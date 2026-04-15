@@ -36,6 +36,12 @@ interface PostConfigFormProps {
   setManualFiles: (files: File[] | ((prev: File[]) => File[])) => void;
   manualCaption: string;
   setManualCaption: (val: string) => void;
+  isAdmin?: boolean;
+  manualTemplates?: any[];
+  selectedTemplate?: any | null;
+  setSelectedTemplate?: (val: any | null) => void;
+  loadingTemplates?: boolean;
+  onUploadNewTemplate?: (file: File) => void;
 }
 
 export default function PostConfigForm({
@@ -54,7 +60,8 @@ export default function PostConfigForm({
   improveLoading, previewLoading, loading, error, allowVideo = true,
   creationMode, setCreationMode,
   manualFiles, setManualFiles,
-  manualCaption, setManualCaption
+  manualCaption, setManualCaption,
+  isAdmin, manualTemplates = [], selectedTemplate, setSelectedTemplate, loadingTemplates, onUploadNewTemplate
 }: PostConfigFormProps) {
   return (
     <form id="create-post-form" onSubmit={handleSubmit} className="space-y-8">
@@ -75,21 +82,26 @@ export default function PostConfigForm({
 
       <div id="tour-form-container" className="premium-card space-y-8">
         
-        {/* MODO DE CREACIÓN: IA VS MANUAL */}
-        <div className="flex bg-slate-100 p-1.5 rounded-2xl w-full sm:w-fit shadow-inner border border-slate-200">
+        {/* MODO DE CREACIÓN: IA VS MANUAL (REFINADA) */}
+        <div className="relative flex bg-slate-100 p-1.5 rounded-2xl w-full sm:w-fit shadow-inner border border-slate-200">
+             {/* Animated Pill Background */}
+             <div 
+               className="absolute top-1.5 bottom-1.5 w-[calc(50%-6px)] bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-slate-200/50 transition-all duration-300 ease-out"
+               style={{ left: creationMode === 'ai' ? '6px' : 'calc(50% + 0px)' }}
+             />
              <button 
                type="button"
                onClick={() => setCreationMode('ai')} 
-               className={`flex-1 flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-all \${creationMode === 'ai' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+               className={`relative flex-1 flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-colors z-10 \${creationMode === 'ai' ? 'text-indigo-700' : 'text-slate-400 hover:text-slate-600'}`}
              >
-               <span>🤖</span> Generar con IA
+               <span className="\${creationMode === 'ai' ? 'scale-110 drop-shadow-sm' : 'grayscale opacity-60'} transition-all">🤖</span> Generar con IA
              </button>
              <button 
                type="button"
                onClick={() => setCreationMode('manual')} 
-               className={`flex-1 flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-all \${creationMode === 'manual' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+               className={`relative flex-1 flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-colors z-10 \${creationMode === 'manual' ? 'text-indigo-700' : 'text-slate-400 hover:text-slate-600'}`}
              >
-               <span>📤</span> Subida Manual
+               <span className="\${creationMode === 'manual' ? 'scale-110 drop-shadow-sm' : 'grayscale opacity-60'} transition-all">📤</span> Subida Manual
              </button>
         </div>
 
@@ -110,25 +122,26 @@ export default function PostConfigForm({
            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Tipo de Publicación</label>
            <div className="grid grid-cols-4 gap-3" role="radiogroup" aria-label="Tipo de Publicación">
               {['Post', 'Historia', 'Carrusel', 'Reel'].map(type => {
-                 const disabled = type === 'Reel' && !allowVideo;
+                 const disabled = type === 'Reel' && !isAdmin;
                  return (
                  <button 
                    key={type}
                    type="button"
                    role="radio"
                    disabled={disabled}
-                   title={disabled ? "Requiere un plan pago para generar videos" : ""}
+                   title={disabled ? "Solo los administradores pueden generar Reels por el momento." : ""}
                    aria-checked={postType === type}
                    onClick={() => setPostType(type)}
                    className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-2 ${
                      disabled ? 'opacity-50 cursor-not-allowed border-slate-100 bg-slate-50 text-slate-400' :
                      postType === type 
-                     ? type === 'Reel' ? 'border-rose-500 bg-rose-50 text-rose-700 shadow-sm' : 'border-indigo-500 bg-indigo-50 text-indigo-700 shadow-sm'
+                     ? type === 'Reel' ? 'border-rose-500 bg-rose-50 text-rose-700 shadow-sm relative overflow-hidden' : 'border-indigo-500 bg-indigo-50 text-indigo-700 shadow-sm'
                      : 'border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200 hover:bg-slate-100'
                    }`}
                  >
-                    <span className="text-2xl">{type === 'Post' ? '🖼️' : type === 'Historia' ? '📱' : type === 'Carrusel' ? '📑' : '🎬'}</span>
-                    <span className="text-[10px] font-black uppercase tracking-widest">{type} {disabled && '🔒'}</span>
+                    {postType === type && type === 'Reel' && <div className="absolute inset-0 bg-rose-500/10 animate-pulse"></div>}
+                    <span className={`${postType === type ? 'scale-110' : ''} transition-transform text-2xl relative z-10`}>{type === 'Post' ? '🖼️' : type === 'Historia' ? '📱' : type === 'Carrusel' ? '📑' : '🎬'}</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest relative z-10">{type} {disabled && '🔒'}</span>
                  </button>
                  )
               })}
@@ -191,70 +204,56 @@ export default function PostConfigForm({
           </div>
         ) : (
           <div className="animate-in slide-in-from-top-4 fade-in">
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Sube tus Archivos</label>
-            <div className="border-2 border-dashed border-indigo-200 rounded-[28px] bg-indigo-50/30 p-8 flex flex-col items-center justify-center text-center hover:bg-indigo-50/50 hover:border-indigo-300 transition-all cursor-pointer relative overflow-hidden group">
-              <input 
-                type="file" 
-                multiple={postType === 'Carrusel'} 
-                accept={postType === 'Reel' ? 'video/mp4,video/quicktime' : 'image/jpeg,image/png,image/webp'} 
-                onChange={(e) => {
-                  if (e.target.files) {
-                     const selected = Array.from(e.target.files);
-                     const max = postType === 'Carrusel' ? 5 : 1;
-                     if (selected.length > max) {
-                         alert(`Para formato \${postType} solo puedes subir un máximo de \${max} archivo(s).`);
-                         return;
-                     }
-                     const maxImageMb = 10;
-                     const maxVideoMb = 50;
-                     let errorMsg = null;
-                     
-                     for (let f of selected) {
-                        const isVid = f.type.includes('video');
-                        const sizeMb = f.size / (1024 * 1024);
-                        if (isVid && sizeMb > maxVideoMb) errorMsg = `Video demasiado grande (\${sizeMb.toFixed(1)}MB). Máx \${maxVideoMb}MB.`;
-                        if (!isVid && sizeMb > maxImageMb) errorMsg = `Imagen demasiado grande (\${sizeMb.toFixed(1)}MB). Máx \${maxImageMb}MB.`;
-                     }
-
-                     if (errorMsg) {
-                        alert(errorMsg);
-                        return;
-                     }
-                     setManualFiles(selected);
-                  }
-                }}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
-              />
-              <span className="text-4xl mb-4 group-hover:scale-110 transition-transform">
-                 {postType === 'Reel' ? '🎬' : '📸'}
-              </span>
-              <h4 className="text-indigo-900 font-black tracking-tight mb-2">Haz click o arrastra archivos aquí</h4>
-              <p className="text-indigo-600/70 text-sm font-medium">
-                 {postType === 'Reel' ? 'Sube tu video (MP4, max 50MB)' : postType === 'Carrusel' ? 'Sube hasta 5 imágenes (Max 10MB c/u)' : 'Sube tu imagen (JPG/PNG/WEBP, max 10MB)'}
-              </p>
-            </div>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Tu Galería</label>
             
-            {manualFiles.length > 0 && (
-              <div className="mt-4 flex flex-wrap gap-4">
-                 {manualFiles.map((file, i) => (
-                    <div key={i} className="relative group bg-slate-100 rounded-xl w-24 h-24 flex-shrink-0 border-2 border-slate-200 overflow-hidden">
-                       {file.type.includes('video') ? (
-                          <div className="w-full h-full flex items-center justify-center text-xs font-bold text-slate-500 bg-slate-200">🎥 Video</div>
-                       ) : (
-                          /* eslint-disable-next-line @next/next/no-img-element */
-                          <img src={URL.createObjectURL(file)} alt="preview" className="w-full h-full object-cover" />
-                       )}
-                       <button 
-                         type="button" 
-                         onClick={() => setManualFiles(prev => prev.filter((_, idx) => idx !== i))}
-                         className="absolute top-1 right-1 bg-red-500 text-white w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20"
-                       >
-                         &times;
-                       </button>
-                    </div>
-                 ))}
-              </div>
-            )}
+            <div className="bg-slate-50 border border-slate-200 rounded-3xl p-4 sm:p-6 mb-6">
+                <div className="flex justify-between items-center mb-4">
+                    <h5 className="font-bold text-slate-700 text-sm">Selecciona o sube una imagen</h5>
+                    {loadingTemplates && <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>}
+                </div>
+                
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[300px] overflow-y-auto pr-2 pb-2 custom-scrollbar">
+                    {/* Botón de subir nuevo */}
+                    <label className="relative flex flex-col items-center justify-center bg-indigo-50/50 border-2 border-dashed border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300 rounded-2xl cursor-pointer group hover:scale-105 transition-all text-indigo-500 aspect-square">
+                        <input 
+                            type="file" 
+                            accept="image/jpeg,image/png,image/webp" 
+                            onChange={(e) => {
+                                if (e.target.files && e.target.files[0] && onUploadNewTemplate) {
+                                    const f = e.target.files[0];
+                                    if (f.size / (1024*1024) > 10) {
+                                        alert("Imagen demasiado grande. Máx 10MB");
+                                        return;
+                                    }
+                                    onUploadNewTemplate(f);
+                                }
+                            }}
+                            className="hidden" 
+                        />
+                        <span className="text-3xl mb-1 group-hover:-translate-y-1 transition-transform">➕</span>
+                        <span className="text-[10px] font-black uppercase">Nueva Foto</span>
+                    </label>
+
+                    {/* Lista de templates del usuario */}
+                    {manualTemplates?.map((tmpl) => (
+                         // eslint-disable-next-line @next/next/no-img-element
+                        <img 
+                            key={tmpl.id}
+                            src={tmpl.url} 
+                            alt="Template" 
+                            onClick={() => setSelectedTemplate?.(tmpl)}
+                            className={`w-full aspect-square object-cover rounded-2xl cursor-pointer transition-all hover:scale-105 shadow-sm \${selectedTemplate?.id === tmpl.id ? 'ring-4 ring-indigo-500 scale-105 drop-shadow-md' : 'opacity-80 hover:opacity-100 hover:ring-2 hover:ring-indigo-300'}`}
+                        />
+                    ))}
+                    
+                    {!loadingTemplates && (!manualTemplates || manualTemplates.length === 0) && (
+                        <div className="col-span-1 sm:col-span-2 md:col-span-3 flex flex-col items-center justify-center text-slate-400 p-4 text-center">
+                            <span className="text-2xl opacity-50 mb-2">📁</span>
+                            <span className="text-[10px] font-bold uppercase tracking-widest">No hay imágenes en tu galería</span>
+                        </div>
+                    )}
+                </div>
+            </div>
 
             <div className="mt-8">
               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Texto de la publicación (Caption)</label>

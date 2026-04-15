@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { auth, db } from "../../../../lib/firebase";
-import { collection, addDoc, getDoc, doc } from "firebase/firestore";
+import { collection, addDoc, getDoc, doc, query, where, getDocs, orderBy } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation";
@@ -12,6 +12,9 @@ import { getQuotaUsage, getPlanLimit, getVideoPlanLimit } from "../../../../lib/
 
 import PostConfigForm from "../../../../components/crear/PostConfigForm";
 import CarouselWizard, { CarouselSlide } from "../../../../components/crear/CarouselWizard";
+import CanvasEditor from "../../../../components/crear/CanvasEditor";
+
+export interface UserTemplate { id: string; url: string; createdAt: Date; }
 
 export default function RrssCreatePost() {
   const router = useRouter();
@@ -23,6 +26,12 @@ export default function RrssCreatePost() {
   const [hasIg, setHasIg] = useState(false);
   const [hasLi, setHasLi] = useState(false);
   const [loadingInitial, setLoadingInitial] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Manual Template States
+  const [manualTemplates, setManualTemplates] = useState<UserTemplate[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<UserTemplate | null>(null);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
 
   // Form states
   const [creationMode, setCreationMode] = useState<'ai' | 'manual'>('ai');
@@ -76,10 +85,40 @@ export default function RrssCreatePost() {
             const used = await getQuotaUsage(u.uid, activeProfile?.id || 'default');
             setPostsThisMonth(used);
             
-            const planLimit = getPlanLimit(plan);
+              const planLimit = getPlanLimit(plan);
             if (used >= planLimit) {
                 setQuotaExceeded(true);
             }
+
+            const isAdminRole = data.role === 'admin' || u.email === 'diemoroy@gmail.com';
+            setIsAdmin(isAdminRole);
+
+            // Fetch User Templates
+            setLoadingTemplates(true);
+            try {
+               const templateQ = query(
+                   collection(db, "user_templates"),
+                   where("userId", "==", u.uid)
+               );
+               const templSnap = await getDocs(templateQ);
+               const templatesData: UserTemplate[] = [];
+               templSnap.forEach(doc => {
+                   const tData = doc.data();
+                   templatesData.push({
+                      id: doc.id,
+                      url: tData.url,
+                      createdAt: tData.createdAt?.toDate() || new Date()
+                   });
+               });
+               // Sort manually as we don't assume a composite index exists
+               templatesData.sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime());
+               setManualTemplates(templatesData);
+            } catch(e) {
+               console.error("Error loading templates", e);
+            } finally {
+               setLoadingTemplates(false);
+            }
+
           }
         } catch (e) {
           console.error(e);
@@ -169,10 +208,50 @@ export default function RrssCreatePost() {
       });
   };
 
+  const handleSaveEditedTemplate = async (finalUrl: string) => {
+      try {
+          const newDoc = await addDoc(collection(db, "user_templates"), {
+              userId: user.uid,
+              url: finalUrl,
+              createdAt: new Date()
+          });
+          const newTmpl: UserTemplate = { id: newDoc.id, url: finalUrl, createdAt: new Date() };
+          setManualTemplates(prev => [newTmpl, ...prev]);
+          setSelectedTemplate(newTmpl);
+      } catch (e) {
+          console.error("Error saving manual template", e);
+      }
+  };
+
+  const handleUploadNewTemplate = async (file: File) => {
+      setLoadingTemplates(true);
+      try {
+          const ext = file.name.split('.').pop();
+          const filename = `manual_post_${Date.now()}.${ext}`;
+          const storageRef = ref(storage, `social_media_uploads/${user.uid}/${filename}`);
+          await uploadBytes(storageRef, file);
+          const url = await getDownloadURL(storageRef);
+          
+          const newDoc = await addDoc(collection(db, "user_templates"), {
+              userId: user.uid,
+              url: url,
+              createdAt: new Date()
+          });
+          const newTmpl: UserTemplate = { id: newDoc.id, url: url, createdAt: new Date() };
+          setManualTemplates(prev => [newTmpl, ...prev]);
+          setSelectedTemplate(newTmpl);
+      } catch (e) {
+          console.error(e);
+          setError("Error subiendo el archivo manual.");
+      } finally {
+          setLoadingTemplates(false);
+      }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (creationMode === 'ai' && !idea) { setError("Por favor ingresa una idea para tu publicación."); return; }
-    if (creationMode === 'manual' && manualFiles.length === 0) { setError("Sube al menos un archivo para tu publicación."); return; }
+    if (creationMode === 'manual' && (!selectedTemplate && manualFiles.length === 0)) { setError("Selecciona o sube una imagen manual primero."); return; }
     if (!date || !time) { setError("Selecciona fecha y hora para agendar."); return; }
     
     const nets: string[] = [];
@@ -199,16 +278,19 @@ export default function RrssCreatePost() {
       let finalUrls: string[] = [];
 
       if (creationMode === 'manual') {
-          // Upload manual files directly to Storage
-          const { storage } = await import('../../../../lib/firebase');
-          for (let i = 0; i < manualFiles.length; i++) {
-              const file = manualFiles[i];
-              const ext = file.name.split('.').pop();
-              const filename = `manual_post_\${Date.now()}_\${i}.\${ext}`;
-              const storageRef = ref(storage, `social_media_uploads/\${user.uid}/\${filename}`);
-              await uploadBytes(storageRef, file);
-              const url = await getDownloadURL(storageRef);
-              finalUrls.push(url);
+          // If a template is selected, use it. Otherwise, upload legacy manual files
+          if (selectedTemplate) {
+              finalUrls.push(selectedTemplate.url);
+          } else {
+              for (let i = 0; i < manualFiles.length; i++) {
+                  const file = manualFiles[i];
+                  const ext = file.name.split('.').pop();
+                  const filename = `manual_post_${Date.now()}_${i}.${ext}`;
+                  const storageRef = ref(storage, `social_media_uploads/${user.uid}/${filename}`);
+                  await uploadBytes(storageRef, file);
+                  const url = await getDownloadURL(storageRef);
+                  finalUrls.push(url);
+              }
           }
       } else {
           finalUrls = previewSlides.map(slide => slide.finalUrl || slide.url);
@@ -287,23 +369,44 @@ export default function RrssCreatePost() {
               previewLoading={previewLoading}
               loading={loading}
               error={error}
-              allowVideo={getVideoPlanLimit(userPlan) > 0}
+              isAdmin={isAdmin}
+              allowVideo={getVideoPlanLimit(userPlan) > 0 || isAdmin}
               creationMode={creationMode}
               setCreationMode={setCreationMode}
               manualFiles={manualFiles}
               setManualFiles={setManualFiles}
               manualCaption={manualCaption}
               setManualCaption={setManualCaption}
+              manualTemplates={manualTemplates}
+              selectedTemplate={selectedTemplate}
+              setSelectedTemplate={setSelectedTemplate}
+              loadingTemplates={loadingTemplates}
+              onUploadNewTemplate={handleUploadNewTemplate}
             />
           </div>
 
           <div className="lg:col-span-5 relative">
             {creationMode === 'manual' ? (
-                <div className="p-8 border-4 border-dashed border-indigo-100 rounded-[32px] text-center flex flex-col items-center justify-center min-h-[500px] text-indigo-400 bg-indigo-50/20 lg:sticky lg:top-24 mt-8 lg:mt-0 transition-all">
-                  <div className="text-6xl mb-4 opacity-80">📱</div>
-                  <h4 className="font-black text-lg mb-2 text-indigo-700">Subida Directa Activada</h4>
-                  <p className="font-medium text-sm max-w-xs leading-relaxed">Tus archivos se subirán directamente sin usar nuestra IA. Asegúrate de que el formato sea correcto. Presiona "Automatizar y Publicar" abajo para finalizar.</p>
-                </div>
+                selectedTemplate ? (
+                    <div className="lg:sticky lg:top-24 mt-8 lg:mt-0 space-y-6">
+                        <CanvasEditor 
+                           baseImageUrl={selectedTemplate.url}
+                           suggestedCopy={manualCaption || "Previsualización manual"}
+                           initialLogoUrl={userLogo}
+                           userId={user?.uid}
+                           onSave={handleSaveEditedTemplate}
+                        />
+                        <button form="create-post-form" disabled={loading} type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-black text-lg py-5 px-8 rounded-[24px] transition-all shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-4 hover:-translate-y-1">
+                           {loading ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : '✅ Aprobar y Agendar'}
+                        </button>
+                    </div>
+                ) : (
+                    <div className="p-8 border-4 border-dashed border-indigo-100 rounded-[32px] text-center flex flex-col items-center justify-center min-h-[500px] text-indigo-400 bg-indigo-50/20 lg:sticky lg:top-24 mt-8 lg:mt-0 transition-all">
+                      <div className="text-6xl mb-4 opacity-80">📱</div>
+                      <h4 className="font-black text-lg mb-2 text-indigo-700">Galería Manual Activa</h4>
+                      <p className="font-medium text-sm max-w-xs leading-relaxed">Sube imágenes en el panel izquierdo o selecciona una de tus plantillas previas para poder editarla, añadir logo y publicarla.</p>
+                    </div>
+                )
             ) : previewSlides.length > 0 ? (
                 postType === 'Reel' ? (
                    <div className="lg:sticky lg:top-24 mt-8 lg:mt-0">
