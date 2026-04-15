@@ -1,0 +1,37 @@
+name: Deploy to DigitalOcean (rrss-auto)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to Server via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DO_HOST }}
+          username: ${{ secrets.DO_USERNAME }}
+          key: ${{ secrets.DO_SSH_KEY }}
+          script: |
+            # Ruta de producción en DigitalOcean
+            cd /var/www/santisoft-rrss
+            
+            echo "Descargando últimos cambios de GitHub..."
+            git pull origin main
+            
+            echo "Instalando dependencias..."
+            npm install
+            
+            echo "Construyendo la aplicación..."
+            npm run build
+            
+            echo "Reiniciando PM2..."
+            # Si es la primera vez que se ejecuta, pm2 restart fallará, así que usamos un respaldo lógico.
+            # Asegúrate del puerto que vas a usar en producción.
+            pm2 restart santisoft-rrss || pm2 start npm --name "santisoft-rrss" -- run start -- -p 3002
+            
+            echo "¡Despliegue completado con éxito!"
