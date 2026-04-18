@@ -48,12 +48,13 @@ export default function AdminEstrategiasPage() {
             if (docSnap.exists() && docSnap.data().goals) {
                 setGoals(docSnap.data().goals);
             } else {
-                // Default setup if nothing exists
+                // Default setup with 5 professional high-impact strategies
                 setGoals([
-                    { id: 'sales', title: 'Crecer en Clientes / Ventas', description: 'Enfocado en conversiones directas.', icon: '💰' },
-                    { id: 'visibility', title: 'Mayor Visibilidad', description: 'Alcance masivo y reconocimiento de marca.', icon: '👁️' },
-                    { id: 'engagement', title: 'Generar Comunidad', description: 'Mejorar interacciones y engagement.', icon: '🤝' },
-                    { id: 'calls', title: 'Más Llamadas', description: 'Atraer clientes interesados en agendar.', icon: '📞' }
+                    { id: 'ventas', title: 'Ventas & Conversión', description: 'Maximizar pedidos y ventas directas mediante contenido persuasivo.', icon: '💰' },
+                    { id: 'autoridad', title: 'Autoridad & Marca', description: 'Posicionarte como el experto número 1 y referente de tu sector.', icon: '🎙️' },
+                    { id: 'viralidad', title: 'Viralidad & Alcance', description: 'Contenido diseñado para ser compartido masivamente y llegar a miles.', icon: '🚀' },
+                    { id: 'lealtad', title: 'Comunidad & Lealtad', description: 'Crear fans reales y embajadores que interactúen con cada publicación.', icon: '❤️' },
+                    { id: 'prospectos', title: 'Captación de Prospectos', description: 'Atraer mensajes directos y registros de clientes altamente interesados.', icon: '📥' }
                 ]);
             }
         } catch (error) {
@@ -108,9 +109,27 @@ export default function AdminEstrategiasPage() {
 
   return (
     <div className="max-w-7xl mx-auto lg:mx-0">
-      <div className="mb-10">
-        <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-tight">Configuración de <span className="text-indigo-600">Estrategias IA.</span></h1>
-        <p className="text-slate-500 mt-4 text-lg font-medium leading-relaxed italic">Administra los objetivos que ven los usuarios premium en el generador de estrategias.</p>
+      <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+           <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-tight">Configuración de <span className="text-indigo-600">Estrategias IA.</span></h1>
+           <p className="text-slate-500 mt-4 text-lg font-medium leading-relaxed italic">Administra los objetivos que ven los usuarios premium en el generador de estrategias.</p>
+        </div>
+        <button 
+            onClick={() => {
+                if(confirm("¿Quieres cargar las 5 plantillas profesionales? Esto sobrescribirá los objetivos actuales.")) {
+                    handleSave([
+                        { id: 'ventas', title: 'Ventas & Conversión', description: 'Maximizar pedidos y ventas directas mediante contenido persuasivo.', icon: '💰' },
+                        { id: 'autoridad', title: 'Autoridad & Marca', description: 'Posicionarte como el experto número 1 y referente de tu sector.', icon: '🎙️' },
+                        { id: 'viralidad', title: 'Viralidad & Alcance', description: 'Contenido diseñado para ser compartido masivamente y llegar a miles.', icon: '🚀' },
+                        { id: 'lealtad', title: 'Comunidad & Lealtad', description: 'Crear fans reales y embajadores que interactúen con cada publicación.', icon: '❤️' },
+                        { id: 'prospectos', title: 'Captación de Prospectos', description: 'Atraer mensajes directos y registros de clientes altamente interesados.', icon: '📥' }
+                    ]);
+                }
+            }}
+            className="bg-indigo-50 text-indigo-600 font-black px-6 py-4 rounded-[24px] border-2 border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all shadow-sm flex items-center gap-2"
+        >
+            <span>💎</span> Cargar Plantillas Pro
+        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

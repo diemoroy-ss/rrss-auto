@@ -30,8 +30,11 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ payments });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("User Payments API Error:", error);
-    return NextResponse.json({ error: "Internal Error" }, { status: 500 });
+    if (error.message?.includes("composite index")) {
+        return NextResponse.json({ error: `⚠️ Falta índice compuesto en Firestore. Copia el link de tus logs de servidor o revisa tu consola de Firebase para crear un índice en 'payments' con campos: userId y date.` }, { status: 500 });
+    }
+    return NextResponse.json({ error: `Internal Error: ${error.message || 'Unknown'}` }, { status: 500 });
   }
 }

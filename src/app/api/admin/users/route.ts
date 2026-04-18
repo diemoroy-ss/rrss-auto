@@ -66,6 +66,7 @@ export async function GET(req: Request) {
         email: data.email || "No Email",
         name: data.name || "Sin Nombre",
         plan: data.plan || "free",
+        role: data.role || "user",
         isDisabled: data.isDisabled || false,
         registeredApps: data.registeredApps || [],
         postsThisMonth: userPostCounts[uId] || 0
