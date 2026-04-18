@@ -118,6 +118,7 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
                  <Link href="/automatizacion-rrss/panel/admin/pagos" className={`block px-3 py-2 rounded-lg text-[11px] font-bold transition-all ${pathname.includes('/admin/pagos') ? 'bg-indigo-600/20 text-indigo-400' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}>Pagos</Link>
                  <Link href="/automatizacion-rrss/panel/admin/whatsapp" className={`block px-3 py-2 rounded-lg text-[11px] font-bold transition-all ${pathname.includes('/whatsapp') ? 'bg-indigo-600/20 text-indigo-400' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}>WhatsApp</Link>
                  <Link href="/automatizacion-rrss/panel/admin/estrategias" className={`block px-3 py-2 rounded-lg text-[11px] font-bold transition-all ${pathname.includes('/admin/estrategias') ? 'bg-indigo-600/20 text-indigo-400' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}>Estrategias</Link>
+                 <Link href="/automatizacion-rrss/panel/admin/workflows" className={`block px-3 py-2 rounded-lg text-[11px] font-bold transition-all ${pathname.includes('/admin/workflows') ? 'bg-indigo-600/20 text-indigo-400' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}>Workflows N8N</Link>
                </div>
             </details>
           )}
@@ -170,6 +171,7 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
                   <Link href="/automatizacion-rrss/panel/admin" className={`whitespace-nowrap px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${pathname === '/automatizacion-rrss/panel/admin' ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-slate-400 border border-white/5'}`}>👑 Usuarios</Link>
                   <Link href="/automatizacion-rrss/panel/admin/whatsapp" className={`whitespace-nowrap px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${pathname.includes('/whatsapp') ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-slate-400 border border-white/5'}`}>💬 Chats</Link>
                   <Link href="/automatizacion-rrss/panel/admin/estrategias" className={`whitespace-nowrap px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${pathname.includes('/admin/estrategias') ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-slate-400 border border-white/5'}`}>🧠 Estrategias</Link>
+                  <Link href="/automatizacion-rrss/panel/admin/workflows" className={`whitespace-nowrap px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${pathname.includes('/admin/workflows') ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-slate-400 border border-white/5'}`}>⚙️ Workflows</Link>
                 </>
             )}
           </div>
