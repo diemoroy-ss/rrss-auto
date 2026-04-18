@@ -1,27 +1,25 @@
 import { NextResponse } from "next/server";
-import { MercadoPagoConfig, Payment } from "mercadopago";
+import { MercadoPagoConfig, Payment, PreApproval } from "mercadopago";
 import { adminDb } from "../../../../lib/firebase-admin";
 
 export async function POST(req: Request) {
   try {
-    // 1. Obtener los parámetros de la URL (si es una notificación clásica IPN) o del body (Webhooks)
     const url = new URL(req.url);
     const dataId = url.searchParams.get("data.id") || url.searchParams.get("id");
     
-    // Intentar leer el body por si viene en formato Webhook moderno
     let body: any = {};
     try {
         body = await req.json();
     } catch(e) {}
 
+    // El tipo de notificación puede venir en el body (webhook) o query param (IPN)
+    const type = body?.type || url.searchParams.get("type");
     const paymentId = body?.data?.id || dataId;
 
     if (!paymentId) {
-        // MP hace pings de confirmación, devolvemos 200 siempre.
-        return NextResponse.json({ message: "No payment ID provided." }, { status: 200 });
+        return NextResponse.json({ message: "No payment/preapproval ID provided." }, { status: 200 });
     }
 
-    // 2. Configurar SDK con el token correcto
     const isTest = process.env.NEXT_PUBLIC_MP_ENV !== "prod";
     const accessToken = isTest 
         ? process.env.MP_ACCESS_TOKEN_TEST 
@@ -33,42 +31,73 @@ export async function POST(req: Request) {
     }
 
     const client = new MercadoPagoConfig({ accessToken, options: { timeout: 5000 } });
-    const payment = new Payment(client);
 
-    // 3. Consultar a Mercado Pago el estado real del pago para evitar fraudes
-    const paymentData = await payment.get({ id: paymentId });
+    // CASO 1: Es un Cobro Efectivo (Pago Único o Cuota de Suscripción)
+    if (type === "payment" || !type) {
+        const payment = new Payment(client);
+        const paymentData = await payment.get({ id: paymentId });
 
-    if (!paymentData) {
-        return new NextResponse("Payment not found", { status: 404 });
-    }
-
-    // 4. Procesar el pago
-    if (paymentData.status === "approved") {
-        const userId = paymentData.external_reference;
-        const items = paymentData.additional_info?.items;
-        
-        if (userId && items && items.length > 0) {
-            const planId = items[0].id; // "pro" o "elite"
-
-            if (adminDb) {
-                await adminDb.collection("users").doc(userId).update({
-                    plan: planId,
-                    lastPaymentDate: new Date().toISOString(),
-                    mpPaymentId: paymentData.id
+        if (paymentData && paymentData.status === "approved") {
+            const userId = paymentData.external_reference;
+            const amount = paymentData.transaction_amount;
+            const status = paymentData.status;
+            
+            // Si viene de una suscripción, a veces el external_reference está en la suscripción madre
+            // pero Mercado Pago suele propagarlo.
+            
+            if (userId && adminDb) {
+                // 1. Guardar en historial de pagos
+                await adminDb.collection("payments").add({
+                    userId,
+                    paymentId: paymentData.id,
+                    amount,
+                    currency: paymentData.currency_id,
+                    status,
+                    date: new Date().toISOString(),
+                    type: "payment",
+                    description: paymentData.description || "Pago Santisoft"
                 });
-                console.log(`Webhook: Cuenta ${userId} actualizada a plan ${planId}`);
-            } else {
-                console.error("Webhook: Firebase Admin no está inicializado.");
+
+                // 2. Actualizar plan del usuario (si no es free)
+                // Nota: El planId suele venir en items[0].id si es Preference, 
+                // o en la descripción si lo parseamos. 
+                // Para simplificar, si es un pago aprobado, mantenemos el plan que el usuario eligió.
+                console.log(`Webhook: Pago aprobado para usuario ${userId} por ${amount}`);
             }
         }
     }
 
-    // Siempre responder HTTP 200 a Mercado Pago para que dejen de reintentar
+    // CASO 2: Es un evento de Suscripción (PreApproval)
+    if (type === "preapproval") {
+        const preApproval = new PreApproval(client);
+        const paData = await preApproval.get({ id: paymentId });
+
+        if (paData && paData.status === "authorized") {
+            const userId = paData.external_reference;
+            const planName = paData.reason; // Ej: "Suscripción PRO - Santisoft"
+            
+            if (userId && adminDb) {
+                let planId = "free";
+                if (planName?.includes("PRO")) planId = "pro";
+                else if (planName?.includes("ELITE")) planId = "elite";
+                else if (planName?.includes("BUSINESS")) planId = "business";
+
+                await adminDb.collection("users").doc(userId).update({
+                    plan: planId,
+                    subscriptionId: paData.id,
+                    subscriptionStatus: paData.status,
+                    lastPaymentDate: new Date().toISOString()
+                });
+                
+                console.log(`Webhook: Suscripción ${paData.id} autorizada para usuario ${userId} (${planId})`);
+            }
+        }
+    }
+
     return NextResponse.json({ success: true }, { status: 200 });
     
   } catch (error) {
     console.error("Webhook Mercado Pago Error:", error);
-    // MP espera un 200 incluso si hay errores internos parsados mal, o reintentará infinitamente.
     return NextResponse.json({ error: "Internal Error handled" }, { status: 200 });
   }
 }

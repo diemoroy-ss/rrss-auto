@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { MercadoPagoConfig, Preference } from "mercadopago";
+import { MercadoPagoConfig, PreApproval } from "mercadopago";
 
 export async function POST(req: Request) {
   try {
-    const { planId, userId } = await req.json();
+    const { planId, userId, userEmail } = await req.json();
 
-    if (!planId || !userId) {
-      return NextResponse.json({ error: "Missing planId or userId" }, { status: 400 });
+    if (!planId || !userId || !userEmail) {
+      return NextResponse.json({ error: "Missing planId, userId or userEmail" }, { status: 400 });
     }
 
     // Determinar Entorno y Llaves
@@ -29,57 +29,47 @@ export async function POST(req: Request) {
 
     if (planId === "pro") {
         title = "Suscripción PRO - Santisoft";
-        price = 11990; // CLP
+        price = 19990; // CLP (Corregido según planes/page.tsx)
     } else if (planId === "elite") {
         title = "Suscripción ELITE - Santisoft";
-        price = 24990; // CLP
+        price = 49990; // CLP (Corregido según planes/page.tsx)
+    } else if (planId === "business") {
+        title = "Suscripción BUSINESS - Santisoft";
+        price = 99990; // CLP
     } else {
-        return NextResponse.json({ error: "Plan inválido" }, { status: 400 });
+        return NextResponse.json({ error: "Plan inválido para suscripción" }, { status: 400 });
     }
 
-    // Construir URLs de Retorno. Se asume q la app corre en prod bajo un dominio o localhost.
-    // Usaremos el origen del request para la URL dinámica
-    const origin = req.headers.get("origin") || "http://localhost:3001";
+    // Construir URLs de Retorno
+    const origin = req.headers.get("origin") || "https://rrss.santisoft.cl";
     
-    // Configurar la Preferencia
-    const preference = new Preference(client);
+    // Configurar la Suscripción (PreApproval)
+    const preApproval = new PreApproval(client);
     
-    // Notification URL requires an internet-accessible domain. 
-    // In dev, Mercado Pago won't be able to reach localhost for webhooks.
-    // We will append a fake notification_url if on localhost to prevent errors, 
-    // but the user needs a tunneling service like ngrok to test webhooks fully, OR test in prod.
-    const baseUrl = origin.includes("localhost") ? "https://api.santisoft.cl" : origin;
-
+    // No hay período de prueba, cobro inmediato mensual
     const body = {
-        items: [
-            {
-                id: planId,
-                title: title,
-                quantity: 1,
-                unit_price: price,
-                currency_id: "CLP",
-                description: `Upgrade de cuenta a ${planId.toUpperCase()} - Usuario: ${userId}`
-            }
-        ],
-        back_urls: {
-            success: `${origin}/automatizacion-rrss/panel/planes/exito`,
-            failure: `${origin}/automatizacion-rrss/panel/planes/error`,
-            pending: `${origin}/automatizacion-rrss/panel/planes/error`
+        reason: title,
+        auto_recurring: {
+            frequency: 1,
+            frequency_type: "months",
+            transaction_amount: price,
+            currency_id: "CLP"
         },
-        auto_return: "approved" as const,
-        external_reference: userId, // Esencial: Guardamos el UID para que el webhook sepa a quién subir el plan
-        notification_url: `${baseUrl}/api/webhooks/mercadopago` 
+        payer_email: userEmail,
+        back_url: `${origin}/automatizacion-rrss/panel/planes/exito`,
+        external_reference: userId, // UID para el webhook
+        status: "authorized"
     };
 
-    const response = await preference.create({ body });
+    const response = await preApproval.create({ body });
 
-    // Si estamos en entorno de prueba, usar sandbox_init_point, caso contrario init_point
+    // La URL de pago para suscripciones se encuentra en init_point o sandbox_init_point
     const checkoutUrl = isTest ? response.sandbox_init_point : response.init_point;
 
     return NextResponse.json({ url: checkoutUrl });
 
   } catch (error: any) {
-    console.error("Error al generar pago con Mercado Pago:", error);
-    return NextResponse.json({ error: "Fallo al generar orden de pago" }, { status: 500 });
+    console.error("Error al generar suscripción con Mercado Pago:", error);
+    return NextResponse.json({ error: "Fallo al generar orden de suscripción" }, { status: 500 });
   }
 }

@@ -26,12 +26,22 @@ export default function AdminEstrategiasPage() {
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
-        if (!user || user.email !== "diemoroy@gmail.com") {
+        if (!user) {
             router.replace("/automatizacion-rrss/panel");
             return;
         }
 
         try {
+            // Check role in Firestore
+            const uDoc = await getDoc(doc(db, "users", user.uid));
+            const userData = uDoc.data();
+            const isAdmin = user.email === "diemoroy@gmail.com" || userData?.role === "admin";
+
+            if (!isAdmin) {
+                router.replace("/automatizacion-rrss/panel");
+                return;
+            }
+
             const docRef = doc(db, "settings", "strategy_config");
             const docSnap = await getDoc(docRef);
             

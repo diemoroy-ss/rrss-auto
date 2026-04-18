@@ -104,7 +104,7 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
             )
           })}
           
-          {user?.email === "diemoroy@gmail.com" && (
+          {(user?.email === "diemoroy@gmail.com" || userDoc?.role === "admin") && (
             <details className="pt-4 border-t border-slate-800 group" open={pathname.includes('/admin')}>
                <summary className="w-full flex items-center justify-between px-5 py-4 rounded-2xl transition-all font-bold text-sm text-slate-400 hover:text-white hover:bg-white/5 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
                  <div className="flex items-center gap-3">
@@ -115,6 +115,7 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
                </summary>
                <div className="mt-2 space-y-2 pl-4 border-l-2 border-slate-800 ml-4">
                  <Link href="/automatizacion-rrss/panel/admin" className={`block px-4 py-2 rounded-xl text-xs font-bold transition-all ${pathname === '/automatizacion-rrss/panel/admin' ? 'bg-indigo-600/20 text-indigo-400' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}>Usuarios Admin</Link>
+                 <Link href="/automatizacion-rrss/panel/admin/pagos" className={`block px-4 py-2 rounded-xl text-xs font-bold transition-all ${pathname.includes('/admin/pagos') ? 'bg-indigo-600/20 text-indigo-400' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}>Historial de Pagos</Link>
                  <Link href="/automatizacion-rrss/panel/admin/whatsapp" className={`block px-4 py-2 rounded-xl text-xs font-bold transition-all ${pathname.includes('/whatsapp') ? 'bg-indigo-600/20 text-indigo-400' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}>Chats WhatsApp</Link>
                  <Link href="/automatizacion-rrss/panel/admin/estrategias" className={`block px-4 py-2 rounded-xl text-xs font-bold transition-all ${pathname.includes('/admin/estrategias') ? 'bg-indigo-600/20 text-indigo-400' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}>Config Estrategias</Link>
                </div>
@@ -163,7 +164,7 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
               )
             })}
             
-            {user?.email === "diemoroy@gmail.com" && (
+            {(user?.email === "diemoroy@gmail.com" || userDoc?.role === "admin") && (
                 <>
                   <div className="w-px h-6 bg-white/10 mx-2 self-center shrink-0"></div>
                   <Link href="/automatizacion-rrss/panel/admin" className={`whitespace-nowrap px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${pathname === '/automatizacion-rrss/panel/admin' ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-slate-400 border border-white/5'}`}>👑 Usuarios</Link>

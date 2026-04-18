@@ -6,6 +6,8 @@ import { auth, db, storage } from "../../../../lib/firebase";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { onAuthStateChanged, updatePassword } from "firebase/auth";
 import Link from "next/link";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
 export default function MiPerfil() {
   const [user, setUser] = useState<any>(null);
@@ -23,11 +25,15 @@ export default function MiPerfil() {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [newPassword, setNewPassword] = useState("");
 
+  const [history, setHistory] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(true);
+
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
       setUser(u);
       if (u) {
         setEmail(u.email || "");
+        fetchHistory(u);
         try {
           const d = await getDoc(doc(db, "users", u.uid));
           if (d.exists()) {
@@ -45,6 +51,23 @@ export default function MiPerfil() {
     });
     return () => unsub();
   }, []);
+
+  const fetchHistory = async (u: any) => {
+    try {
+      const token = await u.getIdToken();
+      const res = await fetch("/api/payments/history", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setHistory(data.payments);
+      }
+    } catch (e) {
+      console.error("Error fetching payment history", e);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
 
   const handleSaveName = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -214,6 +237,9 @@ export default function MiPerfil() {
         </div>
 
         {/* CURRENT SUBSCRIPTION INFO */}
+        </div>
+
+        {/* CURRENT SUBSCRIPTION INFO */}
         <div className="bg-gradient-to-tr from-indigo-900 via-slate-900 to-slate-800 p-8 rounded-[32px] shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500 opacity-20 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
           
@@ -228,6 +254,50 @@ export default function MiPerfil() {
               Ver Mis Planes
             </Link>
           </div>
+        </div>
+
+        {/* PAYMENT HISTORY */}
+        <div className="bg-white p-8 rounded-[32px] border-2 border-slate-100 shadow-xl shadow-slate-200/50 relative overflow-hidden group">
+          <div className="flex items-center gap-4 mb-8 pb-6 border-b border-slate-100">
+             <span className="w-12 h-12 bg-slate-100 text-slate-600 rounded-2xl flex items-center justify-center text-xl shadow-inner font-black">📜</span>
+             <h3 className="text-xl font-black text-slate-900">Historial de Transacciones</h3>
+          </div>
+
+          {loadingHistory ? (
+              <div className="py-10 text-center text-slate-400 font-bold animate-pulse">Cargando historial...</div>
+          ) : history.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-black border-b border-slate-50">
+                      <th className="pb-4">Fecha</th>
+                      <th className="pb-4">Concepto</th>
+                      <th className="pb-4 text-right">Monto</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {history.map((p) => (
+                      <tr key={p.id}>
+                        <td className="py-4 text-xs font-bold text-slate-500">
+                            {format(new Date(p.date), "dd/MM/yyyy", { locale: es })}
+                        </td>
+                        <td className="py-4">
+                            <div className="text-xs font-black text-slate-800">{p.description}</div>
+                            <div className="text-[9px] text-emerald-600 font-black uppercase tracking-widest">{p.status === 'approved' || p.status === 'authorized' ? 'Pagado' : p.status}</div>
+                        </td>
+                        <td className="py-4 text-right">
+                            <div className="text-sm font-black text-slate-900">${p.amount.toLocaleString('es-CL')}</div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+          ) : (
+              <div className="py-10 bg-slate-50 rounded-2xl text-center">
+                  <p className="text-slate-400 font-bold text-sm italic">No tienes pagos registrados todavía.</p>
+              </div>
+          )}
         </div>
 
       </div>

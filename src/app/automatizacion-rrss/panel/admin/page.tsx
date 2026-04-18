@@ -24,7 +24,7 @@ export default function AdminUsersPage() {
   useEffect(() => {
     const fetchUsers = async () => {
       const currentUser = auth.currentUser;
-      if (!currentUser || currentUser.email !== "diemoroy@gmail.com") {
+      if (!currentUser) {
          router.push("/automatizacion-rrss/panel");
          return;
       }
@@ -35,7 +35,10 @@ export default function AdminUsersPage() {
             headers: { Authorization: `Bearer ${token}` }
         });
 
-        if (!res.ok) throw new Error("No tienes permisos para ver esto.");
+        if (!res.ok) {
+           router.push("/automatizacion-rrss/panel");
+           return;
+        }
 
         const data = await res.json();
         setUsers(data.users);

@@ -10,7 +10,13 @@ export async function POST(req: Request) {
         const token = authHeader.split('Bearer ')[1];
         const decodedToken = await adminAuth.verifyIdToken(token);
         
-        if (decodedToken.email !== 'admin@santisoft.cl' && decodedToken.email !== 'diemoroy@gmail.com') {
+        // Check role in Firestore
+        const userDoc = await adminDb.collection('users').doc(decodedToken.uid).get();
+        const userData = userDoc.data();
+        const isSuperAdmin = decodedToken.email === 'diemoroy@gmail.com' || decodedToken.email === 'admin@santisoft.cl';
+        const isAdmin = userData?.role === 'admin';
+
+        if (!isSuperAdmin && !isAdmin) {
             return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 });
         }
 

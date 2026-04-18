@@ -21,11 +21,13 @@ export async function GET(req: Request) {
 
     const decodedToken = await adminAuth.verifyIdToken(idToken);
     
-    // Debug: Log info to see why auth might fail on some machines
-    console.log(`[ADMIN API] Access attempt by: ${decodedToken.email} (UID: ${decodedToken.uid})`);
+    // Check role in Firestore
+    const userDoc = await adminDb.collection("users").doc(decodedToken.uid).get();
+    const userData = userDoc.data();
+    const isSuperAdmin = decodedToken.email === "diemoroy@gmail.com";
+    const isAdmin = userData?.role === "admin";
 
-    // Only Diemo can access this!
-    if (decodedToken.email !== "diemoroy@gmail.com") {
+    if (!isSuperAdmin && !isAdmin) {
       console.warn(`[ADMIN API] Unauthorized access denied for ${decodedToken.email}`);
       return NextResponse.json({ error: "Unauthorized access" }, { status: 403 });
     }

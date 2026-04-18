@@ -16,7 +16,13 @@ export async function POST(req: Request) {
 
     const decodedToken = await adminAuth.verifyIdToken(idToken);
     
-    if (decodedToken.email !== "diemoroy@gmail.com") {
+    // Check role in Firestore
+    const userDoc = await adminDb.collection("users").doc(decodedToken.uid).get();
+    const userData = userDoc.data();
+    const isSuperAdmin = decodedToken.email === "diemoroy@gmail.com";
+    const isAdmin = userData?.role === "admin";
+
+    if (!isSuperAdmin && !isAdmin) {
       return NextResponse.json({ error: "Unauthorized access" }, { status: 403 });
     }
 
