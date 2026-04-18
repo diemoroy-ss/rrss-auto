@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { auth } from "../../../../../lib/firebase";
 import { useRouter } from "next/navigation";
+import { onAuthStateChanged } from "firebase/auth";
 
 type ChatSession = {
   phone: string;
@@ -28,8 +29,7 @@ export default function AdminWhatsAppPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const fetchChats = async () => {
-      const currentUser = auth.currentUser;
+    const unsub = onAuthStateChanged(auth, async (currentUser) => {
       if (!currentUser) {
          router.push("/automatizacion-rrss/panel");
          return;
@@ -54,9 +54,9 @@ export default function AdminWhatsAppPage() {
       } finally {
          setLoadingChats(false);
       }
-    };
+    });
 
-    fetchChats();
+    return () => unsub();
   }, [router]);
 
   const loadConversation = async (chat: ChatSession) => {

@@ -5,6 +5,7 @@ import { auth } from "../../../../../lib/firebase";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { onAuthStateChanged } from "firebase/auth";
 
 type Payment = {
   id: string;
@@ -25,8 +26,7 @@ export default function AdminPaymentsPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const fetchPayments = async () => {
-      const currentUser = auth.currentUser;
+    const unsub = onAuthStateChanged(auth, async (currentUser) => {
       if (!currentUser) {
          router.push("/automatizacion-rrss/panel");
          return;
@@ -51,9 +51,9 @@ export default function AdminPaymentsPage() {
       } finally {
          setLoading(false);
       }
-    };
+    });
 
-    fetchPayments();
+    return () => unsub();
   }, [router]);
 
   // Calcular ingresos totales (simplificado)

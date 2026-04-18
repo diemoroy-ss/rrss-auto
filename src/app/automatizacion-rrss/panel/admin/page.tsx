@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { auth } from "../../../../lib/firebase";
 import { useRouter } from "next/navigation";
+import { onAuthStateChanged } from "firebase/auth";
 
 type UserData = {
   id: string;
@@ -22,8 +23,7 @@ export default function AdminUsersPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      const currentUser = auth.currentUser;
+    const unsub = onAuthStateChanged(auth, async (currentUser) => {
       if (!currentUser) {
          router.push("/automatizacion-rrss/panel");
          return;
@@ -48,9 +48,9 @@ export default function AdminUsersPage() {
       } finally {
          setLoading(false);
       }
-    };
+    });
 
-    fetchUsers();
+    return () => unsub();
   }, [router]);
 
   const toggleUserStatus = async (userId: string, currentStatus: boolean) => {
