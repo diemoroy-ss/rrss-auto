@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { auth, db } from "../../../../../lib/firebase";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
+import StatusModal from "../../../../../components/StatusModal";
 
 interface StrategyGoal {
   id: string;
@@ -23,6 +24,30 @@ export default function AdminEstrategiasPage() {
   const [newTitle, setNewTitle] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [newIcon, setNewIcon] = useState("🎯");
+
+  const [modal, setModal] = useState<{
+    isOpen: boolean;
+    type: "success" | "error" | "info" | "confirm";
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    type: "info",
+    title: "",
+    message: "",
+    onConfirm: () => {}
+  });
+
+  const showModal = (type: any, title: string, message: string, onConfirm?: () => void) => {
+    setModal({
+        isOpen: true,
+        type,
+        title,
+        message,
+        onConfirm: onConfirm || (() => setModal(prev => ({ ...prev, isOpen: false })))
+    });
+  };
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
@@ -70,12 +95,26 @@ export default function AdminEstrategiasPage() {
   const handleSave = async (updatedGoals: StrategyGoal[]) => {
       setSaving(true);
       try {
-          await setDoc(doc(db, "settings", "strategy_config"), { goals: updatedGoals }, { merge: true });
+          const token = await auth.currentUser?.getIdToken();
+          const res = await fetch("/api/admin/strategies", {
+              method: "POST",
+              headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${token}`
+              },
+              body: JSON.stringify({ goals: updatedGoals })
+          });
+
+          if (!res.ok) {
+              const err = await res.json().catch(() => ({}));
+              throw new Error(err.error || "Error al guardar");
+          }
+
           setGoals(updatedGoals);
-          alert("Configuración guardada exitosamente.");
-      } catch (e) {
+          showModal("success", "¡Guardado!", "La configuración de estrategias se ha actualizado correctamente.");
+      } catch (e: any) {
           console.error("Error saving:", e);
-          alert("Hubo un error al guardar.");
+          showModal("error", "Error Crítico", e.message || "No se pudo guardar la configuración.");
       } finally {
           setSaving(false);
       }
@@ -87,7 +126,7 @@ export default function AdminEstrategiasPage() {
       
       const exists = goals.find(g => g.id === newId);
       if (exists) {
-          alert("Ya existe un objetivo con ese ID.");
+          showModal("error", "ID Duplicado", "Ya existe un objetivo definido con ese identificador.");
           return;
       }
 
@@ -100,9 +139,11 @@ export default function AdminEstrategiasPage() {
   };
 
   const handleRemoveGoal = (id: string) => {
-      if(!confirm("¿Seguro que quieres eliminar este objetivo?")) return;
-      const updated = goals.filter(g => g.id !== id);
-      handleSave(updated);
+      showModal("confirm", "Eliminar Objetivo", "¿Estás seguro de que deseas eliminar este objetivo? Los cambios se guardarán automáticamente.", () => {
+          const updated = goals.filter(g => g.id !== id);
+          handleSave(updated);
+          setModal(prev => ({ ...prev, isOpen: false }));
+      });
   };
 
   if (loading) return <div className="text-center font-bold text-slate-400 mt-20">Cargando Panel...</div>;
@@ -116,7 +157,7 @@ export default function AdminEstrategiasPage() {
         </div>
         <button 
             onClick={() => {
-                if(confirm("¿Quieres cargar las 5 plantillas profesionales? Esto sobrescribirá los objetivos actuales.")) {
+                showModal("confirm", "Cargar Plantillas", "¿Quieres cargar las 5 plantillas profesionales? Esto sobrescribirá los objetivos actuales y guardará los cambios.", () => {
                     handleSave([
                         { id: 'ventas', title: 'Ventas & Conversión', description: 'Maximizar pedidos y ventas directas mediante contenido persuasivo.', icon: '💰' },
                         { id: 'autoridad', title: 'Autoridad & Marca', description: 'Posicionarte como el experto número 1 y referente de tu sector.', icon: '🎙️' },
@@ -124,7 +165,8 @@ export default function AdminEstrategiasPage() {
                         { id: 'lealtad', title: 'Comunidad & Lealtad', description: 'Crear fans reales y embajadores que interactúen con cada publicación.', icon: '❤️' },
                         { id: 'prospectos', title: 'Captación de Prospectos', description: 'Atraer mensajes directos y registros de clientes altamente interesados.', icon: '📥' }
                     ]);
-                }
+                    setModal(prev => ({ ...prev, isOpen: false }));
+                });
             }}
             className="bg-indigo-50 text-indigo-600 font-black px-6 py-4 rounded-[24px] border-2 border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all shadow-sm flex items-center gap-2"
         >
@@ -192,6 +234,10 @@ export default function AdminEstrategiasPage() {
               </div>
           </div>
       </div>
+      <StatusModal 
+        {...modal} 
+        onCancel={() => setModal(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }

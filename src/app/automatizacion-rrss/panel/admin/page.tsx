@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { auth } from "../../../../lib/firebase";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
+import StatusModal from "../../../../components/StatusModal";
 
 type UserData = {
   id: string;
@@ -23,6 +24,30 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
+
+  const [modal, setModal] = useState<{
+    isOpen: boolean;
+    type: "success" | "error" | "info" | "confirm";
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    type: "info",
+    title: "",
+    message: "",
+    onConfirm: () => {}
+  });
+
+  const showModal = (type: any, title: string, message: string, onConfirm?: () => void) => {
+    setModal({
+        isOpen: true,
+        type,
+        title,
+        message,
+        onConfirm: onConfirm || (() => setModal(prev => ({ ...prev, isOpen: false })))
+    });
+  };
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (currentUser) => {
@@ -57,31 +82,33 @@ export default function AdminUsersPage() {
   }, [router]);
 
   const toggleUserStatus = async (userId: string, currentStatus: boolean) => {
-    if (!confirm(`¿Estás seguro de que quieres ${currentStatus ? 'activar' : 'desactivar'} esta cuenta?`)) return;
+    showModal("confirm", "Cambiar Estado", `¿Estás seguro de que quieres ${currentStatus ? 'activar' : 'desactivar'} esta cuenta?`, async () => {
+        setModal(prev => ({ ...prev, isOpen: false }));
+        try {
+            const token = await auth.currentUser?.getIdToken();
+            const res = await fetch("/api/admin/users/status", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({ userId, isDisabled: !currentStatus })
+            });
 
-    try {
-        const token = await auth.currentUser?.getIdToken();
-        const res = await fetch("/api/admin/users/status", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
-            },
-            body: JSON.stringify({ userId, isDisabled: !currentStatus })
-        });
+            if (!res.ok) throw new Error("Error al cambiar estado");
 
-        if (!res.ok) throw new Error("Error al cambiar estado");
+            const updatedUsers = users.map(u => u.id === userId ? { ...u, isDisabled: !currentStatus } : u);
+            setUsers(updatedUsers);
+            if (selectedUser?.id === userId) {
+                setSelectedUser({ ...selectedUser, isDisabled: !currentStatus });
+            }
+            showModal("success", "Actualizado", `La cuenta ha sido ${!currentStatus ? 'suspendida' : 'activada'} correctamente.`);
 
-        const updatedUsers = users.map(u => u.id === userId ? { ...u, isDisabled: !currentStatus } : u);
-        setUsers(updatedUsers);
-        if (selectedUser?.id === userId) {
-            setSelectedUser({ ...selectedUser, isDisabled: !currentStatus });
+        } catch (e: any) {
+            console.error(e);
+            showModal("error", "Error", "Hubo un problema al actualizar el estado del usuario.");
         }
-
-    } catch (e) {
-        console.error(e);
-        alert("Hubo un problema al actualizar el usuario.");
-    }
+    });
   };
 
   const updateUserField = async (userId: string, field: string, value: string) => {
@@ -102,8 +129,13 @@ export default function AdminUsersPage() {
         if (selectedUser?.id === userId) {
             setSelectedUser({ ...selectedUser, [field]: value });
         }
+        // No alert here for silent updates unless we want it. 
+        // Let's add a small confirmation for role/plan changes.
+        if (field === 'role' || field === 'plan') {
+            showModal("success", "Guardado", `Se ha actualizado el ${field} del usuario.`);
+        }
     } catch (e) {
-        alert("Hubo un problema al actualizar.");
+        showModal("error", "Error", "Hubo un problema al guardar los cambios.");
     }
   };
 
@@ -377,6 +409,10 @@ export default function AdminUsersPage() {
               </div>
           </div>
       )}
+      <StatusModal 
+        {...modal} 
+        onCancel={() => setModal(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }

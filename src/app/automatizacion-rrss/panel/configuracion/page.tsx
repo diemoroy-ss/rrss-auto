@@ -6,6 +6,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useProfile } from "../../../../contexts/ProfileContext";
+import StatusModal from "../../../../components/StatusModal";
 
 export default function RrssConfig() {
   const { activeProfile, loadProfiles } = useProfile();
@@ -15,6 +16,30 @@ export default function RrssConfig() {
   const [success, setSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [message, setMessage] = useState<{type: 'success' | 'error' | 'info', text: string} | null>(null);
+
+  const [modal, setModal] = useState<{
+    isOpen: boolean;
+    type: "success" | "error" | "info" | "confirm";
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    type: "info",
+    title: "",
+    message: "",
+    onConfirm: () => {}
+  });
+
+  const showModal = (type: any, title: string, message: string, onConfirm?: () => void) => {
+    setModal({
+        isOpen: true,
+        type,
+        title,
+        message,
+        onConfirm: onConfirm || (() => setModal(prev => ({ ...prev, isOpen: false })))
+    });
+  };
 
   useEffect(() => {
     if (message) {
@@ -249,55 +274,73 @@ export default function RrssConfig() {
   };
 
   const handleDisconnectFb = async () => {
-    if (!confirm("¿Desconectar Facebook? Borraremos tu token.")) return;
-    setSaving(true);
-    try {
-      const idToken = await user.getIdToken();
-      await fetch("/api/social-auth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken, uid: user.uid, setAccounts: { facebook: { token: "", pageId: "", adAccountId: "" } } })
-      });
-      setFbStatus(false);
-      setFbPageId("");
-      setMetaAdAccountId("");
-      setFbToken("");
-    } catch (e) { console.error(e); }
-    setSaving(false);
+    showModal("confirm", "Desconectar Facebook", "¿Estás seguro de que deseas desconectar tu cuenta de Facebook? Se eliminarán los datos de acceso guardados.", async () => {
+        setModal(prev => ({ ...prev, isOpen: false }));
+        setSaving(true);
+        try {
+            const idToken = await user.getIdToken();
+            await fetch("/api/social-auth", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ idToken, uid: user.uid, setAccounts: { facebook: { token: "", pageId: "", adAccountId: "" } } })
+            });
+            setFbStatus(false);
+            setFbPageId("");
+            setMetaAdAccountId("");
+            setFbToken("");
+            showModal("success", "Desconectado", "Facebook ha sido desconectado exitosamente.");
+        } catch (e) { 
+            console.error(e);
+            showModal("error", "Error", "No se pudo desconectar la cuenta. Intenta de nuevo.");
+        }
+        setSaving(false);
+    });
   };
 
   const handleDisconnectIg = async () => {
-    if (!confirm("¿Desconectar Instagram? Borraremos tu token.")) return;
-    setSaving(true);
-    try {
-      const idToken = await user.getIdToken();
-      await fetch("/api/social-auth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken, uid: user.uid, setAccounts: { instagram: { token: "", accountId: "" } } })
-      });
-      setIgStatus(false);
-      setIgAccountId("");
-      setIgToken("");
-    } catch (e) { console.error(e); }
-    setSaving(false);
+    showModal("confirm", "Desconectar Instagram", "¿Seguro que quieres desconectar Instagram? Perderás la capacidad de autopublicación inmediata.", async () => {
+        setModal(prev => ({ ...prev, isOpen: false }));
+        setSaving(true);
+        try {
+            const idToken = await user.getIdToken();
+            await fetch("/api/social-auth", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ idToken, uid: user.uid, setAccounts: { instagram: { token: "", accountId: "" } } })
+            });
+            setIgStatus(false);
+            setIgAccountId("");
+            setIgToken("");
+            showModal("success", "Desconectado", "Instagram ha sido desconectado exitosamente.");
+        } catch (e) { 
+            console.error(e);
+            showModal("error", "Error", "No se pudo desconectar la cuenta.");
+        }
+        setSaving(false);
+    });
   };
 
   const handleDisconnectLi = async () => {
-    if (!confirm("¿Borrar credenciales API de LinkedIn? Perderás el acceso si ya habías autorizado el inicio de sesión.")) return;
-    setSaving(true);
-    try {
-      const idToken = await user.getIdToken();
-      await fetch("/api/social-auth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken, uid: user.uid, setAccounts: { linkedin: { clientId: "", clientSecret: "" } } })
-      });
-      setLiStatus(false);
-      setLiClientId("");
-      setLiClientSecret("");
-    } catch (e) { console.error(e); }
-    setSaving(false);
+    showModal("confirm", "Borrar API LinkedIn", "¿Borrar credenciales API de LinkedIn? Perderás el acceso si ya habías autorizado el inicio de sesión.", async () => {
+        setModal(prev => ({ ...prev, isOpen: false }));
+        setSaving(true);
+        try {
+            const idToken = await user.getIdToken();
+            await fetch("/api/social-auth", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ idToken, uid: user.uid, setAccounts: { linkedin: { clientId: "", clientSecret: "" } } })
+            });
+            setLiStatus(false);
+            setLiClientId("");
+            setLiClientSecret("");
+            showModal("success", "Limpieza Exitosa", "Credenciales de LinkedIn eliminadas.");
+        } catch (e) { 
+            console.error(e);
+            showModal("error", "Error", "No se pudo borrar la configuración.");
+        }
+        setSaving(false);
+    });
   };
 
   const handleLinkLi = async () => {
@@ -556,6 +599,10 @@ export default function RrssConfig() {
         </div>
 
       </form>
+      <StatusModal 
+        {...modal} 
+        onCancel={() => setModal(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }

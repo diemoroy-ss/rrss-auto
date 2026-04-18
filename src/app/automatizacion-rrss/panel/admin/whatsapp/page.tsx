@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { auth } from "../../../../../lib/firebase";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
+import StatusModal from "../../../../../components/StatusModal";
 
 type ChatSession = {
   phone: string;
@@ -27,6 +28,30 @@ export default function AdminWhatsAppPage() {
   const [loadingChats, setLoadingChats] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [error, setError] = useState("");
+
+  const [modal, setModal] = useState<{
+    isOpen: boolean;
+    type: "success" | "error" | "info" | "confirm";
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    type: "info",
+    title: "",
+    message: "",
+    onConfirm: () => {}
+  });
+
+  const showModal = (type: any, title: string, message: string, onConfirm?: () => void) => {
+    setModal({
+        isOpen: true,
+        type,
+        title,
+        message,
+        onConfirm: onConfirm || (() => setModal(prev => ({ ...prev, isOpen: false })))
+    });
+  };
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (currentUser) => {
@@ -74,9 +99,9 @@ export default function AdminWhatsAppPage() {
           
           const data = await res.json();
           setMessages(data.messages);
-      } catch (e) {
+      } catch (e: any) {
           console.error(e);
-          alert("Error al cargar la conversación");
+          showModal("error", "Error de Carga", "No se pudo recuperar el historial de la conversación. Por favor, reintenta más tarde.");
       } finally {
           setLoadingMessages(false);
       }
@@ -180,6 +205,10 @@ export default function AdminWhatsAppPage() {
           
         </div>
       )}
+      <StatusModal 
+        {...modal} 
+        onCancel={() => setModal(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }

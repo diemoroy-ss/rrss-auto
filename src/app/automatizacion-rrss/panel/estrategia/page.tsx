@@ -7,6 +7,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useProfile } from "../../../../contexts/ProfileContext";
+import StatusModal from "../../../../components/StatusModal";
 
 interface StrategyGoal {
   id: string;
@@ -42,6 +43,30 @@ export default function EstrategiaPage() {
   const [postsThisMonth, setPostsThisMonth] = useState(0);
   const [hasNetworks, setHasNetworks] = useState(false);
   const { activeProfile } = useProfile();
+
+  const [modal, setModal] = useState<{
+    isOpen: boolean;
+    type: "success" | "error" | "info" | "confirm";
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    type: "info",
+    title: "",
+    message: "",
+    onConfirm: () => {}
+  });
+
+  const showModal = (type: any, title: string, message: string, onConfirm?: () => void) => {
+    setModal({
+        isOpen: true,
+        type,
+        title,
+        message,
+        onConfirm: onConfirm || (() => setModal(prev => ({ ...prev, isOpen: false })))
+    });
+  };
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
@@ -194,11 +219,17 @@ export default function EstrategiaPage() {
     const pendingAISnapshot = await getDocs(qPendingAI);
     
     if (pendingAISnapshot.size > 0) {
-        if (!confirm(`Tienes ${pendingAISnapshot.size} posts sugeridos pendientes de tu estrategia AI anterior.\n\nAl aceptar esta nueva planificación, los posts anteriores de IA serán descartados y reemplazados para evitar conflicto. (Tus borradores manuales no se verán afectados).\n\n¿Deseas continuar?`)) {
-            return;
-        }
+        showModal("confirm", "Sustituir Estrategia", `Tienes ${pendingAISnapshot.size} posts sugeridos de tu estrategia AI anterior. Al aceptar esta nueva planificación, los anteriores serán descartados para evitar conflictos. ¿Deseas continuar?`, () => {
+            setModal(prev => ({ ...prev, isOpen: false }));
+            executeAcceptPlan(pendingAISnapshot);
+        });
+        return;
     }
-    
+
+    executeAcceptPlan(pendingAISnapshot);
+  };
+
+  const executeAcceptPlan = async (pendingAISnapshot: any) => {
     setAccepting(true);
     try {
         // Delete old AI strategy posts
@@ -402,6 +433,10 @@ export default function EstrategiaPage() {
               </div>
           </div>
       )}
+      <StatusModal 
+        {...modal} 
+        onCancel={() => setModal(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }
