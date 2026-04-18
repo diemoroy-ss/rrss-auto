@@ -237,9 +237,6 @@ export default function MiPerfil() {
         </div>
 
         {/* CURRENT SUBSCRIPTION INFO */}
-        </div>
-
-        {/* CURRENT SUBSCRIPTION INFO */}
         <div className="bg-gradient-to-tr from-indigo-900 via-slate-900 to-slate-800 p-8 rounded-[32px] shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500 opacity-20 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
           

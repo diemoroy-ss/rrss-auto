@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { adminDb } from "../../../../lib/firebase-admin";
-import { auth } from "firebase-admin";
+import { adminDb, adminAuth } from "../../../../lib/firebase-admin";
 
 export async function GET(req: Request) {
   try {
@@ -10,7 +9,7 @@ export async function GET(req: Request) {
     }
 
     const idToken = authHeader.split("Bearer ")[1];
-    const decodedToken = await auth().verifyIdToken(idToken);
+    const decodedToken = await adminAuth.verifyIdToken(idToken);
     const userId = decodedToken.uid;
 
     if (!adminDb) {
