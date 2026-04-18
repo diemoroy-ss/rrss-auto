@@ -9,6 +9,11 @@ export async function GET(req: Request) {
         }
 
         const token = authHeader.split("Bearer ")[1];
+        
+        if (!adminAuth || !adminDb) {
+            return NextResponse.json({ error: "Error 500: Firebase Admin No Configurado. Falta la variable FIREBASE_SERVICE_ACCOUNT en el servidor." }, { status: 500 });
+        }
+
         const decodedToken = await adminAuth.verifyIdToken(token);
         
         // Check role in Firestore
@@ -26,9 +31,6 @@ export async function GET(req: Request) {
             }, { status: 403 });
         }
 
-        if (!adminAuth || !adminDb) {
-            return NextResponse.json({ error: "Error 500: Firebase Admin No Configurado. Falta la variable FIREBASE_SERVICE_ACCOUNT en el servidor." }, { status: 500 });
-        }
 
         // Fetch all chat sessions ordered by recently updated
         const snapshot = await adminDb.collection("whatsapp_chats")
@@ -49,6 +51,6 @@ export async function GET(req: Request) {
 
     } catch (error: any) {
         console.error("Admin WhatsApp API error:", error);
-        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+        return NextResponse.json({ error: `Internal Error: ${error.message || 'Unknown'}` }, { status: 500 });
     }
 }

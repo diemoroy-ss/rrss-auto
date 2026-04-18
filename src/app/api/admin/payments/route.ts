@@ -10,6 +10,11 @@ export async function GET(req: Request) {
     }
 
     const idToken = authHeader.split("Bearer ")[1];
+    
+    if (!adminAuth || !adminDb) {
+      return NextResponse.json({ error: "Error 500: Firebase Admin No Configurado. Falta la variable FIREBASE_SERVICE_ACCOUNT en el servidor." }, { status: 500 });
+    }
+
     const decodedToken = await adminAuth.verifyIdToken(idToken);
     
     // Check role in Firestore
@@ -27,9 +32,6 @@ export async function GET(req: Request) {
       }, { status: 403 });
     }
 
-    if (!adminAuth || !adminDb) {
-      return NextResponse.json({ error: "Error 500: Firebase Admin No Configurado. Falta la variable FIREBASE_SERVICE_ACCOUNT en el servidor." }, { status: 500 });
-    }
 
     // Obtener todos los pagos ordenados por fecha descendente
     const paymentsSnapshot = await adminDb.collection("payments").orderBy("date", "desc").limit(100).get();
@@ -56,8 +58,8 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ payments: detailedPayments });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Admin Payments API Error:", error);
-    return NextResponse.json({ error: "Internal Error" }, { status: 500 });
+    return NextResponse.json({ error: `Internal Error: ${error.message || 'Unknown'}` }, { status: 500 });
   }
 }
