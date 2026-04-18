@@ -113,15 +113,25 @@ export default function EstrategiaPage() {
               setPostsThisMonth(count);
           }
           
-          const settingsDoc = await getDoc(doc(db, "settings", "strategy_config"));
-          if (settingsDoc.exists() && settingsDoc.data().goals) {
-              setGoals(settingsDoc.data().goals);
+          // Fetch goals from secure API instead of client-side Firestore
+          const token = await u.getIdToken();
+          const res = await fetch("/api/strategies", {
+              headers: { Authorization: `Bearer ${token}` }
+          });
+
+          if (res.ok) {
+              const data = await res.json();
+              if (data.goals && Array.isArray(data.goals)) {
+                  setGoals(data.goals);
+              }
           } else {
-              // Fallback default goals if not set by admin yet
+              // Fallback default goals if API fails
               setGoals([
-                  { id: 'sales', title: 'Crecer en Clientes / Ventas', description: 'Enfocado en conversiones directas.', icon: '💰' },
-                  { id: 'visibility', title: 'Mayor Visibilidad', description: 'Alcance masivo y reconocimiento de marca.', icon: '👁️' },
-                  { id: 'engagement', title: 'Generar Comunidad', description: 'Mejorar interacciones y engagement.', icon: '🤝' }
+                  { id: 'ventas', title: 'Ventas & Conversión', description: 'Maximizar pedidos y ventas directas mediante contenido persuasivo.', icon: '💰' },
+                  { id: 'autoridad', title: 'Autoridad & Marca', description: 'Posicionarte como el experto número 1 y referente de tu sector.', icon: '🎙️' },
+                  { id: 'viralidad', title: 'Viralidad & Alcance', description: 'Contenido diseñado para ser compartido masivamente y llegar a miles.', icon: '🚀' },
+                  { id: 'lealtad', title: 'Comunidad & Lealtad', description: 'Crear fans reales y embajadores que interactúen con cada publicación.', icon: '❤️' },
+                  { id: 'prospectos', title: 'Captación de Prospectos', description: 'Atraer mensajes directos y registros de clientes altamente interesados.', icon: '📥' }
               ]);
           }
 

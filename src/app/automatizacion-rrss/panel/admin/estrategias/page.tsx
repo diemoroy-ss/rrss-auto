@@ -67,11 +67,17 @@ export default function AdminEstrategiasPage() {
                 return;
             }
 
-            const docRef = doc(db, "settings", "strategy_config");
-            const docSnap = await getDoc(docRef);
-            
-            if (docSnap.exists() && docSnap.data().goals) {
-                setGoals(docSnap.data().goals);
+            // Fetch goals from secure API instead of client-side Firestore
+            const token = await user.getIdToken();
+            const res = await fetch("/api/strategies", {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                if (data.goals && Array.isArray(data.goals)) {
+                    setGoals(data.goals);
+                }
             } else {
                 // Default setup with 5 professional high-impact strategies
                 setGoals([
