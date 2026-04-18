@@ -67,6 +67,7 @@ export async function GET(req: Request) {
         name: data.name || "Sin Nombre",
         plan: data.plan || "free",
         role: data.role || "user",
+        planEndDate: data.planEndDate || null,
         isDisabled: data.isDisabled || false,
         registeredApps: data.registeredApps || [],
         postsThisMonth: userPostCounts[uId] || 0

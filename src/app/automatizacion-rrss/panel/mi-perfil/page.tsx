@@ -16,6 +16,7 @@ export default function MiPerfil() {
   const [email, setEmail] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [plan, setPlan] = useState("free");
+  const [planEndDate, setPlanEndDate] = useState<string | null>(null);
 
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -41,6 +42,7 @@ export default function MiPerfil() {
             setName(data.name || data.company || "");
             setWhatsapp(data.whatsapp || "");
             setPlan(data.plan || "free");
+            setPlanEndDate(data.planEndDate || null);
             setAvatarUrl(data.avatarUrl || "");
           }
         } catch (e) {
@@ -244,7 +246,20 @@ export default function MiPerfil() {
             <div>
                <div className="text-[10px] font-black text-indigo-300 uppercase tracking-widest mb-2">Suscripción Actual</div>
                <h3 className="text-4xl font-black text-white tracking-tight">{planTitles[plan] || 'Desconocido'}</h3>
-               <p className="text-slate-400 text-sm mt-3 max-w-md font-medium">Estás disfrutando de los beneficios y límites configurados de tu categoría. Puedes revisar qué incluye o hacer un upgrade desde la página de planes.</p>
+               
+               {planEndDate ? (
+                 <div className="mt-4 inline-flex items-center gap-2 bg-white/10 border border-white/20 px-4 py-2 rounded-xl">
+                   <span className="text-indigo-300 text-[10px] font-black uppercase tracking-widest">Vence el:</span>
+                   <span className="text-white text-sm font-black">{format(new Date(planEndDate + 'T12:00:00'), "dd 'de' MMMM, yyyy", { locale: es })}</span>
+                 </div>
+               ) : (
+                 <div className="mt-4 inline-flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-xl">
+                   <span className="text-indigo-300 text-[10px] font-black uppercase tracking-widest">Estado:</span>
+                   <span className="text-white text-sm font-black">Acceso Vitalicio / Recurrente</span>
+                 </div>
+               )}
+               
+               <p className="text-slate-400 text-sm mt-5 max-w-md font-medium leading-relaxed">Estás disfrutando de los beneficios y límites configurados de tu categoría. Puedes revisar qué incluye o hacer un upgrade desde la página de planes.</p>
             </div>
             
             <Link href="/automatizacion-rrss/panel/planes" className="shrink-0 bg-white hover:bg-indigo-50 text-indigo-600 font-black py-4 px-8 rounded-2xl shadow-xl transition-all hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-2">

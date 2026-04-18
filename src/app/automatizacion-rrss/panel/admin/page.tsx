@@ -11,6 +11,7 @@ type UserData = {
   name: string;
   plan: string;
   role?: string;
+  planEndDate?: string | null;
   isDisabled: boolean;
   postsThisMonth: number;
   registeredApps: string[];
@@ -350,6 +351,27 @@ export default function AdminUsersPage() {
                                 <option value="admin">Administrador (ADMIN)</option>
                               </select>
                           </div>
+                      </div>
+
+                      <div className="pt-6 border-t border-slate-100">
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">Vencimiento Suscripción</label>
+                          <div className="flex gap-4 items-center">
+                              <input 
+                                type="date" 
+                                value={selectedUser.planEndDate || ""} 
+                                onChange={(e) => updateUserField(selectedUser.id, 'planEndDate', e.target.value)}
+                                className="flex-1 bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 text-sm font-black text-slate-900 outline-none focus:border-indigo-500 transition-all cursor-pointer"
+                              />
+                              {selectedUser.planEndDate && (
+                                  <button 
+                                    onClick={() => updateUserField(selectedUser.id, 'planEndDate', "")}
+                                    className="bg-rose-50 text-rose-600 font-black text-[10px] uppercase px-4 py-4 rounded-2xl hover:bg-rose-100"
+                                  >
+                                    Remover
+                                  </button>
+                              )}
+                          </div>
+                          <p className="text-[10px] text-slate-500 mt-2 font-medium">El usuario podrá ver esta fecha en su sección "Mi Perfil". Dejar en blanco para acceso vitalicio.</p>
                       </div>
                   </div>
               </div>
