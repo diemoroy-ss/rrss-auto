@@ -303,7 +303,7 @@ export default function EstrategiaPage() {
         </p>
       </div>
 
-      <div className="bg-white p-8 md:p-12 rounded-[32px] border-2 border-slate-100 shadow-xl shadow-slate-200/50 relative overflow-hidden">
+      <div className="bg-white p-6 md:p-8 rounded-[32px] border-2 border-slate-100 shadow-xl shadow-slate-200/50 relative overflow-hidden">
           {userPlan === 'free' && user?.email !== 'diemoroy@gmail.com' && (
               <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex flex-col items-center justify-center p-8 text-center rounded-[32px]">
                   <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center text-4xl mb-6 shadow-2xl border-4 border-slate-700">🔒</div>
@@ -315,48 +315,73 @@ export default function EstrategiaPage() {
               </div>
           )}
 
-          <div className={`space-y-8 ${userPlan === 'free' && user?.email !== 'diemoroy@gmail.com' ? 'opacity-30 pointer-events-none blur-sm' : ''}`}>
-             <h3 className="text-xl font-black text-slate-900 tracking-tight">1. ¿Qué deseas lograr este mes?</h3>
-             {error && <div className="p-4 bg-red-50 text-red-600 rounded-2xl border border-red-100 font-bold">{error}</div>}
+          <div className={`space-y-6 ${userPlan === 'free' && user?.email !== 'diemoroy@gmail.com' ? 'opacity-30 pointer-events-none blur-sm' : ''}`}>
+             <div className="flex items-center justify-between">
+               <h3 className="text-base font-black text-slate-900 tracking-tight">1. ¿Qué deseas lograr?</h3>
+               {selectedGoal && (
+                 <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 border border-indigo-100 px-3 py-1 rounded-full uppercase tracking-widest">
+                   ✓ {goals.find(g => g.id === selectedGoal)?.title}
+                 </span>
+               )}
+             </div>
+             {error && <div className="p-3 bg-red-50 text-red-600 rounded-xl border border-red-100 font-bold text-sm">{error}</div>}
              
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+             {/* Horizontal scrollable carousel */}
+             <div className="relative">
+               <div className="flex gap-3 overflow-x-auto pb-2 hide-scrollbar snap-x snap-mandatory">
                  {goals.map(g => (
-                     <button
-                        key={g.id}
-                        onClick={() => setSelectedGoal(g.id)}
-                        className={`text-left p-6 rounded-[24px] border-2 transition-all ${selectedGoal === g.id ? 'border-indigo-600 bg-indigo-50 shadow-md transform -translate-y-1' : 'border-slate-200 hover:border-indigo-300 hover:bg-slate-50 hover:-translate-y-1'}`}
-                     >
-                         <div className="text-4xl mb-4 bg-white w-16 h-16 rounded-2xl flex items-center justify-center shadow-sm border border-slate-100">{g.icon || '🎯'}</div>
-                         <h4 className={`font-black mb-2 text-lg ${selectedGoal === g.id ? 'text-indigo-900' : 'text-slate-800'}`}>{g.title}</h4>
-                         <p className="text-sm text-slate-500 font-medium leading-relaxed">{g.description}</p>
-                     </button>
+                   <button
+                     key={g.id}
+                     onClick={() => setSelectedGoal(g.id)}
+                     className={`snap-start shrink-0 flex items-center gap-3 px-4 py-3 rounded-2xl border-2 transition-all text-left w-[200px] ${
+                       selectedGoal === g.id
+                       ? 'border-indigo-500 bg-indigo-50 shadow-md shadow-indigo-100 -translate-y-0.5'
+                       : 'border-slate-100 bg-slate-50 hover:border-indigo-200 hover:bg-white hover:-translate-y-0.5'
+                     }`}
+                   >
+                     <span className={`text-xl shrink-0 w-9 h-9 rounded-xl flex items-center justify-center ${selectedGoal === g.id ? 'bg-white shadow-sm' : 'bg-white/80'}`}>
+                       {g.icon || '🎯'}
+                     </span>
+                     <div className="min-w-0">
+                       <div className={`font-black text-xs leading-tight ${selectedGoal === g.id ? 'text-indigo-900' : 'text-slate-800'}`}>
+                         {g.title}
+                       </div>
+                       <div className="text-[10px] text-slate-400 font-medium mt-0.5 leading-snug line-clamp-2">
+                         {g.description}
+                       </div>
+                     </div>
+                   </button>
                  ))}
+               </div>
+               {goals.length > 4 && (
+                 <div className="absolute right-0 top-0 bottom-2 w-12 bg-gradient-to-l from-white to-transparent pointer-events-none" />
+               )}
              </div>
 
              <div>
-                 <h3 className="text-lg font-black text-slate-900 tracking-tight mb-3">2. ¿Tienes alguna expectativa o necesidad especial? (Opcional)</h3>
+                 <h3 className="text-sm font-black text-slate-900 tracking-tight mb-3">2. ¿Tienes alguna expectativa especial? <span className="text-slate-400 font-medium">(Opcional)</span></h3>
                  <textarea 
                     value={expectations}
                     onChange={e => setExpectations(e.target.value)}
                     placeholder="Ej: Quiero enfocarme en vender zapatos rojos de verano... o lanzamos una nueva sucursal en Madrid..."
-                    className="w-full bg-slate-50 border-2 border-slate-100 p-5 rounded-[24px] font-medium text-slate-700 outline-none focus:border-indigo-500 transition-colors resize-none mb-2"
+                    className="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-[20px] font-medium text-slate-700 outline-none focus:border-indigo-500 transition-colors resize-none mb-2 text-sm"
                     rows={3}
                  />
-                 <p className="text-xs text-slate-400 font-bold px-4">Esta información extra, combinada con los <Link href="/automatizacion-rrss/panel/configuracion" className="text-indigo-500 underline">Datos de tu Negocio</Link>, hará que la IA sea mucho más precisa.</p>
+                 <p className="text-xs text-slate-400 font-bold px-2">Combinado con tus <Link href="/automatizacion-rrss/panel/configuracion" className="text-indigo-500 underline">Datos de Negocio</Link>, la IA será mucho más precisa.</p>
              </div>
 
-             <div className="pt-8 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-6">
-                 <p className="text-slate-400 font-bold text-sm">Tu negocio actual: <span className="text-indigo-600 bg-indigo-50 px-3 py-1 rounded-lg">{businessType || 'General'}</span></p>
+             <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+                 <p className="text-slate-400 font-bold text-xs">Negocio: <span className="text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">{businessType || 'General'}</span></p>
                  
                  {!hasNetworks ? (
-                    <Link href="/automatizacion-rrss/panel/configuracion" className="w-full sm:w-auto bg-amber-50 hover:bg-amber-100 border-2 border-amber-200 text-amber-700 font-black py-4 px-10 rounded-[28px] transition-all flex items-center justify-center gap-3 shadow-sm hover:-translate-y-1">
+                    <Link href="/automatizacion-rrss/panel/configuracion" className="w-full sm:w-auto bg-amber-50 hover:bg-amber-100 border-2 border-amber-200 text-amber-700 font-black py-3 px-8 rounded-[24px] transition-all flex items-center justify-center gap-2 shadow-sm hover:-translate-y-1 text-sm">
                        ⚠️ Conecta Meta antes de Planificar
                     </Link>
                  ) : (
                      <button
                         onClick={handleGenerate}
                         disabled={generating || !selectedGoal}
-                        className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-black py-4 px-10 rounded-[28px] transition-all shadow-xl shadow-slate-900/20 hover:-translate-y-1 disabled:hover:translate-y-0 disabled:shadow-none flex items-center justify-center gap-3"
+                        className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-black py-3 px-8 rounded-[24px] transition-all shadow-xl shadow-slate-900/20 hover:-translate-y-1 disabled:hover:translate-y-0 disabled:shadow-none flex items-center justify-center gap-3 text-sm"
                      >
                          {generating ? <><div className="w-5 h-5 border-2 border-slate-400 border-t-white rounded-full animate-spin" /> Creando Plan...</> : 'Generar Estrategia AI 🧠'}
                      </button>

@@ -138,3 +138,11 @@ body {
   @apply bg-indigo-600 text-white shadow-lg shadow-indigo-600/20 scale-[1.02];
 }
 
+/* Hide scrollbar utility - keeps scroll functionality without visual scrollbar */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
