@@ -36,7 +36,8 @@ export default function AdminUsersPage() {
         });
 
         if (!res.ok) {
-           setError(`Error ${res.status}: No tienes permisos suficientes o la sesión expiró.`);
+           const errData = await res.json().catch(() => ({}));
+           setError(`Error ${res.status}: ${errData.error || 'No tienes permisos suficientes o la sesión expiró.'}`);
            return;
         }
 

@@ -42,7 +42,8 @@ export default function AdminWhatsAppPage() {
         });
 
         if (!res.ok) {
-           setError(`Error ${res.status}: No tienes permisos suficientes para ver chats.`);
+           const errData = await res.json().catch(() => ({}));
+           setError(`Error ${res.status}: ${errData.error || 'No tienes permisos suficientes para ver chats.'}`);
            return;
         }
 

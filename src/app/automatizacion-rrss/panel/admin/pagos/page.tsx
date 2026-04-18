@@ -39,7 +39,8 @@ export default function AdminPaymentsPage() {
         });
 
         if (!res.ok) {
-           setError(`Error ${res.status}: No tienes permisos suficientes para ver ingresos.`);
+           const errData = await res.json().catch(() => ({}));
+           setError(`Error ${res.status}: ${errData.error || 'No tienes permisos suficientes para ver ingresos.'}`);
            return;
         }
 
