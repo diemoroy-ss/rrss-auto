@@ -74,58 +74,58 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
     <ProfileProvider>
       <div className="min-h-screen panel-grid-bg flex flex-col md:flex-row print:bg-white">
         {/* Sidebar Desktop */}
-      <aside className="w-72 bg-slate-900 text-white hidden md:flex flex-col border-r border-slate-800 shadow-2xl shadow-slate-900/40 print:hidden">
-        <div className="p-8 border-b border-slate-800 bg-slate-950/30">
+      <aside className="w-56 bg-slate-900 text-white hidden md:flex flex-col border-r border-slate-800 shadow-xl shadow-slate-900/30 print:hidden">
+        <div className="px-5 py-5 border-b border-slate-800 bg-slate-950/30">
           <Link href="/automatizacion-rrss/panel">
-            <h2 className="text-2xl font-black tracking-tight text-white flex items-center gap-3 hover:text-indigo-400 transition-all">
-              <span className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-600/30">🤖</span> 
+            <h2 className="text-base font-black tracking-tight text-white flex items-center gap-2.5 hover:text-indigo-400 transition-all">
+              <span className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shadow-md shadow-indigo-600/30 text-base">🤖</span>
               <span>RRSS Bot</span>
             </h2>
           </Link>
-          <p className="text-slate-500 text-[10px] mt-2 font-black uppercase tracking-[0.2em]">Automación Inteligente</p>
+          <p className="text-slate-600 text-[9px] mt-1.5 font-black uppercase tracking-[0.2em]">Automación IA</p>
         </div>
         
-        <nav className="flex-1 py-8 px-4 space-y-3">
+        <nav className="flex-1 py-4 px-3 space-y-1">
           {links.map(link => {
             const isActive = link.exact ? pathname === link.href : pathname.startsWith(link.href);
             return (
               <Link 
                 key={link.href} 
                 href={link.href}
-                className={`flex items-center gap-3 px-5 py-4 rounded-2xl transition-all font-bold text-sm ${
+                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all font-bold text-xs ${
                   isActive 
                   ? 'active-nav-item' 
                   : 'text-slate-400 hover:text-white hover:bg-white/5'
                 }`}
               >
-                <span className={`text-xl transition-transform ${isActive ? 'scale-110' : 'opacity-70'}`}>{link.icon}</span>
+                <span className={`text-base transition-transform ${isActive ? 'scale-110' : 'opacity-60'}`}>{link.icon}</span>
                 {link.label}
               </Link>
             )
           })}
           
           {(user?.email === "diemoroy@gmail.com" || userDoc?.role === "admin") && (
-            <details className="pt-4 border-t border-slate-800 group" open={pathname.includes('/admin')}>
-               <summary className="w-full flex items-center justify-between px-5 py-4 rounded-2xl transition-all font-bold text-sm text-slate-400 hover:text-white hover:bg-white/5 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-                 <div className="flex items-center gap-3">
-                   <span className="text-xl opacity-70">👑</span>
+            <details className="pt-3 border-t border-slate-800 group" open={pathname.includes('/admin')}>
+               <summary className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all font-bold text-xs text-slate-400 hover:text-white hover:bg-white/5 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                 <div className="flex items-center gap-2.5">
+                   <span className="text-base opacity-60">👑</span>
                    Administración
                  </div>
-                 <span className="group-open:rotate-180 transition-transform">▼</span>
+                 <span className="group-open:rotate-180 transition-transform text-[10px]">▼</span>
                </summary>
-               <div className="mt-2 space-y-2 pl-4 border-l-2 border-slate-800 ml-4">
-                 <Link href="/automatizacion-rrss/panel/admin" className={`block px-4 py-2 rounded-xl text-xs font-bold transition-all ${pathname === '/automatizacion-rrss/panel/admin' ? 'bg-indigo-600/20 text-indigo-400' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}>Usuarios Admin</Link>
-                 <Link href="/automatizacion-rrss/panel/admin/pagos" className={`block px-4 py-2 rounded-xl text-xs font-bold transition-all ${pathname.includes('/admin/pagos') ? 'bg-indigo-600/20 text-indigo-400' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}>Historial de Pagos</Link>
-                 <Link href="/automatizacion-rrss/panel/admin/whatsapp" className={`block px-4 py-2 rounded-xl text-xs font-bold transition-all ${pathname.includes('/whatsapp') ? 'bg-indigo-600/20 text-indigo-400' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}>Chats WhatsApp</Link>
-                 <Link href="/automatizacion-rrss/panel/admin/estrategias" className={`block px-4 py-2 rounded-xl text-xs font-bold transition-all ${pathname.includes('/admin/estrategias') ? 'bg-indigo-600/20 text-indigo-400' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}>Config Estrategias</Link>
+               <div className="mt-1.5 space-y-1 pl-3 border-l border-slate-800 ml-3">
+                 <Link href="/automatizacion-rrss/panel/admin" className={`block px-3 py-2 rounded-lg text-[11px] font-bold transition-all ${pathname === '/automatizacion-rrss/panel/admin' ? 'bg-indigo-600/20 text-indigo-400' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}>Usuarios</Link>
+                 <Link href="/automatizacion-rrss/panel/admin/pagos" className={`block px-3 py-2 rounded-lg text-[11px] font-bold transition-all ${pathname.includes('/admin/pagos') ? 'bg-indigo-600/20 text-indigo-400' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}>Pagos</Link>
+                 <Link href="/automatizacion-rrss/panel/admin/whatsapp" className={`block px-3 py-2 rounded-lg text-[11px] font-bold transition-all ${pathname.includes('/whatsapp') ? 'bg-indigo-600/20 text-indigo-400' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}>WhatsApp</Link>
+                 <Link href="/automatizacion-rrss/panel/admin/estrategias" className={`block px-3 py-2 rounded-lg text-[11px] font-bold transition-all ${pathname.includes('/admin/estrategias') ? 'bg-indigo-600/20 text-indigo-400' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}>Estrategias</Link>
                </div>
             </details>
           )}
         </nav>
 
-        <div className="p-6 border-t border-slate-800 bg-slate-950/20">
-          <Link href="/" className="flex items-center justify-center gap-3 px-4 py-4 bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-white text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all border border-slate-700/50">
-            <span>←</span> Volver al Sitio
+        <div className="px-4 py-4 border-t border-slate-800">
+          <Link href="/" className="flex items-center justify-center gap-2 px-3 py-2.5 bg-slate-800/40 hover:bg-slate-800 text-slate-500 hover:text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-slate-700/30">
+            <span>←</span> Salir
           </Link>
         </div>
       </aside>
