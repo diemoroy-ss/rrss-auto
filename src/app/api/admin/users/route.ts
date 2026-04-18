@@ -16,7 +16,7 @@ export async function GET(req: Request) {
     const idToken = authHeader.split("Bearer ")[1];
     
     if (!adminAuth || !adminDb) {
-      return NextResponse.json({ error: "Firebase Admin not configured" }, { status: 500 });
+      return NextResponse.json({ error: "Error 500: Firebase Admin No Configurado. Falta la variable FIREBASE_SERVICE_ACCOUNT en el servidor." }, { status: 500 });
     }
 
     const decodedToken = await adminAuth.verifyIdToken(idToken);

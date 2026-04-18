@@ -26,7 +26,9 @@ export async function GET(req: Request) {
             }, { status: 403 });
         }
 
-        if (!adminDb) throw new Error("Firebase Admin DB not initialized");
+        if (!adminAuth || !adminDb) {
+            return NextResponse.json({ error: "Error 500: Firebase Admin No Configurado. Falta la variable FIREBASE_SERVICE_ACCOUNT en el servidor." }, { status: 500 });
+        }
 
         // Fetch all chat sessions ordered by recently updated
         const snapshot = await adminDb.collection("whatsapp_chats")

@@ -27,8 +27,8 @@ export async function GET(req: Request) {
       }, { status: 403 });
     }
 
-    if (!adminDb) {
-      return NextResponse.json({ error: "Database not initialized" }, { status: 500 });
+    if (!adminAuth || !adminDb) {
+      return NextResponse.json({ error: "Error 500: Firebase Admin No Configurado. Falta la variable FIREBASE_SERVICE_ACCOUNT en el servidor." }, { status: 500 });
     }
 
     // Obtener todos los pagos ordenados por fecha descendente

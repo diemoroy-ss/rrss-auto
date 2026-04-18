@@ -22,5 +22,10 @@ if (!admin.apps.length) {
   }
 }
 
+// Exported instances
 export const adminDb = admin.apps.length ? admin.firestore() : null;
 export const adminAuth = admin.apps.length ? admin.auth() : null;
+
+if (!adminAuth || !adminDb) {
+    console.error("CRITICAL: Firebase Admin failed to initialize. adminAuth or adminDb is null.");
+}
