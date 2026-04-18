@@ -39,7 +39,7 @@ export default function AdminPaymentsPage() {
         });
 
         if (!res.ok) {
-           router.push("/automatizacion-rrss/panel");
+           setError(`Error ${res.status}: No tienes permisos suficientes para ver ingresos.`);
            return;
         }
 

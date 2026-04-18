@@ -14,11 +14,16 @@ export async function GET(req: Request) {
         // Check role in Firestore
         const userDoc = await adminDb.collection("users").doc(decodedToken.uid).get();
         const userData = userDoc.data();
-        const isSuperAdmin = decodedToken.email === "diemoroy@gmail.com";
+        const userEmail = (decodedToken.email || "").toLowerCase();
+        const isSuperAdmin = userEmail === "diemoroy@gmail.com" || userEmail === "admin@santisoft.cl";
         const isAdmin = userData?.role === "admin";
 
         if (!isSuperAdmin && !isAdmin) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+            return NextResponse.json({ 
+                error: "Unauthorized",
+                debugEmail: userEmail,
+                debugRole: userData?.role || "none"
+            }, { status: 403 });
         }
 
         if (!adminDb) throw new Error("Firebase Admin DB not initialized");

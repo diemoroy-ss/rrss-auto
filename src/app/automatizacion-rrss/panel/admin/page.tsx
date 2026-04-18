@@ -36,7 +36,7 @@ export default function AdminUsersPage() {
         });
 
         if (!res.ok) {
-           router.push("/automatizacion-rrss/panel");
+           setError(`Error ${res.status}: No tienes permisos suficientes o la sesión expiró.`);
            return;
         }
 

@@ -24,12 +24,17 @@ export async function GET(req: Request) {
     // Check role in Firestore
     const userDoc = await adminDb.collection("users").doc(decodedToken.uid).get();
     const userData = userDoc.data();
-    const isSuperAdmin = decodedToken.email === "diemoroy@gmail.com";
+    const userEmail = (decodedToken.email || "").toLowerCase();
+    const isSuperAdmin = userEmail === "diemoroy@gmail.com" || userEmail === "admin@santisoft.cl";
     const isAdmin = userData?.role === "admin";
 
     if (!isSuperAdmin && !isAdmin) {
-      console.warn(`[ADMIN API] Unauthorized access denied for ${decodedToken.email}`);
-      return NextResponse.json({ error: "Unauthorized access" }, { status: 403 });
+      console.warn(`[ADMIN API] Unauthorized access denied for ${userEmail}`);
+      return NextResponse.json({ 
+        error: "Acceso Prohibido: No eres administrador",
+        debugEmail: userEmail,
+        debugRole: userData?.role || "none"
+      }, { status: 403 });
     }
 
     // List users from Firestore (not just Auth, because we want their plans)

@@ -42,7 +42,7 @@ export default function AdminWhatsAppPage() {
         });
 
         if (!res.ok) {
-           router.push("/automatizacion-rrss/panel");
+           setError(`Error ${res.status}: No tienes permisos suficientes para ver chats.`);
            return;
         }
 
