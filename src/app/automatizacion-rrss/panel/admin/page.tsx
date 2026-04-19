@@ -190,12 +190,8 @@ export default function AdminUsersPage() {
                            {u.registeredApps.map(app => {
                              const isAutomation = app === 'rrss' || app === 'automatizacion';
                              return (
-                               <span key={app} className={`text-[9px] font-black uppercase px-3 py-1 rounded-bl-lg rounded-tr-lg border ${
-                                 isAutomation 
-                                 ? 'bg-indigo-50 text-indigo-700 border-indigo-100/50' 
-                                 : 'bg-emerald-50 text-emerald-700 border-emerald-100/50'
-                               }`}>
-                                 {isAutomation ? '🤖 Automatización' : '🍔 Gastro'}
+                               <span key={app} className="text-[9px] font-black uppercase px-3 py-1 rounded-bl-lg rounded-tr-lg border bg-indigo-50 text-indigo-700 border-indigo-100/50">
+                                 🤖 Automatización
                                </span>
                              );
                            })}
@@ -339,14 +335,14 @@ export default function AdminUsersPage() {
                               <span>💼</span> Ecosistema Santisoft
                           </h4>
                           <div className="space-y-3">
-                              {['rrss', 'gastronomico'].map(appKey => {
-                                  const hasApp = selectedUser.registeredApps.includes(appKey) || (appKey === 'rrss' && selectedUser.registeredApps.includes('automatizacion'));
+                              {['rrss'].map(appKey => {
+                                  const hasApp = selectedUser.registeredApps.includes(appKey) || selectedUser.registeredApps.includes('automatizacion');
                                   return (
                                       <div key={appKey} className={`flex items-center justify-between p-4 rounded-2xl border ${hasApp ? 'bg-indigo-50 border-indigo-100' : 'bg-white border-slate-100 opacity-60'}`}>
                                           <div className="flex items-center gap-4">
-                                              <span className="text-xl">{appKey === 'rrss' ? '🤖' : '🍔'}</span>
+                                              <span className="text-xl">🤖</span>
                                               <div>
-                                                  <div className="text-sm font-black text-slate-900 capitalize">{appKey === 'rrss' ? 'Automatización RRSS' : 'Gestión Gastronómica'}</div>
+                                                  <div className="text-sm font-black text-slate-900 capitalize">Automatización RRSS</div>
                                                   <div className="text-[10px] font-bold text-slate-500 italic">{hasApp ? 'Licencia Activa' : 'Sin Licencia'}</div>
                                               </div>
                                           </div>

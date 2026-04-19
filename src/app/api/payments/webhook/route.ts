@@ -22,8 +22,13 @@ export async function POST(req: Request) {
 
     console.log("Webhook MP recibido:", body);
 
-    const accessToken = process.env.MP_ACCESS_TOKEN;
+    const isTest = process.env.NEXT_PUBLIC_MP_ENV !== "prod";
+    const accessToken = isTest 
+        ? process.env.MP_ACCESS_TOKEN_TEST 
+        : process.env.MP_ACCESS_TOKEN_PROD;
+
     if (!accessToken) {
+        console.error("Webhook: Falta el MP_ACCESS_TOKEN. Revisa las variables de entorno.");
         return NextResponse.json({ error: "Config error" }, { status: 500 });
     }
 
