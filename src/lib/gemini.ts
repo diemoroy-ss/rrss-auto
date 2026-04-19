@@ -23,7 +23,7 @@ export type ChatMessageItem = {
 export async function generateChatbotResponse(history: ChatMessageItem[], currentMessage: string, userName: string) {
   try {
     const model = genAI.getGenerativeModel({ 
-       model: "gemini-1.5-flash",
+       model: "gemini-2.5-flash",
        // Se le pasa el System Prompt para darle contexto global al bot
        systemInstruction: SYSTEM_PROMPT 
     });

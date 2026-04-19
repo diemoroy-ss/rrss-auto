@@ -45,7 +45,7 @@ export async function POST(req: Request) {
                     if (apiKey) {
                         const genAI = new GoogleGenerativeAI(apiKey);
                         const model = genAI.getGenerativeModel({ 
-                            model: "gemini-1.5-flash",
+                            model: "gemini-2.5-flash",
                             systemInstruction: `Eres un experto Director de Arte. Tu misión es generar una lista estructurada en JSON puro que contenga EXACTAMENTE ${carouselCount} instrucciones descriptivas detalladas para un generador de imágenes de Inteligencia Artificial (Midjourney/DALL-E) en INGLÉS. Las imágenes conformarán un carrusel coherente secuencial.
 
 INSTRUCCIONES CLAVE:
@@ -77,7 +77,7 @@ INSTRUCCIONES CLAVE:
                     if (apiKey) {
                         const genAI = new GoogleGenerativeAI(apiKey);
                         const model = genAI.getGenerativeModel({ 
-                            model: "gemini-1.5-flash",
+                            model: "gemini-2.5-flash",
                             systemInstruction: `Eres un experto Director de Fotografía. Tu misión es generar un ÚNICO prompt descriptivo en INGLÉS para un generador de Video por Inteligencia Artificial (RunwayML/Luma/Sora) que creará un Reel de 8 segundos.
 
 INSTRUCCIONES CLAVE:

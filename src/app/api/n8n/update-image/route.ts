@@ -57,7 +57,7 @@ export async function POST(req: Request) {
                 if (apiKey) {
                     const genAI = new GoogleGenerativeAI(apiKey);
                     const model = genAI.getGenerativeModel({ 
-                        model: "gemini-1.5-flash",
+                        model: "gemini-2.5-flash",
                         systemInstruction: `Eres un Community Manager Experto y Copywriter persuasivo. 
                         Tu misión es redactar el texto O "Pie de Foto" (copy) que acompañará a la imagen publicitaria en redes sociales (Facebook/Instagram).
                         

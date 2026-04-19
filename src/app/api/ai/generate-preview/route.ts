@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
                 console.log("[PROXY] Generating carousel prompts for preview...");
                 const genAI = new GoogleGenerativeAI(apiKey);
                 const model = genAI.getGenerativeModel({ 
-                    model: "gemini-1.5-flash",
+                    model: "gemini-2.5-flash",
                     systemInstruction: `Eres un experto Director de Arte. Tu misión es generar una lista estructurada en JSON puro que contenga EXACTAMENTE ${carouselCount || 3} instrucciones descriptivas detalladas para un generador de imágenes de Inteligencia Artificial (Midjourney/DALL-E) en INGLÉS. Las imágenes conformarán un carrusel coherente secuencial.\n\nINSTRUCCIONES CLAVE:\n1. NO escribas otra cosa más que un Array JSON ("["..." , "..."]").\n2. Escribe cada prompt en INGLÉS técnico y descriptivo enfocado en colores, iluminación y composición.\n3. Asegura coherencia de Estilo Visual entre las imágenes.\n4. NADA de comillas inversas markdown, solo el arreglo puro.`
                 });
                 const result = await model.generateContent(`Genera las ${carouselCount || 3} descripciones visuales para esta idea de post: ${idea}`);
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
                 console.log("[PROXY] Generating reel prompt for preview...");
                 const genAI = new GoogleGenerativeAI(apiKey);
                 const model = genAI.getGenerativeModel({ 
-                    model: "gemini-1.5-flash",
+                    model: "gemini-2.5-flash",
                     systemInstruction: `Eres un experto Director de Fotografía. Tu misión es generar un ÚNICO prompt descriptivo en INGLÉS para un generador de Video por Inteligencia Artificial (RunwayML/Luma/Sora) que creará un Reel de 8 segundos.\n\nINSTRUCCIONES CLAVE:\n1. NO escribas introducciones ni comillas. Escribe SOLO el prompt técnico en inglés.\n2. Especifica movimientos de cámara dinámicos pertinentes a RRSS (ej: slow pan, dynamic zoom, cinematic dolly track).\n3. Asegura que la escena sea visualmente impactante, orientada a formato vertical (9:16).\n4. El texto debe ser fluido y muy enfocado en la iluminación, textura y estilo cinemático.`
                 });
                 const result = await model.generateContent(`Genera el prompt de video para esta idea: ${idea}`);
@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
             console.log("[PROXY] Generating optimized copy with Gemini...");
             const genAI = new GoogleGenerativeAI(apiKey);
             const model = genAI.getGenerativeModel({ 
-                model: "gemini-1.5-flash",
+                model: "gemini-2.5-flash",
                 systemInstruction: `Eres un experto copywriter para redes sociales. 
 Tu objetivo es tomar una idea básica y transformarla en un post altamente atractivo, persuasivo y listo para publicar.
 
