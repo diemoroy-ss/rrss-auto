@@ -73,3 +73,24 @@ export async function enqueuePostTask(postId: string, scheduledFor: Date) {
         throw error;
     }
 }
+
+/**
+ * Elimina una tarea existente de la cola de Google Cloud Tasks.
+ * @param taskName El nombre completo de la tarea (response.name devuelto al crear).
+ */
+export async function deletePostTask(taskName: string) {
+    if (!client) {
+        return false;
+    }
+    try {
+        await client.deleteTask({ name: taskName });
+        console.log(`[GCP TASKS] Deleted task ${taskName}`);
+        return true;
+    } catch (error: any) {
+        // If the error code is 5 (NOT_FOUND), it means it already executed or was deleted.
+        if (error.code !== 5) {
+            console.error(`[GCP TASKS] Error deleting task ${taskName}:`, error);
+        }
+        return false;
+    }
+}

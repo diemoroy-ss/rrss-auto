@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { adminAuth } from '../../../../lib/firebase-admin';
-import { enqueuePostTask } from '../../../../lib/gcp-tasks';
+import { adminAuth, adminDb } from '../../../../lib/firebase-admin';
+import { enqueuePostTask, deletePostTask } from '../../../../lib/gcp-tasks';
 
 export async function POST(req: Request) {
     try {
@@ -31,11 +31,24 @@ export async function POST(req: Request) {
         const now = new Date();
         const targetDate = scheduledDate < now ? new Date(now.getTime() + 30000) : scheduledDate;
 
+        // Borrar tarea previa en GCP si existe
+        const postRef = adminDb.collection('social_posts').doc(postId);
+        const postSnap = await postRef.get();
+        if (postSnap.exists) {
+            const oldTaskName = postSnap.data()?.gcpTaskName;
+            if (oldTaskName) {
+                await deletePostTask(oldTaskName);
+            }
+        }
+
         const taskName = await enqueuePostTask(postId, targetDate);
 
         if (!taskName) {
              return NextResponse.json({ error: 'GCP Tasks config missing' }, { status: 500 });
         }
+
+        // Guardar el identificador nativo de la tarea para posibles cancelaciones posteriores
+        await postRef.update({ gcpTaskName: taskName });
 
         return NextResponse.json({ success: true, taskName });
 

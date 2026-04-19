@@ -38,10 +38,11 @@ export async function POST(req: Request) {
 
         const postData = postSnap.data()!;
         
-        // Si el post ya se procesó, abortamos. (Precaución por retries dobles de Cloud Tasks)
-        if (postData.status !== 'pending' && postData.status !== 'confirmed') {
+        // Solo permitimos la publicación automática de posts 'confirmed'
+        // Si el post está en 'pending', es un borrador y no debe publicarse.
+        if (postData.status !== 'confirmed') {
             console.log(`[GCP EXECUTE] Post ${postId} is in status '${postData.status}'. Skipping.`);
-            return NextResponse.json({ message: "Post already processed." });
+            return NextResponse.json({ message: "Post is not confirmed. Skipping auto-publish." });
         }
 
         // Si el post fue reagendado, la fecha programada será en el futuro respecto a esta tarea obsoleta.
