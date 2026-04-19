@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
 
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ 
-        model: "gemini-2.5-flash",
+        model: "gemini-1.5-flash",
         systemInstruction: `Eres un experto Analista de Datos y Estratega de Marketing Digital Nivel Senior.
 Tu objetivo es analizar un reporte de métricas de publicaciones en redes sociales y devolver una auditoría accionable.
 
