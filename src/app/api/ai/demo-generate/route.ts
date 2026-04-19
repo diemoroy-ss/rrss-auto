@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getVertexModel } from "../../../lib/vertexai";
+import { getVertexModel } from "../../../../lib/vertexai";
 
 // Vercel Serverless maximum duration (requires Pro plan or custom host, but necessary for n8n synchronous wait)
 export const maxDuration = 120;

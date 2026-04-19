@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '../../../../lib/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { getVertexModel } from "../../../lib/vertexai";
+import { getVertexModel } from "../../../../lib/vertexai";
 
 export async function POST(req: Request) {
     try {

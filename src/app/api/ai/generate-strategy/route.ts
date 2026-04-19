@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getVertexModel } from "../../../lib/vertexai";
+import { getVertexModel } from "../../../../lib/vertexai";
 
 export async function POST(req: NextRequest) {
     try {
