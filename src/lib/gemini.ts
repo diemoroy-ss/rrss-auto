@@ -1,8 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
-const apiKey = process.env.GOOGLE_GENAI_API_KEY || "AI_API_KEY_FALLBACK";
-// Inicializa la instancia solo si hay una key, sino fallará de forma controlada en la llamada
-export const genAI = new GoogleGenerativeAI(apiKey);
+import { getVertexModel } from "./vertexai";
 
 export const SYSTEM_PROMPT = `Eres el asistente de Santisoft. Tu estilo es "Minimalista y Humano".
 
@@ -22,13 +18,9 @@ export type ChatMessageItem = {
 
 export async function generateChatbotResponse(history: ChatMessageItem[], currentMessage: string, userName: string) {
   try {
-    const model = genAI.getGenerativeModel({ 
-       model: "gemini-2.5-flash",
-       // Se le pasa el System Prompt para darle contexto global al bot
-       systemInstruction: SYSTEM_PROMPT 
-    });
+    const model = getVertexModel("gemini-2.5-flash", SYSTEM_PROMPT);
 
-    // Formatear el historial para que Gemini lo procese ('user' y 'model')
+    // Formatear el historial para que Vertex AI lo procese ('user' y 'model')
     const mappedHistory = history.map(msg => ({
        role: msg.role === 'ai' ? 'model' : 'user',
        parts: [{ text: msg.text }]
@@ -40,11 +32,12 @@ export async function generateChatbotResponse(history: ChatMessageItem[], curren
 
     const fullMessageToBot = `(Usuario: ${userName}) Mensaje: ${currentMessage}`;
     const result = await chat.sendMessage(fullMessageToBot);
+    const response = await result.response;
     
-    return result.response.text();
+    return response.candidates?.[0]?.content?.parts?.[0]?.text || "No pude generar una respuesta.";
 
   } catch (error: any) {
-     console.error("Gemini Request Error (generateChatbotResponse):", error.message || error);
-     throw new Error(`Failed to reach Gemini: ${error.message || 'Unknown error'}`);
+     console.error("Vertex AI Request Error (generateChatbotResponse):", error.message || error);
+     throw new Error(`Failed to reach Vertex AI: ${error.message || 'Unknown error'}`);
   }
 }

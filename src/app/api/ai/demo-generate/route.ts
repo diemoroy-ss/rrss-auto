@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { getVertexModel } from "../../../lib/vertexai";
 
 // Vercel Serverless maximum duration (requires Pro plan or custom host, but necessary for n8n synchronous wait)
 export const maxDuration = 120;
 
-const apiKey = process.env.GOOGLE_GENAI_API_KEY || '';
 const N8N_WEBHOOK_URL = 'https://n8n.santisoft.cl/webhook/demo-ia';
 
 export async function POST(req: Request) {
@@ -18,23 +17,7 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: 'Server AI not configured' },
-        { status: 500 }
-      );
-    }
-
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
-      generationConfig: {
-        temperature: 0.7,
-      }
-    });
-
-    // 1. Generate structural prompts using Gemini
-    const systemPrompt = `Eres un experto en Marketing Digital y Dirección de Arte B2B.
+    const systemInstruction = `Eres un experto en Marketing Digital y Dirección de Arte B2B.
 El usuario quiere crear un post de redes sociales para su negocio.
 Rubro: ${rubro}
 Idea: ${idea}
@@ -46,17 +29,23 @@ Necesitas generar exactamente un JSON con 3 campos:
 
 Retorna SOLO un JSON válido, sin delimitadores de código markdown como \`\`\`json.`;
 
-    const result = await model.generateContent(systemPrompt);
-    const textResponse = result.response.text().trim();
+    const model = getVertexModel("gemini-2.5-flash", systemInstruction);
     
-    // Clean potential markdown blocks
-    const cleanedJsonStr = textResponse.replace(/^```json/i, '').replace(/^```/, '').replace(/```$/, '').trim();
+    // Configure response as JSON
+    model.generationConfig = {
+        responseMimeType: "application/json",
+    };
+
+    console.log(`[VERTEX-AI] Generating demo prompts for ${rubro} using Vertex AI`);
+    const result = await model.generateContent(systemInstruction); // Use prompt context if needed, but instructions already have it
+    const response = await result.response;
+    const textResponse = response.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "{}";
     
     let generatedPrompts;
     try {
-        generatedPrompts = JSON.parse(cleanedJsonStr);
+        generatedPrompts = JSON.parse(textResponse);
     } catch (e) {
-        console.error("Gemini didn't return valid JSON:", cleanedJsonStr);
+        console.error("Vertex AI didn't return valid JSON:", textResponse);
         return NextResponse.json(
             { error: 'Error generating creative structure. Please try again.' },
             { status: 500 }
@@ -64,9 +53,8 @@ Retorna SOLO un JSON válido, sin delimitadores de código markdown como \`\`\`j
     }
 
     // 2. Transmit to n8n to execute rendering
-    // Enforcing timeouts since n8n process can take a solid 15-45 seconds for images/video
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 115000); // 115s max waiting time for media generation
+    const timeoutId = setTimeout(() => controller.abort(), 115000); 
     
     try {
         const n8nReq = await fetch(N8N_WEBHOOK_URL, {
@@ -98,12 +86,11 @@ Retorna SOLO un JSON válido, sin delimitadores de código markdown como \`\`\`j
 
         const n8nData = await n8nReq.json();
         
-        // Return both our generated copy + the media URLs returned by n8n
         return NextResponse.json({
             copy: generatedPrompts.copy,
             image_prompt: generatedPrompts.image_prompt,
             video_prompt: generatedPrompts.video_prompt,
-            result: n8nData // We expect n8n to send back { imageUrl: '...', videoUrl: '...' } inside this payload
+            result: n8nData 
         });
         
     } catch (e: any) {

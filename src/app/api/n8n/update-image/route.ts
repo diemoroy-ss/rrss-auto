@@ -1,14 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '../../../../lib/firebase';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-
-export async function GET() {
-    return NextResponse.json({ 
-        message: "Endpoint update-image de Santisoft está ONLINE.",
-        status: "Esperando POST con secret y postId"
-    });
-}
+import { getVertexModel } from "../../../lib/vertexai";
 
 export async function POST(req: Request) {
     try {
@@ -32,7 +25,6 @@ export async function POST(req: Request) {
         }
 
         const updateData: any = { isGeneratingImage: false };
-        
         let targetImageUrl = imageUrl;
         
         if (error) {
@@ -43,56 +35,46 @@ export async function POST(req: Request) {
             targetImageUrl = imageUrls[0];
         } else if (imageUrl) {
             updateData.imageUrl = imageUrl;
-            updateData.imageUrls = [imageUrl]; // standardize
+            updateData.imageUrls = [imageUrl]; 
         }
         
         if (!error && (imageUrl || (imageUrls && imageUrls.length > 0))) {
-            // Si la imagen se generó con éxito, generamos el copy automáticamente con Gemini
             try {
                 const postData = postSnap.data();
                 const idea = postData.idea || "Publicación promocional genérica";
                 const textoVisual = postData.text || "No hay instrucciones visuales específicas.";
                 
-                const apiKey = process.env.GOOGLE_GENAI_API_KEY;
-                if (apiKey) {
-                    const genAI = new GoogleGenerativeAI(apiKey);
-                    const model = genAI.getGenerativeModel({ 
-                        model: "gemini-2.5-flash",
-                        systemInstruction: `Eres un Community Manager Experto y Copywriter persuasivo. 
-                        Tu misión es redactar el texto O "Pie de Foto" (copy) que acompañará a la imagen publicitaria en redes sociales (Facebook/Instagram).
-                        
-                        INSTRUCCIONES CLAVES:
-                        - Toma la IDEA PRINCIPAL entregada y desarróllala en un texto súper atractivo, orientado a la acción y venta/engagement.
-                        - Te entregaré también el "Texto Descriptivo / Visual". Úsalo solo como contexto de lo que se verá en la imagen, PERO NO repitas las instrucciones visuales, solo escribe el pie de foto.
-                        - Usa emojis adecuados, viñetas si es necesario, y lenguaje cercano al cliente.
-                        - Cierra SIEMPRE con un Llamado a la Acción (CTA) fuerte.
-                        - NO MENCIONES LA IMAGEN en el texto de forma literal (nada de "En la imagen vemos...").
-                        - NADA de comillas iniciales ni introducciones. Pasa directo al copy final.`
-                    });
+                const systemInstruction = `Eres un Community Manager Experto y Copywriter persuasivo. 
+                Tu misión es redactar el texto O "Pie de Foto" (copy) que acompañará a la imagen publicitaria en redes sociales (Facebook/Instagram).
+                
+                INSTRUCCIONES CLAVES:
+                - Toma la IDEA PRINCIPAL entregada y desarróllala en un texto súper atractivo, orientado a la acción y venta/engagement.
+                - Te entregaré también el "Texto Descriptivo / Visual". Úsalo solo como contexto de lo que se verá en la imagen, PERO NO repitas las instrucciones visuales, solo escribe el pie de foto.
+                - Usa emojis adecuados, viñetas si es necesario, y lenguaje cercano al cliente.
+                - Cierra SIEMPRE con un Llamado a la Acción (CTA) fuerte.
+                - NO MENCIONES LA IMAGEN en el texto de forma literal.
+                - NADA de comillas iniciales ni introducciones.`;
 
-                    const prompt = `Idea Principal del Post: ${idea}\nContexto Visual de la Imagen: ${textoVisual}\n\nEscribe el Pie de Foto (Copy) Listo para Publicar:`;
-                    const result = await model.generateContent(prompt);
-                    const generatedText = await result.response.text();
-                    
-                    if (generatedText) {
-                        updateData.copy = generatedText.trim(); 
-                        // NOTA: NO sobreescribimos updateData.text, ya que ese guarda las instrucciones de la imagen.
-                    }
-                } else {
-                    console.warn("No GOOGLE_GENAI_API_KEY config, skipping copy generation.");
+                const model = getVertexModel("gemini-2.5-flash", systemInstruction);
+
+                const prompt = `Idea Principal del Post: ${idea}\nContexto Visual de la Imagen: ${textoVisual}\n\nEscribe el Pie de Foto (Copy) Listo para Publicar:`;
+                const result = await model.generateContent(prompt);
+                const response = await result.response;
+                const generatedText = response.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+                
+                if (generatedText) {
+                    updateData.copy = generatedText; 
                 }
             } catch (aiError: any) {
-                console.error("Copy AI Generation Error:", aiError);
-                // Si falla la IA del copy, igual guardamos la imagen y no rompemos todo
+                console.error("Copy Generation Error (Vertex AI):", aiError);
             }
         }
 
         await updateDoc(postRef, updateData);
-
         return NextResponse.json({ success: true, postId });
         
     } catch (error: any) {
-        console.error("Update Image Error:", error);
+        console.error("Update Image Error (Vertex):", error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
