@@ -82,35 +82,7 @@ const WORKFLOWS: N8NWorkflow[] = [
         expectedReturn: 'HTTP 200 OK',
         nodeFlow: ['Webhook POST', 'Send Email Node (SMTP/GMail)', 'Respond to Webhook']
     },
-    {
-        id: 'banner-ia',
-        name: 'DigitalBite - Generar Banner',
-        description: 'Inicia el trabajo de renderizado de banner 3D.',
-        url: 'https://n8n.santisoft.cl/webhook/banner-ia',
-        method: 'POST',
-        authStrategy: 'Ninguna (Asegurado por backend proxy)',
-        variablesSent: {
-            prompt: 'String',
-            templateId: 'String',
-            userId: 'String (UID)',
-            ticketId: 'String'
-        },
-        expectedReturn: 'HTTP 200 OK con { status: "processing" }',
-        nodeFlow: ['Webhook POST', 'Format Template', 'ComfyUI / Stable Diffusion', 'Firebase update / Wait']
-    },
-    {
-        id: 'banner-ia-status',
-        name: 'DigitalBite - Estado Banner',
-        description: 'Consulta periódicamente si el banner terminó de renderizarse.',
-        url: 'https://n8n.santisoft.cl/webhook/banner-ia-status?ticketId=xyz',
-        method: 'GET',
-        authStrategy: 'Query Param',
-        variablesSent: {
-            ticketId: 'String'
-        },
-        expectedReturn: '{ status: "completed", url: "..." } o status: "pending"',
-        nodeFlow: ['Webhook GET', 'Firebase Read (Ticket ID)', 'If Completed -> Respond URL', 'Else -> Respond Pending']
-    },
+
     {
         id: 'sincronizar-metricas',
         name: 'Sincronizar Métricas Meta',

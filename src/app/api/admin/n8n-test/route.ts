@@ -82,20 +82,6 @@ export async function POST(req: Request) {
                     pdfBase64: 'JVBERi0xLjEKJcKlwrHDqwoxIDAgb2JqCjw8IC9UeXBlIC9DYXRhbG9nIC9QYWdlcyAyIDAgUiA+PgplbmRvYmoK' // Minimal PDF stub
                 };
                 break;
-            case 'banner-ia':
-                url = 'https://n8n.santisoft.cl/webhook/banner-ia';
-                payload = {
-                    prompt: 'Generame un banner de prueba',
-                    templateId: 'TEST_TPL',
-                    userId: decodedToken.uid,
-                    ticketId: 'TEST_TICKET_ID'
-                };
-                break;
-            case 'banner-ia-status':
-                url = 'https://n8n.santisoft.cl/webhook/banner-ia-status?ticketId=TEST_TICKET_ID';
-                method = 'GET';
-                payload = undefined; // GET requests have no body
-                break;
             case 'sincronizar-metricas':
                 url = 'https://n8n.santisoft.cl/webhook/sincronizar-metricas';
                 payload = {
