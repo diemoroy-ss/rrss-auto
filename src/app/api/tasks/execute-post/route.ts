@@ -44,6 +44,14 @@ export async function POST(req: Request) {
             return NextResponse.json({ message: "Post already processed." });
         }
 
+        // Si el post fue reagendado, la fecha programada será en el futuro respecto a esta tarea obsoleta.
+        const scheduledTime = postData.scheduledFor?.toDate().getTime() || 0;
+        const now = Date.now();
+        if (scheduledTime - now > 2 * 60 * 1000) { // Tolerancia de 2 minutos
+            console.log(`[GCP EXECUTE] Post ${postId} was rescheduled for ${new Date(scheduledTime).toISOString()}. Skipping old obsolete task.`);
+            return NextResponse.json({ message: "Task is obsolete, post was rescheduled." });
+        }
+
         const uid = postData.userId;
         const profileId = postData.profileId;
 

@@ -123,6 +123,7 @@ export default function RrssDashboard() {
   const [message, setMessage] = useState<{type: 'success' | 'error' | 'info', text: string} | null>(null);
   const [selectedPostIds, setSelectedPostIds] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'upcoming' | 'published'>('upcoming');
+  const [rescheduleData, setRescheduleData] = useState<{ id: string, date: string } | null>(null);
   const { activeProfile } = useProfile();
 
   // Modals state
@@ -558,6 +559,42 @@ export default function RrssDashboard() {
     }
   };
 
+  const handleSaveReschedule = async () => {
+    if (!rescheduleData) return;
+    try {
+        const newDate = new Date(rescheduleData.date);
+        setIsUpdatingStatus(true);
+        // Rescheduling inherently clears errors and puts it back to pending if they want to edit.
+        // Actually, let's preserve the status if it's confirmed, but usually they want to review it. Let's force pending.
+        const postToUpdate = posts.find(p => p.id === rescheduleData.id);
+        const originalStatus = postToUpdate?.status || 'pending';
+        const newStatus = originalStatus === 'error' ? 'pending' : originalStatus; 
+
+        await updateDoc(doc(db, "social_posts", rescheduleData.id), { 
+            scheduledFor: newDate,
+            status: newStatus
+        });
+        
+        // Push local arrays
+        setPosts(prev => prev.map(p => p.id === rescheduleData.id ? { ...p, scheduledFor: { toDate: () => newDate, toMillis: () => newDate.getTime() } as any, status: newStatus } : p));
+
+        // Push the new time to GCP tasks
+        const idToken = await auth.currentUser?.getIdToken();
+        await fetch('/api/tasks/schedule', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+            body: JSON.stringify({ postId: rescheduleData.id, scheduledFor: newDate.toISOString() })
+        });
+        
+        setMessage({ type: 'success', text: "Post reagendado exitosamente." });
+        setRescheduleData(null);
+    } catch(err) {
+        setMessage({ type: 'error', text: "Error al reagendar el post." });
+    } finally {
+        setIsUpdatingStatus(false);
+    }
+  };
+
   // --- Calendar Logic ---
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(monthStart);
@@ -890,22 +927,38 @@ export default function RrssDashboard() {
                     </div>
                   )}
 
-                  <div className="mt-auto pt-6 border-t border-slate-100 flex flex-wrap items-center justify-between gap-y-3">
-                    {post.status === 'confirmed' ? (
-                      <button 
-                        onClick={(e) => handleUnconfirm(post, e)} 
-                        className="text-[10px] font-black uppercase tracking-widest text-amber-500 hover:text-amber-600 px-4 py-2 hover:bg-amber-50 rounded-xl transition-all"
-                      >
-                        Pasar a Borrador
-                      </button>
-                    ) : (
-                      <div className="flex-1"></div>
-                    )}
+                  <div className="mt-auto pt-6 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-1">
+                        {post.status === 'confirmed' ? (
+                        <button 
+                            onClick={(e) => handleUnconfirm(post, e)} 
+                            className="text-[10px] font-black uppercase tracking-widest text-amber-500 hover:text-amber-600 px-3 py-2 hover:bg-amber-50 rounded-xl transition-all"
+                        >
+                            Pasar a Borrador
+                        </button>
+                        ) : null}
+
+                        {activeTab === 'upcoming' && (
+                        <button 
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setRescheduleData({
+                                    id: post.id,
+                                    date: format(dateObj, "yyyy-MM-dd'T'HH:mm")
+                                });
+                            }} 
+                            className="text-[10px] font-black uppercase tracking-widest text-indigo-500 hover:text-indigo-600 px-3 py-2 hover:bg-indigo-50 rounded-xl transition-all"
+                        >
+                            Reagendar
+                        </button>
+                        )}
+                    </div>
+                    
                     <button 
                       onClick={(e) => handleDelete(post.id, e)} 
-                      className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-rose-600 px-4 py-2 hover:bg-rose-50 rounded-xl transition-all"
+                      className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-rose-600 px-3 py-2 hover:bg-rose-50 rounded-xl transition-all shrink-0"
                     >
-                      {post.status === 'published' ? 'Ocultar Historial' : isPending ? 'Eliminar permanentemente' : 'Eliminar Post'}
+                      {post.status === 'published' ? 'Ocultar' : isPending ? 'Borrar permanentemente' : 'Borrar'}
                     </button>
                   </div>
                 </div>
@@ -1211,6 +1264,42 @@ export default function RrssDashboard() {
                 </button>
              </div>
           </div>
+        </div>
+      )}
+
+      {/* Reschedule Modal */}
+      {rescheduleData && (
+        <div className="fixed inset-0 z-[1000] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200 relative z-10">
+                <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center text-2xl mx-auto mb-4">
+                    🗓️
+                </div>
+                <h3 className="text-xl font-black text-center text-slate-900 tracking-tight mb-2">Reagendar Post</h3>
+                <p className="text-sm text-slate-500 text-center font-medium mb-6">Modifica la fecha y hora de publicación. El motor se recalibrará al instante.</p>
+                
+                <input 
+                    type="datetime-local" 
+                    value={rescheduleData.date}
+                    onChange={(e) => setRescheduleData({ ...rescheduleData, date: e.target.value })}
+                    className="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 mb-6 focus:outline-none focus:border-indigo-400 font-bold text-slate-700"
+                />
+
+                <div className="flex gap-3">
+                    <button 
+                        onClick={() => setRescheduleData(null)}
+                        className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-3 rounded-xl transition-colors"
+                    >
+                        Cancelar
+                    </button>
+                    <button 
+                        onClick={handleSaveReschedule}
+                        disabled={isUpdatingStatus}
+                        className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-50"
+                    >
+                        {isUpdatingStatus ? 'Guardando...' : 'Guardar'}
+                    </button>
+                </div>
+            </div>
         </div>
       )}
     </div>
