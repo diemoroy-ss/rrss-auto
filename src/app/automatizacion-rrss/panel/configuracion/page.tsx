@@ -456,11 +456,19 @@ export default function RrssConfig() {
                         <span className="w-5 h-5 bg-blue-100 text-blue-600 rounded flex items-center justify-center">
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
                         </span>
-                        Facebook Cuenta
+                        <div className="flex items-center gap-2">
+                           {fbStatus ? (
+                               <span className="bg-emerald-50 text-emerald-600 text-[9px] uppercase tracking-[0.2em] font-black px-2 py-1 rounded-full border border-emerald-100 flex items-center gap-1">
+                                   <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span> ON
+                               </span>
+                           ) : (
+                               <span className="bg-slate-100 text-slate-400 text-[9px] uppercase tracking-[0.2em] font-black px-2 py-1 rounded-full border border-slate-200">OFF</span>
+                           )}
+                           <button type="button" onClick={() => setShowFbConfig(!showFbConfig)} className={`p-1.5 rounded-lg transition-colors ${showFbConfig ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-slate-100 text-slate-400'} group`} title="Configurar Autopublicación en Facebook">
+                               <svg className={`w-4 h-4 transition-transform ${showFbConfig ? 'rotate-90' : 'group-hover:rotate-45'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                           </button>
+                       </div>
                       </label>
-                      <button type="button" onClick={() => setShowFbConfig(!showFbConfig)} className={`p-1.5 rounded-lg transition-colors ${showFbConfig ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-slate-100 text-slate-400'} group`} title="Configurar Autopublicación en Facebook">
-                          <svg className={`w-4 h-4 transition-transform ${showFbConfig ? 'rotate-90' : 'group-hover:rotate-45'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                      </button>
                   </div>
                   <input type="text" value={facebookUrl} onChange={e => setFacebookUrl(e.target.value)} placeholder="@minegocio o enlace" className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700 mb-2" />
                   
@@ -471,12 +479,8 @@ export default function RrssConfig() {
                           <div className="flex items-center justify-between mb-4 relative z-10">
                               <h4 className="text-[11px] font-black text-blue-900 uppercase tracking-widest bg-blue-100 px-3 py-1 rounded-full inline-block">App Token (Técnico)</h4>
                               {fbStatus && (
-                                <div className="flex items-center gap-2">
-                                    <span className="bg-emerald-50 text-emerald-600 text-[9px] uppercase tracking-[0.2em] font-black px-2 py-1 rounded-full border border-emerald-100 flex items-center gap-1"><span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>ON</span>
-                                    <button type="button" onClick={handleDisconnectFb} className="text-rose-500 text-[9px] font-black uppercase tracking-widest hover:bg-rose-50 px-2 py-1 rounded-lg transition-all">Borrar</button>
-                                </div>
+                                  <button type="button" onClick={handleDisconnectFb} className="text-rose-500 text-[10px] font-black uppercase tracking-widest hover:bg-rose-50 px-2 py-1 rounded-lg transition-all">Desconectar</button>
                               )}
-                              {!fbStatus && <span className="bg-slate-100 text-slate-400 text-[9px] uppercase tracking-[0.2em] font-black px-2 py-1 rounded-full border border-slate-200">OFF</span>}
                           </div>
                           <div className="space-y-4 relative z-10">
                               <div>
@@ -504,11 +508,19 @@ export default function RrssConfig() {
                         <span className="w-5 h-5 bg-pink-100 text-pink-600 rounded flex items-center justify-center">
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="20" x="2" y="2" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
                         </span>
-                        Instagram Cuenta
+                        <div className="flex items-center gap-2">
+                           {igStatus ? (
+                               <span className="bg-emerald-50 text-emerald-600 text-[9px] uppercase tracking-[0.2em] font-black px-2 py-1 rounded-full border border-emerald-100 flex items-center gap-1">
+                                   <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span> ON
+                               </span>
+                           ) : (
+                               <span className="bg-slate-100 text-slate-400 text-[9px] uppercase tracking-[0.2em] font-black px-2 py-1 rounded-full border border-slate-200">OFF</span>
+                           )}
+                           <button type="button" onClick={() => setShowIgConfig(!showIgConfig)} className={`p-1.5 rounded-lg transition-colors ${showIgConfig ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-slate-100 text-slate-400'} group`} title="Configurar Autopublicación en Instagram">
+                               <svg className={`w-4 h-4 transition-transform ${showIgConfig ? 'rotate-90' : 'group-hover:rotate-45'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                           </button>
+                       </div>
                       </label>
-                      <button type="button" onClick={() => setShowIgConfig(!showIgConfig)} className={`p-1.5 rounded-lg transition-colors ${showIgConfig ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-slate-100 text-slate-400'} group`} title="Configurar Autopublicación en Instagram">
-                          <svg className={`w-4 h-4 transition-transform ${showIgConfig ? 'rotate-90' : 'group-hover:rotate-45'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                      </button>
                   </div>
                   <input type="text" value={instagramUrl} onChange={e => setInstagramUrl(e.target.value)} placeholder="@minegocio o enlace" className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700 mb-2" />
                   
@@ -519,12 +531,8 @@ export default function RrssConfig() {
                           <div className="flex items-center justify-between mb-4 relative z-10">
                               <h4 className="text-[11px] font-black text-pink-900 uppercase tracking-widest bg-pink-100 px-3 py-1 rounded-full inline-block">Account Token (Técnico)</h4>
                               {igStatus && (
-                                <div className="flex items-center gap-2">
-                                    <span className="bg-emerald-50 text-emerald-600 text-[9px] uppercase tracking-[0.2em] font-black px-2 py-1 rounded-full border border-emerald-100 flex items-center gap-1"><span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>ON</span>
-                                    <button type="button" onClick={handleDisconnectIg} className="text-rose-500 text-[9px] font-black uppercase tracking-widest hover:bg-rose-50 px-2 py-1 rounded-lg transition-all">Borrar</button>
-                                </div>
+                                  <button type="button" onClick={handleDisconnectIg} className="text-rose-500 text-[10px] font-black uppercase tracking-widest hover:bg-rose-50 px-2 py-1 rounded-lg transition-all">Desconectar</button>
                               )}
-                              {!igStatus && <span className="bg-slate-100 text-slate-400 text-[9px] uppercase tracking-[0.2em] font-black px-2 py-1 rounded-full border border-slate-200">OFF</span>}
                           </div>
                           <div className="space-y-4 relative z-10">
                               <div>
@@ -556,11 +564,19 @@ export default function RrssConfig() {
                         <span className="w-5 h-5 bg-sky-100 text-sky-600 rounded flex items-center justify-center">
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
                         </span>
-                        LinkedIn Cuenta
+                        <div className="flex items-center gap-2">
+                           {liStatus ? (
+                               <span className="bg-emerald-50 text-emerald-600 text-[9px] uppercase tracking-[0.2em] font-black px-2 py-1 rounded-full border border-emerald-100 flex items-center gap-1">
+                                   <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span> ON
+                               </span>
+                           ) : (
+                               <span className="bg-slate-100 text-slate-400 text-[9px] uppercase tracking-[0.2em] font-black px-2 py-1 rounded-full border border-slate-200">OFF</span>
+                           )}
+                           <button type="button" onClick={() => setShowLiConfig(!showLiConfig)} className={`p-1.5 rounded-lg transition-colors ${showLiConfig ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-slate-100 text-slate-400'} group`} title="Configurar Autopublicación en LinkedIn">
+                               <svg className={`w-4 h-4 transition-transform ${showLiConfig ? 'rotate-90' : 'group-hover:rotate-45'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                           </button>
+                       </div>
                       </label>
-                      <button type="button" onClick={() => setShowLiConfig(!showLiConfig)} className={`p-1.5 rounded-lg transition-colors ${showLiConfig ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-slate-100 text-slate-400'} group`} title="Configurar Autopublicación en LinkedIn">
-                          <svg className={`w-4 h-4 transition-transform ${showLiConfig ? 'rotate-90' : 'group-hover:rotate-45'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                      </button>
                   </div>
                   <input type="text" value={linkedinUrl} onChange={e => setLinkedinUrl(e.target.value)} placeholder="minegocio o enlace" className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700 mb-2" />
                   
@@ -571,12 +587,8 @@ export default function RrssConfig() {
                           <div className="flex items-center justify-between mb-4 relative z-10">
                               <h4 className="text-[11px] font-black text-sky-900 uppercase tracking-widest bg-sky-100 px-3 py-1 rounded-full inline-block">App Developer (OAuth)</h4>
                               {liStatus && (
-                                <div className="flex items-center gap-2">
-                                    <span className="bg-emerald-50 text-emerald-600 text-[9px] uppercase tracking-[0.2em] font-black px-2 py-1 rounded-full border border-emerald-100 flex items-center gap-1"><span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>ON</span>
-                                    <button type="button" onClick={handleDisconnectLi} className="text-rose-500 text-[9px] font-black uppercase tracking-widest hover:bg-rose-50 px-2 py-1 rounded-lg transition-all">Borrar</button>
-                                </div>
+                                  <button type="button" onClick={handleDisconnectLi} className="text-rose-500 text-[10px] font-black uppercase tracking-widest hover:bg-rose-50 px-2 py-1 rounded-lg transition-all">Desconectar</button>
                               )}
-                              {!liStatus && <span className="bg-slate-100 text-slate-400 text-[9px] uppercase tracking-[0.2em] font-black px-2 py-1 rounded-full border border-slate-200">OFF</span>}
                           </div>
 
                           <div className="space-y-4 relative z-10">
