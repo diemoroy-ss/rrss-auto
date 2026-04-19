@@ -30,15 +30,24 @@ export async function POST(req: NextRequest) {
 
     const prompt = `Negocio: ${businessType || "General"}\nIdea Original: ${idea}\n\nDescripción Mejorada:`;
     
-    console.log("Improving idea with Gemini 1.5 Flash...");
+    console.log(`[AI] Improving idea for business: ${businessType || "General"} using ${model.model}`);
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const improvedIdea = response.text().trim();
 
-    console.log("Idea improved successfully.");
+    console.log("[AI] Idea improved successfully.");
     return NextResponse.json({ improvedIdea });
   } catch (error: any) {
-    console.error("Error improving idea with AI:", error);
-    return NextResponse.json({ error: error.message || "Failed to improve idea" }, { status: 500 });
+    console.error("[AI ERROR] Failed to improve idea with Gemini:", error);
+    
+    // Check for specific Gemini errors (e.g., model not found, auth)
+    const statusCode = error.status || 500;
+    const message = error.message || "Failed to improve idea";
+    
+    return NextResponse.json({ 
+      error: message,
+      details: error.response?.data || error.toString(),
+      model: "gemini-2.5-flash"
+    }, { status: statusCode });
   }
 }
