@@ -8,6 +8,9 @@ const nextConfig = {
     // También ignoramos ESLint para ganar velocidad en el VPS
     ignoreDuringBuilds: true,
   },
+  experimental: {
+    serverComponentsExternalPackages: ['@google-cloud/tasks']
+  },
   async headers() {
     return [
       {
