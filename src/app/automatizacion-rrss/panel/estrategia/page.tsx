@@ -268,7 +268,7 @@ export default function EstrategiaPage() {
             const fmt = post.format?.toLowerCase() || "";
             const postType = fmt.includes('reel') || fmt.includes('video') ? 'Reel' : (fmt.includes('historia') || fmt.includes('story') ? 'Story' : 'Post');
 
-            await addDoc(postsRef, {
+            const newPostRef = await addDoc(postsRef, {
                 userId: user.uid,
                 profileId: activeProfile?.id || 'default',
                 text: `${post.content}\n\n${post.cta}`,
@@ -280,6 +280,17 @@ export default function EstrategiaPage() {
                 networks: ['instagram', 'facebook'], // Default
                 generatedBy: 'ai_strategy'
             });
+
+            try {
+                const idToken = await auth.currentUser?.getIdToken();
+                await fetch('/api/tasks/schedule', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+                    body: JSON.stringify({ postId: newPostRef.id, scheduledFor: scheduledDate.toISOString() })
+                });
+            } catch (scheduleErr) {
+                console.error("Warning: Could not schedule GCP task", scheduleErr);
+            }
         }
         router.push("/automatizacion-rrss/panel");
     } catch(err) {

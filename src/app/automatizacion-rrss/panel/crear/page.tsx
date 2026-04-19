@@ -320,7 +320,26 @@ export default function RrssCreatePost() {
           postPayload.imageUrl = "";
       }
 
-      await addDoc(collection(db, "social_posts"), postPayload);
+      const newPostRef = await addDoc(collection(db, "social_posts"), postPayload);
+      
+      // Schedule the task via backend API (GCP Cloud Tasks)
+      try {
+          const idToken = await auth.currentUser?.getIdToken();
+          await fetch('/api/tasks/schedule', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${idToken}`
+              },
+              body: JSON.stringify({
+                  postId: newPostRef.id,
+                  scheduledFor: scheduledDate.toISOString()
+              })
+          });
+      } catch (scheduleErr) {
+          console.error("Warning: Could not schedule GCP task", scheduleErr);
+      }
+
       router.push("/automatizacion-rrss/panel");
 
     } catch (err) {
