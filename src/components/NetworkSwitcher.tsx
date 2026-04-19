@@ -81,8 +81,8 @@ export default function NetworkSwitcher() {
                         </button>
                     ))}
 
-                    {/* Botón de Agregar (Solo para Business y limitado a 10) */}
-                    {isBusiness && profiles.length < 10 && (
+                    {/* Botón de Agregar (Solo para Business y limitado por el plan) */}
+                    {isBusiness && profiles.length < (planConfig?.maxAccounts || 1) && (
                         <button 
                           onClick={() => setIsCreating(true)}
                           className="group flex flex-col items-center gap-6 transition-all hover:-translate-y-2 opacity-60 hover:opacity-100"

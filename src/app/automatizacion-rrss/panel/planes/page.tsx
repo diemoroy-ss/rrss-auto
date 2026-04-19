@@ -5,74 +5,9 @@ import { auth, db } from "../../../../lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 
-const PLANES = [
-  {
-    id: "free",
-    name: "Plan Gratis",
-    price: "0",
-    period: "/siempre",
-    features: [
-      "4 Posts automáticos al mes",
-      "Publicación a ciegas (100% Auto)",
-      "Imagen con marca de agua",
-      "Soporte por comunidad"
-    ],
-    button: "Seleccionar Gratis",
-    accent: false,
-    limited: true
-  },
-  {
-    id: "pro",
-    name: "Santisoft Pro",
-    price: "19.990",
-    period: "/mes",
-    features: [
-      "20 Posts automáticos al mes",
-      "Publicación a ciegas (100% Auto)",
-      "Sin marca de agua",
-      "Soporte vía WhatsApp",
-      "Analítica básica"
-    ],
-    button: "Suscribirme Pro",
-    accent: true,
-    limited: false
-  },
-  {
-    id: "elite",
-    name: "Santisoft Elite",
-    price: "49.990",
-    period: "/mes",
-    features: [
-      "60 Posts automáticos al mes",
-      "Vista previa y Edición manual",
-      "Sin marca de agua",
-      "Soporte 24/7 dedicado",
-      "1 Cuenta Principal Pyme"
-    ],
-    button: "Ir a Elite",
-    accent: false,
-    limited: false
-  },
-  {
-    id: "business",
-    name: "Agency Business",
-    price: "99.990",
-    period: "/mes",
-    features: [
-      "Posts Ilimitados",
-      "Vista previa y Edición manual",
-      "Hasta 10 Marcas/Sucursales",
-      "Aislamiento por Perfil",
-      "Soporte Prioritario"
-    ],
-    button: "Obtener Business",
-    accent: false,
-    limited: false
-  }
-];
-
 export default function PlanesPage() {
   const [userPlan, setUserPlan] = useState("free");
+  const [planes, setPlanes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<{type: 'success' | 'error' | 'info', text: string} | null>(null);
 
@@ -85,12 +20,38 @@ export default function PlanesPage() {
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
+      // 1. Fetch User Plan
       if (user) {
         const d = await getDoc(doc(db, "users", user.uid));
         if (d.exists()) {
           setUserPlan(d.data().plan || "free");
         }
       }
+
+      // 2. Fetch Plans Config
+      try {
+        const plansDoc = await getDoc(doc(db, "system_config", "plans"));
+        if (plansDoc.exists()) {
+          const data = plansDoc.data();
+          const order = ['free', 'pro', 'elite', 'business'];
+          const formattedPlanes = order.map(id => {
+            const plan = data[id];
+            if (!plan) return null;
+            return {
+              ...plan,
+              id,
+              priceFormatted: plan.price.toLocaleString('es-CL'),
+              period: id === 'free' ? '/siempre' : '/mes',
+              button: id === 'free' ? 'Seleccionar Gratis' : (id === 'pro' ? 'Suscribirme Pro' : (id === 'elite' ? 'Ir a Elite' : 'Obtener Business')),
+              accent: id === 'pro'
+            };
+          }).filter(Boolean);
+          setPlanes(formattedPlanes);
+        }
+      } catch (e) {
+        console.error("Error fetching plans:", e);
+      }
+      
       setLoading(false);
     });
     return () => unsub();
@@ -155,7 +116,7 @@ export default function PlanesPage() {
       )}
 
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {PLANES.map((plan) => (
+        {planes.map((plan) => (
           <div 
             key={plan.id} 
             className={`premium-card relative flex flex-col group ${
@@ -173,13 +134,13 @@ export default function PlanesPage() {
             <div className="mb-10">
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-3">{plan.name}</h3>
               <div className="flex items-baseline gap-1">
-                <span className="text-5xl font-black text-slate-900 tracking-tighter">${plan.price}</span>
+                <span className="text-5xl font-black text-slate-900 tracking-tighter">${plan.priceFormatted}</span>
                 <span className="text-slate-400 font-bold text-sm">{plan.period}</span>
               </div>
             </div>
 
             <ul className="space-y-5 mb-12 flex-1">
-              {plan.features.map((f, i) => (
+              {plan.features.map((f: string, i: number) => (
                 <li key={i} className="flex items-start gap-3 text-sm text-slate-600 font-semibold group-hover:text-slate-900 transition-colors">
                   <span className="w-5 h-5 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center text-[10px] shrink-0">✓</span>
                   {f}

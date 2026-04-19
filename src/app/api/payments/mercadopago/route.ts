@@ -20,25 +20,29 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "Configuración de pasarela incompleta" }, { status: 500 });
     }
 
+    // 2. Fetch Price and Title from Firestore
+    const { adminDb } = await import("../../../../lib/firebase-admin");
+    if (!adminDb) {
+        return NextResponse.json({ error: "Database not available" }, { status: 500 });
+    }
+
+    const plansSnap = await adminDb.collection("system_config").doc("plans").get();
+    if (!plansSnap.exists) {
+        return NextResponse.json({ error: "Planes no configurados" }, { status: 500 });
+    }
+
+    const plansData = plansSnap.data();
+    const planConfig = plansData ? plansData[planId] : null;
+
+    if (!planConfig || planId === 'free') {
+        return NextResponse.json({ error: "Plan inválido para suscripción pago" }, { status: 400 });
+    }
+
+    const title = `Suscripción ${planConfig.name} - Santisoft`;
+    const price = planConfig.price;
+
     // Configurar SDK
     const client = new MercadoPagoConfig({ accessToken, options: { timeout: 5000 } });
-
-    // Configurar Precio y Título
-    let title = "";
-    let price = 0;
-
-    if (planId === "pro") {
-        title = "Suscripción PRO - Santisoft";
-        price = 19990; // CLP (Corregido según planes/page.tsx)
-    } else if (planId === "elite") {
-        title = "Suscripción ELITE - Santisoft";
-        price = 49990; // CLP (Corregido según planes/page.tsx)
-    } else if (planId === "business") {
-        title = "Suscripción BUSINESS - Santisoft";
-        price = 99990; // CLP
-    } else {
-        return NextResponse.json({ error: "Plan inválido para suscripción" }, { status: 400 });
-    }
 
     // Construir URLs de Retorno
     const origin = req.headers.get("origin") || "https://rrss.santisoft.cl";

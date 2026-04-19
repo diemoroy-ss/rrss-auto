@@ -116,6 +116,8 @@ export default function RrssDashboard() {
   const [selectedDateFilter, setSelectedDateFilter] = useState<Date | null>(null);
   const [publishingPostId, setPublishingPostId] = useState<string | null>(null);
   const [userPlan, setUserPlan] = useState<string>("free");
+  const [planLimit, setPlanLimit] = useState(4);
+  const [videoLimit, setVideoLimit] = useState(0);
   const [quotaUsed, setQuotaUsed] = useState(0);
   const [isConfirmingAll, setIsConfirmingAll] = useState(false);
   const [isCancellingAll, setIsCancellingAll] = useState(false);
@@ -154,10 +156,18 @@ export default function RrssDashboard() {
       setUser(u);
       if (u) {
           const d = await getDoc(doc(db, "users", u.uid));
-          if (d.exists()) setUserPlan(d.data().plan || "free");
+          const plan = d.data()?.plan || "free";
+          setUserPlan(plan);
           
-          const used = await getQuotaUsage(u.uid, activeProfile?.id || 'default');
+          const [used, pLimit, vLimit] = await Promise.all([
+             getQuotaUsage(u.uid, activeProfile?.id || 'default'),
+             getPlanLimit(plan),
+             getVideoPlanLimit(plan)
+          ]);
+
           setQuotaUsed(used);
+          setPlanLimit(pLimit);
+          setVideoLimit(vLimit);
       }
     });
     return () => unsub();
@@ -262,8 +272,7 @@ export default function RrssDashboard() {
   };
 
   const handleConfirm = async (post: SocialPost) => {
-    const limit = getPlanLimit(userPlan);
-    if (quotaUsed + (post.networks?.length || 1) > limit) {
+    if (quotaUsed + (post.networks?.length || 1) > planLimit) {
         setUpgradeModalOpen(true);
         return;
     }
@@ -361,10 +370,9 @@ export default function RrssDashboard() {
       const pendingPosts = posts.filter(p => p.status === 'pending');
       if (pendingPosts.length === 0) return;
       
-      const limit = getPlanLimit(userPlan);
       const totalPendingNetworks = pendingPosts.reduce((acc, p) => acc + (p.networks?.length || 1), 0);
       
-      if (quotaUsed + totalPendingNetworks > limit) {
+      if (quotaUsed + totalPendingNetworks > planLimit) {
           setUpgradeModalOpen(true);
           return;
       }
@@ -391,10 +399,9 @@ export default function RrssDashboard() {
       const selectedPosts = posts.filter(p => selectedPostIds.includes(p.id) && p.status === 'pending');
       if (selectedPosts.length === 0) return;
 
-      const limit = getPlanLimit(userPlan);
       const totalNetworks = selectedPosts.reduce((acc, p) => acc + (p.networks?.length || 1), 0);
 
-      if (quotaUsed + totalNetworks > limit) {
+      if (quotaUsed + totalNetworks > planLimit) {
           setUpgradeModalOpen(true);
           return;
       }
@@ -680,12 +687,12 @@ export default function RrssDashboard() {
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="bg-white border-2 border-slate-100 rounded-xl px-4 py-3 flex items-center justify-between gap-4 shadow-sm w-full sm:w-auto">
              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Cuota Mensual</span>
-             <span className={`font-black text-sm ${quotaUsed >= getPlanLimit(userPlan) ? 'text-rose-600' : 'text-indigo-600'}`}>{quotaUsed} / {getPlanLimit(userPlan)}</span>
+             <span className={`font-black text-sm ${quotaUsed >= planLimit ? 'text-rose-600' : 'text-indigo-600'}`}>{quotaUsed} / {planLimit}</span>
           </div>
           
           <div className="bg-white border-2 border-slate-100 rounded-xl px-4 py-3 flex items-center justify-between gap-4 shadow-sm w-full sm:w-auto">
              <span className="text-[10px] font-black uppercase tracking-widest text-pink-400">Reels IA</span>
-             <span className={`font-black text-sm ${videosUsed >= getVideoPlanLimit(userPlan) ? 'text-rose-600' : 'text-pink-600'}`}>{videosUsed} / {getVideoPlanLimit(userPlan)}</span>
+             <span className={`font-black text-sm ${videosUsed >= videoLimit ? 'text-rose-600' : 'text-pink-600'}`}>{videosUsed} / {videoLimit}</span>
           </div>
           
           <Link id="tour-btn-new-post" href="/automatizacion-rrss/panel/crear" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl transition-colors shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2 w-full sm:w-auto">

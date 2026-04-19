@@ -106,6 +106,8 @@ export async function POST(req: NextRequest) {
     // ALWAYS generate a better copy using Gemini
     try {
         const apiKey = process.env.GOOGLE_GENAI_API_KEY;
+        const { email, phone } = body;
+
         if (apiKey && idea) {
             console.log("[PROXY] Generating optimized copy with Gemini...");
             const genAI = new GoogleGenerativeAI(apiKey);
@@ -118,14 +120,16 @@ Reglas:
 1. NUNCA repitas la idea original tal cual. Mejórala significativamente.
 2. Usa un tono adecuado para el rubro especificado.
 3. Incluye emojis relevantes (sin exagerar).
-4. Termina con 3-5 hashtags estratégicos.
-5. NO incluyas introducciones ni explicaciones, solo el texto del post.` 
+4. Termina con un CALL TO ACTION potente. 
+   ${email || phone ? `Usa estos datos de contacto en el CTA: ${email ? `Correo: ${email}` : ''} ${phone ? `Teléfono/WhatsApp: ${phone}` : ''}` : 'Si no hay datos de contacto, usa un CTA genérico como "Contáctanos por DM".'}
+5. Termina con 3-5 hashtags estratégicos.
+6. NO incluyas introducciones ni explicaciones, solo el texto del post.` 
             });
 
             const prompt = `Rubro del negocio: ${businessType || 'General'}\nIdea base del post: ${idea}\n\nEscribe el copy optimizado:`;
             const result = await model.generateContent(prompt);
-            const response = await result.response;
-            const enhancedCopy = response.text().trim();
+            const geminiResponse = await result.response;
+            const enhancedCopy = geminiResponse.text().trim();
             
             if (enhancedCopy) {
                 suggestedCopy = enhancedCopy;

@@ -79,7 +79,7 @@ export async function POST(req: Request) {
 
         // --- QUOTA CHECK ---
         const usage = await getQuotaUsage(uid, profileId || 'default');
-        const limit = getPlanLimit(userData.plan || 'free');
+        const limit = await getPlanLimit(userData.plan || 'free');
         const postNetworkCount = postData.networks?.length || 1;
         
         if (usage + postNetworkCount > limit) {

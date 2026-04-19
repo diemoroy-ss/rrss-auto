@@ -55,6 +55,7 @@ export default function RrssCreatePost() {
   const [userPlan, setUserPlan] = useState("free");
   const [postsThisMonth, setPostsThisMonth] = useState(0);
   const [quotaExceeded, setQuotaExceeded] = useState(false);
+  const [videoLimit, setVideoLimit] = useState(0);
   
   const { activeProfile } = useProfile();
 
@@ -85,10 +86,13 @@ export default function RrssCreatePost() {
             const used = await getQuotaUsage(u.uid, activeProfile?.id || 'default');
             setPostsThisMonth(used);
             
-              const planLimit = getPlanLimit(plan);
+            const planLimit = await getPlanLimit(plan);
             if (used >= planLimit) {
                 setQuotaExceeded(true);
             }
+
+            const vLimit = await getVideoPlanLimit(plan);
+            setVideoLimit(vLimit);
 
             const isAdminRole = data.role === 'admin' || u.email === 'diemoroy@gmail.com';
             setIsAdmin(isAdminRole);
@@ -164,8 +168,9 @@ export default function RrssCreatePost() {
           businessType,
           type: postType,
           carouselCount: postType === 'Carrusel' ? carouselCount : 1,
-          userId: user?.uid,
-          profileId: activeProfile?.id || 'default'
+          profileId: activeProfile?.id || 'default',
+          email: activeProfile?.email || '',
+          phone: activeProfile?.phone || ''
         })
       });
       if (!response.ok) {
@@ -389,7 +394,7 @@ export default function RrssCreatePost() {
               loading={loading}
               error={error}
               isAdmin={isAdmin}
-              allowVideo={getVideoPlanLimit(userPlan) > 0 || isAdmin}
+              allowVideo={videoLimit > 0 || isAdmin}
               creationMode={creationMode}
               setCreationMode={setCreationMode}
               manualFiles={manualFiles}

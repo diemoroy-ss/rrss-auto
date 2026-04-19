@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { auth } from "../../../../lib/firebase";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { onAuthStateChanged } from "firebase/auth";
 import StatusModal from "../../../../components/StatusModal";
 
@@ -148,11 +149,16 @@ export default function AdminUsersPage() {
            <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-tight">Admin <span className="text-indigo-600">Usuarios.</span></h1>
            <p className="text-slate-500 mt-4 text-lg font-medium leading-relaxed italic">Gestión inteligente de acceso y métricas de consumo.</p>
         </div>
-        <div className="bg-white px-6 py-4 rounded-[24px] border-2 border-slate-100 shadow-sm flex items-center gap-4">
-            <span className="text-2xl">👥</span>
-            <div>
-                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Usuarios</div>
-                <div className="text-xl font-black text-slate-900">{users.length}</div>
+        <div className="flex flex-col sm:flex-row gap-4 items-center">
+            <Link href="/automatizacion-rrss/panel/admin/planes" className="w-full sm:w-auto bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-4 px-8 rounded-[24px] border border-slate-200 transition-all flex items-center gap-3">
+                <span>⚙️</span> Configurar Planes
+            </Link>
+            <div className="bg-white px-6 py-4 rounded-[24px] border-2 border-slate-100 shadow-sm flex items-center gap-4">
+                <span className="text-2xl">👥</span>
+                <div>
+                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Usuarios</div>
+                    <div className="text-xl font-black text-slate-900">{users.length}</div>
+                </div>
             </div>
         </div>
       </div>

@@ -75,7 +75,7 @@ export async function GET(req: Request) {
                  userUsageCache[cacheKey] = await getQuotaUsage(uid, profileId || 'default');
             }
             
-            const limit = getPlanLimit(userData.plan || 'free');
+            const limit = await getPlanLimit(userData.plan || 'free');
             const postNetworkCount = postData.networks?.length || 1;
             
             if (userUsageCache[cacheKey] + postNetworkCount > limit) {

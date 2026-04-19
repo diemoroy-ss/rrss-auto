@@ -73,6 +73,8 @@ export default function RrssConfig() {
   const [tiktokUrl, setTiktokUrl] = useState("");
   const [twitterUrl, setTwitterUrl] = useState("");
   const [linkedinUrl, setLinkedinUrl] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   
   const [logoUrl, setLogoUrl] = useState("");
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
@@ -106,6 +108,8 @@ export default function RrssConfig() {
       setTiktokUrl(activeProfile.tiktokUrl || "");
       setTwitterUrl(activeProfile.twitterUrl || "");
       setLinkedinUrl(activeProfile.linkedinUrl || "");
+      setEmail(activeProfile.email || "");
+      setPhone(activeProfile.phone || "");
       setLogoUrl(activeProfile.logoUrl || "");
     } else {
       // Clear states if no active profile
@@ -116,6 +120,8 @@ export default function RrssConfig() {
       setTiktokUrl("");
       setTwitterUrl("");
       setLinkedinUrl("");
+      setEmail("");
+      setPhone("");
     }
   }, [activeProfile]);
 
@@ -206,7 +212,9 @@ export default function RrssConfig() {
                 instagramUrl,
                 tiktokUrl,
                 twitterUrl,
-                linkedinUrl
+                linkedinUrl,
+                email,
+                phone
              } : p
           );
           await updateDoc(userDocRef, { profiles: updatedProfiles });
@@ -424,11 +432,24 @@ export default function RrssConfig() {
               </div>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-2 gap-6 mb-8">
               <div>
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">🌐 Sitio Web</label>
                   <input type="text" value={website} onChange={e => setWebsite(e.target.value)} placeholder="mi-negocio.com o enlace" className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700" />
               </div>
+              <div className="grid grid-cols-2 gap-4">
+                  <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">📧 Correo Contacto</label>
+                      <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="hola@marca.cl" className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700" />
+                  </div>
+                  <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">📞 Teléfono (WhatsApp)</label>
+                      <input type="text" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+56 9 ..." className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700" />
+                  </div>
+              </div>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
               <div>
                   <div className="flex items-center justify-between mb-3">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">

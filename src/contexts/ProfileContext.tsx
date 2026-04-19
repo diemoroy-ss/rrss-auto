@@ -42,6 +42,8 @@ export type BusinessProfile = {
   twitterUrl?: string;
   linkedinUrl?: string;
   logoUrl?: string;
+  email?: string;
+  phone?: string;
 };
 
 type ProfileContextType = {
@@ -51,6 +53,7 @@ type ProfileContextType = {
   addProfile: (name: string, icon: string) => Promise<void>;
   loadProfiles: () => Promise<void>;
   isBusiness: boolean;
+  planConfig: any;
   loading: boolean;
 };
 
@@ -61,6 +64,7 @@ const ProfileContext = createContext<ProfileContextType>({
   addProfile: async () => {},
   loadProfiles: async () => {},
   isBusiness: false,
+  planConfig: null,
   loading: true
 });
 
@@ -68,18 +72,27 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
   const [activeProfileState, setActiveProfileState] = useState<BusinessProfile | null>(null);
   const [profiles, setProfiles] = useState<BusinessProfile[]>([]);
   const [isBusiness, setIsBusiness] = useState(false);
+  const [planConfig, setPlanConfig] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   const loadProfiles = async () => {
      if (!auth.currentUser) return;
      try {
+       // Fetch User Data
        const userDocRef = doc(db, "users", auth.currentUser.uid);
        const userDoc = await getDoc(userDocRef);
+       
+       // Fetch Plans Configuration
+       const plansDoc = await getDoc(doc(db, "system_config", "plans"));
+       const allPlans = plansDoc.exists() ? plansDoc.data() : {};
        
        if (userDoc.exists()) {
           const data = userDoc.data();
           const plan = data.plan || "free";
-          setIsBusiness(plan === "business");
+          
+          const currentPlanInfo = allPlans[plan] || allPlans['free'] || {};
+          setPlanConfig(currentPlanInfo);
+          setIsBusiness(!!currentPlanInfo.multiAccount);
 
            let userProfiles: BusinessProfile[] = data.profiles || [];
            let needsUpdate = false;
@@ -186,7 +199,16 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <ProfileContext.Provider value={{ activeProfile: activeProfileState, profiles, setActiveProfile, addProfile, loadProfiles, isBusiness, loading }}>
+    <ProfileContext.Provider value={{ 
+      activeProfile: activeProfileState, 
+      profiles, 
+      setActiveProfile, 
+      addProfile, 
+      loadProfiles, 
+      isBusiness, 
+      planConfig,
+      loading 
+    }}>
       {children}
     </ProfileContext.Provider>
   );
