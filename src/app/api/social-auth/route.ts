@@ -79,35 +79,42 @@ export async function POST(req: Request) {
                 
                 if (setAccounts.facebook) {
                     const { token, pageId, adAccountId } = setAccounts.facebook;
+                    
                     if (token) {
                         const { encryptedData, iv, authTag } = encrypt(token);
                         newP.facebookToken_enc = encryptedData;
                         newP.iv_fb = iv;
                         newP.tag_fb = authTag;
-                        newP.facebookPageId = pageId || '';
-                        newP.metaAdAccountId = adAccountId || '';
-                    } else if (pageId === "") { // Disconnect
+                    }
+                    
+                    if (pageId !== undefined) newP.facebookPageId = pageId;
+                    if (adAccountId !== undefined) newP.metaAdAccountId = adAccountId;
+
+                    // Specific Disconnect Logic
+                    if (pageId === "") {
                         newP.facebookToken_enc = "";
                         newP.iv_fb = "";
                         newP.tag_fb = "";
-                        newP.facebookPageId = "";
-                        newP.metaAdAccountId = "";
                     }
                 }
 
                 if (setAccounts.instagram) {
                     const { token, accountId } = setAccounts.instagram;
+                    
                     if (token) {
                         const { encryptedData, iv, authTag } = encrypt(token);
                         newP.instagramToken_enc = encryptedData;
                         newP.iv_ig = iv;
                         newP.tag_ig = authTag;
-                        newP.instagramAccountId = accountId || '';
-                    } else if (accountId === "") { // Disconnect
+                    }
+
+                    if (accountId !== undefined) newP.instagramAccountId = accountId;
+
+                    // Disconnect
+                    if (accountId === "") {
                         newP.instagramToken_enc = "";
                         newP.iv_ig = "";
                         newP.tag_ig = "";
-                        newP.instagramAccountId = "";
                     }
                 }
 
