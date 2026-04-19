@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { auth } from "../../../../../../lib/firebase";
+import { auth } from "../../../../../lib/firebase";
 
 interface N8NWorkflow {
     id: string;
