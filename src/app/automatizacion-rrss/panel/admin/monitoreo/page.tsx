@@ -33,15 +33,24 @@ export default function AdminMonitoringPage() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [clientFilter, setClientFilter] = useState("");
 
+  const [hasSearched, setHasSearched] = useState(false);
+
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (currentUser) => {
       if (!currentUser) {
          router.push("/automatizacion-rrss/panel");
          return;
       }
+      setLoading(false);
+    });
+    return () => unsub();
+  }, [router]);
 
+  const handleSearch = async () => {
+      setLoading(true);
+      setHasSearched(true);
       try {
-        const token = await currentUser.getIdToken();
+        const token = await auth.currentUser?.getIdToken();
         const res = await fetch("/api/admin/posts", {
             headers: { Authorization: `Bearer ${token}` }
         });
@@ -60,10 +69,7 @@ export default function AdminMonitoringPage() {
       } finally {
          setLoading(false);
       }
-    });
-
-    return () => unsub();
-  }, [router]);
+  };
 
   // Derived unique clients for select box
   const uniqueClients = useMemo(() => {
@@ -150,32 +156,34 @@ export default function AdminMonitoringPage() {
                 Monitoreo Global de Posts
             </h1>
             <p className="text-slate-500 font-medium max-w-2xl leading-relaxed">
-                Supervisa el estado y ejecución de todas las publicaciones agendadas por los clientes de la plataforma. (Mostrando últimos {posts.length}).
+                Supervisa el estado y ejecución de todas las publicaciones agendadas por los clientes de la plataforma. Para proteger la base de datos, presiona Buscar para extraer los últimos 100 posts.
             </p>
       </div>
 
       {/* Control Bar (Filters) */}
-      <div className="bg-white p-4 md:p-6 rounded-[32px] border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
-            <div className="relative flex-1 w-full max-w-sm">
+      <div className="bg-white p-4 md:p-6 rounded-[32px] border border-slate-200 shadow-sm flex flex-col lg:flex-row gap-4 items-center justify-between">
+            <div className="relative w-full lg:max-w-md">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
                 <input 
                     type="text" 
-                    placeholder="Buscar por cliente, correo o extracto de texto..." 
+                    placeholder="Buscar por correo o extracto de texto..." 
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-[20px] focus:outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-400 font-medium text-sm transition-all"
                 />
             </div>
 
-            <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto hide-scrollbar">
-                <select 
-                    value={clientFilter}
-                    onChange={(e) => setClientFilter(e.target.value)}
-                    className="bg-slate-50 border border-slate-200 text-slate-700 text-sm font-bold rounded-[16px] px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-200 min-w-[140px] cursor-pointer"
-                >
-                    <option value="">Todos los Clientes</option>
-                    {uniqueClients.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
+            <div className="flex items-center gap-3 w-full lg:w-auto overflow-x-auto hide-scrollbar">
+                {uniqueClients.length > 0 && (
+                    <select 
+                        value={clientFilter}
+                        onChange={(e) => setClientFilter(e.target.value)}
+                        className="bg-slate-50 border border-slate-200 text-slate-700 text-sm font-bold rounded-[16px] px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-200 min-w-[140px] cursor-pointer"
+                    >
+                        <option value="">Todos los Clientes</option>
+                        {uniqueClients.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                )}
 
                 <select 
                     value={statusFilter}
@@ -188,6 +196,13 @@ export default function AdminMonitoringPage() {
                     <option value="PROCESSING">En Proceso</option>
                     <option value="ERROR">Con Errores</option>
                 </select>
+
+                <button 
+                  onClick={handleSearch}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white whitespace-nowrap text-sm font-black tracking-wide px-6 py-3 rounded-[16px] transition-all shadow-lg shadow-indigo-600/20"
+                >
+                  Extraer Datos
+                </button>
             </div>
       </div>
 
@@ -205,7 +220,9 @@ export default function AdminMonitoringPage() {
                       </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                      {filteredPosts.length === 0 ? (
+                      {!hasSearched ? (
+                          <tr><td colSpan={5} className="py-24 text-center text-slate-500 font-medium">Presiona <b>Extraer Datos</b> para cargar información desde Firebase.</td></tr>
+                      ) : filteredPosts.length === 0 ? (
                           <tr><td colSpan={5} className="py-12 text-center text-slate-400 font-medium text-sm">No hay publicaciones que coincidan con tus filtros.</td></tr>
                       ) : (
                         filteredPosts.map(post => {

@@ -40,10 +40,10 @@ export async function GET(req: Request) {
             };
         });
 
-        // 2. We fetch the latest 300 posts descending
+        // 2. We fetch the latest 100 posts descending
         const postsSnap = await adminDb.collection('social_posts')
             .orderBy('scheduledFor', 'desc')
-            .limit(300)
+            .limit(100)
             .get();
 
         const posts: any[] = [];
