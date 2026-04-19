@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useProfile } from "../contexts/ProfileContext";
 
 export default function NetworkSwitcher() {
-  const { activeProfile, profiles, setActiveProfile, addProfile, isBusiness, loading } = useProfile();
+  const { activeProfile, profiles, setActiveProfile, addProfile, isBusiness, loading, planConfig } = useProfile();
   const [isOpen, setIsOpen] = useState(false);
   
   // Creation state
