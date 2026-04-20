@@ -101,20 +101,6 @@ export async function POST(req: Request) {
                     prompts: ['A delicious pizza on a wooden table']
                 };
                 break;
-            case 'banner-ia':
-                url = 'https://n8n.santisoft.cl/webhook-test/banner-ia';
-                payload = {
-                    ticketId: 'TEST_TICKET_' + Date.now(),
-                    userId: decodedToken.uid,
-                    customerName: 'Cliente de Prueba'
-                };
-                break;
-            case 'banner-ia-status':
-                url = 'https://n8n.santisoft.cl/webhook-test/banner-ia-status';
-                method = 'GET';
-                url += '?ticketId=TEST_TICKET_123';
-                payload = null;
-                break;
             case 'auto-rrss-post':
                 url = 'https://n8n.santisoft.cl/webhook-test/auto-rrss-post';
                 headers['X-Santisoft-Secret'] = CRON_SECRET;

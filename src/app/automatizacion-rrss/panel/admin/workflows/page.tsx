@@ -116,34 +116,6 @@ const WORKFLOWS: N8NWorkflow[] = [
         nodeFlow: ['Webhook POST', 'AI Image Gen', 'Respond to Webhook']
     },
     {
-        id: 'banner-ia',
-        name: 'Banner IA Generator (Background)',
-        description: 'Inicia el flujo de generación de banners para un nuevo cliente.',
-        url: 'https://n8n.santisoft.cl/webhook-test/banner-ia',
-        method: 'POST',
-        authStrategy: 'Ninguna',
-        variablesSent: {
-            ticketId: 'String',
-            userId: 'String',
-            customerName: 'String'
-        },
-        expectedReturn: 'HTTP 200 OK',
-        nodeFlow: ['Webhook POST', 'Split Loop', 'DALL-E 3', 'Firebase Update']
-    },
-    {
-        id: 'banner-ia-status',
-        name: 'Banner IA Status Check',
-        description: 'Consulta el estado de generación de un ticket de banner.',
-        url: 'https://n8n.santisoft.cl/webhook-test/banner-ia-status',
-        method: 'GET',
-        authStrategy: 'Ninguna',
-        variablesSent: {
-            ticketId: 'Query Param'
-        },
-        expectedReturn: 'JSON { status: "completed", imageUrl: "..." }',
-        nodeFlow: ['Webhook GET', 'Firebase Get', 'Respond to Webhook']
-    },
-    {
         id: 'auto-rrss-post',
         name: 'Publicar Post Automatizado',
         description: 'Flujo que publica contenido real en Facebook/Instagram (GCP Tasks).',
