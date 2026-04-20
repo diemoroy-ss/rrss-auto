@@ -29,7 +29,7 @@ Necesitas generar exactamente un JSON con 3 campos:
 
 Retorna SOLO un JSON válido, sin delimitadores de código markdown como \`\`\`json.`;
 
-    const model = getVertexModel("gemini-2.5-flash", systemInstruction);
+    const model = await getVertexModel("gemini-2.5-flash", systemInstruction);
     
     // Configure response as JSON
     model.generationConfig = {

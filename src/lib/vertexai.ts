@@ -1,47 +1,57 @@
-import { VertexAI, GoogleAuthOptions } from '@google-cloud/vertexai';
+// We use dynamic imports to prevent the top-level load of @google-cloud/vertexai
+// which can cause startup crashes if the environment is not perfectly configured.
 
 const project = process.env.GCP_PROJECT_ID || 'veo-videos-ultra';
 const location = process.env.GCP_TASKS_LOCATION || 'us-central1';
 
-// Initialize VertexAI client lazily to prevent crash if env vars are missing
-let vertexAIInstance: VertexAI | null = null;
+let vertexAIInstance: any = null;
 
-export function getVertexAI() {
+/**
+ * Lazily and dynamically initializes the Vertex AI client.
+ */
+export async function getVertexAI() {
     if (vertexAIInstance) return vertexAIInstance;
 
     const clientEmail = process.env.GCP_CLIENT_EMAIL;
-    const privateKey = process.env.GCP_PRIVATE_KEY 
-        ? process.env.GCP_PRIVATE_KEY.replace(/\\n/g, '\n')
-        : undefined;
+    const privateKeyRaw = process.env.GCP_PRIVATE_KEY;
 
-    if (!clientEmail || !privateKey) {
-        console.warn("Vertex AI credentials missing. AI features will be unavailable.");
+    if (!clientEmail || !privateKeyRaw) {
+        console.warn("Vertex AI credentials missing (ENV). AI features will be unavailable.");
         return null;
     }
 
-    vertexAIInstance = new VertexAI({
-        project: project,
-        location: location,
-        googleAuthOptions: {
-            credentials: {
-                client_email: clientEmail,
-                private_key: privateKey,
-            },
-            projectId: project,
-        }
-    });
+    const privateKey = privateKeyRaw.replace(/\\n/g, '\n');
 
-    return vertexAIInstance;
+    try {
+        // Dynamic import to avoid top-level crash
+        const { VertexAI } = await import('@google-cloud/vertexai');
+
+        vertexAIInstance = new VertexAI({
+            project: project,
+            location: location,
+            googleAuthOptions: {
+                credentials: {
+                    client_email: clientEmail,
+                    private_key: privateKey,
+                },
+                projectId: project,
+            }
+        });
+
+        return vertexAIInstance;
+    } catch (error) {
+        console.error("Failed to load @google-cloud/vertexai dynamically:", error);
+        return null;
+    }
 }
 
 /**
- * Returns a configured model instance from Vertex AI.
- * We use 2.5-flash as the default balanced model for 2026.
+ * Returns a configured model instance from Vertex AI (Async).
  */
-export function getVertexModel(modelName = 'gemini-2.5-flash', systemInstruction?: string) {
-    const client = getVertexAI();
+export async function getVertexModel(modelName = 'gemini-2.5-flash', systemInstruction?: string) {
+    const client = await getVertexAI();
     if (!client) {
-        throw new Error("Vertex AI is not configured. Please check environment variables.");
+        throw new Error("Vertex AI is not configured or failed to load.");
     }
 
     return client.getGenerativeModel({

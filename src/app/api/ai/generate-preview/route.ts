@@ -30,7 +30,7 @@ INSTRUCCIONES CLAVE:
 3. Asegura coherencia de Estilo Visual entre las imágenes.
 4. NADA de comillas inversas markdown, solo el arreglo puro.`;
 
-                const model = getVertexModel("gemini-2.5-flash", systemInstruction);
+                const model = await getVertexModel("gemini-2.5-flash", systemInstruction);
                 const result = await model.generateContent(`Genera las ${carouselCount || 3} descripciones visuales para esta idea de post: ${idea}`);
                 const response = await result.response;
                 const text = response.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
@@ -53,7 +53,7 @@ INSTRUCCIONES CLAVE:
 3. Asegura que la escena sea visualmente impactante, orientada a formato vertical (9:16).
 4. El texto debe ser fluido y muy enfocado en la iluminación, textura y estilo cinemático.`;
 
-                const model = getVertexModel("gemini-2.5-flash", systemInstruction);
+                const model = await getVertexModel("gemini-2.5-flash", systemInstruction);
                 const result = await model.generateContent(`Genera el prompt de video para esta idea: ${idea}`);
                 const response = await result.response;
                 const text = response.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
@@ -114,7 +114,7 @@ Reglas:
 5. Termina con 3-5 hashtags estratégicos.
 6. NO incluyas introducciones ni explicaciones, solo el texto del post.`;
 
-            const model = getVertexModel("gemini-2.5-flash", systemInstruction);
+            const model = await getVertexModel("gemini-2.5-flash", systemInstruction);
             const prompt = `Rubro del negocio: ${businessType || 'General'}\nIdea base del post: ${idea}\n\nEscribe el copy optimizado:`;
             
             const result = await model.generateContent(prompt);

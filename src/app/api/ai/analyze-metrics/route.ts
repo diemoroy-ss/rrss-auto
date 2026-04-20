@@ -41,7 +41,7 @@ ESTRUCCURA SUGERIDA:
 <h3>Recomendación para la próxima Estrategia</h3>
 <p>Dile qué objetivo generar la próxima vez y un pequeño tip táctico.</p>`;
 
-    const model = getVertexModel("gemini-2.5-flash", systemInstruction);
+    const model = await getVertexModel("gemini-2.5-flash", systemInstruction);
 
     const prompt = `Analiza el el siguiente reporte de las últimas ${posts.length} publicaciones de la marca "${profileName}".
 Datos de rendimiento:

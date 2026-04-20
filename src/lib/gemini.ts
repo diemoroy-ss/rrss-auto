@@ -18,7 +18,7 @@ export type ChatMessageItem = {
 
 export async function generateChatbotResponse(history: ChatMessageItem[], currentMessage: string, userName: string) {
   try {
-    const model = getVertexModel("gemini-2.5-flash", SYSTEM_PROMPT);
+    const model = await getVertexModel("gemini-2.5-flash", SYSTEM_PROMPT);
 
     // Formatear el historial para que Vertex AI lo procese ('user' y 'model')
     const mappedHistory = history.map(msg => ({

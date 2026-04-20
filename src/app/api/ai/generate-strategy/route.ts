@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
         3. Cada objeto debe tener: "titulo", "descripcion" y "ejemplo_idea".
         4. No incluyas explicaciones fuera del JSON.`;
 
-        const model = getVertexModel("gemini-2.5-flash", systemInstruction);
+        const model = await getVertexModel("gemini-2.5-flash", systemInstruction);
 
         // Configure response as JSON
         model.generationConfig = {

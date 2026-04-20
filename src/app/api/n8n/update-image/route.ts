@@ -55,7 +55,7 @@ export async function POST(req: Request) {
                 - NO MENCIONES LA IMAGEN en el texto de forma literal.
                 - NADA de comillas iniciales ni introducciones.`;
 
-                const model = getVertexModel("gemini-2.5-flash", systemInstruction);
+                const model = await getVertexModel("gemini-2.5-flash", systemInstruction);
 
                 const prompt = `Idea Principal del Post: ${idea}\nContexto Visual de la Imagen: ${textoVisual}\n\nEscribe el Pie de Foto (Copy) Listo para Publicar:`;
                 const result = await model.generateContent(prompt);

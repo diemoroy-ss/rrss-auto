@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
         3. No entregues el post final, entrega la "Descripción Mejorada" que se usará para generar el diseño.
         4. Responde ÚNICAMENTE con la descripción mejorada, sin explicaciones ni introducciones.`;
 
-    const model = getVertexModel("gemini-2.5-flash", systemInstruction);
+    const model = await getVertexModel("gemini-2.5-flash", systemInstruction);
 
     const prompt = `Negocio: ${businessType || "General"}\nIdea Original: ${idea}\n\nDescripción Mejorada:`;
     
