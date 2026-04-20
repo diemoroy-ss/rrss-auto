@@ -17,6 +17,7 @@ jobs:
           username: ${{ secrets.DO_USERNAME }}
           password: ${{ secrets.DO_PASSWORD }}
           script: |
+            set -e
             # Ruta de producción en DigitalOcean
             cd /var/www/santisoft-rrss
             

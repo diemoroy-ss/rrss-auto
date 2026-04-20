@@ -1,23 +1,31 @@
-import { CloudTasksClient } from '@google-cloud/tasks';
+// Initialize the client lazily to avoid build-time issues with Next.js bundling.
+let client: any = null;
 
-// Initialize the client.
-// In local development or Vercel, we pass the credentials explicitly from env vars.
-// We must parse the private key correctly to replace \n strings with real newlines.
+async function getClient() {
+    if (client) return client;
+    
+    const projectId = process.env.GCP_PROJECT_ID;
+    const clientEmail = process.env.GCP_CLIENT_EMAIL;
+    const privateKey = process.env.GCP_PRIVATE_KEY?.replace(/\\n/g, '\n');
 
-const projectId = process.env.GCP_PROJECT_ID;
-const clientEmail = process.env.GCP_CLIENT_EMAIL;
-const privateKey = process.env.GCP_PRIVATE_KEY?.replace(/\\n/g, '\n');
-
-// Optional chaining just in case it's not defined during build time
-const client = (projectId && clientEmail && privateKey) 
-    ? new CloudTasksClient({
-        credentials: {
-            client_email: clientEmail,
-            private_key: privateKey,
-        },
-        projectId: projectId,
-    }) 
-    : null;
+    if (projectId && clientEmail && privateKey) {
+        try {
+            const { CloudTasksClient } = await import('@google-cloud/tasks');
+            client = new CloudTasksClient({
+                credentials: {
+                    client_email: clientEmail,
+                    private_key: privateKey,
+                },
+                projectId: projectId,
+            });
+            return client;
+        } catch (e) {
+            console.error("[GCP TASKS] Failed to load @google-cloud/tasks dynamically", e);
+            return null;
+        }
+    }
+    return null;
+}
 
 /**
  * Encola un post para ser ejecutado en el tiempo exacto.
@@ -25,10 +33,13 @@ const client = (projectId && clientEmail && privateKey)
  * @param scheduledFor Objeto Date con la fecha y hora exacta programada
  */
 export async function enqueuePostTask(postId: string, scheduledFor: Date) {
+    const client = await getClient();
     if (!client) {
         console.warn("[GCP TASKS] Cloud Tasks client is not initialized. Ensure GCP variables are set. Skipping queue.");
         return null;
     }
+
+    const projectId = process.env.GCP_PROJECT_ID;
 
     const location = process.env.GCP_TASKS_LOCATION || 'us-central1';
     const queue = process.env.GCP_TASKS_QUEUE || 'social-posts-queue';
@@ -79,6 +90,7 @@ export async function enqueuePostTask(postId: string, scheduledFor: Date) {
  * @param taskName El nombre completo de la tarea (response.name devuelto al crear).
  */
 export async function deletePostTask(taskName: string) {
+    const client = await getClient();
     if (!client) {
         return false;
     }
