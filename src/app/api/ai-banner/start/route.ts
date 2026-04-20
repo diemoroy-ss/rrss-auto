@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
 
     // Disparar la peticion a n8n SIN esperar su respuesta (fire-and-forget)
     console.log("[START ROUTE] Disparando fetch a n8n banner-ia en background...");
-    fetch("https://n8n.santisoft.cl/webhook/banner-ia", {
+    fetch("https://n8n.santisoft.cl/webhook-test/banner-ia", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),

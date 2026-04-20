@@ -91,6 +91,40 @@ export async function POST(req: Request) {
                     instagramUrl: 'https://instagram.com/test'
                 };
                 break;
+            case 'img-rrss-auto-test':
+                url = 'https://n8n.santisoft.cl/webhook-test/img-rrss-auto';
+                payload = {
+                    idea: 'Idea de prueba para preview',
+                    businessType: 'Restaurante',
+                    type: 'Post',
+                    carouselCount: 1,
+                    prompts: ['A delicious pizza on a wooden table']
+                };
+                break;
+            case 'banner-ia':
+                url = 'https://n8n.santisoft.cl/webhook-test/banner-ia';
+                payload = {
+                    ticketId: 'TEST_TICKET_' + Date.now(),
+                    userId: decodedToken.uid,
+                    customerName: 'Cliente de Prueba'
+                };
+                break;
+            case 'banner-ia-status':
+                url = 'https://n8n.santisoft.cl/webhook-test/banner-ia-status';
+                method = 'GET';
+                url += '?ticketId=TEST_TICKET_123';
+                payload = null;
+                break;
+            case 'auto-rrss-post':
+                url = 'https://n8n.santisoft.cl/webhook-test/auto-rrss-post';
+                headers['X-Santisoft-Secret'] = CRON_SECRET;
+                payload = {
+                    postId: 'TEST_POST_ID',
+                    userId: decodedToken.uid,
+                    copy: 'Este es un post de prueba configurado desde el dash admin.',
+                    networks: ['instagram']
+                };
+                break;
             default:
                 return NextResponse.json({ error: 'Webhook desconocido' }, { status: 400 });
         }

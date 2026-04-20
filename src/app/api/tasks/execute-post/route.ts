@@ -125,7 +125,7 @@ export async function POST(req: Request) {
             // Optional: attach mediaUrl if they pre-generated it
         };
 
-        const WEBHOOK_URL = 'https://n8n.santisoft.cl/webhook/auto-rrss-post'; // Asumiendo este es el nuevo nombre del webhook para posts
+        const WEBHOOK_URL = 'https://n8n.santisoft.cl/webhook-test/auto-rrss-post'; // Asumiendo este es el nuevo nombre del webhook para posts
         // Wait, what webhook URL were they using before? 
         // In `/api/trigger-posts`, N8N just called the API and the API replied with JSON array.
         // There wasn't an explicit N8N webhook hit from the API, N8N pulled it.

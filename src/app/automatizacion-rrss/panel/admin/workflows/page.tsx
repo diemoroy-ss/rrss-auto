@@ -98,6 +98,66 @@ const WORKFLOWS: N8NWorkflow[] = [
         },
         expectedReturn: '{ success: true, ...métricas }',
         nodeFlow: ['Webhook POST', 'HTTP Request (Meta Graph API)', 'Format Data', 'Respond JSON']
+    },
+    {
+        id: 'img-rrss-auto-test',
+        name: 'Preview AI Generator (Dashboard)',
+        description: 'Genera la vista previa (imagen/video) cuando el usuario crea un post manual.',
+        url: 'https://n8n.santisoft.cl/webhook-test/img-rrss-auto',
+        method: 'POST',
+        authStrategy: 'Ninguna',
+        variablesSent: {
+            idea: 'String',
+            businessType: 'String',
+            type: 'String (Post/Reel/Carrusel)',
+            prompts: 'Array[String]'
+        },
+        expectedReturn: 'JSON { imageUrl: "...", suggestedCopy: "..." }',
+        nodeFlow: ['Webhook POST', 'AI Image Gen', 'Respond to Webhook']
+    },
+    {
+        id: 'banner-ia',
+        name: 'Banner IA Generator (Background)',
+        description: 'Inicia el flujo de generación de banners para un nuevo cliente.',
+        url: 'https://n8n.santisoft.cl/webhook-test/banner-ia',
+        method: 'POST',
+        authStrategy: 'Ninguna',
+        variablesSent: {
+            ticketId: 'String',
+            userId: 'String',
+            customerName: 'String'
+        },
+        expectedReturn: 'HTTP 200 OK',
+        nodeFlow: ['Webhook POST', 'Split Loop', 'DALL-E 3', 'Firebase Update']
+    },
+    {
+        id: 'banner-ia-status',
+        name: 'Banner IA Status Check',
+        description: 'Consulta el estado de generación de un ticket de banner.',
+        url: 'https://n8n.santisoft.cl/webhook-test/banner-ia-status',
+        method: 'GET',
+        authStrategy: 'Ninguna',
+        variablesSent: {
+            ticketId: 'Query Param'
+        },
+        expectedReturn: 'JSON { status: "completed", imageUrl: "..." }',
+        nodeFlow: ['Webhook GET', 'Firebase Get', 'Respond to Webhook']
+    },
+    {
+        id: 'auto-rrss-post',
+        name: 'Publicar Post Automatizado',
+        description: 'Flujo que publica contenido real en Facebook/Instagram (GCP Tasks).',
+        url: 'https://n8n.santisoft.cl/webhook-test/auto-rrss-post',
+        method: 'POST',
+        authStrategy: 'Header: X-Santisoft-Secret: {CRON_SECRET}',
+        variablesSent: {
+            postId: 'String',
+            userId: 'String',
+            copy: 'String',
+            networks: 'Array[String]'
+        },
+        expectedReturn: 'HTTP 200 OK',
+        nodeFlow: ['Webhook POST', 'Auth Check', 'Meta API Post', 'Firebase Update']
     }
 ];
 

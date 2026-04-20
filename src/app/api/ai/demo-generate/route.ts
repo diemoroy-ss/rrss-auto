@@ -4,7 +4,7 @@ import { getFreeModel } from "../../../../lib/gemini-free";
 // Vercel Serverless maximum duration (requires Pro plan or custom host, but necessary for n8n synchronous wait)
 export const maxDuration = 120;
 
-const N8N_WEBHOOK_URL = 'https://n8n.santisoft.cl/webhook/demo-ia';
+const N8N_WEBHOOK_URL = 'https://n8n.santisoft.cl/webhook-test/demo-ia';
 
 export async function POST(req: Request) {
   try {
