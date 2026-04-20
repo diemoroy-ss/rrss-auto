@@ -165,7 +165,7 @@ export default function WorkflowsAdminPage() {
             <div>
                 <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3 mb-2">
                     <span className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-2xl shadow-lg shadow-slate-900/30 text-white">⚙️</span>
-                    Dashboard N8N
+                    Dashboard N8N - Sistema de Orquestación
                 </h1>
                 <p className="text-slate-500 font-medium max-w-2xl leading-relaxed">
                     Monitorea y prueba manualmente la orquestación entre la plataforma web y las automatizaciones en N8N (Make-alike).
