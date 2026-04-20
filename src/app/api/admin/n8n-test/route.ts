@@ -33,7 +33,7 @@ export async function POST(req: Request) {
 
         switch (webhookId) {
             case 'demo-ia':
-                url = 'https://n8n.santisoft.cl/webhook/demo-ia';
+                url = 'https://n8n.santisoft.cl/webhook-test/demo-ia';
                 payload = {
                     business_type: 'TEST_BUSINESS',
                     objective: 'TEST_OBJ',
@@ -83,7 +83,7 @@ export async function POST(req: Request) {
                 };
                 break;
             case 'sincronizar-metricas':
-                url = 'https://n8n.santisoft.cl/webhook/sincronizar-metricas';
+                url = 'https://n8n.santisoft.cl/webhook-test/sincronizar-metricas';
                 payload = {
                     userId: decodedToken.uid,
                     profileId: 'TEST_PROFILE',

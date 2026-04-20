@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getVertexModel } from "../../../../lib/vertexai";
+import { getFreeModel } from "../../../../lib/gemini-free";
 import { getVideoPlanLimit } from "../../../../lib/quota";
 
 export async function POST(req: NextRequest) {
@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "N8N Preview URL not configured" }, { status: 500 });
         }
 
-        if (type === 'Reel' && getVideoPlanLimit(userPlan || 'free') === 0) {
+        if (type === 'Reel' && (await getVideoPlanLimit(userPlan || 'free')) === 0) {
             return NextResponse.json({ error: "Plan actual no permite la generación de videos/reels." }, { status: 403 });
         }
 
@@ -21,18 +21,18 @@ export async function POST(req: NextRequest) {
         
         try {
             if (type === 'Carrusel') {
-                console.log("[VERTEX-AI] Generating carousel prompts for preview...");
+                console.log("[GEMINI-FREE] Generating carousel prompts for preview...");
                 const systemInstruction = `Eres un experto Director de Arte. Tu misión es generar una lista estructurada en JSON puro que contenga EXACTAMENTE ${carouselCount || 3} instrucciones descriptivas detalladas para un generador de imágenes de Inteligencia Artificial (Midjourney/DALL-E) en INGLÉS. Las imágenes conformarán un carrusel coherente secuencial.
 
 INSTRUCCIONES CLAVE:
-1. NO escribas otra cosa más que un Array JSON ("["..." , "..."]").
+1. NO escribas otra cosa más que un Array JSON ("["..." , "..."])". 
 2. Escribe cada prompt en INGLÉS técnico y descriptivo enfocado en colores, iluminación y composición.
 3. Asegura coherencia de Estilo Visual entre las imágenes.
 4. NADA de comillas inversas markdown, solo el arreglo puro.`;
 
-                const model = await getVertexModel("gemini-2.5-flash", systemInstruction);
+                const model = getFreeModel("gemini-2.5-flash", systemInstruction);
                 const result = await model.generateContent(`Genera las ${carouselCount || 3} descripciones visuales para esta idea de post: ${idea}`);
-                const response = await result.response;
+                const response = result.response;
                 const text = response.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
                 
                 const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
@@ -44,7 +44,7 @@ INSTRUCCIONES CLAVE:
                     }
                 }
             } else if (type === 'Reel') {
-                console.log("[VERTEX-AI] Generating reel prompt for preview...");
+                console.log("[GEMINI-FREE] Generating reel prompt for preview...");
                 const systemInstruction = `Eres un experto Director de Fotografía. Tu misión es generar un ÚNICO prompt descriptivo en INGLÉS para un generador de Video por Inteligencia Artificial (RunwayML/Luma/Sora) que creará un Reel de 8 segundos.
 
 INSTRUCCIONES CLAVE:
@@ -53,16 +53,16 @@ INSTRUCCIONES CLAVE:
 3. Asegura que la escena sea visualmente impactante, orientada a formato vertical (9:16).
 4. El texto debe ser fluido y muy enfocado en la iluminación, textura y estilo cinemático.`;
 
-                const model = await getVertexModel("gemini-2.5-flash", systemInstruction);
+                const model = getFreeModel("gemini-2.5-flash", systemInstruction);
                 const result = await model.generateContent(`Genera el prompt de video para esta idea: ${idea}`);
-                const response = await result.response;
+                const response = result.response;
                 const text = response.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
                 if (text) {
                     prompts = [text];
                 }
             }
         } catch (visError) {
-            console.error("[VERTEX-AI] Error generating visual prompts, falling back to original idea:", visError);
+            console.error("[GEMINI-FREE] Error generating visual prompts, falling back to original idea:", visError);
         }
 
         // 2. Call n8n to generate the media
@@ -99,9 +99,9 @@ INSTRUCCIONES CLAVE:
         const imageUrl = data?.imageUrl || data?.image_url || data?.url || data?.finalUrl || data?.final_url;
         let suggestedCopy = data?.suggestedCopy || data?.copy || data?.text || "";
 
-        // 3. Generate high-quality copy using Vertex AI
+        // 3. Generate high-quality copy using Gemini Free
         try {
-            console.log("[VERTEX-AI] Generating optimized copy...");
+            console.log("[GEMINI-FREE] Generating optimized copy...");
             const systemInstruction = `Eres un experto copywriter para redes sociales. 
 Tu objetivo es tomar una idea básica y transformarla en un post altamente atractivo, persuasivo y listo para publicar.
 
@@ -114,18 +114,18 @@ Reglas:
 5. Termina con 3-5 hashtags estratégicos.
 6. NO incluyas introducciones ni explicaciones, solo el texto del post.`;
 
-            const model = await getVertexModel("gemini-2.5-flash", systemInstruction);
+            const model = getFreeModel("gemini-2.5-flash", systemInstruction);
             const prompt = `Rubro del negocio: ${businessType || 'General'}\nIdea base del post: ${idea}\n\nEscribe el copy optimizado:`;
             
             const result = await model.generateContent(prompt);
-            const response = await result.response;
+            const response = result.response;
             const enhancedCopy = response.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
             
             if (enhancedCopy) {
                 suggestedCopy = enhancedCopy;
             }
         } catch (aiError) {
-            console.error("[VERTEX-AI] Copy generation error:", aiError);
+            console.error("[GEMINI-FREE] Copy generation error:", aiError);
         }
 
         return NextResponse.json({

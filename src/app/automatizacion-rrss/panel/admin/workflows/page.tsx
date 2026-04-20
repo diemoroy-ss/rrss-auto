@@ -20,7 +20,7 @@ const WORKFLOWS: N8NWorkflow[] = [
         id: 'demo-ia',
         name: 'Demo IA Generator',
         description: 'Genera contenido de prueba para la landing page (no requiere login).',
-        url: 'https://n8n.santisoft.cl/webhook/demo-ia',
+        url: 'https://n8n.santisoft.cl/webhook-test/demo-ia',
         method: 'POST',
         authStrategy: 'Ninguna (Público)',
         variablesSent: {
@@ -87,7 +87,7 @@ const WORKFLOWS: N8NWorkflow[] = [
         id: 'sincronizar-metricas',
         name: 'Sincronizar Métricas Meta',
         description: 'Pide a N8N que extraiga las analíticas recientes de IG/FB.',
-        url: 'https://n8n.santisoft.cl/webhook/sincronizar-metricas',
+        url: 'https://n8n.santisoft.cl/webhook-test/sincronizar-metricas',
         method: 'POST',
         authStrategy: 'Ninguna',
         variablesSent: {

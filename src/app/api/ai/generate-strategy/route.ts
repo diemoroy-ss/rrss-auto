@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getVertexModel } from "../../../../lib/vertexai";
+import { generateFreeText } from "../../../../lib/gemini-free";
 
 export async function POST(req: NextRequest) {
     try {
@@ -18,21 +18,12 @@ export async function POST(req: NextRequest) {
         3. Cada objeto debe tener: "titulo", "descripcion" y "ejemplo_idea".
         4. No incluyas explicaciones fuera del JSON.`;
 
-        const model = await getVertexModel("gemini-2.5-flash", systemInstruction);
-
-        // Configure response as JSON
-        model.generationConfig = {
-            responseMimeType: "application/json",
-        };
-
         const prompt = `Rubro: ${businessType}\nAudiencia: ${targetAudience || "General"}\nObjetivo: ${objective}\nCanal: ${channel || "Instagram"}`;
 
-        console.log(`[VERTEX-AI] Generating strategy for ${businessType} using Vertex AI`);
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const strategyJson = response.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+        console.log(`[GEMINI-FREE] Generating strategy for ${businessType} using gemini-2.5-flash`);
+        const strategyJson = await generateFreeText(prompt, systemInstruction, true);
 
-        return NextResponse.json(JSON.parse(strategyJson));
+        return NextResponse.json(JSON.parse(strategyJson || "{}"));
 
     } catch (error: any) {
         console.error("[STRATEGY AI ERROR]:", error);

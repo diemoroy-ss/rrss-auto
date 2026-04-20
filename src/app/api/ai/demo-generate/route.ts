@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getVertexModel } from "../../../../lib/vertexai";
+import { getFreeModel } from "../../../../lib/gemini-free";
 
 // Vercel Serverless maximum duration (requires Pro plan or custom host, but necessary for n8n synchronous wait)
 export const maxDuration = 120;
@@ -29,23 +29,23 @@ Necesitas generar exactamente un JSON con 3 campos:
 
 Retorna SOLO un JSON válido, sin delimitadores de código markdown como \`\`\`json.`;
 
-    const model = await getVertexModel("gemini-2.5-flash", systemInstruction);
+    const model = getFreeModel("gemini-2.5-flash", systemInstruction);
     
     // Configure response as JSON
     model.generationConfig = {
         responseMimeType: "application/json",
     };
 
-    console.log(`[VERTEX-AI] Generating demo prompts for ${rubro} using Vertex AI`);
-    const result = await model.generateContent(systemInstruction); // Use prompt context if needed, but instructions already have it
-    const response = await result.response;
+    console.log(`[GEMINI-FREE] Generating demo prompts for ${rubro} using gemini-2.5-flash`);
+    const result = await model.generateContent(systemInstruction);
+    const response = result.response;
     const textResponse = response.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "{}";
     
     let generatedPrompts;
     try {
         generatedPrompts = JSON.parse(textResponse);
     } catch (e) {
-        console.error("Vertex AI didn't return valid JSON:", textResponse);
+        console.error("Gemini Free didn't return valid JSON:", textResponse);
         return NextResponse.json(
             { error: 'Error generating creative structure. Please try again.' },
             { status: 500 }

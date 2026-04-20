@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getVertexModel } from "../../../../lib/vertexai";
+import { generateFreeText } from "../../../../lib/gemini-free";
 
 export async function POST(req: NextRequest) {
   try {
@@ -41,26 +41,22 @@ ESTRUCCURA SUGERIDA:
 <h3>Recomendación para la próxima Estrategia</h3>
 <p>Dile qué objetivo generar la próxima vez y un pequeño tip táctico.</p>`;
 
-    const model = await getVertexModel("gemini-2.5-flash", systemInstruction);
-
     const prompt = `Analiza el el siguiente reporte de las últimas ${posts.length} publicaciones de la marca "${profileName}".
 Datos de rendimiento:
 ${metricsSummary}
 
 Por favor, genera el reporte en HTML estructurado según tus instrucciones. Saca inferencias claras: si una red rinde mejor que otra, si un formato trajo más alcance interacciones, etc.`;
     
-    console.log(`[VERTEX-AI] Generating AI report for ${posts.length} posts of profile ${profileName}`);
+    console.log(`[GEMINI-FREE] Generating AI report for ${posts.length} posts of profile ${profileName}`);
     
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    let analysisHtml = response.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "No se pudo generar la auditoría.";
+    let analysisHtml = (await generateFreeText(prompt, systemInstruction)) || "No se pudo generar la auditoría.";
     
-    // Clean up if Gemini accidentally outputted markdown codeblocks around the HTML
+    // Limpiar si Gemini devuelve markdown alrededor del HTML
     analysisHtml = analysisHtml.replace(/```html/g, "").replace(/```/g, "").trim();
     
     return NextResponse.json({ analysis: analysisHtml });
   } catch (error: any) {
-    console.error("[VERTEX-AI ERROR] Error generating analysis:", error);
+    console.error("[GEMINI-FREE ERROR] Error generating analysis:", error);
     return NextResponse.json({ error: error.message || "Failed to generate analysis" }, { status: 500 });
   }
 }

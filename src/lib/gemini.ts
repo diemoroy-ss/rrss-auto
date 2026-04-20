@@ -1,4 +1,4 @@
-import { getVertexModel } from "./vertexai";
+import { getFreeModel } from "./gemini-free";
 
 export const SYSTEM_PROMPT = `Eres el asistente de Santisoft. Tu estilo es "Minimalista y Humano".
 
@@ -18,9 +18,9 @@ export type ChatMessageItem = {
 
 export async function generateChatbotResponse(history: ChatMessageItem[], currentMessage: string, userName: string) {
   try {
-    const model = await getVertexModel("gemini-2.5-flash", SYSTEM_PROMPT);
+    const model = getFreeModel("gemini-2.5-flash", SYSTEM_PROMPT);
 
-    // Formatear el historial para que Vertex AI lo procese ('user' y 'model')
+    // Formatear el historial para Gemini ('user' y 'model')
     const mappedHistory = history.map(msg => ({
        role: msg.role === 'ai' ? 'model' : 'user',
        parts: [{ text: msg.text }]
@@ -37,7 +37,7 @@ export async function generateChatbotResponse(history: ChatMessageItem[], curren
     return response.candidates?.[0]?.content?.parts?.[0]?.text || "No pude generar una respuesta.";
 
   } catch (error: any) {
-     console.error("Vertex AI Request Error (generateChatbotResponse):", error.message || error);
-     throw new Error(`Failed to reach Vertex AI: ${error.message || 'Unknown error'}`);
+     console.error("Gemini Free Request Error (generateChatbotResponse):", error.message || error);
+     throw new Error(`Failed to reach Gemini API: ${error.message || 'Unknown error'}`);
   }
 }

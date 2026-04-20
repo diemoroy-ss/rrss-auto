@@ -41,7 +41,7 @@ export default function DemoForm() {
         setStep("loading"); // Optional loading feedback while sending lead
         try {
             // Send the lead to the webhook including the generated copy/media links
-            await fetch("https://n8n.santisoft.cl/webhook/demo-ia", {
+            await fetch("https://n8n.santisoft.cl/webhook-test/demo-ia", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ 

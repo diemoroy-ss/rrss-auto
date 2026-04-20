@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getVertexModel } from "../../../../lib/vertexai";
+import { generateFreeText } from "../../../../lib/gemini-free";
 
 export async function POST(req: NextRequest) {
   try {
@@ -18,20 +18,16 @@ export async function POST(req: NextRequest) {
         3. No entregues el post final, entrega la "Descripción Mejorada" que se usará para generar el diseño.
         4. Responde ÚNICAMENTE con la descripción mejorada, sin explicaciones ni introducciones.`;
 
-    const model = await getVertexModel("gemini-2.5-flash", systemInstruction);
-
     const prompt = `Negocio: ${businessType || "General"}\nIdea Original: ${idea}\n\nDescripción Mejorada:`;
     
-    console.log(`[AI] Improving idea for business: ${businessType || "General"} using Vertex AI ${model.model}`);
+    console.log(`[GEMINI-FREE] Improving idea for business: ${businessType || "General"} using gemini-2.5-flash`);
     
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const improvedIdea = response.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "No se pudo mejorar la idea.";
+    const improvedIdea = (await generateFreeText(prompt, systemInstruction)) || "No se pudo mejorar la idea.";
 
-    console.log("[AI] Idea improved successfully.");
+    console.log("[GEMINI-FREE] Idea improved successfully.");
     return NextResponse.json({ improvedIdea });
   } catch (error: any) {
-    console.error("[AI ERROR] Failed to improve idea with Vertex AI:", error);
+    console.error("[GEMINI-FREE ERROR] Failed to improve idea:", error);
     
     const statusCode = error.status || 500;
     const message = error.message || "Failed to improve idea";
@@ -39,7 +35,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ 
       error: message,
       details: error.toString(),
-      engine: "vertex-ai"
+      engine: "gemini-free"
     }, { status: statusCode });
   }
 }

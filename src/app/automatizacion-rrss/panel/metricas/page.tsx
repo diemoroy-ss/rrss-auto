@@ -310,7 +310,7 @@ export default function MetricasDashboard() {
     setSyncStatus({ type: 'info', text: 'Buscando el historial más reciente en los servidores de Meta...' });
     
     try {
-      const response = await fetch('https://n8n.santisoft.cl/webhook/sincronizar-metricas', { 
+      const response = await fetch('https://n8n.santisoft.cl/webhook-test/sincronizar-metricas', { 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user.uid })
