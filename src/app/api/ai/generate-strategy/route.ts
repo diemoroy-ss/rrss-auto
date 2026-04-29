@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
 
         const prompt = `Rubro: ${businessType}\nAudiencia: ${targetAudience || "General"}\nObjetivo: ${objective}\nCanal: ${channel || "Instagram"}`;
 
-        console.log(`[GEMINI-FREE] Generating strategy for ${businessType} using gemini-2.5-flash`);
+        console.log(`[GEMINI-FREE] Generating strategy for ${businessType} using default model`);
         const strategyJson = await generateFreeText(prompt, systemInstruction, true);
 
         return NextResponse.json(JSON.parse(strategyJson || "{}"));

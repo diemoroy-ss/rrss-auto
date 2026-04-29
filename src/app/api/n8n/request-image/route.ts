@@ -38,7 +38,7 @@ INSTRUCCIONES CLAVE:
 3. Asegura coherencia de Estilo Visual entre las imágenes.
 4. NADA de comillas inversas markdown, solo el arreglo puro.`;
 
-            const model = await getVertexModel("gemini-2.5-flash", systemInstruction);
+            const model = await getVertexModel(undefined, systemInstruction);
             const result = await model.generateContent(`Genera descripciones para: ${idea}`);
             const response = await result.response;
             const text = response.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
@@ -61,7 +61,7 @@ INSTRUCCIONES CLAVE:
 2. Especifica movimientos de cámara dinámicos pertinentes a RRSS.
 3. Asegura impacto visual en formato vertical.`;
 
-            const model = await getVertexModel("gemini-2.5-flash", systemInstruction);
+            const model = await getVertexModel(undefined, systemInstruction);
             const result = await model.generateContent(`Prompt de video para: ${idea}`);
             const response = await result.response;
             const text = response.candidates?.[0]?.content?.parts?.[0]?.text?.trim();

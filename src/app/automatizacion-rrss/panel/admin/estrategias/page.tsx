@@ -6,6 +6,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
 import StatusModal from "../../../../../components/StatusModal";
+import VoiceMic from "../../../../../components/VoiceMic";
 
 interface StrategyGoal {
   id: string;
@@ -227,11 +228,17 @@ export default function AdminEstrategiasPage() {
                       </div>
                       <div>
                           <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Título Visible</label>
-                          <input required type="text" value={newTitle} onChange={e => setNewTitle(e.target.value)} className="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-xl font-bold text-slate-700 outline-none focus:border-indigo-500 transition-colors" placeholder="Ej: Crecer en Ventas" />
+                          <div className="relative flex items-center">
+                              <input required type="text" value={newTitle} onChange={e => setNewTitle(e.target.value)} className="w-full bg-slate-50 border-2 border-slate-100 pl-4 pr-12 py-4 rounded-xl font-bold text-slate-700 outline-none focus:border-indigo-500 transition-colors" placeholder="Ej: Crecer en Ventas" />
+                              <VoiceMic onResult={(text) => setNewTitle(prev => prev + (prev ? " " : "") + text)} className="absolute right-4" />
+                          </div>
                       </div>
                       <div>
                           <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Descripción Breve</label>
-                          <textarea required value={newDesc} onChange={e => setNewDesc(e.target.value)} rows={3} className="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-xl font-medium text-slate-700 outline-none focus:border-indigo-500 transition-colors resize-none" placeholder="Lo que el usuario leerá sobre este objetivo..." />
+                          <div className="relative">
+                              <textarea required value={newDesc} onChange={e => setNewDesc(e.target.value)} rows={3} className="w-full bg-slate-50 border-2 border-slate-100 pl-4 pr-12 py-4 rounded-xl font-medium text-slate-700 outline-none focus:border-indigo-500 transition-colors resize-none" placeholder="Lo que el usuario leerá sobre este objetivo..." />
+                              <VoiceMic onResult={(text) => setNewDesc(prev => prev + (prev ? " " : "") + text)} className="absolute right-4 bottom-4" />
+                          </div>
                       </div>
                       <button disabled={saving} type="submit" className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-300 text-white font-black py-4 rounded-xl transition-all shadow-lg hover:shadow-indigo-500/50 flex items-center justify-center gap-2">
                           {saving ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : 'Añadir a la Lista'}

@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI, GenerativeModel } from "@google/generative-ai";
 
-const FREE_MODEL_NAME = "gemini-2.5-flash";
+const FREE_MODEL_NAME = "gemini-3-flash-preview";
+const FALLBACK_MODELS = ["gemini-3-flash-preview", "gemini-2.5-flash", "gemini-2.5-pro", "gemini-1.5-flash"];
 
 let genAIInstance: GoogleGenerativeAI | null = null;
 
@@ -18,7 +19,7 @@ function getGenAI(): GoogleGenerativeAI {
 
 /**
  * Returns a configured generative model from the free Gemini API tier.
- * Uses gemini-2.5-flash for maximum free quota.
+ * Now uses gemini-3-flash-preview by default for stability.
  */
 export function getFreeModel(
     modelName: string = FREE_MODEL_NAME,
@@ -36,6 +37,7 @@ export function getFreeModel(
 
 /**
  * Convenience wrapper: generates text with a single prompt.
+ * Includes automatic fallback logic for 503 (Overloaded) and 429 (Quota) errors.
  * Returns the raw text string.
  */
 export async function generateFreeText(
@@ -43,12 +45,33 @@ export async function generateFreeText(
     systemInstruction?: string,
     jsonMode = false
 ): Promise<string> {
-    const model = getFreeModel(FREE_MODEL_NAME, systemInstruction);
+    let lastError: any = null;
 
-    const result = await model.generateContent({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: jsonMode ? { responseMimeType: "application/json" } : undefined,
-    });
+    for (const modelName of FALLBACK_MODELS) {
+        try {
+            console.log(`[GEMINI-FREE] Attempting generation with ${modelName}...`);
+            const model = getFreeModel(modelName, systemInstruction);
 
-    return result.response.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? "";
+            const result = await model.generateContent({
+                contents: [{ role: "user", parts: [{ text: prompt }] }],
+                generationConfig: jsonMode ? { responseMimeType: "application/json" } : undefined,
+            });
+
+            const text = result.response.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+            if (text) return text;
+        } catch (error: any) {
+            lastError = error;
+            const status = error.status || (error.message?.match(/\[(\d+)\]/)?.[1]);
+            
+            console.warn(`[GEMINI-FREE] Model ${modelName} failed (Status: ${status}).`);
+            
+            // If it's a 404, 503 or 429, we try the next one.
+            // If it's a 400 (Bad Request), we stop because it's likely a prompt issue.
+            if (status === "400") break;
+            
+            continue;
+        }
+    }
+
+    throw lastError || new Error("All Gemini models failed to respond.");
 }

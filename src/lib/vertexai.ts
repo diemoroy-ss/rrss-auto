@@ -48,7 +48,7 @@ export async function getVertexAI() {
 /**
  * Returns a configured model instance from Vertex AI (Async).
  */
-export async function getVertexModel(modelName = 'gemini-2.5-flash', systemInstruction?: string) {
+export async function getVertexModel(modelName = 'gemini-3-flash-preview', systemInstruction?: string) {
     const client = await getVertexAI();
     if (!client) {
         throw new Error("Vertex AI is not configured or failed to load.");

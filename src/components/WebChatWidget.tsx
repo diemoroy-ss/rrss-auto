@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import VoiceMic from "./VoiceMic";
 
 export default function WebChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
@@ -186,15 +187,21 @@ export default function WebChatWidget() {
                 </div>
 
                 {/* Área de Input */}
-                <form onSubmit={handleSendMessage} className="p-3 bg-white border-t border-slate-200 flex gap-2 shrink-0">
-                   <input 
-                      type="text" 
-                      placeholder="Escribe tu mensaje..." 
-                      value={inputText}
-                      onChange={e => setInputText(e.target.value)}
-                      disabled={isLoading}
-                      className="flex-1 px-4 py-2 border border-slate-200 rounded-full text-sm font-medium focus:outline-none focus:border-indigo-500 disabled:bg-slate-50"
-                   />
+                <form onSubmit={handleSendMessage} className="p-3 bg-white border-t border-slate-200 flex items-center gap-2 shrink-0">
+                   <div className="flex-1 relative flex items-center">
+                       <input 
+                          type="text" 
+                          placeholder="Escribe tu mensaje..." 
+                          value={inputText}
+                          onChange={e => setInputText(e.target.value)}
+                          disabled={isLoading}
+                          className="w-full pl-4 pr-10 py-2 border border-slate-200 rounded-full text-sm font-medium focus:outline-none focus:border-indigo-500 disabled:bg-slate-50"
+                       />
+                       <VoiceMic 
+                          onResult={(text) => setInputText(prev => prev + (prev ? " " : "") + text)} 
+                          className="absolute right-3"
+                       />
+                   </div>
                    <button 
                       type="submit" 
                       disabled={!inputText.trim() || isLoading}

@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
 
     const prompt = `Negocio: ${businessType || "General"}\nIdea Original: ${idea}\n\nDescripción Mejorada:`;
     
-    console.log(`[GEMINI-FREE] Improving idea for business: ${businessType || "General"} using gemini-2.5-flash`);
+    console.log(`[GEMINI-FREE] Improving idea for business: ${businessType || "General"} using default model`);
     
     const improvedIdea = (await generateFreeText(prompt, systemInstruction)) || "No se pudo mejorar la idea.";
 

@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import VoiceMic from "./VoiceMic";
 
 export default function DemoForm() {
     const [step, setStep] = useState<"idea" | "loading" | "result">("idea");
@@ -88,27 +89,39 @@ export default function DemoForm() {
                         <form onSubmit={handleIdeaSubmit} className="space-y-4">
                             <div>
                                 <label htmlFor="demo-rubro" className="text-[11px] font-black uppercase tracking-widest text-slate-400 block mb-1.5 px-1">Tu Rubro o Tipo de Negocio</label>
-                                <input
-                                    id="demo-rubro"
-                                    required
-                                    type="text"
-                                    placeholder="Ej: Sushi / Clínica Dental / Tienda de Ropa"
-                                    value={ideaData.rubro}
-                                    onChange={e => setIdeaData({...ideaData, rubro: e.target.value})}
-                                    className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-medium transition-all"
-                                />
+                                <div className="relative flex items-center">
+                                    <input
+                                        id="demo-rubro"
+                                        required
+                                        type="text"
+                                        placeholder="Ej: Sushi / Clínica Dental / Tienda de Ropa"
+                                        value={ideaData.rubro}
+                                        onChange={e => setIdeaData({...ideaData, rubro: e.target.value})}
+                                        className="w-full pl-4 pr-12 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-medium transition-all"
+                                    />
+                                    <VoiceMic 
+                                        onResult={(text) => setIdeaData(prev => ({ ...prev, rubro: prev.rubro + (prev.rubro ? " " : "") + text }))} 
+                                        className="absolute right-4"
+                                    />
+                                </div>
                             </div>
                             <div>
                                 <label htmlFor="demo-idea" className="text-[11px] font-black uppercase tracking-widest text-slate-400 block mb-1.5 px-1">¿Qué quieres promocionar?</label>
-                                <textarea
-                                    id="demo-idea"
-                                    required
-                                    rows={3}
-                                    placeholder="Ej: Lanzamiento de mi nuevo menú de verano con 20% de descuento este fin de semana"
-                                    value={ideaData.idea}
-                                    onChange={e => setIdeaData({...ideaData, idea: e.target.value})}
-                                    className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-medium transition-all resize-none"
-                                />
+                                <div className="relative">
+                                    <textarea
+                                        id="demo-idea"
+                                        required
+                                        rows={3}
+                                        placeholder="Ej: Lanzamiento de mi nuevo menú de verano con 20% de descuento este fin de semana"
+                                        value={ideaData.idea}
+                                        onChange={e => setIdeaData({...ideaData, idea: e.target.value})}
+                                        className="w-full pl-4 pr-12 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-medium transition-all resize-none"
+                                    />
+                                    <VoiceMic 
+                                        onResult={(text) => setIdeaData(prev => ({ ...prev, idea: prev.idea + (prev.idea ? " " : "") + text }))} 
+                                        className="absolute right-4 bottom-4"
+                                    />
+                                </div>
                             </div>
                             <button
                                 type="submit"

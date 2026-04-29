@@ -29,14 +29,14 @@ Necesitas generar exactamente un JSON con 3 campos:
 
 Retorna SOLO un JSON válido, sin delimitadores de código markdown como \`\`\`json.`;
 
-    const model = getFreeModel("gemini-2.5-flash", systemInstruction);
+    const model = getFreeModel(undefined, systemInstruction);
     
     // Configure response as JSON
     model.generationConfig = {
         responseMimeType: "application/json",
     };
 
-    console.log(`[GEMINI-FREE] Generating demo prompts for ${rubro} using gemini-2.5-flash`);
+    console.log(`[GEMINI-FREE] Generating demo prompts for ${rubro} using default model`);
     const result = await model.generateContent(systemInstruction);
     const response = result.response;
     const textResponse = response.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "{}";

@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import VoiceMic from "../VoiceMic";
 
 interface PostConfigFormProps {
   idea: string;
@@ -108,13 +109,19 @@ export default function PostConfigForm({
         {/* RUBRO / NEGOCIO */}
         <div>
            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Tu Rubro o Tipo de Negocio</label>
-           <input 
-             type="text" 
-             value={businessType} 
-             onChange={e => setBusinessType(e.target.value)}
-             placeholder="Ej: Gastrobar, Tienda de Mascotas, Coaching Online..."
-             className="w-full bg-slate-50 border-2 border-slate-100 px-6 py-4 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700 hover:border-slate-200"
-           />
+           <div className="relative flex items-center">
+               <input 
+                 type="text" 
+                 value={businessType} 
+                 onChange={e => setBusinessType(e.target.value)}
+                 placeholder="Ej: Gastrobar, Tienda de Mascotas, Coaching Online..."
+                 className="w-full bg-slate-50 border-2 border-slate-100 pl-6 pr-12 py-4 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700 hover:border-slate-200"
+               />
+               <VoiceMic 
+                 onResult={(text) => setBusinessType(prev => prev + (prev ? " " : "") + text)} 
+                 className="absolute right-4"
+               />
+           </div>
         </div>
 
          {/* POST TYPE SELECTOR */}
@@ -198,6 +205,10 @@ export default function PostConfigForm({
                   placeholder="Describe lo que quieres publicar..."
                   className="w-full bg-transparent px-4 py-6 text-base text-slate-800 outline-none placeholder:text-slate-400 min-h-[160px] resize-none font-medium leading-relaxed"
                   maxLength={1000}
+                />
+                <VoiceMic 
+                  onResult={(text) => setIdea(prev => prev + (prev ? " " : "") + text)} 
+                  className="absolute right-6 bottom-6"
                 />
             </div>
             <p className="text-[10px] font-black text-slate-300 mt-3 text-right uppercase tracking-widest">{idea.length} / 1000 Caracteres</p>

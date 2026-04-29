@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useProfile } from "../../contexts/ProfileContext";
 import { auth, db } from "../../lib/firebase";
 import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
+import VoiceMic from "../VoiceMic";
 
 export default function AdsWizard({ isOpen, onClose, onSuccess }: { isOpen: boolean, onClose: () => void, onSuccess: () => void }) {
     const { activeProfile } = useProfile();
@@ -107,7 +108,10 @@ export default function AdsWizard({ isOpen, onClose, onSuccess }: { isOpen: bool
                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
                         <div>
                             <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Nombre de Campaña</label>
-                            <input type="text" value={campaignName} onChange={e => setCampaignName(e.target.value)} placeholder="Ej. Promo Meseta" className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-xl focus:border-indigo-500 outline-none font-bold text-slate-700" />
+                            <div className="relative flex items-center">
+                                <input type="text" value={campaignName} onChange={e => setCampaignName(e.target.value)} placeholder="Ej. Promo Meseta" className="w-full bg-slate-50 border-2 border-slate-100 pl-5 pr-12 py-3 rounded-xl focus:border-indigo-500 outline-none font-bold text-slate-700" />
+                                <VoiceMic onResult={(text) => setCampaignName(prev => prev + (prev ? " " : "") + text)} className="absolute right-4" />
+                            </div>
                         </div>
                         <div>
                             <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-3">Objetivo</label>
@@ -196,7 +200,10 @@ export default function AdsWizard({ isOpen, onClose, onSuccess }: { isOpen: bool
                         </div>
                         <div>
                             <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Texto Principal (Copy)</label>
-                            <textarea value={creativeMessage} onChange={e => setCreativeMessage(e.target.value)} rows={3} placeholder="¡Descubre nuestros nuevos productos!" className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-xl focus:border-indigo-500 outline-none text-sm font-medium text-slate-700" />
+                            <div className="relative">
+                                <textarea value={creativeMessage} onChange={e => setCreativeMessage(e.target.value)} rows={3} placeholder="¡Descubre nuestros nuevos productos!" className="w-full bg-slate-50 border-2 border-slate-100 pl-5 pr-12 py-3 rounded-xl focus:border-indigo-500 outline-none text-sm font-medium text-slate-700" />
+                                <VoiceMic onResult={(text) => setCreativeMessage(prev => prev + (prev ? " " : "") + text)} className="absolute right-4 bottom-4" />
+                            </div>
                         </div>
                         <div>
                             <label className="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Enlace de Destino</label>

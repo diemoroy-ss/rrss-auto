@@ -18,7 +18,7 @@ export type ChatMessageItem = {
 
 export async function generateChatbotResponse(history: ChatMessageItem[], currentMessage: string, userName: string) {
   try {
-    const model = getFreeModel("gemini-2.5-flash", SYSTEM_PROMPT);
+    const model = getFreeModel(undefined, SYSTEM_PROMPT);
 
     // Formatear el historial para Gemini ('user' y 'model')
     const mappedHistory = history.map(msg => ({
