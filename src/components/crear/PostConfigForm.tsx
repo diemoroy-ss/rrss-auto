@@ -208,7 +208,7 @@ export default function PostConfigForm({
                 />
                 <VoiceMic 
                   onResult={(text) => setIdea(prev => prev + (prev ? " " : "") + text)} 
-                  className="absolute right-6 bottom-6"
+                  className="absolute right-6 top-6 z-20"
                 />
             </div>
             <p className="text-[10px] font-black text-slate-300 mt-3 text-right uppercase tracking-widest">{idea.length} / 1000 Caracteres</p>
@@ -275,6 +275,10 @@ export default function PostConfigForm({
                     onChange={e => setManualCaption(e.target.value)}
                     placeholder="Escribe el texto que acompañará tu post..."
                     className="w-full bg-transparent px-4 py-6 text-base text-slate-800 outline-none placeholder:text-slate-400 min-h-[160px] resize-none font-medium leading-relaxed"
+                  />
+                  <VoiceMic 
+                    onResult={(text) => setManualCaption(prev => prev + (prev ? " " : "") + text)} 
+                    className="absolute right-6 top-6 z-20"
                   />
               </div>
             </div>

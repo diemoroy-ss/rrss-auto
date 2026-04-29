@@ -101,7 +101,7 @@ export default function DemoForm() {
                                     />
                                     <VoiceMic 
                                         onResult={(text) => setIdeaData(prev => ({ ...prev, rubro: prev.rubro + (prev.rubro ? " " : "") + text }))} 
-                                        className="absolute right-4"
+                                        className="absolute right-4 z-20"
                                     />
                                 </div>
                             </div>
@@ -119,7 +119,7 @@ export default function DemoForm() {
                                     />
                                     <VoiceMic 
                                         onResult={(text) => setIdeaData(prev => ({ ...prev, idea: prev.idea + (prev.idea ? " " : "") + text }))} 
-                                        className="absolute right-4 bottom-4"
+                                        className="absolute right-4 top-4 z-20"
                                     />
                                 </div>
                             </div>
