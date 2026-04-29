@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useProfile } from "../../../../contexts/ProfileContext";
 import StatusModal from "../../../../components/StatusModal";
+import VoiceMic from "../../../../components/VoiceMic";
 
 interface StrategyGoal {
   id: string;
@@ -371,13 +372,19 @@ export default function EstrategiaPage() {
 
              <div>
                  <h3 className="text-sm font-black text-slate-900 tracking-tight mb-3">2. ¿Tienes alguna expectativa especial? <span className="text-slate-400 font-medium">(Opcional)</span></h3>
-                 <textarea 
-                    value={expectations}
-                    onChange={e => setExpectations(e.target.value)}
-                    placeholder="Ej: Quiero enfocarme en vender zapatos rojos de verano... o lanzamos una nueva sucursal en Madrid..."
-                    className="w-full bg-slate-50 border-2 border-slate-100 p-4 rounded-[20px] font-medium text-slate-700 outline-none focus:border-indigo-500 transition-colors resize-none mb-2 text-sm"
-                    rows={3}
-                 />
+                 <div className="relative">
+                     <textarea 
+                        value={expectations}
+                        onChange={e => setExpectations(e.target.value)}
+                        placeholder="Ej: Quiero enfocarme en vender zapatos rojos de verano... o lanzamos una nueva sucursal en Madrid..."
+                        className="w-full bg-slate-50 border-2 border-slate-100 pl-4 pr-12 py-4 rounded-[20px] font-medium text-slate-700 outline-none focus:border-indigo-500 transition-colors resize-none mb-2 text-sm"
+                        rows={3}
+                     />
+                     <VoiceMic 
+                        onResult={(text) => setExpectations(prev => prev + (prev ? " " : "") + text)} 
+                        className="absolute right-4 top-4 z-20"
+                     />
+                 </div>
                  <p className="text-xs text-slate-400 font-bold px-2">Combinado con tus <Link href="/automatizacion-rrss/panel/configuracion" className="text-indigo-500 underline">Datos de Negocio</Link>, la IA será mucho más precisa.</p>
              </div>
 
