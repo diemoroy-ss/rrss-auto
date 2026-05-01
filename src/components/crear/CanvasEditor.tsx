@@ -12,6 +12,9 @@ interface CanvasEditorProps {
   onSave: (finalUrl: string) => void;
 }
 
+import { db } from "../../lib/firebase";
+import { collection, addDoc } from "firebase/firestore";
+
 interface TextLayer {
   text: string;
   color: string;
@@ -64,7 +67,7 @@ export default function CanvasEditor({
     setDragTarget(target);
     if (target === 'text' && index !== undefined) {
         setDraggingLayerIndex(index);
-        setActiveLayerIndex(index); // Cambiar automáticamente a la capa que se está arrastrando
+        setActiveLayerIndex(index);
     }
     setIsDragging(true);
   };
@@ -132,66 +135,38 @@ export default function CanvasEditor({
      setIsOverlaying(true);
      setError("");
      
-     const tId = `btf_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
-     setTicketId(tId);
-
      try {
        // Filtramos capas que tengan texto
        const activeLayers = textLayers.filter(l => l.text.trim() !== "");
 
-       const startRes = await fetch("/api/ai-banner/start", {
-         method: "POST",
-         headers: { "Content-Type": "application/json" },
-         body: JSON.stringify({
-           ticketId: tId,
-           baseImageUrl: baseImageUrl,
-           userId: userId,
-           textLayers: activeLayers, // Enviamos el array completo
-           
-           // Compatibilidad hacia atrás (usamos la primera capa activa)
-           overlayText: activeLayers[0]?.text || "",
-           textX: Math.round(activeLayers[0]?.x || 50),
-           textY: Math.round(activeLayers[0]?.y || 50),
-           overlayColor: activeLayers[0]?.color || "#ffffff",
-           overlayFont: activeLayers[0]?.font || "Montserrat",
-           overlaySize: parseInt(activeLayers[0]?.size || "40"),
-
-           useLogo,
-           logoUrl: userLogo,
-           logoX: Math.round(logoX),
-           logoY: Math.round(logoY),
-         })
+       // 1. Guardar el diseño en Firebase (renders temporales)
+       const designRef = await addDoc(collection(db, "preview_renders"), {
+          baseImageUrl,
+          userId,
+          textLayers: activeLayers,
+          useLogo,
+          logoUrl: userLogo,
+          logoX,
+          logoY,
+          createdAt: new Date()
        });
 
-       if (!startRes.ok) throw new Error("Error al iniciar Butterfly IA.");
+       // 2. Construir la URL de Butterfly
+       // Usamos el dominio de producción para que Butterfly pueda acceder a la página de render
+       const baseUrl = window.location.origin;
+       const renderUrl = `${baseUrl}/render/preview?id=${designRef.id}`;
+       const butterflyUrl = `https://butterfly.santisoft.cl/link-previews/v1?url=${encodeURIComponent(renderUrl)}`;
 
-       const checkStatus = async () => {
-         try {
-           const res = await fetch(`/api/ai-banner/status?ticketId=${tId}`);
-           const data = await res.json();
-
-           if (data.status === "done" && data.finalUrl) {
-             setFinalImageUrl(data.finalUrl);
-             setIsOverlaying(false);
-             onSave(data.finalUrl); // Sync up to parent
-           } else if (data.status === "error") {
-             setError(data.error || "Error al aplicar estilos.");
-             setIsOverlaying(false);
-           } else {
-             setTimeout(checkStatus, 2500);
-           }
-         } catch (e) {
-             console.error("Polling error:", e);
-             setError("Perdimos conexión con el generador. Mostrando versión base.");
-             setIsOverlaying(false);
-         }
-       };
-
-       setTimeout(checkStatus, 2000);
+       // 3. Simular un pequeño tiempo de carga para que el usuario vea que algo pasó
+       setTimeout(() => {
+          setFinalImageUrl(butterflyUrl);
+          setIsOverlaying(false);
+          onSave(butterflyUrl);
+       }, 1500);
 
      } catch (err: any) {
          console.error(err);
-         setError(err.message || "Error inesperado al aplicar estilos.");
+         setError("Error al generar la previsualización.");
          setIsOverlaying(false);
      }
   };
