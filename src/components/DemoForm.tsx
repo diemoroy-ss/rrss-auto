@@ -150,7 +150,7 @@ export default function DemoForm() {
                                     Generado 100% con Inteligencia Artificial. Listo para publicar en redes.
                                 </p>
                             </div>
-                            <button onClick={resetForm} className="hidden md:flex items-center justify-center w-12 h-12 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-full transition-colors order-first md:order-last">
+                            <button onClick={resetForm} className="flex items-center justify-center w-10 h-10 md:w-12 md:h-12 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-full transition-colors order-first md:order-last">
                                 ✕
                             </button>
                         </div>

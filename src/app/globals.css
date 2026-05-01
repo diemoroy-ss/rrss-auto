@@ -146,3 +146,31 @@ body {
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* Safe Area Utilities for Mobile (iOS Notch/Home Bar) */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+.mb-safe {
+  margin-bottom: env(safe-area-inset-bottom);
+}
+
+/* Accessibility: Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Glassmorphism utility for mobile drawers/bottom sheets */
+.glass-drawer {
+  @apply bg-white/80 backdrop-blur-xl border-t border-white/20;
+}

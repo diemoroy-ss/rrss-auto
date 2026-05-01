@@ -89,7 +89,7 @@ export default function WebChatWidget() {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-[100] flex flex-col items-end">
+    <div className={`fixed transition-all duration-300 z-[100] ${isOpen ? 'inset-0 md:inset-auto md:bottom-6 md:right-6' : 'bottom-6 right-6'}`}>
       
       {/* Botón flotante */}
       {!isOpen && (
@@ -110,26 +110,31 @@ export default function WebChatWidget() {
 
       {/* Ventana de Chat */}
       {isOpen && (
-        <div className="w-[350px] sm:w-[400px] h-[500px] bg-white rounded-2xl shadow-2xl flex flex-col border border-slate-200 overflow-hidden transform origin-bottom-right transition-all">
+        <div className="w-full h-full md:w-[400px] md:h-[600px] bg-white md:rounded-2xl shadow-2xl flex flex-col border border-slate-200 overflow-hidden transform origin-bottom md:origin-bottom-right transition-all fixed inset-0 md:relative rounded-t-[32px] md:rounded-b-2xl">
           
           {/* Header */}
-          <div className="bg-indigo-600 text-white p-4 flex items-center justify-between shrink-0 shadow-md z-10">
-             <div className="flex items-center gap-3">
-                <span className="text-2xl">🤖</span>
-                <div>
-                   <h3 className="font-bold tracking-tight">Santisoft Asistente</h3>
-                   <p className="text-[10px] text-indigo-200 uppercase tracking-widest font-black flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span> En Línea
-                   </p>
+          <div className="bg-indigo-600 text-white p-4 flex flex-col shrink-0 shadow-md z-10">
+             {/* Drag Handle Mobile */}
+             <div className="w-12 h-1 bg-white/20 rounded-full mx-auto mb-3 md:hidden"></div>
+             
+             <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <span className="text-2xl">🤖</span>
+                    <div>
+                    <h3 className="font-bold tracking-tight">Santisoft Asistente</h3>
+                    <p className="text-[10px] text-indigo-200 uppercase tracking-widest font-black flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span> En Línea
+                    </p>
+                    </div>
                 </div>
+                <button 
+                    onClick={() => setIsOpen(false)}
+                    className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                    aria-label="Cerrar chat"
+                >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
              </div>
-             <button 
-                onClick={() => setIsOpen(false)}
-                className="p-2 hover:bg-white/20 rounded-full transition-colors"
-                aria-label="Cerrar chat"
-             >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-             </button>
           </div>
 
           {!isRegistered ? (

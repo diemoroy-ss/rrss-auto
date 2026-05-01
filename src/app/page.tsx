@@ -134,12 +134,12 @@ export default function Home() {
              <span className="text-emerald-800 text-[11px] font-black uppercase tracking-widest">Oferta: 4 imágenes y posteos Gratis al mes</span>
           </div>
 
-          <h1 className="font-display text-5xl md:text-7xl font-bold mb-6 tracking-tight leading-tight text-slate-900">
+          <h1 className="font-display text-4xl sm:text-5xl md:text-7xl font-bold mb-6 tracking-tight leading-tight text-slate-900">
             Tus Redes Sociales en <br/>
             <span className="text-indigo-600">Piloto Automático.</span>
           </h1>
 
-          <p className="text-lg md:text-xl mb-10 text-slate-500 max-w-2xl mx-auto font-medium">
+          <p className="text-base sm:text-lg md:text-xl mb-10 text-slate-500 max-w-2xl mx-auto font-medium">
             Conectamos IA con tus cuentas de Meta para que generes, agendes y publiques contenido sin mover un dedo.
           </p>
 
@@ -337,7 +337,7 @@ export default function Home() {
             <div className="absolute bottom-0 left-0 w-96 h-96 bg-indigo-500/10 blur-[100px] -ml-48 -mb-48 rounded-full"></div>
             
             <div className="relative z-10">
-              <h2 className="font-display text-4xl md:text-6xl font-bold text-white mb-8">¿Listo para recuperar tu tiempo?</h2>
+              <h2 className="font-display text-3xl sm:text-4xl md:text-6xl font-bold text-white mb-8">¿Listo para recuperar tu tiempo?</h2>
               <p className="text-indigo-200 text-lg md:text-xl mb-12 max-w-2xl mx-auto">Únete a cientos de negocios que ya automatizan su presencia digital con Santisoft.</p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 {user ? (

@@ -22,7 +22,7 @@ export default function WhatsAppButton() {
       target="_blank"
       rel="noopener noreferrer"
       // bottom-28 para que quede justo arriba del widget webchat
-      className="fixed bottom-[100px] right-6 z-[90] flex items-center justify-center w-14 h-14 bg-[#25D366] text-white rounded-full shadow-xl hover:bg-[#1EBE5D] hover:-translate-y-1 transition-all duration-300 group"
+      className="fixed bottom-[88px] right-6 z-[90] flex items-center justify-center w-14 h-14 bg-[#25D366] text-white rounded-full shadow-xl hover:bg-[#1EBE5D] hover:-translate-y-1 transition-all duration-300 group"
       aria-label="Chatear por WhatsApp"
     >
       <svg 

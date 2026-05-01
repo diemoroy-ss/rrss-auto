@@ -88,7 +88,7 @@ function DashboardCarouselViewer({ urls }: { urls: string[] }) {
             onClick={(e) => { e.stopPropagation(); setIndex(prev => Math.max(0, prev - 1)); }}
             disabled={index === 0}
             aria-label="Imagen anterior"
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 shadow-lg flex items-center justify-center text-slate-800 disabled:opacity-30 hover:bg-white transition-all hover:scale-110 font-black text-sm"
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/90 shadow-lg flex items-center justify-center text-slate-800 disabled:opacity-30 hover:bg-white transition-all hover:scale-110 font-black text-xl z-20"
           >
             ←
           </button>
@@ -96,7 +96,7 @@ function DashboardCarouselViewer({ urls }: { urls: string[] }) {
             onClick={(e) => { e.stopPropagation(); setIndex(prev => Math.min(urls.length - 1, prev + 1)); }}
             disabled={index === urls.length - 1}
             aria-label="Imagen siguiente"
-            className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 shadow-lg flex items-center justify-center text-slate-800 disabled:opacity-30 hover:bg-white transition-all hover:scale-110 font-black text-sm"
+            className="absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/90 shadow-lg flex items-center justify-center text-slate-800 disabled:opacity-30 hover:bg-white transition-all hover:scale-110 font-black text-xl z-20"
           >
             →
           </button>
@@ -130,6 +130,7 @@ export default function RrssDashboard() {
 
   // Modals state
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [confirmModalState, setConfirmModalState] = useState<{ isOpen: boolean; title: string; desc: string; confirmText: string; cancelText: string; isDanger: boolean; onConfirm: () => void; } | null>(null);
 
   const requestConfirmation = (title: string, desc: string, onConfirm: () => void, isDanger: boolean = false) => {
@@ -673,6 +674,14 @@ export default function RrssDashboard() {
                <span>✅</span> Publicados
              </button>
           </div>
+
+          {/* Botón de Calendario Mobile */}
+          <button 
+            onClick={() => setIsCalendarOpen(true)}
+            className="lg:hidden flex items-center gap-2 mt-4 bg-white border border-slate-200 px-5 py-2.5 rounded-xl font-bold text-sm text-slate-700 shadow-sm hover:bg-slate-50 transition-all w-full sm:w-auto"
+          >
+            <span>📅</span> {selectedDateFilter ? format(selectedDateFilter, "d 'de' MMMM", { locale: es }) : 'Filtrar por Fecha'}
+          </button>
         </div>
 
         {message && (
@@ -702,57 +711,73 @@ export default function RrssDashboard() {
       </div>
 
       <div className="flex flex-col lg:flex-row items-start gap-8 w-full">
-        {/* Sidebar Left: Posts List (lg:order-1) */}
-        
         {/* Sidebar Right: Calendar Filter (lg:order-2) */}
-        <div className="w-full sm:max-w-sm lg:w-[280px] xl:w-[300px] shrink-0 flex flex-col gap-6 lg:sticky lg:top-24 lg:order-2 mx-auto lg:mx-0">
-          {/* Mini Calendar Filter */}
-          <div id="tour-calendar-widget" className="bg-white rounded-[24px] p-5 shadow-xl shadow-slate-200/50 border border-slate-100 w-full">
-          <div className="flex justify-between items-center mb-4 px-1">
-            <h3 className="text-sm font-black text-slate-900 capitalize tracking-tight flex items-center gap-2">
-               <span className="w-6 h-6 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center text-[10px] shadow-sm">🗓️</span>
-               {format(currentMonth, "MMM yyyy", { locale: es })}
-            </h3>
-            <div className="flex gap-1">
-              <button onClick={prevMonth} className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 font-bold transition-all text-sm">&lt;</button>
-              <button onClick={nextMonth} className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 font-bold transition-all text-sm">&gt;</button>
+        <div className={`w-full lg:w-[280px] xl:w-[300px] shrink-0 flex flex-col gap-6 lg:sticky lg:top-24 lg:order-2 mx-auto lg:mx-0 ${isCalendarOpen ? 'fixed inset-0 z-[110] p-6 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center' : 'hidden lg:flex'}`}>
+          
+          {/* Contenedor del Calendario (Modal en mobile, Sidebar en desktop) */}
+          <div className={`${isCalendarOpen ? 'bg-white rounded-[32px] p-6 w-full max-w-sm animate-in zoom-in duration-200 shadow-2xl relative' : ''}`}>
+            
+            {/* Close button mobile */}
+            {isCalendarOpen && (
+              <button 
+                onClick={() => setIsCalendarOpen(false)}
+                className="absolute top-4 right-4 w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 font-black lg:hidden"
+              >
+                &times;
+              </button>
+            )}
+
+            {/* Mini Calendar Filter */}
+            <div id="tour-calendar-widget" className={`${isCalendarOpen ? '' : 'bg-white rounded-[24px] p-5 shadow-xl shadow-slate-200/50 border border-slate-100 w-full'}`}>
+            <div className="flex justify-between items-center mb-4 px-1">
+              <h3 className="text-sm font-black text-slate-900 capitalize tracking-tight flex items-center gap-2">
+                 <span className="w-6 h-6 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center text-[10px] shadow-sm">🗓️</span>
+                 {format(currentMonth, "MMM yyyy", { locale: es })}
+              </h3>
+              <div className="flex gap-1">
+                <button onClick={prevMonth} className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 font-bold transition-all text-sm">&lt;</button>
+                <button onClick={nextMonth} className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 font-bold transition-all text-sm">&gt;</button>
+              </div>
             </div>
-          </div>
-          <div className="grid grid-cols-7 gap-1">
-            {['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'].map(d => (
-              <div key={d} className="text-center text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">{d}</div>
-            ))}
-            {Array.from({ length: startDayIndex }).map((_, i) => (
-              <div key={`empty-${i}`} aria-hidden="true" className="h-8"></div>
-            ))}
-            {daysInMonth.map((day, i) => {
-               const dots = getDotsForDate(day);
-               const isToday = isSameDay(day, new Date());
-               const hasPosts = dots.length > 0;
-               const isSelected = selectedDateFilter && isSameDay(day, selectedDateFilter);
-               
-               return (
-                 <div 
-                   key={i} 
-                   onClick={() => setSelectedDateFilter(isSelected ? null : day)}
-                   className={`h-9 rounded-lg border flex flex-col items-center justify-center p-0.5 transition-all cursor-pointer ${isSelected ? 'bg-indigo-600 border-indigo-600 shadow-md transform scale-105' : isToday ? 'bg-indigo-50 border-indigo-200 shadow-inner hover:bg-indigo-100 text-indigo-600' : hasPosts ? 'bg-white border-slate-200 hover:border-indigo-300 hover:shadow-sm' : 'bg-slate-50/50 border-transparent hover:bg-slate-100'}`}
-                 >
-                   <span className={`text-[11px] font-bold ${isSelected ? 'text-white' : isToday ? 'text-indigo-600' : hasPosts ? 'text-slate-900' : 'text-slate-400'}`}>{format(day, 'd')}</span>
-                   <div className="flex flex-wrap justify-center gap-[2px] mt-0.5 w-full">
-                      {dots.slice(0, 3).map((dot, idx) => (
-                        <div key={idx} aria-hidden="true" className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white' : dot.color} shadow-sm`} title={dot.title}></div>
-                      ))}
-                      {dots.length > 3 && <span aria-hidden="true" className={`text-[6px] font-black leading-none ${isSelected ? 'text-indigo-200' : 'text-slate-400'}`}>+</span>}
+            <div className="grid grid-cols-7 gap-1">
+              {['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'].map(d => (
+                <div key={d} className="text-center text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">{d}</div>
+              ))}
+              {Array.from({ length: startDayIndex }).map((_, i) => (
+                <div key={`empty-${i}`} aria-hidden="true" className="h-8"></div>
+              ))}
+              {daysInMonth.map((day, i) => {
+                 const dots = getDotsForDate(day);
+                 const isToday = isSameDay(day, new Date());
+                 const hasPosts = dots.length > 0;
+                 const isSelected = selectedDateFilter && isSameDay(day, selectedDateFilter);
+                 
+                 return (
+                   <div 
+                     key={i} 
+                     onClick={() => {
+                       setSelectedDateFilter(isSelected ? null : day);
+                       if (isCalendarOpen) setIsCalendarOpen(false);
+                     }}
+                     className={`h-9 rounded-lg border flex flex-col items-center justify-center p-0.5 transition-all cursor-pointer ${isSelected ? 'bg-indigo-600 border-indigo-600 shadow-md transform scale-105' : isToday ? 'bg-indigo-50 border-indigo-200 shadow-inner hover:bg-indigo-100 text-indigo-600' : hasPosts ? 'bg-white border-slate-200 hover:border-indigo-300 hover:shadow-sm' : 'bg-slate-50/50 border-transparent hover:bg-slate-100'}`}
+                   >
+                     <span className={`text-[11px] font-bold ${isSelected ? 'text-white' : isToday ? 'text-indigo-600' : hasPosts ? 'text-slate-900' : 'text-slate-400'}`}>{format(day, 'd')}</span>
+                     <div className="flex flex-wrap justify-center gap-[2px] mt-0.5 w-full">
+                        {dots.slice(0, 3).map((dot, idx) => (
+                          <div key={idx} aria-hidden="true" className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white' : dot.color} shadow-sm`} title={dot.title}></div>
+                        ))}
+                        {dots.length > 3 && <span aria-hidden="true" className={`text-[6px] font-black leading-none ${isSelected ? 'text-indigo-200' : 'text-slate-400'}`}>+</span>}
+                     </div>
                    </div>
-                 </div>
-               )
-            })}
-          </div>
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-3 border-t border-slate-100 pt-3">
-             <div className="flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest text-slate-500"><div aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-pink-500"></div> Reel</div>
-             <div className="flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest text-slate-500"><div aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-purple-500"></div> Carrusel</div>
-             <div className="flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest text-slate-500"><div aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-blue-500"></div> Post</div>
-             <div className="flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest text-slate-500"><div aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-amber-500"></div> Story</div>
+                 )
+              })}
+            </div>
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-3 border-t border-slate-100 pt-3">
+               <div className="flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest text-slate-500"><div aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-pink-500"></div> Reel</div>
+               <div className="flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest text-slate-500"><div aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-purple-500"></div> Carrusel</div>
+               <div className="flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest text-slate-500"><div aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-blue-500"></div> Post</div>
+               <div className="flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest text-slate-500"><div aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-amber-500"></div> Story</div>
+            </div>
           </div>
         </div>
 
@@ -830,9 +855,9 @@ export default function RrssDashboard() {
                 {/* Checkbox Overlay */}
                 <div 
                   onClick={(e) => toggleSelectPost(post.id, e)}
-                  className={`absolute top-4 left-4 z-20 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-indigo-600 border-indigo-600 text-white scale-110 shadow-lg' : 'bg-white/80 backdrop-blur-sm border-slate-200 opacity-0 group-hover:opacity-100 shadow-sm'}`}
+                  className={`absolute top-4 left-4 z-20 w-9 h-9 rounded-xl border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-indigo-600 border-indigo-600 text-white scale-110 shadow-lg' : 'bg-white/80 backdrop-blur-sm border-slate-200 opacity-0 group-hover:opacity-100 shadow-sm'}`}
                 >
-                  {isSelected && <span className="text-xs font-black">✓</span>}
+                  {isSelected && <span className="text-sm font-black">✓</span>}
                 </div>
 
                 <div className={`px-5 py-4 border-b flex flex-col gap-3 ${statusConfig.color.split(' ').find(c => c.startsWith('bg-'))} ${statusConfig.color.split(' ').find(c => c.startsWith('border-'))}`}>
@@ -853,7 +878,7 @@ export default function RrssDashboard() {
                     {/* NETWORKS */}
                     <div className="flex gap-1.5">
                       {post.networks.map(net => (
-                        <span key={net} title={net} className="w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-200">
+                        <span key={net} title={net} className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-200">
                           <NetworkIcon network={net} postId={`${post.id}-${net}`} />
                         </span>
                       ))}
@@ -1019,205 +1044,211 @@ export default function RrssDashboard() {
 
     {/* Modal de Detalles */}
       {selectedPost && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 pointer-events-auto">
+        <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-6 pointer-events-auto">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setSelectedPost(null)}></div>
-          <div className="bg-white rounded-[32px] shadow-2xl w-full max-w-2xl relative z-10 p-8 sm:p-10 animate-in zoom-in duration-300 max-h-[90vh] overflow-y-auto mt-16 md:mt-0 hide-scrollbar">
-            <button onClick={() => setSelectedPost(null)} className="absolute top-6 right-6 w-10 h-10 bg-slate-100 hover:bg-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-800 text-2xl font-black transition-colors">&times;</button>
+          <div className="bg-white rounded-t-[32px] md:rounded-[32px] shadow-2xl w-full max-w-2xl relative z-10 animate-in slide-in-from-bottom md:zoom-in duration-300 h-[90vh] md:h-auto md:max-h-[90vh] overflow-hidden flex flex-col">
             
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8">
-               <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 bg-gradient-to-br from-indigo-50 to-purple-50 text-indigo-500 rounded-2xl flex items-center justify-center text-3xl shadow-sm border border-indigo-100/50">📱</div>
-                  <div>
-                    <h2 className="text-2xl font-black tracking-tight text-slate-900 mb-1">Detalle de Publicación</h2>
-                    <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-                      {format(selectedPost.scheduledFor?.toDate ? selectedPost.scheduledFor.toDate() : new Date(), "d MMM, yyyy - HH:mm", { locale: es })}
-                    </p>
-                  </div>
-               </div>
-               <div className="flex flex-col items-start sm:items-end gap-2">
-                  <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Publicar en:</span>
-                   <div className="flex gap-2">
-                    {['facebook', 'instagram', 'linkedin'].filter(net => 
-                      // Only show linkedin if activeProfile has linkedinToken_enc OR if the post already has it
-                      net !== 'linkedin' || activeProfile?.linkedinToken_enc || selectedPost.networks.includes('linkedin')
-                    ).map(net => {
-                      const isActive = selectedPost.networks.includes(net);
-                      return (
-                        <button 
-                          key={net} 
-                          onClick={(e) => toggleNetwork(selectedPost, net as any, e)}
-                          className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all ${
-                            isActive 
-                            ? 'bg-indigo-50 border-indigo-200 text-indigo-600 scale-105 shadow-sm shadow-indigo-500/10' 
-                            : 'bg-slate-50 border-slate-100 text-slate-400 opacity-60'
-                          }`}
-                        >
-                          <span className={`${!isActive && 'grayscale'}`}>{net === 'facebook' ? '🔵' : net === 'instagram' ? '🟣' : '💼'}</span>
-                          <span className="text-[10px] font-black uppercase tracking-widest">{net}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-               </div>
-            </div>
-
-            <div className="space-y-6">
-               <div className="flex flex-wrap items-center gap-3">
-                 <span className="text-[10px] font-black uppercase tracking-widest px-4 py-2 bg-slate-100 text-slate-500 rounded-xl border border-slate-200">Formato</span>
-                 <div className="flex gap-2">
-                    {['Post', 'Historia', 'Carrusel', 'Reel'].map(type => {
-                      const isActive = selectedPost.type === type || (!selectedPost.type && type === 'Post');
-                      return (
-                        <button
-                          key={type}
-                          onClick={(e) => handleChangeType(selectedPost, type, e)}
-                          className={`text-[10px] uppercase font-black tracking-widest px-4 py-2 rounded-xl border transition-all ${
-                             isActive 
-                               ? type === 'Historia' ? 'bg-amber-50 text-amber-600 border-amber-200 shadow-sm scale-105'
-                               : type === 'Carrusel' ? 'bg-purple-50 text-purple-600 border-purple-200 shadow-sm scale-105'
-                               : type === 'Reel' ? 'bg-rose-50 text-rose-600 border-rose-200 shadow-sm scale-105'
-                               : 'bg-blue-50 text-blue-600 border-blue-200 shadow-sm scale-105'
-                             : 'bg-slate-50 text-slate-400 border-slate-100 hover:border-slate-300'
-                          }`}
-                        >
-                          {type}
-                        </button>
-                      );
-                    })}
-                 </div>
-                 <span className={`text-[10px] uppercase font-black tracking-widest px-4 py-2 rounded-xl border ${selectedPost.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-200' : selectedPost.status === 'confirmed' ? 'bg-indigo-50 text-indigo-600 border-indigo-200' : selectedPost.status === 'published' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>
-                    Estado: {selectedPost.status === 'pending' ? 'Borrador' : selectedPost.status === 'confirmed' ? 'Confirmado' : selectedPost.status === 'published' ? 'Publicado' : selectedPost.status}
-                 </span>
-               </div>
-
-               {selectedPost.type === 'Carrusel' && (
-                 <div className="bg-purple-50/50 p-4 rounded-[20px] border border-purple-100 shadow-inner mt-4 animate-in slide-in-from-top-2 fade-in">
-                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-purple-600 mb-3 flex items-center gap-2"><span>🖼️</span> ¿Cuántas imágenes tendrá el Carrusel?</h3>
+            {/* Header Sticky en Mobile */}
+            <div className="p-6 sm:p-10 pb-4 border-b border-slate-100 shrink-0 relative">
+                {/* Drag Handle Mobile */}
+                <div className="w-12 h-1 bg-slate-200 rounded-full mx-auto mb-6 md:hidden"></div>
+                
+                <button onClick={() => setSelectedPost(null)} className="absolute top-6 right-6 w-10 h-10 bg-slate-100 hover:bg-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-800 text-2xl font-black transition-colors">&times;</button>
+                
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pr-10 md:pr-0">
                     <div className="flex items-center gap-4">
-                        <input 
-                            type="range" 
-                            min="2" 
-                            max="4" 
-                            value={selectedPost.carouselCount || 3} 
-                            onChange={(e) => handleChangeCarouselCount(selectedPost, parseInt(e.target.value))}
-                            className="w-full h-1.5 bg-purple-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
-                        />
-                        <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-purple-200 shadow-sm shrink-0">
-                            <span className="text-sm font-black text-purple-600">{selectedPost.carouselCount || 3}</span>
-                            <span className="text-[9px] font-black text-purple-400 uppercase tracking-widest">imgs</span>
+                        <div className="w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-indigo-50 to-purple-50 text-indigo-500 rounded-2xl flex items-center justify-center text-2xl md:text-3xl shadow-sm border border-indigo-100/50">📱</div>
+                        <div>
+                            <h2 className="text-xl md:text-2xl font-black tracking-tight text-slate-900 mb-0.5 md:mb-1">Detalle</h2>
+                            <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                                {format(selectedPost.scheduledFor?.toDate ? selectedPost.scheduledFor.toDate() : new Date(), "d MMM, yyyy - HH:mm", { locale: es })}
+                            </p>
                         </div>
                     </div>
-                 </div>
-               )}
+                    <div className="flex flex-col items-start sm:items-end gap-2">
+                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Publicar en:</span>
+                        <div className="flex gap-2">
+                            {['facebook', 'instagram', 'linkedin'].filter(net => 
+                                net !== 'linkedin' || activeProfile?.linkedinToken_enc || selectedPost.networks.includes('linkedin')
+                            ).map(net => {
+                                const isActive = selectedPost.networks.includes(net);
+                                return (
+                                    <button 
+                                        key={net} 
+                                        onClick={(e) => toggleNetwork(selectedPost, net as any, e)}
+                                        className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all ${
+                                            isActive 
+                                            ? 'bg-indigo-50 border-indigo-200 text-indigo-600 scale-105 shadow-sm shadow-indigo-500/10' 
+                                            : 'bg-slate-50 border-slate-100 text-slate-400 opacity-60'
+                                        }`}
+                                    >
+                                        <span className={`${!isActive && 'grayscale'}`}>{net === 'facebook' ? '🔵' : net === 'instagram' ? '🟣' : '💼'}</span>
+                                        <span className="text-[10px] font-black uppercase tracking-widest">{net}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-               <div className="bg-slate-50 p-6 rounded-[28px] border border-slate-100 shadow-inner">
-                 <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400 mb-3 flex items-center gap-2"><span>💡</span> Idea Principal / Enganche</h3>
-                 <p className="text-xl font-black text-slate-900 leading-tight">"{selectedPost.idea}"</p>
-               </div>
-
-               {selectedPost.text && (
-                 <div>
-                   <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 ml-2">Texto Descriptivo / Instrucción Visual</h3>
-                   <div className="bg-white p-6 rounded-[28px] border-2 border-slate-100 text-slate-600 font-medium whitespace-pre-wrap text-[15px] leading-relaxed relative">
-                     {selectedPost.text}
+            {/* Scrollable Content Area */}
+            <div className="flex-1 overflow-y-auto p-6 sm:p-10 pt-4 pb-32 hide-scrollbar">
+                <div className="space-y-6">
+                   <div className="flex flex-wrap items-center gap-3">
+                     <span className="text-[10px] font-black uppercase tracking-widest px-4 py-2 bg-slate-100 text-slate-500 rounded-xl border border-slate-200">Formato</span>
+                     <div className="flex gap-2">
+                        {['Post', 'Historia', 'Carrusel', 'Reel'].map(type => {
+                          const isActive = selectedPost.type === type || (!selectedPost.type && type === 'Post');
+                          return (
+                            <button
+                              key={type}
+                              onClick={(e) => handleChangeType(selectedPost, type, e)}
+                              className={`text-[10px] uppercase font-black tracking-widest px-4 py-2 rounded-xl border transition-all ${
+                                 isActive 
+                                   ? type === 'Historia' ? 'bg-amber-50 text-amber-600 border-amber-200 shadow-sm scale-105'
+                                   : type === 'Carrusel' ? 'bg-purple-50 text-purple-600 border-purple-200 shadow-sm scale-105'
+                                   : type === 'Reel' ? 'bg-rose-50 text-rose-600 border-rose-200 shadow-sm scale-105'
+                                   : 'bg-blue-50 text-blue-600 border-blue-200 shadow-sm scale-105'
+                                 : 'bg-slate-50 text-slate-400 border-slate-100 hover:border-slate-300'
+                              }`}
+                            >
+                              {type}
+                            </button>
+                          );
+                        })}
+                     </div>
+                     <span className={`text-[10px] uppercase font-black tracking-widest px-4 py-2 rounded-xl border ${selectedPost.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-200' : selectedPost.status === 'confirmed' ? 'bg-indigo-50 text-indigo-600 border-indigo-200' : selectedPost.status === 'published' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>
+                        Estado: {selectedPost.status === 'pending' ? 'Borrador' : selectedPost.status === 'confirmed' ? 'Confirmado' : selectedPost.status === 'published' ? 'Publicado' : selectedPost.status}
+                     </span>
                    </div>
-                 </div>
-               )}
 
-               <div>
-                 <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-3 ml-2">Copy / Pie de Foto para Redes</h3>
-                 <div className="bg-indigo-50/30 p-6 rounded-[28px] border-2 border-indigo-100 text-slate-800 font-medium whitespace-pre-wrap text-[15px] leading-relaxed relative shadow-inner">
-                   {selectedPost.copy ? selectedPost.copy : <span className="text-slate-400 italic">El copy se generará automáticamente con la imagen.</span>}
-                 </div>
-               </div>
+                   {selectedPost.type === 'Carrusel' && (
+                     <div className="bg-purple-50/50 p-4 rounded-[20px] border border-purple-100 shadow-inner mt-4 animate-in slide-in-from-top-2 fade-in">
+                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-purple-600 mb-3 flex items-center gap-2"><span>🖼️</span> ¿Cuántas imágenes tendrá el Carrusel?</h3>
+                        <div className="flex items-center gap-4">
+                            <input 
+                                type="range" 
+                                min="2" 
+                                max="4" 
+                                value={selectedPost.carouselCount || 3} 
+                                onChange={(e) => handleChangeCarouselCount(selectedPost, parseInt(e.target.value))}
+                                className="w-full h-1.5 bg-purple-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                            />
+                            <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-purple-200 shadow-sm shrink-0">
+                                <span className="text-sm font-black text-purple-600">{selectedPost.carouselCount || 3}</span>
+                                <span className="text-[9px] font-black text-purple-400 uppercase tracking-widest">imgs</span>
+                            </div>
+                        </div>
+                     </div>
+                   )}
 
-               {selectedPost.isGeneratingImage ? (
-                  <div className="rounded-[28px] p-8 bg-indigo-50 border border-indigo-100 flex flex-col items-center justify-center animate-pulse">
-                     <div className="w-10 h-10 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin mb-4 shadow-md"></div>
-                     <p className="text-xs font-black text-indigo-600 tracking-widest uppercase mb-4">Pintando con n8n...</p>
-                     <button 
-                       onClick={(e) => handleResetGeneratingState(selectedPost.id, e)}
-                       className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-rose-500 bg-white px-4 py-2 rounded-xl border border-slate-100 transition-all"
+                   <div className="bg-slate-50 p-6 rounded-[28px] border border-slate-100 shadow-inner">
+                     <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400 mb-3 flex items-center gap-2"><span>💡</span> Idea Principal / Enganche</h3>
+                     <p className="text-xl font-black text-slate-900 leading-tight">"{selectedPost.idea}"</p>
+                   </div>
+
+                   {selectedPost.text && (
+                     <div>
+                       <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3 ml-2">Texto Descriptivo / Instrucción Visual</h3>
+                       <div className="bg-white p-6 rounded-[28px] border-2 border-slate-100 text-slate-600 font-medium whitespace-pre-wrap text-[15px] leading-relaxed relative">
+                         {selectedPost.text}
+                       </div>
+                     </div>
+                   )}
+
+                   <div>
+                     <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-3 ml-2">Copy / Pie de Foto para Redes</h3>
+                     <div className="bg-indigo-50/30 p-6 rounded-[28px] border-2 border-indigo-100 text-slate-800 font-medium whitespace-pre-wrap text-[15px] leading-relaxed relative shadow-inner">
+                       {selectedPost.copy ? selectedPost.copy : <span className="text-slate-400 italic">El copy se generará automáticamente con la imagen.</span>}
+                     </div>
+                   </div>
+
+                   {selectedPost.isGeneratingImage ? (
+                      <div className="rounded-[28px] p-8 bg-indigo-50 border border-indigo-100 flex flex-col items-center justify-center animate-pulse">
+                         <div className="w-10 h-10 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin mb-4 shadow-md"></div>
+                         <p className="text-xs font-black text-indigo-600 tracking-widest uppercase mb-4">Pintando con n8n...</p>
+                         <button 
+                           onClick={(e) => handleResetGeneratingState(selectedPost.id, e)}
+                           className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-rose-500 bg-white px-4 py-2 rounded-xl border border-slate-100 transition-all"
+                         >
+                            Resetear Estado (Si está trabado)
+                         </button>
+                      </div>
+                    ) : selectedPost.imageUrl ? (
+                     <div>
+                       <div className="flex items-center justify-between mb-3 ml-2">
+                           <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Referencia Visual de IA</h3>
+                           {['elite', 'business'].includes(userPlan) && (
+                               <button 
+                                 onClick={(e) => handleGenerateMedia(selectedPost.id, e)}
+                                 className="text-[10px] font-black uppercase tracking-widest text-indigo-500 hover:text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100 transition-all flex items-center gap-1.5 shadow-sm"
+                               >
+                                  <span>✨</span> Volver a Generar
+                               </button>
+                           )}
+                       </div>
+                       <div className="rounded-[28px] p-2 bg-slate-50 border-2 border-slate-100">
+                         <DashboardCarouselViewer urls={selectedPost.imageUrls && selectedPost.imageUrls.length > 0 ? selectedPost.imageUrls : [selectedPost.imageUrl!]} />
+                       </div>
+                     </div>
+                   ) : ['elite', 'business'].includes(userPlan) ? (
+                     <div 
+                       onClick={(e) => handleGenerateMedia(selectedPost.id, e)}
+                       className="rounded-[28px] p-8 bg-slate-50 border-2 border-dashed border-slate-200 flex flex-col items-center justify-center cursor-pointer hover:bg-indigo-50 hover:border-indigo-300 transition-all group/modalmedia"
                      >
-                        Resetear Estado (Si está trabado)
-                     </button>
-                  </div>
-                ) : selectedPost.imageUrl ? (
-                 <div>
-                   <div className="flex items-center justify-between mb-3 ml-2">
-                       <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Referencia Visual de IA</h3>
-                       {['elite', 'business'].includes(userPlan) && (
-                           <button 
-                             onClick={(e) => handleGenerateMedia(selectedPost.id, e)}
-                             className="text-[10px] font-black uppercase tracking-widest text-indigo-500 hover:text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100 transition-all flex items-center gap-1.5 shadow-sm"
-                           >
-                              <span>✨</span> Volver a Generar
-                           </button>
-                       )}
-                   </div>
-                   <div className="rounded-[28px] p-2 bg-slate-50 border-2 border-slate-100">
-                     <DashboardCarouselViewer urls={selectedPost.imageUrls && selectedPost.imageUrls.length > 0 ? selectedPost.imageUrls : [selectedPost.imageUrl!]} />
-                   </div>
-                 </div>
-               ) : ['elite', 'business'].includes(userPlan) ? (
-                 <div 
-                   onClick={(e) => handleGenerateMedia(selectedPost.id, e)}
-                   className="rounded-[28px] p-8 bg-slate-50 border-2 border-dashed border-slate-200 flex flex-col items-center justify-center cursor-pointer hover:bg-indigo-50 hover:border-indigo-300 transition-all group/modalmedia"
-                 >
-                    <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center text-2xl shadow-sm text-indigo-500 mx-auto mb-4 group-hover/modalmedia:scale-110 group-hover/modalmedia:bg-indigo-500 group-hover/modalmedia:text-white transition-all">✨</div>
-                    <p className="text-sm font-black text-slate-500 uppercase tracking-widest group-hover/modalmedia:text-indigo-600">Generar Vista Previa Ahora</p>
-                 </div>
-               ) : (
-                 <div className="rounded-[28px] p-8 bg-slate-50 border border-slate-200 flex flex-col items-center justify-center">
-                    <div className="w-14 h-14 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center text-3xl shadow-sm mx-auto mb-4">🤖</div>
-                    <p className="text-sm font-black text-slate-500 uppercase tracking-widest">Confía en Piloto Automático</p>
-                    <p className="text-xs text-slate-400 mt-2 text-center max-w-sm">Mejora a Elite o Business para pre-visualizar y editar las imágenes generadas antes de que sean publicadas.</p>
-                 </div>
-               )}
+                        <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center text-2xl shadow-sm text-indigo-500 mx-auto mb-4 group-hover/modalmedia:scale-110 group-hover/modalmedia:bg-indigo-500 group-hover/modalmedia:text-white transition-all">✨</div>
+                        <p className="text-sm font-black text-slate-500 uppercase tracking-widest group-hover/modalmedia:text-indigo-600">Generar Vista Previa Ahora</p>
+                     </div>
+                   ) : (
+                     <div className="rounded-[28px] p-8 bg-slate-50 border border-slate-200 flex flex-col items-center justify-center">
+                        <div className="w-14 h-14 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center text-3xl shadow-sm mx-auto mb-4">🤖</div>
+                        <p className="text-sm font-black text-slate-500 uppercase tracking-widest">Confía en Piloto Automático</p>
+                        <p className="text-xs text-slate-400 mt-2 text-center max-w-sm">Mejora a Elite o Business para pre-visualizar y editar las imágenes generadas antes de que sean publicadas.</p>
+                     </div>
+                   )}
+                </div>
             </div>
 
-            <div className="mt-12 pt-8 border-t-2 border-slate-100 flex flex-col items-center gap-6">
-               <div className="w-full flex flex-col sm:flex-row gap-4">
-                 <button
-                   onClick={() => handlePublishNow(selectedPost.id)}
-                   disabled={publishingPostId === selectedPost.id || selectedPost.status === 'published' || !selectedPost.imageUrl}
-                   className="flex-1 bg-gradient-to-br from-slate-800 to-black text-white px-8 py-5 rounded-[28px] font-black text-[13px] uppercase tracking-[0.1em] hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-40 disabled:grayscale disabled:cursor-not-allowed group/publish shadow-2xl shadow-slate-900/30 overflow-hidden relative"
-                 >
-                   <div className="absolute inset-0 bg-gradient-to-tr from-orange-500/10 to-transparent opacity-0 group-hover/publish:opacity-100 transition-opacity"></div>
-                   {publishingPostId === selectedPost.id ? (
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white animate-spin rounded-full" />
-                   ) : (
-                      <span className="text-2xl group-hover/publish:scale-125 transition-transform duration-300 drop-shadow-[0_0_8px_rgba(249,115,22,0.6)]">
-                        {selectedPost.status === 'published' ? '✨' : '🔥'}
-                      </span>
-                   )}
-                   <span className="relative z-10">{selectedPost.status === 'published' ? 'Publicación Lista' : 'Publicar Ahora!!!'}</span>
-                 </button>
+            {/* Sticky Actions Bar Mobile / Footer Desktop */}
+            <div className="shrink-0 p-6 sm:p-10 border-t border-slate-100 bg-white/80 backdrop-blur-xl absolute bottom-0 inset-x-0 z-20">
+                <div className="w-full flex flex-col sm:flex-row gap-4">
+                  <button
+                    onClick={() => handlePublishNow(selectedPost.id)}
+                    disabled={publishingPostId === selectedPost.id || selectedPost.status === 'published' || !selectedPost.imageUrl}
+                    className="flex-1 bg-gradient-to-br from-slate-800 to-black text-white px-8 py-4 md:py-5 rounded-2xl md:rounded-[28px] font-black text-[13px] uppercase tracking-[0.1em] hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-40 disabled:grayscale disabled:cursor-not-allowed group/publish shadow-2xl shadow-slate-900/30 overflow-hidden relative"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-tr from-orange-500/10 to-transparent opacity-0 group-hover/publish:opacity-100 transition-opacity"></div>
+                    {publishingPostId === selectedPost.id ? (
+                       <div className="w-5 h-5 border-2 border-white/30 border-t-white animate-spin rounded-full" />
+                    ) : (
+                       <span className="text-2xl group-hover/publish:scale-125 transition-transform duration-300 drop-shadow-[0_0_8px_rgba(249,115,22,0.6)]">
+                         {selectedPost.status === 'published' ? '✨' : '🔥'}
+                       </span>
+                    )}
+                    <span className="relative z-10">{selectedPost.status === 'published' ? 'Publicación Lista' : 'Publicar Ahora!!!'}</span>
+                  </button>
 
-                 <button
-                   onClick={() => handleUpdateStatus(selectedPost.id, selectedPost.status === 'confirmed' ? 'pending' : 'confirmed')}
-                   disabled={isUpdatingStatus || selectedPost.status === 'published'}
-                   className="flex-1 bg-gradient-to-br from-indigo-600 to-violet-700 text-white px-8 py-5 rounded-[28px] font-black text-[13px] uppercase tracking-[0.1em] hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-40 disabled:cursor-not-allowed group/bot shadow-2xl shadow-indigo-600/30 overflow-hidden relative"
-                 >
-                   <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-0 group-hover/bot:opacity-100 transition-opacity"></div>
-                   {isUpdatingStatus ? (
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white animate-spin rounded-full" />
-                   ) : (
-                      <span className="text-2xl group-hover/bot:rotate-12 transition-transform duration-300 drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]">
-                        {selectedPost.status === 'confirmed' ? '⏳' : '✅'}
-                      </span>
-                   )}
-                   <span className="relative z-10">{selectedPost.status === 'confirmed' ? 'Desmarcar Bot' : 'Confirmar Bot'}</span>
-                 </button>
-               </div>
-
-               <button 
-                 onClick={() => setSelectedPost(null)} 
-                 className="px-12 py-3 font-bold text-slate-400 hover:text-slate-600 text-sm uppercase tracking-widest hover:bg-slate-50 rounded-2xl transition-all"
-               >
-                 Cerrar / Cancelar
-               </button>
+                  <button
+                    onClick={() => handleUpdateStatus(selectedPost.id, selectedPost.status === 'confirmed' ? 'pending' : 'confirmed')}
+                    disabled={isUpdatingStatus || selectedPost.status === 'published'}
+                    className="flex-1 bg-gradient-to-br from-indigo-600 to-violet-700 text-white px-8 py-4 md:py-5 rounded-2xl md:rounded-[28px] font-black text-[13px] uppercase tracking-[0.1em] hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-40 disabled:cursor-not-allowed group/bot shadow-2xl shadow-indigo-600/30 overflow-hidden relative"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-0 group-hover/bot:opacity-100 transition-opacity"></div>
+                    {isUpdatingStatus ? (
+                       <div className="w-5 h-5 border-2 border-white/30 border-t-white animate-spin rounded-full" />
+                    ) : (
+                       <span className="text-2xl group-hover/bot:rotate-12 transition-transform duration-300 drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]">
+                         {selectedPost.status === 'confirmed' ? '⏳' : '✅'}
+                       </span>
+                    )}
+                    <span className="relative z-10">{selectedPost.status === 'confirmed' ? 'Desmarcar Bot' : 'Confirmar Bot'}</span>
+                  </button>
+                </div>
             </div>
+          </div>
+        </div>
+      )}
           </div>
         </div>
       )}

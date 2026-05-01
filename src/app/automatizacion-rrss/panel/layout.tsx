@@ -150,36 +150,49 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
                <h2 className="text-xl font-black tracking-tight flex items-center gap-2">🤖 <span className="text-indigo-400">RRSS</span> Bot</h2>
              </Link>
              <div className="flex items-center">
-                <div className="scale-75 origin-right">
-                  <NetworkSwitcher />
-                </div>
+                <NetworkSwitcher />
                 <ProfileMenu user={user} userDoc={userDoc} />
              </div>
           </div>
-          <div className="flex overflow-x-auto bg-slate-950 px-4 py-4 gap-2 hide-scrollbar border-b border-white/5">
-            {links.map(link => {
-              const isActive = link.exact ? pathname === link.href : pathname.startsWith(link.href);
-              return (
-                <Link key={link.href} href={link.href} className={`whitespace-nowrap px-5 py-2.5 rounded-xl text-xs font-bold transition-all ${isActive ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'bg-slate-900 text-slate-400 border border-white/5'}`}>
-                  {link.icon} {link.label}
-                </Link>
-              )
-            })}
+          <div className="relative bg-slate-950 border-b border-white/5">
+            {/* Scroll Fade Left */}
+            <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-slate-950 to-transparent z-10 pointer-events-none"></div>
             
-            {(user?.email === "diemoroy@gmail.com" || userDoc?.role === "admin") && (
-                <>
-                  <div className="w-px h-6 bg-white/10 mx-2 self-center shrink-0"></div>
-                  <Link href="/automatizacion-rrss/panel/admin" className={`whitespace-nowrap px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${pathname === '/automatizacion-rrss/panel/admin' ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-slate-400 border border-white/5'}`}>👑 Usuarios</Link>
-                  <Link href="/automatizacion-rrss/panel/admin/whatsapp" className={`whitespace-nowrap px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${pathname.includes('/whatsapp') ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-slate-400 border border-white/5'}`}>💬 Chats</Link>
-                  <Link href="/automatizacion-rrss/panel/admin/estrategias" className={`whitespace-nowrap px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${pathname.includes('/admin/estrategias') ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-slate-400 border border-white/5'}`}>🧠 Estrategias</Link>
-                  <Link href="/automatizacion-rrss/panel/admin/workflows" className={`whitespace-nowrap px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${pathname.includes('/admin/workflows') ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-slate-400 border border-white/5'}`}>⚙️ Workflows</Link>
-                  <Link href="/automatizacion-rrss/panel/admin/monitoreo" className={`whitespace-nowrap px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${pathname.includes('/admin/monitoreo') ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-slate-400 border border-white/5'}`}>📡 Monitoreo</Link>
-                </>
-            )}
+            <div className="flex overflow-x-auto px-4 py-4 gap-2 hide-scrollbar">
+              {links.map(link => {
+                const isActive = link.exact ? pathname === link.href : pathname.startsWith(link.href);
+                return (
+                  <Link key={link.href} href={link.href} className={`whitespace-nowrap px-5 py-2.5 rounded-xl text-xs font-bold transition-all ${isActive ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'bg-slate-900 text-slate-400 border border-white/5'}`}>
+                    {link.icon} {link.label}
+                  </Link>
+                )
+              })}
+              
+              {(user?.email === "diemoroy@gmail.com" || userDoc?.role === "admin") && (
+                  <>
+                    <div className="w-px h-6 bg-white/10 mx-2 self-center shrink-0"></div>
+                    <details className="relative shrink-0 group/admin">
+                      <summary className="list-none cursor-pointer whitespace-nowrap px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-900 text-slate-400 border border-white/5 flex items-center gap-2 group-open/admin:bg-indigo-600 group-open/admin:text-white transition-all">
+                        👑 Admin <span className="text-[10px] group-open/admin:rotate-180 transition-transform">▼</span>
+                      </summary>
+                      <div className="absolute left-0 bottom-full mb-2 bg-slate-900 border border-white/10 rounded-2xl p-2 shadow-2xl flex flex-col gap-1 min-w-[160px] animate-in slide-in-from-bottom-2 fade-in">
+                        <Link href="/automatizacion-rrss/panel/admin" className="px-4 py-2 rounded-lg text-xs font-bold text-slate-400 hover:bg-white/5 hover:text-white transition-colors">Usuarios</Link>
+                        <Link href="/automatizacion-rrss/panel/admin/whatsapp" className="px-4 py-2 rounded-lg text-xs font-bold text-slate-400 hover:bg-white/5 hover:text-white transition-colors">Chats</Link>
+                        <Link href="/automatizacion-rrss/panel/admin/estrategias" className="px-4 py-2 rounded-lg text-xs font-bold text-slate-400 hover:bg-white/5 hover:text-white transition-colors">Estrategias</Link>
+                        <Link href="/automatizacion-rrss/panel/admin/workflows" className="px-4 py-2 rounded-lg text-xs font-bold text-slate-400 hover:bg-white/5 hover:text-white transition-colors">Workflows</Link>
+                        <Link href="/automatizacion-rrss/panel/admin/monitoreo" className="px-4 py-2 rounded-lg text-xs font-bold text-slate-400 hover:bg-white/5 hover:text-white transition-colors">Monitoreo</Link>
+                      </div>
+                    </details>
+                  </>
+              )}
+            </div>
+
+            {/* Scroll Fade Right */}
+            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-slate-950 to-transparent z-10 pointer-events-none"></div>
           </div>
         </div>
 
-        <div className="p-6 md:p-12 pt-8 md:pt-24 max-w-[1400px] mx-auto print:p-0 print:m-0 print:max-w-none">
+        <div className="p-4 sm:p-6 md:p-12 pt-6 md:pt-24 max-w-[1400px] mx-auto print:p-0 print:m-0 print:max-w-none">
           {children}
         </div>
         <div className="print:hidden">

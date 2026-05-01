@@ -43,7 +43,7 @@ export default function NetworkSwitcher() {
          <span className="text-xl group-hover:scale-110 transition-transform">{activeProfile.icon || '🏢'}</span>
          <div className="text-left hidden md:block">
             <div className="text-[9px] font-black uppercase tracking-widest text-slate-400">Cuenta Activa</div>
-            <div className="text-sm font-bold text-slate-800 leading-tight">{activeProfile.name}</div>
+            <div className="text-sm font-bold text-slate-800 leading-tight line-clamp-1 max-w-[120px]">{activeProfile.name}</div>
          </div>
          <span className="text-slate-300 ml-2 group-hover:text-indigo-400">▼</span>
       </button>
@@ -75,7 +75,7 @@ export default function NetworkSwitcher() {
                             {activeProfile.id === p.id && <div className="absolute inset-0 bg-white/20 animate-pulse mix-blend-overlay"></div>}
                             <span className="relative z-10">{p.icon || '🏢'}</span>
                           </div>
-                          <span className={`text-xl font-bold tracking-tight transition-colors ${activeProfile.id === p.id ? 'text-white' : 'text-slate-400 group-hover:text-white'}`}>
+                          <span className={`text-lg md:text-xl font-bold tracking-tight transition-colors line-clamp-1 max-w-[140px] md:max-w-[200px] text-center px-2 ${activeProfile.id === p.id ? 'text-white' : 'text-slate-400 group-hover:text-white'}`}>
                             {p.name}
                           </span>
                         </button>
