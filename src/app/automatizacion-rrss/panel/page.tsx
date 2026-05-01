@@ -641,12 +641,22 @@ export default function RrssDashboard() {
     });
   }, [posts, selectedDateFilter, activeTab]);
 
-  if (loading) return <div className="animate-pulse space-y-4 max-w-4xl"><div className="h-10 bg-slate-200 rounded w-1/3"></div><div className="h-64 bg-slate-200 rounded"></div></div>;
+  const videosUsed = useMemo(() => {
+    return posts.filter(p => {
+      const t = p.type?.toLowerCase() || '';
+      return t.includes('reel') || t.includes('video');
+    }).length;
+  }, [posts]);
 
-  const videosUsed = posts.filter(p => {
-    const t = p.type?.toLowerCase() || '';
-    return t.includes('reel') || t.includes('video');
-  }).length;
+  if (loading) {
+    return (
+      <div className="animate-pulse space-y-4 max-w-4xl">
+        <div className="h-10 bg-slate-200 rounded w-1/3"></div>
+        <div className="h-64 bg-slate-200 rounded"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full max-w-7xl mx-auto">
       <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mb-4">
@@ -1000,6 +1010,7 @@ export default function RrssDashboard() {
         </div>
       )}
       </div>
+    </div>
 
       {/* Floating Action Bar for Selection */}
       {selectedPostIds.length > 0 && (
