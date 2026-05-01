@@ -92,7 +92,7 @@ export async function POST(req: Request) {
                 };
                 break;
             case 'img-rrss-auto-test':
-                url = 'https://n8n.santisoft.cl/webhook-test/img-rrss-auto';
+                url = 'https://n8n.santisoft.cl/webhook/img-rrss-auto';
                 payload = {
                     idea: 'Idea de prueba para preview',
                     businessType: 'Restaurante',
