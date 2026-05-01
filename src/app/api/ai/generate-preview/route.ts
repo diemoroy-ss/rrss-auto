@@ -97,7 +97,7 @@ INSTRUCCIONES CLAVE:
         }
 
         // Normalize response
-        const imageUrl = data?.imageUrl || data?.image_url || data?.url || data?.finalUrl || data?.final_url;
+        const imageUrl = data?.imageUrl || data?.image_url || data?.imgUrl || data?.url || data?.finalUrl || data?.final_url;
         let suggestedCopy = data?.suggestedCopy || data?.copy || data?.text || "";
 
         // 3. Generate high-quality copy using Gemini Free
