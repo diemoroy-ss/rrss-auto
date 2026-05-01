@@ -19,19 +19,36 @@ export default function CanvasEditor({
   userId,
   onSave
 }: CanvasEditorProps) {
+interface TextLayer {
+  text: string;
+  color: string;
+  font: string;
+  size: string;
+  x: number;
+  y: number;
+}
+
+export default function CanvasEditor({
+  baseImageUrl,
+  suggestedCopy,
+  initialLogoUrl,
+  userId,
+  onSave
+}: CanvasEditorProps) {
   const [showEditor, setShowEditor] = useState(false);
-  const [overlayText, setOverlayText] = useState("");
-  const [overlayColor, setOverlayColor] = useState("#ffffff");
-  const [overlayFont, setOverlayFont] = useState("Montserrat");
-  const [overlaySize, setOverlaySize] = useState("40");
+  const [activeLayerIndex, setActiveLayerIndex] = useState(0);
+  const [textLayers, setTextLayers] = useState<TextLayer[]>([
+    { text: "", color: "#ffffff", font: "Montserrat", size: "40", x: 50, y: 40 },
+    { text: "", color: "#ffffff", font: "Montserrat", size: "30", x: 50, y: 50 },
+    { text: "", color: "#ffffff", font: "Montserrat", size: "20", x: 50, y: 60 },
+  ]);
+
   const [useLogo, setUseLogo] = useState(false);
   const [finalImageUrl, setFinalImageUrl] = useState("");
   const [isOverlaying, setIsOverlaying] = useState(false);
   const [ticketId, setTicketId] = useState("");
   const [error, setError] = useState("");
 
-  const [overlayX, setOverlayX] = useState(50);
-  const [overlayY, setOverlayY] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
 
   const [userLogo, setUserLogo] = useState(initialLogoUrl);
@@ -39,6 +56,7 @@ export default function CanvasEditor({
   const [logoX, setLogoX] = useState(10);
   const [logoY, setLogoY] = useState(10);
   const [dragTarget, setDragTarget] = useState<'text' | 'logo' | null>(null);
+  const [draggingLayerIndex, setDraggingLayerIndex] = useState<number | null>(null);
   
   const logoInputRef = useRef<HTMLInputElement>(null);
   const previewContainerRef = useRef<HTMLDivElement>(null);
@@ -48,9 +66,13 @@ export default function CanvasEditor({
     setUserLogo(initialLogoUrl);
   }, [initialLogoUrl]);
 
-  const handleMouseDown = (target: 'text' | 'logo') => {
+  const handleMouseDown = (target: 'text' | 'logo', index?: number) => {
     if (!showEditor || isOverlaying) return;
     setDragTarget(target);
+    if (target === 'text' && index !== undefined) {
+        setDraggingLayerIndex(index);
+        setActiveLayerIndex(index); // Cambiar automáticamente a la capa que se está arrastrando
+    }
     setIsDragging(true);
   };
 
@@ -63,10 +85,13 @@ export default function CanvasEditor({
     const clampedX = Math.max(0, Math.min(100, x));
     const clampedY = Math.max(0, Math.min(100, y));
 
-    if (dragTarget === 'text') {
-        setOverlayX(clampedX);
-        setOverlayY(clampedY);
-    } else {
+    if (dragTarget === 'text' && draggingLayerIndex !== null) {
+        setTextLayers(prev => {
+            const next = [...prev];
+            next[draggingLayerIndex] = { ...next[draggingLayerIndex], x: clampedX, y: clampedY };
+            return next;
+        });
+    } else if (dragTarget === 'logo') {
         setLogoX(clampedX);
         setLogoY(clampedY);
     }
@@ -75,6 +100,15 @@ export default function CanvasEditor({
   const handleMouseUp = () => {
     setIsDragging(false);
     setDragTarget(null);
+    setDraggingLayerIndex(null);
+  };
+
+  const updateActiveLayer = (updates: Partial<TextLayer>) => {
+    setTextLayers(prev => {
+        const next = [...prev];
+        next[activeLayerIndex] = { ...next[activeLayerIndex], ...updates };
+        return next;
+    });
   };
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -109,23 +143,30 @@ export default function CanvasEditor({
      setTicketId(tId);
 
      try {
+       // Filtramos capas que tengan texto
+       const activeLayers = textLayers.filter(l => l.text.trim() !== "");
+
        const startRes = await fetch("/api/ai-banner/start", {
          method: "POST",
          headers: { "Content-Type": "application/json" },
          body: JSON.stringify({
            ticketId: tId,
-           textX: Math.round(overlayX),
-           textY: Math.round(overlayY),
            baseImageUrl: baseImageUrl,
-           overlayText,
-           overlayColor,
-           overlayFont,
-           overlaySize: parseInt(overlaySize),
+           userId: userId,
+           textLayers: activeLayers, // Enviamos el array completo
+           
+           // Compatibilidad hacia atrás (usamos la primera capa activa)
+           overlayText: activeLayers[0]?.text || "",
+           textX: Math.round(activeLayers[0]?.x || 50),
+           textY: Math.round(activeLayers[0]?.y || 50),
+           overlayColor: activeLayers[0]?.color || "#ffffff",
+           overlayFont: activeLayers[0]?.font || "Montserrat",
+           overlaySize: parseInt(activeLayers[0]?.size || "40"),
+
            useLogo,
            logoUrl: userLogo,
            logoX: Math.round(logoX),
            logoY: Math.round(logoY),
-           userId: userId
          })
        });
 
@@ -193,29 +234,33 @@ export default function CanvasEditor({
           <img src={finalImageUrl || baseImageUrl} alt="AI Output" className="w-full h-full object-cover" />
           
        {/* Overlays before render */}
-       {showEditor && overlayText && !finalImageUrl && !isOverlaying && (
-           <div 
-              onMouseDown={() => handleMouseDown('text')}
-              className={`absolute z-20 pointer-events-auto p-4 text-center select-none active:scale-95 transition-transform ${isDragging && dragTarget === 'text' ? 'cursor-grabbing' : 'cursor-grab font-black'}`}
-              style={{ 
-                  color: overlayColor, 
-                  fontFamily: overlayFont, 
-                  fontSize: `${overlaySize}px`, 
-                  fontWeight: 'bold', 
-                  textShadow: '2px 2px 8px rgba(0,0,0,0.8)',
-                  left: `${overlayX}%`,
-                  top: `${overlayY}%`,
-                  transform: `translate(-50%, -50%) ${isDragging && dragTarget === 'text' ? 'scale(1.1)' : ''}`,
-                  position: 'absolute',
-                  whiteSpace: 'nowrap'
-              }}
-           >
-               {overlayText}
-               {showEditor && !isDragging && (
-                   <div className="absolute -inset-2 border-2 border-dashed border-white/50 rounded-lg animate-pulse pointer-events-none" />
-               )}
-           </div>
-       )}
+       {showEditor && !finalImageUrl && !isOverlaying && textLayers.map((layer, idx) => (
+           layer.text && (
+            <div 
+               key={idx}
+               onMouseDown={() => handleMouseDown('text', idx)}
+               className={`absolute z-20 pointer-events-auto p-4 text-center select-none active:scale-95 transition-transform ${isDragging && draggingLayerIndex === idx ? 'cursor-grabbing' : 'cursor-grab font-black'} ${activeLayerIndex === idx ? 'ring-2 ring-indigo-500/50 rounded-xl' : ''}`}
+               style={{ 
+                   color: layer.color, 
+                   fontFamily: layer.font, 
+                   fontSize: `${layer.size}px`, 
+                   fontWeight: 'bold', 
+                   textShadow: '2px 2px 8px rgba(0,0,0,0.8)',
+                   left: `${layer.x}%`,
+                   top: `${layer.y}%`,
+                   transform: `translate(-50%, -50%) ${isDragging && draggingLayerIndex === idx ? 'scale(1.1)' : ''}`,
+                   position: 'absolute',
+                   whiteSpace: 'nowrap'
+               }}
+            >
+                {layer.text}
+                {showEditor && activeLayerIndex === idx && !isDragging && (
+                    <div className="absolute -inset-2 border-2 border-dashed border-white/50 rounded-lg animate-pulse pointer-events-none" />
+                )}
+            </div>
+           )
+       ))}
+
        {showEditor && useLogo && userLogo && !finalImageUrl && !isOverlaying && (
             <div 
               onMouseDown={() => handleMouseDown('logo')}
@@ -262,29 +307,68 @@ export default function CanvasEditor({
         <div className="bg-white p-6 rounded-2xl border border-slate-200 space-y-4 shadow-sm animate-in slide-in-from-top-4">
             <h5 className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-2 border-b border-slate-100 pb-2">🦋 Butterfly IA (Toque Final)</h5>
             
-            <div>
-               <label className="block text-[10px] font-bold text-slate-400 mb-1">Texto Principal</label>
-               <input type="text" value={overlayText} onChange={e => setOverlayText(e.target.value)} disabled={isOverlaying} placeholder="Ej: 50% OFF" className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-sm font-bold disabled:opacity-50" />
+            {/* TABS PARA CAPAS DE TEXTO */}
+            <div className="flex gap-2 mb-2">
+                {[0, 1, 2].map(i => (
+                    <button 
+                      key={i}
+                      onClick={() => setActiveLayerIndex(i)}
+                      className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeLayerIndex === i ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}
+                    >
+                        Capa {i+1}
+                    </button>
+                ))}
+            </div>
+
+            <div className="animate-in fade-in duration-300" key={activeLayerIndex}>
+               <label className="block text-[10px] font-bold text-slate-400 mb-1">Contenido Capa {activeLayerIndex + 1}</label>
+               <input 
+                  type="text" 
+                  value={textLayers[activeLayerIndex].text} 
+                  onChange={e => updateActiveLayer({ text: e.target.value })} 
+                  disabled={isOverlaying} 
+                  placeholder={`Texto para la capa ${activeLayerIndex + 1}...`} 
+                  className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-sm font-bold disabled:opacity-50" 
+                />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
                 <div>
                     <label className="block text-[10px] font-bold text-slate-400 mb-1">Color</label>
                     <div className="flex gap-2">
-                        {['#ffffff', '#000000', '#f43f5e', '#3b82f6', '#10b981'].map(color => (
-                            <button key={color} type="button" disabled={isOverlaying} onClick={() => setOverlayColor(color)} className={`w-6 h-6 rounded-full border-2 disabled:opacity-50 ${overlayColor === color ? 'border-indigo-500 scale-110' : 'border-transparent'}`} style={{ backgroundColor: color }} />
+                        {['#ffffff', '#000000', '#f43f5e', '#3b82f6', '#10b981', '#facc15'].map(color => (
+                            <button 
+                                key={color} 
+                                type="button" 
+                                disabled={isOverlaying} 
+                                onClick={() => updateActiveLayer({ color })} 
+                                className={`w-6 h-6 rounded-full border-2 disabled:opacity-50 ${textLayers[activeLayerIndex].color === color ? 'border-indigo-500 scale-110' : 'border-transparent'}`} 
+                                style={{ backgroundColor: color }} 
+                            />
                         ))}
                     </div>
                 </div>
                 <div>
-                    <label className="block text-[10px] font-bold text-slate-400 mb-1">Tamaño: {overlaySize}px</label>
-                    <input type="range" min="20" max="100" value={overlaySize} onChange={e => setOverlaySize(e.target.value)} disabled={isOverlaying} className="w-full disabled:opacity-50" />
+                    <label className="block text-[10px] font-bold text-slate-400 mb-1">Tamaño: {textLayers[activeLayerIndex].size}px</label>
+                    <input 
+                        type="range" 
+                        min="15" max="120" 
+                        value={textLayers[activeLayerIndex].size} 
+                        onChange={e => updateActiveLayer({ size: e.target.value })} 
+                        disabled={isOverlaying} 
+                        className="w-full disabled:opacity-50" 
+                    />
                 </div>
             </div>
 
             <div>
                 <label className="block text-[10px] font-bold text-slate-400 mb-1">Tipografía</label>
-                <select value={overlayFont} onChange={e => setOverlayFont(e.target.value)} disabled={isOverlaying} className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-sm font-bold disabled:opacity-50">
+                <select 
+                    value={textLayers[activeLayerIndex].font} 
+                    onChange={e => updateActiveLayer({ font: e.target.value })} 
+                    disabled={isOverlaying} 
+                    className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-sm font-bold disabled:opacity-50"
+                >
                     {fonts.map(font => <option key={font} value={font}>{font}</option>)}
                 </select>
             </div>
@@ -315,7 +399,12 @@ export default function CanvasEditor({
                 )}
             </div>
 
-            <button type="button" onClick={handleApplyOverlay} disabled={isOverlaying || (!overlayText && !useLogo)} className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-bold py-2.5 rounded-xl text-xs uppercase tracking-widest transition-colors mt-4 flex items-center justify-center gap-2">
+            <button 
+                type="button" 
+                onClick={handleApplyOverlay} 
+                disabled={isOverlaying || (textLayers.every(l => !l.text) && !useLogo)} 
+                className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-bold py-2.5 rounded-xl text-xs uppercase tracking-widest transition-colors mt-4 flex items-center justify-center gap-2"
+            >
                 {isOverlaying ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : 'Aplicar Capas 🦋'}
             </button>
         </div>

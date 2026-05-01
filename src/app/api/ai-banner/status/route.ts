@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
     console.log(`[STATUS ROUTE] Consultando n8n banner-ia-status para ticket: ${ticketId}`);
     // AHORA n8n espera un GET con el ticketId en la query param
     const n8nResp = await fetch(
-      `https://n8n.santisoft.cl/webhook-test/banner-ia-status?ticketId=${ticketId}`,
+      `https://n8n.santisoft.cl/webhook/banner-ia-status?ticketId=${ticketId}`,
       { method: "GET" }
     );
 
