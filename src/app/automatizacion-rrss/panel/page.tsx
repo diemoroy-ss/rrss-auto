@@ -1040,7 +1040,6 @@ export default function RrssDashboard() {
           </div>
         </div>
       )}
-    </div>
 
     {/* Modal de Detalles */}
       {selectedPost && (
@@ -1246,9 +1245,6 @@ export default function RrssDashboard() {
                   </button>
                 </div>
             </div>
-          </div>
-        </div>
-      )}
           </div>
         </div>
       )}
