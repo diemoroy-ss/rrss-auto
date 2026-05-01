@@ -12,13 +12,6 @@ interface CanvasEditorProps {
   onSave: (finalUrl: string) => void;
 }
 
-export default function CanvasEditor({
-  baseImageUrl,
-  suggestedCopy,
-  initialLogoUrl,
-  userId,
-  onSave
-}: CanvasEditorProps) {
 interface TextLayer {
   text: string;
   color: string;

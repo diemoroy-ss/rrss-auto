@@ -61,6 +61,4 @@ export async function POST(req: NextRequest) {
     console.error("[START ROUTE] Error crítico:", err);
     return NextResponse.json({ error: err.message || "Error interno" }, { status: 500 });
   }
-
-
-
+}
