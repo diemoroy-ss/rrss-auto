@@ -6,10 +6,11 @@ export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
         const { idea, businessType, type, carouselCount, userPlan, email, phone } = body;
-        const n8nUrl = process.env.NEXT_PUBLIC_N8N_PREVIEW_URL;
+        let n8nUrl = process.env.NEXT_PUBLIC_N8N_PREVIEW_URL;
 
-        if (!n8nUrl) {
-            return NextResponse.json({ error: "N8N Preview URL not configured" }, { status: 500 });
+        // Fallback to production if not set or if it's the old test URL
+        if (!n8nUrl || n8nUrl.includes('webhook-test')) {
+            n8nUrl = 'https://n8n.santisoft.cl/webhook/img-rrss-auto';
         }
 
         if (type === 'Reel' && (await getVideoPlanLimit(userPlan || 'free')) === 0) {
