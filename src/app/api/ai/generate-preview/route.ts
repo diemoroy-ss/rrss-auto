@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
 
         // 1. Generate visual prompts based on the idea using Vertex AI
         let prompts: string[] = [idea];
-        
+
         try {
             if (type === 'Carrusel') {
                 console.log("[GEMINI-FREE] Generating carousel prompts for preview...");
@@ -35,7 +35,7 @@ INSTRUCCIONES CLAVE:
                 const result = await model.generateContent(`Genera las ${carouselCount || 3} descripciones visuales para esta idea de post: ${idea}`);
                 const response = result.response;
                 const text = response.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
-                
+
                 const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
                 const match = cleanedText.match(/\[[\s\S]*\]/);
                 if (match) {
@@ -97,7 +97,7 @@ INSTRUCCIONES CLAVE:
         }
 
         // Normalize response
-        const imageUrl = data?.imageUrl || data?.image_url || data?.imgUrl || data?.url || data?.finalUrl || data?.final_url;
+        const imageUrl = data?.imageUrl || data?.image_url || data?.url || data?.finalUrl || data?.final_url;
         let suggestedCopy = data?.suggestedCopy || data?.copy || data?.text || "";
 
         // 3. Generate high-quality copy using Gemini Free
@@ -117,11 +117,11 @@ Reglas:
 
             const model = getFreeModel(undefined, systemInstruction);
             const prompt = `Rubro del negocio: ${businessType || 'General'}\nIdea base del post: ${idea}\n\nEscribe el copy optimizado:`;
-            
+
             const result = await model.generateContent(prompt);
             const response = result.response;
             const enhancedCopy = response.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-            
+
             if (enhancedCopy) {
                 suggestedCopy = enhancedCopy;
             }
