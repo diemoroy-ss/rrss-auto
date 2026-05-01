@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI, GenerativeModel } from "@google/generative-ai";
 
-const FREE_MODEL_NAME = "gemini-3-flash-preview";
-const FALLBACK_MODELS = ["gemini-3-flash-preview", "gemini-2.5-flash", "gemini-2.5-pro", "gemini-1.5-flash"];
+const FREE_MODEL_NAME = "gemini-3-flash";
+const FALLBACK_MODELS = ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.5-pro", "gemini-1.5-flash"];
 
 let genAIInstance: GoogleGenerativeAI | null = null;
 
@@ -19,7 +19,7 @@ function getGenAI(): GoogleGenerativeAI {
 
 /**
  * Returns a configured generative model from the free Gemini API tier.
- * Now uses gemini-3-flash-preview by default for stability.
+ * Now uses gemini-3-flash by default for stability.
  */
 export function getFreeModel(
     modelName: string = FREE_MODEL_NAME,
