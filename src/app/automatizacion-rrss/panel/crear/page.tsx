@@ -448,7 +448,23 @@ export default function RrssCreatePost() {
                     <div className="p-8 border-4 border-dashed border-indigo-100 rounded-[32px] text-center flex flex-col items-center justify-center min-h-[500px] text-indigo-400 bg-indigo-50/20 lg:sticky lg:top-24 mt-8 lg:mt-0 transition-all">
                       <div className="text-6xl mb-4 opacity-80">📱</div>
                       <h4 className="font-black text-lg mb-2 text-indigo-700">Galería Manual Activa</h4>
-                      <p className="font-medium text-sm max-w-xs leading-relaxed">Sube imágenes en el panel izquierdo o selecciona una de tus plantillas previas para poder editarla, añadir logo y publicarla.</p>
+                      <p className="font-medium text-sm max-w-xs leading-relaxed mb-8">Selecciona una de tus plantillas previas a la izquierda o sube una nueva aquí para empezar.</p>
+                      
+                      <label className="flex flex-col items-center justify-center bg-white border-2 border-dashed border-indigo-300 hover:bg-indigo-50 hover:border-indigo-500 rounded-2xl cursor-pointer group hover:scale-105 transition-all text-indigo-600 px-10 py-6 shadow-xl shadow-indigo-100/50">
+                          <input 
+                              type="file" 
+                              accept="image/jpeg,image/png,image/webp" 
+                              onChange={(e) => {
+                                  if (e.target.files && e.target.files[0] && handleUploadNewTemplate) {
+                                      const f = e.target.files[0];
+                                      handleUploadNewTemplate(f);
+                                  }
+                              }}
+                              className="hidden" 
+                          />
+                          <span className="text-4xl mb-2 group-hover:rotate-12 transition-transform">📸</span>
+                          <span className="text-sm font-black uppercase tracking-widest">Subir Nueva Foto</span>
+                      </label>
                     </div>
                 )
             ) : previewSlides.length > 0 ? (
