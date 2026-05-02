@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { storage } from "../../lib/firebase";
+import { db, storage } from "../../lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { collection, addDoc } from "firebase/firestore";
 
 interface CanvasEditorProps {
   baseImageUrl: string;
@@ -11,9 +12,6 @@ interface CanvasEditorProps {
   userId: string;
   onSave: (finalUrl: string) => void;
 }
-
-import { db } from "../../lib/firebase";
-import { collection, addDoc } from "firebase/firestore";
 
 interface TextLayer {
   text: string;
@@ -42,7 +40,6 @@ export default function CanvasEditor({
   const [useLogo, setUseLogo] = useState(false);
   const [finalImageUrl, setFinalImageUrl] = useState("");
   const [isOverlaying, setIsOverlaying] = useState(false);
-  const [ticketId, setTicketId] = useState("");
   const [error, setError] = useState("");
 
   const [isDragging, setIsDragging] = useState(false);
@@ -136,10 +133,8 @@ export default function CanvasEditor({
      setError("");
      
      try {
-       // Filtramos capas que tengan texto
        const activeLayers = textLayers.filter(l => l.text.trim() !== "");
 
-       // 1. Guardar el diseño en Firebase (renders temporales)
        const designRef = await addDoc(collection(db, "preview_renders"), {
           baseImageUrl,
           userId,
@@ -151,13 +146,10 @@ export default function CanvasEditor({
           createdAt: new Date()
        });
 
-       // 2. Construir la URL de Butterfly
-       // Usamos el dominio de producción para que Butterfly pueda acceder a la página de render
        const baseUrl = window.location.origin;
        const renderUrl = `${baseUrl}/render/preview?id=${designRef.id}`;
        const butterflyUrl = `https://butterfly.santisoft.cl/link-previews/v1?url=${encodeURIComponent(renderUrl)}`;
 
-       // 3. Simular un pequeño tiempo de carga para que el usuario vea que algo pasó
        setTimeout(() => {
           setFinalImageUrl(butterflyUrl);
           setIsOverlaying(false);
@@ -275,7 +267,6 @@ export default function CanvasEditor({
         <div className="bg-white p-6 rounded-2xl border border-slate-200 space-y-4 shadow-sm animate-in slide-in-from-top-4">
             <h5 className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-2 border-b border-slate-100 pb-2">🦋 Butterfly IA (Toque Final)</h5>
             
-            {/* TABS PARA CAPAS DE TEXTO */}
             <div className="flex gap-2 mb-2">
                 {[0, 1, 2].map(i => (
                     <button 
