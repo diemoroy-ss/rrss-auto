@@ -83,9 +83,8 @@ export default function PostConfigForm({
 
       <div id="tour-form-container" className="premium-card space-y-8">
         
-        {/* MODO DE CREACIÓN: IA VS MANUAL (REFINADA) */}
+        {/* MODO DE CREACIÓN: IA VS MANUAL */}
         <div className="relative flex bg-slate-100 p-1.5 rounded-2xl w-full sm:w-fit shadow-inner border border-slate-200">
-             {/* Animated Pill Background */}
              <div 
                className="absolute top-1.5 bottom-1.5 w-[calc(50%-6px)] bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-slate-200/50 transition-all duration-300 ease-out"
                style={{ left: creationMode === 'ai' ? '6px' : 'calc(50% + 0px)' }}
@@ -93,16 +92,16 @@ export default function PostConfigForm({
              <button 
                type="button"
                onClick={() => setCreationMode('ai')} 
-               className={`relative flex-1 flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-colors z-10 \${creationMode === 'ai' ? 'text-indigo-700' : 'text-slate-400 hover:text-slate-600'}`}
+               className={`relative flex-1 flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-colors z-10 ${creationMode === 'ai' ? 'text-indigo-700' : 'text-slate-400 hover:text-slate-600'}`}
              >
-               <span className="\${creationMode === 'ai' ? 'scale-110 drop-shadow-sm' : 'grayscale opacity-60'} transition-all">🤖</span> Generar con IA
+               <span className={`${creationMode === 'ai' ? 'scale-110 drop-shadow-sm' : 'grayscale opacity-60'} transition-all`}>🤖</span> Generar con IA
              </button>
              <button 
                type="button"
                onClick={() => setCreationMode('manual')} 
-               className={`relative flex-1 flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-colors z-10 \${creationMode === 'manual' ? 'text-indigo-700' : 'text-slate-400 hover:text-slate-600'}`}
+               className={`relative flex-1 flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-colors z-10 ${creationMode === 'manual' ? 'text-indigo-700' : 'text-slate-400 hover:text-slate-600'}`}
              >
-               <span className="\${creationMode === 'manual' ? 'scale-110 drop-shadow-sm' : 'grayscale opacity-60'} transition-all">📤</span> Subida Manual
+               <span className={`${creationMode === 'manual' ? 'scale-110 drop-shadow-sm' : 'grayscale opacity-60'} transition-all`}>📤</span> Subida Manual
              </button>
         </div>
 
@@ -155,7 +154,7 @@ export default function PostConfigForm({
            </div>
         </div>
 
-        {/* ANIMATED CAROUSEL COUNT INPUT */}
+        {/* CAROUSEL COUNT */}
         {postType === 'Carrusel' && (
           <div className="animate-in slide-in-from-top-4 fade-in pt-4">
              <label className="block text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2"><span>📑</span> ¿Cuántas imágenes tendrá el carrusel?</label>
@@ -173,20 +172,22 @@ export default function PostConfigForm({
           </div>
         )}
 
-        {/* INPUT IDEA / MEDIA UPLOAD */}
-        {creationMode === 'ai' ? (
-          <div id="tour-step-idea">
-            <div className="flex flex-wrap justify-between items-end gap-4 mb-4">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Tu Idea Base</label>
-              <div className="flex gap-2">
-                <button 
-                  type="button"
-                  onClick={handleImproveWithAI}
-                  disabled={improveLoading || !idea}
-                  className="bg-indigo-50 hover:bg-indigo-100 disabled:bg-slate-100 text-indigo-700 text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl transition-all flex items-center gap-2 border border-indigo-200 shadow-sm"
-                >
-                  {improveLoading ? 'Refinando...' : '✨ Mejorar con IA'}
-                </button>
+        {/* SECCIÓN DE IDEA / CAPTION / IA (PERMANENTE) */}
+        <div id="tour-step-idea">
+          <div className="flex flex-wrap justify-between items-end gap-4 mb-4">
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+              {creationMode === 'ai' ? 'Tu Idea Base' : 'Texto de la publicación (Caption)'}
+            </label>
+            <div className="flex gap-2">
+              <button 
+                type="button"
+                onClick={handleImproveWithAI}
+                disabled={improveLoading || (creationMode === 'ai' ? !idea : !manualCaption)}
+                className="bg-indigo-50 hover:bg-indigo-100 disabled:bg-slate-100 text-indigo-700 text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl transition-all flex items-center gap-2 border border-indigo-200 shadow-sm"
+              >
+                {improveLoading ? 'Refinando...' : '✨ Mejorar con IA'}
+              </button>
+              {creationMode === 'ai' && (
                 <button 
                   type="button"
                   onClick={handleGeneratePreview}
@@ -195,37 +196,45 @@ export default function PostConfigForm({
                 >
                   {previewLoading ? 'Generando...' : '🖼️ Ver Previsualización'}
                 </button>
-              </div>
+              )}
             </div>
-            <div className="relative border-2 border-slate-100 rounded-[28px] bg-slate-50/50 focus-within:ring-4 focus-within:ring-indigo-500/10 focus-within:border-indigo-500/50 transition-all overflow-hidden flex items-start">
-                <span className="pl-6 pt-6 text-xl">💡</span>
-                <textarea
-                  value={idea}
-                  onChange={e => setIdea(e.target.value)}
-                  placeholder="Describe lo que quieres publicar..."
-                  className="w-full bg-transparent px-4 py-6 text-base text-slate-800 outline-none placeholder:text-slate-400 min-h-[160px] resize-none font-medium leading-relaxed"
-                  maxLength={1000}
-                />
-                <VoiceMic 
-                  onResult={(text) => setIdea(prev => prev + (prev ? " " : "") + text)} 
-                  className="absolute right-6 top-6 z-20"
-                />
-            </div>
-            <p className="text-[10px] font-black text-slate-300 mt-3 text-right uppercase tracking-widest">{idea.length} / 1000 Caracteres</p>
           </div>
-        ) : (
-          <div className="animate-in slide-in-from-top-4 fade-in">
+          <div className="relative border-2 border-slate-100 rounded-[28px] bg-slate-50/50 focus-within:ring-4 focus-within:ring-indigo-500/10 focus-within:border-indigo-500/50 transition-all overflow-hidden flex items-start">
+              <span className="pl-6 pt-6 text-xl">{creationMode === 'ai' ? '💡' : '✍️'}</span>
+              <textarea
+                value={creationMode === 'ai' ? idea : manualCaption}
+                onChange={e => creationMode === 'ai' ? setIdea(e.target.value) : setManualCaption(e.target.value)}
+                placeholder={creationMode === 'ai' ? "Describe lo que quieres publicar..." : "Escribe el texto que acompañará tu post..."}
+                className="w-full bg-transparent px-4 py-6 text-base text-slate-800 outline-none placeholder:text-slate-400 min-h-[160px] resize-none font-medium leading-relaxed"
+                maxLength={1000}
+              />
+              <VoiceMic 
+                onResult={(text) => {
+                  if (creationMode === 'ai') setIdea(prev => prev + (prev ? " " : "") + text);
+                  else setManualCaption(prev => prev + (prev ? " " : "") + text);
+                }} 
+                className="absolute right-6 top-6 z-20"
+              />
+          </div>
+          <p className="text-[10px] font-black text-slate-300 mt-3 text-right uppercase tracking-widest">
+            {(creationMode === 'ai' ? idea.length : manualCaption.length)} / 1000 Caracteres
+          </p>
+        </div>
+
+        {/* GALERÍA MANUAL (SOLO SI EL MODO ES MANUAL) */}
+        {creationMode === 'manual' && (
+          <div className="animate-in slide-in-from-top-4 fade-in pt-4 border-t border-slate-100">
             <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Tu Galería</label>
             
-            <div className="bg-slate-50 border border-slate-200 rounded-3xl p-4 sm:p-6 mb-6">
+            <div className="bg-slate-50 border border-slate-200 rounded-3xl p-4 sm:p-6 shadow-inner">
                 <div className="flex justify-between items-center mb-4">
                     <h5 className="font-bold text-slate-700 text-sm">Selecciona o sube una imagen</h5>
                     {loadingTemplates && <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>}
                 </div>
                 
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[300px] overflow-y-auto pr-2 pb-2 custom-scrollbar">
-                    {/* Botón de subir nuevo */}
-                    <label className="relative flex flex-col items-center justify-center bg-indigo-50/50 border-2 border-dashed border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300 rounded-2xl cursor-pointer group hover:scale-105 transition-all text-indigo-500 aspect-square">
+                    {/* Botón de subir nuevo (Siempre el primero) */}
+                    <label className="relative flex flex-col items-center justify-center bg-white border-2 border-dashed border-indigo-200 hover:bg-indigo-50 hover:border-indigo-400 rounded-2xl cursor-pointer group hover:scale-105 transition-all text-indigo-500 aspect-square shadow-sm">
                         <input 
                             type="file" 
                             accept="image/jpeg,image/png,image/webp" 
@@ -241,8 +250,8 @@ export default function PostConfigForm({
                             }}
                             className="hidden" 
                         />
-                        <span className="text-3xl mb-1 group-hover:-translate-y-1 transition-transform">➕</span>
-                        <span className="text-[10px] font-black uppercase">Nueva Foto</span>
+                        <span className="text-3xl mb-1 group-hover:rotate-12 transition-transform">📸</span>
+                        <span className="text-[10px] font-black uppercase tracking-tighter">Nueva Foto</span>
                     </label>
 
                     {/* Lista de templates del usuario */}
@@ -253,34 +262,17 @@ export default function PostConfigForm({
                             src={tmpl.url} 
                             alt="Template" 
                             onClick={() => setSelectedTemplate?.(tmpl)}
-                            className={`w-full aspect-square object-cover rounded-2xl cursor-pointer transition-all hover:scale-105 shadow-sm \${selectedTemplate?.id === tmpl.id ? 'ring-4 ring-indigo-500 scale-105 drop-shadow-md' : 'opacity-80 hover:opacity-100 hover:ring-2 hover:ring-indigo-300'}`}
+                            className={`w-full aspect-square object-cover rounded-2xl cursor-pointer transition-all hover:scale-105 shadow-sm ${selectedTemplate?.id === tmpl.id ? 'ring-4 ring-indigo-500 scale-105 drop-shadow-md z-10' : 'opacity-80 hover:opacity-100 hover:ring-2 hover:ring-indigo-300'}`}
                         />
                     ))}
                     
                     {!loadingTemplates && (!manualTemplates || manualTemplates.length === 0) && (
                         <div className="col-span-1 sm:col-span-2 md:col-span-3 flex flex-col items-center justify-center text-slate-400 p-4 text-center">
                             <span className="text-2xl opacity-50 mb-2">📁</span>
-                            <span className="text-[10px] font-bold uppercase tracking-widest">No hay imágenes en tu galería</span>
+                            <span className="text-[10px] font-bold uppercase tracking-widest">Galería Vacía</span>
                         </div>
                     )}
                 </div>
-            </div>
-
-            <div className="mt-8">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Texto de la publicación (Caption)</label>
-              <div className="relative border-2 border-slate-100 rounded-[28px] bg-slate-50/50 focus-within:ring-4 focus-within:ring-indigo-500/10 focus-within:border-indigo-500/50 transition-all overflow-hidden flex items-start">
-                  <span className="pl-6 pt-6 text-xl">✍️</span>
-                  <textarea
-                    value={manualCaption}
-                    onChange={e => setManualCaption(e.target.value)}
-                    placeholder="Escribe el texto que acompañará tu post..."
-                    className="w-full bg-transparent px-4 py-6 text-base text-slate-800 outline-none placeholder:text-slate-400 min-h-[160px] resize-none font-medium leading-relaxed"
-                  />
-                  <VoiceMic 
-                    onResult={(text) => setManualCaption(prev => prev + (prev ? " " : "") + text)} 
-                    className="absolute right-6 top-6 z-20"
-                  />
-              </div>
             </div>
           </div>
         )}

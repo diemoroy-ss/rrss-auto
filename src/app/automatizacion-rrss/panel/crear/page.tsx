@@ -134,18 +134,38 @@ export default function RrssCreatePost() {
   }, [activeProfile?.id]);
 
   const handleImproveWithAI = async () => {
-    if (!idea) { setError("Por favor ingresa una idea base para mejorarla."); return; }
+    const currentIdea = creationMode === 'ai' ? idea : manualCaption;
+    if (!currentIdea) { setError("Por favor ingresa una idea o caption base para mejorarla."); return; }
+    
     setImproveLoading(true);
     setError("");
+    
     try {
+      // Intentar obtener una imagen para dar contexto visual a la IA
+      let contextImageUrl = "";
+      if (creationMode === 'manual' && selectedTemplate) {
+          contextImageUrl = selectedTemplate.url;
+      } else if (creationMode === 'ai' && previewSlides.length > 0) {
+          contextImageUrl = previewSlides[0].url;
+      }
+
       const response = await fetch('/api/ai/improve-idea', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idea, businessType })
+        body: JSON.stringify({ 
+            idea: currentIdea, 
+            businessType,
+            imageUrl: contextImageUrl
+        })
       });
       if (!response.ok) throw new Error("Error en mejora IA");
       const data = await response.json();
-      setIdea(data.improvedIdea);
+      
+      if (creationMode === 'ai') {
+          setIdea(data.improvedIdea);
+      } else {
+          setManualCaption(data.improvedIdea);
+      }
     } catch (err) {
       console.error(err);
       setError("No pudimos mejorar la idea. Intenta nuevamente.");

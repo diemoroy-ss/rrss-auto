@@ -38,22 +38,45 @@ export function getFreeModel(
 /**
  * Convenience wrapper: generates text with a single prompt.
  * Includes automatic fallback logic for 503 (Overloaded) and 429 (Quota) errors.
- * Returns the raw text string.
+ * Now supports an optional imageUrl for multimodal context.
  */
 export async function generateFreeText(
     prompt: string,
     systemInstruction?: string,
-    jsonMode = false
+    jsonMode = false,
+    imageUrl?: string
 ): Promise<string> {
     let lastError: any = null;
+
+    // Pre-process image if provided
+    let imagePart: any = null;
+    if (imageUrl) {
+        try {
+            const response = await fetch(imageUrl);
+            const buffer = await response.arrayBuffer();
+            const base64 = Buffer.from(buffer).toString("base64");
+            const mimeType = response.headers.get("content-type") || "image/jpeg";
+            imagePart = {
+                inlineData: {
+                    data: base64,
+                    mimeType
+                }
+            };
+        } catch (e) {
+            console.error("[GEMINI-FREE] Failed to fetch image context:", e);
+        }
+    }
 
     for (const modelName of FALLBACK_MODELS) {
         try {
             console.log(`[GEMINI-FREE] Attempting generation with ${modelName}...`);
             const model = getFreeModel(modelName, systemInstruction);
 
+            const parts: any[] = [{ text: prompt }];
+            if (imagePart) parts.push(imagePart);
+
             const result = await model.generateContent({
-                contents: [{ role: "user", parts: [{ text: prompt }] }],
+                contents: [{ role: "user", parts }],
                 generationConfig: jsonMode ? { responseMimeType: "application/json" } : undefined,
             });
 
@@ -65,10 +88,7 @@ export async function generateFreeText(
             
             console.warn(`[GEMINI-FREE] Model ${modelName} failed (Status: ${status}).`);
             
-            // If it's a 404, 503 or 429, we try the next one.
-            // If it's a 400 (Bad Request), we stop because it's likely a prompt issue.
             if (status === "400") break;
-            
             continue;
         }
     }
