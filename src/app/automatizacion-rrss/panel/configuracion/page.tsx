@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { auth, db, storage } from "../../../../lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
@@ -8,7 +8,147 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useProfile } from "../../../../contexts/ProfileContext";
 import StatusModal from "../../../../components/StatusModal";
 
-export default function RrssConfig() {
+// Helper components para Modales de Selección
+function MetaSelectionModal({ isOpen, onClose, onSelect, profileId }: any) {
+  const [pages, setPages] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [selectedPage, setSelectedPage] = useState<any>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setLoading(true);
+      setError("");
+      // Fetch pages
+      auth.currentUser?.getIdToken().then(token => {
+        fetch(`/api/auth/meta/pages?profileId=${profileId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) throw new Error(data.error);
+          setPages(data.data || []);
+        })
+        .catch(err => setError(err.message))
+        .finally(() => setLoading(false));
+      });
+    }
+  }, [isOpen, profileId]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-3xl p-8 max-w-lg w-full shadow-2xl relative">
+        <h3 className="text-2xl font-black text-slate-900 mb-2">Selecciona tu Página</h3>
+        <p className="text-slate-500 mb-6 text-sm">Elige qué Página de Facebook y Cuenta de Instagram conectar.</p>
+        
+        {loading ? (
+          <div className="py-10 flex justify-center"><div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div></div>
+        ) : error ? (
+          <div className="p-4 bg-rose-50 text-rose-600 rounded-xl font-bold text-sm">{error}</div>
+        ) : pages.length === 0 ? (
+          <div className="p-4 bg-amber-50 text-amber-600 rounded-xl font-bold text-sm">No se encontraron páginas de Facebook. Asegúrate de tener permisos de administrador.</div>
+        ) : (
+          <div className="space-y-3 max-h-64 overflow-y-auto pr-2">
+            {pages.map(p => (
+              <label key={p.id} className={`flex items-center gap-4 p-4 border-2 rounded-2xl cursor-pointer transition-colors ${selectedPage?.id === p.id ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 hover:border-indigo-200 hover:bg-slate-50'}`}>
+                <input type="radio" name="meta_page" checked={selectedPage?.id === p.id} onChange={() => setSelectedPage(p)} className="hidden" />
+                <div className="w-10 h-10 bg-slate-200 rounded-full flex-shrink-0 flex items-center justify-center font-bold text-slate-500">{p.name.charAt(0)}</div>
+                <div className="flex-1">
+                  <p className="font-bold text-slate-900">{p.name}</p>
+                  {p.instagram_business_account ? (
+                    <p className="text-xs text-emerald-600 font-medium">✨ Instagram: @{p.instagram_business_account.username}</p>
+                  ) : (
+                    <p className="text-xs text-amber-500 font-medium">⚠️ Sin Instagram vinculado</p>
+                  )}
+                </div>
+              </label>
+            ))}
+          </div>
+        )}
+
+        <div className="mt-8 flex justify-end gap-3">
+          <button onClick={onClose} className="px-5 py-2.5 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition-colors">Cancelar</button>
+          <button onClick={() => onSelect(selectedPage)} disabled={!selectedPage} className="px-5 py-2.5 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 transition-colors">Guardar Conexión</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LinkedInSelectionModal({ isOpen, onClose, onSelect, profileId }: any) {
+  const [pages, setPages] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [selectedPage, setSelectedPage] = useState<any>(null); // null means personal profile
+
+  useEffect(() => {
+    if (isOpen) {
+      setLoading(true);
+      setError("");
+      auth.currentUser?.getIdToken().then(token => {
+        fetch(`/api/auth/linkedin/pages?profileId=${profileId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) throw new Error(data.error);
+          setPages(data.data || []);
+        })
+        .catch(err => setError(err.message))
+        .finally(() => setLoading(false));
+      });
+    }
+  }, [isOpen, profileId]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-3xl p-8 max-w-lg w-full shadow-2xl relative">
+        <h3 className="text-2xl font-black text-slate-900 mb-2">Selecciona tu Perfil de LinkedIn</h3>
+        <p className="text-slate-500 mb-6 text-sm">Elige dónde deseas publicar tus posts automáticamente.</p>
+        
+        {loading ? (
+          <div className="py-10 flex justify-center"><div className="w-8 h-8 border-4 border-[#0077b5] border-t-transparent rounded-full animate-spin"></div></div>
+        ) : error ? (
+          <div className="p-4 bg-rose-50 text-rose-600 rounded-xl font-bold text-sm">{error}</div>
+        ) : (
+          <div className="space-y-3 max-h-64 overflow-y-auto pr-2">
+            <label className={`flex items-center gap-4 p-4 border-2 rounded-2xl cursor-pointer transition-colors ${selectedPage === null ? 'border-[#0077b5] bg-sky-50' : 'border-slate-100 hover:border-sky-100 hover:bg-slate-50'}`}>
+              <input type="radio" name="li_page" checked={selectedPage === null} onChange={() => setSelectedPage(null)} className="hidden" />
+              <div className="w-10 h-10 bg-[#0077b5] text-white rounded-full flex-shrink-0 flex items-center justify-center font-bold">👤</div>
+              <div className="flex-1">
+                <p className="font-bold text-slate-900">Perfil Personal</p>
+                <p className="text-xs text-slate-500 font-medium">Publicar como tú mismo.</p>
+              </div>
+            </label>
+
+            {pages.map(p => (
+              <label key={p.id} className={`flex items-center gap-4 p-4 border-2 rounded-2xl cursor-pointer transition-colors ${selectedPage?.id === p.id ? 'border-[#0077b5] bg-sky-50' : 'border-slate-100 hover:border-sky-100 hover:bg-slate-50'}`}>
+                <input type="radio" name="li_page" checked={selectedPage?.id === p.id} onChange={() => setSelectedPage(p)} className="hidden" />
+                <div className="w-10 h-10 bg-slate-200 rounded-full flex-shrink-0 flex items-center justify-center font-bold text-slate-500">🏢</div>
+                <div className="flex-1">
+                  <p className="font-bold text-slate-900">{p.name}</p>
+                  <p className="text-xs text-[#0077b5] font-medium">Página de Empresa</p>
+                </div>
+              </label>
+            ))}
+          </div>
+        )}
+
+        <div className="mt-8 flex justify-end gap-3">
+          <button onClick={onClose} className="px-5 py-2.5 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition-colors">Cancelar</button>
+          <button onClick={() => onSelect(selectedPage)} className="px-5 py-2.5 rounded-xl font-bold text-white bg-[#0077b5] hover:bg-[#005582] transition-colors">Guardar Conexión</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+function ConfigContent() {
   const { activeProfile, loadProfiles } = useProfile();
   const [user, setUser] = useState<any>(null);
   const [loadingInitial, setLoadingInitial] = useState(true);
@@ -49,22 +189,12 @@ export default function RrssConfig() {
   }, [message]);
 
   const [fbStatus, setFbStatus] = useState(false);
-  const [fbPageId, setFbPageId] = useState("");
-  const [fbToken, setFbToken] = useState("");
-  const [metaAdAccountId, setMetaAdAccountId] = useState("");
-
   const [igStatus, setIgStatus] = useState(false);
-  const [igAccountId, setIgAccountId] = useState("");
-  const [igToken, setIgToken] = useState("");
-
-  const [showFbConfig, setShowFbConfig] = useState(false);
-  const [showIgConfig, setShowIgConfig] = useState(false);
-  const [showLiConfig, setShowLiConfig] = useState(false);
-
   const [liStatus, setLiStatus] = useState(false);
-  const [liClientId, setLiClientId] = useState("");
-  const [liClientSecret, setLiClientSecret] = useState("");
-  const [isLinkingLi, setIsLinkingLi] = useState(false);
+
+  // Connection Modals State
+  const [showMetaModal, setShowMetaModal] = useState(false);
+  const [showLinkedInModal, setShowLinkedInModal] = useState(false);
 
   // New Business Data States
   const [website, setWebsite] = useState("");
@@ -89,17 +219,10 @@ export default function RrssConfig() {
 
   useEffect(() => {
     if (activeProfile) {
+      // Check if they are actually connected (has tokens)
       setFbStatus(!!activeProfile.facebookToken_enc);
-      setFbPageId(activeProfile.facebookPageId || "");
-      setMetaAdAccountId(activeProfile.metaAdAccountId || "");
-      
       setIgStatus(!!activeProfile.instagramToken_enc);
-      setIgAccountId(activeProfile.instagramAccountId || "");
-
-      // Check linkedin status if we have the client ID encrypted and maybe token
-      setLiStatus(!!activeProfile.linkedinClientId_enc);
-      setLiClientId(""); // Never display secrets
-      setLiClientSecret("");
+      setLiStatus(!!activeProfile.linkedinUserToken_enc); // Centralized Token
 
       // Load Business Data
       setWebsite(activeProfile.website || "");
@@ -111,6 +234,29 @@ export default function RrssConfig() {
       setEmail(activeProfile.email || "");
       setPhone(activeProfile.phone || "");
       setLogoUrl(activeProfile.logoUrl || "");
+
+      // Handle OAuth Redirects
+      const searchParams = new URLSearchParams(window.location.search);
+      if (searchParams.get('meta') === 'success' && activeProfile.metaUserToken_enc && !activeProfile.facebookToken_enc) {
+          setShowMetaModal(true);
+          // Clean URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+      }
+      if (searchParams.get('linkedin') === 'success' && activeProfile.linkedinUserToken_enc && !activeProfile.linkedinPersonUrn) {
+          // Si queremos forzar a que elija siempre... o si ya tiene linkedinUserToken_enc mostramos
+          setShowLinkedInModal(true);
+          window.history.replaceState({}, document.title, window.location.pathname);
+      } else if (searchParams.get('linkedin') === 'success' && activeProfile.linkedinUserToken_enc) {
+          // If already has urn, maybe just show it
+          setShowLinkedInModal(true);
+          window.history.replaceState({}, document.title, window.location.pathname);
+      }
+      
+      if (searchParams.get('meta') === 'error' || searchParams.get('linkedin') === 'error') {
+          setErrorMsg("Hubo un error al conectar la red social.");
+          window.history.replaceState({}, document.title, window.location.pathname);
+      }
+
     } else {
       // Clear states if no active profile
       setLogoUrl("");
@@ -168,41 +314,17 @@ export default function RrssConfig() {
     }
   };
 
-  const handleSave = async (e: React.FormEvent) => {
+  const handleSaveData = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user || !activeProfile) return;
     setSaving(true);
     setSuccess(false);
     setErrorMsg("");
 
     try {
-      const idToken = await user.getIdToken();
-      
-      const payload = {
-        idToken,
-        uid: user.uid,
-        profileId: activeProfile?.id,
-        setAccounts: {
-          facebook: fbToken || fbPageId || metaAdAccountId ? { token: fbToken, pageId: fbPageId, adAccountId: metaAdAccountId } : null,
-          instagram: igToken || igAccountId ? { token: igToken, accountId: igAccountId } : null,
-          linkedin: liClientId || liClientSecret ? { clientId: liClientId, clientSecret: liClientSecret } : null
-        }
-      };
-
-      if (!fbToken && fbStatus) payload.setAccounts.facebook = null; 
-      if (!igToken && igStatus) payload.setAccounts.instagram = null;
-      if (!liClientId && liStatus) payload.setAccounts.linkedin = null;
-
-      const res = await fetch("/api/social-auth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Error guardando configuración de Meta");
-
       const userDocRef = doc(db, "users", user.uid);
       const userDoc = await getDoc(userDocRef);
-      if (userDoc.exists() && activeProfile) {
+      if (userDoc.exists()) {
           const data = userDoc.data();
           const updatedProfiles = (data.profiles || []).map((p: any) => 
              p.id === activeProfile.id ? {
@@ -222,15 +344,6 @@ export default function RrssConfig() {
       }
 
       setSuccess(true);
-      if (fbToken) setFbStatus(true);
-      if (igToken) setIgStatus(true);
-      if (liClientId) setLiStatus(true);
-      
-      setFbToken("");
-      setIgToken("");
-      setLiClientId("");
-      setLiClientSecret("");
-      
       setTimeout(() => setSuccess(false), 5000);
 
     } finally {
@@ -238,51 +351,109 @@ export default function RrssConfig() {
     }
   };
 
-  const handleRepairMigration = async () => {
+  const handleConnectMeta = async () => {
     if (!user || !activeProfile) return;
+    try {
+        const idToken = await user.getIdToken();
+        const origin = window.location.origin;
+        const res = await fetch(`/api/auth/meta?profileId=${activeProfile.id}&origin=${encodeURIComponent(origin)}`, {
+            headers: { "Authorization": `Bearer ${idToken}` }
+        });
+        const data = await res.json();
+        if (data.url) {
+            window.location.href = data.url;
+        } else {
+            throw new Error(data.error || "No se pudo generar la URL de Meta");
+        }
+    } catch (e: any) {
+        setErrorMsg(e.message);
+    }
+  };
+
+  const handleConnectLinkedIn = async () => {
+    if (!user || !activeProfile) return;
+    try {
+        const idToken = await user.getIdToken();
+        const origin = window.location.origin;
+        const res = await fetch(`/api/linkedin/auth?profileId=${activeProfile.id}&origin=${encodeURIComponent(origin)}`, {
+            headers: { "Authorization": `Bearer ${idToken}` }
+        });
+        const data = await res.json();
+        if (data.url) {
+            window.location.href = data.url;
+        } else {
+            throw new Error(data.error || "No se pudo generar la URL de LinkedIn");
+        }
+    } catch (e: any) {
+        setErrorMsg(e.message);
+    }
+  };
+
+  const saveMetaSelection = async (page: any) => {
+    if (!user || !activeProfile) return;
+    setShowMetaModal(false);
     setSaving(true);
     try {
-      const userDocRef = doc(db, "users", user.uid);
-      const userDoc = await getDoc(userDocRef);
-      if (userDoc.exists()) {
-        const data = userDoc.data();
-        const profiles = data.profiles || [];
-        const index = profiles.findIndex((p: any) => p.id === activeProfile.id);
-        
-        if (index !== -1) {
-          const profile = { ...profiles[index] };
-          // Merge root data into this profile if profile lacks it
-          if (data.facebookToken_enc) profile.facebookToken_enc = data.facebookToken_enc;
-          if (data.iv_fb) profile.iv_fb = data.iv_fb;
-          if (data.tag_fb) profile.tag_fb = data.tag_fb;
-          if (data.facebookPageId) profile.facebookPageId = data.facebookPageId;
-          if (data.metaAdAccountId) profile.metaAdAccountId = data.metaAdAccountId;
-          
-          if (data.instagramToken_enc) profile.instagramToken_enc = data.instagramToken_enc;
-          if (data.iv_ig) profile.iv_ig = data.iv_ig;
-          if (data.tag_ig) profile.tag_ig = data.tag_ig;
-          if (data.instagramAccountId) profile.instagramAccountId = data.instagramAccountId;
-          
-          if (data.website && !profile.website) profile.website = data.website;
-          if (data.facebookUrl && !profile.facebookUrl) profile.facebookUrl = data.facebookUrl;
-          if (data.instagramUrl && !profile.instagramUrl) profile.instagramUrl = data.instagramUrl;
-          
-          profiles[index] = profile;
-          await updateDoc(userDocRef, { profiles });
-          await loadProfiles();
-          setMessage({ type: 'success', text: "¡Datos antiguos sincronizados correctamente!" });
+      const idToken = await user.getIdToken();
+      const payload = {
+        idToken,
+        uid: user.uid,
+        profileId: activeProfile.id,
+        setAccounts: {
+          facebook: { token: page.access_token, pageId: page.id },
+          instagram: page.instagram_business_account ? { token: page.access_token, accountId: page.instagram_business_account.id } : null
         }
-      }
-    } catch (e) {
-      console.error(e);
-      setErrorMsg("Error al intentar reparar la conexión.");
+      };
+
+      const res = await fetch("/api/social-auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error("Error guardando cuentas");
+      
+      await loadProfiles();
+      setMessage({ type: 'success', text: "¡Meta conectado correctamente!" });
+    } catch (e: any) {
+      setErrorMsg("Error guardando conexión de Meta.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveLinkedInSelection = async (page: any) => {
+    if (!user || !activeProfile) return;
+    setShowLinkedInModal(false);
+    setSaving(true);
+    try {
+      const idToken = await user.getIdToken();
+      const payload = {
+        idToken,
+        uid: user.uid,
+        profileId: activeProfile.id,
+        setAccounts: {
+          linkedin: { companyUrn: page ? page.urn : null }
+        }
+      };
+
+      const res = await fetch("/api/social-auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error("Error guardando cuentas");
+      
+      await loadProfiles();
+      setMessage({ type: 'success', text: "¡LinkedIn configurado correctamente!" });
+    } catch (e: any) {
+      setErrorMsg("Error guardando conexión de LinkedIn.");
     } finally {
       setSaving(false);
     }
   };
 
   const handleDisconnectFb = async () => {
-    showModal("confirm", "Desconectar Facebook", "¿Estás seguro de que deseas desconectar tu cuenta de Facebook? Se eliminarán los datos de acceso guardados.", async () => {
+    showModal("confirm", "Desconectar Facebook", "¿Estás seguro de que deseas desconectar Meta?", async () => {
         setModal(prev => ({ ...prev, isOpen: false }));
         setSaving(true);
         try {
@@ -290,38 +461,11 @@ export default function RrssConfig() {
             await fetch("/api/social-auth", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ idToken, uid: user.uid, setAccounts: { facebook: { token: "", pageId: "", adAccountId: "" } } })
+                body: JSON.stringify({ idToken, uid: user.uid, profileId: activeProfile.id, setAccounts: { facebook: { token: "", pageId: "" }, instagram: { token: "", accountId: "" } } })
             });
-            setFbStatus(false);
-            setFbPageId("");
-            setMetaAdAccountId("");
-            setFbToken("");
-            showModal("success", "Desconectado", "Facebook ha sido desconectado exitosamente.");
+            await loadProfiles();
+            showModal("success", "Desconectado", "Meta ha sido desconectado exitosamente.");
         } catch (e) { 
-            console.error(e);
-            showModal("error", "Error", "No se pudo desconectar la cuenta. Intenta de nuevo.");
-        }
-        setSaving(false);
-    });
-  };
-
-  const handleDisconnectIg = async () => {
-    showModal("confirm", "Desconectar Instagram", "¿Seguro que quieres desconectar Instagram? Perderás la capacidad de autopublicación inmediata.", async () => {
-        setModal(prev => ({ ...prev, isOpen: false }));
-        setSaving(true);
-        try {
-            const idToken = await user.getIdToken();
-            await fetch("/api/social-auth", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ idToken, uid: user.uid, setAccounts: { instagram: { token: "", accountId: "" } } })
-            });
-            setIgStatus(false);
-            setIgAccountId("");
-            setIgToken("");
-            showModal("success", "Desconectado", "Instagram ha sido desconectado exitosamente.");
-        } catch (e) { 
-            console.error(e);
             showModal("error", "Error", "No se pudo desconectar la cuenta.");
         }
         setSaving(false);
@@ -329,7 +473,7 @@ export default function RrssConfig() {
   };
 
   const handleDisconnectLi = async () => {
-    showModal("confirm", "Borrar API LinkedIn", "¿Borrar credenciales API de LinkedIn? Perderás el acceso si ya habías autorizado el inicio de sesión.", async () => {
+    showModal("confirm", "Desconectar LinkedIn", "¿Seguro que quieres desconectar LinkedIn?", async () => {
         setModal(prev => ({ ...prev, isOpen: false }));
         setSaving(true);
         try {
@@ -337,42 +481,15 @@ export default function RrssConfig() {
             await fetch("/api/social-auth", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ idToken, uid: user.uid, setAccounts: { linkedin: { clientId: "", clientSecret: "" } } })
+                body: JSON.stringify({ idToken, uid: user.uid, profileId: activeProfile.id, setAccounts: { linkedin: { disconnect: true } } })
             });
-            setLiStatus(false);
-            setLiClientId("");
-            setLiClientSecret("");
-            showModal("success", "Limpieza Exitosa", "Credenciales de LinkedIn eliminadas.");
+            await loadProfiles();
+            showModal("success", "Desconectado", "LinkedIn desconectado.");
         } catch (e) { 
-            console.error(e);
-            showModal("error", "Error", "No se pudo borrar la configuración.");
+            showModal("error", "Error", "No se pudo desconectar.");
         }
         setSaving(false);
     });
-  };
-
-  const handleLinkLi = async () => {
-    if (!user || !activeProfile) return;
-    setIsLinkingLi(true);
-    try {
-        const idToken = await user.getIdToken();
-        const origin = window.location.origin; // Dynamically grab http://localhost:3002 or production URL
-        const res = await fetch(`/api/linkedin/auth?profileId=${activeProfile.id}&origin=${encodeURIComponent(origin)}`, {
-            headers: {
-                "Authorization": `Bearer ${idToken}`
-            }
-        });
-        const data = await res.json();
-        if (data.url) {
-            window.location.href = data.url;
-        } else {
-            throw new Error(data.error || "No URL returned");
-        }
-    } catch (e: any) {
-        console.error("Error Linking LinkedIn", e);
-        setErrorMsg(e.message);
-        setIsLinkingLi(false);
-    }
   };
 
   if (loadingInitial) return <div className="animate-pulse space-y-4 max-w-2xl"><div className="h-10 bg-slate-200 rounded w-1/3"></div><div className="h-64 bg-slate-200 rounded"></div></div>;
@@ -381,13 +498,7 @@ export default function RrssConfig() {
     <div className="max-w-4xl mx-auto lg:mx-0 pb-20">
       <div className="mb-10">
         <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-tight">Configuración de <span className="text-indigo-600">Marca.</span></h1>
-        <p className="text-slate-500 mt-4 text-lg font-medium leading-relaxed">Completa la identidad de <strong className="text-indigo-500">{activeProfile?.name}</strong> para alimentar el "Cerebro" de Estrategia AI y administrar sus conexiones a Meta.</p>
-        <button 
-          onClick={handleRepairMigration}
-          className="mt-4 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 transition-all border border-slate-200 hover:border-indigo-200 px-3 py-1.5 rounded-lg flex items-center gap-2"
-        >
-          <span>🔧</span> ¿Faltan datos antiguos o conexiones? Reparar Aquí
-        </button>
+        <p className="text-slate-500 mt-4 text-lg font-medium leading-relaxed">Completa la identidad de <strong className="text-indigo-500">{activeProfile?.name}</strong> para alimentar el "Cerebro" de Estrategia AI y administrar sus conexiones.</p>
       </div>
 
       {errorMsg && <div className="mb-8 p-5 bg-rose-50 text-rose-600 rounded-[24px] font-black text-sm border border-rose-100 animate-in fade-in slide-in-from-top-2">⚠️ {errorMsg}</div>}
@@ -402,7 +513,7 @@ export default function RrssConfig() {
         </div>
       )}
 
-      <form onSubmit={handleSave} className="space-y-10">
+      <form onSubmit={handleSaveData} className="space-y-10">
         
         {/* BUSINESS DATA */}
         <div className="bg-white p-8 rounded-[32px] border-2 border-slate-100 shadow-xl shadow-slate-200/50 relative overflow-hidden group">
@@ -449,185 +560,88 @@ export default function RrssConfig() {
               </div>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                  <div className="flex items-center justify-between mb-3">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                        <span className="w-5 h-5 bg-blue-100 text-blue-600 rounded flex items-center justify-center">
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-                        </span>
-                        <div className="flex items-center gap-2">
-                           {fbStatus ? (
-                               <span className="bg-emerald-50 text-emerald-600 text-[9px] uppercase tracking-[0.2em] font-black px-2 py-1 rounded-full border border-emerald-100 flex items-center gap-1">
-                                   <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span> ON
-                               </span>
-                           ) : (
-                               <span className="bg-slate-100 text-slate-400 text-[9px] uppercase tracking-[0.2em] font-black px-2 py-1 rounded-full border border-slate-200">OFF</span>
-                           )}
-                           <button type="button" onClick={() => setShowFbConfig(!showFbConfig)} className={`p-1.5 rounded-lg transition-colors ${showFbConfig ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-slate-100 text-slate-400'} group`} title="Configurar Autopublicación en Facebook">
-                               <svg className={`w-4 h-4 transition-transform ${showFbConfig ? 'rotate-90' : 'group-hover:rotate-45'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                           </button>
+          {/* Redes Sociales - Botones Conectar */}
+          <div className="pt-6 border-t border-slate-100">
+             <h4 className="text-sm font-black text-slate-900 mb-4 uppercase tracking-widest">Conexiones a Redes Sociales</h4>
+             
+             <div className="grid md:grid-cols-2 gap-4">
+                {/* Meta (FB/IG) */}
+                <div className="p-5 border-2 border-slate-100 rounded-2xl bg-slate-50 flex flex-col justify-between">
+                   <div>
+                       <div className="flex items-center gap-3 mb-2">
+                           <span className="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                           </span>
+                           <h5 className="font-black text-slate-900">Meta (FB & IG)</h5>
                        </div>
-                      </label>
-                  </div>
-                  <input type="text" value={facebookUrl} onChange={e => setFacebookUrl(e.target.value)} placeholder="@minegocio o enlace" className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700 mb-2" />
-                  
-                  {/* FACEBOOK META ACCOUNTS (COLLAPSIBLE) */}
-                  {showFbConfig && (
-                      <div className="bg-blue-50/30 border border-blue-100 p-5 rounded-[20px] mt-2 animate-in slide-in-from-top-2 fade-in relative overflow-hidden group">
-                          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-100/50 blur-[40px] -mr-16 -mt-16 rounded-full"></div>
-                          <div className="flex items-center justify-between mb-4 relative z-10">
-                              <h4 className="text-[11px] font-black text-blue-900 uppercase tracking-widest bg-blue-100 px-3 py-1 rounded-full inline-block">App Token (Técnico)</h4>
-                              {fbStatus && (
-                                  <button type="button" onClick={handleDisconnectFb} className="text-rose-500 text-[10px] font-black uppercase tracking-widest hover:bg-rose-50 px-2 py-1 rounded-lg transition-all">Desconectar</button>
-                              )}
-                          </div>
-                          <div className="space-y-4 relative z-10">
-                              <div>
-                                <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">ID de la Página (Page ID)</label>
-                                <input type="text" value={fbPageId} onChange={e => setFbPageId(e.target.value)} placeholder="Ej. 10234567890" className="w-full bg-white border border-blue-100 px-4 py-2.5 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none text-xs font-bold transition-all text-slate-700" />
-                              </div>
-                              <div>
-                                <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">ID de Cuenta Publicitaria (Ad Account ID)</label>
-                                <input type="text" value={metaAdAccountId} onChange={e => setMetaAdAccountId(e.target.value)} placeholder="Ej. act_1234567890" className="w-full bg-white border border-blue-100 px-4 py-2.5 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none text-xs font-bold transition-all text-slate-700" />
-                              </div>
-                              <div>
-                                <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Access Token (Meta API)</label>
-                                <div className="relative">
-                                  <input type="password" value={fbToken} onChange={e => setFbToken(e.target.value)} placeholder={fbStatus ? "••••••••••••••••" : "Pegar token aquí (EAA...)"} className="w-full bg-white border border-blue-100 px-4 py-2.5 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none text-xs font-bold transition-all text-slate-700 font-mono" />
-                                  {fbStatus && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-emerald-600 uppercase tracking-tighter bg-emerald-50 px-1.5 py-0.5 rounded">OK</span>}
-                                </div>
-                              </div>
-                          </div>
-                      </div>
-                  )}
-              </div>
-              <div>
-                  <div className="flex items-center justify-between mb-3">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                        <span className="w-5 h-5 bg-pink-100 text-pink-600 rounded flex items-center justify-center">
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="20" x="2" y="2" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
-                        </span>
-                        <div className="flex items-center gap-2">
-                           {igStatus ? (
-                               <span className="bg-emerald-50 text-emerald-600 text-[9px] uppercase tracking-[0.2em] font-black px-2 py-1 rounded-full border border-emerald-100 flex items-center gap-1">
-                                   <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span> ON
-                               </span>
-                           ) : (
-                               <span className="bg-slate-100 text-slate-400 text-[9px] uppercase tracking-[0.2em] font-black px-2 py-1 rounded-full border border-slate-200">OFF</span>
-                           )}
-                           <button type="button" onClick={() => setShowIgConfig(!showIgConfig)} className={`p-1.5 rounded-lg transition-colors ${showIgConfig ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-slate-100 text-slate-400'} group`} title="Configurar Autopublicación en Instagram">
-                               <svg className={`w-4 h-4 transition-transform ${showIgConfig ? 'rotate-90' : 'group-hover:rotate-45'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                           </button>
+                       <p className="text-xs text-slate-500 font-medium mb-4">Conecta tu cuenta para publicar automáticamente en Facebook e Instagram.</p>
+                   </div>
+                   
+                   {fbStatus ? (
+                       <div>
+                           <div className="flex items-center gap-2 mb-3">
+                               <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                               <span className="text-xs font-bold text-emerald-600">Conectado</span>
+                           </div>
+                           <div className="flex gap-2">
+                               <button type="button" onClick={() => setShowMetaModal(true)} className="flex-1 bg-white border-2 border-slate-200 hover:border-blue-500 text-slate-700 text-xs font-bold py-2 rounded-xl transition-colors">Cambiar Página</button>
+                               <button type="button" onClick={handleDisconnectFb} className="px-3 bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold rounded-xl text-xs transition-colors">X</button>
+                           </div>
                        </div>
-                      </label>
-                  </div>
-                  <input type="text" value={instagramUrl} onChange={e => setInstagramUrl(e.target.value)} placeholder="@minegocio o enlace" className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700 mb-2" />
-                  
-                  {/* INSTAGRAM META ACCOUNTS (COLLAPSIBLE) */}
-                  {showIgConfig && (
-                      <div className="bg-pink-50/30 border border-pink-100 p-5 rounded-[20px] mt-2 animate-in slide-in-from-top-2 fade-in relative overflow-hidden group">
-                          <div className="absolute top-0 right-0 w-32 h-32 bg-pink-100/50 blur-[40px] -mr-16 -mt-16 rounded-full"></div>
-                          <div className="flex items-center justify-between mb-4 relative z-10">
-                              <h4 className="text-[11px] font-black text-pink-900 uppercase tracking-widest bg-pink-100 px-3 py-1 rounded-full inline-block">Account Token (Técnico)</h4>
-                              {igStatus && (
-                                  <button type="button" onClick={handleDisconnectIg} className="text-rose-500 text-[10px] font-black uppercase tracking-widest hover:bg-rose-50 px-2 py-1 rounded-lg transition-all">Desconectar</button>
-                              )}
-                          </div>
-                          <div className="space-y-4 relative z-10">
-                              <div>
-                                <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Instagram Business Account ID</label>
-                                <input type="text" value={igAccountId} onChange={e => setIgAccountId(e.target.value)} placeholder="Ej. 17841400000000000" className="w-full bg-white border border-pink-100 px-4 py-2.5 rounded-xl focus:ring-2 focus:ring-pink-500/20 focus:border-pink-400 outline-none text-xs font-bold transition-all text-slate-700" />
-                              </div>
-                              <div>
-                                <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">User Access Token</label>
-                                <div className="relative">
-                                  <input type="password" value={igToken} onChange={e => setIgToken(e.target.value)} placeholder={igStatus ? "••••••••••••••••" : "Pegar token aquí (EAA...)"} className="w-full bg-white border border-pink-100 px-4 py-2.5 rounded-xl focus:ring-2 focus:ring-pink-500/20 focus:border-pink-400 outline-none text-xs font-bold transition-all text-slate-700 font-mono" />
-                                  {igStatus && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-emerald-600 uppercase tracking-tighter bg-emerald-50 px-1.5 py-0.5 rounded">OK</span>}
-                                </div>
-                              </div>
-                          </div>
-                      </div>
-                  )}
-              </div>
-              <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">🎵 TikTok Cuenta</label>
-                  <input type="text" value={tiktokUrl} onChange={e => setTiktokUrl(e.target.value)} placeholder="@minegocio o enlace" className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700" />
-              </div>
-              <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">🐦 Twitter (X) Cuenta</label>
-                  <input type="text" value={twitterUrl} onChange={e => setTwitterUrl(e.target.value)} placeholder="@minegocio o enlace" className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700" />
-              </div>
-              <div>
-                  <div className="flex items-center justify-between mb-3">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                        <span className="w-5 h-5 bg-sky-100 text-sky-600 rounded flex items-center justify-center">
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
-                        </span>
-                        <div className="flex items-center gap-2">
-                           {liStatus ? (
-                               <span className="bg-emerald-50 text-emerald-600 text-[9px] uppercase tracking-[0.2em] font-black px-2 py-1 rounded-full border border-emerald-100 flex items-center gap-1">
-                                   <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span> ON
-                               </span>
-                           ) : (
-                               <span className="bg-slate-100 text-slate-400 text-[9px] uppercase tracking-[0.2em] font-black px-2 py-1 rounded-full border border-slate-200">OFF</span>
-                           )}
-                           <button type="button" onClick={() => setShowLiConfig(!showLiConfig)} className={`p-1.5 rounded-lg transition-colors ${showLiConfig ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-slate-100 text-slate-400'} group`} title="Configurar Autopublicación en LinkedIn">
-                               <svg className={`w-4 h-4 transition-transform ${showLiConfig ? 'rotate-90' : 'group-hover:rotate-45'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                           </button>
-                       </div>
-                      </label>
-                  </div>
-                  <input type="text" value={linkedinUrl} onChange={e => setLinkedinUrl(e.target.value)} placeholder="minegocio o enlace" className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700 mb-2" />
-                  
-                  {/* LINKEDIN DEVELOPER ACCOUNTS (COLLAPSIBLE) */}
-                  {showLiConfig && (
-                      <div className="bg-sky-50/30 border border-sky-100 p-5 rounded-[20px] mt-2 animate-in slide-in-from-top-2 fade-in relative overflow-hidden group">
-                          <div className="absolute top-0 right-0 w-32 h-32 bg-sky-100/50 blur-[40px] -mr-16 -mt-16 rounded-full"></div>
-                          <div className="flex items-center justify-between mb-4 relative z-10">
-                              <h4 className="text-[11px] font-black text-sky-900 uppercase tracking-widest bg-sky-100 px-3 py-1 rounded-full inline-block">App Developer (OAuth)</h4>
-                              {liStatus && (
-                                  <button type="button" onClick={handleDisconnectLi} className="text-rose-500 text-[10px] font-black uppercase tracking-widest hover:bg-rose-50 px-2 py-1 rounded-lg transition-all">Desconectar</button>
-                              )}
-                          </div>
+                   ) : (
+                       <button type="button" onClick={handleConnectMeta} className="w-full bg-[#1877F2] hover:bg-[#166fe5] text-white font-bold py-2.5 rounded-xl shadow-md text-sm transition-colors">
+                           Conectar con Meta
+                       </button>
+                   )}
+                </div>
 
-                          <div className="space-y-4 relative z-10">
-                              <p className="text-[10px] text-sky-800 font-medium leading-relaxed bg-sky-50 p-2 rounded-lg border border-sky-100">Crea una app en <a href="https://www.linkedin.com/developers/" target="_blank" className="font-bold underline text-indigo-600 hover:text-indigo-800">LinkedIn Developers</a>, pide el permiso "Share on LinkedIn" y conéctala aquí para publicar posts.</p>
-                              <div>
-                                <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Client ID</label>
-                                <input type="text" value={liClientId} onChange={e => setLiClientId(e.target.value)} placeholder={liStatus ? "Configurado (oculto por seguridad)" : "Ej. 77xpto..."} className="w-full bg-white border border-sky-100 px-4 py-2.5 rounded-xl focus:ring-2 focus:ring-sky-500/20 focus:border-sky-400 outline-none text-xs font-bold transition-all text-slate-700" />
-                              </div>
-                              <div>
-                                <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Primary Client Secret</label>
-                                <div className="relative">
-                                  <input type="password" value={liClientSecret} onChange={e => setLiClientSecret(e.target.value)} placeholder={liStatus ? "••••••••••••••••" : "Pegar Client Secret secreto"} className="w-full bg-white border border-sky-100 px-4 py-2.5 rounded-xl focus:ring-2 focus:ring-sky-500/20 focus:border-sky-400 outline-none text-xs font-bold transition-all text-slate-700 font-mono" />
-                                </div>
-                              </div>
-                              <div className="pt-2 border-t border-sky-100/50">
-                                {liStatus ? (
-                                    <button disabled={isLinkingLi} type="button" onClick={handleLinkLi} className="w-full bg-[#0077b5] hover:bg-[#005582] text-white text-xs font-black uppercase tracking-widest py-3 rounded-xl transition-all shadow-md shadow-sky-500/20 flex items-center gap-2 justify-center disabled:opacity-50">
-                                       {isLinkingLi ? 'Generando Enlace...' : (
-                                       <>
-                                         <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
-                                         Vincular Accesos (Log In)
-                                       </>
-                                       )}
-                                    </button>
-                                ) : (
-                                    <p className="text-[9px] text-center text-slate-500 font-bold">Guarda los IDs para habilitar el Link de Autorización.</p>
-                                )}
-                              </div>
-                          </div>
-                      </div>
-                  )}
-              </div>
+                {/* LinkedIn */}
+                <div className="p-5 border-2 border-slate-100 rounded-2xl bg-slate-50 flex flex-col justify-between">
+                   <div>
+                       <div className="flex items-center gap-3 mb-2">
+                           <span className="w-8 h-8 bg-sky-100 text-sky-600 rounded-lg flex items-center justify-center">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                           </span>
+                           <h5 className="font-black text-slate-900">LinkedIn</h5>
+                       </div>
+                       <p className="text-xs text-slate-500 font-medium mb-4">Publica en tu perfil personal o en una página de empresa administrada.</p>
+                   </div>
+                   
+                   {liStatus ? (
+                       <div>
+                           <div className="flex items-center gap-2 mb-3">
+                               <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                               <span className="text-xs font-bold text-emerald-600">Conectado {activeProfile?.linkedinCompanyUrn ? '(Empresa)' : '(Personal)'}</span>
+                           </div>
+                           <div className="flex gap-2">
+                               <button type="button" onClick={() => setShowLinkedInModal(true)} className="flex-1 bg-white border-2 border-slate-200 hover:border-sky-500 text-slate-700 text-xs font-bold py-2 rounded-xl transition-colors">Configurar</button>
+                               <button type="button" onClick={handleDisconnectLi} className="px-3 bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold rounded-xl text-xs transition-colors">X</button>
+                           </div>
+                       </div>
+                   ) : (
+                       <button type="button" onClick={handleConnectLinkedIn} className="w-full bg-[#0077b5] hover:bg-[#005582] text-white font-bold py-2.5 rounded-xl shadow-md text-sm transition-colors">
+                           Conectar con LinkedIn
+                       </button>
+                   )}
+                </div>
+             </div>
+
+             <div className="grid md:grid-cols-2 gap-4 mt-6">
+                <div>
+                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">🎵 TikTok URL</label>
+                   <input type="text" value={tiktokUrl} onChange={e => setTiktokUrl(e.target.value)} placeholder="@minegocio o enlace" className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700" />
+                </div>
+                <div>
+                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">🐦 Twitter (X) URL</label>
+                   <input type="text" value={twitterUrl} onChange={e => setTwitterUrl(e.target.value)} placeholder="@minegocio o enlace" className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700" />
+                </div>
+             </div>
           </div>
         </div>
 
-
         <div className="sticky bottom-6 z-50 flex justify-end">
            <button disabled={saving} type="submit" className="w-full md:w-auto bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-black text-lg py-5 px-14 rounded-[28px] transition-all shadow-2xl shadow-indigo-900/40 flex items-center justify-center gap-4 hover:-translate-y-1">
-             {saving ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : <><span>💾</span> Guardar Configuración</>}
+             {saving ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : <><span>💾</span> Guardar Información</>}
            </button>
         </div>
 
@@ -636,6 +650,16 @@ export default function RrssConfig() {
         {...modal} 
         onCancel={() => setModal(prev => ({ ...prev, isOpen: false }))}
       />
+      <MetaSelectionModal isOpen={showMetaModal} onClose={() => setShowMetaModal(false)} profileId={activeProfile?.id} onSelect={saveMetaSelection} />
+      <LinkedInSelectionModal isOpen={showLinkedInModal} onClose={() => setShowLinkedInModal(false)} profileId={activeProfile?.id} onSelect={saveLinkedInSelection} />
     </div>
+  );
+}
+
+export default function RrssConfig() {
+  return (
+    <Suspense fallback={<div className="animate-pulse h-96 bg-slate-100 rounded-3xl"></div>}>
+      <ConfigContent />
+    </Suspense>
   );
 }

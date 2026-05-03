@@ -119,21 +119,23 @@ export async function POST(req: Request) {
                 }
 
                 if (setAccounts.linkedin) {
-                    const { clientId, clientSecret } = setAccounts.linkedin;
+                    const { clientId, clientSecret, companyUrn, disconnect } = setAccounts.linkedin;
+                    
+                    if (companyUrn !== undefined) {
+                        newP.linkedinCompanyUrn = companyUrn;
+                    }
+
                     if (clientId && clientSecret) {
                         const encryptedId = encrypt(clientId);
                         const encryptedSecret = encrypt(clientSecret);
                         
                         newP.linkedinClientId_enc = encryptedId.encryptedData;
                         newP.linkedinClientSecret_enc = encryptedSecret.encryptedData;
-                        // Use a single IV, tag for simplicity, or we can use the main one. The encrypt function generates a random IV each time, so we need to store them.
-                        // Let's store the secret's IV and tag in iv_li and tag_li. For the ID, we can store iv_li_id, tag_li_id... wait.
-                        // Because encrypt() returns a different IV/Tag for each call, we should store them.
                         newP.iv_li_id = encryptedId.iv;
                         newP.tag_li_id = encryptedId.authTag;
                         newP.iv_li_secret = encryptedSecret.iv;
                         newP.tag_li_secret = encryptedSecret.authTag;
-                    } else if (clientId === "") { // Disconnect
+                    } else if (clientId === "" || disconnect === true) { // Disconnect
                         newP.linkedinClientId_enc = "";
                         newP.linkedinClientSecret_enc = "";
                         newP.iv_li_id = "";
@@ -141,7 +143,9 @@ export async function POST(req: Request) {
                         newP.iv_li_secret = "";
                         newP.tag_li_secret = "";
                         newP.linkedinToken_enc = ""; // Also wipe access token if disconnected
+                        newP.linkedinUserToken_enc = "";
                         newP.linkedinPersonUrn = "";
+                        newP.linkedinCompanyUrn = "";
                     }
                 }
                 

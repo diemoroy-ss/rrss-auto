@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { adminDb } from '../../../../lib/firebase-admin';
-import { decrypt, encrypt } from '../../../../lib/encryption';
+import { encrypt } from '../../../../lib/encryption';
 
 export async function GET(req: Request) {
     try {
@@ -8,108 +8,97 @@ export async function GET(req: Request) {
         const code = searchParams.get('code');
         const state = searchParams.get('state');
         const error = searchParams.get('error');
-        const errorDescription = searchParams.get('error_description');
 
-        if (error || !state) {
-            console.error("LinkedIn OAuth Error:", error, errorDescription);
-            const fallbackOrigin = state?.split('|')?.[2] || 'http://localhost:3002';
-            return NextResponse.redirect(`${fallbackOrigin}/automatizacion-rrss/panel/configuracion?error=${encodeURIComponent(errorDescription || 'Error auth')}`);
+        if (error) {
+            console.error("LinkedIn OAuth Error:", error);
+            const [,, origin] = decodeURIComponent(state || "").split('|');
+            return NextResponse.redirect(`${origin || 'http://localhost:3003'}/automatizacion-rrss/panel/configuracion?linkedin=error`);
         }
 
-        if (!code) {
-             return new NextResponse("Authorization code missing", { status: 400 });
+        if (!code || !state) {
+            return NextResponse.json({ error: "Missing code or state" }, { status: 400 });
         }
 
-        // Parse State: uid|profileId|origin
-        const [uid, profileId, origin] = decodeURIComponent(state).split('|');
-        if (!uid || !profileId || !origin) {
-            return new NextResponse("Invalid state format", { status: 400 });
+        const decodedState = decodeURIComponent(state);
+        const [uid, profileId, origin] = decodedState.split('|');
+
+        if (!uid || !profileId) {
+            return NextResponse.json({ error: "Invalid state" }, { status: 400 });
         }
 
-        const userRef = adminDb.collection("users").doc(uid);
-        const userDoc = await userRef.get();
-        if (!userDoc.exists) return new NextResponse("User not found", { status: 404 });
-
-        let profiles = userDoc.data()?.profiles || [];
-        const profileIndex = profiles.findIndex((p: any) => p.id === profileId);
-
-        if (profileIndex === -1) {
-            return new NextResponse("Profile not found", { status: 404 });
-        }
-
-        const profile = profiles[profileIndex];
-
-        if (!profile.linkedinClientId_enc || !profile.linkedinClientSecret_enc) {
-            return new NextResponse("LinkedIn API Credentials not found in Profile", { status: 400 });
-        }
-
-        // Decrypt ID & Secret
-        const clientId = decrypt(profile.linkedinClientId_enc, profile.iv_li_id, profile.tag_li_id);
-        const clientSecret = decrypt(profile.linkedinClientSecret_enc, profile.iv_li_secret, profile.tag_li_secret);
-        
-        if (!clientId || !clientSecret) {
-            return new NextResponse("Failed to decrypt credentials", { status: 500 });
-        }
-
+        const clientId = process.env.LINKEDIN_CLIENT_ID;
+        const clientSecret = process.env.LINKEDIN_CLIENT_SECRET;
         const redirectUri = `${origin}/api/linkedin/callback`;
 
-        // Exchange code for Access Token
-        const tokenRes = await fetch("https://www.linkedin.com/oauth/v2/accessToken", {
-            method: "POST",
+        if (!clientId || !clientSecret) {
+            return NextResponse.json({ error: "LinkedIn App no configurada en entorno" }, { status: 500 });
+        }
+
+        // 1. Obtener Access Token
+        const tokenParams = new URLSearchParams({
+            grant_type: 'authorization_code',
+            code,
+            redirect_uri: redirectUri,
+            client_id: clientId,
+            client_secret: clientSecret,
+        });
+
+        const tokenRes = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
+            method: 'POST',
             headers: {
-                "Content-Type": "application/x-www-form-urlencoded"
+                'Content-Type': 'application/x-www-form-urlencoded',
             },
-            body: new URLSearchParams({
-                grant_type: "authorization_code",
-                code,
-                redirect_uri: redirectUri,
-                client_id: clientId,
-                client_secret: clientSecret
-            }).toString()
+            body: tokenParams.toString(),
         });
 
         const tokenData = await tokenRes.json();
+
         if (tokenData.error) {
-            console.error("Token Exchange Error:", tokenData);
-            return NextResponse.redirect(`${origin}/automatizacion-rrss/panel/configuracion?error=${encodeURIComponent('Token exchange failed')}`);
+            console.error("LinkedIn Token Error:", tokenData);
+            return NextResponse.redirect(`${origin}/automatizacion-rrss/panel/configuracion?linkedin=error`);
         }
 
         const accessToken = tokenData.access_token;
 
-        // Fetch user URN via OpenID userinfo
-        const userInfoRes = await fetch("https://api.linkedin.com/v2/userinfo", {
+        // 2. Obtener Info del Usuario para sacar el URN (person URN)
+        const meRes = await fetch('https://api.linkedin.com/v2/userinfo', {
             headers: {
-                "Authorization": `Bearer ${accessToken}`
+                Authorization: `Bearer ${accessToken}`
             }
         });
-        const userInfo = await userInfoRes.json();
-        if (userInfo.error) {
-            console.error("UserInfo Fetch Error:", userInfo);
-            return NextResponse.redirect(`${origin}/automatizacion-rrss/panel/configuracion?error=${encodeURIComponent('Failed to fetch user URN')}`);
+        const meData = await meRes.json();
+        const personUrn = `urn:li:person:${meData.sub}`;
+
+        // 3. Guardar en Firebase
+        const userDocRef = adminDb.collection('users').doc(uid);
+        const userDoc = await userDocRef.get();
+        if (!userDoc.exists) {
+            return NextResponse.json({ error: "User not found" }, { status: 404 });
         }
 
-        const personUrn = `urn:li:person:${userInfo.sub}`;
+        const profiles = userDoc.data()?.profiles || [];
+        const index = profiles.findIndex((p: any) => p.id === profileId);
 
-        // Encrypt the Access Token
-        const encryptedToken = encrypt(accessToken);
+        if (index === -1) {
+            return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+        }
 
-        // Update the profile array
-        profiles[profileIndex] = {
-            ...profile,
-            linkedinToken_enc: encryptedToken.encryptedData,
-            iv_li_token: encryptedToken.iv,
-            tag_li_token: encryptedToken.authTag,
+        const encToken = encrypt(accessToken);
+
+        profiles[index] = {
+            ...profiles[index],
+            linkedinUserToken_enc: encToken.encryptedData,
+            iv_li_user: encToken.iv,
+            tag_li_user: encToken.tag,
             linkedinPersonUrn: personUrn
         };
 
-        // Save to DB
-        await userRef.update({ profiles });
+        await userDocRef.update({ profiles });
 
-        // Redirect back to React UI
-        return NextResponse.redirect(`${origin}/automatizacion-rrss/panel/configuracion?success=linkedin_linked`);
+        return NextResponse.redirect(`${origin}/automatizacion-rrss/panel/configuracion?linkedin=success`);
 
-    } catch (e: any) {
-        console.error("Callback Error:", e);
-        return new NextResponse("Internal Server Error", { status: 500 });
+    } catch (error: any) {
+        console.error("LinkedIn Callback Error:", error);
+        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
