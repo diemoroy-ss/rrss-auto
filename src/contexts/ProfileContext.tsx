@@ -33,6 +33,9 @@ export type BusinessProfile = {
   tag_li_secret?: string;
   iv_li_token?: string;
   tag_li_token?: string;
+  
+  metaTokenExpiresAt?: number;
+  linkedinTokenExpiresAt?: number;
 
   rubro?: string;
   website?: string;

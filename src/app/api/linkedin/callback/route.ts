@@ -84,13 +84,17 @@ export async function GET(req: Request) {
         }
 
         const encToken = encrypt(accessToken);
+        
+        const expiresIn = tokenData.expires_in;
+        const linkedinTokenExpiresAt = expiresIn ? Date.now() + expiresIn * 1000 : null;
 
         profiles[index] = {
             ...profiles[index],
             linkedinUserToken_enc: encToken.encryptedData,
             iv_li_user: encToken.iv,
             tag_li_user: encToken.tag,
-            linkedinPersonUrn: personUrn
+            linkedinPersonUrn: personUrn,
+            ...(linkedinTokenExpiresAt ? { linkedinTokenExpiresAt } : {})
         };
 
         await userDocRef.update({ profiles });

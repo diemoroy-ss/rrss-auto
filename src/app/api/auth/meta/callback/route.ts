@@ -71,11 +71,16 @@ export async function GET(req: Request) {
         }
 
         const enc = encrypt(userAccessToken);
+        
+        const expiresIn = longTokenData.expires_in || tokenData.expires_in;
+        const metaTokenExpiresAt = expiresIn ? Date.now() + expiresIn * 1000 : null;
+
         profiles[index] = {
             ...profiles[index],
             metaUserToken_enc: enc.encryptedData,
             iv_meta_user: enc.iv,
-            tag_meta_user: enc.tag
+            tag_meta_user: enc.tag,
+            ...(metaTokenExpiresAt ? { metaTokenExpiresAt } : {})
         };
 
         await userDocRef.update({ profiles });

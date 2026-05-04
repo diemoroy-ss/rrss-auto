@@ -8,6 +8,21 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useProfile } from "../../../../contexts/ProfileContext";
 import StatusModal from "../../../../components/StatusModal";
 
+function getExpirationText(timestamp?: number) {
+  if (!timestamp) return null;
+  const now = Date.now();
+  const diff = timestamp - now;
+  if (diff <= 0) return { text: "Expirado", color: "text-rose-500", bg: "bg-rose-100", isExpired: true };
+  
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  if (days > 0) return { text: `Expira en ${days} día${days !== 1 ? 's' : ''}`, color: days < 7 ? "text-amber-600" : "text-emerald-600", bg: days < 7 ? "bg-amber-100" : "bg-emerald-100", isExpired: false };
+  
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  if (hours > 0) return { text: `Expira en ${hours} h`, color: "text-amber-600", bg: "bg-amber-100", isExpired: false };
+  
+  return { text: "Expira pronto", color: "text-amber-600", bg: "bg-amber-100", isExpired: false };
+}
+
 // Helper components para Modales de Selección
 function MetaSelectionModal({ isOpen, onClose, onSelect, profileId }: any) {
   const [pages, setPages] = useState<any[]>([]);
@@ -578,14 +593,26 @@ function ConfigContent() {
                    </div>
                    
                    {fbStatus ? (
-                       <div>
-                           <div className="flex items-center gap-2 mb-3">
-                               <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                               <span className="text-xs font-bold text-emerald-600">Conectado</span>
+                       <div className="flex flex-col h-full justify-end">
+                           <div className="flex items-center justify-between mb-3">
+                               <div className="flex items-center gap-2">
+                                   <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                                   <span className="text-xs font-bold text-emerald-600">Conectado</span>
+                               </div>
+                               {(() => {
+                                   const expInfo = getExpirationText(activeProfile?.metaTokenExpiresAt);
+                                   if (!expInfo) return null;
+                                   return (
+                                       <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${expInfo.bg} ${expInfo.color}`}>
+                                           {expInfo.text}
+                                       </span>
+                                   );
+                               })()}
                            </div>
                            <div className="flex gap-2">
-                               <button type="button" onClick={() => setShowMetaModal(true)} className="flex-1 bg-white border-2 border-slate-200 hover:border-blue-500 text-slate-700 text-xs font-bold py-2 rounded-xl transition-colors">Cambiar Página</button>
-                               <button type="button" onClick={handleDisconnectFb} className="px-3 bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold rounded-xl text-xs transition-colors">X</button>
+                               <button type="button" onClick={() => setShowMetaModal(true)} className="flex-1 bg-white border-2 border-slate-200 hover:border-blue-500 text-slate-700 text-[10px] sm:text-xs font-bold py-2 rounded-xl transition-colors truncate">Cambiar Página</button>
+                               <button type="button" onClick={handleConnectMeta} className="flex-1 bg-blue-50 border-2 border-blue-100 hover:border-blue-300 text-blue-600 text-[10px] sm:text-xs font-bold py-2 rounded-xl transition-colors truncate">Actualizar Token</button>
+                               <button type="button" onClick={handleDisconnectFb} className="px-3 bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold rounded-xl text-xs transition-colors" title="Desconectar">X</button>
                            </div>
                        </div>
                    ) : (
@@ -608,14 +635,26 @@ function ConfigContent() {
                    </div>
                    
                    {liStatus ? (
-                       <div>
-                           <div className="flex items-center gap-2 mb-3">
-                               <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                               <span className="text-xs font-bold text-emerald-600">Conectado {activeProfile?.linkedinCompanyUrn ? '(Empresa)' : '(Personal)'}</span>
+                       <div className="flex flex-col h-full justify-end">
+                           <div className="flex items-center justify-between mb-3">
+                               <div className="flex items-center gap-2">
+                                   <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                                   <span className="text-[10px] sm:text-xs font-bold text-emerald-600 truncate">Conectado {activeProfile?.linkedinCompanyUrn ? '(Empresa)' : '(Personal)'}</span>
+                               </div>
+                               {(() => {
+                                   const expInfo = getExpirationText(activeProfile?.linkedinTokenExpiresAt);
+                                   if (!expInfo) return null;
+                                   return (
+                                       <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${expInfo.bg} ${expInfo.color} whitespace-nowrap ml-2`}>
+                                           {expInfo.text}
+                                       </span>
+                                   );
+                               })()}
                            </div>
                            <div className="flex gap-2">
-                               <button type="button" onClick={() => setShowLinkedInModal(true)} className="flex-1 bg-white border-2 border-slate-200 hover:border-sky-500 text-slate-700 text-xs font-bold py-2 rounded-xl transition-colors">Configurar</button>
-                               <button type="button" onClick={handleDisconnectLi} className="px-3 bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold rounded-xl text-xs transition-colors">X</button>
+                               <button type="button" onClick={() => setShowLinkedInModal(true)} className="flex-1 bg-white border-2 border-slate-200 hover:border-sky-500 text-slate-700 text-[10px] sm:text-xs font-bold py-2 rounded-xl transition-colors truncate">Configurar</button>
+                               <button type="button" onClick={handleConnectLinkedIn} className="flex-1 bg-sky-50 border-2 border-sky-100 hover:border-sky-300 text-sky-600 text-[10px] sm:text-xs font-bold py-2 rounded-xl transition-colors truncate">Actualizar Token</button>
+                               <button type="button" onClick={handleDisconnectLi} className="px-3 bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold rounded-xl text-xs transition-colors" title="Desconectar">X</button>
                            </div>
                        </div>
                    ) : (
