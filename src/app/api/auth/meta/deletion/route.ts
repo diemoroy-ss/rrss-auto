@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     // Para validación del panel de Meta, basta con responder el formato correcto.
 
     const confirmationCode = `DEL_${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
-    const statusUrl = `${process.env.NEXT_PUBLIC_APP_URL}/eliminacion-datos?code=${confirmationCode}`;
+    const statusUrl = `${process.env.NEXT_PUBLIC_APP_URL}/eliminaciondatos?code=${confirmationCode}`;
 
     return NextResponse.json({
       url: statusUrl,

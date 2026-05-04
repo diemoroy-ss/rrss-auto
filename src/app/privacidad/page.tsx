@@ -94,7 +94,7 @@ export default function Privacidad() {
                   Eliminación de Datos
                 </h2>
                 <p>
-                  Usted puede revocar el acceso de Santisoft en cualquier momento desde la configuración de su cuenta de Facebook o solicitando la eliminación total de sus datos en nuestra página de <Link href="/eliminacion-datos" className="text-indigo-600 hover:underline">Eliminación de Datos</Link>.
+                  Usted puede revocar el acceso de Santisoft en cualquier momento desde la configuración de su cuenta de Facebook o solicitando la eliminación total de sus datos en nuestra página de <Link href="/eliminaciondatos" className="text-indigo-600 hover:underline">Eliminación de Datos</Link>.
                 </p>
               </section>
 
