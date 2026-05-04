@@ -9,7 +9,7 @@ import { useProfile } from "../../../../contexts/ProfileContext";
 import StatusModal from "../../../../components/StatusModal";
 
 function getExpirationText(timestamp?: number) {
-  if (!timestamp) return null;
+  if (!timestamp) return { text: "Vigencia Desconocida", color: "text-slate-500", bg: "bg-slate-100", isExpired: false, isUnknown: true };
   const now = Date.now();
   const diff = timestamp - now;
   if (diff <= 0) return { text: "Expirado", color: "text-rose-500", bg: "bg-rose-100", isExpired: true };
