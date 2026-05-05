@@ -48,9 +48,14 @@ export async function POST(req: Request) {
         const caption = post.copy || post.text || post.idea || '';
         const imageUrl = post.imageUrl;
 
+        if (!post.networks || post.networks.length === 0) {
+            errorLog += "No se seleccionó ninguna red social para publicar. ";
+        }
+
         // FACEBOOK
-        if (post.networks?.includes('facebook') && targetProfile.facebookToken_enc) {
-            try {
+        if (post.networks?.includes('facebook')) {
+            if (targetProfile.facebookToken_enc) {
+                try {
                 const plainToken = decrypt(targetProfile.facebookToken_enc, targetProfile.iv_fb, targetProfile.tag_fb);
                 const pageId = targetProfile.facebookPageId;
                 
@@ -158,11 +163,15 @@ export async function POST(req: Request) {
                 console.error("FB Publish Error:", e.message);
                 errorLog += `FB: ${e.message}. `;
             }
+            } else {
+                errorLog += `Facebook: Cuenta no vinculada o token faltante. `;
+            }
         }
 
         // INSTAGRAM
-        if (post.networks?.includes('instagram') && targetProfile.instagramToken_enc) {
-            try {
+        if (post.networks?.includes('instagram')) {
+            if (targetProfile.instagramToken_enc) {
+                try {
                 const plainToken = decrypt(targetProfile.instagramToken_enc, targetProfile.iv_ig, targetProfile.tag_ig);
                 const igAccountId = targetProfile.instagramAccountId;
                 
@@ -326,11 +335,15 @@ export async function POST(req: Request) {
                 console.error("IG Publish Error:", e.message);
                 errorLog += `IG: ${e.message}. `;
             }
+            } else {
+                errorLog += `Instagram: Cuenta no vinculada o token faltante. `;
+            }
         }
 
         // LINKEDIN
-        if (post.networks?.includes('linkedin') && targetProfile.linkedinToken_enc && targetProfile.linkedinPersonUrn) {
-            try {
+        if (post.networks?.includes('linkedin')) {
+            if (targetProfile.linkedinToken_enc && targetProfile.linkedinPersonUrn) {
+                try {
                 const plainToken = decrypt(targetProfile.linkedinToken_enc, targetProfile.iv_li_token, targetProfile.tag_li_token);
                 const personUrn = targetProfile.linkedinPersonUrn;
                 
@@ -448,6 +461,9 @@ export async function POST(req: Request) {
             } catch (e: any) {
                 console.error("LI Publish Error:", e.message);
                 errorLog += `LI: ${e.message}. `;
+            }
+            } else {
+                errorLog += `LinkedIn: Cuenta no vinculada o token faltante. `;
             }
         }
 
