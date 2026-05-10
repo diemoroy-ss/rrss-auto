@@ -79,7 +79,7 @@ export async function GET(req: Request) {
             ...profiles[index],
             metaUserToken_enc: enc.encryptedData,
             iv_meta_user: enc.iv,
-            tag_meta_user: enc.tag,
+            tag_meta_user: enc.authTag,
             ...(metaTokenExpiresAt ? { metaTokenExpiresAt } : {})
         };
 
