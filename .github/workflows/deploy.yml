@@ -21,6 +21,10 @@ jobs:
           envs: GITHUB_TOKEN
           script: |
             set -e
+            # Cargar NVM y Node.js para entorno SSH no interactivo
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
             # Ruta de producción en DigitalOcean
             cd /var/www/santisoft-rrss
             
