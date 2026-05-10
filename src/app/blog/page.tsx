@@ -9,12 +9,14 @@ export default async function BlogIndex() {
         if (adminDb) {
             const snapshot = await adminDb.collection('blog_posts')
                 .where('status', '==', 'published')
-                .orderBy('createdAt', 'desc')
                 .get();
             
             snapshot.forEach(doc => {
                 posts.push({ id: doc.id, ...doc.data() });
             });
+
+            // Ordenar por fecha en JavaScript para evitar error de índice compuesto en Firestore
+            posts.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         }
     } catch (error) {
         console.error("Error fetching blog posts:", error);
