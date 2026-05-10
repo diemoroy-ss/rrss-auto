@@ -104,7 +104,7 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
             )
           })}
           
-          {(user?.email === "diemoroy@gmail.com" || userDoc?.role === "admin") && (
+          {(["diemoroy@gmail.com", "spalezcom@gmail.com", "santisoftai@gmail.com"].includes(user?.email) || userDoc?.role === "admin") && (
             <details className="pt-3 border-t border-slate-800 group" open={pathname.includes('/admin')}>
                <summary className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all font-bold text-xs text-slate-400 hover:text-white hover:bg-white/5 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
                  <div className="flex items-center gap-2.5">
@@ -168,7 +168,7 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
                 )
               })}
               
-              {(user?.email === "diemoroy@gmail.com" || userDoc?.role === "admin") && (
+              {(["diemoroy@gmail.com", "spalezcom@gmail.com", "santisoftai@gmail.com"].includes(user?.email) || userDoc?.role === "admin") && (
                   <>
                     <div className="w-px h-6 bg-white/10 mx-2 self-center shrink-0"></div>
                     <details className="relative shrink-0 group/admin">
