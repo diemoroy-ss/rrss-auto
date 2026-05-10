@@ -30,7 +30,14 @@ export async function GET(req: Request) {
         // Pass UID, profileId, and origin in state
         const state = encodeURIComponent(`${decodedToken.uid}|${profileId}|${origin}`);
 
-        const url = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}&scope=${scopes}&response_type=code`;
+        const configId = process.env.META_CONFIG_ID;
+        let url = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}&response_type=code`;
+        
+        if (configId) {
+            url += `&config_id=${configId}`;
+        } else {
+            url += `&scope=${scopes}`;
+        }
 
         return NextResponse.json({ url });
 
