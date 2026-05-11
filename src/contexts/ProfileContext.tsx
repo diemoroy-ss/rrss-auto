@@ -16,12 +16,14 @@ export type BusinessProfile = {
   iv_fb?: string;
   tag_fb?: string;
   facebookPageId?: string;
+  facebookPageName?: string;
   metaAdAccountId?: string;
 
   instagramToken_enc?: string;
   iv_ig?: string;
   tag_ig?: string;
   instagramAccountId?: string;
+  instagramUsername?: string;
 
   linkedinClientId_enc?: string;
   linkedinClientSecret_enc?: string;

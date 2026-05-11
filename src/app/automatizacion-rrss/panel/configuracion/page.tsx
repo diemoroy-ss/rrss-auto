@@ -415,8 +415,16 @@ function ConfigContent() {
         uid: user.uid,
         profileId: activeProfile.id,
         setAccounts: {
-          facebook: { token: page.access_token, pageId: page.id },
-          instagram: page.instagram_business_account ? { token: page.access_token, accountId: page.instagram_business_account.id } : null
+          facebook: { 
+            token: page.access_token, 
+            pageId: page.id,
+            name: page.name
+          },
+          instagram: page.instagram_business_account ? { 
+            token: page.access_token, 
+            accountId: page.instagram_business_account.id,
+            username: page.instagram_business_account.username
+          } : null
         }
       };
 
@@ -609,6 +617,26 @@ function ConfigContent() {
                                    );
                                })()}
                            </div>
+                           {/* Cuentas conectadas */}
+                           {(activeProfile?.facebookPageName || activeProfile?.instagramUsername) && (
+                               <div className="mb-3 p-3 bg-white border border-slate-100 rounded-xl space-y-1.5 shadow-sm text-left">
+                                   {activeProfile.facebookPageName && (
+                                       <div className="text-[11px] font-bold text-slate-700 flex items-center gap-2">
+                                           <span className="text-blue-500 shrink-0">👤</span>
+                                           <span className="text-slate-400 font-medium tracking-wide">Página:</span>
+                                           <span className="text-slate-700 font-bold truncate">{activeProfile.facebookPageName}</span>
+                                       </div>
+                                   )}
+                                   {activeProfile.instagramUsername && (
+                                       <div className="text-[11px] font-bold text-slate-700 flex items-center gap-2">
+                                           <span className="text-pink-500 shrink-0">📸</span>
+                                           <span className="text-slate-400 font-medium tracking-wide">Insta:</span>
+                                           <span className="text-slate-700 font-bold truncate">@{activeProfile.instagramUsername}</span>
+                                       </div>
+                                   )}
+                               </div>
+                           )}
+
                            <div className="flex gap-2">
                                <button type="button" onClick={() => setShowMetaModal(true)} className="flex-1 bg-white border-2 border-slate-200 hover:border-blue-500 text-slate-700 text-[10px] sm:text-xs font-bold py-2 rounded-xl transition-colors truncate">Cambiar Página</button>
                                <button type="button" onClick={handleConnectMeta} className="flex-1 bg-blue-50 border-2 border-blue-100 hover:border-blue-300 text-blue-600 text-[10px] sm:text-xs font-bold py-2 rounded-xl transition-colors truncate">Actualizar Token</button>

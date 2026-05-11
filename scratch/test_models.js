@@ -35,11 +35,10 @@ async function testModels() {
   // Probar modelos específicos
   const modelsToTest = [
     "gemini-2.5-flash",
-    "gemini-2.5-flash-preview-05-20",
-    "gemini-2.0-flash",
-    "gemini-2.0-flash-lite",
-    "gemini-1.5-flash",
-    "gemini-1.5-flash-8b",
+    "gemini-2.5-pro",
+    "gemini-3.1-flash-lite",
+    "gemini-flash-latest",
+    "gemini-3-flash-preview"
   ];
 
   const genAI = new GoogleGenerativeAI(apiKey);

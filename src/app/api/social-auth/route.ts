@@ -6,7 +6,7 @@ async function validatefb(token: string, pageId: string) {
         const res = await fetch(`https://graph.facebook.com/v19.0/${pageId}?access_token=${token}&fields=name`);
         const data = await res.json();
         if (data.error) throw new Error(data.error.message || "Token de Facebook inválido");
-        return true;
+        return data.name || "Página de Facebook";
     } catch (e: any) {
         throw new Error(`Facebook: ${e.message}`);
     }
@@ -17,7 +17,7 @@ async function validateIg(token: string, accountId: string) {
         const res = await fetch(`https://graph.facebook.com/v19.0/${accountId}?access_token=${token}&fields=name,username`);
         const data = await res.json();
         if (data.error) throw new Error(data.error.message || "Token de Instagram inválido");
-        return true;
+        return data.username || "Usuario de Instagram";
     } catch (e: any) {
         throw new Error(`Instagram: ${e.message}`);
     }
@@ -48,12 +48,14 @@ export async function POST(req: Request) {
         }
 
         // 2. Validate external Tokens
+        let fbPageName = "";
+        let igUsername = "";
         try {
             if (setAccounts.facebook?.token && setAccounts.facebook?.pageId) {
-                await validatefb(setAccounts.facebook.token, setAccounts.facebook.pageId);
+                fbPageName = await validatefb(setAccounts.facebook.token, setAccounts.facebook.pageId);
             }
             if (setAccounts.instagram?.token && setAccounts.instagram?.accountId) {
-                await validateIg(setAccounts.instagram.token, setAccounts.instagram.accountId);
+                igUsername = await validateIg(setAccounts.instagram.token, setAccounts.instagram.accountId);
             }
         } catch (valError: any) {
             return NextResponse.json({ error: valError.message }, { status: 400 });
@@ -78,7 +80,7 @@ export async function POST(req: Request) {
                 const newP = { ...p };
                 
                 if (setAccounts.facebook) {
-                    const { token, pageId, adAccountId } = setAccounts.facebook;
+                    const { token, pageId, adAccountId, name } = setAccounts.facebook;
                     
                     if (token) {
                         const { encryptedData, iv, authTag } = encrypt(token);
@@ -89,17 +91,24 @@ export async function POST(req: Request) {
                     
                     if (pageId !== undefined) newP.facebookPageId = pageId;
                     if (adAccountId !== undefined) newP.metaAdAccountId = adAccountId;
+                    
+                    if (name !== undefined) {
+                        newP.facebookPageName = name;
+                    } else if (fbPageName) {
+                        newP.facebookPageName = fbPageName;
+                    }
 
                     // Specific Disconnect Logic
                     if (pageId === "") {
                         newP.facebookToken_enc = "";
                         newP.iv_fb = "";
                         newP.tag_fb = "";
+                        newP.facebookPageName = "";
                     }
                 }
 
                 if (setAccounts.instagram) {
-                    const { token, accountId } = setAccounts.instagram;
+                    const { token, accountId, username } = setAccounts.instagram;
                     
                     if (token) {
                         const { encryptedData, iv, authTag } = encrypt(token);
@@ -109,12 +118,19 @@ export async function POST(req: Request) {
                     }
 
                     if (accountId !== undefined) newP.instagramAccountId = accountId;
+                    
+                    if (username !== undefined) {
+                        newP.instagramUsername = username;
+                    } else if (igUsername) {
+                        newP.instagramUsername = igUsername;
+                    }
 
                     // Disconnect
                     if (accountId === "") {
                         newP.instagramToken_enc = "";
                         newP.iv_ig = "";
                         newP.tag_ig = "";
+                        newP.instagramUsername = "";
                     }
                 }
 
