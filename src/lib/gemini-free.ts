@@ -32,7 +32,7 @@ export function getFreeModel(
         ...(systemInstruction && {
             systemInstruction: { role: "system", parts: [{ text: systemInstruction }] }
         }),
-    });
+    }, { apiVersion: "v1" });
 }
 
 /**

@@ -155,15 +155,15 @@ export default function SeoAutopilotPanel() {
                   <div className="space-y-4">
                       <div>
                           <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Tono de Voz</label>
-                          <input type="text" value={tone} onChange={e => setTone(e.target.value)} placeholder="Ej: Profesional, cercano, divertido..." className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
+                          <textarea rows={2} value={tone} onChange={e => setTone(e.target.value)} placeholder="Ej: Profesional, cercano, divertido..." className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none" />
                       </div>
                       <div>
                           <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Público Objetivo</label>
-                          <input type="text" value={audience} onChange={e => setAudience(e.target.value)} placeholder="Ej: Emprendedores de 25 a 40 años" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
+                          <textarea rows={2} value={audience} onChange={e => setAudience(e.target.value)} placeholder="Ej: Emprendedores de 25 a 40 años" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none" />
                       </div>
                       <div>
                           <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Palabras Clave (Opcional)</label>
-                          <input type="text" value={keywords} onChange={e => setKeywords(e.target.value)} placeholder="Ej: automatización, ventas, marketing" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
+                          <textarea rows={2} value={keywords} onChange={e => setKeywords(e.target.value)} placeholder="Ej: automatización, ventas, marketing" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none" />
                       </div>
                       <button onClick={handleSaveConfig} disabled={savingConfig} className="w-full mt-4 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-bold py-3 px-6 rounded-xl transition-all">
                           {savingConfig ? "Guardando..." : "Guardar Configuración"}
