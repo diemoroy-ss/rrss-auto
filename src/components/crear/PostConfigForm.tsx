@@ -43,6 +43,7 @@ interface PostConfigFormProps {
   setSelectedTemplate?: (val: any | null) => void;
   loadingTemplates?: boolean;
   onUploadNewTemplate?: (file: File) => void;
+  hideSubmit?: boolean;
 }
 
 export default function PostConfigForm({
@@ -62,7 +63,8 @@ export default function PostConfigForm({
   creationMode, setCreationMode,
   manualFiles, setManualFiles,
   manualCaption, setManualCaption,
-  isAdmin, manualTemplates = [], selectedTemplate, setSelectedTemplate, loadingTemplates, onUploadNewTemplate
+  isAdmin, manualTemplates = [], selectedTemplate, setSelectedTemplate, loadingTemplates, onUploadNewTemplate,
+  hideSubmit = false
 }: PostConfigFormProps) {
   return (
     <form id="create-post-form" onSubmit={handleSubmit} className="space-y-8">
@@ -313,9 +315,11 @@ export default function PostConfigForm({
         </div>
       </div>
 
-      <button disabled={loading} type="submit" className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-black text-lg py-5 px-8 rounded-[28px] transition-all shadow-2xl shadow-slate-900/20 flex items-center justify-center gap-4 hover:scale-[1.02]">
-        {loading ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : <><span>{needsConnection ? '💾' : '🤖'}</span> {needsConnection ? 'Guardar Idea' : 'Automatizar y Publicar'}</>}
-      </button>
+      {!hideSubmit && (
+        <button disabled={loading} type="submit" className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-black text-lg py-5 px-8 rounded-[28px] transition-all shadow-2xl shadow-slate-900/20 flex items-center justify-center gap-4 hover:scale-[1.02]">
+          {loading ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : <><span>{needsConnection ? '💾' : '🤖'}</span> {needsConnection ? 'Guardar Idea' : 'Automatizar y Publicar'}</>}
+        </button>
+      )}
     </form>
   );
 }

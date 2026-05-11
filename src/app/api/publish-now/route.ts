@@ -4,6 +4,25 @@ import { doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { decrypt } from '../../../lib/encryption';
 import { getQuotaUsage, getPlanLimit } from '../../../lib/quota';
 
+// Helper function to fetch Meta Graph API with retry mechanism to handle transient errors
+async function fetchWithRetry(url: string, options: any, retries = 3, delay = 2000): Promise<any> {
+    for (let i = 0; i < retries; i++) {
+        try {
+            const res = await fetch(url, options);
+            const data = await res.json();
+            if (data.error) {
+                throw new Error(data.error.message || JSON.stringify(data.error));
+            }
+            return data;
+        } catch (err: any) {
+            console.warn(`[API Retry] Request to ${url} failed (attempt ${i + 1}/${retries}): ${err.message}`);
+            if (i === retries - 1) throw err;
+            await new Promise(resolve => setTimeout(resolve, delay));
+            delay *= 1.5; // Exponential backoff
+        }
+    }
+}
+
 export async function POST(req: Request) {
     try {
         const { postId } = await req.json();
@@ -62,112 +81,104 @@ export async function POST(req: Request) {
 
             if (fbToken) {
                 try {
-                const plainToken = decrypt(fbToken, ivFb, tagFb);
-                
-                if (post.type === 'Carrusel' && post.imageUrls && post.imageUrls.length > 1) {
-                    const attachedMedia = [];
-                    for (const url of post.imageUrls) {
-                        const photoRes = await fetch(`https://graph.facebook.com/v19.0/${pageId}/photos`, {
+                    const plainToken = decrypt(fbToken, ivFb, tagFb);
+                    
+                    if (post.type === 'Carrusel' && post.imageUrls && post.imageUrls.length > 1) {
+                        const attachedMedia = [];
+                        for (const url of post.imageUrls) {
+                            const photoData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${pageId}/photos`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    url: url,
+                                    published: false,
+                                    access_token: plainToken
+                                })
+                            });
+                            attachedMedia.push({ media_fbid: photoData.id });
+                        }
+                        
+                        const fbData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${pageId}/feed`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
-                                url: url,
-                                published: false,
+                                message: caption,
+                                attached_media: attachedMedia,
                                 access_token: plainToken
                             })
                         });
-                        const photoData = await photoRes.json();
-                        if (photoData.error) throw new Error(photoData.error.message);
-                        attachedMedia.push({ media_fbid: photoData.id });
+                        
+                        await setDoc(doc(db, 'external_posts', fbData.id), {
+                           userId: uid,
+                           profileId: profileId || 'default',
+                           network: 'facebook',
+                           caption: caption,
+                           media_type: 'CAROUSEL_ALBUM',
+                           likes: 0,
+                           comments: 0,
+                           shares: 0,
+                           reach: 0,
+                           impressions: 0,
+                           created_time: new Date().toISOString(),
+                           timestamp: new Date()
+                        });
+                    } else if (post.type === 'Reel') {
+                        const fbData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${pageId}/videos`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                file_url: imageUrl,
+                                description: caption,
+                                access_token: plainToken
+                            })
+                        });
+                        
+                        await setDoc(doc(db, 'external_posts', fbData.id), {
+                           userId: uid,
+                           profileId: profileId || 'default',
+                           network: 'facebook',
+                           caption: caption,
+                           media_type: 'VIDEO',
+                           likes: 0,
+                           comments: 0,
+                           shares: 0,
+                           reach: 0,
+                           impressions: 0,
+                           created_time: new Date().toISOString(),
+                           timestamp: new Date()
+                        });
+                    } else {
+                        const fbData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${pageId}/photos`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                url: imageUrl,
+                                message: caption,
+                                access_token: plainToken
+                            })
+                        });
+                        
+                        await setDoc(doc(db, 'external_posts', fbData.id), {
+                           userId: uid,
+                           profileId: profileId || 'default',
+                           network: 'facebook',
+                           caption: caption,
+                           media_type: 'POST',
+                           likes: 0,
+                           comments: 0,
+                           shares: 0,
+                           reach: 0,
+                           impressions: 0,
+                           created_time: new Date().toISOString(),
+                           timestamp: new Date()
+                        });
                     }
-                    
-                    const fbRes = await fetch(`https://graph.facebook.com/v19.0/${pageId}/feed`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            message: caption,
-                            attached_media: attachedMedia,
-                            access_token: plainToken
-                        })
-                    });
-                    const fbData = await fbRes.json();
-                    if (fbData.error) throw new Error(fbData.error.message);
-                    
-                    await setDoc(doc(db, 'external_posts', fbData.id), {
-                       userId: uid,
-                       profileId: profileId || 'default',
-                       network: 'facebook',
-                       caption: caption,
-                       media_type: 'CAROUSEL_ALBUM',
-                       likes: 0,
-                       comments: 0,
-                       shares: 0,
-                       reach: 0,
-                       impressions: 0,
-                       created_time: new Date().toISOString(),
-                       timestamp: new Date()
-                    });
-                } else if (post.type === 'Reel') {
-                    const fbRes = await fetch(`https://graph.facebook.com/v19.0/${pageId}/videos`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            file_url: imageUrl,
-                            description: caption,
-                            access_token: plainToken
-                        })
-                    });
-                    const fbData = await fbRes.json();
-                    if (fbData.error) throw new Error(fbData.error.message);
-                    
-                    await setDoc(doc(db, 'external_posts', fbData.id), {
-                       userId: uid,
-                       profileId: profileId || 'default',
-                       network: 'facebook',
-                       caption: caption,
-                       media_type: 'VIDEO',
-                       likes: 0,
-                       comments: 0,
-                       shares: 0,
-                       reach: 0,
-                       impressions: 0,
-                       created_time: new Date().toISOString(),
-                       timestamp: new Date()
-                    });
-                } else {
-                    const fbRes = await fetch(`https://graph.facebook.com/v19.0/${pageId}/photos`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            url: imageUrl,
-                            message: caption,
-                            access_token: plainToken
-                        })
-                    });
-                    const fbData = await fbRes.json();
-                    if (fbData.error) throw new Error(fbData.error.message);
-                    
-                    await setDoc(doc(db, 'external_posts', fbData.id), {
-                       userId: uid,
-                       profileId: profileId || 'default',
-                       network: 'facebook',
-                       caption: caption,
-                       media_type: 'POST',
-                       likes: 0,
-                       comments: 0,
-                       shares: 0,
-                       reach: 0,
-                       impressions: 0,
-                       created_time: new Date().toISOString(),
-                       timestamp: new Date()
-                    });
-                }
 
-                successNetworks.push('facebook');
-            } catch (e: any) {
-                console.error("FB Publish Error:", e.message);
-                errorLog += `FB: ${e.message}. `;
-            }
+                    successNetworks.push('facebook');
+                } catch (e: any) {
+                    console.error("FB Publish Error:", e.message);
+                    errorLog += `FB: ${e.message}. `;
+                }
             } else {
                 errorLog += `Facebook: Cuenta no vinculada o token faltante. `;
             }
@@ -182,190 +193,176 @@ export async function POST(req: Request) {
 
             if (igToken) {
                 try {
-                const plainToken = decrypt(igToken, ivIg, tagIg);
-                
-                if (post.type === 'Carrusel' && post.imageUrls && post.imageUrls.length > 1) {
-                    const childrenIds = [];
-                    for (const url of post.imageUrls) {
-                        const itemRes = await fetch(`https://graph.facebook.com/v19.0/${igAccountId}/media`, {
-                           method: 'POST',
-                           headers: { 'Content-Type': 'application/json' },
-                           body: JSON.stringify({
-                               image_url: url,
-                               is_carousel_item: true,
+                    const plainToken = decrypt(igToken, ivIg, tagIg);
+                    
+                    if (post.type === 'Carrusel' && post.imageUrls && post.imageUrls.length > 1) {
+                        const childrenIds = [];
+                        for (const url of post.imageUrls) {
+                            const itemData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${igAccountId}/media`, {
+                               method: 'POST',
+                               headers: { 'Content-Type': 'application/json' },
+                               body: JSON.stringify({
+                                   image_url: url,
+                                   is_carousel_item: true,
+                                   access_token: plainToken
+                               })
+                            });
+                            childrenIds.push(itemData.id);
+                        }
+
+                        const igMediaData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${igAccountId}/media`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                               media_type: 'CAROUSEL',
+                               children: childrenIds,
+                               caption: caption,
                                access_token: plainToken
-                           })
+                            })
                         });
-                        const itemData = await itemRes.json();
-                        if (itemData.error) throw new Error(itemData.error.message);
-                        childrenIds.push(itemData.id);
-                    }
+                        
+                        const igPubData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${igAccountId}/media_publish`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                creation_id: igMediaData.id,
+                                access_token: plainToken
+                            })
+                        });
 
-                    const igMediaRes = await fetch(`https://graph.facebook.com/v19.0/${igAccountId}/media`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                           media_type: 'CAROUSEL',
-                           children: childrenIds,
+                        await setDoc(doc(db, 'external_posts', igPubData.id), {
+                           userId: uid,
+                           profileId: profileId || 'default',
+                           network: 'instagram',
                            caption: caption,
-                           access_token: plainToken
-                        })
-                    });
-                    const igMediaData = await igMediaRes.json();
-                    if (igMediaData.error) throw new Error(igMediaData.error.message);
-                    
-                    const igPubRes = await fetch(`https://graph.facebook.com/v19.0/${igAccountId}/media_publish`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            creation_id: igMediaData.id,
-                            access_token: plainToken
-                        })
-                    });
-                    const igPubData = await igPubRes.json();
-                    if (igPubData.error) throw new Error(igPubData.error.message);
-
-                    await setDoc(doc(db, 'external_posts', igPubData.id), {
-                       userId: uid,
-                       profileId: profileId || 'default',
-                       network: 'instagram',
-                       caption: caption,
-                       media_type: 'CAROUSEL',
-                       likes: 0,
-                       comments: 0,
-                       shares: 0,
-                       reach: 0,
-                       impressions: 0,
-                       created_time: new Date().toISOString(),
-                       timestamp: new Date()
-                    });
-                } else if (post.type === 'Reel') {
-                    // 1. Create Reels Container
-                    const igMediaRes = await fetch(`https://graph.facebook.com/v19.0/${igAccountId}/media`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            video_url: imageUrl,
-                            caption: caption,
-                            media_type: 'REELS',
-                            access_token: plainToken
-                        })
-                    });
-                    const igMediaData = await igMediaRes.json();
-                    if (igMediaData.error) throw new Error(igMediaData.error.message);
-                    
-                    // 2. Poll for Processing Status
-                    let isReady = false;
-                    for (let i = 0; i < 8; i++) { // Esperar hasta 40 segundos.
-                        await new Promise(r => setTimeout(r, 5000));
-                        const statusRes = await fetch(`https://graph.facebook.com/v19.0/${igMediaData.id}?fields=status_code&access_token=${plainToken}`);
-                        const statusData = await statusRes.json();
-                        if (statusData.status_code === 'FINISHED') {
-                            isReady = true;
-                            break;
-                        } else if (statusData.status_code === 'ERROR') {
-                            throw new Error("Instagram Graph API falló al procesar el video del Reel transcurrido.");
+                           media_type: 'CAROUSEL',
+                           likes: 0,
+                           comments: 0,
+                           shares: 0,
+                           reach: 0,
+                           impressions: 0,
+                           created_time: new Date().toISOString(),
+                           timestamp: new Date()
+                        });
+                    } else if (post.type === 'Reel') {
+                        // 1. Create Reels Container
+                        const igMediaData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${igAccountId}/media`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                video_url: imageUrl,
+                                caption: caption,
+                                media_type: 'REELS',
+                                access_token: plainToken
+                            })
+                        });
+                        
+                        // 2. Poll for Processing Status
+                        let isReady = false;
+                        for (let i = 0; i < 8; i++) { // Esperar hasta 40 segundos.
+                            await new Promise(r => setTimeout(r, 5000));
+                            const statusRes = await fetch(`https://graph.facebook.com/v19.0/${igMediaData.id}?fields=status_code&access_token=${plainToken}`);
+                            const statusData = await statusRes.json();
+                            if (statusData.status_code === 'FINISHED') {
+                                isReady = true;
+                                break;
+                            } else if (statusData.status_code === 'ERROR') {
+                                throw new Error("Instagram Graph API falló al procesar el video del Reel transcurrido.");
+                            }
                         }
-                    }
-                    if (!isReady) throw new Error("Tiempo de espera agotado procesando el Reel de Instagram en los servidores de Meta.");
+                        if (!isReady) throw new Error("Tiempo de espera agotado procesando el Reel de Instagram en los servidores de Meta.");
 
-                    // 3. Publish Media
-                    const igPubRes = await fetch(`https://graph.facebook.com/v19.0/${igAccountId}/media_publish`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            creation_id: igMediaData.id,
+                        // 3. Publish Media
+                        const igPubData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${igAccountId}/media_publish`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                creation_id: igMediaData.id,
+                                access_token: plainToken
+                            })
+                        });
+
+                        await setDoc(doc(db, 'external_posts', igPubData.id), {
+                           userId: uid,
+                           profileId: profileId || 'default',
+                           network: 'instagram',
+                           caption: caption,
+                           media_type: 'REELS',
+                           likes: 0,
+                           comments: 0,
+                           shares: 0,
+                           reach: 0,
+                           impressions: 0,
+                           created_time: new Date().toISOString(),
+                           timestamp: new Date()
+                        });
+                    } else {
+                        const isStory = post.type?.toLowerCase().includes('stor') || post.type?.toLowerCase().includes('historia');
+                        
+                        const containerBody: any = {
+                            image_url: imageUrl,
                             access_token: plainToken
-                        })
-                    });
-                    const igPubData = await igPubRes.json();
-                    if (igPubData.error) throw new Error(igPubData.error.message);
+                        };
 
-                    await setDoc(doc(db, 'external_posts', igPubData.id), {
-                       userId: uid,
-                       profileId: profileId || 'default',
-                       network: 'instagram',
-                       caption: caption,
-                       media_type: 'REELS',
-                       likes: 0,
-                       comments: 0,
-                       shares: 0,
-                       reach: 0,
-                       impressions: 0,
-                       created_time: new Date().toISOString(),
-                       timestamp: new Date()
-                    });
-                } else {
-                    const isStory = post.type?.toLowerCase().includes('stor') || post.type?.toLowerCase().includes('historia');
-                    
-                    const containerBody: any = {
-                        image_url: imageUrl,
-                        access_token: plainToken
-                    };
-
-                    if (isStory) {
-                        containerBody.media_type = 'STORIES';
-                    } else if (caption) {
-                        containerBody.caption = caption;
-                    }
-
-                    // 1. Create Media Container
-                    const igMediaRes = await fetch(`https://graph.facebook.com/v19.0/${igAccountId}/media`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(containerBody)
-                    });
-                    const igMediaData = await igMediaRes.json();
-                    if (igMediaData.error) throw new Error(igMediaData.error.message);
-                    
-                    // 2. Poll for Processing Status (Ensures Meta has downloaded the image)
-                    let isReady = false;
-                    for (let i = 0; i < 6; i++) { // Esperar hasta 12 segundos.
-                        const statusRes = await fetch(`https://graph.facebook.com/v19.0/${igMediaData.id}?fields=status_code&access_token=${plainToken}`);
-                        const statusData = await statusRes.json();
-                        if (statusData.status_code === 'FINISHED') {
-                            isReady = true;
-                            break;
-                        } else if (statusData.status_code === 'ERROR') {
-                            throw new Error("Instagram Graph API falló al procesar la imagen.");
+                        if (isStory) {
+                            containerBody.media_type = 'STORIES';
+                        } else if (caption) {
+                            containerBody.caption = caption;
                         }
-                        await new Promise(r => setTimeout(r, 2000));
+
+                        // 1. Create Media Container
+                        const igMediaData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${igAccountId}/media`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(containerBody)
+                        });
+                        
+                        // 2. Poll for Processing Status (Ensures Meta has downloaded the image)
+                        let isReady = false;
+                        for (let i = 0; i < 6; i++) { // Esperar hasta 12 segundos.
+                            const statusRes = await fetch(`https://graph.facebook.com/v19.0/${igMediaData.id}?fields=status_code&access_token=${plainToken}`);
+                            const statusData = await statusRes.json();
+                            if (statusData.status_code === 'FINISHED') {
+                                isReady = true;
+                                break;
+                            } else if (statusData.status_code === 'ERROR') {
+                                throw new Error("Instagram Graph API falló al procesar la imagen.");
+                            }
+                            await new Promise(r => setTimeout(r, 2000));
+                        }
+                        if (!isReady) throw new Error("Tiempo de espera agotado procesando la imagen en los servidores de Meta.");
+
+                        // 3. Publish Media
+                        const igPubData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${igAccountId}/media_publish`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                creation_id: igMediaData.id,
+                                access_token: plainToken
+                            })
+                        });
+
+                        await setDoc(doc(db, 'external_posts', igPubData.id), {
+                           userId: uid,
+                           profileId: profileId || 'default',
+                           network: 'instagram',
+                           caption: caption,
+                           media_type: isStory ? 'STORIES' : 'IMAGE',
+                           likes: 0,
+                           comments: 0,
+                           shares: 0,
+                           reach: 0,
+                           impressions: 0,
+                           created_time: new Date().toISOString(),
+                           timestamp: new Date()
+                        });
                     }
-                    if (!isReady) throw new Error("Tiempo de espera agotado procesando la imagen en los servidores de Meta.");
 
-                    // 3. Publish Media
-                    const igPubRes = await fetch(`https://graph.facebook.com/v19.0/${igAccountId}/media_publish`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            creation_id: igMediaData.id,
-                            access_token: plainToken
-                        })
-                    });
-                    const igPubData = await igPubRes.json();
-                    if (igPubData.error) throw new Error(igPubData.error.message);
-
-                    await setDoc(doc(db, 'external_posts', igPubData.id), {
-                       userId: uid,
-                       profileId: profileId || 'default',
-                       network: 'instagram',
-                       caption: caption,
-                       media_type: isStory ? 'STORIES' : 'IMAGE',
-                       likes: 0,
-                       comments: 0,
-                       shares: 0,
-                       reach: 0,
-                       impressions: 0,
-                       created_time: new Date().toISOString(),
-                       timestamp: new Date()
-                    });
+                    successNetworks.push('instagram');
+                } catch (e: any) {
+                    console.error("IG Publish Error:", e.message);
+                    errorLog += `IG: ${e.message}. `;
                 }
-
-                successNetworks.push('instagram');
-            } catch (e: any) {
-                console.error("IG Publish Error:", e.message);
-                errorLog += `IG: ${e.message}. `;
-            }
             } else {
                 errorLog += `Instagram: Cuenta no vinculada o token faltante. `;
             }
@@ -380,123 +377,122 @@ export async function POST(req: Request) {
 
             if (liToken && personUrn) {
                 try {
-                const plainToken = decrypt(liToken, ivLi, tagLi);
-                
-                let mediaAssetUrn = null;
+                    const plainToken = decrypt(liToken, ivLi, tagLi);
+                    
+                    let mediaAssetUrn = null;
 
-                // Si hay imagen, tenemos que subirla a LinkedIn Assets
-                if (imageUrl && !post.type?.toLowerCase().includes('reel')) {
-                    // 1. Register Upload
-                    const regRes = await fetch("https://api.linkedin.com/v2/assets?action=registerUpload", {
+                    // Si hay imagen, tenemos que subirla a LinkedIn Assets
+                    if (imageUrl && !post.type?.toLowerCase().includes('reel')) {
+                        // 1. Register Upload
+                        const regRes = await fetch("https://api.linkedin.com/v2/assets?action=registerUpload", {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${plainToken}`,
+                                'Content-Type': 'application/json',
+                                'X-Restli-Protocol-Version': '2.0.0'
+                            },
+                            body: JSON.stringify({
+                              "registerUploadRequest": {
+                                "recipes": ["urn:li:digitalmediaRecipe:feedshare-image"],
+                                "owner": personUrn,
+                                "serviceRelationships": [
+                                  {
+                                    "relationshipType": "OWNER",
+                                    "identifier": "urn:li:userGeneratedContent"
+                                  }
+                                ]
+                              }
+                            })
+                        });
+                        const regData = await regRes.json();
+                        
+                        if (regData.value?.asset && regData.value?.uploadMechanism?.["com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest"]?.uploadUrl) {
+                            mediaAssetUrn = regData.value.asset;
+                            const uploadUrl = regData.value.uploadMechanism["com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest"].uploadUrl;
+                            
+                            // 2. Download Image into memory
+                            const imgRes = await fetch(imageUrl);
+                            const imgBuffer = await imgRes.arrayBuffer();
+                            
+                            // 3. Upload Image to LinkedIn
+                            const uploadRes = await fetch(uploadUrl, {
+                                method: 'PUT',
+                                headers: {
+                                    'Authorization': `Bearer ${plainToken}`
+                                },
+                                body: imgBuffer
+                            });
+                            
+                            if (!uploadRes.ok) {
+                                 throw new Error("Failed to upload image bytes to LinkedIn.");
+                            }
+                        }
+                    }
+
+                    // Prepare Share payload
+                    const sharePayload: any = {
+                        "author": personUrn,
+                        "lifecycleState": "PUBLISHED",
+                        "specificContent": {
+                            "com.linkedin.ugc.ShareContent": {
+                                "shareCommentary": {
+                                    "text": caption
+                                },
+                                "shareMediaCategory": mediaAssetUrn ? "IMAGE" : "NONE"
+                            }
+                        },
+                        "visibility": {
+                            "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"
+                        }
+                    };
+
+                    if (mediaAssetUrn) {
+                        sharePayload.specificContent["com.linkedin.ugc.ShareContent"].media = [
+                            {
+                                "status": "READY",
+                                "description": { "text": caption },
+                                "media": mediaAssetUrn,
+                                "title": { "text": "Publicación de Santisoft" }
+                            }
+                        ];
+                    }
+
+                    // 4. Create Post
+                    const postRes = await fetch("https://api.linkedin.com/v2/ugcPosts", {
                         method: 'POST',
                         headers: {
                             'Authorization': `Bearer ${plainToken}`,
                             'Content-Type': 'application/json',
                             'X-Restli-Protocol-Version': '2.0.0'
                         },
-                        body: JSON.stringify({
-                          "registerUploadRequest": {
-                            "recipes": ["urn:li:digitalmediaRecipe:feedshare-image"],
-                            "owner": personUrn,
-                            "serviceRelationships": [
-                              {
-                                "relationshipType": "OWNER",
-                                "identifier": "urn:li:userGeneratedContent"
-                              }
-                            ]
-                          }
-                        })
+                        body: JSON.stringify(sharePayload)
                     });
-                    const regData = await regRes.json();
+                    const postData = await postRes.json();
                     
-                    if (regData.value?.asset && regData.value?.uploadMechanism?.["com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest"]?.uploadUrl) {
-                        mediaAssetUrn = regData.value.asset;
-                        const uploadUrl = regData.value.uploadMechanism["com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest"].uploadUrl;
-                        
-                        // 2. Download Image into memory
-                        const imgRes = await fetch(imageUrl);
-                        const imgBuffer = await imgRes.arrayBuffer();
-                        
-                        // 3. Upload Image to LinkedIn
-                        const uploadRes = await fetch(uploadUrl, {
-                            method: 'PUT',
-                            headers: {
-                                // Content-Type is empty or standard octet-stream for binary
-                                'Authorization': `Bearer ${plainToken}`
-                            },
-                            body: imgBuffer
-                        });
-                        
-                        if (!uploadRes.ok) {
-                             throw new Error("Failed to upload image bytes to LinkedIn.");
-                        }
+                    if (postData.error || postData.message) {
+                        throw new Error(postData.message || postData.error);
                     }
+
+                    successNetworks.push('linkedin');
+                    
+                    await setDoc(doc(db, 'external_posts', postData.id || `li_${Date.now()}`), {
+                       userId: uid,
+                       profileId: profileId || 'default',
+                       network: 'linkedin',
+                       caption: caption,
+                       media_type: mediaAssetUrn ? 'IMAGE' : 'TEXT',
+                       likes: 0,
+                       comments: 0,
+                       shares: 0,
+                       reach: 0,
+                       impressions: 0,
+                       created_time: new Date().toISOString(),
+                       timestamp: new Date()
+                    });
+                } catch (e: any) {
+                    console.error("LI Publish Error:", e.message);
+                    errorLog += `LI: ${e.message}. `;
                 }
-
-                // Prepare Share payload
-                const sharePayload: any = {
-                    "author": personUrn,
-                    "lifecycleState": "PUBLISHED",
-                    "specificContent": {
-                        "com.linkedin.ugc.ShareContent": {
-                            "shareCommentary": {
-                                "text": caption
-                            },
-                            "shareMediaCategory": mediaAssetUrn ? "IMAGE" : "NONE"
-                        }
-                    },
-                    "visibility": {
-                        "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"
-                    }
-                };
-
-                if (mediaAssetUrn) {
-                    sharePayload.specificContent["com.linkedin.ugc.ShareContent"].media = [
-                        {
-                            "status": "READY",
-                            "description": { "text": caption },
-                            "media": mediaAssetUrn,
-                            "title": { "text": "Publicación de Santisoft" }
-                        }
-                    ];
-                }
-
-                // 4. Create Post
-                const postRes = await fetch("https://api.linkedin.com/v2/ugcPosts", {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${plainToken}`,
-                        'Content-Type': 'application/json',
-                        'X-Restli-Protocol-Version': '2.0.0'
-                    },
-                    body: JSON.stringify(sharePayload)
-                });
-                const postData = await postRes.json();
-                
-                if (postData.error || postData.message) {
-                    throw new Error(postData.message || postData.error);
-                }
-
-                successNetworks.push('linkedin');
-                
-                await setDoc(doc(db, 'external_posts', postData.id || `li_${Date.now()}`), {
-                   userId: uid,
-                   profileId: profileId || 'default',
-                   network: 'linkedin',
-                   caption: caption,
-                   media_type: mediaAssetUrn ? 'IMAGE' : 'TEXT',
-                   likes: 0,
-                   comments: 0,
-                   shares: 0,
-                   reach: 0,
-                   impressions: 0,
-                   created_time: new Date().toISOString(),
-                   timestamp: new Date()
-                });
-            } catch (e: any) {
-                console.error("LI Publish Error:", e.message);
-                errorLog += `LI: ${e.message}. `;
-            }
             } else {
                 errorLog += `LinkedIn: Cuenta no vinculada o token faltante. `;
             }
@@ -510,7 +506,6 @@ export async function POST(req: Request) {
             });
             return NextResponse.json({ success: true, published: successNetworks, errors: errorLog });
         } else {
-            // Even if errors, don't necessarily abort the app entirely
             await updateDoc(postRef, {
                 status: 'error',
                 publishError: errorLog || 'No se pudo publicar en ninguna red'

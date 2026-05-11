@@ -376,6 +376,7 @@ export default function RrssCreatePost() {
 
   if (loadingInitial) return <div className="animate-pulse space-y-4 max-w-2xl"><div className="h-10 bg-slate-200 rounded w-1/3"></div><div className="h-64 bg-slate-200 rounded"></div></div>;
   const needsConnection = !hasFb && !hasIg && !hasLi;
+  const isPreviewVisible = (creationMode === 'manual' && !!selectedTemplate) || (creationMode === 'ai' && previewSlides.length > 0);
 
   return (
     <div className="max-w-[1400px] mx-auto lg:mx-0">
@@ -399,6 +400,7 @@ export default function RrssCreatePost() {
             <PostConfigForm 
               idea={idea} setIdea={setIdea}
               postType={postType} setPostType={setPostType}
+              hideSubmit={isPreviewVisible}
               carouselCount={carouselCount} setCarouselCount={setCarouselCount}
               businessType={businessType} setBusinessType={setBusinessType}
               date={date} setDate={setDate}
