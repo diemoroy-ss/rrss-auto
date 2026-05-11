@@ -694,14 +694,27 @@ export default function RrssDashboard() {
           </button>
         </div>
 
-        {message && (
-          <div className={`mb-8 p-4 rounded-xl font-bold flex items-center gap-3 animate-in fade-in slide-in-from-top-4 ${
-            message.type === 'error' ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'
+      {/* Floating Modern Toast */}
+      {message && (
+        <div className="fixed top-6 right-6 z-[9999] max-w-md w-full p-4 animate-in slide-in-from-right-10 fade-in duration-300 pointer-events-auto">
+          <div className={`rounded-3xl p-4 shadow-2xl border flex items-center gap-3 bg-white/95 backdrop-blur-md ${
+            message.type === 'error' ? 'border-rose-100 text-rose-800 shadow-rose-100/30' : 'border-emerald-100 text-emerald-800 shadow-emerald-100/30'
           }`}>
-            <span>{message.type === 'error' ? '⚠️' : '✅'}</span>
-            {message.text}
+            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center text-lg shadow-sm ${
+              message.type === 'error' ? 'bg-rose-50' : 'bg-emerald-50'
+            }`}>
+              {message.type === 'error' ? '⚠️' : '✅'}
+            </div>
+            <div className="flex-1">
+              <p className="text-[10px] font-black tracking-tight uppercase text-slate-400">
+                {message.type === 'error' ? 'Error del Sistema' : 'Operación Exitosa'}
+              </p>
+              <p className="text-xs font-bold text-slate-700 mt-0.5 leading-tight">{message.text}</p>
+            </div>
+            <button onClick={() => setMessage(null)} className="text-slate-400 hover:text-slate-600 text-lg font-black px-2">&times;</button>
           </div>
-        )}
+        </div>
+      )}
 
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="bg-white border-2 border-slate-100 rounded-xl px-4 py-3 flex items-center justify-between gap-4 shadow-sm w-full sm:w-auto">
@@ -1105,6 +1118,23 @@ export default function RrssDashboard() {
             {/* Scrollable Content Area */}
             <div className="flex-1 overflow-y-auto p-6 sm:p-10 pt-4 pb-32 hide-scrollbar">
                 <div className="space-y-6">
+                   {/* Mensaje de Error de Publicación */}
+                   {selectedPost.publishError && (
+                     <div className="bg-rose-50 border-2 border-rose-200 rounded-[24px] p-6 text-rose-800 animate-in slide-in-from-top-2 fade-in">
+                       <div className="flex gap-3 items-start">
+                         <span className="text-2xl">⚠️</span>
+                         <div>
+                           <h4 className="font-black text-sm tracking-tight text-rose-900 uppercase">Error de Publicación</h4>
+                           <p className="text-xs font-semibold text-rose-700/90 mt-1 leading-relaxed">
+                             {selectedPost.publishError}
+                           </p>
+                           <p className="text-[10px] font-bold text-rose-500 mt-3 uppercase tracking-wider">
+                             Por favor, revisa la conexión de tus cuentas de redes sociales en el panel de configuración o el estado de tus tokens de Meta/LinkedIn.
+                           </p>
+                         </div>
+                       </div>
+                     </div>
+                   )}
                    <div className="flex flex-wrap items-center gap-3">
                      <span className="text-[10px] font-black uppercase tracking-widest px-4 py-2 bg-slate-100 text-slate-500 rounded-xl border border-slate-200">Formato</span>
                      <div className="flex gap-2">

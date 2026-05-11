@@ -27,7 +27,7 @@ export async function POST(req: Request) {
 
         const userData = userSnap.data();
         let targetProfile: any = null;
-        if (profileId && profileId !== 'default' && Array.isArray(userData.profiles)) {
+        if (profileId && Array.isArray(userData.profiles)) {
             targetProfile = userData.profiles.find((p: any) => p.id === profileId);
         }
         if (!targetProfile) targetProfile = userData;

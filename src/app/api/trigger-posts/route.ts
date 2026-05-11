@@ -60,7 +60,7 @@ export async function GET(req: Request) {
             
             // Multi-tenant profile resolution
             let targetProfile: any = null;
-            if (profileId && profileId !== 'default' && Array.isArray(userData.profiles)) {
+            if (profileId && Array.isArray(userData.profiles)) {
                 targetProfile = userData.profiles.find((p: any) => p.id === profileId);
             }
             

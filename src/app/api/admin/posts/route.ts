@@ -53,7 +53,7 @@ export async function GET(req: Request) {
             const ownerInfo = userMap[ownerId] || { name: 'Desconocido', email: 'Desconocido' };
             
             let profileName = 'Perfil Principal';
-            if (p.profileId && p.profileId !== 'default' && Array.isArray(ownerInfo.profiles)) {
+            if (p.profileId && Array.isArray(ownerInfo.profiles)) {
                   const prf = ownerInfo.profiles.find((pf: any) => pf.id === p.profileId);
                   if (prf) profileName = prf.instagramUsername || prf.facebookPageName || prf.name || 'Perfil Secundario';
             }
