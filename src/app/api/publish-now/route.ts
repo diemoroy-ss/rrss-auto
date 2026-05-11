@@ -297,16 +297,23 @@ export async function POST(req: Request) {
                     });
                 } else {
                     const isStory = post.type?.toLowerCase().includes('stor') || post.type?.toLowerCase().includes('historia');
+                    
+                    const containerBody: any = {
+                        image_url: imageUrl,
+                        access_token: plainToken
+                    };
+
+                    if (isStory) {
+                        containerBody.media_type = 'STORIES';
+                    } else if (caption) {
+                        containerBody.caption = caption;
+                    }
+
                     // 1. Create Media Container
                     const igMediaRes = await fetch(`https://graph.facebook.com/v19.0/${igAccountId}/media`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            image_url: imageUrl,
-                            caption: caption,
-                            media_type: isStory ? 'STORIES' : 'IMAGE',
-                            access_token: plainToken
-                        })
+                        body: JSON.stringify(containerBody)
                     });
                     const igMediaData = await igMediaRes.json();
                     if (igMediaData.error) throw new Error(igMediaData.error.message);
