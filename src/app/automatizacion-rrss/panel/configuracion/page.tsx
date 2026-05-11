@@ -70,12 +70,20 @@ function MetaSelectionModal({ isOpen, onClose, onSelect, profileId }: any) {
               <label key={p.id} className={`flex items-center gap-4 p-4 border-2 rounded-2xl cursor-pointer transition-colors ${selectedPage?.id === p.id ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 hover:border-indigo-200 hover:bg-slate-50'}`}>
                 <input type="radio" name="meta_page" checked={selectedPage?.id === p.id} onChange={() => setSelectedPage(p)} className="hidden" />
                 <div className="w-10 h-10 bg-slate-200 rounded-full flex-shrink-0 flex items-center justify-center font-bold text-slate-500">{p.name.charAt(0)}</div>
-                <div className="flex-1">
-                  <p className="font-bold text-slate-900">{p.name}</p>
+                <div className="flex-1 space-y-1.5">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[10px] font-black text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-0.5 rounded-md uppercase tracking-wider">Facebook Page</span>
+                    <span className="font-extrabold text-slate-900 text-sm leading-tight">{p.name}</span>
+                  </div>
                   {p.instagram_business_account ? (
-                    <p className="text-xs text-emerald-600 font-medium">✨ Instagram: @{p.instagram_business_account.username}</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] font-black text-pink-600 bg-pink-50 border border-pink-100 px-2.5 py-0.5 rounded-md uppercase tracking-wider">Instagram Business</span>
+                      <span className="text-xs text-slate-600 font-bold">@{p.instagram_business_account.username}</span>
+                    </div>
                   ) : (
-                    <p className="text-xs text-amber-500 font-medium">⚠️ Sin Instagram vinculado</p>
+                    <div className="text-[10px] font-black text-amber-600 bg-amber-50 border border-amber-100 px-2.5 py-0.5 rounded-md uppercase tracking-wider">
+                      ⚠️ Sin Instagram Vinculado
+                    </div>
                   )}
                 </div>
               </label>
