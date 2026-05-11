@@ -310,13 +310,16 @@ export default function MetricasDashboard() {
     setSyncStatus({ type: 'info', text: 'Buscando el historial más reciente en los servidores de Meta...' });
     
     try {
-      const response = await fetch('https://n8n.santisoft.cl/webhook-test/sincronizar-metricas', { 
+      const response = await fetch('/api/sync-metrics', { 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.uid })
+        body: JSON.stringify({ 
+          userId: user.uid,
+          profileId: activeProfile?.id || 'default'
+        })
       });
 
-      if (!response.ok) throw new Error("Error en el servidor de n8n");
+      if (!response.ok) throw new Error("Error en el servidor de sincronización");
       
       // Tras finalizar, volvemos a descargar los datos actualizados de Firestore
       if (user) await fetchMetrics(user.uid);
@@ -325,7 +328,7 @@ export default function MetricasDashboard() {
       setTimeout(() => setSyncStatus(null), 5000);
       
     } catch (e) {
-      setSyncStatus({ type: 'error', text: 'No pudimos sincronizar en este momento. Revisa tu conexión con n8n.' });
+      setSyncStatus({ type: 'error', text: 'No pudimos sincronizar en este momento. Revisa tu conexión con el servidor.' });
       setTimeout(() => setSyncStatus(null), 5000);
     } finally {
       setIsSyncing(false);
