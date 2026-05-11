@@ -92,8 +92,8 @@ export default function EstrategiaPage() {
                   linkedinUrl: activeProfile?.linkedinUrl || (isDefault ? data.linkedinUrl : "") || "",
               });
               
-              const fbOK = !!activeProfile?.facebookToken_enc || (isDefault && !!data.facebookToken_enc);
-              const igOK = !!activeProfile?.instagramToken_enc || (isDefault && !!data.instagramToken_enc);
+              const fbOK = !!activeProfile?.facebookToken_enc || !!data.facebookToken_enc;
+              const igOK = !!activeProfile?.instagramToken_enc || !!data.instagramToken_enc;
               setHasNetworks(fbOK || igOK);
               
               // Calculate posts this month
@@ -152,7 +152,7 @@ export default function EstrategiaPage() {
       setLoading(false);
     });
     return () => unsub();
-  }, []);
+  }, [activeProfile]);
 
   const handleGenerate = async () => {
       if (userPlan === 'free' && user?.email !== 'diemoroy@gmail.com') return;
