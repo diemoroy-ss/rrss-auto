@@ -54,10 +54,14 @@ export async function POST(req: Request) {
 
         // FACEBOOK
         if (post.networks?.includes('facebook')) {
-            if (targetProfile.facebookToken_enc) {
+            const fbToken = targetProfile.facebookToken_enc || userData.facebookToken_enc;
+            const ivFb = targetProfile.iv_fb || userData.iv_fb;
+            const tagFb = targetProfile.tag_fb || userData.tag_fb;
+            const pageId = targetProfile.facebookPageId || userData.facebookPageId;
+
+            if (fbToken) {
                 try {
-                const plainToken = decrypt(targetProfile.facebookToken_enc, targetProfile.iv_fb, targetProfile.tag_fb);
-                const pageId = targetProfile.facebookPageId;
+                const plainToken = decrypt(fbToken, ivFb, tagFb);
                 
                 if (post.type === 'Carrusel' && post.imageUrls && post.imageUrls.length > 1) {
                     const attachedMedia = [];
@@ -170,10 +174,14 @@ export async function POST(req: Request) {
 
         // INSTAGRAM
         if (post.networks?.includes('instagram')) {
-            if (targetProfile.instagramToken_enc) {
+            const igToken = targetProfile.instagramToken_enc || userData.instagramToken_enc;
+            const ivIg = targetProfile.iv_ig || userData.iv_ig;
+            const tagIg = targetProfile.tag_ig || userData.tag_ig;
+            const igAccountId = targetProfile.instagramAccountId || userData.instagramAccountId;
+
+            if (igToken) {
                 try {
-                const plainToken = decrypt(targetProfile.instagramToken_enc, targetProfile.iv_ig, targetProfile.tag_ig);
-                const igAccountId = targetProfile.instagramAccountId;
+                const plainToken = decrypt(igToken, ivIg, tagIg);
                 
                 if (post.type === 'Carrusel' && post.imageUrls && post.imageUrls.length > 1) {
                     const childrenIds = [];
@@ -342,10 +350,14 @@ export async function POST(req: Request) {
 
         // LINKEDIN
         if (post.networks?.includes('linkedin')) {
-            if (targetProfile.linkedinToken_enc && targetProfile.linkedinPersonUrn) {
+            const liToken = targetProfile.linkedinToken_enc || userData.linkedinToken_enc;
+            const ivLi = targetProfile.iv_li_token || userData.iv_li_token;
+            const tagLi = targetProfile.tag_li_token || userData.tag_li_token;
+            const personUrn = targetProfile.linkedinPersonUrn || userData.linkedinPersonUrn;
+
+            if (liToken && personUrn) {
                 try {
-                const plainToken = decrypt(targetProfile.linkedinToken_enc, targetProfile.iv_li_token, targetProfile.tag_li_token);
-                const personUrn = targetProfile.linkedinPersonUrn;
+                const plainToken = decrypt(liToken, ivLi, tagLi);
                 
                 let mediaAssetUrn = null;
 

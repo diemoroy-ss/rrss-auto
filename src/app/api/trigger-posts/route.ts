@@ -93,23 +93,33 @@ export async function GET(req: Request) {
             const credentials: any = {};
 
             // Decrypt Facebook
-            if (postData.networks?.includes('facebook') && targetProfile.facebookToken_enc) {
+            const fbToken = targetProfile.facebookToken_enc || userData.facebookToken_enc;
+            const ivFb = targetProfile.iv_fb || userData.iv_fb;
+            const tagFb = targetProfile.tag_fb || userData.tag_fb;
+            const pageId = targetProfile.facebookPageId || userData.facebookPageId;
+
+            if (postData.networks?.includes('facebook') && fbToken) {
                 try {
-                    const plainToken = decrypt(targetProfile.facebookToken_enc, targetProfile.iv_fb, targetProfile.tag_fb);
+                    const plainToken = decrypt(fbToken, ivFb, tagFb);
                     credentials.facebook = {
                         token: plainToken,
-                        pageId: targetProfile.facebookPageId
+                        pageId: pageId
                     };
                 } catch(e) { console.error("Error decrypting FB", e); }
             }
 
             // Decrypt Instagram
-            if (postData.networks?.includes('instagram') && targetProfile.instagramToken_enc) {
+            const igToken = targetProfile.instagramToken_enc || userData.instagramToken_enc;
+            const ivIg = targetProfile.iv_ig || userData.iv_ig;
+            const tagIg = targetProfile.tag_ig || userData.tag_ig;
+            const igAccountId = targetProfile.instagramAccountId || userData.instagramAccountId;
+
+            if (postData.networks?.includes('instagram') && igToken) {
                 try {
-                    const plainToken = decrypt(targetProfile.instagramToken_enc, targetProfile.iv_ig, targetProfile.tag_ig);
+                    const plainToken = decrypt(igToken, ivIg, tagIg);
                     credentials.instagram = {
                         token: plainToken,
-                        accountId: targetProfile.instagramAccountId
+                        accountId: igAccountId
                     };
                 } catch(e) { console.error("Error decrypting IG", e); }
             }
