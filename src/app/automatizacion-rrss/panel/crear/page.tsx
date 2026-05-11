@@ -195,7 +195,7 @@ export default function RrssCreatePost() {
       });
       if (!response.ok) {
         const errData = await response.json();
-        throw new Error(errData.error || "Error en n8n");
+        throw new Error(errData.error || "No se pudo generar la previsualización. Por favor, inténtalo de nuevo.");
       }
       
       const data = await response.json();

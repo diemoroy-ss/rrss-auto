@@ -105,7 +105,7 @@ INSTRUCCIONES CLAVE:
         if (!n8nResponse.ok) {
             const errText = await n8nResponse.text();
             console.error(`[PROXY] n8n error: ${errText}`);
-            return NextResponse.json({ error: `N8n error: ${errText}`, status: n8nResponse.status }, { status: 500 });
+            return NextResponse.json({ error: "No se pudo conectar con el servicio de generación de imágenes. Por favor, asegúrate de que el flujo esté activo o inténtalo de nuevo más tarde." }, { status: 500 });
         }
 
         const rawText = await n8nResponse.text();
@@ -115,7 +115,7 @@ INSTRUCCIONES CLAVE:
             data = Array.isArray(rawData) ? rawData[0] : rawData;
         } catch (parseError) {
             console.error(`[PROXY] n8n returned non-JSON: ${rawText}`);
-            return NextResponse.json({ error: "N8n response parse error" }, { status: 502 });
+            return NextResponse.json({ error: "El servidor de generación devolvió una respuesta no válida. Por favor, vuelve a intentarlo en unos instantes." }, { status: 502 });
         }
 
         // Normalize response
@@ -159,6 +159,6 @@ Reglas:
 
     } catch (err: any) {
         console.error("[PROXY] Error generating preview:", err.message);
-        return NextResponse.json({ error: err.message || "Error generating preview" }, { status: 500 });
+        return NextResponse.json({ error: "No pudimos generar la previsualización debido a un problema técnico de red. Por favor, reinténtalo." }, { status: 500 });
     }
 }
