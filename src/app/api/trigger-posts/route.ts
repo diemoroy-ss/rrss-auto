@@ -60,8 +60,9 @@ export async function GET(req: Request) {
             
             // Multi-tenant profile resolution
             let targetProfile: any = null;
-            if (profileId && Array.isArray(userData.profiles)) {
-                targetProfile = userData.profiles.find((p: any) => p.id === profileId);
+            const targetProfileId = profileId || 'default';
+            if (Array.isArray(userData.profiles)) {
+                targetProfile = userData.profiles.find((p: any) => p.id === targetProfileId);
             }
             
             // Si no se encontró el perfil o es 'default', usamos la data global del usuario (Legacy support)
