@@ -127,6 +127,7 @@ export default function RrssDashboard() {
   const [selectedPostIds, setSelectedPostIds] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'upcoming' | 'published'>('upcoming');
   const [rescheduleData, setRescheduleData] = useState<{ id: string, date: string } | null>(null);
+  const [isPublishingStory, setIsPublishingStory] = useState(false);
   const { activeProfile } = useProfile();
 
   // Modals state
@@ -553,6 +554,41 @@ export default function RrssDashboard() {
         setPublishingPostId(null);
       }
     });
+  };
+
+  const handlePublishStory = async (postId: string) => {
+    requestConfirmation(
+      "¿Compartir como Historia?",
+      "La imagen de esta publicación se compartirá de inmediato como Historia en tu Instagram Business y Facebook Page. ¿Deseas continuar?",
+      async () => {
+        setIsPublishingStory(true);
+        setConfirmModalState(null);
+        try {
+          const res = await fetch('/api/publish-story', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ postId })
+          });
+          
+          const data = await res.json();
+          
+          if (!res.ok) {
+            throw new Error(data.error || "No se pudo compartir la historia.");
+          }
+          
+          setMessage({ 
+            type: 'success', 
+            text: `¡Historia publicada con éxito en: ${data.published.join(', ')}!` 
+          });
+          setSelectedPost(null);
+        } catch (err: any) {
+          console.error(err);
+          setMessage({ type: 'error', text: err.message || "Error al compartir como historia." });
+        } finally {
+          setIsPublishingStory(false);
+        }
+      }
+    );
   };
 
   const handleDeletePost = async (postId: string) => {
@@ -1281,37 +1317,63 @@ export default function RrssDashboard() {
             {/* Sticky Actions Bar Mobile / Footer Desktop */}
             <div className="shrink-0 p-6 sm:p-10 border-t border-slate-100 bg-white/80 backdrop-blur-xl absolute bottom-0 inset-x-0 z-20">
                 <div className="w-full flex flex-col sm:flex-row gap-4">
-                  <button
-                    onClick={() => handlePublishNow(selectedPost.id)}
-                    disabled={publishingPostId === selectedPost.id || selectedPost.status === 'published' || !selectedPost.imageUrl}
-                    className="flex-1 bg-gradient-to-br from-slate-800 to-black text-white px-8 py-4 md:py-5 rounded-2xl md:rounded-[28px] font-black text-[13px] uppercase tracking-[0.1em] hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-40 disabled:grayscale disabled:cursor-not-allowed group/publish shadow-2xl shadow-slate-900/30 overflow-hidden relative"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-tr from-orange-500/10 to-transparent opacity-0 group-hover/publish:opacity-100 transition-opacity"></div>
-                    {publishingPostId === selectedPost.id ? (
-                       <div className="w-5 h-5 border-2 border-white/30 border-t-white animate-spin rounded-full" />
-                    ) : (
-                       <span className="text-2xl group-hover/publish:scale-125 transition-transform duration-300 drop-shadow-[0_0_8px_rgba(249,115,22,0.6)]">
-                         {selectedPost.status === 'published' ? '✨' : '🔥'}
-                       </span>
-                    )}
-                    <span className="relative z-10">{selectedPost.status === 'published' ? 'Publicación Lista' : 'Publicar Ahora!!!'}</span>
-                  </button>
+                  {selectedPost.status === 'published' ? (
+                    <>
+                      <div className="flex-1 bg-emerald-50 border border-emerald-200 text-emerald-800 px-6 py-4 rounded-2xl md:rounded-[28px] font-bold text-xs flex items-center justify-center gap-2 shadow-sm">
+                        <span>✨</span> Publicación de Feed Lista y Activa
+                      </div>
+                      
+                      <button
+                        onClick={() => handlePublishStory(selectedPost.id)}
+                        disabled={isPublishingStory}
+                        className="flex-1 bg-gradient-to-br from-pink-500 to-rose-600 text-white px-8 py-4 md:py-5 rounded-2xl md:rounded-[28px] font-black text-[13px] uppercase tracking-[0.1em] hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50 group/story shadow-2xl shadow-rose-500/30 overflow-hidden relative"
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-0 group-hover/story:opacity-100 transition-opacity"></div>
+                        {isPublishingStory ? (
+                           <div className="w-5 h-5 border-2 border-white/30 border-t-white animate-spin rounded-full" />
+                        ) : (
+                           <span className="text-2xl group-hover/story:scale-125 transition-transform duration-300 drop-shadow-[0_0_8px_rgba(244,63,94,0.6)]">
+                             📱
+                           </span>
+                        )}
+                        <span className="relative z-10">{isPublishingStory ? 'Compartiendo Historia...' : 'Compartir como Historia'}</span>
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => handlePublishNow(selectedPost.id)}
+                        disabled={publishingPostId === selectedPost.id || !selectedPost.imageUrl}
+                        className="flex-1 bg-gradient-to-br from-slate-800 to-black text-white px-8 py-4 md:py-5 rounded-2xl md:rounded-[28px] font-black text-[13px] uppercase tracking-[0.1em] hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-40 disabled:grayscale disabled:cursor-not-allowed group/publish shadow-2xl shadow-slate-900/30 overflow-hidden relative"
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-tr from-orange-500/10 to-transparent opacity-0 group-hover/publish:opacity-100 transition-opacity"></div>
+                        {publishingPostId === selectedPost.id ? (
+                           <div className="w-5 h-5 border-2 border-white/30 border-t-white animate-spin rounded-full" />
+                        ) : (
+                           <span className="text-2xl group-hover/publish:scale-125 transition-transform duration-300 drop-shadow-[0_0_8px_rgba(249,115,22,0.6)]">
+                             🔥
+                           </span>
+                        )}
+                        <span className="relative z-10">Publicar Ahora!!!</span>
+                      </button>
 
-                  <button
-                    onClick={() => handleUpdateStatus(selectedPost.id, selectedPost.status === 'confirmed' ? 'pending' : 'confirmed')}
-                    disabled={isUpdatingStatus || selectedPost.status === 'published'}
-                    className="flex-1 bg-gradient-to-br from-indigo-600 to-violet-700 text-white px-8 py-4 md:py-5 rounded-2xl md:rounded-[28px] font-black text-[13px] uppercase tracking-[0.1em] hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-40 disabled:cursor-not-allowed group/bot shadow-2xl shadow-indigo-600/30 overflow-hidden relative"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-0 group-hover/bot:opacity-100 transition-opacity"></div>
-                    {isUpdatingStatus ? (
-                       <div className="w-5 h-5 border-2 border-white/30 border-t-white animate-spin rounded-full" />
-                    ) : (
-                       <span className="text-2xl group-hover/bot:rotate-12 transition-transform duration-300 drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]">
-                         {selectedPost.status === 'confirmed' ? '⏳' : '✅'}
-                       </span>
-                    )}
-                    <span className="relative z-10">{selectedPost.status === 'confirmed' ? 'Desmarcar Bot' : 'Confirmar Bot'}</span>
-                  </button>
+                      <button
+                        onClick={() => handleUpdateStatus(selectedPost.id, selectedPost.status === 'confirmed' ? 'pending' : 'confirmed')}
+                        disabled={isUpdatingStatus}
+                        className="flex-1 bg-gradient-to-br from-indigo-600 to-violet-700 text-white px-8 py-4 md:py-5 rounded-2xl md:rounded-[28px] font-black text-[13px] uppercase tracking-[0.1em] hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-40 disabled:cursor-not-allowed group/bot shadow-2xl shadow-indigo-600/30 overflow-hidden relative"
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-0 group-hover/bot:opacity-100 transition-opacity"></div>
+                        {isUpdatingStatus ? (
+                           <div className="w-5 h-5 border-2 border-white/30 border-t-white animate-spin rounded-full" />
+                        ) : (
+                           <span className="text-2xl group-hover/bot:rotate-12 transition-transform duration-300 drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]">
+                             {selectedPost.status === 'confirmed' ? '⏳' : '✅'}
+                           </span>
+                        )}
+                        <span className="relative z-10">{selectedPost.status === 'confirmed' ? 'Desmarcar Bot' : 'Confirmar Bot'}</span>
+                      </button>
+                    </>
+                  )}
                 </div>
             </div>
           </div>
