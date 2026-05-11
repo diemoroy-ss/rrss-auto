@@ -123,6 +123,7 @@ export default function RrssDashboard() {
   const [isCancellingAll, setIsCancellingAll] = useState(false);
   const [hasNetworks, setHasNetworks] = useState(false);
   const [message, setMessage] = useState<{type: 'success' | 'error' | 'info', text: string} | null>(null);
+  const [publishResult, setPublishResult] = useState<{ isOpen: boolean; success: boolean; published: string[]; errors: string | null } | null>(null);
   const [selectedPostIds, setSelectedPostIds] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'upcoming' | 'published'>('upcoming');
   const [rescheduleData, setRescheduleData] = useState<{ id: string, date: string } | null>(null);
@@ -514,12 +515,39 @@ export default function RrssDashboard() {
         });
         
         const data = await res.json();
-        if (data.error) throw new Error(data.error);
-
-        setMessage({ type: 'success', text: `¡Publicado con éxito en: ${data.published.join(', ')}!` });
-        setSelectedPost(null); 
+        
+        if (res.status === 500 || data.error) {
+          const errMsg = data.error || "Error desconocido al publicar";
+          setPublishResult({
+            isOpen: true,
+            success: false,
+            published: [],
+            errors: errMsg
+          });
+          setMessage({ type: 'error', text: errMsg });
+        } else {
+          const hasErrors = !!data.errors;
+          setPublishResult({
+            isOpen: true,
+            success: !hasErrors,
+            published: data.published || [],
+            errors: data.errors || null
+          });
+          
+          if (hasErrors) {
+            setMessage({ type: 'error', text: `Publicación parcial. Errores: ${data.errors}` });
+          } else {
+            setMessage({ type: 'success', text: `¡Publicado con éxito en: ${data.published.join(', ')}!` });
+          }
+        }
       } catch (err: any) {
         console.error(err);
+        setPublishResult({
+          isOpen: true,
+          success: false,
+          published: [],
+          errors: err.message || "Error de red al intentar publicar"
+        });
         setMessage({ type: 'error', text: err.message || "Error al publicar ahora" });
       } finally {
         setPublishingPostId(null);
@@ -1375,6 +1403,92 @@ export default function RrssDashboard() {
                     </button>
                 </div>
             </div>
+        </div>
+      )}
+
+      {/* Modern Publish Result Modal */}
+      {publishResult?.isOpen && (
+        <div className="fixed inset-0 z-[1001] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+            <div className="bg-white rounded-[32px] p-8 max-w-md w-full shadow-2xl border border-slate-100 relative z-10 animate-in zoom-in-95 duration-300 text-center">
+                
+                {publishResult.success ? (
+                   <>
+                     <div className="w-20 h-20 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center text-4xl mx-auto mb-6 shadow-inner border border-emerald-100">
+                        🎉
+                     </div>
+                     <h3 className="text-2xl font-black text-slate-900 tracking-tight mb-3">¡Publicación Exitosa!</h3>
+                     <p className="text-slate-500 font-medium text-sm leading-relaxed mb-6">
+                        Tu contenido se ha enviado y publicado correctamente en las siguientes redes vinculadas:
+                     </p>
+                     <div className="flex justify-center gap-3 mb-8">
+                        {publishResult.published.map(net => (
+                           <span key={net} className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-2 shadow-sm">
+                              {net === 'facebook' ? '🔵 Facebook' : net === 'instagram' ? '📸 Instagram' : '💼 LinkedIn'}
+                           </span>
+                        ))}
+                     </div>
+                   </>
+                ) : publishResult.published.length > 0 ? (
+                   <>
+                     <div className="w-20 h-20 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center text-4xl mx-auto mb-6 shadow-inner border border-amber-100">
+                        ⚠️
+                     </div>
+                     <h3 className="text-2xl font-black text-slate-900 tracking-tight mb-3">Publicación Parcial</h3>
+                     <p className="text-slate-500 font-medium text-sm leading-relaxed mb-6">
+                        Se logró publicar en algunas redes, pero otras reportaron un error de sincronización:
+                     </p>
+                     <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-left mb-6 max-h-40 overflow-y-auto">
+                        <div className="flex flex-wrap gap-2 mb-3">
+                           <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">Publicado en:</span>
+                           {publishResult.published.map(net => (
+                              <span key={net} className="text-[10px] font-bold text-slate-700 bg-white border px-2 py-0.5 rounded-md shadow-sm">{net}</span>
+                           ))}
+                        </div>
+                        <p className="text-xs font-bold text-rose-600 uppercase tracking-wider mb-1">Detalles del Error:</p>
+                        <p className="text-xs text-slate-600 leading-relaxed font-medium font-mono whitespace-pre-wrap">{publishResult.errors}</p>
+                     </div>
+                   </>
+                ) : (
+                   <>
+                     <div className="w-20 h-20 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center text-4xl mx-auto mb-6 shadow-inner border border-rose-100">
+                        ❌
+                     </div>
+                     <h3 className="text-2xl font-black text-slate-900 tracking-tight mb-3">Error de Publicación</h3>
+                     <p className="text-slate-500 font-medium text-sm leading-relaxed mb-6">
+                        No se pudo procesar la publicación en ninguna de tus redes sociales.
+                     </p>
+                     <div className="bg-rose-50/50 border border-rose-100 rounded-2xl p-5 text-left mb-8 max-h-40 overflow-y-auto">
+                        <p className="text-xs font-bold text-rose-700 uppercase tracking-wider mb-1">Reporte de Meta/API:</p>
+                        <p className="text-xs text-rose-600 leading-relaxed font-medium font-mono whitespace-pre-wrap">{publishResult.errors}</p>
+                     </div>
+                   </>
+                )}
+
+                <button 
+                  onClick={() => {
+                    setPublishResult(null);
+                    setSelectedPost(null);
+                  }}
+                  className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-2xl transition-all shadow-lg font-display"
+                >
+                  Entendido, cerrar
+                </button>
+            </div>
+        </div>
+      )}
+
+      {/* Modern Full-Screen Publishing Loading Overlay */}
+      {publishingPostId && (
+        <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-xl flex flex-col items-center justify-center p-4 animate-in fade-in duration-200">
+           <div className="text-center text-white max-w-sm animate-bounce">
+              <div className="w-24 h-24 bg-indigo-600 rounded-[32px] flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-indigo-500/40 border border-indigo-400">
+                 <div className="w-10 h-10 border-4 border-white/30 border-t-white animate-spin rounded-full" />
+              </div>
+              <h3 className="text-2xl font-black tracking-tight mb-2">Publicando Contenido...</h3>
+              <p className="text-indigo-200/80 font-medium text-sm leading-relaxed">
+                 Estamos conectándonos con los servidores de Meta y enviando tus imágenes. Esto puede tardar unos segundos. 🚀
+              </p>
+           </div>
         </div>
       )}
     </div>

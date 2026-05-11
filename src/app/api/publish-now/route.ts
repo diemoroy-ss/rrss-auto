@@ -318,7 +318,22 @@ export async function POST(req: Request) {
                     const igMediaData = await igMediaRes.json();
                     if (igMediaData.error) throw new Error(igMediaData.error.message);
                     
-                    // 2. Publish Media
+                    // 2. Poll for Processing Status (Ensures Meta has downloaded the image)
+                    let isReady = false;
+                    for (let i = 0; i < 6; i++) { // Esperar hasta 12 segundos.
+                        const statusRes = await fetch(`https://graph.facebook.com/v19.0/${igMediaData.id}?fields=status_code&access_token=${plainToken}`);
+                        const statusData = await statusRes.json();
+                        if (statusData.status_code === 'FINISHED') {
+                            isReady = true;
+                            break;
+                        } else if (statusData.status_code === 'ERROR') {
+                            throw new Error("Instagram Graph API falló al procesar la imagen.");
+                        }
+                        await new Promise(r => setTimeout(r, 2000));
+                    }
+                    if (!isReady) throw new Error("Tiempo de espera agotado procesando la imagen en los servidores de Meta.");
+
+                    // 3. Publish Media
                     const igPubRes = await fetch(`https://graph.facebook.com/v19.0/${igAccountId}/media_publish`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
