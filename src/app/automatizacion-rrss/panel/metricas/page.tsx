@@ -281,13 +281,46 @@ export default function MetricasDashboard() {
         return dateB - dateA;
       });
       
-      setPublishedPosts(data);
+      // De-duplicate posts that represent the same publication to prevent Facebook duplicates
+      const uniqueData: SocialPost[] = [];
+      const seenKeys = new Set<string>();
 
-      // Aggregate Metrics
+      data.forEach(post => {
+         const cleanIdea = (post.idea || '').trim().toLowerCase().slice(0, 100);
+         const network = post.networks?.[0] || 'unknown';
+         const key = `${network}_${cleanIdea}`;
+
+         if (!seenKeys.has(key)) {
+            seenKeys.add(key);
+            uniqueData.push(post);
+         } else {
+            // Swap to keep the one with actual metrics if the duplicate has more metrics
+            const existingIndex = uniqueData.findIndex(p => {
+               const pCleanIdea = (p.idea || '').trim().toLowerCase().slice(0, 100);
+               const pNetwork = p.networks?.[0] || 'unknown';
+               return `${pNetwork}_${pCleanIdea}` === key;
+            });
+            if (existingIndex !== -1) {
+                const existingPost = uniqueData[existingIndex];
+                const existingLikes = existingPost.metrics?.likes || 0;
+                const currentLikes = post.metrics?.likes || 0;
+                const existingReach = existingPost.metrics?.reach || 0;
+                const currentReach = post.metrics?.reach || 0;
+
+                if (currentLikes > existingLikes || currentReach > existingReach) {
+                    uniqueData[existingIndex] = post;
+                }
+            }
+         }
+      });
+
+      setPublishedPosts(uniqueData);
+
+      // Aggregate Metrics using de-duplicated data
       let reachSum = 0;
       let interactionSum = 0;
       
-      data.forEach(post => {
+      uniqueData.forEach(post => {
          const m = post.metrics;
          if (m) {
              reachSum += (m.reach || 0);
