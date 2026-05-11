@@ -126,6 +126,7 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
                  <Link href="/automatizacion-rrss/panel/admin/estrategias" className={`block px-3 py-2 rounded-lg text-[11px] font-bold transition-all ${pathname.includes('/admin/estrategias') ? 'bg-indigo-600/20 text-indigo-400' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}>Estrategias</Link>
                  <Link href="/automatizacion-rrss/panel/admin/workflows" className={`block px-3 py-2 rounded-lg text-[11px] font-bold transition-all ${pathname.includes('/admin/workflows') ? 'bg-indigo-600/20 text-indigo-400' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}>Workflows N8N</Link>
                  <Link href="/automatizacion-rrss/panel/admin/monitoreo" className={`block px-3 py-2 rounded-lg text-[11px] font-bold transition-all ${pathname.includes('/admin/monitoreo') ? 'bg-indigo-600/20 text-indigo-400' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}>Monitoreo Posts</Link>
+                 <Link href="/automatizacion-rrss/panel/admin/analitica" className={`block px-3 py-2 rounded-lg text-[11px] font-bold transition-all ${pathname.includes('/admin/analitica') ? 'bg-indigo-600/20 text-indigo-400' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}>📈 Analítica</Link>
                </div>
             </details>
           )}
@@ -187,6 +188,7 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
                         <Link href="/automatizacion-rrss/panel/admin/estrategias" className="px-4 py-2 rounded-lg text-xs font-bold text-slate-400 hover:bg-white/5 hover:text-white transition-colors">Estrategias</Link>
                         <Link href="/automatizacion-rrss/panel/admin/workflows" className="px-4 py-2 rounded-lg text-xs font-bold text-slate-400 hover:bg-white/5 hover:text-white transition-colors">Workflows</Link>
                         <Link href="/automatizacion-rrss/panel/admin/monitoreo" className="px-4 py-2 rounded-lg text-xs font-bold text-slate-400 hover:bg-white/5 hover:text-white transition-colors">Monitoreo</Link>
+                        <Link href="/automatizacion-rrss/panel/admin/analitica" className="px-4 py-2 rounded-lg text-xs font-bold text-slate-400 hover:bg-white/5 hover:text-white transition-colors">📈 Analítica</Link>
                       </div>
                     </details>
                   </>

@@ -7,6 +7,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import WebChatWidget from '../components/WebChatWidget';
 import WhatsAppButton from '../components/WhatsAppButton';
 import PromoModal from '../components/PromoModal';
+import PageTracker from '../components/PageTracker';
 
 function ConstellationCanvas() {
 // ... canvas code remains the same
@@ -101,6 +102,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen">
+      <PageTracker page="landing" />
       {/* ── HERO ── */}
       <section className="hero-section pt-32 pb-16 px-6 relative border-b border-slate-200">
         <ConstellationCanvas />
