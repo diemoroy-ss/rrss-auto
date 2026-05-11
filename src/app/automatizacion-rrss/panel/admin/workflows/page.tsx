@@ -103,7 +103,7 @@ const WORKFLOWS: N8NWorkflow[] = [
         id: 'img-rrss-auto-test',
         name: 'Preview AI Generator (Dashboard)',
         description: 'Genera la vista previa (imagen/video) cuando el usuario crea un post manual.',
-        url: 'https://n8n.santisoft.cl/webhook/img-rrss-auto',
+        url: 'https://n8n.santisoft.cl/webhook-test/img-rrss-auto',
         method: 'POST',
         authStrategy: 'Ninguna',
         variablesSent: {

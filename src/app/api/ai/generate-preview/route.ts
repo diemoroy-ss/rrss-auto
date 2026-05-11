@@ -8,9 +8,9 @@ export async function POST(req: NextRequest) {
         const { idea, businessType, type, carouselCount, userPlan, email, phone } = body;
         let n8nUrl = process.env.NEXT_PUBLIC_N8N_PREVIEW_URL;
 
-        // Fallback to production if not set or if it's the old test URL
-        if (!n8nUrl || n8nUrl.includes('webhook-test')) {
-            n8nUrl = 'https://n8n.santisoft.cl/webhook/img-rrss-auto';
+        // Fallback to test URL as requested
+        if (!n8nUrl) {
+            n8nUrl = 'https://n8n.santisoft.cl/webhook-test/img-rrss-auto';
         }
 
         if (type === 'Reel' && (await getVideoPlanLimit(userPlan || 'free')) === 0) {
