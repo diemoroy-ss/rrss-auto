@@ -42,7 +42,7 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
     return () => unsub();
   }, [router]);
 
-  const links = [
+  const baseLinks = [
     { href: "/automatizacion-rrss/panel", label: "Próximos Posts", icon: "📅", exact: true },
     { href: "/automatizacion-rrss/panel/metricas", label: "Estadísticas", icon: "📊", exact: false },
     { href: "/automatizacion-rrss/panel/crear", label: "Nuevo Post", icon: "✍️", exact: false },
@@ -50,6 +50,12 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
     { href: "/automatizacion-rrss/panel/ads", label: "Meta Ads", icon: "🎯", exact: true },
     { href: "/automatizacion-rrss/panel/configuracion", label: "Configuración de Marca", icon: "🏪", exact: false },
   ];
+
+  const links = [...baseLinks];
+  const userEmail = (user?.email || "").toLowerCase();
+  if (["diemoroy@gmail.com", "spalezcom@gmail.com", "santisoftai@gmail.com"].includes(userEmail) || userDoc?.hasSeoAutopilot || userDoc?.role === "admin") {
+      links.splice(5, 0, { href: "/automatizacion-rrss/panel/blog", label: "Blog IA", icon: "📝", exact: false });
+  }
 
 
 
