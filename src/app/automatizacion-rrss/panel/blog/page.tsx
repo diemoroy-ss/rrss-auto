@@ -198,9 +198,14 @@ export default function SeoAutopilotPanel() {
             Gestiona los artículos generados por Inteligencia Artificial y revisa el calendario estratégico de publicaciones para posicionar en Google.
           </p>
         </div>
-        <button onClick={() => setShowConfig(true)} className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold py-2 px-6 rounded-xl shadow-sm transition-all flex items-center gap-2 hover:shadow-md">
-            ⚙️ Configurar Sitio Web
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <a href="/blog" target="_blank" className="bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 font-bold py-2 px-6 rounded-xl shadow-sm transition-all flex items-center gap-2 hover:shadow-md">
+              🌐 Ver Blog Público
+          </a>
+          <button onClick={() => setShowConfig(true)} className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold py-2 px-6 rounded-xl shadow-sm transition-all flex items-center gap-2 hover:shadow-md">
+              ⚙️ Configurar Sitio Web
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}
