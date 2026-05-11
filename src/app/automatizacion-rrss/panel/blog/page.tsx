@@ -35,6 +35,13 @@ export default function SeoAutopilotPanel() {
   // Strategy State
   const [generatingStrategy, setGeneratingStrategy] = useState(false);
 
+  // Toast State
+  const [toastMessage, setToastMessage] = useState("");
+  const showToast = (msg: string) => {
+      setToastMessage(msg);
+      setTimeout(() => setToastMessage(""), 3500);
+  };
+
   const fetchPosts = async () => {
       const q = query(collection(db, "blog_posts")); 
       const snap = await getDocs(q);
@@ -97,9 +104,10 @@ export default function SeoAutopilotPanel() {
               seoConfig: { tone, audience, keywords }
           });
           setShowConfig(false);
+          showToast("✅ Configuración guardada correctamente");
       } catch (error) {
           console.error("Error saving config:", error);
-          alert("Error guardando la configuración");
+          showToast("❌ Error guardando la configuración");
       } finally {
           setSavingConfig(false);
       }
@@ -123,10 +131,10 @@ export default function SeoAutopilotPanel() {
           if (!response.ok) throw new Error(data.error);
           
           await fetchPosts(); // Refresh list to show new calendar items
-          alert("¡Estrategia generada con éxito!");
+          showToast("✨ ¡Estrategia generada con éxito!");
       } catch (error: any) {
           console.error(error);
-          alert("Error generando la estrategia: " + error.message);
+          showToast("❌ Error generando la estrategia: " + error.message);
       } finally {
           setGeneratingStrategy(false);
       }
@@ -143,6 +151,13 @@ export default function SeoAutopilotPanel() {
   return (
     <div className="max-w-[1400px] mx-auto lg:mx-0 animate-in fade-in duration-500 pb-20 relative">
       
+      {/* Toast Notification */}
+      {toastMessage && (
+          <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-3 rounded-full shadow-2xl font-bold text-sm z-[200] animate-in fade-in slide-in-from-bottom-4 flex items-center gap-2">
+              {toastMessage}
+          </div>
+      )}
+
       {/* Config Modal */}
       {showConfig && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in">
