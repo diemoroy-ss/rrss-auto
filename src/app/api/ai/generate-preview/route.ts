@@ -109,18 +109,33 @@ INSTRUCCIONES CLAVE:
         }
 
         const rawText = await n8nResponse.text();
-        let data;
+        let data: any = null;
+        
         try {
             const rawData = JSON.parse(rawText);
             data = Array.isArray(rawData) ? rawData[0] : rawData;
         } catch (parseError) {
-            console.error(`[PROXY] n8n returned non-JSON: ${rawText}`);
-            return NextResponse.json({ error: "El servidor de generación devolvió una respuesta no válida. Por favor, vuelve a intentarlo en unos instantes." }, { status: 502 });
+            console.warn(`[PROXY] n8n returned non-JSON: ${rawText}. Checking if it is a plain URL...`);
+            const trimmedText = rawText.trim();
+            if (trimmedText.startsWith('http://') || trimmedText.startsWith('https://')) {
+                data = { imageUrl: trimmedText };
+            } else {
+                return NextResponse.json({ 
+                    error: "El servidor de generación devolvió una respuesta no válida. Por favor, vuelve a intentarlo en unos instantes.",
+                    details: rawText.substring(0, 1000)
+                }, { status: 502 });
+            }
         }
 
         // Normalize response
         const imageUrl = data?.imageUrl || data?.image_url || data?.url || data?.finalUrl || data?.final_url;
         let suggestedCopy = data?.suggestedCopy || data?.copy || data?.text || "";
+
+        if (!imageUrl) {
+            console.error(`[PROXY] No imageUrl found in n8n response data:`, data);
+            const errorMessage = data?.error || data?.message || "No se pudo generar la imagen. El servidor de diseño no devolvió una URL válida de imagen.";
+            return NextResponse.json({ error: errorMessage }, { status: 422 });
+        }
 
         // 3. Generate high-quality copy using Gemini Free
         try {
