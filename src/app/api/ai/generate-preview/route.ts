@@ -74,11 +74,33 @@ INSTRUCCIONES CLAVE:
         };
 
         console.log(`[PROXY] Calling n8n: ${n8nUrl}`);
-        const n8nResponse = await fetch(n8nUrl, {
+        let n8nResponse = await fetch(n8nUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payloadToN8N),
         });
+
+        // Smart fallback: If the production webhook returns a 404 (meaning the workflow is inactive/not registered in n8n yet),
+        // we automatically try the test webhook URL. This allows testing directly in the n8n editor via 'Listen for test event'.
+        if (n8nResponse.status === 404 && n8nUrl.includes('/webhook/') && !n8nUrl.includes('/webhook-test/')) {
+            const fallbackUrl = n8nUrl.replace('/webhook/', '/webhook-test/');
+            console.log(`[PROXY] Production webhook returned 404 (workflow is likely inactive). Trying test fallback: ${fallbackUrl}`);
+            try {
+                const testResponse = await fetch(fallbackUrl, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payloadToN8N),
+                });
+                if (testResponse.ok) {
+                    console.log(`[PROXY] Fallback to test URL succeeded with status: ${testResponse.status}`);
+                    n8nResponse = testResponse;
+                } else {
+                    console.error(`[PROXY] Fallback to test URL also failed with status: ${testResponse.status}`);
+                }
+            } catch (fallbackErr: any) {
+                console.error(`[PROXY] Error during fallback fetch to ${fallbackUrl}:`, fallbackErr.message);
+            }
+        }
 
         if (!n8nResponse.ok) {
             const errText = await n8nResponse.text();
