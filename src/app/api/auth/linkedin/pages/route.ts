@@ -41,42 +41,46 @@ export async function GET(req: Request) {
         // Usamos la v2 API endpoint para organizationAcls
         const orgsUrl = `https://api.linkedin.com/v2/organizationAcls?q=roleAssignee&role=ADMINISTRATOR&state=APPROVED`;
         
-        const orgsRes = await fetch(orgsUrl, {
-            headers: {
-                Authorization: `Bearer ${accessToken}`,
-                'X-Restli-Protocol-Version': '2.0.0'
-            }
-        });
-        const orgsData = await orgsRes.json();
-
-        if (orgsData.error || orgsData.status >= 400) {
-             return NextResponse.json({ error: orgsData.message || 'Error fetching orgs' }, { status: 500 });
-        }
-
-        const orgElements = orgsData.elements || [];
-        
-        // Obtener detalles (nombre/logo) de cada organización
-        const pages = [];
-        for (const el of orgElements) {
-             const orgUrn = el.organization;
-             const orgId = orgUrn.split(':').pop();
-             
-             // Fetch org details
-             const detailRes = await fetch(`https://api.linkedin.com/v2/organizations/${orgId}`, {
+        const pages: any[] = [];
+        try {
+            const orgsRes = await fetch(orgsUrl, {
                 headers: {
                     Authorization: `Bearer ${accessToken}`,
                     'X-Restli-Protocol-Version': '2.0.0'
                 }
-             });
-             const detailData = await detailRes.json();
-             
-             if (!detailData.error) {
-                 pages.push({
-                     id: orgId,
-                     urn: orgUrn,
-                     name: detailData.localizedName || 'Página de Empresa'
-                 });
-             }
+            });
+            
+            if (orgsRes.ok) {
+                const orgsData = await orgsRes.json();
+                const orgElements = orgsData.elements || [];
+                
+                // Obtener detalles (nombre/logo) de cada organización
+                for (const el of orgElements) {
+                     const orgUrn = el.organization;
+                     const orgId = orgUrn.split(':').pop();
+                     
+                     // Fetch org details
+                     const detailRes = await fetch(`https://api.linkedin.com/v2/organizations/${orgId}`, {
+                        headers: {
+                            Authorization: `Bearer ${accessToken}`,
+                            'X-Restli-Protocol-Version': '2.0.0'
+                        }
+                     });
+                     
+                     if (detailRes.ok) {
+                         const detailData = await detailRes.json();
+                         pages.push({
+                             id: orgId,
+                             urn: orgUrn,
+                             name: detailData.localizedName || 'Página de Empresa'
+                         });
+                     }
+                }
+            } else {
+                console.warn(`LinkedIn Fetch Orgs Warning (Status ${orgsRes.status}). User likely doesn't have organization permissions or w_organization_social scope.`);
+            }
+        } catch (orgError) {
+            console.error("Error fetching LinkedIn organizations:", orgError);
         }
 
         return NextResponse.json({ data: pages });

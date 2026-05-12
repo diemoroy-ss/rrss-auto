@@ -26,8 +26,10 @@ export async function GET(req: Request) {
 
         // Construir Redirect URI para LinkedIn
         const redirectUri = `${origin}/api/linkedin/callback`;
-        // Request w_organization_social for company pages
-        const scope = encodeURIComponent('w_member_social w_organization_social profile openid email');
+        // Use configured scope from env, or fallback to safe default (w_member_social profile openid email)
+        // because requesting w_organization_social will fail if the app is not approved for Community Management API / Marketing Developer Platform
+        const configuredScope = process.env.LINKEDIN_SCOPE || 'w_member_social profile openid email';
+        const scope = encodeURIComponent(configuredScope);
         // El state pasaremos el profileId para saber a quien guardar el token cuando regrese
         const state = encodeURIComponent(`${decodedToken.uid}|${profileId}|${origin}`);
 
