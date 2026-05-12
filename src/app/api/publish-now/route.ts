@@ -370,12 +370,13 @@ export async function POST(req: Request) {
 
         // LINKEDIN
         if (post.networks?.includes('linkedin')) {
-            const liToken = targetProfile.linkedinToken_enc || userData.linkedinToken_enc;
-            const ivLi = targetProfile.iv_li_token || userData.iv_li_token;
-            const tagLi = targetProfile.tag_li_token || userData.tag_li_token;
+            const liToken = targetProfile.linkedinUserToken_enc || targetProfile.linkedinToken_enc || userData.linkedinUserToken_enc || userData.linkedinToken_enc;
+            const ivLi = targetProfile.iv_li_user || targetProfile.iv_li_token || userData.iv_li_user || userData.iv_li_token;
+            const tagLi = targetProfile.tag_li_user || targetProfile.tag_li_token || userData.tag_li_user || userData.tag_li_token;
             const personUrn = targetProfile.linkedinPersonUrn || userData.linkedinPersonUrn;
+            const authorUrn = targetProfile.linkedinCompanyUrn || personUrn;
 
-            if (liToken && personUrn) {
+            if (liToken && authorUrn) {
                 try {
                     const plainToken = decrypt(liToken, ivLi, tagLi);
                     
@@ -394,7 +395,7 @@ export async function POST(req: Request) {
                             body: JSON.stringify({
                               "registerUploadRequest": {
                                 "recipes": ["urn:li:digitalmediaRecipe:feedshare-image"],
-                                "owner": personUrn,
+                                "owner": authorUrn,
                                 "serviceRelationships": [
                                   {
                                     "relationshipType": "OWNER",
@@ -431,7 +432,7 @@ export async function POST(req: Request) {
 
                     // Prepare Share payload
                     const sharePayload: any = {
-                        "author": personUrn,
+                        "author": authorUrn,
                         "lifecycleState": "PUBLISHED",
                         "specificContent": {
                             "com.linkedin.ugc.ShareContent": {
@@ -495,6 +496,72 @@ export async function POST(req: Request) {
                 }
             } else {
                 errorLog += `LinkedIn: Cuenta no vinculada o token faltante. `;
+            }
+        }
+
+        // TIKTOK
+        if (post.networks?.includes('tiktok')) {
+            const ttToken = targetProfile.tiktokToken_enc || userData.tiktokToken_enc;
+            const ivTt = targetProfile.iv_tt || userData.iv_tt;
+            const tagTt = targetProfile.tag_tt || userData.tag_tt;
+
+            if (ttToken && imageUrl) {
+                try {
+                    const plainToken = decrypt(ttToken, ivTt, tagTt);
+                    
+                    const initRes = await fetch("https://open.tiktokapis.com/v2/post/publish/video/init/", {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${plainToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            post_info: {
+                                title: caption,
+                                privacy_level: "PUBLIC_TO_EVERYONE",
+                                disable_comment: false,
+                                disable_duet: false,
+                                disable_stitch: false
+                            },
+                            source_info: {
+                                source: "PULL_FROM_URL",
+                                video_url: imageUrl
+                            }
+                        })
+                    });
+
+                    const initData = await initRes.json();
+
+                    if (initData.error || !initData.data) {
+                        const errMessage = initData.error?.message || JSON.stringify(initData.error || initData);
+                        throw new Error(`TikTok API error: ${errMessage}`);
+                    }
+
+                    successNetworks.push('tiktok');
+
+                    await setDoc(doc(db, 'external_posts', initData.data.publish_id || `tt_${Date.now()}`), {
+                       userId: uid,
+                       profileId: profileId || 'default',
+                       network: 'tiktok',
+                       caption: caption,
+                       media_type: 'VIDEO',
+                       likes: 0,
+                       comments: 0,
+                       shares: 0,
+                       reach: 0,
+                       impressions: 0,
+                       created_time: new Date().toISOString(),
+                       timestamp: new Date()
+                    });
+
+                } catch (e: any) {
+                    console.error("TikTok Publish Error:", e.message);
+                    errorLog += `TikTok: ${e.message}. `;
+                }
+            } else if (!imageUrl) {
+                errorLog += `TikTok: Falta la URL del video para publicar. `;
+            } else {
+                errorLog += `TikTok: Cuenta no vinculada o token faltante. `;
             }
         }
 

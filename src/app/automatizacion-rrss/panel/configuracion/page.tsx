@@ -214,6 +214,7 @@ function ConfigContent() {
   const [fbStatus, setFbStatus] = useState(false);
   const [igStatus, setIgStatus] = useState(false);
   const [liStatus, setLiStatus] = useState(false);
+  const [ttStatus, setTtStatus] = useState(false);
 
   // Connection Modals State
   const [showMetaModal, setShowMetaModal] = useState(false);
@@ -224,7 +225,6 @@ function ConfigContent() {
   const [facebookUrl, setFacebookUrl] = useState("");
   const [instagramUrl, setInstagramUrl] = useState("");
   const [tiktokUrl, setTiktokUrl] = useState("");
-  const [twitterUrl, setTwitterUrl] = useState("");
   const [linkedinUrl, setLinkedinUrl] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -246,13 +246,13 @@ function ConfigContent() {
       setFbStatus(!!activeProfile.facebookToken_enc);
       setIgStatus(!!activeProfile.instagramToken_enc);
       setLiStatus(!!activeProfile.linkedinUserToken_enc); // Centralized Token
+      setTtStatus(!!activeProfile.tiktokToken_enc); // TikTok Token
 
       // Load Business Data
       setWebsite(activeProfile.website || "");
       setFacebookUrl(activeProfile.facebookUrl || "");
       setInstagramUrl(activeProfile.instagramUrl || "");
       setTiktokUrl(activeProfile.tiktokUrl || "");
-      setTwitterUrl(activeProfile.twitterUrl || "");
       setLinkedinUrl(activeProfile.linkedinUrl || "");
       setEmail(activeProfile.email || "");
       setPhone(activeProfile.phone || "");
@@ -274,8 +274,12 @@ function ConfigContent() {
           setShowLinkedInModal(true);
           window.history.replaceState({}, document.title, window.location.pathname);
       }
+      if (searchParams.get('tiktok') === 'success') {
+          setMessage({ type: 'success', text: "¡TikTok conectado correctamente!" });
+          window.history.replaceState({}, document.title, window.location.pathname);
+      }
       
-      if (searchParams.get('meta') === 'error' || searchParams.get('linkedin') === 'error') {
+      if (searchParams.get('meta') === 'error' || searchParams.get('linkedin') === 'error' || searchParams.get('tiktok') === 'error') {
           setErrorMsg("Hubo un error al conectar la red social.");
           window.history.replaceState({}, document.title, window.location.pathname);
       }
@@ -287,7 +291,6 @@ function ConfigContent() {
       setFacebookUrl("");
       setInstagramUrl("");
       setTiktokUrl("");
-      setTwitterUrl("");
       setLinkedinUrl("");
       setEmail("");
       setPhone("");
@@ -356,7 +359,6 @@ function ConfigContent() {
                 facebookUrl,
                 instagramUrl,
                 tiktokUrl,
-                twitterUrl,
                 linkedinUrl,
                 email,
                 phone
@@ -406,6 +408,25 @@ function ConfigContent() {
             window.open(data.url, '_blank');
         } else {
             throw new Error(data.error || "No se pudo generar la URL de LinkedIn");
+        }
+    } catch (e: any) {
+        setErrorMsg(e.message);
+    }
+  };
+
+  const handleConnectTikTok = async () => {
+    if (!user || !activeProfile) return;
+    try {
+        const idToken = await user.getIdToken();
+        const origin = window.location.origin;
+        const res = await fetch(`/api/auth/tiktok?profileId=${activeProfile.id}&origin=${encodeURIComponent(origin)}`, {
+            headers: { "Authorization": `Bearer ${idToken}` }
+        });
+        const data = await res.json();
+        if (data.url) {
+            window.open(data.url, '_blank');
+        } else {
+            throw new Error(data.error || "No se pudo generar la URL de TikTok");
         }
     } catch (e: any) {
         setErrorMsg(e.message);
@@ -523,6 +544,26 @@ function ConfigContent() {
     });
   };
 
+  const handleDisconnectTt = async () => {
+    showModal("confirm", "Desconectar TikTok", "¿Seguro que quieres desconectar TikTok?", async () => {
+        setModal(prev => ({ ...prev, isOpen: false }));
+        setSaving(true);
+        try {
+            const idToken = await user.getIdToken();
+            await fetch("/api/social-auth", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ idToken, uid: user.uid, profileId: activeProfile.id, setAccounts: { tiktok: { disconnect: true } } })
+            });
+            await loadProfiles();
+            showModal("success", "Desconectado", "TikTok desconectado.");
+        } catch (e) { 
+            showModal("error", "Error", "No se pudo desconectar TikTok.");
+        }
+        setSaving(false);
+    });
+  };
+
   if (loadingInitial) return <div className="animate-pulse space-y-4 max-w-2xl"><div className="h-10 bg-slate-200 rounded w-1/3"></div><div className="h-64 bg-slate-200 rounded"></div></div>;
 
   return (
@@ -595,7 +636,7 @@ function ConfigContent() {
           <div className="pt-6 border-t border-slate-100">
              <h4 className="text-sm font-black text-slate-900 mb-4 uppercase tracking-widest">Conexiones a Redes Sociales</h4>
              
-             <div className="grid md:grid-cols-2 gap-4">
+             <div className="grid md:grid-cols-3 gap-4">
                 {/* Meta (FB/IG) */}
                 <div className="p-5 border-2 border-slate-100 rounded-2xl bg-slate-50 flex flex-col justify-between">
                    <div>
@@ -646,13 +687,13 @@ function ConfigContent() {
                            )}
 
                            <div className="flex gap-2">
-                               <button type="button" onClick={() => setShowMetaModal(true)} className="flex-1 bg-white border-2 border-slate-200 hover:border-blue-500 text-slate-700 text-[10px] sm:text-xs font-bold py-2 rounded-xl transition-colors truncate">Cambiar Página</button>
-                               <button type="button" onClick={handleConnectMeta} className="flex-1 bg-blue-50 border-2 border-blue-100 hover:border-blue-300 text-blue-600 text-[10px] sm:text-xs font-bold py-2 rounded-xl transition-colors truncate">Actualizar Token</button>
+                               <button type="button" onClick={() => setShowMetaModal(true)} className="flex-1 bg-white border-2 border-slate-200 hover:border-blue-500 text-slate-700 text-[10px] sm:text-xs font-bold py-2 rounded-xl transition-colors truncate">Cambiar</button>
+                               <button type="button" onClick={handleConnectMeta} className="flex-1 bg-blue-50 border-2 border-blue-100 hover:border-blue-300 text-blue-600 text-[10px] sm:text-xs font-bold py-2 rounded-xl transition-colors truncate">Actualizar</button>
                                <button type="button" onClick={handleDisconnectFb} className="px-3 bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold rounded-xl text-xs transition-colors" title="Desconectar">X</button>
                            </div>
                        </div>
                    ) : (
-                       <button type="button" onClick={handleConnectMeta} className="w-full bg-[#1877F2] hover:bg-[#166fe5] text-white font-bold py-2.5 rounded-xl shadow-md text-sm transition-colors">
+                       <button type="button" onClick={handleConnectMeta} className="w-full bg-[#1877F2] hover:bg-[#166fe5] text-white font-bold py-2.5 rounded-xl shadow-md text-sm transition-colors mt-auto">
                            Conectar con Meta
                        </button>
                    )}
@@ -689,13 +730,67 @@ function ConfigContent() {
                            </div>
                            <div className="flex gap-2">
                                <button type="button" onClick={() => setShowLinkedInModal(true)} className="flex-1 bg-white border-2 border-slate-200 hover:border-sky-500 text-slate-700 text-[10px] sm:text-xs font-bold py-2 rounded-xl transition-colors truncate">Configurar</button>
-                               <button type="button" onClick={handleConnectLinkedIn} className="flex-1 bg-sky-50 border-2 border-sky-100 hover:border-sky-300 text-sky-600 text-[10px] sm:text-xs font-bold py-2 rounded-xl transition-colors truncate">Actualizar Token</button>
+                               <button type="button" onClick={handleConnectLinkedIn} className="flex-1 bg-sky-50 border-2 border-sky-100 hover:border-sky-300 text-sky-600 text-[10px] sm:text-xs font-bold py-2 rounded-xl transition-colors truncate">Actualizar</button>
                                <button type="button" onClick={handleDisconnectLi} className="px-3 bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold rounded-xl text-xs transition-colors" title="Desconectar">X</button>
                            </div>
                        </div>
                    ) : (
-                       <button type="button" onClick={handleConnectLinkedIn} className="w-full bg-[#0077b5] hover:bg-[#005582] text-white font-bold py-2.5 rounded-xl shadow-md text-sm transition-colors">
+                       <button type="button" onClick={handleConnectLinkedIn} className="w-full bg-[#0077b5] hover:bg-[#005582] text-white font-bold py-2.5 rounded-xl shadow-md text-sm transition-colors mt-auto">
                            Conectar con LinkedIn
+                       </button>
+                   )}
+                </div>
+
+                {/* TikTok */}
+                <div className="p-5 border-2 border-slate-100 rounded-2xl bg-slate-50 flex flex-col justify-between">
+                   <div>
+                       <div className="flex items-center gap-3 mb-2">
+                           <span className="w-8 h-8 bg-black text-white rounded-lg flex items-center justify-center">
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                 <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.86-.74-3.94-1.74-.22-.2-.41-.43-.61-.65v5.13c.04 2.11-.6 4.31-2.12 5.85-1.59 1.62-3.95 2.45-6.19 2.14-2.61-.31-4.99-2.22-5.74-4.79-.88-2.85-.02-6.22 2.19-8.15 1.72-1.53 4.12-2.11 6.36-1.57v4.18c-1.34-.37-2.89-.08-3.94.83-1.04.9-1.54 2.37-1.28 3.73.28 1.43 1.57 2.53 3.01 2.62 1.45.09 2.92-.85 3.39-2.22.25-.66.29-1.39.27-2.09V0z"/>
+                              </svg>
+                           </span>
+                           <h5 className="font-black text-slate-900">TikTok</h5>
+                       </div>
+                       <p className="text-xs text-slate-500 font-medium mb-4">Publica tus Reels y videos automáticamente en tu perfil de TikTok.</p>
+                   </div>
+                   
+                   {ttStatus ? (
+                       <div className="flex flex-col h-full justify-end">
+                           <div className="flex items-center justify-between mb-3">
+                               <div className="flex items-center gap-2">
+                                   <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                                   <span className="text-xs font-bold text-emerald-600">Conectado</span>
+                               </div>
+                               {(() => {
+                                   const expInfo = getExpirationText(activeProfile?.tiktokTokenExpiresAt);
+                                   if (!expInfo) return null;
+                                   return (
+                                       <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${expInfo.bg} ${expInfo.color} whitespace-nowrap ml-2`}>
+                                           {expInfo.text}
+                                       </span>
+                                   );
+                               })()}
+                           </div>
+                           
+                           {activeProfile?.tiktokUsername && (
+                               <div className="mb-3 p-3 bg-white border border-slate-100 rounded-xl space-y-1.5 shadow-sm text-left">
+                                   <div className="text-[11px] font-bold text-slate-700 flex items-center gap-2">
+                                       <span className="text-black shrink-0">🎵</span>
+                                       <span className="text-slate-400 font-medium tracking-wide">Perfil:</span>
+                                       <span className="text-slate-700 font-bold truncate">{activeProfile.tiktokUsername}</span>
+                                   </div>
+                                </div>
+                           )}
+
+                           <div className="flex gap-2">
+                               <button type="button" onClick={handleConnectTikTok} className="flex-1 bg-white border-2 border-slate-200 hover:border-black text-slate-700 text-[10px] sm:text-xs font-bold py-2 rounded-xl transition-colors truncate">Actualizar</button>
+                               <button type="button" onClick={handleDisconnectTt} className="px-3 bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold rounded-xl text-xs transition-colors" title="Desconectar">X</button>
+                           </div>
+                       </div>
+                   ) : (
+                       <button type="button" onClick={handleConnectTikTok} className="w-full bg-black hover:bg-slate-900 text-white font-bold py-2.5 rounded-xl shadow-md text-sm transition-colors mt-auto">
+                           Conectar con TikTok
                        </button>
                    )}
                 </div>
@@ -707,8 +802,8 @@ function ConfigContent() {
                    <input type="text" value={tiktokUrl} onChange={e => setTiktokUrl(e.target.value)} placeholder="@minegocio o enlace" className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700" />
                 </div>
                 <div>
-                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">🐦 Twitter (X) URL</label>
-                   <input type="text" value={twitterUrl} onChange={e => setTwitterUrl(e.target.value)} placeholder="@minegocio o enlace" className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700" />
+                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">💼 LinkedIn URL</label>
+                   <input type="text" value={linkedinUrl} onChange={e => setLinkedinUrl(e.target.value)} placeholder="https://linkedin.com/in/minegocio o enlace" className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700" />
                 </div>
              </div>
           </div>

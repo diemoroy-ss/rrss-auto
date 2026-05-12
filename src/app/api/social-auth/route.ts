@@ -164,6 +164,17 @@ export async function POST(req: Request) {
                         newP.linkedinCompanyUrn = "";
                     }
                 }
+
+                if (setAccounts.tiktok) {
+                    const { disconnect } = setAccounts.tiktok;
+                    if (disconnect === true) {
+                        newP.tiktokToken_enc = "";
+                        newP.iv_tt = "";
+                        newP.tag_tt = "";
+                        newP.tiktokUsername = "";
+                        newP.tiktokTokenExpiresAt = null;
+                    }
+                }
                 
                 return newP;
             }

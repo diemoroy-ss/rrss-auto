@@ -28,16 +28,27 @@ export type BusinessProfile = {
   linkedinClientId_enc?: string;
   linkedinClientSecret_enc?: string;
   linkedinToken_enc?: string;
+  linkedinUserToken_enc?: string;
   linkedinPersonUrn?: string;
+  linkedinCompanyUrn?: string;
+  metaUserToken_enc?: string;
   iv_li_id?: string;
   tag_li_id?: string;
   iv_li_secret?: string;
   tag_li_secret?: string;
   iv_li_token?: string;
   tag_li_token?: string;
+  iv_li_user?: string;
+  tag_li_user?: string;
+
+  tiktokToken_enc?: string;
+  iv_tt?: string;
+  tag_tt?: string;
+  tiktokUsername?: string;
   
   metaTokenExpiresAt?: number;
   linkedinTokenExpiresAt?: number;
+  tiktokTokenExpiresAt?: number;
 
   rubro?: string;
   website?: string;

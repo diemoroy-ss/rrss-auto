@@ -17,11 +17,12 @@ interface PostConfigFormProps {
   setDate: (val: string) => void;
   time: string;
   setTime: (val: string) => void;
-  networks: { facebook: boolean; instagram: boolean; linkedin: boolean };
-  setNetworks: React.Dispatch<React.SetStateAction<{ facebook: boolean; instagram: boolean; linkedin: boolean }>>;
+  networks: { facebook: boolean; instagram: boolean; linkedin: boolean; tiktok: boolean };
+  setNetworks: React.Dispatch<React.SetStateAction<{ facebook: boolean; instagram: boolean; linkedin: boolean; tiktok: boolean }>>;
   hasFb: boolean;
   hasIg: boolean;
   hasLi: boolean;
+  hasTt: boolean;
   needsConnection: boolean;
   handleImproveWithAI: () => void;
   handleGeneratePreview: () => void;
@@ -54,7 +55,7 @@ export default function PostConfigForm({
   date, setDate,
   time, setTime,
   networks, setNetworks,
-  hasFb, hasIg, hasLi,
+  hasFb, hasIg, hasLi, hasTt,
   needsConnection,
   handleImproveWithAI,
   handleGeneratePreview,
@@ -119,7 +120,7 @@ export default function PostConfigForm({
                  className="w-full bg-slate-50 border-2 border-slate-100 pl-6 pr-12 py-4 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700 hover:border-slate-200"
                />
                <VoiceMic 
-                 onResult={(text) => setBusinessType(prev => prev + (prev ? " " : "") + text)} 
+                 onResult={(text) => setBusinessType(businessType + (businessType ? " " : "") + text)} 
                  className="absolute right-4"
                />
            </div>
@@ -212,8 +213,8 @@ export default function PostConfigForm({
               />
               <VoiceMic 
                 onResult={(text) => {
-                  if (creationMode === 'ai') setIdea(prev => prev + (prev ? " " : "") + text);
-                  else setManualCaption(prev => prev + (prev ? " " : "") + text);
+                  if (creationMode === 'ai') setIdea(idea + (idea ? " " : "") + text);
+                  else setManualCaption(manualCaption + (manualCaption ? " " : "") + text);
                 }} 
                 className="absolute right-6 top-6 z-20"
               />
@@ -295,7 +296,7 @@ export default function PostConfigForm({
 
         <div id="tour-step-networks">
           <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Redes de destino</label>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <button type="button" onClick={() => setNetworks(prev => ({...prev, facebook: !prev.facebook}))} className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-2 font-bold text-xs ${networks.facebook ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200'}`}>
               <span className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm text-blue-600 text-lg">🔵</span>
               Facebook
@@ -308,8 +309,12 @@ export default function PostConfigForm({
               <span className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm text-sky-600 text-lg">💼</span>
               LinkedIn
             </button>
+            <button type="button" onClick={() => setNetworks(prev => ({...prev, tiktok: !prev.tiktok}))} className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-2 font-bold text-xs ${networks.tiktok ? 'border-slate-900 bg-slate-50 text-slate-900' : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200'}`}>
+              <span className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm text-slate-900 text-lg">🎵</span>
+              TikTok
+            </button>
           </div>
-          {!hasFb && !hasIg && !hasLi && (
+          {!hasFb && !hasIg && !hasLi && !hasTt && (
               <p className="text-[10px] font-bold text-slate-400 mt-4 bg-slate-50 p-4 rounded-xl border border-slate-100 italic">⚠️ Nota: Las opciones de redes están limitadas porque no hay cuentas vinculadas.</p>
           )}
         </div>

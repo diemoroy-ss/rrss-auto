@@ -26,6 +26,13 @@ function NetworkIcon({ network, postId }: { network: string; postId: string }) {
       </svg>
     );
   }
+  if (network === 'tiktok') {
+    return (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="text-black" aria-label="TikTok">
+        <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.86-.74-3.94-1.74-.22-.2-.41-.43-.61-.65v5.13c.04 2.11-.6 4.31-2.12 5.85-1.59 1.62-3.95 2.45-6.19 2.14-2.61-.31-4.99-2.22-5.74-4.79-.88-2.85-.02-6.22 2.19-8.15 1.72-1.53 4.12-2.11 6.36-1.57v4.18c-1.34-.37-2.89-.08-3.94.83-1.04.9-1.54 2.37-1.28 3.73.28 1.43 1.57 2.53 3.01 2.62 1.45.09 2.92-.85 3.39-2.22.25-.66.29-1.39.27-2.09V0z"/>
+      </svg>
+    );
+  }
   // Instagram with a unique gradient ID per post
   const gradId = `ig-grad-${postId}`;
   return (
@@ -57,6 +64,7 @@ interface SocialPost {
   imageUrls?: string[];
   carouselCount?: number;
   isGeneratingImage?: boolean; // UI State para regeneración
+  publishError?: string;
 }
 
 function DashboardCarouselViewer({ urls }: { urls: string[] }) {
@@ -309,7 +317,7 @@ export default function RrssDashboard() {
     }
   };
 
-  const toggleNetwork = async (post: SocialPost, network: 'facebook' | 'instagram' | 'linkedin', e: React.MouseEvent) => {
+  const toggleNetwork = async (post: SocialPost, network: 'facebook' | 'instagram' | 'linkedin' | 'tiktok', e: React.MouseEvent) => {
     e.stopPropagation();
     try {
       let newNetworks = [...post.networks];
@@ -322,6 +330,8 @@ export default function RrssDashboard() {
       } else {
         newNetworks.push(network);
       }
+      
+      await updateDoc(doc(db, "social_posts", post.id), { networks: newNetworks });
       
       // Update local state
       setPosts(prev => prev.map(p => p.id === post.id ? { ...p, networks: newNetworks } : p));
@@ -1155,9 +1165,11 @@ export default function RrssDashboard() {
                     <div className="flex flex-col items-start sm:items-end gap-2">
                         <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Publicar en:</span>
                         <div className="flex gap-2">
-                            {['facebook', 'instagram', 'linkedin'].filter(net => 
-                                net !== 'linkedin' || activeProfile?.linkedinToken_enc || selectedPost.networks.includes('linkedin')
-                            ).map(net => {
+                            {['facebook', 'instagram', 'linkedin', 'tiktok'].filter(net => {
+                                if (net === 'linkedin') return !!activeProfile?.linkedinUserToken_enc || !!activeProfile?.linkedinToken_enc || selectedPost.networks.includes('linkedin');
+                                if (net === 'tiktok') return !!activeProfile?.tiktokToken_enc || selectedPost.networks.includes('tiktok');
+                                return true;
+                            }).map(net => {
                                 const isActive = selectedPost.networks.includes(net);
                                 return (
                                     <button 
@@ -1169,7 +1181,7 @@ export default function RrssDashboard() {
                                             : 'bg-slate-50 border-slate-100 text-slate-400 opacity-60'
                                         }`}
                                     >
-                                        <span className={`${!isActive && 'grayscale'}`}>{net === 'facebook' ? '🔵' : net === 'instagram' ? '🟣' : '💼'}</span>
+                                        <span className={`${!isActive && 'grayscale'}`}>{net === 'facebook' ? '🔵' : net === 'instagram' ? '🟣' : net === 'linkedin' ? '💼' : '🎵'}</span>
                                         <span className="text-[10px] font-black uppercase tracking-widest">{net}</span>
                                     </button>
                                 );
@@ -1485,7 +1497,7 @@ export default function RrssDashboard() {
                      <div className="flex justify-center gap-3 mb-8">
                         {publishResult.published.map(net => (
                            <span key={net} className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-2 shadow-sm">
-                              {net === 'facebook' ? '🔵 Facebook' : net === 'instagram' ? '📸 Instagram' : '💼 LinkedIn'}
+                              {net === 'facebook' ? '🔵 Facebook' : net === 'instagram' ? '📸 Instagram' : net === 'linkedin' ? '💼 LinkedIn' : '🎵 TikTok'}
                            </span>
                         ))}
                      </div>

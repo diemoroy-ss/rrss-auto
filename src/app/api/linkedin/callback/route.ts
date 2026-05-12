@@ -92,7 +92,7 @@ export async function GET(req: Request) {
             ...profiles[index],
             linkedinUserToken_enc: encToken.encryptedData,
             iv_li_user: encToken.iv,
-            tag_li_user: encToken.tag,
+            tag_li_user: encToken.authTag,
             linkedinPersonUrn: personUrn,
             ...(linkedinTokenExpiresAt ? { linkedinTokenExpiresAt } : {})
         };

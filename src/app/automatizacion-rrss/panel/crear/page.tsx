@@ -25,6 +25,7 @@ export default function RrssCreatePost() {
   const [hasFb, setHasFb] = useState(false);
   const [hasIg, setHasIg] = useState(false);
   const [hasLi, setHasLi] = useState(false);
+  const [hasTt, setHasTt] = useState(false);
   const [loadingInitial, setLoadingInitial] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -43,7 +44,7 @@ export default function RrssCreatePost() {
   const [businessType, setBusinessType] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
-  const [networks, setNetworks] = useState({ facebook: true, instagram: true, linkedin: true });
+  const [networks, setNetworks] = useState({ facebook: true, instagram: true, linkedin: true, tiktok: true });
 
   // Wizard state
   const [previewSlides, setPreviewSlides] = useState<CarouselSlide[]>([]);
@@ -70,15 +71,17 @@ export default function RrssCreatePost() {
             const isDefault = activeProfile?.id === 'default';
             const fbOK = !!activeProfile?.facebookToken_enc || (isDefault && !!data.facebookToken_enc);
             const igOK = !!activeProfile?.instagramToken_enc || (isDefault && !!data.instagramToken_enc);
-            const liOK = !!activeProfile?.linkedinToken_enc || (isDefault && !!data.linkedinToken_enc);
+            const liOK = !!activeProfile?.linkedinUserToken_enc || !!activeProfile?.linkedinToken_enc || (isDefault && (!!data.linkedinUserToken_enc || !!data.linkedinToken_enc));
+            const ttOK = !!activeProfile?.tiktokToken_enc || (isDefault && !!data.tiktokToken_enc);
             
             setHasFb(fbOK);
             setHasIg(igOK);
             setHasLi(liOK);
+            setHasTt(ttOK);
             setBusinessType(activeProfile?.rubro || (isDefault ? data.rubro : "") || "");
             setUserLogo(activeProfile?.logoUrl || (isDefault ? data.logoUrl : "") || "");
             
-            setNetworks({ facebook: fbOK, instagram: igOK, linkedin: liOK });
+            setNetworks({ facebook: fbOK, instagram: igOK, linkedin: liOK, tiktok: ttOK });
             
             const plan = data.plan || "free";
             setUserPlan(plan);
@@ -283,8 +286,9 @@ export default function RrssCreatePost() {
     if (networks.facebook && hasFb) nets.push('facebook');
     if (networks.instagram && hasIg) nets.push('instagram');
     if (networks.linkedin && hasLi) nets.push('linkedin');
+    if (networks.tiktok && hasTt) nets.push('tiktok');
 
-    if (nets.length === 0 && (hasFb || hasIg || hasLi)) { 
+    if (nets.length === 0 && (hasFb || hasIg || hasLi || hasTt)) { 
         setError("Selecciona al menos una red social destino."); 
         return; 
     }
@@ -375,7 +379,7 @@ export default function RrssCreatePost() {
   };
 
   if (loadingInitial) return <div className="animate-pulse space-y-4 max-w-2xl"><div className="h-10 bg-slate-200 rounded w-1/3"></div><div className="h-64 bg-slate-200 rounded"></div></div>;
-  const needsConnection = !hasFb && !hasIg && !hasLi;
+  const needsConnection = !hasFb && !hasIg && !hasLi && !hasTt;
   const isPreviewVisible = (creationMode === 'manual' && !!selectedTemplate) || (creationMode === 'ai' && previewSlides.length > 0);
 
   return (
@@ -406,7 +410,7 @@ export default function RrssCreatePost() {
               date={date} setDate={setDate}
               time={time} setTime={setTime}
               networks={networks} setNetworks={setNetworks}
-              hasFb={hasFb} hasIg={hasIg} hasLi={hasLi}
+              hasFb={hasFb} hasIg={hasIg} hasLi={hasLi} hasTt={hasTt}
               needsConnection={needsConnection}
               handleImproveWithAI={handleImproveWithAI}
               handleGeneratePreview={handleGeneratePreview}
