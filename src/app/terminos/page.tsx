@@ -17,14 +17,14 @@ export default function Terminos() {
           <section>
             <h2 className="text-xl font-bold text-slate-900 mb-4">1. Aceptación de los Términos</h2>
             <p>
-              Al utilizar los servicios de Santisoft, usted acepta cumplir con estos términos y condiciones. Santisoft proporciona herramientas de automatización para redes sociales basadas en Inteligencia Artificial y conexiones oficiales con Meta API.
+              Al utilizar los servicios de Santisoft, usted acepta cumplir con estos términos y condiciones. Santisoft proporciona herramientas de automatización para redes sociales basadas en Inteligencia Artificial y conexiones oficiales con Meta API (Facebook e Instagram), TikTok Content Posting API y LinkedIn API.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-bold text-slate-900 mb-4">2. Uso del Servicio y Campañas Publicitarias</h2>
+            <h2 className="text-xl font-bold text-slate-900 mb-4">2. Uso del Servicio y Publicaciones</h2>
             <p>
-              El usuario es el único responsable del contenido generado, configurado y publicado a través de nuestra plataforma. Santisoft no se hace responsable por el uso inapropiado del servicio que contravenga las políticas de comunidad de Meta (Facebook/Instagram) o las leyes locales vigentes.
+              El usuario es el único responsable del contenido generado, configurado y publicado a través de nuestra plataforma en sus respectivas cuentas de redes sociales. Santisoft no se hace responsable por el uso inapropiado del servicio que contravenga las políticas de comunidad o pautas de integración de Meta, TikTok o LinkedIn, ni por las leyes locales vigentes.
             </p>
             <p className="mt-4">
               <strong>Publicidad (Meta Ads):</strong> Al utilizar nuestro Creador de Campañas, usted autoriza a Santisoft a enviar la configuración de presupuestos y creativos a la API de Meta. <strong>Usted (el usuario y titular de la cuenta en Meta) es el único responsable de los cargos financieros, facturación y resultados de dichas campañas.</strong> Santisoft no se responsabiliza por cargos accidentales, sobregastos generados dentro de Facebook, rechazo de anuncios o bloqueos de cuentas publicitarias derivadas del uso de nuestra integración.

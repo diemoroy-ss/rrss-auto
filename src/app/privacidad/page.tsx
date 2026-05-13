@@ -40,7 +40,7 @@ export default function Privacidad() {
                   Introducción
                 </h2>
                 <p>
-                  En <strong>Santisoft</strong>, la privacidad de sus datos es nuestra prioridad. Esta política describe cómo recopilamos, utilizamos y protegemos su información cuando utiliza nuestra plataforma de automatización de redes sociales y nuestras integraciones con Meta API.
+                  En <strong>Santisoft</strong>, la privacidad de sus datos es nuestra prioridad. Esta política describe cómo recopilamos, utilizamos y protegemos su información cuando utiliza nuestra plataforma de automatización de redes sociales y nuestras integraciones oficiales con Meta API (Facebook e Instagram), TikTok Content Posting API y LinkedIn API.
                 </p>
               </section>
 
@@ -53,28 +53,27 @@ export default function Privacidad() {
                   Para proporcionar nuestros servicios, recopilamos:
                 </p>
                 <ul className="list-disc pl-6 space-y-2 mt-4 text-slate-500">
-                  <li>Información de perfil público proporcionada a través de Facebook Login.</li>
-                  <li>Tokens de acceso autorizados para gestionar páginas de Facebook e Instagram.</li>
+                  <li>Información de perfil y tokens de acceso autorizados para publicar en Facebook, Instagram, TikTok y LinkedIn.</li>
                   <li>Métricas de rendimiento de anuncios (impresiones, clics, gasto) para mostrar en su panel de control.</li>
-                  <li>Contenido multimedia y textos que usted decida programar o publicar.</li>
+                  <li>Contenido multimedia y textos que usted decida programar o publicar en sus perfiles autorizados.</li>
                 </ul>
               </section>
 
               <section className="bg-slate-50 p-8 rounded-3xl border border-slate-100">
                 <h2 className="text-2xl font-bold text-slate-900 mb-4 flex items-center gap-3">
                   <span className="w-8 h-8 bg-indigo-600 text-white rounded-lg flex items-center justify-center text-sm">03</span>
-                  Uso de los Datos y Meta API
+                  Uso de los Datos y APIs Externas
                 </h2>
                 <p>
-                  Santisoft utiliza las APIs oficiales de Meta para permitirle gestionar su presencia digital. Los datos se utilizan exclusivamente para:
+                  Santisoft utiliza las APIs oficiales de Meta, TikTok y LinkedIn para permitirle gestionar su presencia digital. Los datos se utilizan exclusivamente para:
                 </p>
                 <ul className="list-disc pl-6 space-y-2 mt-4 text-slate-500">
-                  <li>Publicar contenido en sus cuentas autorizadas.</li>
-                  <li>Analizar el rendimiento de sus campañas publicitarias.</li>
+                  <li>Publicar y programar contenido en sus cuentas autorizadas según su explícito consentimiento.</li>
+                  <li>Analizar el rendimiento de sus campañas publicitarias y perfiles.</li>
                   <li>Personalizar sugerencias de contenido mediante Inteligencia Artificial.</li>
                 </ul>
                 <p className="mt-4 font-semibold text-indigo-600">
-                  Importante: No vendemos sus datos a terceros ni los utilizamos para fines ajenos a la funcionalidad de la plataforma.
+                  Importante: No vendemos sus datos a terceros, no transferimos información de tokens a entidades no autorizadas, ni utilizamos los datos para fines ajenos a la funcionalidad directa de la plataforma.
                 </p>
               </section>
 
