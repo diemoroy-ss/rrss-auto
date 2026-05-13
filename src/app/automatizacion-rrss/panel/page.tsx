@@ -73,7 +73,11 @@ function DashboardCarouselViewer({ urls }: { urls: string[] }) {
   if (!urls || urls.length === 0) return null;
 
   const currentUrl = urls[index];
-  const isVideo = currentUrl?.toLowerCase().endsWith('.mp4');
+  const isVideo = currentUrl?.toLowerCase().includes('.mp4') || 
+                  currentUrl?.toLowerCase().includes('.mov') || 
+                  currentUrl?.toLowerCase().includes('.webm') || 
+                  currentUrl?.toLowerCase().includes('video') || 
+                  currentUrl?.toLowerCase().includes('quicktime');
 
   return (
     <div className={`rounded-2xl overflow-hidden shadow-sm relative group bg-black flex-shrink-0 border border-slate-200 flex items-center justify-center ${isVideo ? 'aspect-[9/16] max-h-[60vh] max-w-[320px] mx-auto' : 'aspect-video bg-white'}`}>
@@ -1008,7 +1012,12 @@ export default function RrssDashboard() {
                     </div>
                   ) : post.imageUrl ? (
                     <div className="mt-2 mb-6 rounded-2xl overflow-hidden border border-slate-200/50 aspect-video bg-slate-50 flex items-center justify-center shadow-inner relative group-hover:border-indigo-200 transition-all">
-                      {post.type === 'Reel' || post.imageUrl?.endsWith('.mp4') ? (
+                      {post.type === 'Reel' || 
+                       post.imageUrl?.toLowerCase().includes('.mp4') || 
+                       post.imageUrl?.toLowerCase().includes('.mov') || 
+                       post.imageUrl?.toLowerCase().includes('.webm') || 
+                       post.imageUrl?.toLowerCase().includes('video') || 
+                       post.imageUrl?.toLowerCase().includes('quicktime') ? (
                         <>
                           <div className="absolute inset-0 bg-gradient-to-br from-rose-900 to-slate-900 flex flex-col items-center justify-center gap-3">
                             <div className="w-14 h-14 rounded-full bg-white/15 border-2 border-white/30 flex items-center justify-center backdrop-blur-sm shadow-xl">
@@ -1164,7 +1173,7 @@ export default function RrssDashboard() {
                     </div>
                     <div className="flex flex-col items-start sm:items-end gap-2">
                         <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Publicar en:</span>
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2 justify-start sm:justify-end">
                             {['facebook', 'instagram', 'linkedin', 'tiktok'].filter(net => {
                                 if (net === 'linkedin') return !!activeProfile?.linkedinUserToken_enc || !!activeProfile?.linkedinToken_enc || selectedPost.networks.includes('linkedin');
                                 if (net === 'tiktok') return !!activeProfile?.tiktokToken_enc || selectedPost.networks.includes('tiktok');
