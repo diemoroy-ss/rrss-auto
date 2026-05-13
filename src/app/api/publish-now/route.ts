@@ -509,6 +509,10 @@ export async function POST(req: Request) {
                 try {
                     const plainToken = decrypt(ttToken, ivTt, tagTt);
                     
+                    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://rrss.santisoft.cl';
+                    const proxyUrl = `${appUrl}/api/video-proxy?url=${encodeURIComponent(imageUrl)}`;
+                    console.log(`[TikTok Publish] Using proxied video URL: ${proxyUrl}`);
+                    
                     const initRes = await fetch("https://open.tiktokapis.com/v2/post/publish/video/init/", {
                         method: 'POST',
                         headers: {
@@ -525,7 +529,7 @@ export async function POST(req: Request) {
                             },
                             source_info: {
                                 source: "PULL_FROM_URL",
-                                video_url: imageUrl
+                                video_url: proxyUrl
                             }
                         })
                     });
