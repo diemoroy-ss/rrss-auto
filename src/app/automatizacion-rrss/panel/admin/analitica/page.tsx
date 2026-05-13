@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import { adminDb } from "../../../../lib/firebase-admin";
 
 // This page is SERVER side for data fetching
 export default function AnalyticsPage() {

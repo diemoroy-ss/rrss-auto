@@ -65,7 +65,7 @@ export async function POST(req: Request) {
         status: "authorized"
     };
 
-    const response = await preApproval.create({ body });
+    const response: any = await preApproval.create({ body });
 
     // La URL de pago para suscripciones se encuentra en init_point o sandbox_init_point
     const checkoutUrl = isTest ? response.sandbox_init_point : response.init_point;

@@ -520,7 +520,7 @@ export async function POST(req: Request) {
                     console.log(`[TikTok Publish] Video downloaded. Size: ${videoSize} bytes`);
 
                     // --- Paso 2: Inicializar la publicación con FILE_UPLOAD ---
-                    const initRes = await fetch("https://open.tiktokapis.com/v2/post/publish/video/init/", {
+                    let initRes = await fetch("https://open.tiktokapis.com/v2/post/publish/video/init/", {
                         method: 'POST',
                         headers: {
                             'Authorization': `Bearer ${plainToken}`,
@@ -537,14 +537,49 @@ export async function POST(req: Request) {
                             source_info: {
                                 source: "FILE_UPLOAD",
                                 video_size: videoSize,
-                                chunk_size: videoSize, // Un solo chunk (máx 64MB)
+                                chunk_size: videoSize,
                                 total_chunk_count: 1
                             }
                         })
                     });
 
-                    const initData = await initRes.json();
-                    console.log('[TikTok Publish] Init response:', JSON.stringify(initData));
+                    let initData = await initRes.json();
+                    console.log('[TikTok Publish] First Init response:', JSON.stringify(initData));
+
+                    // Si falla por las pautas de integración (generalmente porque la app está en modo Sandbox y requiere SELF_ONLY)
+                    const isGuidelinesError = initData.error?.message?.toLowerCase().includes('guidelines') || 
+                                              JSON.stringify(initData).toLowerCase().includes('guidelines') ||
+                                              initData.error?.code === 'spam_or_sensitive_content' || // Código común en sandbox
+                                              initData.error?.code === 'unaudited_client_can_only_post_to_private_accounts';
+
+                    if (isGuidelinesError) {
+                        console.warn('[TikTok Publish] Detected Sandbox mode or integration guidelines restriction. Retrying with SELF_ONLY privacy level...');
+                        initRes = await fetch("https://open.tiktokapis.com/v2/post/publish/video/init/", {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${plainToken}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                post_info: {
+                                    title: caption.slice(0, 150) || 'Publicación',
+                                    privacy_level: "SELF_ONLY", // Modo privado para pruebas en Sandbox
+                                    disable_comment: false,
+                                    disable_duet: false,
+                                    disable_stitch: false
+                                },
+                                source_info: {
+                                    source: "FILE_UPLOAD",
+                                    video_size: videoSize,
+                                    chunk_size: videoSize,
+                                    total_chunk_count: 1
+                                }
+                            })
+                        });
+                        initData = await initRes.json();
+                        console.log('[TikTok Publish] Sandbox retry Init response:', JSON.stringify(initData));
+                        errorLog += "TikTok (Sandbox: El video se subió en modo privado 'Solo Yo' porque tu App de TikTok está en modo de pruebas / Sandbox. Debes solicitar la revisión de tu App en el panel de desarrolladores de TikTok para publicar de forma pública). ";
+                    }
 
                     if (initData.error?.code !== 'ok' || !initData.data?.upload_url) {
                         const errMessage = initData.error?.message || JSON.stringify(initData);
