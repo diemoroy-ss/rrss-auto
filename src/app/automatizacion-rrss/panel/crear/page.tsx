@@ -14,7 +14,7 @@ import PostConfigForm from "../../../../components/crear/PostConfigForm";
 import CarouselWizard, { CarouselSlide } from "../../../../components/crear/CarouselWizard";
 import CanvasEditor from "../../../../components/crear/CanvasEditor";
 
-export interface UserTemplate { id: string; url: string; createdAt: Date; }
+export interface UserTemplate { id: string; url: string; type?: 'image' | 'video'; createdAt: Date; }
 
 export default function RrssCreatePost() {
   const router = useRouter();
@@ -97,7 +97,7 @@ export default function RrssCreatePost() {
             const vLimit = await getVideoPlanLimit(plan);
             setVideoLimit(vLimit);
 
-            const isAdminRole = data.role === 'admin' || u.email === 'diemoroy@gmail.com';
+            const isAdminRole = data.role === 'admin' || u.email === 'diemoroy@gmail.com' || u.email === 'spalezcom@gmail.com';
             setIsAdmin(isAdminRole);
 
             // Fetch User Templates
@@ -114,6 +114,7 @@ export default function RrssCreatePost() {
                    templatesData.push({
                       id: doc.id,
                       url: tData.url,
+                      type: tData.type || (tData.url.match(/\.(mp4|mov|webm|quicktime)/i) || tData.url.includes("video") ? 'video' : 'image'),
                       createdAt: tData.createdAt?.toDate() || new Date()
                    });
                });
@@ -241,9 +242,10 @@ export default function RrssCreatePost() {
           const newDoc = await addDoc(collection(db, "user_templates"), {
               userId: user.uid,
               url: finalUrl,
+              type: 'image',
               createdAt: new Date()
           });
-          const newTmpl: UserTemplate = { id: newDoc.id, url: finalUrl, createdAt: new Date() };
+          const newTmpl: UserTemplate = { id: newDoc.id, url: finalUrl, type: 'image', createdAt: new Date() };
           setManualTemplates(prev => [newTmpl, ...prev]);
           setSelectedTemplate(newTmpl);
       } catch (e) {
@@ -260,12 +262,14 @@ export default function RrssCreatePost() {
           await uploadBytes(storageRef, file);
           const url = await getDownloadURL(storageRef);
           
+          const isVideo = file.type.startsWith('video/');
           const newDoc = await addDoc(collection(db, "user_templates"), {
               userId: user.uid,
               url: url,
+              type: isVideo ? 'video' : 'image',
               createdAt: new Date()
           });
-          const newTmpl: UserTemplate = { id: newDoc.id, url: url, createdAt: new Date() };
+          const newTmpl: UserTemplate = { id: newDoc.id, url: url, type: isVideo ? 'video' : 'image', createdAt: new Date() };
           setManualTemplates(prev => [newTmpl, ...prev]);
           setSelectedTemplate(newTmpl);
       } catch (e) {
@@ -279,7 +283,7 @@ export default function RrssCreatePost() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (creationMode === 'ai' && !idea) { setError("Por favor ingresa una idea para tu publicación."); return; }
-    if (creationMode === 'manual' && (!selectedTemplate && manualFiles.length === 0)) { setError("Selecciona o sube una imagen manual primero."); return; }
+    if (creationMode === 'manual' && (!selectedTemplate && manualFiles.length === 0)) { setError("Selecciona o sube un archivo (imagen o video) manual primero."); return; }
     if (!date || !time) { setError("Selecciona fecha y hora para agendar."); return; }
     
     const nets: string[] = [];
@@ -438,14 +442,34 @@ export default function RrssCreatePost() {
           <div className="lg:col-span-5 relative">
             {creationMode === 'manual' ? (
                 selectedTemplate ? (
-                    <div className="lg:sticky lg:top-24 mt-8 lg:mt-0 space-y-6">
-                        <CanvasEditor 
-                           baseImageUrl={selectedTemplate.url}
-                           suggestedCopy={manualCaption || "Previsualización manual"}
-                           initialLogoUrl={userLogo}
-                           userId={user?.uid}
-                           onSave={handleSaveEditedTemplate}
-                        />
+                    <div className="lg:sticky lg:top-24 mt-8 lg:mt-0 space-y-6 animate-in fade-in duration-300">
+                        {selectedTemplate.type === 'video' || selectedTemplate.url.match(/\.(mp4|mov|webm|quicktime)/i) || selectedTemplate.url.includes("video") ? (
+                            <div className="p-8 bg-slate-50 rounded-[32px] border-2 border-slate-100 animate-in zoom-in duration-500 space-y-6 shadow-xl shadow-slate-200/50">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                       <span className="text-xl">🎬</span>
+                                       <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest">Video de Publicación</h4>
+                                    </div>
+                                </div>
+                                <div className="aspect-[9/16] max-h-[60vh] rounded-[24px] overflow-hidden bg-black border-4 border-white shadow-xl relative group mx-auto flex items-center justify-center">
+                                    <video src={selectedTemplate.url} autoPlay loop muted playsInline controls className="w-full h-full object-cover animate-in fade-in" />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Copy para Redes</label>
+                                    <div className="p-6 bg-white rounded-2xl border border-slate-200 text-slate-600 text-sm font-medium leading-relaxed italic shadow-inner">
+                                       "{manualCaption || 'Escribe el texto que acompañará tu video a la izquierda...'}"
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <CanvasEditor 
+                               baseImageUrl={selectedTemplate.url}
+                               suggestedCopy={manualCaption || "Previsualización manual"}
+                               initialLogoUrl={userLogo}
+                               userId={user?.uid}
+                               onSave={handleSaveEditedTemplate}
+                            />
+                        )}
                         <button form="create-post-form" disabled={loading} type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-black text-lg py-5 px-8 rounded-[24px] transition-all shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-4 hover:-translate-y-1">
                            {loading ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : '✅ Aprobar y Agendar'}
                         </button>
@@ -454,22 +478,28 @@ export default function RrssCreatePost() {
                     <div className="p-8 border-4 border-dashed border-indigo-100 rounded-[32px] text-center flex flex-col items-center justify-center min-h-[500px] text-indigo-400 bg-indigo-50/20 lg:sticky lg:top-24 mt-8 lg:mt-0 transition-all">
                       <div className="text-6xl mb-4 opacity-80">📱</div>
                       <h4 className="font-black text-lg mb-2 text-indigo-700">Galería Manual Activa</h4>
-                      <p className="font-medium text-sm max-w-xs leading-relaxed mb-8">Selecciona una de tus plantillas previas a la izquierda o sube una nueva aquí para empezar.</p>
+                      <p className="font-medium text-sm max-w-xs leading-relaxed mb-8">Selecciona uno de tus diseños o videos previos a la izquierda o sube uno nuevo para empezar.</p>
                       
                       <label className="flex flex-col items-center justify-center bg-white border-2 border-dashed border-indigo-300 hover:bg-indigo-50 hover:border-indigo-500 rounded-2xl cursor-pointer group hover:scale-105 transition-all text-indigo-600 px-10 py-6 shadow-xl shadow-indigo-100/50">
                           <input 
                               type="file" 
-                              accept="image/jpeg,image/png,image/webp" 
+                              accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm" 
                               onChange={(e) => {
                                   if (e.target.files && e.target.files[0] && handleUploadNewTemplate) {
                                       const f = e.target.files[0];
+                                      const isVideo = f.type.startsWith('video/');
+                                      const maxSize = isVideo ? 100 : 10;
+                                      if (f.size / (1024*1024) > maxSize) {
+                                          alert(isVideo ? `Video demasiado grande. Máx ${maxSize}MB` : `Imagen demasiado grande. Máx ${maxSize}MB`);
+                                          return;
+                                      }
                                       handleUploadNewTemplate(f);
                                   }
                               }}
                               className="hidden" 
                           />
                           <span className="text-4xl mb-2 group-hover:rotate-12 transition-transform">📸</span>
-                          <span className="text-sm font-black uppercase tracking-widest">Subir Nueva Foto</span>
+                          <span className="text-sm font-black uppercase tracking-widest text-center">Subir Foto o Video</span>
                       </label>
                     </div>
                 )

@@ -231,7 +231,7 @@ export default function PostConfigForm({
             
             <div className="bg-slate-50 border border-slate-200 rounded-3xl p-4 sm:p-6 shadow-inner">
                 <div className="flex justify-between items-center mb-4">
-                    <h5 className="font-bold text-slate-700 text-sm">Selecciona o sube una imagen</h5>
+                    <h5 className="font-bold text-slate-700 text-sm">Selecciona o sube una imagen o video</h5>
                     {loadingTemplates && <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>}
                 </div>
                 
@@ -240,12 +240,14 @@ export default function PostConfigForm({
                     <label className="relative flex flex-col items-center justify-center bg-white border-2 border-dashed border-indigo-200 hover:bg-indigo-50 hover:border-indigo-400 rounded-2xl cursor-pointer group hover:scale-105 transition-all text-indigo-500 aspect-square shadow-sm">
                         <input 
                             type="file" 
-                            accept="image/jpeg,image/png,image/webp" 
+                            accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm" 
                             onChange={(e) => {
                                 if (e.target.files && e.target.files[0] && onUploadNewTemplate) {
                                     const f = e.target.files[0];
-                                    if (f.size / (1024*1024) > 10) {
-                                        alert("Imagen demasiado grande. Máx 10MB");
+                                    const isVideo = f.type.startsWith('video/');
+                                    const maxSize = isVideo ? 100 : 10;
+                                    if (f.size / (1024*1024) > maxSize) {
+                                        alert(isVideo ? `Video demasiado grande. Máx ${maxSize}MB` : `Imagen demasiado grande. Máx ${maxSize}MB`);
                                         return;
                                     }
                                     onUploadNewTemplate(f);
@@ -254,20 +256,34 @@ export default function PostConfigForm({
                             className="hidden" 
                         />
                         <span className="text-3xl mb-1 group-hover:rotate-12 transition-transform">📸</span>
-                        <span className="text-[10px] font-black uppercase tracking-tighter">Nueva Foto</span>
+                        <span className="text-[10px] font-black uppercase tracking-tighter text-center">Subir Foto/Video</span>
                     </label>
 
                     {/* Lista de templates del usuario */}
-                    {manualTemplates?.map((tmpl) => (
-                         // eslint-disable-next-line @next/next/no-img-element
-                        <img 
-                            key={tmpl.id}
-                            src={tmpl.url} 
-                            alt="Template" 
-                            onClick={() => setSelectedTemplate?.(tmpl)}
-                            className={`w-full aspect-square object-cover rounded-2xl cursor-pointer transition-all hover:scale-105 shadow-sm ${selectedTemplate?.id === tmpl.id ? 'ring-4 ring-indigo-500 scale-105 drop-shadow-md z-10' : 'opacity-80 hover:opacity-100 hover:ring-2 hover:ring-indigo-300'}`}
-                        />
-                    ))}
+                    {manualTemplates?.map((tmpl) => {
+                        const isVideo = tmpl.type === 'video' || tmpl.url.match(/\.(mp4|mov|webm|quicktime)/i) || tmpl.url.includes("video");
+                        return (
+                          <div 
+                              key={tmpl.id}
+                              onClick={() => setSelectedTemplate?.(tmpl)}
+                              className={`relative w-full aspect-square rounded-2xl cursor-pointer overflow-hidden transition-all hover:scale-105 shadow-sm ${selectedTemplate?.id === tmpl.id ? 'ring-4 ring-indigo-500 scale-105 drop-shadow-md z-10' : 'opacity-80 hover:opacity-100 hover:ring-2 hover:ring-indigo-300'}`}
+                          >
+                              {isVideo ? (
+                                  <div className="relative w-full h-full bg-slate-950 flex items-center justify-center">
+                                      <video src={tmpl.url} className="w-full h-full object-cover opacity-60 pointer-events-none" muted playsInline />
+                                      <span className="absolute text-xl z-10">🎬</span>
+                                  </div>
+                              ) : (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img 
+                                      src={tmpl.url} 
+                                      alt="Template" 
+                                      className="w-full h-full object-cover"
+                                  />
+                              )}
+                          </div>
+                        );
+                    })}
                     
                     {!loadingTemplates && (!manualTemplates || manualTemplates.length === 0) && (
                         <div className="col-span-1 sm:col-span-2 md:col-span-3 flex flex-col items-center justify-center text-slate-400 p-4 text-center">
