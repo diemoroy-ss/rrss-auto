@@ -44,6 +44,7 @@ interface PostConfigFormProps {
   setSelectedTemplate?: (val: any | null) => void;
   loadingTemplates?: boolean;
   onUploadNewTemplate?: (file: File) => void;
+  onDeleteTemplate?: (tmpl: any) => Promise<void>;
   hideSubmit?: boolean;
 }
 
@@ -64,7 +65,7 @@ export default function PostConfigForm({
   creationMode, setCreationMode,
   manualFiles, setManualFiles,
   manualCaption, setManualCaption,
-  isAdmin, manualTemplates = [], selectedTemplate, setSelectedTemplate, loadingTemplates, onUploadNewTemplate,
+  isAdmin, manualTemplates = [], selectedTemplate, setSelectedTemplate, loadingTemplates, onUploadNewTemplate, onDeleteTemplate,
   hideSubmit = false
 }: PostConfigFormProps) {
   return (
@@ -266,7 +267,7 @@ export default function PostConfigForm({
                           <div 
                               key={tmpl.id}
                               onClick={() => setSelectedTemplate?.(tmpl)}
-                              className={`relative w-full aspect-square rounded-2xl cursor-pointer overflow-hidden transition-all hover:scale-105 shadow-sm ${selectedTemplate?.id === tmpl.id ? 'ring-4 ring-indigo-500 scale-105 drop-shadow-md z-10' : 'opacity-80 hover:opacity-100 hover:ring-2 hover:ring-indigo-300'}`}
+                              className={`group relative w-full aspect-square rounded-2xl cursor-pointer overflow-hidden transition-all hover:scale-105 shadow-sm ${selectedTemplate?.id === tmpl.id ? 'ring-4 ring-indigo-500 scale-105 drop-shadow-md z-10' : 'opacity-80 hover:opacity-100 hover:ring-2 hover:ring-indigo-300'}`}
                           >
                               {isVideo ? (
                                   <div className="relative w-full h-full bg-slate-950 flex items-center justify-center">
@@ -280,6 +281,25 @@ export default function PostConfigForm({
                                       alt="Template" 
                                       className="w-full h-full object-cover"
                                   />
+                              )}
+                              
+                              {/* Botón Borrar */}
+                              {onDeleteTemplate && (
+                                  <button
+                                      type="button"
+                                      onClick={(e) => {
+                                          e.stopPropagation(); // Evitar seleccionar el template al borrar
+                                          if (confirm("¿Estás seguro de que deseas eliminar este archivo de tu galería?")) {
+                                              onDeleteTemplate(tmpl);
+                                          }
+                                      }}
+                                      className="absolute top-2 right-2 w-8 h-8 rounded-full bg-rose-600/90 text-white flex items-center justify-center shadow-md hover:bg-rose-700 active:scale-95 transition-all opacity-0 group-hover:opacity-100 z-20"
+                                      title="Eliminar de la galería"
+                                  >
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                      </svg>
+                                  </button>
                               )}
                           </div>
                         );
@@ -312,22 +332,69 @@ export default function PostConfigForm({
 
         <div id="tour-step-networks">
           <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Redes de destino</label>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <button type="button" onClick={() => setNetworks(prev => ({...prev, facebook: !prev.facebook}))} className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-2 font-bold text-xs ${networks.facebook ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200'}`}>
-              <span className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm text-blue-600 text-lg">🔵</span>
-              Facebook
+          <div className="flex flex-wrap gap-4">
+            {/* Facebook */}
+            <button 
+              type="button" 
+              title="Facebook"
+              onClick={() => setNetworks(prev => ({...prev, facebook: !prev.facebook}))} 
+              className={`w-14 h-14 rounded-2xl border-2 transition-all duration-300 flex items-center justify-center ${
+                networks.facebook 
+                ? 'bg-[#1877F2] text-white border-[#1877F2] shadow-lg shadow-[#1877F2]/30 scale-105' 
+                : 'bg-slate-800 text-slate-400 border-slate-900 hover:bg-slate-900 hover:text-slate-200'
+              }`}
+            >
+              <svg className="w-7 h-7" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+              </svg>
             </button>
-            <button type="button" onClick={() => setNetworks(prev => ({...prev, instagram: !prev.instagram}))} className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-2 font-bold text-xs ${networks.instagram ? 'border-pink-500 bg-pink-50 text-pink-700' : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200'}`}>
-              <span className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm text-pink-600 text-lg">🟣</span>
-              Instagram
+
+            {/* Instagram */}
+            <button 
+              type="button" 
+              title="Instagram"
+              onClick={() => setNetworks(prev => ({...prev, instagram: !prev.instagram}))} 
+              className={`w-14 h-14 rounded-2xl border-2 transition-all duration-300 flex items-center justify-center ${
+                networks.instagram 
+                ? 'bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7] text-white border-transparent shadow-lg shadow-pink-500/30 scale-105' 
+                : 'bg-slate-800 text-slate-400 border-slate-900 hover:bg-slate-900 hover:text-slate-200'
+              }`}
+            >
+              <svg className="w-7 h-7" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/>
+              </svg>
             </button>
-            <button type="button" onClick={() => setNetworks(prev => ({...prev, linkedin: !prev.linkedin}))} className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-2 font-bold text-xs ${networks.linkedin ? 'border-sky-500 bg-sky-50 text-sky-700' : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200'}`}>
-              <span className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm text-sky-600 text-lg">💼</span>
-              LinkedIn
+
+            {/* LinkedIn */}
+            <button 
+              type="button" 
+              title="LinkedIn"
+              onClick={() => setNetworks(prev => ({...prev, linkedin: !prev.linkedin}))} 
+              className={`w-14 h-14 rounded-2xl border-2 transition-all duration-300 flex items-center justify-center ${
+                networks.linkedin 
+                ? 'bg-[#0077B5] text-white border-[#0077B5] shadow-lg shadow-[#0077B5]/30 scale-105' 
+                : 'bg-slate-800 text-slate-400 border-slate-900 hover:bg-slate-900 hover:text-slate-200'
+              }`}
+            >
+              <svg className="w-7 h-7" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M22.23 0H1.77C.8 0 0 .77 0 1.72v20.56C0 23.23.8 24 1.77 24h20.46c.98 0 1.77-.77 1.77-1.72V1.72C24 .77 23.2 0 22.23 0zM7.12 20.45H3.56V9H7.12v11.45zM5.34 7.43c-1.14 0-2.06-.92-2.06-2.06 0-1.14.92-2.06 2.06-2.06 1.14 0 2.06.92 2.06 2.06 0 1.14-.92 2.06-2.06 2.06zm15.11 13.02h-3.56v-5.6c0-1.34-.03-3.05-1.86-3.05-1.86 0-2.14 1.45-2.14 2.95v5.65h-3.56V9h3.42v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29z"/>
+              </svg>
             </button>
-            <button type="button" onClick={() => setNetworks(prev => ({...prev, tiktok: !prev.tiktok}))} className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-2 font-bold text-xs ${networks.tiktok ? 'border-slate-900 bg-slate-50 text-slate-900' : 'border-slate-100 bg-slate-50 text-slate-400 hover:border-slate-200'}`}>
-              <span className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm text-slate-900 text-lg">🎵</span>
-              TikTok
+
+            {/* TikTok */}
+            <button 
+              type="button" 
+              title="TikTok"
+              onClick={() => setNetworks(prev => ({...prev, tiktok: !prev.tiktok}))} 
+              className={`w-14 h-14 rounded-2xl border-2 transition-all duration-300 flex items-center justify-center ${
+                networks.tiktok 
+                ? 'bg-[#000000] text-white border-[#000000] shadow-lg shadow-black/35 scale-105' 
+                : 'bg-slate-800 text-slate-400 border-slate-900 hover:bg-slate-900 hover:text-slate-200'
+              }`}
+            >
+              <svg className="w-7 h-7" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.02 1.59 4.23.96 1.21 2.28 2.06 3.77 2.44v3.91c-1.3-.08-2.59-.53-3.69-1.3-1.1-.77-1.95-1.87-2.45-3.14v7.88c.03 2.24-.65 4.43-1.95 6.22-1.3 1.79-3.21 2.99-5.38 3.39-2.17.4-4.44.02-6.39-1.07C2 21.6 1.11 19.53 1.02 17.29c-.09-2.24.63-4.44 2.03-6.2 1.4-1.76 3.42-2.92 5.67-3.23.7-.1-1.3-.01.59-.02v4c-1.36.14-2.61.83-3.41 1.9-.8 1.07-1.12 2.42-.89 3.75.23 1.33.99 2.51 2.08 3.24 1.09.73 2.42.92 3.66.52 1.24-.4 2.21-1.34 2.66-2.56.45-1.22.4-2.57-.14-3.75-.15-.33-.31-.65-.49-.95.01-3.69-.01-7.39.02-11.08z"/>
+              </svg>
             </button>
           </div>
           {!hasFb && !hasIg && !hasLi && !hasTt && (

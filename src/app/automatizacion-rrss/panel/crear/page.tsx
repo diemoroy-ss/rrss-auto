@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { auth, db, storage } from "../../../../lib/firebase";
-import { collection, addDoc, getDoc, doc, query, where, getDocs, orderBy } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { collection, addDoc, getDoc, doc, query, where, getDocs, orderBy, deleteDoc } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -280,6 +280,39 @@ export default function RrssCreatePost() {
       }
   };
 
+  const handleDeleteTemplate = async (tmpl: UserTemplate) => {
+      setLoadingTemplates(true);
+      try {
+          // 1. Delete from Firestore
+          await deleteDoc(doc(db, "user_templates", tmpl.id));
+
+          // 2. Delete from Storage if it's hosted in our Firebase Storage
+          if (tmpl.url.includes("firebasestorage.googleapis.com")) {
+              try {
+                  const decodedUrl = decodeURIComponent(tmpl.url);
+                  const pathStart = decodedUrl.indexOf("/o/") + 3;
+                  const pathEnd = decodedUrl.indexOf("?");
+                  const storagePath = decodedUrl.substring(pathStart, pathEnd > -1 ? pathEnd : undefined);
+                  const fileRef = ref(storage, storagePath);
+                  await deleteObject(fileRef);
+              } catch (storageErr) {
+                  console.warn("[Firebase Storage] No se pudo borrar el archivo binario:", storageErr);
+              }
+          }
+
+          // 3. Update local states
+          setManualTemplates(prev => prev.filter(t => t.id !== tmpl.id));
+          if (selectedTemplate?.id === tmpl.id) {
+              setSelectedTemplate(null);
+          }
+      } catch (e: any) {
+          console.error("Error al borrar el template:", e);
+          setError("No se pudo eliminar el archivo de la galería.");
+      } finally {
+          setLoadingTemplates(false);
+      }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (creationMode === 'ai' && !idea) { setError("Por favor ingresa una idea para tu publicación."); return; }
@@ -436,6 +469,7 @@ export default function RrssCreatePost() {
               setSelectedTemplate={setSelectedTemplate}
               loadingTemplates={loadingTemplates}
               onUploadNewTemplate={handleUploadNewTemplate}
+              onDeleteTemplate={handleDeleteTemplate}
             />
           </div>
 
