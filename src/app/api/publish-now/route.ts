@@ -549,7 +549,7 @@ export async function POST(req: Request) {
                     // Si falla por las pautas de integración (generalmente porque la app está en modo Sandbox y requiere SELF_ONLY)
                     const isGuidelinesError = initData.error?.message?.toLowerCase().includes('guidelines') || 
                                               JSON.stringify(initData).toLowerCase().includes('guidelines') ||
-                                              initData.error?.code === 'spam_or_sensitive_content' || // Código común en sandbox
+                                              initData.error?.code === 'spam_or_sensitive_content' || 
                                               initData.error?.code === 'unaudited_client_can_only_post_to_private_accounts';
 
                     if (isGuidelinesError) {
@@ -578,12 +578,15 @@ export async function POST(req: Request) {
                         });
                         initData = await initRes.json();
                         console.log('[TikTok Publish] Sandbox retry Init response:', JSON.stringify(initData));
-                        errorLog += "TikTok (Sandbox: El video se subió en modo privado 'Solo Yo' porque tu App de TikTok está en modo de pruebas / Sandbox. Debes solicitar la revisión de tu App en el panel de desarrolladores de TikTok para publicar de forma pública). ";
+                        
+                        if (initData.error?.code === 'ok' && initData.data?.upload_url) {
+                            errorLog += "TikTok (Sandbox: El video se subió en modo privado 'Solo Yo' porque tu App de TikTok está en modo de pruebas / Sandbox. Debes solicitar la revisión de tu App en el panel de desarrolladores de TikTok para publicar de forma pública). ";
+                        }
                     }
 
                     if (initData.error?.code !== 'ok' || !initData.data?.upload_url) {
                         const errMessage = initData.error?.message || JSON.stringify(initData);
-                        throw new Error(`TikTok API error: ${errMessage}`);
+                        throw new Error(`TikTok API error: ${errMessage} (Nota de Sandbox: Si tu App de TikTok está en modo de pruebas, TikTok exige que tu cuenta de TikTok esté configurada como 'Cuenta Privada' en tu celular para poder recibir videos de prueba).`);
                     }
 
                     const uploadUrl = initData.data.upload_url;
