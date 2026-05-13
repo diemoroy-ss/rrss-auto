@@ -509,10 +509,17 @@ export async function POST(req: Request) {
                 try {
                     const plainToken = decrypt(ttToken, ivTt, tagTt);
                     
-                    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://rrss.santisoft.cl';
-                    const proxyUrl = `${appUrl}/api/video-proxy?url=${encodeURIComponent(imageUrl)}`;
-                    console.log(`[TikTok Publish] Using proxied video URL: ${proxyUrl}`);
+                    // --- Paso 1: Descargar el video desde Firebase Storage al servidor ---
+                    console.log(`[TikTok Publish] Downloading video from: ${imageUrl}`);
+                    const videoRes = await fetch(imageUrl);
+                    if (!videoRes.ok) throw new Error(`No se pudo descargar el video: HTTP ${videoRes.status}`);
                     
+                    const videoBuffer = await videoRes.arrayBuffer();
+                    const videoSize = videoBuffer.byteLength;
+                    
+                    console.log(`[TikTok Publish] Video downloaded. Size: ${videoSize} bytes`);
+
+                    // --- Paso 2: Inicializar la publicación con FILE_UPLOAD ---
                     const initRes = await fetch("https://open.tiktokapis.com/v2/post/publish/video/init/", {
                         method: 'POST',
                         headers: {
@@ -521,34 +528,59 @@ export async function POST(req: Request) {
                         },
                         body: JSON.stringify({
                             post_info: {
-                                title: caption,
+                                title: caption.slice(0, 150) || 'Publicación',
                                 privacy_level: "PUBLIC_TO_EVERYONE",
                                 disable_comment: false,
                                 disable_duet: false,
                                 disable_stitch: false
                             },
                             source_info: {
-                                source: "PULL_FROM_URL",
-                                video_url: proxyUrl
+                                source: "FILE_UPLOAD",
+                                video_size: videoSize,
+                                chunk_size: videoSize, // Un solo chunk (máx 64MB)
+                                total_chunk_count: 1
                             }
                         })
                     });
 
                     const initData = await initRes.json();
+                    console.log('[TikTok Publish] Init response:', JSON.stringify(initData));
 
-                    if (initData.error || !initData.data) {
-                        const errMessage = initData.error?.message || JSON.stringify(initData.error || initData);
+                    if (initData.error?.code !== 'ok' || !initData.data?.upload_url) {
+                        const errMessage = initData.error?.message || JSON.stringify(initData);
                         throw new Error(`TikTok API error: ${errMessage}`);
                     }
 
+                    const uploadUrl = initData.data.upload_url;
+                    const publishId = initData.data.publish_id;
+
+                    // --- Paso 3: Subir el video en un solo chunk ---
+                    console.log(`[TikTok Publish] Uploading video chunk to: ${uploadUrl}`);
+                    const uploadRes = await fetch(uploadUrl, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'video/mp4',
+                            'Content-Range': `bytes 0-${videoSize - 1}/${videoSize}`,
+                            'Content-Length': String(videoSize)
+                        },
+                        body: videoBuffer
+                    });
+
+                    if (!uploadRes.ok) {
+                        const uploadErr = await uploadRes.text();
+                        throw new Error(`Error subiendo video a TikTok: ${uploadRes.status} - ${uploadErr}`);
+                    }
+
+                    console.log(`[TikTok Publish] Upload successful. publish_id: ${publishId}`);
                     successNetworks.push('tiktok');
 
-                    await setDoc(doc(db, 'external_posts', initData.data.publish_id || `tt_${Date.now()}`), {
+                    await setDoc(doc(db, 'external_posts', publishId || `tt_${Date.now()}`), {
                        userId: uid,
                        profileId: profileId || 'default',
                        network: 'tiktok',
                        caption: caption,
                        media_type: 'VIDEO',
+                       publish_id: publishId,
                        likes: 0,
                        comments: 0,
                        shares: 0,

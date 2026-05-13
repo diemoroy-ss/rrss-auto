@@ -124,16 +124,39 @@ export async function POST(req: Request) {
             } catch(e) { console.error("Error decrypting IG", e); }
         }
 
+        // Decrypt TikTok
+        const ttToken = targetProfile.tiktokToken_enc || userData.tiktokToken_enc;
+        const ivTt = targetProfile.iv_tt || userData.iv_tt;
+        const tagTt = targetProfile.tag_tt || userData.tag_tt;
+        const ttOpenId = targetProfile.tiktokOpenId || userData.tiktokOpenId;
+
+        if (postData.networks?.includes('tiktok') && ttToken) {
+            try {
+                const plainToken = decrypt(ttToken, ivTt, tagTt);
+                credentials.tiktok = {
+                    token: plainToken,
+                    openId: ttOpenId
+                };
+            } catch(e) { console.error("Error decrypting TT", e); }
+        }
+
         // Enviar a N8N
         const n8nPayload = {
             postId,
             userId: uid,
             profileId: profileId || 'default',
             copy: postData.copy || postData.idea || '',
-            type: postData.type || 'Post', // 'Post', 'Historia', 'Carrusel', etc.
+            title: (postData.copy || postData.idea || '').slice(0, 150), // TikTok title max 150 chars
+            type: postData.type || 'Post',
             networks: postData.networks || [],
+            imageUrl: postData.imageUrl || '',
+            videoUrl: postData.videoUrl || postData.imageUrl || '',
+            // TikTok-specific compliance fields (Direct Post API requirements)
+            tiktok_privacy_level: 'PUBLIC_TO_EVERYONE',
+            tiktok_disable_duet: false,
+            tiktok_disable_comment: false,
+            tiktok_disable_stitch: false,
             credentials
-            // Optional: attach mediaUrl if they pre-generated it
         };
 
         const WEBHOOK_URL = 'https://n8n.santisoft.cl/webhook-test/auto-rrss-post'; // Asumiendo este es el nuevo nombre del webhook para posts
