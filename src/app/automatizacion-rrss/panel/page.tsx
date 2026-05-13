@@ -1406,7 +1406,7 @@ export default function RrssDashboard() {
                              {selectedPost.status === 'confirmed' ? '⏳' : '✅'}
                            </span>
                         )}
-                        <span className="relative z-10">{selectedPost.status === 'confirmed' ? 'Desmarcar Bot' : 'Confirmar Bot'}</span>
+                        <span className="relative z-10">{selectedPost.status === 'confirmed' ? 'Desmarcar IA' : 'Confirmar IA'}</span>
                       </button>
                     </>
                   )}

@@ -40,7 +40,7 @@ export default function Privacidad() {
                   Introducción
                 </h2>
                 <p>
-                  En <strong>Santisoft</strong>, la privacidad de sus datos es nuestra prioridad. Esta política describe cómo recopilamos, utilizamos y protegemos su información cuando utiliza nuestra plataforma de automatización de redes sociales y nuestras integraciones oficiales con Meta API (Facebook e Instagram), TikTok Content Posting API y LinkedIn API.
+                  Esta Política de Privacidad describe cómo <strong>Santisoft AI</strong> (en adelante, 'la Aplicación'), operada por Santisoft, recopila, utiliza y protege su información cuando utiliza nuestra plataforma de automatización de redes sociales y nuestras integraciones oficiales con Meta API (Facebook e Instagram), TikTok Content Posting API y LinkedIn API.
                 </p>
               </section>
 

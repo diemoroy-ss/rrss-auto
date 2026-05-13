@@ -17,7 +17,7 @@ export default function Terminos() {
           <section>
             <h2 className="text-xl font-bold text-slate-900 mb-4">1. Aceptación de los Términos</h2>
             <p>
-              Al utilizar los servicios de Santisoft, usted acepta cumplir con estos términos y condiciones. Santisoft proporciona herramientas de automatización para redes sociales basadas en Inteligencia Artificial y conexiones oficiales con Meta API (Facebook e Instagram), TikTok Content Posting API y LinkedIn API.
+              Al utilizar los servicios de <strong>Santisoft AI</strong> (en adelante, 'la Aplicación'), operada por Santisoft, usted acepta que la aplicación gestione sus permisos de redes sociales y cumpla con estos términos y condiciones. Santisoft AI proporciona herramientas de automatización para redes sociales basadas en Inteligencia Artificial y conexiones oficiales utilizando las APIs de Meta (Facebook e Instagram), TikTok Content Posting API y LinkedIn API para publicar contenido en su nombre bajo su explícito consentimiento.
             </p>
           </section>
 

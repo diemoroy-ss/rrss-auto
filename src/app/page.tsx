@@ -111,7 +111,7 @@ export default function Home() {
         <nav className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center z-50 max-w-7xl mx-auto w-full">
            <div className="flex items-center gap-2 font-display font-black text-xl text-slate-900">
              <span className="w-10 h-10 bg-indigo-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200">🤖</span>
-             Santisoft <span className="text-indigo-600">Bot</span>
+             Santisoft <span className="text-indigo-600">AI</span>
            </div>
            
            {user ? (
@@ -201,7 +201,7 @@ export default function Home() {
             { 
               icon: "🚀", 
               title: "Publicación Automática", 
-              desc: "Nuestros bots de n8n se conectan a Meta API y publican por ti en Instagram y Facebook." 
+              desc: "Nuestra IA se conecta a Meta, TikTok y LinkedIn API y publica por ti de forma automática." 
             }
           ].map((f, i) => (
             <div key={i} className="service-card group">
