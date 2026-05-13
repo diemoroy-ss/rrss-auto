@@ -65,6 +65,7 @@ interface SocialPost {
   carouselCount?: number;
   isGeneratingImage?: boolean; // UI State para regeneración
   publishError?: string;
+  publishInfo?: string;
 }
 
 function DashboardCarouselViewer({ urls }: { urls: string[] }) {
@@ -552,7 +553,8 @@ export default function RrssDashboard() {
           if (hasErrors) {
             setMessage({ type: 'error', text: `Publicación parcial. Errores: ${data.errors}` });
           } else {
-            setMessage({ type: 'success', text: `¡Publicado con éxito en: ${data.published.join(', ')}!` });
+            const infoNote = data.info ? ` (Nota: ${data.info})` : '';
+            setMessage({ type: 'success', text: `¡Publicado con éxito en: ${data.published.join(', ')}!${infoNote}` });
           }
         }
       } catch (err: any) {
@@ -1203,7 +1205,6 @@ export default function RrssDashboard() {
             {/* Scrollable Content Area */}
             <div className="flex-1 overflow-y-auto p-6 sm:p-10 pt-4 pb-32 hide-scrollbar">
                 <div className="space-y-6">
-                   {/* Mensaje de Error de Publicación */}
                    {selectedPost.publishError && (
                      <div className="bg-rose-50 border-2 border-rose-200 rounded-[24px] p-6 text-rose-800 animate-in slide-in-from-top-2 fade-in">
                        <div className="flex gap-3 items-start">
@@ -1215,6 +1216,20 @@ export default function RrssDashboard() {
                            </p>
                            <p className="text-[10px] font-bold text-rose-500 mt-3 uppercase tracking-wider">
                              Por favor, revisa la conexión de tus cuentas de redes sociales en el panel de configuración o el estado de tus tokens de Meta/LinkedIn.
+                           </p>
+                         </div>
+                       </div>
+                     </div>
+                   )}
+
+                   {selectedPost.publishInfo && (
+                     <div className="bg-sky-50 border-2 border-sky-200 rounded-[24px] p-6 text-sky-800 animate-in slide-in-from-top-2 fade-in shadow-sm">
+                       <div className="flex gap-3 items-start">
+                         <span className="text-2xl">ℹ️</span>
+                         <div>
+                           <h4 className="font-black text-sm tracking-tight text-sky-900 uppercase">Aviso de Publicación (Sandbox)</h4>
+                           <p className="text-xs font-bold text-sky-700/90 mt-1 leading-relaxed">
+                             {selectedPost.publishInfo}
                            </p>
                          </div>
                        </div>

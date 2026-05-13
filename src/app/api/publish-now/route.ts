@@ -64,6 +64,7 @@ export async function POST(req: Request) {
 
         let successNetworks = [];
         let errorLog = '';
+        let infoLog = '';
 
         const caption = post.copy || post.text || post.idea || '';
         const imageUrl = post.imageUrl;
@@ -580,7 +581,7 @@ export async function POST(req: Request) {
                         console.log('[TikTok Publish] Sandbox retry Init response:', JSON.stringify(initData));
                         
                         if (initData.error?.code === 'ok' && initData.data?.upload_url) {
-                            errorLog += "TikTok (Sandbox: El video se subió en modo privado 'Solo Yo' porque tu App de TikTok está en modo de pruebas / Sandbox. Debes solicitar la revisión de tu App en el panel de desarrolladores de TikTok para publicar de forma pública). ";
+                            infoLog += "TikTok Sandbox: El video se subió exitosamente en modo privado 'Solo Yo' (Para hacerlo público de forma automática a todo el mundo en futuros videos, debes solicitar la revisión de tu App en el panel de desarrolladores de TikTok). ";
                         }
                     }
 
@@ -643,9 +644,10 @@ export async function POST(req: Request) {
             await updateDoc(postRef, {
                 status: 'published',
                 publishedAt: new Date(),
-                publishError: errorLog || null
+                publishError: errorLog || null,
+                publishInfo: infoLog || null
             });
-            return NextResponse.json({ success: true, published: successNetworks, errors: errorLog });
+            return NextResponse.json({ success: true, published: successNetworks, errors: errorLog || null, info: infoLog || null });
         } else {
             await updateDoc(postRef, {
                 status: 'error',
