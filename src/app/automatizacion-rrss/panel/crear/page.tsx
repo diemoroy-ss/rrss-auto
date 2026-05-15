@@ -532,6 +532,10 @@ export default function RrssCreatePost() {
   };
 
 
+  const hasText = creationMode === 'ai' ? idea.trim().length > 0 : manualCaption.trim().length > 0;
+  const hasMedia = (creationMode === 'manual' && !!selectedTemplate) || (creationMode === 'ai' && previewSlides.length > 0);
+  const isReady = hasText && hasMedia;
+
   if (loadingInitial) return <div className="animate-pulse space-y-4 max-w-2xl"><div className="h-10 bg-slate-200 rounded w-1/3"></div><div className="h-64 bg-slate-200 rounded"></div></div>;
   const needsConnection = !hasFb && !hasIg && !hasLi && !hasTt;
   const isPreviewVisible = (creationMode === 'manual' && !!selectedTemplate) || (creationMode === 'ai' && previewSlides.length > 0);
@@ -558,7 +562,7 @@ export default function RrssCreatePost() {
             <PostConfigForm 
               idea={idea} setIdea={setIdea}
               postType={postType} setPostType={setPostType}
-              hideSubmit={isPreviewVisible}
+              hideSubmit={true}
               carouselCount={carouselCount} setCarouselCount={setCarouselCount}
               businessType={businessType} setBusinessType={setBusinessType}
               date={date} setDate={setDate}
@@ -624,7 +628,7 @@ export default function RrssCreatePost() {
                                onSave={handleSaveEditedTemplate}
                             />
                         )}
-                        {!showScheduler ? (
+                        {isReady && !showScheduler ? (
                            <div className="grid grid-cols-2 gap-4">
                               <button type="button" onClick={() => handleSubmit(undefined, true)} disabled={loading} className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-black text-[14px] py-4 rounded-[20px] transition-all flex items-center justify-center gap-2">
                                  {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : '⚡ Publicar Ahora'}
@@ -638,9 +642,11 @@ export default function RrssCreatePost() {
                               <button type="button" onClick={() => setShowScheduler(false)} disabled={loading} className="w-1/3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-[14px] py-4 rounded-[20px] transition-all flex items-center justify-center">
                                  Cancelar
                               </button>
-                              <button onClick={(e) => handleSubmit(e, false)} disabled={loading} className="w-2/3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-black text-[15px] py-4 px-6 rounded-[20px] transition-all shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 hover:-translate-y-1">
-                                 {loading ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : '✅ Confirmar Agendamiento'}
-                              </button>
+                              {isReady && (
+                                 <button onClick={(e) => handleSubmit(e, false)} disabled={loading} className="w-2/3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-black text-[15px] py-4 px-6 rounded-[20px] transition-all shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 hover:-translate-y-1">
+                                    {loading ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : '✅ Confirmar Agendamiento'}
+                                 </button>
+                              )}
                            </div>
                         )}
                     </div>
@@ -682,7 +688,7 @@ export default function RrssCreatePost() {
                           Reel Generado
                        </div>
                      </div>
-                     {!showScheduler ? (
+                     {isReady && !showScheduler ? (
                         <div className="grid grid-cols-2 gap-4 mt-8">
                            <button type="button" onClick={() => handleSubmit(undefined, true)} disabled={loading} className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-black text-[14px] py-4 rounded-[20px] transition-all flex items-center justify-center gap-2">
                               {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : '⚡ Publicar Ahora'}
@@ -710,7 +716,7 @@ export default function RrssCreatePost() {
                         userLogo={userLogo}
                         userId={user?.uid}
                      />
-                     {!showScheduler ? (
+                     {isReady && !showScheduler ? (
                         <div className="grid grid-cols-2 gap-4 mt-6">
                            <button type="button" onClick={() => handleSubmit(undefined, true)} disabled={loading} className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-black text-[14px] py-4 rounded-[20px] transition-all flex items-center justify-center gap-2">
                               {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : '⚡ Publicar Ahora'}
