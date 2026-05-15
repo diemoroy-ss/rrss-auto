@@ -48,6 +48,7 @@ interface PostConfigFormProps {
   hideSubmit?: boolean;
   showScheduler?: boolean;
   setShowScheduler?: (val: boolean) => void;
+  constraints?: { safeCharLimit: number; allowedMediaTypes: string[]; warnings: string[]; forcedType: string };
 }
 
 export default function PostConfigForm({
@@ -68,8 +69,22 @@ export default function PostConfigForm({
   manualFiles, setManualFiles,
   manualCaption, setManualCaption,
   isAdmin, manualTemplates = [], selectedTemplate, setSelectedTemplate, loadingTemplates, onUploadNewTemplate, onDeleteTemplate,
-  hideSubmit = false, showScheduler = false, setShowScheduler
+  hideSubmit = false, showScheduler = false, setShowScheduler,
+  constraints
 }: PostConfigFormProps) {
+  
+  // Rule B: Force Reel if TikTok is selected
+  React.useEffect(() => {
+    if (networks.tiktok && postType !== 'Reel') {
+      setPostType('Reel');
+    }
+  }, [networks.tiktok, postType, setPostType]);
+
+  const maxChars = constraints?.safeCharLimit || 1000;
+  const currentLength = creationMode === 'ai' ? idea.length : manualCaption.length;
+  const isOverLimit = currentLength > maxChars;
+
+
   return (
     <form id="create-post-form" onSubmit={handleSubmit} className="space-y-8">
       {error && <div className="p-5 bg-rose-50 text-rose-600 rounded-2xl font-black text-sm border border-rose-100 animate-in fade-in slide-in-from-top-2">{error}</div>}
@@ -172,7 +187,17 @@ export default function PostConfigForm({
               </svg>
             </button>
           </div>
+          {constraints?.warnings && constraints.warnings.length > 0 && (
+            <div className="mt-4 space-y-2">
+               {constraints.warnings.map((w, i) => (
+                 <div key={i} className="flex items-center gap-2 text-[10px] font-black text-indigo-500 bg-indigo-50 px-4 py-2 rounded-xl border border-indigo-100 animate-in slide-in-from-left-2">
+                   <span>ℹ️</span> {w}
+                 </div>
+               ))}
+            </div>
+          )}
           {!hasFb && !hasIg && !hasLi && !hasTt && (
+
               <p className="text-[10px] font-bold text-slate-400 mt-4 bg-slate-50 p-4 rounded-xl border border-slate-100 italic">⚠️ Nota: Las opciones de redes están limitadas porque no hay cuentas vinculadas.</p>
           )}
         </div>
@@ -203,18 +228,25 @@ export default function PostConfigForm({
            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Tipo de Publicación</label>
            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3" role="radiogroup" aria-label="Tipo de Publicación">
               {['Post', 'Historia', 'Carrusel', 'Reel'].map(type => {
-                 const disabled = type === 'Reel' && !isAdmin;
+                 const isAdminOnly = type === 'Reel' && !isAdmin;
+                 const isNetworkLimited = networks.tiktok && type !== 'Reel';
+                 const disabled = isAdminOnly || isNetworkLimited;
+                 
+                 let title = "";
+                 if (isAdminOnly) title = "Solo los administradores pueden generar Reels por el momento.";
+                 if (isNetworkLimited) title = "TikTok solo permite formato Reel / Video.";
+
                  return (
                  <button 
                    key={type}
                    type="button"
                    role="radio"
                    disabled={disabled}
-                   title={disabled ? "Solo los administradores pueden generar Reels por el momento." : ""}
+                   title={title}
                    aria-checked={postType === type}
                    onClick={() => setPostType(type)}
                    className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-2 ${
-                     disabled ? 'opacity-50 cursor-not-allowed border-slate-100 bg-slate-50 text-slate-400' :
+                     disabled ? 'opacity-40 cursor-not-allowed border-slate-100 bg-slate-50 text-slate-400' :
                      postType === type 
                      ? type === 'Reel' ? 'border-rose-500 bg-rose-50 text-rose-700 shadow-sm relative overflow-hidden' : 'border-indigo-500 bg-indigo-50 text-indigo-700 shadow-sm'
                      : 'border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200 hover:bg-slate-100'
@@ -222,7 +254,7 @@ export default function PostConfigForm({
                  >
                     {postType === type && type === 'Reel' && <div className="absolute inset-0 bg-rose-500/10 animate-pulse"></div>}
                     <span className={`${postType === type ? 'scale-110' : ''} transition-transform text-2xl relative z-10`}>{type === 'Post' ? '🖼️' : type === 'Historia' ? '📱' : type === 'Carrusel' ? '📑' : '🎬'}</span>
-                    <span className="text-[10px] font-black uppercase tracking-widest relative z-10">{type} {disabled && '🔒'}</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest relative z-10">{type} {isAdminOnly && '🔒'}</span>
                  </button>
                  )
               })}
@@ -281,8 +313,8 @@ export default function PostConfigForm({
                   value={creationMode === 'ai' ? idea : manualCaption}
                   onChange={e => creationMode === 'ai' ? setIdea(e.target.value) : setManualCaption(e.target.value)}
                   placeholder={creationMode === 'ai' ? "Describe lo que quieres publicar..." : "Escribe el texto que acompañará tu post..."}
-                  className="w-full bg-transparent px-4 py-6 text-base text-slate-800 outline-none placeholder:text-slate-400 min-h-[160px] resize-none font-medium leading-relaxed"
-                  maxLength={1000}
+                  className={`w-full bg-transparent px-4 py-6 text-base outline-none placeholder:text-slate-400 min-h-[160px] resize-none font-medium leading-relaxed ${isOverLimit ? 'text-rose-600' : 'text-slate-800'}`}
+                  maxLength={maxChars + 500}
                 />
               </div>
               <div className="px-6 py-4 bg-white/50 border-t border-slate-100 flex items-center justify-between">
@@ -293,9 +325,22 @@ export default function PostConfigForm({
                   }} 
                   className="relative"
                 />
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                  {(creationMode === 'ai' ? idea.length : manualCaption.length)} / 1000 Caracteres
+                <p className={`text-[10px] font-black uppercase tracking-widest ${isOverLimit ? 'text-rose-600' : 'text-slate-400'}`}>
+                  {currentLength} / {maxChars} Caracteres {isOverLimit && "(Límite Excedido)"}
                 </p>
+                {/* Hashtag Rule Check */}
+                {(() => {
+                   const hashtags = (creationMode === 'ai' ? idea : manualCaption).match(/#[a-z0-9_]+/gi) || [];
+                   const maxHashtags = constraints?.warnings.some(w => w.includes('LinkedIn')) ? 3 : 5;
+                   if (hashtags.length > maxHashtags) {
+                      return (
+                        <p className="text-[9px] font-bold text-amber-600 animate-pulse ml-4">
+                           ⚠️ Sugerencia: Usa solo {maxHashtags} hashtags para mejor alcance.
+                        </p>
+                      );
+                   }
+                   return null;
+                })()}
               </div>
           </div>
         </div>

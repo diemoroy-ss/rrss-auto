@@ -92,9 +92,12 @@ export default function EstrategiaPage() {
                   linkedinUrl: activeProfile?.linkedinUrl || (isDefault ? data.linkedinUrl : "") || "",
               });
               
-              const fbOK = !!activeProfile?.facebookToken_enc || !!data.facebookToken_enc;
-              const igOK = !!activeProfile?.instagramToken_enc || !!data.instagramToken_enc;
-              setHasNetworks(fbOK || igOK);
+              const fbOK = !!activeProfile?.facebookToken_enc || (isDefault && !!data.facebookToken_enc);
+              const igOK = !!activeProfile?.instagramToken_enc || (isDefault && !!data.instagramToken_enc);
+              const ttOK = !!activeProfile?.tiktokToken_enc || (isDefault && !!data.tiktokToken_enc);
+              const liOK = !!activeProfile?.linkedinUserToken_enc || !!activeProfile?.linkedinToken_enc || (isDefault && (!!data.linkedinUserToken_enc || !!data.linkedinToken_enc));
+              
+              setHasNetworks(fbOK || igOK || ttOK || liOK);
               
               // Calculate posts this month
               const firstDayOfMonth = new Date();
@@ -174,7 +177,13 @@ export default function EstrategiaPage() {
                  expectations,
                  businessData,
                  userId: user?.uid,
-                 profileId: activeProfile?.id || 'default'
+                 profileId: activeProfile?.id || 'default',
+                  connectedPlatforms: {
+                      facebook: !!activeProfile?.facebookToken_enc || (activeProfile?.id === 'default' && !!(data.facebookToken_enc)),
+                      instagram: !!activeProfile?.instagramToken_enc || (activeProfile?.id === 'default' && !!(data.instagramToken_enc)),
+                      tiktok: !!activeProfile?.tiktokToken_enc || (activeProfile?.id === 'default' && !!(data.tiktokToken_enc)),
+                      linkedin: !!activeProfile?.linkedinUserToken_enc || !!activeProfile?.linkedinToken_enc || (activeProfile?.id === 'default' && !!(data.linkedinToken_enc))
+                  }
              })
          });
          if (!res.ok) {
@@ -393,7 +402,7 @@ export default function EstrategiaPage() {
                  
                  {!hasNetworks ? (
                     <Link href="/automatizacion-rrss/panel/configuracion" className="w-full sm:w-auto bg-amber-50 hover:bg-amber-100 border-2 border-amber-200 text-amber-700 font-black py-3 px-8 rounded-[24px] transition-all flex items-center justify-center gap-2 shadow-sm hover:-translate-y-1 text-sm">
-                       ⚠️ Conecta Meta antes de Planificar
+                       ⚠️ Vincula una Red Social para Planificar
                     </Link>
                  ) : (
                      <button

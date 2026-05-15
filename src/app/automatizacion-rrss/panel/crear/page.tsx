@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useProfile } from "../../../../contexts/ProfileContext";
 import { getQuotaUsage, getPlanLimit, getVideoPlanLimit } from "../../../../lib/quota";
+import { fetchSocialRules, getCombinedConstraints, SocialRules, DEFAULT_SOCIAL_RULES } from "../../../../lib/socialRules";
 
 import PostConfigForm from "../../../../components/crear/PostConfigForm";
 import CarouselWizard, { CarouselSlide } from "../../../../components/crear/CarouselWizard";
@@ -66,6 +67,9 @@ export default function RrssCreatePost() {
   const [aiOptions, setAiOptions] = useState<string[]>([]);
   const [showOptionsModal, setShowOptionsModal] = useState(false);
   
+  const [socialRules, setSocialRules] = useState<SocialRules>(DEFAULT_SOCIAL_RULES);
+  const [constraints, setConstraints] = useState({ safeCharLimit: 2200, allowedMediaTypes: ["image", "video"], warnings: [] as string[], forcedType: "" });
+
   const [statusModal, setStatusModal] = useState<{
 
     isOpen: boolean;
@@ -88,6 +92,10 @@ export default function RrssCreatePost() {
       setUser(u);
       if (u) {
         try {
+          // Load social rules once
+          const rules = await fetchSocialRules();
+          setSocialRules(rules);
+
           const d = await getDoc(doc(db, "users", u.uid));
           if (d.exists()) {
             const data = d.data();
@@ -159,6 +167,16 @@ export default function RrssCreatePost() {
     });
     return () => unsub();
   }, [activeProfile?.id]);
+
+  useEffect(() => {
+    const selectedNets = Object.entries(networks).filter(([_, val]) => val).map(([key]) => key);
+    const newConstraints = getCombinedConstraints(selectedNets, socialRules, postType);
+    setConstraints(newConstraints);
+    
+    if (newConstraints.forcedType && postType !== newConstraints.forcedType) {
+        setPostType(newConstraints.forcedType);
+    }
+  }, [networks, postType, socialRules]);
 
   const handleImproveWithAI = async () => {
     const currentIdea = creationMode === 'ai' ? idea : manualCaption;
@@ -370,6 +388,25 @@ export default function RrssCreatePost() {
         return; 
     }
 
+    // Business Rules Validation
+    const currentText = creationMode === 'ai' ? idea : manualCaption;
+    if (currentText.length > constraints.safeCharLimit) {
+        setError(`El texto es demasiado largo para las redes seleccionadas (Máx: ${constraints.safeCharLimit} caracteres).`);
+        return;
+    }
+
+    if (creationMode === 'manual') {
+        const isVideo = selectedTemplate?.type === 'video' || (manualFiles[0]?.type.startsWith('video/'));
+        if (isVideo && !constraints.allowedMediaTypes.includes('video')) {
+            setError("Una de las redes seleccionadas no acepta video en este formato.");
+            return;
+        }
+        if (!isVideo && !constraints.allowedMediaTypes.includes('image')) {
+            setError("Una de las redes seleccionadas (ej: TikTok) requiere que el contenido sea un video.");
+            return;
+        }
+    }
+
     setLoading(true);
     setError("");
 
@@ -552,6 +589,7 @@ export default function RrssCreatePost() {
               onDeleteTemplate={handleDeleteTemplate}
               showScheduler={showScheduler}
               setShowScheduler={setShowScheduler}
+              constraints={constraints}
             />
           </div>
 
