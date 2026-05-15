@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Santisoft Automatización RRSS',
+  title: 'Santisoft AI',
   description: 'Panel de control de redes sociales',
 }
 
