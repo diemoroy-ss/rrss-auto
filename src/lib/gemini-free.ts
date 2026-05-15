@@ -1,11 +1,12 @@
 import { GoogleGenerativeAI, GenerativeModel } from "@google/generative-ai";
 
-const FREE_MODEL_NAME = "gemini-3.1-flash-lite";
+const FREE_MODEL_NAME = "gemini-1.5-flash";
 const FALLBACK_MODELS = [
+    "gemini-1.5-flash",
     "gemini-3.1-flash-lite",
     "gemini-flash-latest",
-    "gemini-2.5-flash",
-    "gemini-2.5-pro"
+    "gemini-2.5-pro",
+    "gemini-2.0-flash"
 ];
 
 let genAIInstance: GoogleGenerativeAI | null = null;
@@ -91,9 +92,7 @@ export async function generateFreeText(
             lastError = error;
             const status = error.status || (error.message?.match(/\[(\d+)\]/)?.[1]);
             
-            console.warn(`[GEMINI-FREE] Model ${modelName} failed (Status: ${status}).`);
-            
-            if (status === "400") break;
+            console.warn(`[GEMINI-FREE] Model ${modelName} failed (Status: ${status}). Detail: ${error.message}`);
             continue;
         }
     }
