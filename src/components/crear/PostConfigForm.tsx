@@ -401,9 +401,6 @@ export default function PostConfigForm({
           </div>
       )}
 
-
-      </div>
-
       {!hideSubmit && (
         !showScheduler ? (
            <div className="grid grid-cols-2 gap-4">
