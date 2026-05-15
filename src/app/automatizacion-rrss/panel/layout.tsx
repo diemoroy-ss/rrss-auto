@@ -132,7 +132,14 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
           )}
         </nav>
 
-        <div className="px-4 py-4 border-t border-slate-800">
+        <div className="px-4 py-4 border-t border-slate-800 space-y-3">
+          <Link 
+            href="/terminos" 
+            target="_blank"
+            className="flex items-center gap-2 px-3 text-slate-500 hover:text-slate-300 text-[9px] font-bold uppercase tracking-widest transition-all"
+          >
+            ⚖️ Términos y Privacidad
+          </Link>
           <Link href="/" className="flex items-center justify-center gap-2 px-3 py-2.5 bg-slate-800/40 hover:bg-slate-800 text-slate-500 hover:text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all border border-slate-700/30">
             <span>←</span> Salir
           </Link>
@@ -203,10 +210,8 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
         <div className="p-4 sm:p-6 md:p-12 pt-6 md:pt-24 max-w-[1400px] mx-auto print:p-0 print:m-0 print:max-w-none">
           {children}
         </div>
-        <div className="print:hidden">
-           <InternalTour />
-        </div>
       </main>
+
     </div>
     </ProfileProvider>
   );
