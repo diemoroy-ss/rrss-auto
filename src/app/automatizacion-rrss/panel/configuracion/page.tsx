@@ -236,75 +236,68 @@ function ConfigContent() {
   const [logoUrl, setLogoUrl] = useState("");
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
+  // Redundant auth listener removed to avoid extra renders
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (u) => {
-      setUser(u);
-      setLoadingInitial(false);
-    });
-    return () => unsub();
+    setUser(auth.currentUser);
+    setLoadingInitial(false);
   }, []);
 
+  // Use a separate effect for initial data loading from activeProfile to avoid loops
   useEffect(() => {
     if (activeProfile) {
-      // Check if they are actually connected (has tokens)
       setFbStatus(!!activeProfile.facebookToken_enc);
       setIgStatus(!!activeProfile.instagramToken_enc);
-      setLiStatus(!!activeProfile.linkedinUserToken_enc); // Centralized Token
-      setTtStatus(!!activeProfile.tiktokToken_enc); // TikTok Token
+      setLiStatus(!!activeProfile.linkedinUserToken_enc);
+      setTtStatus(!!activeProfile.tiktokToken_enc);
 
-      // Load Business Data
-      setWebsite(activeProfile.website || "");
-      setFacebookUrl(activeProfile.facebookUrl || "");
-      setInstagramUrl(activeProfile.instagramUrl || "");
-      setTiktokUrl(activeProfile.tiktokUrl || "");
-      setLinkedinUrl(activeProfile.linkedinUrl || "");
-      setEmail(activeProfile.email || "");
-      setPhone(activeProfile.phone || "");
-      setLogoUrl(activeProfile.logoUrl || "");
-
-      // Handle OAuth Redirects
-      const metaParam = searchParams.get('meta');
-      const linkedinParam = searchParams.get('linkedin');
-      const tiktokParam = searchParams.get('tiktok');
-      let shouldReplace = false;
-
-      if (metaParam === 'success' && activeProfile.metaUserToken_enc && !activeProfile.facebookToken_enc) {
-          setShowMetaModal(true);
-          shouldReplace = true;
-      }
-      if (linkedinParam === 'success' && activeProfile.linkedinUserToken_enc && !activeProfile.linkedinPersonUrn) {
-          setShowLinkedInModal(true);
-          shouldReplace = true;
-      } else if (linkedinParam === 'success' && activeProfile.linkedinUserToken_enc) {
-          setShowLinkedInModal(true);
-          shouldReplace = true;
-      }
-      if (tiktokParam === 'success') {
-          setMessage({ type: 'success', text: "¡TikTok conectado correctamente!" });
-          shouldReplace = true;
-      }
-      
-      if (metaParam === 'error' || linkedinParam === 'error' || tiktokParam === 'error') {
-          setErrorMsg("Hubo un error al conectar la red social.");
-          shouldReplace = true;
-      }
-
-      if (shouldReplace) {
-          router.replace(pathname, { scroll: false });
-      }
-
-    } else {
-      // Clear states if no active profile
-      setLogoUrl("");
-      setWebsite("");
-      setFacebookUrl("");
-      setInstagramUrl("");
-      setTiktokUrl("");
-      setLinkedinUrl("");
-      setEmail("");
-      setPhone("");
+      // Only set these if they are different to avoid unnecessary re-renders
+      if (activeProfile.website !== website) setWebsite(activeProfile.website || "");
+      if (activeProfile.facebookUrl !== facebookUrl) setFacebookUrl(activeProfile.facebookUrl || "");
+      if (activeProfile.instagramUrl !== instagramUrl) setInstagramUrl(activeProfile.instagramUrl || "");
+      if (activeProfile.tiktokUrl !== tiktokUrl) setTiktokUrl(activeProfile.tiktokUrl || "");
+      if (activeProfile.linkedinUrl !== linkedinUrl) setLinkedinUrl(activeProfile.linkedinUrl || "");
+      if (activeProfile.email !== email) setEmail(activeProfile.email || "");
+      if (activeProfile.phone !== phone) setPhone(activeProfile.phone || "");
+      if (activeProfile.logoUrl !== logoUrl) setLogoUrl(activeProfile.logoUrl || "");
     }
-  }, [activeProfile, searchParams, pathname, router]);
+  }, [activeProfile]); // Only depend on activeProfile for data syncing
+
+  // Separate effect for one-time URL parameter handling
+  useEffect(() => {
+    if (!activeProfile) return;
+
+    const metaParam = searchParams.get('meta');
+    const linkedinParam = searchParams.get('linkedin');
+    const tiktokParam = searchParams.get('tiktok');
+    let shouldReplace = false;
+
+    if (metaParam === 'success' && activeProfile.metaUserToken_enc && !activeProfile.facebookToken_enc) {
+        setShowMetaModal(true);
+        shouldReplace = true;
+    }
+    
+    if (linkedinParam === 'success' && activeProfile.linkedinUserToken_enc) {
+        setShowLinkedInModal(true);
+        shouldReplace = true;
+    }
+    
+    if (tiktokParam === 'success') {
+        setMessage({ type: 'success', text: "¡TikTok conectado correctamente!" });
+        shouldReplace = true;
+    }
+    
+    if (metaParam === 'error' || linkedinParam === 'error' || tiktokParam === 'error') {
+        setErrorMsg("Hubo un error al conectar la red social.");
+        shouldReplace = true;
+    }
+
+    if (shouldReplace) {
+        // Clear params from URL to prevent re-processing on next render
+        const newUrl = pathname;
+        router.replace(newUrl, { scroll: false });
+    }
+  }, [searchParams, activeProfile, pathname, router]);
+
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.[0] || !user) return;
