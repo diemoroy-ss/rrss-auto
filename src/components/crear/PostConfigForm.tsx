@@ -412,9 +412,14 @@ export default function PostConfigForm({
               </button>
            </div>
         ) : (
-           <button onClick={(e) => handleSubmit(e, false)} disabled={loading} className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-black text-lg py-5 px-8 rounded-[28px] transition-all shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-4 hover:-translate-y-1">
-              {loading ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : '✅ Confirmar Agendamiento'}
-           </button>
+           <div className="flex gap-4">
+              <button type="button" onClick={() => setShowScheduler && setShowScheduler(false)} disabled={loading} className="w-1/3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-lg py-5 px-6 rounded-[28px] transition-all flex items-center justify-center shadow-sm">
+                 Cancelar
+              </button>
+              <button onClick={(e) => handleSubmit(e, false)} disabled={loading} className="w-2/3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-black text-lg py-5 px-8 rounded-[28px] transition-all shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-4 hover:-translate-y-1">
+                 {loading ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : '✅ Confirmar Agendamiento'}
+              </button>
+           </div>
         )
       )}
     </form>
