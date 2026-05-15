@@ -159,7 +159,8 @@ export default function LoginGastronomico() {
            <div className="w-16 h-16 bg-slate-900 text-white rounded-[20px] flex items-center justify-center text-3xl mx-auto mb-4 shadow-xl shadow-slate-900/20">
              🤖
            </div>
-           <h1 className="text-3xl font-black text-slate-900 tracking-tight">Santisoft Automatización</h1>
+           <h1 className="text-3xl font-black text-slate-900 tracking-tight">Santisoft AI</h1>
+
            <p className="text-slate-500 mt-2 text-sm">{isRegister ? "Crea una cuenta para empezar" : "Inicia sesión para gestionar tus redes sociales."}</p>
         </div>
 
