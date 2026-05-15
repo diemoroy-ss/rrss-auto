@@ -1,10 +1,10 @@
 import { GoogleGenerativeAI, GenerativeModel } from "@google/generative-ai";
 
-const FREE_MODEL_NAME = "gemini-2.5-flash";
+const FREE_MODEL_NAME = "gemini-3.1-flash-lite";
 const FALLBACK_MODELS = [
-    "gemini-2.5-flash",
     "gemini-3.1-flash-lite",
     "gemini-flash-latest",
+    "gemini-2.5-flash",
     "gemini-2.5-pro"
 ];
 
