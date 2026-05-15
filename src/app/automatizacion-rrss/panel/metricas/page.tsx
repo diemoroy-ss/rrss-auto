@@ -45,7 +45,7 @@ export default function MetricasDashboard() {
   // Aggregated Stats
   const [totalReach, setTotalReach] = useState(0);
   const [totalInteractions, setTotalInteractions] = useState(0);
-  const [networkFilter, setNetworkFilter] = useState<'todos' | 'facebook' | 'instagram'>('todos');
+  const [networkFilter, setNetworkFilter] = useState<'todos' | 'facebook' | 'instagram' | 'tiktok' | 'linkedin'>('todos');
   const { activeProfile } = useProfile();
   
   // AI Feature States
@@ -314,13 +314,29 @@ export default function MetricasDashboard() {
          }
       });
 
-      setPublishedPosts(uniqueData);
+      // Final step: Filter posts by currently connected networks to avoid showing "ghost" data from disconnected accounts
+      const isDefault = activeProfile?.id === 'default';
+      const userDoc = isDefault ? await getDoc(doc(db, "users", uid)) : null;
+      const uData = userDoc?.exists() ? userDoc.data() : {};
 
-      // Aggregate Metrics using de-duplicated data
+      const connectedSet = new Set<string>();
+      if (!!activeProfile?.facebookToken_enc || (isDefault && !!uData.facebookToken_enc)) connectedSet.add('facebook');
+      if (!!activeProfile?.instagramToken_enc || (isDefault && !!uData.instagramToken_enc)) connectedSet.add('instagram');
+      if (!!activeProfile?.tiktokToken_enc || (isDefault && !!uData.tiktokToken_enc)) connectedSet.add('tiktok');
+      if (!!activeProfile?.linkedinUserToken_enc || !!activeProfile?.linkedinToken_enc || (isDefault && (!!uData.linkedinUserToken_enc || !!uData.linkedinToken_enc))) connectedSet.add('linkedin');
+
+      const filteredData = uniqueData.filter(post => {
+         const postNetwork = post.networks?.[0] || 'unknown';
+         return connectedSet.has(postNetwork);
+      });
+
+      setPublishedPosts(filteredData);
+
+      // Aggregate Metrics using filtered data
       let reachSum = 0;
       let interactionSum = 0;
       
-      uniqueData.forEach(post => {
+      filteredData.forEach(post => {
          const m = post.metrics;
          if (m) {
              reachSum += (m.reach || 0);
@@ -387,7 +403,13 @@ export default function MetricasDashboard() {
              try {
                 const userDoc = await getDoc(doc(db, "users", user.uid));
                 if (userDoc.exists()) {
-                   rootHasTokens = !!userDoc.data().facebookToken_enc || !!userDoc.data().instagramToken_enc;
+                   const uData = userDoc.data();
+                   rootHasTokens = {
+                      facebook: !!uData.facebookToken_enc,
+                      instagram: !!uData.instagramToken_enc,
+                      tiktok: !!uData.tiktokToken_enc,
+                      linkedin: !!uData.linkedinToken_enc || !!uData.linkedinUserToken_enc
+                   };
                 }
              } catch (e) {
                 console.error(e);
@@ -395,9 +417,12 @@ export default function MetricasDashboard() {
           }
           
           if (isMounted) {
-              const fbOK = !!activeProfile.facebookToken_enc;
-              const igOK = !!activeProfile.instagramToken_enc;
-              setHasNetworks(fbOK || igOK || rootHasTokens);
+              const fbOK = !!activeProfile.facebookToken_enc || (isDefault && !!rootHasTokens?.facebook);
+              const igOK = !!activeProfile.instagramToken_enc || (isDefault && !!rootHasTokens?.instagram);
+              const ttOK = !!activeProfile.tiktokToken_enc || (isDefault && !!rootHasTokens?.tiktok);
+              const liOK = !!activeProfile.linkedinUserToken_enc || !!activeProfile.linkedinToken_enc || (isDefault && (!!rootHasTokens?.linkedin));
+              
+              setHasNetworks(fbOK || igOK || ttOK || liOK);
           }
        }
     };
@@ -430,7 +455,7 @@ export default function MetricasDashboard() {
              <span className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-600/30">📈</span>
              Rendimiento y Métricas
           </h1>
-          <p className="text-slate-500 mt-2 font-medium text-lg max-w-2xl">Visualiza el impacto de tus publicaciones automatizadas. Los datos se actualizan automáticamente desde tus perfiles de Meta.</p>
+          <p className="text-slate-500 mt-2 font-medium text-lg max-w-2xl">Visualiza el impacto de tus publicaciones automatizadas. Los datos se actualizan automáticamente desde tus perfiles conectados.</p>
         </div>
         <div className="flex items-center gap-4">
           <button 
@@ -645,9 +670,11 @@ export default function MetricasDashboard() {
                 </div>
                 
                 <div className="flex items-center gap-2">
-                   <button onClick={() => setNetworkFilter('todos')} className={`px-4 py-1.5 border rounded-lg text-sm font-medium transition-colors ${networkFilter === 'todos' ? 'border-slate-800 bg-slate-800 text-white shadow-md' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}>Todos</button>
-                   <button onClick={() => setNetworkFilter('facebook')} className={`px-4 py-1.5 border rounded-lg text-sm font-medium transition-colors ${networkFilter === 'facebook' ? 'border-slate-800 bg-slate-800 text-white shadow-md' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}>Facebook</button>
-                   <button onClick={() => setNetworkFilter('instagram')} className={`px-4 py-1.5 border rounded-lg text-sm font-medium transition-colors ${networkFilter === 'instagram' ? 'border-slate-800 bg-slate-800 text-white shadow-md' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}>Instagram</button>
+                    <button onClick={() => setNetworkFilter('todos')} className={`px-4 py-1.5 border rounded-lg text-sm font-medium transition-colors ${networkFilter === 'todos' ? 'border-slate-800 bg-slate-800 text-white shadow-md' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}>Todos</button>
+                    <button onClick={() => setNetworkFilter('facebook')} className={`px-4 py-1.5 border rounded-lg text-sm font-medium transition-colors ${networkFilter === 'facebook' ? 'border-slate-800 bg-slate-800 text-white shadow-md' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}>Facebook</button>
+                    <button onClick={() => setNetworkFilter('instagram')} className={`px-4 py-1.5 border rounded-lg text-sm font-medium transition-colors ${networkFilter === 'instagram' ? 'border-slate-800 bg-slate-800 text-white shadow-md' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}>Instagram</button>
+                    <button onClick={() => setNetworkFilter('tiktok')} className={`px-4 py-1.5 border rounded-lg text-sm font-medium transition-colors ${networkFilter === 'tiktok' ? 'border-slate-800 bg-slate-800 text-white shadow-md' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}>TikTok</button>
+                    <button onClick={() => setNetworkFilter('linkedin')} className={`px-4 py-1.5 border rounded-lg text-sm font-medium transition-colors ${networkFilter === 'linkedin' ? 'border-slate-800 bg-slate-800 text-white shadow-md' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}>LinkedIn</button>
                 </div>
              </div>
 
@@ -669,37 +696,41 @@ export default function MetricasDashboard() {
                    const reach = post.metrics?.reach || 0;
                    const comments = post.metrics?.comments || 0;
                    
-                   const isFb = post.networks.includes('facebook');
-                   const rankColor = i === 0 ? 'text-amber-500' : i === 1 ? 'text-slate-400' : i === 2 ? 'text-orange-700' : 'text-slate-800';
-                   const accentColor = isFb ? 'bg-blue-600' : 'bg-pink-500';
+                    const isFb = post.networks.includes('facebook');
+                    const isIg = post.networks.includes('instagram');
+                    const isTt = post.networks.includes('tiktok');
+                    const isLi = post.networks.includes('linkedin');
+                    
+                    const rankColor = i === 0 ? 'text-amber-500' : i === 1 ? 'text-slate-400' : i === 2 ? 'text-orange-700' : 'text-slate-800';
+                    const accentColor = isFb ? 'bg-blue-600' : isIg ? 'bg-pink-500' : isTt ? 'bg-black' : 'bg-blue-700';
+                    const brandBg = isFb ? 'bg-blue-50 text-blue-500' : isIg ? 'bg-pink-50 text-pink-500' : isTt ? 'bg-slate-900 text-white' : 'bg-blue-50 text-blue-600';
 
-                   return (
-                     <div key={post.id} className="pr-4 md:pr-10 p-4 md:py-3 md:pl-4 flex flex-col md:flex-row gap-4 items-start md:items-center group bg-white border border-slate-200 rounded-2xl shadow-sm relative overflow-hidden transition-all hover:shadow-md hover:border-slate-300">
-                        {/* Accent Bar */}
-                        <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${accentColor}`}></div>
-                        
-                        <div className={`font-black text-xl w-10 text-center select-none ${rankColor} md:ml-4`}>
-                           #{i + 1}
-                        </div>
+                    return (
+                      <div key={post.id} className="pr-4 md:pr-10 p-4 md:py-3 md:pl-4 flex flex-col md:flex-row gap-4 items-start md:items-center group bg-white border border-slate-200 rounded-2xl shadow-sm relative overflow-hidden transition-all hover:shadow-md hover:border-slate-300">
+                         {/* Accent Bar */}
+                         <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${accentColor}`}></div>
+                         
+                         <div className={`font-black text-xl w-10 text-center select-none ${rankColor} md:ml-4`}>
+                            #{i + 1}
+                         </div>
 
-                        <div className={`w-14 h-14 rounded-2xl shrink-0 flex items-center justify-center shadow-sm ${isFb ? 'bg-blue-50 text-blue-500' : 'bg-pink-50 text-pink-500'}`}>
-                           {isFb ? (
-                              <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/></svg>
-                           ) : (
-                              <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.07m0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-                           )}
-                        </div>
+                         <div className={`w-14 h-14 rounded-2xl shrink-0 flex items-center justify-center shadow-sm ${brandBg}`}>
+                            {isFb && <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/></svg>}
+                            {isIg && <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.07m0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>}
+                            {isTt && <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.9-.32-1.98-.23-2.81.33-.85.51-1.44 1.43-1.58 2.41-.14.96.11 1.99.69 2.77.58.78 1.47 1.27 2.41 1.39.67.1 1.38.01 1.98-.31.69-.39 1.19-1.05 1.35-1.82.06-.3.07-.62.07-.92V0h.02z"/></svg>}
+                            {isLi && <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M4.98 3.5c0 1.381-1.11 2.5-2.48 2.5s-2.48-1.119-2.48-2.5c0-1.38 1.11-2.5 2.48-2.5s2.48 1.12 2.48 2.5zm.02 4.5h-5v16h5v-16zm7.982 0h-4.968v16h4.969v-8.399c0-4.67 6.029-5.052 6.029 0v8.399h4.988v-10.131c0-7.88-8.922-7.593-11.018-3.714v-2.155z"/></svg>}
+                         </div>
 
-                        <div className="flex-1 min-w-0 pr-4 mt-2 md:mt-0 xl:max-w-xl">
-                           <div className="flex items-center gap-3 mb-1.5">
-                              <span className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold ${isFb ? 'text-blue-700 bg-blue-50' : 'text-pink-700 bg-pink-50'}`}>
-                                 <span className={`w-1.5 h-1.5 rounded-full ${isFb ? 'bg-blue-500' : 'bg-pink-500'}`}></span>
-                                 {isFb ? 'Facebook' : 'Instagram'}
-                              </span>
-                              <span className="text-xs text-slate-400 font-medium">{dateStr}</span>
-                           </div>
-                           <p className="font-medium text-[15px] text-slate-800 leading-snug line-clamp-2 md:whitespace-pre-line">{post.idea}</p>
-                        </div>
+                         <div className="flex-1 min-w-0 pr-4 mt-2 md:mt-0 xl:max-w-xl">
+                            <div className="flex items-center gap-3 mb-1.5">
+                               <span className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold ${isFb ? 'text-blue-700 bg-blue-50' : isIg ? 'text-pink-700 bg-pink-50' : isTt ? 'text-slate-900 bg-slate-100' : 'text-blue-800 bg-blue-50'}`}>
+                                  <span className={`w-1.5 h-1.5 rounded-full ${isFb ? 'bg-blue-500' : isIg ? 'bg-pink-500' : isTt ? 'bg-black' : 'bg-blue-700'}`}></span>
+                                  {isFb ? 'Facebook' : isIg ? 'Instagram' : isTt ? 'TikTok' : 'LinkedIn'}
+                               </span>
+                               <span className="text-xs text-slate-400 font-medium">{dateStr}</span>
+                            </div>
+                            <p className="font-medium text-[15px] text-slate-800 leading-snug line-clamp-2 md:whitespace-pre-line">{post.idea}</p>
+                         </div>
 
                         <div className="flex items-center justify-between md:justify-end gap-6 md:gap-8 w-full md:w-auto mt-4 md:mt-0 pt-4 md:pt-0 border-t border-slate-100 md:border-none pl-12 md:pl-0 md:ml-auto">
                            <div className="flex flex-col items-center">
