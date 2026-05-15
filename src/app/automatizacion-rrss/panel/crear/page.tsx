@@ -57,6 +57,7 @@ export default function RrssCreatePost() {
   const [postsThisMonth, setPostsThisMonth] = useState(0);
   const [quotaExceeded, setQuotaExceeded] = useState(false);
   const [videoLimit, setVideoLimit] = useState(0);
+  const [showScheduler, setShowScheduler] = useState(false);
   
   const { activeProfile } = useProfile();
 
@@ -319,11 +320,11 @@ export default function RrssCreatePost() {
       }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent, publishNow: boolean = false) => {
+    if (e) e.preventDefault();
     if (creationMode === 'ai' && !idea) { setError("Por favor ingresa una idea para tu publicación."); return; }
     if (creationMode === 'manual' && (!selectedTemplate && manualFiles.length === 0)) { setError("Selecciona o sube un archivo (imagen o video) manual primero."); return; }
-    if (!date || !time) { setError("Selecciona fecha y hora para agendar."); return; }
+    if (!publishNow && (!date || !time)) { setError("Selecciona fecha y hora para agendar."); return; }
     
     const nets: string[] = [];
     if (networks.facebook && hasFb) nets.push('facebook');
@@ -340,11 +341,17 @@ export default function RrssCreatePost() {
     setError("");
 
     try {
-      const scheduledDate = new Date(`${date}T${time}:00`);
-      if (scheduledDate < new Date()) {
-          setError("La fecha agendada debe ser en el futuro.");
-          setLoading(false);
-          return;
+      let scheduledDate = new Date();
+      if (!publishNow) {
+          scheduledDate = new Date(`${date}T${time}:00`);
+          if (scheduledDate < new Date()) {
+              setError("La fecha agendada debe ser en el futuro.");
+              setLoading(false);
+              return;
+          }
+      } else {
+          // Sumar 1 minuto para que se procese de inmediato sin errores de fecha pasada
+          scheduledDate = new Date(Date.now() + 60000);
       }
 
       let finalUrls: string[] = [];
@@ -476,6 +483,8 @@ export default function RrssCreatePost() {
               loadingTemplates={loadingTemplates}
               onUploadNewTemplate={handleUploadNewTemplate}
               onDeleteTemplate={handleDeleteTemplate}
+              showScheduler={showScheduler}
+              setShowScheduler={setShowScheduler}
             />
           </div>
 
@@ -510,9 +519,20 @@ export default function RrssCreatePost() {
                                onSave={handleSaveEditedTemplate}
                             />
                         )}
-                        <button form="create-post-form" disabled={loading} type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-black text-lg py-5 px-8 rounded-[24px] transition-all shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-4 hover:-translate-y-1">
-                           {loading ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : '✅ Aprobar y Agendar'}
-                        </button>
+                        {!showScheduler ? (
+                           <div className="grid grid-cols-2 gap-4">
+                              <button type="button" onClick={() => handleSubmit(undefined, true)} disabled={loading} className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-black text-[14px] py-4 rounded-[20px] transition-all flex items-center justify-center gap-2">
+                                 {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : '⚡ Publicar Ahora'}
+                              </button>
+                              <button type="button" onClick={() => setShowScheduler(true)} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[14px] py-4 rounded-[20px] transition-all flex items-center justify-center gap-2">
+                                 📅 Aprobar y Agendar
+                              </button>
+                           </div>
+                        ) : (
+                           <button onClick={(e) => handleSubmit(e, false)} disabled={loading} className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-black text-[15px] py-4 px-6 rounded-[20px] transition-all shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 hover:-translate-y-1">
+                              {loading ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : '✅ Confirmar Agendamiento'}
+                           </button>
+                        )}
                     </div>
                 ) : (
                     <div className="p-8 border-4 border-dashed border-indigo-100 rounded-[32px] text-center flex flex-col items-center justify-center min-h-[500px] text-indigo-400 bg-indigo-50/20 lg:sticky lg:top-24 mt-8 lg:mt-0 transition-all">
@@ -552,9 +572,20 @@ export default function RrssCreatePost() {
                           Reel Generado
                        </div>
                      </div>
-                     <button form="create-post-form" disabled={loading} type="submit" className="w-full mt-8 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-black text-lg py-5 px-8 rounded-[24px] transition-all shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-4 hover:-translate-y-1">
-                       {loading ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : '✅ Aprobar y Agendar'}
-                     </button>
+                     {!showScheduler ? (
+                        <div className="grid grid-cols-2 gap-4 mt-8">
+                           <button type="button" onClick={() => handleSubmit(undefined, true)} disabled={loading} className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-black text-[14px] py-4 rounded-[20px] transition-all flex items-center justify-center gap-2">
+                              {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : '⚡ Publicar Ahora'}
+                           </button>
+                           <button type="button" onClick={() => setShowScheduler(true)} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[14px] py-4 rounded-[20px] transition-all flex items-center justify-center gap-2">
+                              📅 Aprobar y Agendar
+                           </button>
+                        </div>
+                     ) : (
+                        <button onClick={(e) => handleSubmit(e, false)} disabled={loading} className="w-full mt-8 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-black text-[15px] py-4 px-6 rounded-[20px] transition-all shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 hover:-translate-y-1">
+                           {loading ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : '✅ Confirmar Agendamiento'}
+                        </button>
+                     )}
                    </div>
                 ) : (
                    <div className="lg:sticky lg:top-24 mt-8 lg:mt-0">
@@ -564,9 +595,20 @@ export default function RrssCreatePost() {
                         userLogo={userLogo}
                         userId={user?.uid}
                      />
-                     <button form="create-post-form" disabled={loading} type="submit" className="w-full mt-6 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-black text-lg py-5 px-8 rounded-[24px] transition-all shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-4 hover:-translate-y-1">
-                       {loading ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : '✅ Aprobar y Agendar'}
-                     </button>
+                     {!showScheduler ? (
+                        <div className="grid grid-cols-2 gap-4 mt-6">
+                           <button type="button" onClick={() => handleSubmit(undefined, true)} disabled={loading} className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-black text-[14px] py-4 rounded-[20px] transition-all flex items-center justify-center gap-2">
+                              {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : '⚡ Publicar Ahora'}
+                           </button>
+                           <button type="button" onClick={() => setShowScheduler(true)} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[14px] py-4 rounded-[20px] transition-all flex items-center justify-center gap-2">
+                              📅 Aprobar y Agendar
+                           </button>
+                        </div>
+                     ) : (
+                        <button onClick={(e) => handleSubmit(e, false)} disabled={loading} className="w-full mt-6 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-black text-[15px] py-4 px-6 rounded-[20px] transition-all shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 hover:-translate-y-1">
+                           {loading ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : '✅ Confirmar Agendamiento'}
+                        </button>
+                     )}
                    </div>
                 )
             ) : previewLoading ? (
