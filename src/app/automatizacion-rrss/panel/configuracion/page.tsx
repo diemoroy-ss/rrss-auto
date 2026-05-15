@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { auth, db, storage } from "../../../../lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
@@ -173,6 +174,9 @@ function LinkedInSelectionModal({ isOpen, onClose, onSelect, profileId }: any) {
 
 function ConfigContent() {
   const { activeProfile, loadProfiles } = useProfile();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
   const [user, setUser] = useState<any>(null);
   const [loadingInitial, setLoadingInitial] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -259,29 +263,34 @@ function ConfigContent() {
       setLogoUrl(activeProfile.logoUrl || "");
 
       // Handle OAuth Redirects
-      const searchParams = new URLSearchParams(window.location.search);
-      if (searchParams.get('meta') === 'success' && activeProfile.metaUserToken_enc && !activeProfile.facebookToken_enc) {
+      const metaParam = searchParams.get('meta');
+      const linkedinParam = searchParams.get('linkedin');
+      const tiktokParam = searchParams.get('tiktok');
+      let shouldReplace = false;
+
+      if (metaParam === 'success' && activeProfile.metaUserToken_enc && !activeProfile.facebookToken_enc) {
           setShowMetaModal(true);
-          // Clean URL
-          window.history.replaceState({}, document.title, window.location.pathname);
+          shouldReplace = true;
       }
-      if (searchParams.get('linkedin') === 'success' && activeProfile.linkedinUserToken_enc && !activeProfile.linkedinPersonUrn) {
-          // Si queremos forzar a que elija siempre... o si ya tiene linkedinUserToken_enc mostramos
+      if (linkedinParam === 'success' && activeProfile.linkedinUserToken_enc && !activeProfile.linkedinPersonUrn) {
           setShowLinkedInModal(true);
-          window.history.replaceState({}, document.title, window.location.pathname);
-      } else if (searchParams.get('linkedin') === 'success' && activeProfile.linkedinUserToken_enc) {
-          // If already has urn, maybe just show it
+          shouldReplace = true;
+      } else if (linkedinParam === 'success' && activeProfile.linkedinUserToken_enc) {
           setShowLinkedInModal(true);
-          window.history.replaceState({}, document.title, window.location.pathname);
+          shouldReplace = true;
       }
-      if (searchParams.get('tiktok') === 'success') {
+      if (tiktokParam === 'success') {
           setMessage({ type: 'success', text: "¡TikTok conectado correctamente!" });
-          window.history.replaceState({}, document.title, window.location.pathname);
+          shouldReplace = true;
       }
       
-      if (searchParams.get('meta') === 'error' || searchParams.get('linkedin') === 'error' || searchParams.get('tiktok') === 'error') {
+      if (metaParam === 'error' || linkedinParam === 'error' || tiktokParam === 'error') {
           setErrorMsg("Hubo un error al conectar la red social.");
-          window.history.replaceState({}, document.title, window.location.pathname);
+          shouldReplace = true;
+      }
+
+      if (shouldReplace) {
+          router.replace(pathname, { scroll: false });
       }
 
     } else {
@@ -295,7 +304,7 @@ function ConfigContent() {
       setEmail("");
       setPhone("");
     }
-  }, [activeProfile]);
+  }, [activeProfile, searchParams, pathname, router]);
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.[0] || !user) return;
