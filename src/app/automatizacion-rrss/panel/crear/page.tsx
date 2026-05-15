@@ -13,6 +13,8 @@ import { getQuotaUsage, getPlanLimit, getVideoPlanLimit } from "../../../../lib/
 import PostConfigForm from "../../../../components/crear/PostConfigForm";
 import CarouselWizard, { CarouselSlide } from "../../../../components/crear/CarouselWizard";
 import CanvasEditor from "../../../../components/crear/CanvasEditor";
+import StatusModal from "../../../../components/StatusModal";
+
 
 export interface UserTemplate { id: string; url: string; type?: 'image' | 'video'; createdAt: Date; }
 
@@ -59,7 +61,21 @@ export default function RrssCreatePost() {
   const [videoLimit, setVideoLimit] = useState(0);
   const [showScheduler, setShowScheduler] = useState(false);
   
+  const [statusModal, setStatusModal] = useState<{
+    isOpen: boolean;
+    type: "success" | "error" | "info" | "confirm";
+    title: string;
+    message: string;
+    onConfirm?: () => void;
+  }>({
+    isOpen: false,
+    type: "info",
+    title: "",
+    message: ""
+  });
+
   const { activeProfile } = useProfile();
+
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async u => {
@@ -355,14 +371,13 @@ export default function RrssCreatePost() {
               return;
           }
       } else {
-          // Sumar 1 minuto para que se procese de inmediato sin errores de fecha pasada
-          scheduledDate = new Date(Date.now() + 60000);
+          // Si es para ahora, usamos el tiempo actual
+          scheduledDate = new Date();
       }
 
       let finalUrls: string[] = [];
 
       if (creationMode === 'manual') {
-          // If a template is selected, use it. Otherwise, upload legacy manual files
           if (selectedTemplate) {
               finalUrls.push(selectedTemplate.url);
           } else {
@@ -389,7 +404,7 @@ export default function RrssCreatePost() {
         businessType,
         scheduledFor: scheduledDate,
         networks: nets,
-        status: 'pending',
+        status: publishNow ? 'publishing' : 'pending',
         createdAt: new Date(),
         copy: creationMode === 'manual' ? manualCaption : (previewSlides[0]?.copy || idea),
         generatedBy: creationMode === 'manual' ? 'manual' : 'ai'
@@ -406,32 +421,67 @@ export default function RrssCreatePost() {
 
       const newPostRef = await addDoc(collection(db, "social_posts"), postPayload);
       
-      // Schedule the task via backend API (GCP Cloud Tasks)
-      try {
-          const idToken = await auth.currentUser?.getIdToken();
-          await fetch('/api/tasks/schedule', {
-              method: 'POST',
-              headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${idToken}`
-              },
-              body: JSON.stringify({
-                  postId: newPostRef.id,
-                  scheduledFor: scheduledDate.toISOString()
-              })
-          });
-      } catch (scheduleErr) {
-          console.error("Warning: Could not schedule GCP task", scheduleErr);
-      }
+      if (publishNow) {
+          // Publicar de inmediato llamando a la API
+          try {
+              const pubRes = await fetch('/api/publish-now', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ postId: newPostRef.id })
+              });
+              const pubData = await pubRes.json();
+              
+              if (!pubRes.ok || pubData.error) {
+                  throw new Error(pubData.error || "Error al publicar en las redes sociales.");
+              }
+              
+              // Si todo salió bien, informamos al usuario
+              setStatusModal({
+                isOpen: true,
+                type: "success",
+                title: "¡Publicado!",
+                message: `Tu contenido ya está en el aire en: ${pubData.published.join(', ')}.`,
+                onConfirm: () => router.push("/automatizacion-rrss/panel")
+              });
+          } catch (pubErr: any) {
+              console.error("Error en publicación inmediata:", pubErr);
+              setStatusModal({
+                isOpen: true,
+                type: "error",
+                title: "Error al Publicar",
+                message: pubErr.message || "No pudimos conectar con las redes sociales ahora mismo."
+              });
+              setLoading(false);
+          }
 
-      router.push("/automatizacion-rrss/panel");
+      } else {
+          // Solo agendar (Cloud Tasks)
+          try {
+              const idToken = await auth.currentUser?.getIdToken();
+              await fetch('/api/tasks/schedule', {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${idToken}`
+                  },
+                  body: JSON.stringify({
+                      postId: newPostRef.id,
+                      scheduledFor: scheduledDate.toISOString()
+                  })
+              });
+          } catch (scheduleErr) {
+              console.error("Warning: Could not schedule GCP task", scheduleErr);
+          }
+          router.push("/automatizacion-rrss/panel");
+      }
 
     } catch (err) {
       console.error(err);
-      setError("Error programando el post. Intenta nuevamente.");
+      setError("Error procesando el post. Intenta nuevamente.");
       setLoading(false);
     }
   };
+
 
   if (loadingInitial) return <div className="animate-pulse space-y-4 max-w-2xl"><div className="h-10 bg-slate-200 rounded w-1/3"></div><div className="h-64 bg-slate-200 rounded"></div></div>;
   const needsConnection = !hasFb && !hasIg && !hasLi && !hasTt;
@@ -646,6 +696,20 @@ export default function RrssCreatePost() {
             )}
           </div>
       </div>
+      <StatusModal 
+        isOpen={statusModal.isOpen}
+        type={statusModal.type}
+        title={statusModal.title}
+        message={statusModal.message}
+        onConfirm={() => {
+            if (statusModal.onConfirm) {
+                statusModal.onConfirm();
+            } else {
+                setStatusModal(prev => ({ ...prev, isOpen: false }));
+            }
+        }}
+      />
     </div>
   );
 }
+
