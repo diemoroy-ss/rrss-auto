@@ -14,6 +14,8 @@ import PostConfigForm from "../../../../components/crear/PostConfigForm";
 import CarouselWizard, { CarouselSlide } from "../../../../components/crear/CarouselWizard";
 import CanvasEditor from "../../../../components/crear/CanvasEditor";
 import StatusModal from "../../../../components/StatusModal";
+import AIOptionsModal from "../../../../components/crear/AIOptionsModal";
+
 
 
 export interface UserTemplate { id: string; url: string; type?: 'image' | 'video'; createdAt: Date; }
@@ -60,8 +62,12 @@ export default function RrssCreatePost() {
   const [quotaExceeded, setQuotaExceeded] = useState(false);
   const [videoLimit, setVideoLimit] = useState(0);
   const [showScheduler, setShowScheduler] = useState(false);
+
+  const [aiOptions, setAiOptions] = useState<string[]>([]);
+  const [showOptionsModal, setShowOptionsModal] = useState(false);
   
   const [statusModal, setStatusModal] = useState<{
+
     isOpen: boolean;
     type: "success" | "error" | "info" | "confirm";
     title: string;
@@ -189,14 +195,20 @@ export default function RrssCreatePost() {
 
 
       const data = await response.json();
-      const improvedText = data.data?.finalPost || data.improvedIdea || currentIdea;
-
-      if (creationMode === 'ai') {
-          setIdea(improvedText);
+      
+      if (data.data?.options && data.data.options.length > 1) {
+          setAiOptions(data.data.options);
+          setShowOptionsModal(true);
       } else {
-          setManualCaption(improvedText);
+          const improvedText = data.data?.finalPost || data.improvedIdea || currentIdea;
+          if (creationMode === 'ai') {
+              setIdea(improvedText);
+          } else {
+              setManualCaption(improvedText);
+          }
       }
     } catch (err: any) {
+
       console.error("Error en LangGraph:", err);
       const detailedError = err.message + (err.detail ? ` (${err.detail})` : "");
       setError(detailedError);
@@ -696,6 +708,21 @@ export default function RrssCreatePost() {
             )}
           </div>
       </div>
+      <AIOptionsModal 
+        isOpen={showOptionsModal}
+        options={aiOptions}
+        onSelect={(opt) => {
+            if (creationMode === 'ai') setIdea(opt);
+            else setManualCaption(opt);
+            setShowOptionsModal(false);
+        }}
+        onRedo={() => {
+            setShowOptionsModal(false);
+            handleImproveWithAI();
+        }}
+        onClose={() => setShowOptionsModal(false)}
+      />
+
       <StatusModal 
         isOpen={statusModal.isOpen}
         type={statusModal.type}

@@ -38,6 +38,7 @@ export const WorkflowAnnotation = Annotation.Root({
   draft: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "" }),
   critique: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "" }),
   finalPost: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "" }),
+  options: Annotation<string[]>({ reducer: (a, b) => b ?? a, default: () => [] }),
 });
 
 export type WorkflowState = typeof WorkflowAnnotation.State;
@@ -109,6 +110,8 @@ async function refineNode(state: WorkflowState): Promise<Partial<WorkflowState>>
   const rules = getRules(state.platform);
 
   const prompt = `Eres un redactor perfeccionista. Tomando el borrador original y las críticas del editor, reescribe la versión final óptima para ${state.platform}.
+  
+  Genera exactamente 3 OPCIONES diferentes (una corta, una mediana y una creativa) para que el usuario elija.
 
 Borrador Original:
 """
@@ -121,16 +124,41 @@ ${state.critique}
 """
 
 === REGLAS ESTRICTAS (${state.platform}) ===
-- Límite Máximo: ${rules.maxLength} caracteres.
+- Límite Máximo: ${rules.maxLength} caracteres por cada opción.
 - Tono: ${rules.tone}
 
-¡OBLIGATORIO! La versión final bajo NINGUNA CIRCUNSTANCIA debe superar los ${rules.maxLength} caracteres. Recorta texto si es necesario para asegurar que cumple la regla.
-Produce únicamente el texto final listo para ser publicado.`;
+¡OBLIGATORIO! Cada versión final bajo NINGUNA CIRCUNSTANCIA debe superar los ${rules.maxLength} caracteres.
+Produce únicamente las 3 opciones con el siguiente formato exacto:
+
+[[OPCION 1]]
+Texto de la opción 1...
+
+[[OPCION 2]]
+Texto de la opción 2...
+
+[[OPCION 3]]
+Texto de la opción 3...`;
 
   const text = await generateFreeText(prompt);
-  console.log(`[LangGraph Node] refineNode - Completado. Longitud final: ${text.length}`);
-  return { finalPost: text };
+  console.log(`[LangGraph Node] refineNode - Completado. Longitud total: ${text.length}`);
+  
+  // Parser simple para extraer las opciones
+  const options: string[] = [];
+  const parts = text.split(/\[\[OPCION \d\]\]/i);
+  for (const part of parts) {
+      const trimmed = part.trim();
+      if (trimmed) options.push(trimmed);
+  }
+
+  // Si falló el split (el LLM no siguió el formato), intentamos devolver el texto completo como única opción
+  const finalOptions = options.length > 0 ? options.slice(0, 3) : [text];
+
+  return { 
+    options: finalOptions, 
+    finalPost: finalOptions[0] // Por defecto la primera
+  };
 }
+
 
 
 // Instancia global en memoria del Checkpointer (MemorySaver)
@@ -262,7 +290,9 @@ export async function runFullContentWorkflow(topic: string, platform: string = "
       draft: finalState.draft,
       critique: finalState.critique,
       finalPost: finalState.finalPost,
+      options: finalState.options || []
     };
+
   } catch (error: any) {
     console.error(`[LangGraph Error] runFullContentWorkflow fail:`, error);
     throw error;
