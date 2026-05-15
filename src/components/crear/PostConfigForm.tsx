@@ -180,19 +180,22 @@ export default function PostConfigForm({
         {/* RUBRO / NEGOCIO */}
         <div>
            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Tu Rubro o Tipo de Negocio</label>
-           <div className="relative flex items-center">
+           <div className="space-y-3">
                <input 
                  type="text" 
                  value={businessType} 
                  onChange={e => setBusinessType(e.target.value)}
                  placeholder="Ej: Gastrobar, Tienda de Mascotas, Coaching Online..."
-                 className="w-full bg-slate-50 border-2 border-slate-100 pl-6 pr-12 py-4 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700 hover:border-slate-200"
+                 className="w-full bg-slate-50 border-2 border-slate-100 px-6 py-4 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700 hover:border-slate-200"
                />
-               <VoiceMic 
-                 onResult={(text) => setBusinessType(businessType + (businessType ? " " : "") + text)} 
-                 className="absolute right-4"
-               />
+               <div className="flex justify-end">
+                 <VoiceMic 
+                   onResult={(text) => setBusinessType(businessType + (businessType ? " " : "") + text)} 
+                   className="relative"
+                 />
+               </div>
            </div>
+
         </div>
 
          {/* POST TYPE SELECTOR */}
@@ -271,27 +274,32 @@ export default function PostConfigForm({
               )}
             </div>
           </div>
-          <div className="relative border-2 border-slate-100 rounded-[28px] bg-slate-50/50 focus-within:ring-4 focus-within:ring-indigo-500/10 focus-within:border-indigo-500/50 transition-all overflow-hidden flex items-start">
-              <span className="pl-6 pt-6 text-xl">{creationMode === 'ai' ? '💡' : '✍️'}</span>
-              <textarea
-                value={creationMode === 'ai' ? idea : manualCaption}
-                onChange={e => creationMode === 'ai' ? setIdea(e.target.value) : setManualCaption(e.target.value)}
-                placeholder={creationMode === 'ai' ? "Describe lo que quieres publicar..." : "Escribe el texto que acompañará tu post..."}
-                className="w-full bg-transparent px-4 py-6 text-base text-slate-800 outline-none placeholder:text-slate-400 min-h-[160px] resize-none font-medium leading-relaxed"
-                maxLength={1000}
-              />
-              <VoiceMic 
-                onResult={(text) => {
-                  if (creationMode === 'ai') setIdea(idea + (idea ? " " : "") + text);
-                  else setManualCaption(manualCaption + (manualCaption ? " " : "") + text);
-                }} 
-                className="absolute right-6 top-6 z-20"
-              />
+          <div className="border-2 border-slate-100 rounded-[28px] bg-slate-50/50 focus-within:ring-4 focus-within:ring-indigo-500/10 focus-within:border-indigo-500/50 transition-all overflow-hidden flex flex-col">
+              <div className="flex items-start">
+                <span className="pl-6 pt-6 text-xl">{creationMode === 'ai' ? '💡' : '✍️'}</span>
+                <textarea
+                  value={creationMode === 'ai' ? idea : manualCaption}
+                  onChange={e => creationMode === 'ai' ? setIdea(e.target.value) : setManualCaption(e.target.value)}
+                  placeholder={creationMode === 'ai' ? "Describe lo que quieres publicar..." : "Escribe el texto que acompañará tu post..."}
+                  className="w-full bg-transparent px-4 py-6 text-base text-slate-800 outline-none placeholder:text-slate-400 min-h-[160px] resize-none font-medium leading-relaxed"
+                  maxLength={1000}
+                />
+              </div>
+              <div className="px-6 py-4 bg-white/50 border-t border-slate-100 flex items-center justify-between">
+                <VoiceMic 
+                  onResult={(text) => {
+                    if (creationMode === 'ai') setIdea(idea + (idea ? " " : "") + text);
+                    else setManualCaption(manualCaption + (manualCaption ? " " : "") + text);
+                  }} 
+                  className="relative"
+                />
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  {(creationMode === 'ai' ? idea.length : manualCaption.length)} / 1000 Caracteres
+                </p>
+              </div>
           </div>
-          <p className="text-[10px] font-black text-slate-300 mt-3 text-right uppercase tracking-widest">
-            {(creationMode === 'ai' ? idea.length : manualCaption.length)} / 1000 Caracteres
-          </p>
         </div>
+
 
         {/* GALERÍA MANUAL (SOLO SI EL MODO ES MANUAL) */}
         {creationMode === 'manual' && (
