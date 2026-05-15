@@ -204,21 +204,31 @@ export default function RrssDashboard() {
     );
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
-        const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as SocialPost));
-        data.sort((a, b) => {
+        const newData = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as SocialPost));
+        newData.sort((a, b) => {
           const timeA = a.scheduledFor?.toMillis ? a.scheduledFor.toMillis() : 0;
           const timeB = b.scheduledFor?.toMillis ? b.scheduledFor.toMillis() : 0;
-          return timeA - timeB; // Ascending order in UI
+          return timeA - timeB;
         });
-        setPosts(data);
+
+        // Check for deep equality to avoid redundant re-renders
+        setPosts(prev => {
+           if (JSON.stringify(prev) === JSON.stringify(newData)) return prev;
+           return newData;
+        });
+        
         setLoading(false);
         
         setSelectedPost(prev => {
             if (!prev) return null;
-            const updated = data.find(p => p.id === prev.id);
-            return updated || null;
+            const updated = newData.find(p => p.id === prev.id);
+            if (!updated) return null;
+            // Only update selectedPost if it actually changed
+            if (JSON.stringify(prev) === JSON.stringify(updated)) return prev;
+            return updated;
         });
     }, (error: any) => {
+
         console.error("Error listening to posts:", error);
         if (error.code === 'failed-precondition' && error.message.includes('index')) {
             setMessage({ type: 'error', text: "⚠️ Falta índice compuesto en Firestore. Abre la consola de desarrollo (F12) para ver el link exacto de creación." });
