@@ -97,7 +97,7 @@ export default function RrssCreatePost() {
             const vLimit = await getVideoPlanLimit(plan);
             setVideoLimit(vLimit);
 
-            const isAdminRole = data.role === 'admin' || u.email === 'diemoroy@gmail.com' || u.email === 'spalezcom@gmail.com';
+            const isAdminRole = data.role === 'admin' || u.email === 'diemoroy@gmail.com' || u.email === 'spalezcom@gmail.com' || u.email === 'santisoftai@gmail.com';
             setIsAdmin(isAdminRole);
 
             // Fetch User Templates
@@ -145,34 +145,40 @@ export default function RrssCreatePost() {
     setError("");
     
     try {
-      // Intentar obtener una imagen para dar contexto visual a la IA
-      let contextImageUrl = "";
-      if (creationMode === 'manual' && selectedTemplate) {
-          contextImageUrl = selectedTemplate.url;
-      } else if (creationMode === 'ai' && previewSlides.length > 0) {
-          contextImageUrl = previewSlides[0].url;
-      }
+      // Determinamos la plataforma destino según las redes seleccionadas
+      let targetPlatform = "LinkedIn";
+      if (networks.tiktok) targetPlatform = "TikTok";
+      else if (networks.instagram) targetPlatform = "Instagram";
+      else if (networks.facebook) targetPlatform = "Facebook";
 
-      const response = await fetch('/api/ai/improve-idea', {
+      const topicStr = `Rubro o negocio: ${businessType || "General"}. Idea/Tema: ${currentIdea}`;
+
+      const response = await fetch('/api/ai/langgraph', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-            idea: currentIdea, 
-            businessType,
-            imageUrl: contextImageUrl
+            action: 'generate_full',
+            topic: topicStr, 
+            platform: targetPlatform
         })
       });
-      if (!response.ok) throw new Error("Error en mejora IA");
-      const data = await response.json();
-      
-      if (creationMode === 'ai') {
-          setIdea(data.improvedIdea);
-      } else {
-          setManualCaption(data.improvedIdea);
+
+      if (!response.ok) {
+        const errJson = await response.json().catch(() => ({}));
+        throw new Error(errJson.error || "Error interno del servidor en LangGraph.");
       }
-    } catch (err) {
-      console.error(err);
-      setError("No pudimos mejorar la idea. Intenta nuevamente.");
+
+      const data = await response.json();
+      const improvedText = data.data?.finalPost || data.improvedIdea || currentIdea;
+
+      if (creationMode === 'ai') {
+          setIdea(improvedText);
+      } else {
+          setManualCaption(improvedText);
+      }
+    } catch (err: any) {
+      console.error("Error en LangGraph:", err);
+      setError(err.message || "No pudimos mejorar la idea con LangGraph. Intenta nuevamente.");
     } finally {
       setImproveLoading(false);
     }
