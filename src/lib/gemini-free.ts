@@ -1,13 +1,17 @@
 import { GoogleGenerativeAI, GenerativeModel } from "@google/generative-ai";
 
-const FREE_MODEL_NAME = "gemini-1.5-flash";
+const FREE_MODEL_NAME = "gemini-3.1-flash-lite";
+
 const FALLBACK_MODELS = [
-    "gemini-1.5-flash",
+    "gemini-3-flash",
     "gemini-3.1-flash-lite",
     "gemini-flash-latest",
-    "gemini-2.5-pro",
-    "gemini-2.0-flash"
+    "gemini-3.1-pro",
+    "gemini-2.5-flash",
+    "gemini-2.0-flash",
+    "gemini-1.5-flash"
 ];
+
 
 let genAIInstance: GoogleGenerativeAI | null = null;
 
@@ -86,8 +90,9 @@ export async function generateFreeText(
                 generationConfig: jsonMode ? { responseMimeType: "application/json" } : undefined,
             });
 
-            const text = result.response.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-            if (text) return text;
+            const text = result.response.text();
+            if (text) return text.trim();
+
         } catch (error: any) {
             lastError = error;
             const status = error.status || (error.message?.match(/\[(\d+)\]/)?.[1]);

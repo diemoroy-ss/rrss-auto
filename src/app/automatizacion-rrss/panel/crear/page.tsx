@@ -166,8 +166,11 @@ export default function RrssCreatePost() {
 
       if (!response.ok) {
         const errJson = await response.json().catch(() => ({}));
-        throw new Error(errJson.error || "Error interno del servidor en LangGraph.");
+        const e = new Error(errJson.error || "Error interno del servidor en LangGraph.");
+        (e as any).detail = errJson.detail;
+        throw e;
       }
+
 
       const data = await response.json();
       const improvedText = data.data?.finalPost || data.improvedIdea || currentIdea;
@@ -179,7 +182,9 @@ export default function RrssCreatePost() {
       }
     } catch (err: any) {
       console.error("Error en LangGraph:", err);
-      setError(err.message || "No pudimos mejorar la idea con LangGraph. Intenta nuevamente.");
+      const detailedError = err.message + (err.detail ? ` (${err.detail})` : "");
+      setError(detailedError);
+
     } finally {
       setImproveLoading(false);
     }

@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server';
-import { getFreeModel } from "../../../../lib/gemini-free";
+import { startAsyncVideoGeneration, getVideoWorkflowStatus } from "../../../../lib/langgraph-video";
 
-// Vercel Serverless maximum duration (requires Pro plan or custom host, but necessary for n8n synchronous wait)
-export const maxDuration = 120;
-
-const N8N_WEBHOOK_URL = 'https://n8n.santisoft.cl/webhook-test/demo-ia';
+// Vercel Serverless maximum duration
+export const maxDuration = 60;
 
 export async function POST(req: Request) {
   try {
@@ -12,106 +10,60 @@ export async function POST(req: Request) {
 
     if (!rubro || !idea) {
       return NextResponse.json(
-        { error: 'Missing rubro or idea' },
+        { error: 'Faltan parámetros rubro o idea' },
         { status: 400 }
       );
     }
 
-    const systemInstruction = `Eres un experto en Marketing Digital y Dirección de Arte B2B.
-El usuario quiere crear un post de redes sociales para su negocio.
-Rubro: ${rubro}
-Idea: ${idea}
+    // Generamos un identificador único de hilo para este proceso de video
+    const threadId = `video_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
-Necesitas generar exactamente un JSON con 3 campos:
-- "image_prompt": Un prompt profesional, hiperrealista y detallado en INGLÉS para un modelo de IA de imágenes. No incluyas texto o letras en la imagen. Prioriza iluminación dramática, colores vibrantes de alto contraste y composición 4:5.
-- "video_prompt": Un prompt descriptivo en INGLÉS para generación de video AI de 5 segundos, formato vertical. Debe describir movimiento cinematográfico (ej: "Slow cinematic pan...").
-- "copy": El texto (caption) para Instagram/Facebook en ESPAÑOL, con emojis y llamado a la acción persuasivo (max 400 caracteres).
-
-Retorna SOLO un JSON válido, sin delimitadores de código markdown como \`\`\`json.`;
-
-    const model = getFreeModel(undefined, systemInstruction);
+    console.log(`[API Demo Generate] Iniciando generación asíncrona de video sin n8n. ThreadID: ${threadId}`);
     
-    // Configure response as JSON
-    model.generationConfig = {
-        responseMimeType: "application/json",
-    };
+    // Disparamos la orquestación asíncrona de LangGraph en segundo plano
+    const initResult = await startAsyncVideoGeneration(rubro, idea, threadId);
 
-    console.log(`[GEMINI-FREE] Generating demo prompts for ${rubro} using default model`);
-    const result = await model.generateContent(systemInstruction);
-    const response = result.response;
-    const textResponse = response.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "{}";
+    // Retornamos inmediatamente el threadId al frontend para que consulte el avance por long-polling/SSE
+    return NextResponse.json({
+      threadId,
+      status: initResult.status,
+      message: initResult.message,
+    });
     
-    let generatedPrompts;
-    try {
-        generatedPrompts = JSON.parse(textResponse);
-    } catch (e) {
-        console.error("Gemini Free didn't return valid JSON:", textResponse);
-        return NextResponse.json(
-            { error: 'Error generating creative structure. Please try again.' },
-            { status: 500 }
-        );
-    }
-
-    // 2. Transmit to n8n to execute rendering
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 115000); 
-    
-    try {
-        const n8nReq = await fetch(N8N_WEBHOOK_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                rubro,
-                idea,
-                image_prompt: generatedPrompts.image_prompt,
-                video_prompt: generatedPrompts.video_prompt,
-                copy: generatedPrompts.copy,
-                timestamp: new Date().toISOString()
-            }),
-            signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-
-        if (!n8nReq.ok) {
-            console.error(`n8n responded with ${n8nReq.status}`);
-            return NextResponse.json(
-                { error: 'Renderer service unavailable. Please try again later.' },
-                { status: 502 }
-            );
-        }
-
-        const n8nData = await n8nReq.json();
-        
-        return NextResponse.json({
-            copy: generatedPrompts.copy,
-            image_prompt: generatedPrompts.image_prompt,
-            video_prompt: generatedPrompts.video_prompt,
-            result: n8nData 
-        });
-        
-    } catch (e: any) {
-        clearTimeout(timeoutId);
-        if (e.name === 'AbortError') {
-             return NextResponse.json(
-                { error: 'Media generation took too long. Please try again.' },
-                { status: 504 }
-            );
-        }
-        console.error("Error communicating with n8n:", e);
-        return NextResponse.json(
-            { error: 'Service communication error' },
-            { status: 500 }
-        );
-    }
-    
-  } catch (error) {
-    console.error('API /demo-generate error:', error);
+  } catch (error: any) {
+    console.error('API /demo-generate POST error:', error);
     return NextResponse.json(
-      { error: 'Internal Server Error' },
+      { error: error.message || 'Error Interno del Servidor' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const threadId = searchParams.get('threadId');
+
+    if (!threadId) {
+      return NextResponse.json(
+        { error: 'Falta parámetro threadId' },
+        { status: 400 }
+      );
+    }
+
+    console.log(`[API Demo Generate] Consultando estado del render para hilo: ${threadId}`);
+    const statusData = await getVideoWorkflowStatus(threadId);
+
+    if (statusData.status === 'not_found') {
+      return NextResponse.json({ error: statusData.errorMessage }, { status: 404 });
+    }
+
+    return NextResponse.json(statusData);
+
+  } catch (error: any) {
+    console.error('API /demo-generate GET error:', error);
+    return NextResponse.json(
+      { error: error.message || 'Error Interno del Servidor' },
       { status: 500 }
     );
   }

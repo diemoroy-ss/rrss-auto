@@ -9,10 +9,13 @@ export default function DemoForm() {
     const [result, setResult] = useState<{ imageUrl?: string; videoUrl?: string; copy?: string } | null>(null);
     const [error, setError] = useState("");
 
+    const [statusMessage, setStatusMessage] = useState("Iniciando motores de IA...");
+
     const handleIdeaSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setStep("loading");
         setError("");
+        setStatusMessage("Planificando guion y escenas cinematográficas...");
 
         try {
             const response = await fetch("/api/ai/demo-generate", {
@@ -24,17 +27,50 @@ export default function DemoForm() {
             if (!response.ok) throw new Error("Error en el servidor de IA");
             const data = await response.json();
             
-            setResult({
-                imageUrl: data.result?.imageUrl || data.result?.image,
-                videoUrl: data.result?.videoUrl || data.result?.video,
-                copy: data.copy
-            });
-            setStep("result");
+            if (!data.threadId) {
+                throw new Error("No se pudo inicializar el flujo de video");
+            }
+
+            // Iniciamos polling asíncrono
+            pollWorkflowStatus(data.threadId);
         } catch (err) {
             console.error(err);
             setError("No pudimos generar la creatividad en este momento. Inténtalo más tarde.");
             setStep("idea");
         }
+    };
+
+    const pollWorkflowStatus = (threadId: string) => {
+        const interval = setInterval(async () => {
+            try {
+                const res = await fetch(`/api/ai/demo-generate?threadId=${threadId}`);
+                if (!res.ok) return;
+
+                const statusData = await res.json();
+
+                if (statusData.status === 'preparing_firebase_assets') {
+                    setStatusMessage("Pre-procesando y almacenando recursos en Firebase Storage...");
+                } else if (statusData.status === 'rendering_remotion_chunks') {
+                    setStatusMessage("Renderizando escenas concurrentes en Remotion Lambda...");
+                } else if (statusData.status === 'stitching') {
+                    setStatusMessage("Concatenando fragmentos de video MP4...");
+                } else if (statusData.status === 'completed') {
+                    clearInterval(interval);
+                    setResult({
+                        imageUrl: statusData.scenes?.[0]?.assetUrl || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1000&auto=format&fit=crop",
+                        videoUrl: statusData.finalVideoUrl,
+                        copy: statusData.copy
+                    });
+                    setStep("result");
+                } else if (statusData.status === 'failed' || statusData.status === 'error') {
+                    clearInterval(interval);
+                    setError(statusData.errorMessage || "Fallo el renderizado del video.");
+                    setStep("idea");
+                }
+            } catch (e) {
+                console.error("Error en polling:", e);
+            }
+        }, 3000);
     };
 
     const handleLeadSubmit = async (e: React.FormEvent) => {
@@ -74,7 +110,7 @@ export default function DemoForm() {
                         <div className="absolute inset-0 flex items-center justify-center text-2xl animate-pulse">✨</div>
                     </div>
                     <h3 className="text-2xl font-display font-bold text-slate-900 mb-2">Creando Magia Pura…</h3>
-                    <p className="text-slate-500 font-medium max-w-xs">Nuestros motores de IA están redactando, diseñando y renderizando tu nuevo post profesional en tiempo récord.</p>
+                    <p className="text-slate-500 font-medium max-w-xs">{statusMessage}</p>
                 </div>
             ) : (
                 <div id="demo-form" className="bg-white p-8 md:p-10 rounded-[32px] border border-slate-200 shadow-2xl relative overflow-hidden group min-h-[460px]">
