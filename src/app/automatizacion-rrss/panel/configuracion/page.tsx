@@ -225,7 +225,9 @@ function ConfigContent() {
   const [showLinkedInModal, setShowLinkedInModal] = useState(false);
 
   // New Business Data States
+  const [brandName, setBrandName] = useState("");
   const [website, setWebsite] = useState("");
+
   const [facebookUrl, setFacebookUrl] = useState("");
   const [instagramUrl, setInstagramUrl] = useState("");
   const [tiktokUrl, setTiktokUrl] = useState("");
@@ -251,7 +253,9 @@ function ConfigContent() {
       setTtStatus(!!activeProfile.tiktokToken_enc);
 
       // Only set these if they are different to avoid unnecessary re-renders
+      if (activeProfile.name !== brandName) setBrandName(activeProfile.name || "");
       if (activeProfile.website !== website) setWebsite(activeProfile.website || "");
+
       if (activeProfile.facebookUrl !== facebookUrl) setFacebookUrl(activeProfile.facebookUrl || "");
       if (activeProfile.instagramUrl !== instagramUrl) setInstagramUrl(activeProfile.instagramUrl || "");
       if (activeProfile.tiktokUrl !== tiktokUrl) setTiktokUrl(activeProfile.tiktokUrl || "");
@@ -357,7 +361,9 @@ function ConfigContent() {
           const updatedProfiles = (data.profiles || []).map((p: any) => 
              p.id === activeProfile.id ? {
                 ...p,
+                name: brandName,
                 website,
+
                 facebookUrl,
                 instagramUrl,
                 tiktokUrl,
@@ -617,7 +623,13 @@ function ConfigContent() {
               </div>
           </div>
 
+          <div className="mb-8">
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">🏷️ Nombre de la Marca / Negocio</label>
+              <input type="text" value={brandName} onChange={e => setBrandName(e.target.value)} placeholder="Ej: Mi Restaurante" className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700" />
+          </div>
+
           <div className="grid md:grid-cols-2 gap-6 mb-8">
+
               <div>
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">🌐 Sitio Web</label>
                   <input type="text" value={website} onChange={e => setWebsite(e.target.value)} placeholder="mi-negocio.com o enlace" className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700" />
