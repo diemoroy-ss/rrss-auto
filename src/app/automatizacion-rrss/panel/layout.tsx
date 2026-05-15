@@ -85,7 +85,7 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
           <Link href="/automatizacion-rrss/panel">
             <h2 className="text-base font-black tracking-tight text-white flex items-center gap-2.5 hover:text-indigo-400 transition-all">
               <span className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shadow-md shadow-indigo-600/30 text-base">🤖</span>
-              <span>RRSS AI</span>
+              <span>Santisoft AI</span>
             </h2>
           </Link>
           <p className="text-slate-600 text-[9px] mt-1.5 font-black uppercase tracking-[0.2em]">Automatización IA</p>
@@ -154,7 +154,7 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
         <div className="md:hidden relative z-[90] print:hidden">
           <div className="bg-slate-900 text-white p-5 flex items-center justify-between shadow-lg">
              <Link href="/automatizacion-rrss/panel" className="shrink-0 mr-4">
-               <h2 className="text-xl font-black tracking-tight flex items-center gap-2">🤖 <span className="text-indigo-400">RRSS</span> AI</h2>
+               <h2 className="text-xl font-black tracking-tight flex items-center gap-2">🤖 <span className="text-indigo-400">Santisoft</span> AI</h2>
              </Link>
              <div className="flex items-center">
                 <NetworkSwitcher />
