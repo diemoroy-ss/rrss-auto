@@ -1359,21 +1359,28 @@ export default function RrssDashboard() {
                         <span>✨</span> Publicación de Feed Lista y Activa
                       </div>
                       
-                      <button
-                        onClick={() => handlePublishStory(selectedPost.id)}
-                        disabled={isPublishingStory}
-                        className="flex-1 bg-gradient-to-br from-pink-500 to-rose-600 text-white px-8 py-4 md:py-5 rounded-2xl md:rounded-[28px] font-black text-[13px] uppercase tracking-[0.1em] hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50 group/story shadow-2xl shadow-rose-500/30 overflow-hidden relative"
-                      >
-                        <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-0 group-hover/story:opacity-100 transition-opacity"></div>
-                        {isPublishingStory ? (
-                           <div className="w-5 h-5 border-2 border-white/30 border-t-white animate-spin rounded-full" />
-                        ) : (
-                           <span className="text-2xl group-hover/story:scale-125 transition-transform duration-300 drop-shadow-[0_0_8px_rgba(244,63,94,0.6)]">
-                             📱
-                           </span>
-                        )}
-                        <span className="relative z-10">{isPublishingStory ? 'Compartiendo Historia...' : 'Compartir como Historia'}</span>
-                      </button>
+                      {((selectedPost.publishedIn && selectedPost.publishedIn.includes('instagram')) || (!selectedPost.publishedIn && selectedPost.networks.includes('instagram'))) ? (
+                        <button
+                          onClick={() => handlePublishStory(selectedPost.id)}
+                          disabled={isPublishingStory}
+                          className="flex-1 bg-gradient-to-br from-pink-500 to-rose-600 text-white px-8 py-4 md:py-5 rounded-2xl md:rounded-[28px] font-black text-[13px] uppercase tracking-[0.1em] hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50 group/story shadow-2xl shadow-rose-500/30 overflow-hidden relative"
+                        >
+                          <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-0 group-hover/story:opacity-100 transition-opacity"></div>
+                          {isPublishingStory ? (
+                             <div className="w-5 h-5 border-2 border-white/30 border-t-white animate-spin rounded-full" />
+                          ) : (
+                             <span className="text-2xl group-hover/story:scale-125 transition-transform duration-300 drop-shadow-[0_0_8px_rgba(244,63,94,0.6)]">
+                               📱
+                             </span>
+                          )}
+                          <span className="relative z-10">{isPublishingStory ? 'Compartiendo Historia...' : 'Compartir como Historia'}</span>
+                        </button>
+                      ) : (
+                        <div className="flex-1 bg-slate-50 border border-slate-200 text-slate-400 px-6 py-4 rounded-2xl md:rounded-[28px] font-bold text-xs flex items-center justify-center gap-2">
+                          <span>ℹ️</span> No disponible para historias (Sin Instagram)
+                        </div>
+                      )}
+
                     </>
                   ) : (
                     <>

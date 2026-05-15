@@ -645,9 +645,11 @@ export async function POST(req: Request) {
                 status: 'published',
                 publishedAt: new Date(),
                 publishError: errorLog || null,
-                publishInfo: infoLog || null
+                publishInfo: infoLog || null,
+                publishedIn: successNetworks
             });
             return NextResponse.json({ success: true, published: successNetworks, errors: errorLog || null, info: infoLog || null });
+
         } else {
             await updateDoc(postRef, {
                 status: 'error',
