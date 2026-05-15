@@ -12,7 +12,7 @@ export default function Terminos() {
         <h1 className="font-display text-4xl md:text-5xl font-bold text-slate-900 mb-8">Términos y Condiciones</h1>
         
         <div className="prose prose-slate max-w-none text-slate-600 space-y-6 font-medium leading-relaxed">
-          <p className="text-lg text-slate-500 italic">Última actualización: Marzo 2026</p>
+          <p className="text-lg text-slate-500 italic">Última actualización: Mayo 2026</p>
 
           <section>
             <h2 className="text-xl font-bold text-slate-900 mb-4">1. Aceptación de los Términos</h2>
@@ -49,6 +49,13 @@ export default function Terminos() {
             <h2 className="text-xl font-bold text-slate-900 mb-4">5. Propiedad Intelectual</h2>
             <p>
               El usuario mantiene los derechos de autor sobre las ideas y contenidos base que proporciona. Santisoft mantiene los derechos sobre el software, algoritmos y interfaces que componen el servicio.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-bold text-slate-900 mb-4">6. Privacidad y Uso de Datos</h2>
+            <p>
+              Valoramos su privacidad. Santisoft AI recopila únicamente los datos necesarios para el funcionamiento del servicio, tales como tokens de acceso cifrados, nombres de usuario de perfiles conectados y métricas de rendimiento. Sus credenciales nunca se almacenan en texto plano. Los datos de rendimiento se utilizan exclusivamente para generar los reportes analíticos solicitados por usted. No compartimos, vendemos ni distribuimos su información a terceros para fines publicitarios externos. Usted puede solicitar la eliminación definitiva de sus datos y la desconexión de sus cuentas en cualquier momento desde la configuración de la aplicación.
             </p>
           </section>
 

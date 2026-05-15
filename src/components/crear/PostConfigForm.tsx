@@ -130,62 +130,70 @@ export default function PostConfigForm({
         <div id="tour-step-networks">
           <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Redes de destino</label>
           <div className="flex flex-wrap gap-4">
-            <button 
-              type="button" 
-              title="Facebook"
-              onClick={() => setNetworks(prev => ({...prev, facebook: !prev.facebook}))} 
-              className={`w-14 h-14 rounded-2xl border-2 transition-all duration-300 flex items-center justify-center ${
-                networks.facebook 
-                ? 'bg-[#1877F2] text-white border-[#1877F2] shadow-lg shadow-[#1877F2]/30 scale-105' 
-                : 'bg-slate-800 text-slate-400 border-slate-900 hover:bg-slate-900 hover:text-slate-200'
-              }`}
-            >
-              <svg className="w-7 h-7" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-              </svg>
-            </button>
-            <button 
-              type="button" 
-              title="Instagram"
-              onClick={() => setNetworks(prev => ({...prev, instagram: !prev.instagram}))} 
-              className={`w-14 h-14 rounded-2xl border-2 transition-all duration-300 flex items-center justify-center ${
-                networks.instagram 
-                ? 'bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7] text-white border-transparent shadow-lg shadow-pink-500/30 scale-105' 
-                : 'bg-slate-800 text-slate-400 border-slate-900 hover:bg-slate-900 hover:text-slate-200'
-              }`}
-            >
-              <svg className="w-7 h-7" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/>
-              </svg>
-            </button>
-            <button 
-              type="button" 
-              title="LinkedIn"
-              onClick={() => setNetworks(prev => ({...prev, linkedin: !prev.linkedin}))} 
-              className={`w-14 h-14 rounded-2xl border-2 transition-all duration-300 flex items-center justify-center ${
-                networks.linkedin 
-                ? 'bg-[#0077B5] text-white border-[#0077B5] shadow-lg shadow-[#0077B5]/30 scale-105' 
-                : 'bg-slate-800 text-slate-400 border-slate-900 hover:bg-slate-900 hover:text-slate-200'
-              }`}
-            >
-              <svg className="w-7 h-7" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M22.23 0H1.77C.8 0 0 .77 0 1.72v20.56C0 23.23.8 24 1.77 24h20.46c.98 0 1.77-.77 1.77-1.72V1.72C24 .77 23.2 0 22.23 0zM7.12 20.45H3.56V9H7.12v11.45zM5.34 7.43c-1.14 0-2.06-.92-2.06-2.06 0-1.14.92-2.06 2.06-2.06 1.14 0 2.06.92 2.06 2.06 0 1.14-.92 2.06-2.06 2.06zm15.11 13.02h-3.56v-5.6c0-1.34-.03-3.05-1.86-3.05-1.86 0-2.14 1.45-2.14 2.95v5.65h-3.56V9h3.42v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29z"/>
-              </svg>
-            </button>
-            <button 
-              type="button" 
-              title="TikTok"
-              onClick={() => setNetworks(prev => ({...prev, tiktok: !prev.tiktok}))} 
-              className={`w-14 h-14 rounded-2xl border-2 transition-all duration-300 flex items-center justify-center ${
-                networks.tiktok 
-                ? 'bg-[#000000] text-white border-[#000000] shadow-lg shadow-black/35 scale-105' 
-                : 'bg-slate-800 text-slate-400 border-slate-900 hover:bg-slate-900 hover:text-slate-200'
-              }`}
-            >
-              <svg className="w-7 h-7" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.02 1.59 4.23.96 1.21 2.28 2.06 3.77 2.44v3.91c-1.3-.08-2.59-.53-3.69-1.3-1.1-.77-1.95-1.87-2.45-3.14v7.88c.03 2.24-.65 4.43-1.95 6.22-1.3 1.79-3.21 2.99-5.38 3.39-2.17.4-4.44.02-6.39-1.07C2 21.6 1.11 19.53 1.02 17.29c-.09-2.24.63-4.44 2.03-6.2 1.4-1.76 3.42-2.92 5.67-3.23.7-.1-1.3-.01.59-.02v4c-1.36.14-2.61.83-3.41 1.9-.8 1.07-1.12 2.42-.89 3.75.23 1.33.99 2.51 2.08 3.24 1.09.73 2.42.92 3.66.52 1.24-.4 2.21-1.34 2.66-2.56.45-1.22.4-2.57-.14-3.75-.15-.33-.31-.65-.49-.95.01-3.69-.01-7.39.02-11.08z"/>
-              </svg>
-            </button>
+            {hasFb && (
+              <button 
+                type="button" 
+                title="Facebook"
+                onClick={() => setNetworks(prev => ({...prev, facebook: !prev.facebook}))} 
+                className={`w-14 h-14 rounded-2xl border-2 transition-all duration-300 flex items-center justify-center ${
+                  networks.facebook 
+                  ? 'bg-[#1877F2] text-white border-[#1877F2] shadow-lg shadow-[#1877F2]/30 scale-105' 
+                  : 'bg-slate-800 text-slate-400 border-slate-900 hover:bg-slate-900 hover:text-slate-200'
+                }`}
+              >
+                <svg className="w-7 h-7" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                </svg>
+              </button>
+            )}
+            {hasIg && (
+              <button 
+                type="button" 
+                title="Instagram"
+                onClick={() => setNetworks(prev => ({...prev, instagram: !prev.instagram}))} 
+                className={`w-14 h-14 rounded-2xl border-2 transition-all duration-300 flex items-center justify-center ${
+                  networks.instagram 
+                  ? 'bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7] text-white border-transparent shadow-lg shadow-pink-500/30 scale-105' 
+                  : 'bg-slate-800 text-slate-400 border-slate-900 hover:bg-slate-900 hover:text-slate-200'
+                }`}
+              >
+                <svg className="w-7 h-7" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/>
+                </svg>
+              </button>
+            )}
+            {hasLi && (
+              <button 
+                type="button" 
+                title="LinkedIn"
+                onClick={() => setNetworks(prev => ({...prev, linkedin: !prev.linkedin}))} 
+                className={`w-14 h-14 rounded-2xl border-2 transition-all duration-300 flex items-center justify-center ${
+                  networks.linkedin 
+                  ? 'bg-[#0077B5] text-white border-[#0077B5] shadow-lg shadow-[#0077B5]/30 scale-105' 
+                  : 'bg-slate-800 text-slate-400 border-slate-900 hover:bg-slate-900 hover:text-slate-200'
+                }`}
+              >
+                <svg className="w-7 h-7" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M22.23 0H1.77C.8 0 0 .77 0 1.72v20.56C0 23.23.8 24 1.77 24h20.46c.98 0 1.77-.77 1.77-1.72V1.72C24 .77 23.2 0 22.23 0zM7.12 20.45H3.56V9H7.12v11.45zM5.34 7.43c-1.14 0-2.06-.92-2.06-2.06 0-1.14.92-2.06 2.06-2.06 1.14 0 2.06.92 2.06 2.06 0 1.14-.92 2.06-2.06 2.06zm15.11 13.02h-3.56v-5.6c0-1.34-.03-3.05-1.86-3.05-1.86 0-2.14 1.45-2.14 2.95v5.65h-3.56V9h3.42v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29z"/>
+                </svg>
+              </button>
+            )}
+            {hasTt && (
+              <button 
+                type="button" 
+                title="TikTok"
+                onClick={() => setNetworks(prev => ({...prev, tiktok: !prev.tiktok}))} 
+                className={`w-14 h-14 rounded-2xl border-2 transition-all duration-300 flex items-center justify-center ${
+                  networks.tiktok 
+                  ? 'bg-[#000000] text-white border-[#000000] shadow-lg shadow-black/35 scale-105' 
+                  : 'bg-slate-800 text-slate-400 border-slate-900 hover:bg-slate-900 hover:text-slate-200'
+                }`}
+              >
+                <svg className="w-7 h-7" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.02 1.59 4.23.96 1.21 2.28 2.06 3.77 2.44v3.91c-1.3-.08-2.59-.53-3.69-1.3-1.1-.77-1.95-1.87-2.45-3.14v7.88c.03 2.24-.65 4.43-1.95 6.22-1.3 1.79-3.21 2.99-5.38 3.39-2.17.4-4.44.02-6.39-1.07C2 21.6 1.11 19.53 1.02 17.29c-.09-2.24.63-4.44 2.03-6.2 1.4-1.76 3.42-2.92 5.67-3.23.7-.1-1.3-.01.59-.02v4c-1.36.14-2.61.83-3.41 1.9-.8 1.07-1.12 2.42-.89 3.75.23 1.33.99 2.51 2.08 3.24 1.09.73 2.42.92 3.66.52 1.24-.4 2.21-1.34 2.66-2.56.45-1.22.4-2.57-.14-3.75-.15-.33-.31-.65-.49-.95.01-3.69-.01-7.39.02-11.08z"/>
+                </svg>
+              </button>
+            )}
           </div>
           {constraints?.warnings && constraints.warnings.length > 0 && (
             <div className="mt-4 space-y-2">
@@ -331,7 +339,7 @@ export default function PostConfigForm({
                 {/* Hashtag Rule Check */}
                 {(() => {
                    const hashtags = (creationMode === 'ai' ? idea : manualCaption).match(/#[a-z0-9_]+/gi) || [];
-                   const maxHashtags = constraints?.warnings.some(w => w.includes('LinkedIn')) ? 3 : 5;
+                   const maxHashtags = constraints?.warnings?.some(w => w.includes('LinkedIn')) ? 3 : 5;
                    if (hashtags.length > maxHashtags) {
                       return (
                         <p className="text-[9px] font-bold text-amber-600 animate-pulse ml-4">
