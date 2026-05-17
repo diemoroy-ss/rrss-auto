@@ -1,0 +1,113 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ==========================================
+    // FUNCIONES AUXILIARES DE SEGURIDAD
+    // ==========================================
+
+    // Verifica si la petición proviene de un usuario autenticado
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Verifica si el usuario autenticado coincide con el ID del documento
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Verifica si el usuario logueado posee rol de administrador
+    function isAdmin() {
+      return isAuthenticated() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // ==========================================
+    // REGLAS DE SEGURIDAD POR COLECCIÓN
+    // ==========================================
+
+    // --- COLECCIÓN DE USUARIOS ---
+    // Cada usuario solo puede ver y editar su propio perfil.
+    // Los administradores tienen acceso total.
+    match /users/{userId} {
+      allow read, write: if isOwner(userId) || isAdmin();
+    }
+
+    // --- COLECCIÓN DE PUBLICACIONES DE REDES SOCIALES ---
+    // Los usuarios pueden crear y gestionar únicamente sus propias publicaciones.
+    match /social_posts/{postId} {
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    // --- COLECCIÓN DE ESTRATEGIAS DE IA ---
+    // Acceso restringido al creador del plan de estrategia.
+    match /user_strategies/{strategyId} {
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    // --- COLECCIÓN DE PLANTILLAS DE DISEÑO DEL USUARIO ---
+    match /user_templates/{templateId} {
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    // --- COLECCIÓN DE RENDERS DE PREVISUALIZACIÓN DE CANVAS ---
+    match /preview_renders/{renderId} {
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    // --- COLECCIÓN DE PUBLICACIONES EXTERNAS IMPORTADAS ---
+    match /external_posts/{postId} {
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    // --- COLECCIÓN DE PUBLICACIONES DEL BLOG ---
+    // Son públicas para lectura (cualquier visitante puede leer el blog).
+    // Solo administradores pueden escribir, editar o borrar artículos.
+    match /blog_posts/{postId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // --- COLECCIÓN DE CONFIGURACIONES DEL SISTEMA (Ej: Límites de Planes) ---
+    // Cualquiera puede leer la configuración del sistema, solo administradores editan.
+    match /system_config/{configId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // --- COLECCIÓN DE AJUSTES GENERALES ---
+    match /settings/{settingId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // --- PAGOS Y SUSCRIPCIONES (Mercado Pago) ---
+    // Los usuarios pueden ver su historial de pagos. Solo la pasarela/admin escribe (vía backend Admin SDK).
+    match /payments/{paymentId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    // --- COLECCIONES RESTRINGIDAS / DE USO EXCLUSIVO DEL SERVIDOR ---
+    // Las consultas de servidor que utilizan Firebase Admin SDK omiten las reglas de seguridad.
+    // Restringimos el acceso directo del cliente web para evitar fugas de logs o métricas.
+    match /whatsapp_chats/{chatId} {
+      allow read, write: if isAdmin();
+      match /messages/{messageId} {
+        allow read, write: if isAdmin();
+      }
+    }
+    match /analytics_events/{eventId} {
+      allow read, write: if isAdmin();
+    }
+    match /analytics_daily/{dailyId} {
+      allow read, write: if isAdmin();
+    }
+  }
+}
