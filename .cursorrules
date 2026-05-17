@@ -1,0 +1,27 @@
+# 🏛️ Reglas del Proyecto - Sisoft Automatización (NestJS, Next.js 14 & AI Engineering)
+
+## 📌 Directrices de Desarrollo
+Todas las contribuciones de código y archivos generados dentro de este espacio de trabajo deben adherirse estrictamente a las siguientes especificaciones técnicas y de seguridad:
+
+### 1. Arquitectura y Stack de Tecnologías
+* **Next.js 14 (App Router)**: Todas las rutas bajo `src/app/` deben seguir la estructura de directorios del App Router (`page.tsx`, `layout.tsx`, `route.ts` para APIs).
+* **Modularidad Extrema (NestJS / DI)**: Respeta la división limpia entre capas. Los controladores/endpoints HTTP solo manejan ruteo, extracción de payloads y códigos de estado; los servicios inyectados (`@Injectable()`) manejan la lógica del negocio.
+* **Lazy Loading en Servidor**: Todos los recursos y clientes de servidor pesados (ej. `@google-cloud/tasks`, `vertexai`, `firebase-admin`) deben inicializarse bajo demanda mediante carga perezosa (`await import(...)`) para optimizar el rendimiento y evitar sobrecargar los arranques de bundle.
+
+### 2. El Contrato por Delante (TypeScript Estricto)
+* **NUNCA usar `any`**: Cero excepciones. El uso de `any` en variables, firmas de funciones y catch blocks está prohibido. Utiliza `unknown` para errores y tipados explícitos del SDK oficial para servicios de terceros.
+* **Validación de DTOs**: Las entradas a las API (cuerpo, query o parámetros) se deben validar utilizando clases DTO con decoradores `class-validator` y `class-transformer`.
+
+### 3. Ingeniería de Inteligencia Artificial (LangGraph)
+* **Checkpointers y Recuperación**: Todos los grafos de flujo asíncronos y multi-agentes deben compilarse utilizando `MemorySaver` como checkpointer para posibilitar reanudaciones mediante `thread_id`.
+* **Interrupción Humana Obrigada (Human-in-the-loop)**: Los workflows de generación de contenido crítico deben configurarse explícitamente con `interruptBefore` antes de realizar las optimizaciones finales o publicaciones automáticas.
+
+### 4. Seguridad de la Información y Criptografía
+* **Cifrado AES-256-GCM**: Todos los datos sensibles (por ejemplo, tokens de autenticación de redes de usuarios guardados en Firestore) deben cifrarse de forma obligatoria mediante el protocolo **AES-256-GCM** utilizando un vector de inicialización (`iv`) único y una etiqueta de autenticación (`tag`) para garantizar la integridad física de los tokens.
+* **Protección de Rutas (RBAC & Cron)**: 
+  * Rutas administrativas protegidas mediante filtros de roles (`admin`, `superadmin`).
+  * Webhooks internos y tareas programadas protegidos mediante cabecera Bearer con validación estricta de `CRON_SECRET`.
+* **Sanitización Contra Inyecciones**: Toda entrada de texto provista por el usuario destinada a alimentar prompts de IA debe ser sanitizada utilizando funciones de prevención contra Prompt Injection (`sanitizeInput`), filtrando etiquetas maliciosas y delimitando contextos de comillas triples.
+
+### 5. Manejo Seguro de Excepciones
+* **Filtros de Errores (maskError)**: Los bloques catch en las API deben silenciar los stack traces técnicos en producción para prevenir fugas de información. Devuelve respuestas semánticas limpias con códigos estándar (400, 401, 403, 500).

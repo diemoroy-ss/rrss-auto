@@ -1,7 +1,9 @@
-// Initialize the client lazily to avoid build-time issues with Next.js bundling.
-let client: any = null;
+import type { CloudTasksClient } from '@google-cloud/tasks';
 
-async function getClient() {
+// Initialize the client lazily to avoid build-time issues with Next.js bundling.
+let client: CloudTasksClient | null = null;
+
+async function getClient(): Promise<CloudTasksClient | null> {
     if (client) return client;
     
     const projectId = process.env.GCP_PROJECT_ID;
@@ -27,33 +29,43 @@ async function getClient() {
     return null;
 }
 
+interface TaskPayload {
+    httpRequest: {
+        httpMethod: 'POST' | 'GET' | 'PUT' | 'DELETE' | 'HEAD' | 'OPTIONS' | 'PATCH';
+        url: string;
+        headers?: Record<string, string>;
+        body?: string;
+    };
+    scheduleTime?: {
+        seconds: number | string;
+    };
+}
+
 /**
  * Encola un post para ser ejecutado en el tiempo exacto.
  * @param postId El ID del documento en la colección social_posts
  * @param scheduledFor Objeto Date con la fecha y hora exacta programada
  */
-export async function enqueuePostTask(postId: string, scheduledFor: Date) {
-    const client = await getClient();
-    if (!client) {
+export async function enqueuePostTask(postId: string, scheduledFor: Date): Promise<string | null> {
+    const clientInstance = await getClient();
+    if (!clientInstance) {
         console.warn("[GCP TASKS] Cloud Tasks client is not initialized. Ensure GCP variables are set. Skipping queue.");
         return null;
     }
 
     const projectId = process.env.GCP_PROJECT_ID;
-
     const location = process.env.GCP_TASKS_LOCATION || 'us-central1';
     const queue = process.env.GCP_TASKS_QUEUE || 'social-posts-queue';
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://rrss.santisoft.cl';
 
     // The full path to the queue
-    const parent = client.queuePath(projectId!, location, queue);
-
+    const parent = clientInstance.queuePath(projectId!, location, queue);
     const url = `${appUrl}/api/tasks/execute-post`;
     
     // We send the postId to the webhook executor
     const payload = JSON.stringify({ postId });
 
-    const task: any = {
+    const task: TaskPayload = {
         httpRequest: {
             httpMethod: 'POST',
             url: url,
@@ -76,9 +88,9 @@ export async function enqueuePostTask(postId: string, scheduledFor: Date) {
     try {
         console.log(`[GCP TASKS] Sending task for post ${postId} scheduled at ${scheduledFor.toISOString()}`);
         const request = { parent: parent, task: task };
-        const [response] = await client.createTask(request);
+        const [response] = await clientInstance.createTask(request);
         console.log(`[GCP TASKS] Created task ${response.name}`);
-        return response.name;
+        return response.name || null;
     } catch (error) {
         console.error(`[GCP TASKS] Error creating task for post ${postId}:`, error);
         throw error;
@@ -89,20 +101,22 @@ export async function enqueuePostTask(postId: string, scheduledFor: Date) {
  * Elimina una tarea existente de la cola de Google Cloud Tasks.
  * @param taskName El nombre completo de la tarea (response.name devuelto al crear).
  */
-export async function deletePostTask(taskName: string) {
-    const client = await getClient();
-    if (!client) {
+export async function deletePostTask(taskName: string): Promise<boolean> {
+    const clientInstance = await getClient();
+    if (!clientInstance) {
         return false;
     }
     try {
-        await client.deleteTask({ name: taskName });
+        await clientInstance.deleteTask({ name: taskName });
         console.log(`[GCP TASKS] Deleted task ${taskName}`);
         return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const err = error as Error & { code?: number };
         // If the error code is 5 (NOT_FOUND), it means it already executed or was deleted.
-        if (error.code !== 5) {
+        if (err.code !== 5) {
             console.error(`[GCP TASKS] Error deleting task ${taskName}:`, error);
         }
         return false;
     }
 }
+

@@ -96,7 +96,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ status: "success" }, { status: 200 });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error procesando Webhook de WhatsApp:", error);
     // Retornamos 200 para que Evolution no reintente el webhook infinitamente si hay un error nuestro
     return NextResponse.json({ status: "error", message: "Algo salió mal" }, { status: 200 });

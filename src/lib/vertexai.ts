@@ -1,15 +1,17 @@
+import type { VertexAI, GenerativeModel } from '@google-cloud/vertexai';
+
 // We use dynamic imports to prevent the top-level load of @google-cloud/vertexai
 // which can cause startup crashes if the environment is not perfectly configured.
 
 const project = process.env.GCP_PROJECT_ID || 'veo-videos-ultra';
 const location = process.env.GCP_TASKS_LOCATION || 'us-central1';
 
-let vertexAIInstance: any = null;
+let vertexAIInstance: VertexAI | null = null;
 
 /**
  * Lazily and dynamically initializes the Vertex AI client.
  */
-export async function getVertexAI() {
+export async function getVertexAI(): Promise<VertexAI | null> {
     if (vertexAIInstance) return vertexAIInstance;
 
     const clientEmail = process.env.GCP_CLIENT_EMAIL;
@@ -48,7 +50,7 @@ export async function getVertexAI() {
 /**
  * Returns a configured model instance from Vertex AI (Async).
  */
-export async function getVertexModel(modelName = 'gemini-2.5-flash', systemInstruction?: string) {
+export async function getVertexModel(modelName = 'gemini-2.5-flash', systemInstruction?: string): Promise<GenerativeModel> {
     const client = await getVertexAI();
     if (!client) {
         throw new Error("Vertex AI is not configured or failed to load.");

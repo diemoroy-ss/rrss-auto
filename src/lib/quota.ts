@@ -1,12 +1,21 @@
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
+interface PlanConfig {
+    postsLimit: number;
+    videosLimit: number;
+}
+
+interface SystemPlansConfig {
+    [planId: string]: PlanConfig | undefined;
+}
+
 // Memory cache to avoid excessive Firestore reads
-let plansCache: any = null;
+let plansCache: SystemPlansConfig | null = null;
 let lastCacheUpdate = 0;
 const CACHE_TTL = 1000 * 60 * 5; // 5 minutes
 
-async function getPlansConfig() {
+async function getPlansConfig(): Promise<SystemPlansConfig> {
     const now = Date.now();
     if (plansCache && (now - lastCacheUpdate < CACHE_TTL)) {
         return plansCache;
@@ -15,7 +24,7 @@ async function getPlansConfig() {
     try {
         const plansDoc = await getDoc(doc(db, "system_config", "plans"));
         if (plansDoc.exists()) {
-            plansCache = plansDoc.data();
+            plansCache = plansDoc.data() as SystemPlansConfig;
             lastCacheUpdate = now;
             return plansCache;
         }
