@@ -1,4 +1,15 @@
+import type { Metadata } from "next";
+import Image from "next/image";
 import Link from 'next/link';
+
+export const metadata: Metadata = {
+  title: "Santisoft AI | Política de Privacidad",
+  description: "Política de privacidad de Santisoft AI. Conoce cómo recopilamos, usamos y protegemos tus datos.",
+  icons: {
+    icon: [{ url: "/favicon.png", type: "image/png" }],
+    apple: "/favicon.png",
+  },
+};
 
 export default function Privacidad() {
   return (
@@ -21,9 +32,24 @@ export default function Privacidad() {
           {/* Subtle Glow */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full blur-3xl opacity-50 -mr-32 -mt-32" />
           
+          {/* App icon + App name header — required by TikTok reviewer */}
+          <div className="flex items-center gap-4 mb-8 relative z-10">
+            <Image
+              src="/favicon.png"
+              alt="Santisoft AI logo"
+              width={56}
+              height={56}
+              className="rounded-2xl shadow-md shadow-indigo-100"
+              priority
+            />
+            <span className="text-2xl font-black text-slate-900">
+              Santisoft <span className="text-indigo-600">AI</span>
+            </span>
+          </div>
+
           <header className="relative z-10 mb-16">
-            <h1 className="text-4xl md:text-6xl font-extrabold text-slate-900 tracking-tight mb-6">
-              Política de <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Privacidad</span>
+            <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight mb-6">
+              Santisoft AI <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Política de Privacidad</span>
             </h1>
             <div className="flex items-center gap-3 text-slate-400 font-medium">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>

@@ -1,4 +1,15 @@
+import type { Metadata } from "next";
+import Image from "next/image";
 import Link from 'next/link';
+
+export const metadata: Metadata = {
+  title: "Santisoft AI | Términos de Servicio",
+  description: "Términos de servicio y condiciones de uso de Santisoft AI.",
+  icons: {
+    icon: [{ url: "/favicon.png", type: "image/png" }],
+    apple: "/favicon.png",
+  },
+};
 
 export default function Terminos() {
   return (
@@ -9,7 +20,24 @@ export default function Terminos() {
            ← Volver al Inicio
         </Link>
 
-        <h1 className="font-display text-4xl md:text-5xl font-bold text-slate-900 mb-8">Términos y Condiciones</h1>
+        {/* App icon + App name header — required by TikTok reviewer */}
+        <div className="flex items-center gap-4 mb-8">
+          <Image
+            src="/favicon.png"
+            alt="Santisoft AI logo"
+            width={56}
+            height={56}
+            className="rounded-2xl shadow-md shadow-indigo-100"
+            priority
+          />
+          <span className="text-2xl font-black text-slate-900">
+            Santisoft <span className="text-indigo-600">AI</span>
+          </span>
+        </div>
+
+        <h1 className="font-display text-4xl md:text-5xl font-bold text-slate-900 mb-8">
+          Santisoft AI <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Términos de Servicio</span>
+        </h1>
         
         <div className="prose prose-slate max-w-none text-slate-600 space-y-6 font-medium leading-relaxed">
           <p className="text-lg text-slate-500 italic">Última actualización: Mayo 2026</p>
