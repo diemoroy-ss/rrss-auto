@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: "Santisoft AI | Política de Privacidad",
-  description: "Política de privacidad de Santisoft AI. Conoce cómo recopilamos, usamos y protegemos tus datos.",
+  description: "Política de privacidad y uso de datos de Santisoft AI. Conoce cómo recopilamos, usamos y protegemos tus datos.",
   icons: {
     icon: [{ url: "/favicon.png", type: "image/png" }],
     apple: "/favicon.png",
@@ -53,7 +53,7 @@ export default function Privacidad() {
             </h1>
             <div className="flex items-center gap-3 text-slate-400 font-medium">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              Última actualización: 4 de Mayo, 2026
+              Última actualización: 22 de Mayo, 2026
             </div>
           </header>
           
@@ -76,10 +76,11 @@ export default function Privacidad() {
                   Datos que Recopilamos
                 </h2>
                 <p>
-                  Para proporcionar nuestros servicios, recopilamos:
+                  Para proporcionar nuestros servicios de automatización, recopilamos:
                 </p>
                 <ul className="list-disc pl-6 space-y-2 mt-4 text-slate-500">
                   <li>Información de perfil y tokens de acceso autorizados para publicar en Facebook, Instagram, TikTok y LinkedIn.</li>
+                  <li>Información recopilada a través de nuestros servicios de automatización de WhatsApp, incluyendo números de teléfono y el contenido de los mensajes interactuados.</li>
                   <li>Métricas de rendimiento de anuncios (impresiones, clics, gasto) para mostrar en su panel de control.</li>
                   <li>Contenido multimedia y textos que usted decida programar o publicar en sus perfiles autorizados.</li>
                 </ul>
@@ -93,33 +94,43 @@ export default function Privacidad() {
                 <p>
                   Santisoft utiliza las APIs oficiales de Meta, TikTok y LinkedIn para permitirle gestionar su presencia digital. Los datos se utilizan exclusivamente para:
                 </p>
-                <ul className="list-disc pl-6 space-y-2 mt-4 text-slate-500">
+                <ul className="list-disc pl-6 space-y-2 mt-4 text-slate-500 mb-6">
                   <li>Publicar y programar contenido en sus cuentas autorizadas según su explícito consentimiento.</li>
                   <li>Analizar el rendimiento de sus campañas publicitarias y perfiles.</li>
                   <li>Personalizar sugerencias de contenido mediante Inteligencia Artificial.</li>
                 </ul>
-                <p className="mt-4 font-semibold text-indigo-600">
-                  Importante: No vendemos sus datos a terceros, no transferimos información de tokens a entidades no autorizadas, ni utilizamos los datos para fines ajenos a la funcionalidad directa de la plataforma.
+
+                <h3 className="text-xl font-bold text-slate-950 mb-2">Uso de Inteligencia Artificial (IA)</h3>
+                <p className="mb-6">
+                  Nuestro sistema utiliza la API de Google Gemini para procesar mensajes y generar respuestas automáticas. Los datos enviados a la IA se utilizan exclusivamente para generar respuestas inmediatas a sus consultas y no son utilizados para el entrenamiento público de modelos de lenguaje externos.
+                </p>
+
+                <h3 className="text-xl font-bold text-slate-950 mb-2">Gestión de Anuncios (Meta Ads)</h3>
+                <p className="mb-4">
+                  Al utilizar la función de Creador de Campañas, solicitamos permisos avanzados de gestión (`ads_management` y `ads_read`). Con su autorización, Santisoft lee su ID de cuenta publicitaria y métricas básicas (gasto, impresiones, clics) para mostrarlas en su panel, y utiliza el token para automatizar la creación de campañas publicitarias en su nombre.
+                </p>
+                <p className="font-semibold text-indigo-600">
+                  Importante: Santisoft NUNCA almacena, procesa, ni tiene acceso a su información de tarjetas de crédito o métodos de pago, la cual reside exclusivamente en los servidores de Meta. No vendemos sus datos a terceros, ni transferimos información de tokens a entidades no autorizadas.
                 </p>
               </section>
 
               <section>
                 <h2 className="text-2xl font-bold text-slate-900 mb-4 flex items-center gap-3">
                   <span className="w-8 h-8 bg-indigo-600 text-white rounded-lg flex items-center justify-center text-sm">04</span>
-                  Seguridad de la Información
+                  Seguridad y Almacenamiento
                 </h2>
                 <p>
-                  Implementamos protocolos de cifrado SSL y almacenamiento seguro en infraestructura de clase mundial (Google Cloud) para garantizar que sus tokens de acceso y datos personales estén protegidos contra accesos no autorizados.
+                  Toda la información personal, tokens cifrados e historial de chats se almacena de forma segura en bases de datos de Google Cloud (Firestore). Implementamos protocolos de cifrado SSL y medidas de seguridad técnicas para proteger sus datos contra acceso no autorizado, pérdida o alteración.
                 </p>
               </section>
 
               <section>
                 <h2 className="text-2xl font-bold text-slate-900 mb-4 flex items-center gap-3">
                   <span className="w-8 h-8 bg-indigo-600 text-white rounded-lg flex items-center justify-center text-sm">05</span>
-                  Eliminación de Datos
+                  Tus Derechos y Eliminación de Datos
                 </h2>
                 <p>
-                  Usted puede revocar el acceso de Santisoft en cualquier momento desde la configuración de su cuenta de Facebook o solicitando la eliminación total de sus datos en nuestra página de <Link href="/eliminaciondatos" className="text-indigo-600 hover:underline">Eliminación de Datos</Link>.
+                  Conforme a la normativa vigente, usted tiene derecho a acceder, rectificar y eliminar sus datos personales. Puede revocar el acceso de Santisoft en cualquier momento desde la configuración de su cuenta de Facebook o solicitando la eliminación total de sus datos en nuestra página de <Link href="/eliminaciondatos" className="text-indigo-600 hover:underline">Eliminación de Datos</Link>.
                 </p>
               </section>
 

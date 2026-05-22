@@ -166,7 +166,7 @@ export default async function BlogIndex() {
             <footer className="py-12 border-t border-slate-200 bg-white text-center mt-auto">
                 <div className="flex justify-center gap-6 mb-4 text-xs font-bold uppercase tracking-widest text-slate-500">
                     <Link href="/" className="hover:text-indigo-600 transition-colors">Inicio</Link>
-                    <Link href="/politica-datos" className="hover:text-indigo-600 transition-colors">Privacidad</Link>
+                    <Link href="/privacidad" className="hover:text-indigo-600 transition-colors">Privacidad</Link>
                     <Link href="/terminos" className="hover:text-indigo-600 transition-colors">Términos</Link>
                 </div>
                 <p className="text-slate-400 text-sm font-medium">© 2026 Santisoft. Todos los derechos reservados.</p>
