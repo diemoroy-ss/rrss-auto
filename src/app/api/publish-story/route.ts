@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '../../../lib/firebase';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { adminDb } from '../../../lib/firebase-admin';
 import { decrypt } from '../../../lib/encryption';
 
 // Helper function to fetch Meta Graph API with retry mechanism
@@ -28,12 +27,15 @@ export async function POST(req: Request) {
 
         if (!postId) return NextResponse.json({ error: "postId is required" }, { status: 400 });
 
-        const postRef = doc(db, "social_posts", postId);
-        const postSnap = await getDoc(postRef);
+        if (!adminDb) {
+            return NextResponse.json({ error: "Firebase Admin SDK not initialized" }, { status: 500 });
+        }
+        const postRef = adminDb.collection("social_posts").doc(postId);
+        const postSnap = await postRef.get();
 
-        if (!postSnap.exists()) return NextResponse.json({ error: "Post no encontrado" }, { status: 404 });
+        if (!postSnap.exists) return NextResponse.json({ error: "Post no encontrado" }, { status: 404 });
 
-        const post = postSnap.data();
+        const post = postSnap.data()!;
         
         // Use post's imageUrl (or first item in imageUrls if it's a carousel)
         const imageUrl = post.imageUrl || (post.imageUrls && post.imageUrls[0]);
@@ -42,10 +44,10 @@ export async function POST(req: Request) {
         const uid = post.userId;
         const profileId = post.profileId;
 
-        const userSnap = await getDoc(doc(db, "users", uid));
-        if (!userSnap.exists()) return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
+        const userSnap = await adminDb.collection("users").doc(uid).get();
+        if (!userSnap.exists) return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
 
-        const userData = userSnap.data();
+        const userData = userSnap.data()!;
         let targetProfile: any = null;
         const targetProfileId = profileId || 'default';
         if (Array.isArray(userData.profiles)) {
@@ -157,7 +159,7 @@ export async function POST(req: Request) {
 
         if (successNetworks.length > 0) {
             // Log successful story publication in Firestore post doc if desired
-            await updateDoc(postRef, {
+            await postRef.update({
                 storyPublishedAt: new Date(),
                 storyPublishError: errorLog || null
             });

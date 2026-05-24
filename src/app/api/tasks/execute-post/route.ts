@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { adminDb } from '../../../../lib/firebase-admin';
 import { decrypt } from '../../../../lib/encryption';
-import { getQuotaUsage, getPlanLimit } from '../../../../lib/quota';
+import { getQuotaUsageAdmin, getPlanLimitAdmin } from '../../../../lib/quota-admin';
 
 /**
  * Este endpoint es llamado secretamente por Google Cloud Tasks
@@ -79,8 +79,8 @@ export async function POST(req: Request) {
         }
 
         // --- QUOTA CHECK ---
-        const usage = await getQuotaUsage(uid, profileId || 'default');
-        const limit = await getPlanLimit(userData.plan || 'free');
+        const usage = await getQuotaUsageAdmin(uid, profileId || 'default');
+        const limit = await getPlanLimitAdmin(userData.plan || 'free');
         const postNetworkCount = postData.networks?.length || 1;
         
         if (usage + postNetworkCount > limit) {

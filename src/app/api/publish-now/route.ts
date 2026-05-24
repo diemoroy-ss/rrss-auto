@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
-import { db } from '../../../lib/firebase';
-import { doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
+import { adminDb } from '../../../lib/firebase-admin';
 import { decrypt } from '../../../lib/encryption';
-import { getQuotaUsage, getPlanLimit } from '../../../lib/quota';
+import { getQuotaUsageAdmin, getPlanLimitAdmin } from '../../../lib/quota-admin';
 
 // Helper function to fetch Meta Graph API with retry mechanism to handle transient errors
 async function fetchWithRetry(url: string, options: any, retries = 3, delay = 2000): Promise<any> {
@@ -29,10 +28,13 @@ export async function POST(req: Request) {
 
         if (!postId) return NextResponse.json({ error: "postId is required" }, { status: 400 });
 
-        const postRef = doc(db, "social_posts", postId);
-        const postSnap = await getDoc(postRef);
+        if (!adminDb) {
+            return NextResponse.json({ error: "Firebase Admin SDK not initialized" }, { status: 500 });
+        }
+        const postRef = adminDb.collection("social_posts").doc(postId);
+        const postSnap = await postRef.get();
 
-        if (!postSnap.exists()) return NextResponse.json({ error: "Post no encontrado" }, { status: 404 });
+        if (!postSnap.exists) return NextResponse.json({ error: "Post no encontrado" }, { status: 404 });
 
         const post = postSnap.data();
         
@@ -41,8 +43,8 @@ export async function POST(req: Request) {
         const uid = post.userId;
         const profileId = post.profileId;
 
-        const userSnap = await getDoc(doc(db, "users", uid));
-        if (!userSnap.exists()) return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
+        const userSnap = await adminDb.collection("users").doc(uid).get();
+        if (!userSnap.exists) return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
 
         const userData = userSnap.data();
         let targetProfile: any = null;
@@ -53,8 +55,8 @@ export async function POST(req: Request) {
         if (!targetProfile) targetProfile = userData;
 
         // --- QUOTA CHECK ---
-        const usedQuota = await getQuotaUsage(uid, profileId || 'default');
-        const limit = await getPlanLimit(userData.plan || 'free');
+        const usedQuota = await getQuotaUsageAdmin(uid, profileId || 'default');
+        const limit = await getPlanLimitAdmin(userData.plan || 'free');
         const postNetworkCount = post.networks?.length || 1;
         
         if (usedQuota + postNetworkCount > limit) {
@@ -109,7 +111,7 @@ export async function POST(req: Request) {
                             })
                         });
                         
-                        await setDoc(doc(db, 'external_posts', fbData.id), {
+                        await adminDb.collection('external_posts').doc(fbData.id).set({
                            userId: uid,
                            profileId: profileId || 'default',
                            network: 'facebook',
@@ -134,7 +136,7 @@ export async function POST(req: Request) {
                             })
                         });
                         
-                        await setDoc(doc(db, 'external_posts', fbData.id), {
+                        await adminDb.collection('external_posts').doc(fbData.id).set({
                            userId: uid,
                            profileId: profileId || 'default',
                            network: 'facebook',
@@ -159,7 +161,7 @@ export async function POST(req: Request) {
                             })
                         });
                         
-                        await setDoc(doc(db, 'external_posts', fbData.id), {
+                        await adminDb.collection('external_posts').doc(fbData.id).set({
                            userId: uid,
                            profileId: profileId || 'default',
                            network: 'facebook',
@@ -231,7 +233,7 @@ export async function POST(req: Request) {
                             })
                         });
 
-                        await setDoc(doc(db, 'external_posts', igPubData.id), {
+                        await adminDb.collection('external_posts').doc(igPubData.id).set({
                            userId: uid,
                            profileId: profileId || 'default',
                            network: 'instagram',
@@ -283,7 +285,7 @@ export async function POST(req: Request) {
                             })
                         });
 
-                        await setDoc(doc(db, 'external_posts', igPubData.id), {
+                        await adminDb.collection('external_posts').doc(igPubData.id).set({
                            userId: uid,
                            profileId: profileId || 'default',
                            network: 'instagram',
@@ -343,7 +345,7 @@ export async function POST(req: Request) {
                             })
                         });
 
-                        await setDoc(doc(db, 'external_posts', igPubData.id), {
+                        await adminDb.collection('external_posts').doc(igPubData.id).set({
                            userId: uid,
                            profileId: profileId || 'default',
                            network: 'instagram',
@@ -477,7 +479,7 @@ export async function POST(req: Request) {
 
                     successNetworks.push('linkedin');
                     
-                    await setDoc(doc(db, 'external_posts', postData.id || `li_${Date.now()}`), {
+                    await adminDb.collection('external_posts').doc(postData.id || `li_${Date.now()}`).set({
                        userId: uid,
                        profileId: profileId || 'default',
                        network: 'linkedin',
@@ -613,7 +615,7 @@ export async function POST(req: Request) {
                     console.log(`[TikTok Publish] Upload successful. publish_id: ${publishId}`);
                     successNetworks.push('tiktok');
 
-                    await setDoc(doc(db, 'external_posts', publishId || `tt_${Date.now()}`), {
+                    await adminDb.collection('external_posts').doc(publishId || `tt_${Date.now()}`).set({
                        userId: uid,
                        profileId: profileId || 'default',
                        network: 'tiktok',
@@ -641,7 +643,7 @@ export async function POST(req: Request) {
         }
 
         if (successNetworks.length > 0) {
-            await updateDoc(postRef, {
+            await postRef.update({
                 status: 'published',
                 publishedAt: new Date(),
                 publishError: errorLog || null,
@@ -651,7 +653,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: true, published: successNetworks, errors: errorLog || null, info: infoLog || null });
 
         } else {
-            await updateDoc(postRef, {
+            await postRef.update({
                 status: 'error',
                 publishError: errorLog || 'No se pudo publicar en ninguna red'
             });

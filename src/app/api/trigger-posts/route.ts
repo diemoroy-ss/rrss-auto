@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
-import { db } from '../../../lib/firebase'; // We need admin sdk or just regular client if rules allow
-import { collection, query, where, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { adminDb } from '../../../lib/firebase-admin';
 import { decrypt } from '../../../lib/encryption';
-import { getQuotaUsage, getPlanLimit } from '../../../lib/quota';
+import { getQuotaUsageAdmin, getPlanLimitAdmin } from '../../../lib/quota-admin';
 
 // This endpoint is meant to be called by N8N on a cron schedule (e.g. every 5 minutes)
 export async function GET(req: Request) {
@@ -16,27 +15,20 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        if (!adminDb) {
+            return NextResponse.json({ error: "Firebase Admin SDK not initialized" }, { status: 500 });
+        }
         const now = new Date();
 
-        // Warning: Firebase Client SDK in Node environment might hit permission errors 
-        // if your Firestore security rules block unauthenticated reads to 'social_posts' and 'users'.
-        // For this API to work WITHOUT Firebase Admin SDK, rules must be somewhat open or 
-        // we must use the REST API with a Service Account/API Key.
-        // Fetch both pending and confirmed posts scheduled for now or earlier
-        const qPending = query(
-            collection(db, "social_posts"), 
-            where("status", "==", "pending"),
-            where("scheduledFor", "<=", now)
-        );
-        const qConfirmed = query(
-            collection(db, "social_posts"), 
-            where("status", "==", "confirmed"),
-            where("scheduledFor", "<=", now)
-        );
-
         const [snapPending, snapConfirmed] = await Promise.all([
-            getDocs(qPending),
-            getDocs(qConfirmed)
+            adminDb.collection("social_posts")
+                .where("status", "==", "pending")
+                .where("scheduledFor", "<=", now)
+                .get(),
+            adminDb.collection("social_posts")
+                .where("status", "==", "confirmed")
+                .where("scheduledFor", "<=", now)
+                .get()
         ]);
         
         const allDocs = [...snapPending.docs, ...snapConfirmed.docs];
@@ -53,10 +45,10 @@ export async function GET(req: Request) {
 
             if (!uid) continue;
 
-            const userSnap = await getDoc(doc(db, "users", uid));
-            if (!userSnap.exists()) continue;
+            const userSnap = await adminDb.collection("users").doc(uid).get();
+            if (!userSnap.exists) continue;
 
-            const userData = userSnap.data();
+            const userData = userSnap.data()!;
             
             // Multi-tenant profile resolution
             let targetProfile: any = null;
@@ -73,17 +65,17 @@ export async function GET(req: Request) {
             // --- QUOTA CHECK ---
             const cacheKey = `${uid}_${profileId || 'default'}`;
             if (userUsageCache[cacheKey] === undefined) {
-                 userUsageCache[cacheKey] = await getQuotaUsage(uid, profileId || 'default');
+                 userUsageCache[cacheKey] = await getQuotaUsageAdmin(uid, profileId || 'default');
             }
             
-            const limit = await getPlanLimit(userData.plan || 'free');
+            const limit = await getPlanLimitAdmin(userData.plan || 'free');
             const postNetworkCount = postData.networks?.length || 1;
             
             if (userUsageCache[cacheKey] + postNetworkCount > limit) {
                  // Mark as quota exceeded so it doesn't get picked up repeatedly
-                 await updateDoc(doc(db, "social_posts", postId), {
-                     status: 'quota_exceeded'
-                 });
+                  await adminDb.collection("social_posts").doc(postId).update({
+                      status: 'quota_exceeded'
+                  });
                  continue; // Skip this post
             }
 
@@ -161,7 +153,7 @@ export async function GET(req: Request) {
             });
             
             // Mark as processing so it doesn't get picked up again
-            await updateDoc(doc(db, "social_posts", postId), {
+            await adminDb.collection("social_posts").doc(postId).update({
                 status: 'processing'
             });
         }
