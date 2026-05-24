@@ -709,226 +709,30 @@ export default function RrssCreatePost() {
             ) : previewSlides.length > 0 ? (
                 postType === 'Reel' ? (
                    <div className="lg:sticky lg:top-24 mt-8 lg:mt-0 space-y-6 animate-in fade-in duration-300">
-                     
-                     {/* 1. PORTADA / COVER GENERADA */}
-                     <div className="premium-card p-6 space-y-4">
-                       <div className="flex items-center justify-between">
-                         <div className="flex items-center gap-2">
-                           <span className="text-xl">🖼️</span>
-                           <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest">Portada / Imagen de Referencia</h4>
-                         </div>
-                         {previewSlides[0]?.url && !previewSlides[0].url.match(/\.(mp4|mov|webm|quicktime)/i) && (
-                           <a 
-                             href={previewSlides[0].url} 
-                             download="cover_reference.png" 
-                             target="_blank"
-                             rel="noopener noreferrer"
-                             className="text-[10px] font-black uppercase bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-xl border border-indigo-200 transition-all flex items-center gap-1.5"
-                           >
-                             📥 Descargar Portada
-                           </a>
-                         )}
-                       </div>
-                       
+                     <div className="premium-card p-8 text-center flex flex-col items-center justify-center min-h-[450px] bg-slate-50/50 border-2 border-slate-100 rounded-[32px] shadow-sm">
                        {previewSlides[0]?.url && !previewSlides[0].url.match(/\.(mp4|mov|webm|quicktime)/i) ? (
-                         <div className="aspect-[9/16] max-h-[40vh] rounded-2xl overflow-hidden bg-slate-900 border-4 border-white shadow-md relative mx-auto flex items-center justify-center">
+                         <div className="aspect-[9/16] w-full max-w-[200px] rounded-2xl overflow-hidden bg-slate-100 border-4 border-white shadow-md relative mb-6">
                            {/* eslint-disable-next-line @next/next/no-img-element */}
                            <img src={previewSlides[0].url} alt="Cover Reference" className="w-full h-full object-cover" />
-                           <div className="absolute inset-0 bg-slate-950/20 backdrop-blur-[1px]"></div>
-                           <div className="absolute bottom-4 left-4 right-4 text-center bg-black/60 backdrop-blur-md py-2 px-3 rounded-xl border border-white/10 text-white font-black text-[10px] uppercase tracking-wider">
-                             Imagen de referencia para tu video
-                           </div>
-                         </div>
-                       ) : previewSlides[0]?.url ? (
-                         <div className="aspect-[9/16] max-h-[50vh] rounded-2xl overflow-hidden bg-black border-4 border-white shadow-xl relative mx-auto flex items-center justify-center">
-                           <video src={previewSlides[0].url} autoPlay loop muted playsInline controls className="w-full h-full object-cover" />
-                           <div className="absolute top-4 right-4 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full shadow-lg">
-                              Video Cargado
-                           </div>
                          </div>
                        ) : (
-                         <div className="p-8 border-2 border-dashed border-slate-200 rounded-2xl text-center text-xs text-slate-400 font-bold italic">
-                           Genera la previsualización primero para ver la portada
-                         </div>
+                         <div className="text-6xl mb-6 opacity-80">🎬</div>
                        )}
+                       <h4 className="font-black text-lg mb-2 text-slate-800 uppercase tracking-tight">Reel en Producción</h4>
+                       <p className="font-medium text-slate-500 text-sm max-w-xs leading-relaxed mb-6">
+                         Ya hemos generado tu portada, prompt de animación y locución de audio.
+                       </p>
+                       <button
+                         type="button"
+                         onClick={() => setShowReelWorkspace(true)}
+                         className="w-full max-w-xs bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm py-4 px-6 rounded-2xl transition-all shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2"
+                       >
+                         🎬 Abrir Espacio de Producción
+                       </button>
                      </div>
-
-                     {/* 2. PROMPT DE ANIMACIÓN (IMAGE-TO-VIDEO) */}
-                     {videoPrompt && (
-                       <div className="premium-card p-6 space-y-4 bg-gradient-to-br from-slate-900 to-indigo-950 text-white border-0 shadow-xl">
-                         <div className="flex items-center justify-between">
-                           <h4 className="text-xs font-black uppercase tracking-widest text-indigo-300">🎬 Prompt de Animación (Image-to-Video)</h4>
-                           <button
-                             type="button"
-                             onClick={() => {
-                               navigator.clipboard.writeText(videoPrompt);
-                               setStatusModal({
-                                   isOpen: true,
-                                   type: "success",
-                                   title: "Copiado",
-                                   message: "¡Prompt copiado al portapapeles!"
-                               });
-                             }}
-                             className="text-[10px] font-black uppercase bg-indigo-600/50 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-xl border border-indigo-500/30 transition-all"
-                           >
-                             📋 Copiar Prompt
-                           </button>
-                         </div>
-                         <p className="text-xs text-indigo-100/70 font-medium leading-relaxed">
-                           Usa este prompt descriptivo en inglés junto con la imagen descargada de arriba para generar tu video en Runway o Luma.
-                         </p>
-                         <div className="p-4 bg-slate-950/80 rounded-2xl border border-indigo-900/50 font-mono text-xs select-all break-words text-indigo-200">
-                           {videoPrompt}
-                         </div>
-                         
-                         <div className="pt-2 border-t border-indigo-900/50">
-                           <p className="text-[10px] font-black uppercase text-indigo-400 tracking-wider mb-2">Herramientas recomendadas:</p>
-                           <div className="flex flex-wrap gap-2">
-                             <a href="https://runwayml.com/" target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg transition-colors">Runway Gen-3</a>
-                             <a href="https://lumalabs.ai/dream-machine" target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg transition-colors">Luma Dream Machine</a>
-                             <a href="https://klingai.com/" target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg transition-colors">Kling AI</a>
-                             <a href="https://pika.art/" target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg transition-colors">Pika Labs</a>
-                           </div>
-                         </div>
-                       </div>
-                     )}
-
-                     {/* 3. LOCUCIÓN AUDIO CON ELEVENLABS */}
-                     {voiceoverScript && (
-                       <div className="premium-card p-6 space-y-4">
-                         <div className="flex items-center justify-between">
-                           <h4 className="text-xs font-black uppercase tracking-widest text-slate-400">🗣️ Audio de Locución (Text-to-Speech)</h4>
-                           {audioUrl && (
-                             <a 
-                               href={audioUrl} 
-                               download="voiceover.mp3" 
-                               target="_blank"
-                               rel="noopener noreferrer"
-                               className="text-[10px] font-black uppercase bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-xl border border-indigo-200 transition-all flex items-center gap-1.5"
-                             >
-                               🔊 Descargar Locución
-                             </a>
-                           )}
-                         </div>
-                         
-                         {audioUrl ? (
-                           <div className="bg-indigo-50/50 p-4 border border-indigo-100 rounded-2xl flex items-center justify-center">
-                             <audio src={audioUrl} controls className="w-full" />
-                           </div>
-                         ) : (
-                           <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-center text-xs text-slate-400 font-bold italic">
-                             Genera la previsualización para crear el audio.
-                           </div>
-                         )}
-
-                         <div className="space-y-1">
-                           <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Guion de Voz:</span>
-                           <p className="p-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs text-slate-600 font-medium italic leading-relaxed">
-                             "{voiceoverScript}"
-                           </p>
-                         </div>
-                       </div>
-                     )}
-
-                     {/* 4. SELECTOR Y CARGADOR DE VIDEO FINAL */}
-                     {previewSlides.length > 0 && (
-                       <div className="premium-card p-6 space-y-4 border-2 border-dashed border-indigo-300 bg-indigo-50/10">
-                         <h4 className="text-xs font-black uppercase tracking-widest text-indigo-700">📤 Sube tu Video de Reel Final</h4>
-                         <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                           Una vez que hayas creado tu video con la locución montada, súbelo aquí en formato MP4 para poder publicarlo.
-                         </p>
-                         
-                         <label className="flex flex-col items-center justify-center bg-white border-2 border-dashed border-indigo-200 hover:bg-indigo-50 hover:border-indigo-400 rounded-2xl cursor-pointer group hover:scale-[1.01] transition-all text-indigo-500 py-8 px-4 shadow-sm relative">
-                           {reelVideoUploading ? (
-                             <div className="flex flex-col items-center gap-3">
-                               <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
-                               <span className="text-xs font-black uppercase text-indigo-600">Subiendo video a Firebase Storage...</span>
-                             </div>
-                           ) : (
-                             <>
-                               <input 
-                                 type="file" 
-                                 accept="video/mp4,video/quicktime,video/webm" 
-                                 onChange={async (e) => {
-                                   if (e.target.files && e.target.files[0]) {
-                                     const f = e.target.files[0];
-                                     if (f.size / (1024*1024) > 100) {
-                                       setStatusModal({
-                                          isOpen: true,
-                                          type: "error",
-                                          title: "Video demasiado grande",
-                                          message: "Video demasiado grande. Máximo 100MB."
-                                       });
-                                       return;
-                                     }
-                                     setReelVideoUploading(true);
-                                     try {
-                                       const ext = f.name.split('.').pop();
-                                       const filename = `reel_uploads/${user?.uid}/${Date.now()}.${ext}`;
-                                       const storageRef = ref(storage, `social_media_uploads/${user?.uid}/${filename}`);
-                                       await uploadBytes(storageRef, f);
-                                       const downloadUrl = await getDownloadURL(storageRef);
-                                       
-                                       setPreviewSlides(prev => {
-                                         const copy = [...prev];
-                                         if (copy[0]) {
-                                           copy[0].url = downloadUrl;
-                                           copy[0].finalUrl = downloadUrl;
-                                         }
-                                         return copy;
-                                       });
-                                     } catch (uploadErr) {
-                                       console.error(uploadErr);
-                                       setStatusModal({
-                                           isOpen: true,
-                                           type: "error",
-                                           title: "Error de carga",
-                                           message: "Error subiendo el video."
-                                       });
-                                     } finally {
-                                       setReelVideoUploading(false);
-                                     }
-                                   }
-                                 }}
-                                 className="hidden" 
-                               />
-                               <span className="text-3xl mb-1 group-hover:rotate-12 transition-transform">🎥</span>
-                               <span className="text-xs font-black uppercase tracking-tight text-center">
-                                 {previewSlides[0]?.url && previewSlides[0].url.match(/\.(mp4|mov|webm|quicktime)/i) ? 'Reemplazar Video Cargado' : 'Seleccionar Video Final'}
-                               </span>
-                             </>
-                           )}
-                         </label>
-                       </div>
-                     )}
-
-                     {/* ACCIONES DE PUBLICACIÓN / AGENDADO */}
-                     {isReady && !showScheduler ? (
-                        <div className="grid grid-cols-2 gap-4 mt-8">
-                           <button type="button" onClick={() => handleSubmit(undefined, true)} disabled={loading} className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-black text-[14px] py-4 rounded-[20px] transition-all flex items-center justify-center gap-2">
-                              {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : '⚡ Publicar Ahora'}
-                           </button>
-                           <button type="button" onClick={() => setShowScheduler(true)} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[14px] py-4 rounded-[20px] transition-all flex items-center justify-center gap-2">
-                              📅 Aprobar y Agendar
-                           </button>
-                        </div>
-                     ) : (
-                        showScheduler && (
-                         <div className="flex gap-3 mt-8">
-                            <button type="button" onClick={() => setShowScheduler(false)} disabled={loading} className="w-1/3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-[14px] py-4 rounded-[20px] transition-all flex items-center justify-center">
-                               Cancelar
-                            </button>
-                            {isReady && (
-                               <button onClick={(e) => handleSubmit(e, false)} disabled={loading} className="w-2/3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-black text-[15px] py-4 px-6 rounded-[20px] transition-all shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 hover:-translate-y-1">
-                                  {loading ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : '✅ Confirmar Agendamiento'}
-                               </button>
-                            )}
-                         </div>
-                        )
-                     )}
                    </div>
                 ) : (
-                   <div className="lg:sticky lg:top-24 mt-8 lg:mt-0">
+                    <div className="lg:sticky lg:top-24 mt-8 lg:mt-0">
                      <CarouselWizard 
                         slides={previewSlides}
                         onUpdateSlide={updateSlideFinalUrl}
@@ -1001,32 +805,32 @@ export default function RrssCreatePost() {
       />
 
       {showReelWorkspace && (
-        <div className="fixed inset-0 bg-slate-950 z-[150] overflow-y-auto px-6 py-12 md:p-12 flex flex-col justify-start items-center animate-in fade-in duration-300">
+        <div className="fixed inset-0 bg-white z-[150] overflow-y-auto px-6 py-12 md:p-12 flex flex-col justify-start items-center animate-in fade-in duration-300">
            {/* Header */}
-           <div className="w-full max-w-5xl flex justify-between items-center mb-10 pb-6 border-b border-slate-800">
+           <div className="w-full max-w-5xl flex justify-between items-center mb-10 pb-6 border-b border-slate-150">
               <div>
-                 <span className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em]">Asistente de Video IA</span>
-                 <h2 className="text-3xl font-black text-white tracking-tight mt-1">Tu Espacio de Producción de Reel</h2>
+                 <span className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em]">Asistente de Video IA</span>
+                 <h2 className="text-3xl font-black text-slate-900 tracking-tight mt-1">Tu Espacio de Producción de Reel</h2>
               </div>
               <button 
                 onClick={() => setShowReelWorkspace(false)}
-                className="bg-slate-900 hover:bg-slate-850 hover:text-white text-slate-400 px-5 py-2.5 rounded-xl text-xs font-black border border-slate-800 transition-colors uppercase tracking-widest"
+                className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-5 py-2.5 rounded-xl text-xs font-black border border-slate-200 transition-colors uppercase tracking-widest"
               >
                 Cerrar
               </button>
            </div>
 
            {/* Content Grid */}
-           <div className="w-full max-w-5xl grid lg:grid-cols-12 gap-8 items-start mb-10 text-white">
+           <div className="w-full max-w-5xl grid lg:grid-cols-12 gap-8 items-start mb-10 text-slate-800">
               
               {/* Left column: Reference Cover & final upload */}
               <div className="lg:col-span-6 space-y-6">
                  {/* Reference image */}
-                 <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-xl">
+                 <div className="bg-slate-50/50 border border-slate-200/80 rounded-3xl p-6 space-y-4 shadow-sm">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="text-xl">🖼️</span>
-                        <h4 className="text-xs font-black text-slate-200 uppercase tracking-widest">1. Imagen de Portada / Referencia</h4>
+                        <h4 className="text-xs font-black text-slate-700 uppercase tracking-widest">1. Imagen de Portada / Referencia</h4>
                       </div>
                       {previewSlides[0]?.url && !previewSlides[0].url.match(/\.(mp4|mov|webm|quicktime)/i) && (
                         <a 
@@ -1034,7 +838,7 @@ export default function RrssCreatePost() {
                           download="cover_reference.png" 
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-[10px] font-black uppercase bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl border border-indigo-500/30 transition-all flex items-center gap-1.5 shadow-lg shadow-indigo-600/10"
+                          className="text-[10px] font-black uppercase bg-indigo-600 hover:bg-indigo-750 text-white px-4 py-2 rounded-xl border border-indigo-500/20 transition-all flex items-center gap-1.5 shadow-lg shadow-indigo-600/10"
                         >
                           📥 Descargar Portada
                         </a>
@@ -1042,32 +846,32 @@ export default function RrssCreatePost() {
                     </div>
                     
                     {previewSlides[0]?.url && !previewSlides[0].url.match(/\.(mp4|mov|webm|quicktime)/i) ? (
-                      <div className="aspect-[9/16] max-h-[50vh] rounded-2xl overflow-hidden bg-slate-950 border-4 border-slate-800 shadow-inner relative mx-auto flex items-center justify-center">
+                      <div className="aspect-[9/16] max-h-[50vh] rounded-2xl overflow-hidden bg-slate-100 border-4 border-white shadow-md relative mx-auto flex items-center justify-center">
                         <img src={previewSlides[0].url} alt="Cover Reference" className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-slate-955/20 backdrop-blur-[1px]"></div>
-                        <div className="absolute bottom-4 left-4 right-4 text-center bg-black/85 backdrop-blur-md py-2.5 px-3 rounded-xl border border-white/10 text-white font-black text-[10px] uppercase tracking-wider">
+                        <div className="absolute inset-0 bg-slate-900/10 backdrop-blur-[0.5px]"></div>
+                        <div className="absolute bottom-4 left-4 right-4 text-center bg-slate-900/90 backdrop-blur-md py-2.5 px-3 rounded-xl border border-white/10 text-white font-black text-[10px] uppercase tracking-wider">
                           Usa esta imagen en tu herramienta de video
                         </div>
                       </div>
                     ) : (
-                      <div className="p-8 border-2 border-dashed border-slate-800 rounded-2xl text-center text-xs text-slate-500 font-bold italic">
+                      <div className="p-8 border-2 border-dashed border-slate-200 rounded-2xl text-center text-xs text-slate-400 font-bold italic">
                         No hay portada disponible.
                       </div>
                     )}
                  </div>
 
                  {/* final video upload */}
-                 <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-xl">
-                    <h4 className="text-xs font-black uppercase tracking-widest text-indigo-400">4. Sube tu Video de Reel Final</h4>
-                    <p className="text-xs text-slate-400 font-medium leading-relaxed">
+                 <div className="bg-slate-50/50 border border-slate-200/80 rounded-3xl p-6 space-y-4 shadow-sm">
+                    <h4 className="text-xs font-black uppercase tracking-widest text-indigo-600">4. Sube tu Video de Reel Final</h4>
+                    <p className="text-xs text-slate-500 font-medium leading-relaxed">
                       Una vez que hayas creado tu video en Runway/Luma combinando la imagen de arriba con la locución de la derecha, súbelo aquí en formato MP4.
                     </p>
                     
-                    <label className="flex flex-col items-center justify-center bg-slate-950 border-2 border-dashed border-slate-800 hover:bg-slate-900 hover:border-indigo-500/50 rounded-2xl cursor-pointer group hover:scale-[1.01] transition-all text-indigo-400 py-10 px-4 shadow-sm relative">
+                    <label className="flex flex-col items-center justify-center bg-white border-2 border-dashed border-slate-200 hover:bg-slate-50 hover:border-indigo-500/50 rounded-2xl cursor-pointer group hover:scale-[1.01] transition-all text-indigo-600 py-10 px-4 shadow-sm relative">
                       {reelVideoUploading ? (
                         <div className="flex flex-col items-center gap-3">
-                          <div className="w-8 h-8 border-4 border-indigo-900/30 border-t-indigo-500 rounded-full animate-spin"></div>
-                          <span className="text-xs font-black uppercase text-indigo-400">Subiendo video a Firebase Storage...</span>
+                          <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                          <span className="text-xs font-black uppercase text-indigo-600">Subiendo video a Firebase Storage...</span>
                         </div>
                       ) : (
                         <>
@@ -1136,7 +940,7 @@ export default function RrssCreatePost() {
                             className="hidden" 
                           />
                           <span className="text-4xl mb-2 group-hover:rotate-12 transition-transform">🎥</span>
-                          <span className="text-xs font-black uppercase tracking-wider text-center text-slate-350">
+                          <span className="text-xs font-black uppercase tracking-wider text-center text-slate-600">
                             Seleccionar Video Final (.MP4)
                           </span>
                         </>
@@ -1149,9 +953,9 @@ export default function RrssCreatePost() {
               <div className="lg:col-span-6 space-y-6">
                  {/* Video Animation Prompt */}
                  {videoPrompt && (
-                   <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-xl">
+                   <div className="bg-slate-50/50 border border-slate-200/80 rounded-3xl p-6 space-y-4 shadow-sm">
                      <div className="flex items-center justify-between">
-                       <h4 className="text-xs font-black uppercase tracking-widest text-indigo-400">2. Prompt de Animación (Image-to-Video)</h4>
+                       <h4 className="text-xs font-black uppercase tracking-widest text-indigo-600">2. Prompt de Animación (Image-to-Video)</h4>
                        <button
                          type="button"
                          onClick={() => {
@@ -1163,25 +967,25 @@ export default function RrssCreatePost() {
                                message: "¡Prompt copiado al portapapeles!"
                            });
                          }}
-                         className="text-[10px] font-black uppercase bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 hover:text-white px-4 py-2 rounded-xl border border-indigo-500/20 transition-all"
+                         className="text-[10px] font-black uppercase bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-4 py-2 rounded-xl border border-indigo-200 transition-all"
                        >
                          📋 Copiar Prompt
                        </button>
                      </div>
-                     <p className="text-xs text-slate-450 font-medium leading-relaxed">
+                     <p className="text-xs text-slate-500 font-medium leading-relaxed">
                        Copia este prompt descriptivo en inglés y pégalo en tu generador de video (junto a la imagen descargada) para generar el movimiento.
                      </p>
-                     <div className="p-4 bg-slate-950 rounded-2xl border border-slate-850 font-mono text-xs select-all break-words text-indigo-300 leading-relaxed">
+                     <div className="p-4 bg-slate-100 border border-slate-200 rounded-2xl font-mono text-xs select-all break-words text-slate-700 leading-relaxed">
                        {videoPrompt}
                      </div>
                      
-                     <div className="pt-4 border-t border-slate-800/80">
-                       <p className="text-[10px] font-black uppercase text-slate-500 tracking-wider mb-3">Herramientas Recomendadas para Generar Video:</p>
+                     <div className="pt-4 border-t border-slate-200">
+                       <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider mb-3">Herramientas Recomendadas para Generar Video:</p>
                        <div className="grid grid-cols-2 gap-2.5">
-                         <a href="https://runwayml.com/" target="_blank" rel="noopener noreferrer" className="text-xs font-bold bg-slate-850 hover:bg-slate-800 text-white py-3 px-4 rounded-xl border border-slate-800/80 transition-colors text-center">Runway Gen-3</a>
-                         <a href="https://lumalabs.ai/dream-machine" target="_blank" rel="noopener noreferrer" className="text-xs font-bold bg-slate-850 hover:bg-slate-800 text-white py-3 px-4 rounded-xl border border-slate-800/80 transition-colors text-center">Luma Dream Machine</a>
-                         <a href="https://klingai.com/" target="_blank" rel="noopener noreferrer" className="text-xs font-bold bg-slate-850 hover:bg-slate-800 text-white py-3 px-4 rounded-xl border border-slate-800/80 transition-colors text-center">Kling AI</a>
-                         <a href="https://pika.art/" target="_blank" rel="noopener noreferrer" className="text-xs font-bold bg-slate-850 hover:bg-slate-800 text-white py-3 px-4 rounded-xl border border-slate-800/80 transition-colors text-center">Pika Labs</a>
+                         <a href="https://runwayml.com/" target="_blank" rel="noopener noreferrer" className="text-xs font-bold bg-white hover:bg-slate-100 text-slate-700 py-3 px-4 rounded-xl border border-slate-200 transition-colors text-center">Runway Gen-3</a>
+                         <a href="https://lumalabs.ai/dream-machine" target="_blank" rel="noopener noreferrer" className="text-xs font-bold bg-white hover:bg-slate-100 text-slate-700 py-3 px-4 rounded-xl border border-slate-200 transition-colors text-center">Luma Dream Machine</a>
+                         <a href="https://klingai.com/" target="_blank" rel="noopener noreferrer" className="text-xs font-bold bg-white hover:bg-slate-100 text-slate-700 py-3 px-4 rounded-xl border border-slate-200 transition-colors text-center">Kling AI</a>
+                         <a href="https://pika.art/" target="_blank" rel="noopener noreferrer" className="text-xs font-bold bg-white hover:bg-slate-100 text-slate-700 py-3 px-4 rounded-xl border border-slate-200 transition-colors text-center">Pika Labs</a>
                        </div>
                      </div>
                    </div>
@@ -1189,16 +993,16 @@ export default function RrssCreatePost() {
 
                  {/* Voiceover Script & Audio */}
                  {voiceoverScript && (
-                   <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-xl">
+                   <div className="bg-slate-50/50 border border-slate-200/80 rounded-3xl p-6 space-y-4 shadow-sm">
                      <div className="flex items-center justify-between">
-                       <h4 className="text-xs font-black uppercase tracking-widest text-slate-350">3. Locución de Audio (ElevenLabs)</h4>
+                       <h4 className="text-xs font-black uppercase tracking-widest text-slate-600">3. Locución de Audio (ElevenLabs)</h4>
                        {audioUrl && (
                          <a 
                            href={audioUrl} 
                            download="voiceover.mp3" 
                            target="_blank"
                            rel="noopener noreferrer"
-                           className="text-[10px] font-black uppercase bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl border border-indigo-500/30 transition-all flex items-center gap-1.5"
+                           className="text-[10px] font-black uppercase bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl border border-indigo-500/20 transition-all flex items-center gap-1.5"
                          >
                            🔊 Descargar Audio (.MP3)
                          </a>
@@ -1206,18 +1010,18 @@ export default function RrssCreatePost() {
                      </div>
                      
                      {audioUrl ? (
-                       <div className="bg-slate-950 p-4 border border-slate-800 rounded-2xl flex items-center justify-center">
+                       <div className="bg-slate-100 p-4 border border-slate-200 rounded-2xl flex items-center justify-center">
                          <audio src={audioUrl} controls className="w-full text-slate-800" />
                        </div>
                      ) : (
-                       <div className="p-4 bg-slate-950 border border-slate-800 rounded-2xl text-center text-xs text-slate-500 font-bold italic">
+                       <div className="p-4 bg-slate-100 border border-slate-200 rounded-2xl text-center text-xs text-slate-400 font-bold italic">
                          Audio no disponible.
                        </div>
                      )}
 
                      <div className="space-y-2">
-                       <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Guion de Voz en Español:</span>
-                       <p className="p-5 bg-slate-950 border border-slate-800 rounded-2xl text-xs text-slate-300 font-medium italic leading-relaxed">
+                       <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Guion de Voz en Español:</span>
+                       <p className="p-5 bg-slate-100 border border-slate-200 rounded-2xl text-xs text-slate-700 font-medium italic leading-relaxed">
                          "{voiceoverScript}"
                        </p>
                      </div>
