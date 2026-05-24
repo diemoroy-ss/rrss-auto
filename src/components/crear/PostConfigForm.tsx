@@ -319,7 +319,7 @@ export default function PostConfigForm({
                   disabled={previewLoading || !idea}
                   className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-indigo-200"
                 >
-                  {previewLoading ? 'Generando...' : '🖼️ Ver Previsualización'}
+                  {previewLoading ? 'Generando...' : (postType === 'Reel' || networks.tiktok) ? '🎬 Generar Prompts y Audio' : '🖼️ Ver Previsualización'}
                 </button>
               )}
             </div>
