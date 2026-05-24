@@ -12,6 +12,7 @@ export default function NetworkSwitcher() {
   const [newName, setNewName] = useState("");
   const [newIcon, setNewIcon] = useState("🏢");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   const emojis = ['🏢', '💇‍♀️', '🍽️', '🏋️‍♂️', '🐾', '📸', '☕', '👗', '🏠', '🚗'];
 
@@ -20,12 +21,13 @@ export default function NetworkSwitcher() {
   const handleAdd = async () => {
      if (!newName.trim()) return;
      setIsSubmitting(true);
+     setError("");
      try {
         await addProfile(newName, newIcon);
         setIsCreating(false);
         setNewName("");
      } catch (e) {
-        alert("Error al crear la cuenta");
+        setError("Error al crear la cuenta. Inténtalo nuevamente.");
      } finally {
         setIsSubmitting(false);
      }
@@ -51,7 +53,7 @@ export default function NetworkSwitcher() {
       {/* 🎬 EL MODAL NETFLIX STYLE 🎬 */}
       {isOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/95 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200">
-           <div className="absolute top-8 right-8 text-white/50 hover:text-white cursor-pointer text-5xl font-light transition-colors" onClick={() => { setIsOpen(false); setIsCreating(false); }}>×</div>
+           <div className="absolute top-8 right-8 text-white/50 hover:text-white cursor-pointer text-5xl font-light transition-colors" onClick={() => { setIsOpen(false); setIsCreating(false); setError(""); }}>×</div>
            
            <div className="text-center w-full max-w-6xl px-4 mt-8">
               {!isCreating ? (
@@ -101,6 +103,11 @@ export default function NetworkSwitcher() {
                 <div className="max-w-md mx-auto animate-in slide-in-from-bottom-4 duration-300">
                     <h2 className="text-4xl font-black text-white tracking-tight mb-8">Nueva Cuenta Business</h2>
                     <div className="bg-slate-800/50 p-8 rounded-[32px] border border-slate-700 shadow-2xl space-y-8">
+                        {error && (
+                           <div className="p-4 bg-rose-500/20 text-rose-300 rounded-2xl font-bold text-xs border border-rose-500/30 text-left animate-in fade-in">
+                              {error}
+                           </div>
+                        )}
                         <div className="flex justify-center mb-4">
                            <div className="w-24 h-24 bg-indigo-600 rounded-3xl flex items-center justify-center text-5xl shadow-lg border-2 border-indigo-400">
                               {newIcon}
@@ -136,7 +143,7 @@ export default function NetworkSwitcher() {
 
                         <div className="pt-4 flex gap-4">
                            <button 
-                              onClick={() => setIsCreating(false)}
+                              onClick={() => { setIsCreating(false); setError(""); setNewName(""); }}
                               className="flex-1 py-4 font-bold text-slate-400 hover:text-white transition-colors"
                            >
                               Cancelar

@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import VoiceMic from "../VoiceMic";
+import StatusModal from "../StatusModal";
 
 interface PostConfigFormProps {
   idea: string;
@@ -72,6 +73,16 @@ export default function PostConfigForm({
   hideSubmit = false, showScheduler = false, setShowScheduler,
   constraints
 }: PostConfigFormProps) {
+  const [localStatusModal, setLocalStatusModal] = React.useState<{
+    isOpen: boolean;
+    type: "success" | "error" | "info" | "confirm";
+    title: string;
+    message: string;
+    onConfirm?: () => void;
+    onCancel?: () => void;
+    confirmText?: string;
+    cancelText?: string;
+  } | null>(null);
   
   // Rule B: Force Reel if TikTok is selected
   React.useEffect(() => {
@@ -376,7 +387,13 @@ export default function PostConfigForm({
                                     const isVideo = f.type.startsWith('video/');
                                     const maxSize = isVideo ? 100 : 10;
                                     if (f.size / (1024*1024) > maxSize) {
-                                        alert(isVideo ? `Video demasiado grande. Máx ${maxSize}MB` : `Imagen demasiado grande. Máx ${maxSize}MB`);
+                                        setLocalStatusModal({
+                                            isOpen: true,
+                                            type: "error",
+                                            title: "Archivo demasiado grande",
+                                            message: isVideo ? `Video demasiado grande. Máx ${maxSize}MB` : `Imagen demasiado grande. Máx ${maxSize}MB`,
+                                            onConfirm: () => setLocalStatusModal(null)
+                                        });
                                         return;
                                     }
                                     onUploadNewTemplate(f);
@@ -417,9 +434,21 @@ export default function PostConfigForm({
                                       type="button"
                                       onClick={(e) => {
                                           e.stopPropagation(); // Evitar seleccionar el template al borrar
-                                          if (confirm("¿Estás seguro de que deseas eliminar este archivo de tu galería?")) {
-                                              onDeleteTemplate(tmpl);
-                                          }
+                                          setLocalStatusModal({
+                                              isOpen: true,
+                                              type: "confirm",
+                                              title: "¿Eliminar de la galería?",
+                                              message: "¿Estás seguro de que deseas eliminar este archivo de tu galería?",
+                                              confirmText: "Sí, eliminar",
+                                              cancelText: "Cancelar",
+                                              onConfirm: async () => {
+                                                  if (onDeleteTemplate) {
+                                                      await onDeleteTemplate(tmpl);
+                                                  }
+                                                  setLocalStatusModal(null);
+                                              },
+                                              onCancel: () => setLocalStatusModal(null)
+                                          });
                                       }}
                                       className="absolute top-2 right-2 w-8 h-8 rounded-full bg-rose-600/90 text-white flex items-center justify-center shadow-md hover:bg-rose-700 active:scale-95 transition-all opacity-0 group-hover:opacity-100 z-20"
                                       title="Eliminar de la galería"
@@ -481,6 +510,18 @@ export default function PostConfigForm({
               </button>
            </div>
         )
+      )}
+      {localStatusModal && (
+        <StatusModal
+          isOpen={localStatusModal.isOpen}
+          type={localStatusModal.type}
+          title={localStatusModal.title}
+          message={localStatusModal.message}
+          onConfirm={localStatusModal.onConfirm}
+          onCancel={localStatusModal.onCancel}
+          confirmText={localStatusModal.confirmText}
+          cancelText={localStatusModal.cancelText}
+        />
       )}
     </form>
   );

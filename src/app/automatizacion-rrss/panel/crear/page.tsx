@@ -686,7 +686,12 @@ export default function RrssCreatePost() {
                                       const isVideo = f.type.startsWith('video/');
                                       const maxSize = isVideo ? 100 : 10;
                                       if (f.size / (1024*1024) > maxSize) {
-                                          alert(isVideo ? `Video demasiado grande. Máx ${maxSize}MB` : `Imagen demasiado grande. Máx ${maxSize}MB`);
+                                          setStatusModal({
+                                              isOpen: true,
+                                              type: "error",
+                                              title: "Archivo demasiado grande",
+                                              message: isVideo ? `Video demasiado grande. Máx ${maxSize}MB` : `Imagen demasiado grande. Máx ${maxSize}MB`
+                                          });
                                           return;
                                       }
                                       handleUploadNewTemplate(f);
@@ -755,7 +760,12 @@ export default function RrssCreatePost() {
                              type="button"
                              onClick={() => {
                                navigator.clipboard.writeText(videoPrompt);
-                               alert("¡Prompt copiado al portapapeles!");
+                               setStatusModal({
+                                   isOpen: true,
+                                   type: "success",
+                                   title: "Copiado",
+                                   message: "¡Prompt copiado al portapapeles!"
+                               });
                              }}
                              className="text-[10px] font-black uppercase bg-indigo-600/50 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-xl border border-indigo-500/30 transition-all"
                            >
@@ -841,7 +851,12 @@ export default function RrssCreatePost() {
                                    if (e.target.files && e.target.files[0]) {
                                      const f = e.target.files[0];
                                      if (f.size / (1024*1024) > 100) {
-                                       alert("Video demasiado grande. Máximo 100MB.");
+                                       setStatusModal({
+                                          isOpen: true,
+                                          type: "error",
+                                          title: "Video demasiado grande",
+                                          message: "Video demasiado grande. Máximo 100MB."
+                                       });
                                        return;
                                      }
                                      setReelVideoUploading(true);
@@ -862,7 +877,12 @@ export default function RrssCreatePost() {
                                        });
                                      } catch (uploadErr) {
                                        console.error(uploadErr);
-                                       alert("Error subiendo el video.");
+                                       setStatusModal({
+                                           isOpen: true,
+                                           type: "error",
+                                           title: "Error de carga",
+                                           message: "Error subiendo el video."
+                                       });
                                      } finally {
                                        setReelVideoUploading(false);
                                      }
