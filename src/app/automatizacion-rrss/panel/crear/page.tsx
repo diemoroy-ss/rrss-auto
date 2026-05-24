@@ -893,7 +893,7 @@ export default function RrssCreatePost() {
                                 setReelVideoUploading(true);
                                 try {
                                   const ext = f.name.split('.').pop();
-                                  const filename = `reel_upload_${Date.now()}.${ext}`;
+                                  const filename = `manual_post_${Date.now()}.${ext}`;
                                   const storageRef = ref(storage, `social_media_uploads/${user?.uid}/${filename}`);
                                   await uploadBytes(storageRef, f);
                                   const downloadUrl = await getDownloadURL(storageRef);
