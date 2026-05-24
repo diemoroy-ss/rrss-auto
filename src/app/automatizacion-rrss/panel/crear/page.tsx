@@ -66,6 +66,10 @@ export default function RrssCreatePost() {
 
   const [aiOptions, setAiOptions] = useState<string[]>([]);
   const [showOptionsModal, setShowOptionsModal] = useState(false);
+  const [videoPrompt, setVideoPrompt] = useState("");
+  const [voiceoverScript, setVoiceoverScript] = useState("");
+  const [audioUrl, setAudioUrl] = useState("");
+  const [reelVideoUploading, setReelVideoUploading] = useState(false);
   
   const [socialRules, setSocialRules] = useState<SocialRules>(DEFAULT_SOCIAL_RULES);
   const [constraints, setConstraints] = useState({ safeCharLimit: 2200, allowedMediaTypes: ["image", "video"], warnings: [] as string[], forcedType: "" });
@@ -263,12 +267,22 @@ export default function RrssCreatePost() {
       const data = await response.json();
       const newSlides: CarouselSlide[] = [];
       
-      if (data.imageUrls && Array.isArray(data.imageUrls)) {
-          data.imageUrls.forEach((url: string) => {
-              newSlides.push({ url, copy: data.suggestedCopy || idea });
-          });
-      } else if (data.imageUrl) {
-          newSlides.push({ url: data.imageUrl, copy: data.suggestedCopy || idea });
+      if (postType === 'Reel') {
+          setVideoPrompt(data.videoPrompt || "");
+          setVoiceoverScript(data.voiceoverScript || "");
+          setAudioUrl(data.audioUrl || "");
+          newSlides.push({ url: data.imageUrl || "", copy: data.suggestedCopy || idea });
+      } else {
+          setVideoPrompt("");
+          setVoiceoverScript("");
+          setAudioUrl("");
+          if (data.imageUrls && Array.isArray(data.imageUrls)) {
+              data.imageUrls.forEach((url: string) => {
+                  newSlides.push({ url, copy: data.suggestedCopy || idea });
+              });
+          } else if (data.imageUrl) {
+              newSlides.push({ url: data.imageUrl, copy: data.suggestedCopy || idea });
+          }
       }
 
       if (newSlides.length === 0) {
@@ -533,7 +547,13 @@ export default function RrssCreatePost() {
 
 
   const hasText = creationMode === 'ai' ? idea.trim().length > 0 : manualCaption.trim().length > 0;
-  const hasMedia = (creationMode === 'manual' && !!selectedTemplate) || (creationMode === 'ai' && previewSlides.length > 0);
+  const isReel = postType === 'Reel';
+  const hasReelVideo = isReel 
+    ? (creationMode === 'ai' 
+        ? (previewSlides[0]?.url?.match(/\.(mp4|mov|webm|quicktime)/i) || previewSlides[0]?.url?.includes('video')) 
+        : !!selectedTemplate) 
+    : true;
+  const hasMedia = (creationMode === 'manual' && !!selectedTemplate) || (creationMode === 'ai' && previewSlides.length > 0 && hasReelVideo);
   const isReady = hasText && hasMedia;
 
   if (loadingInitial) return <div className="animate-pulse space-y-4 max-w-2xl"><div className="h-10 bg-slate-200 rounded w-1/3"></div><div className="h-64 bg-slate-200 rounded"></div></div>;
@@ -681,13 +701,186 @@ export default function RrssCreatePost() {
                 )
             ) : previewSlides.length > 0 ? (
                 postType === 'Reel' ? (
-                   <div className="lg:sticky lg:top-24 mt-8 lg:mt-0">
-                     <div className="rounded-[32px] overflow-hidden shadow-2xl relative bg-black aspect-[9/16] max-h-[80vh] max-w-[400px] mx-auto flex items-center justify-center border-4 border-slate-900 ring-4 ring-indigo-500/20">
-                       <video src={previewSlides[0].url} autoPlay loop muted playsInline controls className="w-full h-full object-cover" />
-                       <div className="absolute top-4 right-4 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full shadow-lg">
-                          Reel Generado
+                   <div className="lg:sticky lg:top-24 mt-8 lg:mt-0 space-y-6 animate-in fade-in duration-300">
+                     
+                     {/* 1. PORTADA / COVER GENERADA */}
+                     <div className="premium-card p-6 space-y-4">
+                       <div className="flex items-center justify-between">
+                         <div className="flex items-center gap-2">
+                           <span className="text-xl">🖼️</span>
+                           <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest">Portada / Imagen de Referencia</h4>
+                         </div>
+                         {previewSlides[0]?.url && !previewSlides[0].url.match(/\.(mp4|mov|webm|quicktime)/i) && (
+                           <a 
+                             href={previewSlides[0].url} 
+                             download="cover_reference.png" 
+                             target="_blank"
+                             rel="noopener noreferrer"
+                             className="text-[10px] font-black uppercase bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-xl border border-indigo-200 transition-all flex items-center gap-1.5"
+                           >
+                             📥 Descargar Portada
+                           </a>
+                         )}
                        </div>
+                       
+                       {previewSlides[0]?.url && !previewSlides[0].url.match(/\.(mp4|mov|webm|quicktime)/i) ? (
+                         <div className="aspect-[9/16] max-h-[40vh] rounded-2xl overflow-hidden bg-slate-900 border-4 border-white shadow-md relative mx-auto flex items-center justify-center">
+                           {/* eslint-disable-next-line @next/next/no-img-element */}
+                           <img src={previewSlides[0].url} alt="Cover Reference" className="w-full h-full object-cover" />
+                           <div className="absolute inset-0 bg-slate-950/20 backdrop-blur-[1px]"></div>
+                           <div className="absolute bottom-4 left-4 right-4 text-center bg-black/60 backdrop-blur-md py-2 px-3 rounded-xl border border-white/10 text-white font-black text-[10px] uppercase tracking-wider">
+                             Imagen de referencia para tu video
+                           </div>
+                         </div>
+                       ) : previewSlides[0]?.url ? (
+                         <div className="aspect-[9/16] max-h-[50vh] rounded-2xl overflow-hidden bg-black border-4 border-white shadow-xl relative mx-auto flex items-center justify-center">
+                           <video src={previewSlides[0].url} autoPlay loop muted playsInline controls className="w-full h-full object-cover" />
+                           <div className="absolute top-4 right-4 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full shadow-lg">
+                              Video Cargado
+                           </div>
+                         </div>
+                       ) : (
+                         <div className="p-8 border-2 border-dashed border-slate-200 rounded-2xl text-center text-xs text-slate-400 font-bold italic">
+                           Genera la previsualización primero para ver la portada
+                         </div>
+                       )}
                      </div>
+
+                     {/* 2. PROMPT DE ANIMACIÓN (IMAGE-TO-VIDEO) */}
+                     {videoPrompt && (
+                       <div className="premium-card p-6 space-y-4 bg-gradient-to-br from-slate-900 to-indigo-950 text-white border-0 shadow-xl">
+                         <div className="flex items-center justify-between">
+                           <h4 className="text-xs font-black uppercase tracking-widest text-indigo-300">🎬 Prompt de Animación (Image-to-Video)</h4>
+                           <button
+                             type="button"
+                             onClick={() => {
+                               navigator.clipboard.writeText(videoPrompt);
+                               alert("¡Prompt copiado al portapapeles!");
+                             }}
+                             className="text-[10px] font-black uppercase bg-indigo-600/50 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-xl border border-indigo-500/30 transition-all"
+                           >
+                             📋 Copiar Prompt
+                           </button>
+                         </div>
+                         <p className="text-xs text-indigo-100/70 font-medium leading-relaxed">
+                           Usa este prompt descriptivo en inglés junto con la imagen descargada de arriba para generar tu video en Runway o Luma.
+                         </p>
+                         <div className="p-4 bg-slate-950/80 rounded-2xl border border-indigo-900/50 font-mono text-xs select-all break-words text-indigo-200">
+                           {videoPrompt}
+                         </div>
+                         
+                         <div className="pt-2 border-t border-indigo-900/50">
+                           <p className="text-[10px] font-black uppercase text-indigo-400 tracking-wider mb-2">Herramientas recomendadas:</p>
+                           <div className="flex flex-wrap gap-2">
+                             <a href="https://runwayml.com/" target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg transition-colors">Runway Gen-3</a>
+                             <a href="https://lumalabs.ai/dream-machine" target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg transition-colors">Luma Dream Machine</a>
+                             <a href="https://klingai.com/" target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg transition-colors">Kling AI</a>
+                             <a href="https://pika.art/" target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg transition-colors">Pika Labs</a>
+                           </div>
+                         </div>
+                       </div>
+                     )}
+
+                     {/* 3. LOCUCIÓN AUDIO CON ELEVENLABS */}
+                     {voiceoverScript && (
+                       <div className="premium-card p-6 space-y-4">
+                         <div className="flex items-center justify-between">
+                           <h4 className="text-xs font-black uppercase tracking-widest text-slate-400">🗣️ Audio de Locución (Text-to-Speech)</h4>
+                           {audioUrl && (
+                             <a 
+                               href={audioUrl} 
+                               download="voiceover.mp3" 
+                               target="_blank"
+                               rel="noopener noreferrer"
+                               className="text-[10px] font-black uppercase bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-xl border border-indigo-200 transition-all flex items-center gap-1.5"
+                             >
+                               🔊 Descargar Locución
+                             </a>
+                           )}
+                         </div>
+                         
+                         {audioUrl ? (
+                           <div className="bg-indigo-50/50 p-4 border border-indigo-100 rounded-2xl flex items-center justify-center">
+                             <audio src={audioUrl} controls className="w-full" />
+                           </div>
+                         ) : (
+                           <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-center text-xs text-slate-400 font-bold italic">
+                             Genera la previsualización para crear el audio.
+                           </div>
+                         )}
+
+                         <div className="space-y-1">
+                           <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Guion de Voz:</span>
+                           <p className="p-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs text-slate-600 font-medium italic leading-relaxed">
+                             "{voiceoverScript}"
+                           </p>
+                         </div>
+                       </div>
+                     )}
+
+                     {/* 4. SELECTOR Y CARGADOR DE VIDEO FINAL */}
+                     {previewSlides.length > 0 && (
+                       <div className="premium-card p-6 space-y-4 border-2 border-dashed border-indigo-300 bg-indigo-50/10">
+                         <h4 className="text-xs font-black uppercase tracking-widest text-indigo-700">📤 Sube tu Video de Reel Final</h4>
+                         <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                           Una vez que hayas creado tu video con la locución montada, súbelo aquí en formato MP4 para poder publicarlo.
+                         </p>
+                         
+                         <label className="flex flex-col items-center justify-center bg-white border-2 border-dashed border-indigo-200 hover:bg-indigo-50 hover:border-indigo-400 rounded-2xl cursor-pointer group hover:scale-[1.01] transition-all text-indigo-500 py-8 px-4 shadow-sm relative">
+                           {reelVideoUploading ? (
+                             <div className="flex flex-col items-center gap-3">
+                               <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                               <span className="text-xs font-black uppercase text-indigo-600">Subiendo video a Firebase Storage...</span>
+                             </div>
+                           ) : (
+                             <>
+                               <input 
+                                 type="file" 
+                                 accept="video/mp4,video/quicktime,video/webm" 
+                                 onChange={async (e) => {
+                                   if (e.target.files && e.target.files[0]) {
+                                     const f = e.target.files[0];
+                                     if (f.size / (1024*1024) > 100) {
+                                       alert("Video demasiado grande. Máximo 100MB.");
+                                       return;
+                                     }
+                                     setReelVideoUploading(true);
+                                     try {
+                                       const ext = f.name.split('.').pop();
+                                       const filename = `reel_uploads/${user?.uid}/${Date.now()}.${ext}`;
+                                       const storageRef = ref(storage, `social_media_uploads/${user?.uid}/${filename}`);
+                                       await uploadBytes(storageRef, f);
+                                       const downloadUrl = await getDownloadURL(storageRef);
+                                       
+                                       setPreviewSlides(prev => {
+                                         const copy = [...prev];
+                                         if (copy[0]) {
+                                           copy[0].url = downloadUrl;
+                                           copy[0].finalUrl = downloadUrl;
+                                         }
+                                         return copy;
+                                       });
+                                     } catch (uploadErr) {
+                                       console.error(uploadErr);
+                                       alert("Error subiendo el video.");
+                                     } finally {
+                                       setReelVideoUploading(false);
+                                     }
+                                   }
+                                 }}
+                                 className="hidden" 
+                               />
+                               <span className="text-3xl mb-1 group-hover:rotate-12 transition-transform">🎥</span>
+                               <span className="text-xs font-black uppercase tracking-tight text-center">
+                                 {previewSlides[0]?.url && previewSlides[0].url.match(/\.(mp4|mov|webm|quicktime)/i) ? 'Reemplazar Video Cargado' : 'Seleccionar Video Final'}
+                               </span>
+                             </>
+                           )}
+                         </label>
+                       </div>
+                     )}
+
+                     {/* ACCIONES DE PUBLICACIÓN / AGENDADO */}
                      {isReady && !showScheduler ? (
                         <div className="grid grid-cols-2 gap-4 mt-8">
                            <button type="button" onClick={() => handleSubmit(undefined, true)} disabled={loading} className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-black text-[14px] py-4 rounded-[20px] transition-all flex items-center justify-center gap-2">
@@ -698,14 +891,18 @@ export default function RrssCreatePost() {
                            </button>
                         </div>
                      ) : (
-                        <div className="flex gap-3 mt-8">
-                           <button type="button" onClick={() => setShowScheduler(false)} disabled={loading} className="w-1/3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-[14px] py-4 rounded-[20px] transition-all flex items-center justify-center">
-                              Cancelar
-                           </button>
-                           <button onClick={(e) => handleSubmit(e, false)} disabled={loading} className="w-2/3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-black text-[15px] py-4 px-6 rounded-[20px] transition-all shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 hover:-translate-y-1">
-                              {loading ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : '✅ Confirmar Agendamiento'}
-                           </button>
-                        </div>
+                        showScheduler && (
+                         <div className="flex gap-3 mt-8">
+                            <button type="button" onClick={() => setShowScheduler(false)} disabled={loading} className="w-1/3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-[14px] py-4 rounded-[20px] transition-all flex items-center justify-center">
+                               Cancelar
+                            </button>
+                            {isReady && (
+                               <button onClick={(e) => handleSubmit(e, false)} disabled={loading} className="w-2/3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-black text-[15px] py-4 px-6 rounded-[20px] transition-all shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 hover:-translate-y-1">
+                                  {loading ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : '✅ Confirmar Agendamiento'}
+                               </button>
+                            )}
+                         </div>
+                        )
                      )}
                    </div>
                 ) : (

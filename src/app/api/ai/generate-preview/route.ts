@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getFreeModel } from "../../../../lib/gemini-free";
-import { getVideoPlanLimit } from "../../../../lib/quota";
+import { generateElevenLabsAudio } from "../../../../lib/elevenlabs";
 
 export async function POST(req: NextRequest) {
     try {
@@ -13,9 +13,9 @@ export async function POST(req: NextRequest) {
             n8nUrl = 'https://n8n.santisoft.cl/webhook-test/img-rrss-auto';
         }
 
-        if (type === 'Reel' && (await getVideoPlanLimit(userPlan || 'free')) === 0) {
-            return NextResponse.json({ error: "Plan actual no permite la generación de videos/reels." }, { status: 403 });
-        }
+        let videoPrompt = "";
+        let voiceoverScript = "";
+        let audioUrl = "";
 
         // 1. Generate visual prompts based on the idea using Vertex AI
         let prompts: string[] = [idea];
@@ -45,32 +45,56 @@ INSTRUCCIONES CLAVE:
                     }
                 }
             } else if (type === 'Reel') {
-                console.log("[GEMINI-FREE] Generating reel prompt for preview...");
-                const systemInstruction = `Eres un experto Director de Fotografía. Tu misión es generar un ÚNICO prompt descriptivo en INGLÉS para un generador de Video por Inteligencia Artificial (RunwayML/Luma/Sora) que creará un Reel de 8 segundos.
+                console.log("[GEMINI-FREE] Generating Reel assets (image & video prompts + voiceover script)...");
+                const systemInstruction = `Eres un experto Director de Arte y Guionista de Redes Sociales.
+Tu tarea es analizar la idea del post y retornar un objeto JSON con la estructura exacta indicada a continuación:
 
-INSTRUCCIONES CLAVE:
-1. NO escribas introducciones ni comillas. Escribe SOLO el prompt técnico en inglés.
-2. Especifica movimientos de cámara dinámicos pertinentes a RRSS (ej: slow pan, dynamic zoom, cinematic dolly track).
-3. Asegura que la escena sea visualmente impactante, orientada a formato vertical (9:16).
-4. El texto debe ser fluido y muy enfocado en la iluminación, textura y estilo cinemático.`;
+{
+  "image_prompt": "Un prompt detallado en INGLÉS para generar la imagen de portada/escena inicial del Reel en un generador de imágenes de IA. Debe ser visualmente impactante, descriptivo, en formato vertical (9:16) y sin texto.",
+  "video_prompt": "Un prompt de animación en INGLÉS para un generador de Image-to-Video (como Runway o Luma). Describe el movimiento de la cámara, los elementos que se mueven, luces y efectos cinemáticos, partiendo desde la imagen inicial generada.",
+  "voiceover_script": "Un guion de locución corto y persuasivo en ESPAÑOL de exactamente 15 a 20 palabras (ideal para un Reel de 8-10 segundos)."
+}
+
+IMPORTANTE: Escribe únicamente el JSON válido, sin formato markdown (NADA de comillas invertidas ni la palabra json).`;
 
                 const model = getFreeModel(undefined, systemInstruction);
-                const result = await model.generateContent(`Genera el prompt de video para esta idea: ${idea}`);
+                const result = await model.generateContent(`Genera los assets para esta idea de Reel: ${idea}`);
                 const response = result.response;
-                const text = response.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-                if (text) {
-                    prompts = [text];
+                const text = response.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "{}";
+
+                const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
+                const match = cleanedText.match(/\{[\s\S]*\}/);
+                if (match) {
+                    const parsed = JSON.parse(match[0]);
+                    prompts = [parsed.image_prompt || idea];
+                    videoPrompt = parsed.video_prompt || "";
+                    voiceoverScript = parsed.voiceover_script || "";
+                } else {
+                    prompts = [idea];
+                }
+
+                // Generar locución de ElevenLabs
+                if (voiceoverScript && process.env.ELEVENLABS_API_KEY) {
+                    try {
+                        const userId = body.profileId || "default_user";
+                        const audioGenerated = await generateElevenLabsAudio(voiceoverScript, userId);
+                        if (audioGenerated) {
+                            audioUrl = audioGenerated;
+                        }
+                    } catch (elevenErr) {
+                        console.error("[ElevenLabs Error in route]:", elevenErr);
+                    }
                 }
             }
         } catch (visError) {
             console.error("[GEMINI-FREE] Error generating visual prompts, falling back to original idea:", visError);
         }
 
-        // 2. Call n8n to generate the media
+        // 2. Call n8n to generate the media (Force 'Post' type for Reel to get a static cover image)
         const payloadToN8N = {
             ...body,
+            type: type === 'Reel' ? 'Post' : type,
             prompts,
-            prompt_video: type === 'Reel' && prompts.length > 0 ? prompts[0] : undefined
         };
 
         console.log(`[PROXY] Calling n8n: ${n8nUrl}`);
@@ -169,7 +193,10 @@ Reglas:
         return NextResponse.json({
             ...data,
             imageUrl,
-            suggestedCopy
+            suggestedCopy,
+            videoPrompt,
+            voiceoverScript,
+            audioUrl
         });
 
     } catch (err: any) {

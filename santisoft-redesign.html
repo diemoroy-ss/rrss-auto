@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Santisoft AI — Redes Sociales en Piloto Automático</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,700..900;1,9..144,300..800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Plus+Jakarta+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --black: #0C0C0A;
+  --white: #FFFFFF;
+  --accent: #E5300A;
+  --accent-pale: #FFF1EE;
+  --g50: #F8F8F5;
+  --g100: #EFEFEA;
+  --g200: #DEDEDA;
+  --g400: #ADADА7;
+  --g500: #8C8C88;
+  --g600: #71716B;
+  --g800: #28281F;
+  --fd: 'Fraunces', serif;
+  --fm: 'DM Mono', monospace;
+  --fb: 'Plus Jakarta Sans', sans-serif;
+  --mw: 1160px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;scroll-behavior:smooth}
+body{font-family:var(--fb);color:var(--black);background:var(--white);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+img{display:block;max-width:100%}
+a{color:inherit}
+
+#dot-canvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;opacity:.5}
+
+.promo-bar{background:var(--black);color:var(--white);text-align:center;padding:11px 1rem;font-family:var(--fm);font-size:11px;letter-spacing:.1em;position:relative;z-index:10}
+.promo-bar strong{color:var(--accent)}
+
+nav{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--g100);height:60px;display:flex;align-items:center;padding:0 2rem}
+.nav-in{max-width:var(--mw);margin:0 auto;width:100%;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--fm);font-size:13px;font-weight:500;color:var(--black);text-decoration:none;letter-spacing:.02em;display:flex;align-items:center;gap:9px}
+.logo-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);display:inline-block;flex-shrink:0}
+.nav-btn{font-family:var(--fm);font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--white);background:var(--black);border:none;padding:10px 20px;text-decoration:none;transition:background .2s}
+.nav-btn:hover{background:var(--accent)}
+
+#hero{position:relative;z-index:1;min-height:calc(100vh - 60px);display:grid;grid-template-columns:1fr 420px;align-items:center;gap:4rem;max-width:var(--mw);margin:0 auto;padding:5rem 2rem 4rem}
+.hero-eyebrow{font-family:var(--fm);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--g500);display:flex;align-items:center;gap:10px;margin-bottom:1.5rem}
+.hero-eyebrow::before{content:'';width:28px;height:1px;background:var(--accent);display:block;flex-shrink:0}
+h1{font-family:var(--fd);font-size:clamp(3rem,6.5vw,5.6rem);font-weight:800;line-height:1.02;letter-spacing:-.035em;font-optical-sizing:auto;margin-bottom:1.5rem}
+h1 em{font-style:italic;font-weight:700;color:var(--accent)}
+.hero-body{font-size:1.05rem;line-height:1.7;color:var(--g600);max-width:40ch;margin-bottom:2.5rem}
+.hero-acts{display:flex;gap:1rem;align-items:center;flex-wrap:wrap}
+.btn-solid{font-family:var(--fm);font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--white);background:var(--black);border:none;padding:14px 26px;text-decoration:none;display:inline-block;transition:background .2s,transform .15s}
+.btn-solid:hover{background:var(--accent);transform:translateY(-1px)}
+.btn-link{font-family:var(--fm);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--g500);text-decoration:none;display:inline-flex;align-items:center;gap:6px;transition:color .2s}
+.btn-link:hover{color:var(--black)}
+.btn-link::after{content:'↓';font-family:sans-serif;font-size:12px}
+
+.demo-card{background:var(--white);border:1px solid var(--g200);padding:2rem;position:relative}
+.demo-card::before{content:'';position:absolute;top:-1px;left:-1px;width:36px;height:36px;border-top:2px solid var(--accent);border-left:2px solid var(--accent);pointer-events:none}
+.demo-lbl{font-family:var(--fm);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--g500);margin-bottom:1.25rem;display:block}
+.demo-row{margin-bottom:.875rem}
+.demo-flbl{display:block;font-family:var(--fm);font-size:11px;color:var(--g500);margin-bottom:5px;letter-spacing:.04em}
+.demo-inp{width:100%;padding:9px 11px;border:1px solid var(--g200);background:var(--g50);font-family:var(--fb);font-size:13.5px;color:var(--black);outline:none;transition:border-color .2s,background .2s}
+.demo-inp:focus{border-color:var(--black);background:var(--white)}
+.demo-btn{width:100%;padding:11px;background:var(--black);color:var(--white);border:none;font-family:var(--fm);font-size:11px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:background .2s;margin-top:.5rem}
+.demo-btn:hover{background:var(--accent)}
+.demo-btn:disabled{opacity:.5;cursor:not-allowed}
+.demo-out{margin-top:1.25rem;padding:1rem;background:var(--g50);border-left:2px solid var(--accent);font-size:13px;line-height:1.65;color:var(--g800);display:none}
+.demo-out.on{display:block}
+.demo-note{font-family:var(--fm);font-size:10px;color:var(--g400);text-align:center;margin-top:.75rem;letter-spacing:.05em;display:block}
+
+.ticker-wrap{width:100%;overflow:hidden;border-top:1px solid var(--g100);border-bottom:1px solid var(--g100);padding:13px 0;background:var(--white);position:relative;z-index:1}
+.ticker-track{display:flex;gap:0;width:max-content;animation:ticker 28s linear infinite}
+.ticker-track span{font-family:var(--fm);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--g500);white-space:nowrap;padding:0 2rem}
+.ticker-track span.accent{color:var(--accent)}
+@keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+.wrap{max-width:var(--mw);margin:0 auto;padding:0 2rem}
+section{position:relative;z-index:1}
+
+.sec-head{display:grid;grid-template-columns:180px 1fr;align-items:start;gap:2rem;padding:5rem 0 3rem;border-bottom:1px solid var(--g100);margin-bottom:3.5rem}
+.sec-idx{font-family:var(--fm);font-size:10.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--g400);padding-top:.5rem}
+h2{font-family:var(--fd);font-size:clamp(2rem,4vw,3.2rem);font-weight:800;line-height:1.06;letter-spacing:-.03em;font-optical-sizing:auto}
+h2 em{font-style:italic;font-weight:700}
+
+#como{background:var(--white);padding-bottom:6rem}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--g100)}
+.step{padding:2.5rem 1.75rem;border-right:1px solid var(--g100);position:relative;overflow:hidden;transition:background .25s}
+.step:last-child{border-right:none}
+.step:hover{background:var(--g50)}
+.step-n{font-family:var(--fm);font-size:4.5rem;font-weight:400;color:var(--g100);line-height:1;display:block;margin-bottom:1rem;user-select:none;transition:color .3s}
+.step:hover .step-n{color:var(--accent-pale)}
+.step h3{font-family:var(--fd);font-size:1.25rem;font-weight:700;letter-spacing:-.02em;margin-bottom:.75rem;font-optical-sizing:auto}
+.step p{font-size:13.5px;line-height:1.7;color:var(--g600)}
+
+#testimonios{background:var(--g50);padding:6rem 0}
+.tgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:2.5rem}
+.tcard{position:relative}
+.tquote{font-family:var(--fd);font-size:4.5rem;line-height:.8;color:var(--g200);margin-bottom:.5rem;font-optical-sizing:auto;user-select:none}
+.ttext{font-family:var(--fd);font-size:15px;line-height:1.75;color:var(--g800);margin-bottom:1.5rem;font-style:italic;font-optical-sizing:auto}
+.tname{font-family:var(--fm);font-size:11.5px;font-weight:500;letter-spacing:.06em;color:var(--black);display:block}
+.trole{font-family:var(--fm);font-size:10.5px;color:var(--g400);letter-spacing:.05em;display:block;margin-top:2px}
+.tstars{font-size:11px;color:var(--accent);letter-spacing:2px;display:block;margin-top:5px}
+
+#planes{padding:6rem 0;background:var(--white)}
+.pnote{font-family:var(--fm);font-size:10px;color:var(--g400);letter-spacing:.1em;margin-bottom:2.5rem;display:block}
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--g200)}
+.plan{padding:2.5rem 2rem;border-right:1px solid var(--g200);transition:background .2s}
+.plan:last-child{border-right:none}
+.plan:hover{background:var(--g50)}
+.plan.feat{background:var(--black);color:var(--white)}
+.plan.feat:hover{background:var(--g800)}
+.plan-badge{font-family:var(--fm);font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);display:block;margin-bottom:1.5rem}
+.plan h3{font-family:var(--fd);font-size:1.6rem;font-weight:700;letter-spacing:-.02em;margin-bottom:.4rem;font-optical-sizing:auto}
+.plan.feat h3{color:var(--white)}
+.plan-price{font-family:var(--fm);font-size:2rem;font-weight:500;letter-spacing:-.03em;color:var(--black);display:block;margin-bottom:.2rem}
+.plan.feat .plan-price{color:var(--white)}
+.plan-period{font-family:var(--fm);font-size:10px;letter-spacing:.1em;color:var(--g400);display:block;margin-bottom:2rem}
+.plan.feat .plan-period{color:rgba(255,255,255,.35)}
+.plan ul{list-style:none;margin-bottom:2rem}
+.plan ul li{font-size:13px;padding:8px 0;border-bottom:1px solid var(--g100);color:var(--g600);display:flex;align-items:center;gap:8px}
+.plan.feat ul li{border-bottom-color:rgba(255,255,255,.08);color:rgba(255,255,255,.6)}
+.plan ul li::before{content:'—';font-family:var(--fm);font-size:10px;color:var(--accent);flex-shrink:0}
+.plan-cta{display:block;text-align:center;font-family:var(--fm);font-size:11px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;padding:11px;border:1px solid var(--g200);color:var(--black);transition:all .2s}
+.plan-cta:hover{background:var(--black);color:var(--white);border-color:var(--black)}
+.plan.feat .plan-cta{border-color:var(--accent);color:var(--accent)}
+.plan.feat .plan-cta:hover{background:var(--accent);color:var(--white)}
+
+#cta-final{background:var(--black);padding:6rem 0}
+.cta-in{display:grid;grid-template-columns:1fr auto;align-items:center;gap:4rem}
+.cta-hl{font-family:var(--fd);font-size:clamp(2rem,4vw,3.2rem);font-weight:800;line-height:1.06;letter-spacing:-.03em;color:var(--white);font-optical-sizing:auto}
+.cta-hl em{font-style:italic;color:var(--accent)}
+.btn-white{font-family:var(--fm);font-size:11px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--black);background:var(--white);padding:15px 30px;text-decoration:none;white-space:nowrap;display:inline-block;transition:background .2s,color .2s}
+.btn-white:hover{background:var(--accent);color:var(--white)}
+
+footer{background:var(--white);border-top:1px solid var(--g100);padding:1.5rem 2rem}
+.foot-in{max-width:var(--mw);margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.foot-copy{font-family:var(--fm);font-size:10.5px;color:var(--g400);letter-spacing:.06em}
+.foot-links{display:flex;gap:1.5rem}
+.foot-links a{font-family:var(--fm);font-size:10.5px;color:var(--g400);text-decoration:none;letter-spacing:.06em;transition:color .2s}
+.foot-links a:hover{color:var(--black)}
+
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .6s ease}
+.reveal.on{opacity:1;transform:none}
+</style>
+</head>
+<body>
+
+<canvas id="dot-canvas" aria-hidden="true"></canvas>
+
+<div class="promo-bar">
+  OFERTA — <strong>4 IMÁGENES Y POSTEOS GRATIS</strong> CADA MES · SIN TARJETA DE CRÉDITO
+</div>
+
+<nav>
+  <div class="nav-in">
+    <a href="/" class="logo">
+      <span class="logo-dot"></span>SANTISOFT AI
+    </a>
+    <a href="https://rrss.santisoft.cl/login" class="nav-btn">Empezar Gratis</a>
+  </div>
+</nav>
+
+<section id="hero">
+  <div>
+    <div class="hero-eyebrow">Automatización RRSS · Meta · LinkedIn · TikTok</div>
+    <h1>
+      Tus Redes Sociales<br>en <em>Piloto<br>Automático.</em>
+    </h1>
+    <p class="hero-body">
+      Conectamos IA con tus cuentas de Meta para que generes, agendes y publiques contenido sin mover un dedo.
+    </p>
+    <div class="hero-acts">
+      <a href="#planes" class="btn-solid">Explorar Planes</a>
+      <a href="https://rrss.santisoft.cl/login" class="btn-link">Acceso Cliente</a>
+    </div>
+  </div>
+
+  <div class="demo-card reveal">
+    <span class="demo-lbl">Ve la magia en acción — sin registro previo</span>
+    <div class="demo-row">
+      <label class="demo-flbl" for="d-rubro">Tu rubro o tipo de negocio</label>
+      <input class="demo-inp" id="d-rubro" type="text" placeholder="Ej: café especialidad, veterinaria...">
+    </div>
+    <div class="demo-row">
+      <label class="demo-flbl" for="d-promo">¿Qué quieres promocionar?</label>
+      <input class="demo-inp" id="d-promo" type="text" placeholder="Ej: lanzamiento de nuevo menú...">
+    </div>
+    <button class="demo-btn" id="demo-btn" onclick="genPost()">→ Generar post con IA</button>
+    <div class="demo-out" id="demo-out"></div>
+    <span class="demo-note">Sin tarjeta de crédito · Completamente gratis</span>
+  </div>
+</section>
+
+<div class="ticker-wrap" aria-hidden="true">
+  <div class="ticker-track" id="ticker">
+    <span>Automatización</span><span class="accent">·</span>
+    <span>Meta API</span><span class="accent">·</span>
+    <span>TikTok</span><span class="accent">·</span>
+    <span>LinkedIn</span><span class="accent">·</span>
+    <span>24 / 7</span><span class="accent">·</span>
+    <span>IA Generativa</span><span class="accent">·</span>
+    <span>Sin código</span><span class="accent">·</span>
+    <span>Copy perfecto</span><span class="accent">·</span>
+    <span>Automatización</span><span class="accent">·</span>
+    <span>Meta API</span><span class="accent">·</span>
+    <span>TikTok</span><span class="accent">·</span>
+    <span>LinkedIn</span><span class="accent">·</span>
+    <span>24 / 7</span><span class="accent">·</span>
+    <span>IA Generativa</span><span class="accent">·</span>
+    <span>Sin código</span><span class="accent">·</span>
+    <span>Copy perfecto</span><span class="accent">·</span>
+  </div>
+</div>
+
+<section id="como">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="sec-idx">01 — Cómo funciona</span>
+      <h2>Un flujo <em>invisible,</em><br>24/7.</h2>
+    </div>
+    <div class="steps">
+      <div class="step reveal">
+        <span class="step-n">01</span>
+        <h3>Generación con IA</h3>
+        <p>Solo dinos tu idea y nuestra IA redactará el copy perfecto, optimizado para engagement en cada plataforma.</p>
+      </div>
+      <div class="step reveal" style="transition-delay:.1s">
+        <span class="step-n">02</span>
+        <h3>Agendamiento Inteligente</h3>
+        <p>Elige el día y la hora. Guardamos tu post de forma segura y lo preparamos para publicación exacta.</p>
+      </div>
+      <div class="step reveal" style="transition-delay:.2s">
+        <span class="step-n">03</span>
+        <h3>Publicación Automática</h3>
+        <p>Nuestra IA se conecta a Meta, TikTok y LinkedIn API y publica por ti de forma completamente automática.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="testimonios">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="sec-idx">02 — Clientes</span>
+      <h2>Resultados <em>reales,</em><br>negocios reales.</h2>
+    </div>
+    <div class="tgrid">
+      <div class="tcard reveal">
+        <div class="tquote">"</div>
+        <p class="ttext">Antes perdía 3 horas a la semana armando posts. Ahora Santisoft lo hace solo y mis publicaciones quedaron mucho más profesionales.</p>
+        <span class="tname">VALENTINA R.</span>
+        <span class="trole">Café & Pastelería</span>
+        <span class="tstars">★★★★★</span>
+      </div>
+      <div class="tcard reveal" style="transition-delay:.1s">
+        <div class="tquote">"</div>
+        <p class="ttext">Lo que más me convenció fue probarlo gratis. En 10 minutos vi cómo la IA creaba un post real para mi negocio. Inmediato.</p>
+        <span class="tname">MARCELO T.</span>
+        <span class="trole">Consultora de Marketing</span>
+        <span class="tstars">★★★★★</span>
+      </div>
+      <div class="tcard reveal" style="transition-delay:.2s">
+        <div class="tquote">"</div>
+        <p class="ttext">No soy técnica para nada y lo configuré sola en menos de 20 minutos. Ahora publico todos los días sin pensar en ello.</p>
+        <span class="tname">ANDREA P.</span>
+        <span class="trole">Clínica Veterinaria</span>
+        <span class="tstars">★★★★★</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="planes">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="sec-idx">03 — Planes</span>
+      <h2>Escoge tu nivel<br>de <em>automatización.</em></h2>
+    </div>
+    <span class="pnote">PRECIOS EN PESOS CHILENOS (CLP) — IVA INCLUIDO</span>
+    <div class="pgrid reveal">
+      <div class="plan">
+        <h3>Gratis</h3>
+        <span class="plan-price">$0</span>
+        <span class="plan-period">SIEMPRE</span>
+        <ul>
+          <li>4 Posts automáticos/mes</li>
+          <li>Publicación directa</li>
+          <li>Marca de agua Santisoft</li>
+          <li>Soporte comunitario</li>
+        </ul>
+        <a href="https://rrss.santisoft.cl/login" class="plan-cta">Comenzar Gratis</a>
+      </div>
+      <div class="plan feat">
+        <span class="plan-badge">MÁS POPULAR</span>
+        <h3>Pro</h3>
+        <span class="plan-price">$19.990</span>
+        <span class="plan-period">AL MES</span>
+        <ul>
+          <li>20 Posts automáticos/mes</li>
+          <li>Publicación directa</li>
+          <li>Sin marca de agua</li>
+          <li>Soporte WhatsApp</li>
+        </ul>
+        <a href="https://rrss.santisoft.cl/login" class="plan-cta">Empezar Pro</a>
+      </div>
+      <div class="plan">
+        <h3>Elite</h3>
+        <span class="plan-price">$49.990</span>
+        <span class="plan-period">AL MES</span>
+        <ul>
+          <li>60 Posts automáticos/mes</li>
+          <li>Vista previa y edición</li>
+          <li>Sin marca de agua</li>
+          <li>Soporte 24/7</li>
+        </ul>
+        <a href="https://rrss.santisoft.cl/login" class="plan-cta">Contactar Ventas</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="cta-final">
+  <div class="wrap">
+    <div class="cta-in reveal">
+      <h2 class="cta-hl">¿Listo para<br>recuperar <em>tu tiempo?</em></h2>
+      <a href="https://rrss.santisoft.cl/login" class="btn-white">Empezar Ahora Gratis</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="foot-in">
+    <span class="foot-copy">© 2026 SANTISOFT. TODOS LOS DERECHOS RESERVADOS.</span>
+    <div class="foot-links">
+      <a href="https://rrss.santisoft.cl/privacidad">Privacidad</a>
+      <a href="https://rrss.santisoft.cl/terminos">Términos</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+const canvas = document.getElementById('dot-canvas');
+const ctx = canvas.getContext('2d');
+let W, H, dots = [];
+const SP = 40, R = 1;
+
+function init() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  dots = [];
+  for (let x = 0; x < W + SP; x += SP) {
+    for (let y = 0; y < H + SP; y += SP) {
+      dots.push({ bx:x, by:y, ox:0, oy:0, vx:(Math.random()-.5)*.18, vy:(Math.random()-.5)*.18 });
+    }
+  }
+}
+
+function draw(t) {
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#AAAAА5';
+  for (let d of dots) {
+    d.ox += d.vx + Math.sin(t*.00025 + d.bx*.009) * .14;
+    d.oy += d.vy + Math.cos(t*.0003 + d.by*.011) * .14;
+    if (Math.abs(d.ox) > 7) d.vx *= -1;
+    if (Math.abs(d.oy) > 7) d.vy *= -1;
+    ctx.beginPath();
+    ctx.arc(d.bx + d.ox, d.by + d.oy, R, 0, Math.PI*2);
+    ctx.fill();
+  }
+  requestAnimationFrame(draw);
+}
+
+init();
+window.addEventListener('resize', init);
+requestAnimationFrame(draw);
+
+const obs = new IntersectionObserver(es => es.forEach(e => { if(e.isIntersecting){e.target.classList.add('on');obs.unobserve(e.target);} }), { threshold:.06, rootMargin:'0px 0px -30px 0px' });
+document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+async function genPost() {
+  const rubro = document.getElementById('d-rubro').value.trim();
+  const promo = document.getElementById('d-promo').value.trim();
+  if (!rubro || !promo) { alert('Por favor completa los dos campos.'); return; }
+  const btn = document.getElementById('demo-btn');
+  const out = document.getElementById('demo-out');
+  btn.disabled = true;
+  btn.textContent = '⏳ Generando...';
+  out.classList.remove('on');
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: 'Eres experto en marketing digital para negocios latinoamericanos. Crea posts en español con emojis apropiados, copy persuasivo y 5 hashtags relevantes. Máximo 200 palabras. Responde solo con el post, sin explicaciones adicionales.',
+        messages: [{ role: 'user', content: `Crea un post para Instagram/Facebook para un negocio de: ${rubro}. Quieren promocionar: ${promo}.` }]
+      })
+    });
+    const data = await res.json();
+    out.textContent = data.content[0].text;
+    out.classList.add('on');
+  } catch(e) {
+    out.textContent = 'Error al conectar con la IA. Intenta nuevamente.';
+    out.classList.add('on');
+  }
+  btn.disabled = false;
+  btn.textContent = '→ Generar otro post';
+}
+</script>
+</body>
+</html>

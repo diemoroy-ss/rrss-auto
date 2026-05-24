@@ -236,12 +236,11 @@ export default function PostConfigForm({
            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Tipo de Publicación</label>
            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3" role="radiogroup" aria-label="Tipo de Publicación">
               {['Post', 'Historia', 'Carrusel', 'Reel'].map(type => {
-                 const isAdminOnly = type === 'Reel' && !isAdmin;
+                 const isAdminOnly = false;
                  const isNetworkLimited = networks.tiktok && type !== 'Reel';
                  const disabled = isAdminOnly || isNetworkLimited;
                  
                  let title = "";
-                 if (isAdminOnly) title = "Solo los administradores pueden generar Reels por el momento.";
                  if (isNetworkLimited) title = "TikTok solo permite formato Reel / Video.";
 
                  return (
