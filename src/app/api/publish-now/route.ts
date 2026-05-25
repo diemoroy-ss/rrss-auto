@@ -260,9 +260,9 @@ export async function POST(req: Request) {
                             })
                         });
                         
-                        // 2. Poll for Processing Status
+                        // 2. Poll for Processing Status (Wait up to 60 seconds)
                         let isReady = false;
-                        for (let i = 0; i < 8; i++) { // Esperar hasta 40 segundos.
+                        for (let i = 0; i < 12; i++) { // Esperar hasta 60 segundos.
                             await new Promise(r => setTimeout(r, 5000));
                             const statusRes = await fetch(`https://graph.facebook.com/v19.0/${igMediaData.id}?fields=status_code&access_token=${plainToken}`);
                             const statusData = await statusRes.json();
@@ -320,9 +320,9 @@ export async function POST(req: Request) {
                             body: JSON.stringify(containerBody)
                         });
                         
-                        // 2. Poll for Processing Status (Ensures Meta has downloaded the image)
+                        // 2. Poll for Processing Status (Ensures Meta has downloaded the image - Wait up to 30 seconds)
                         let isReady = false;
-                        for (let i = 0; i < 6; i++) { // Esperar hasta 12 segundos.
+                        for (let i = 0; i < 15; i++) { // Esperar hasta 30 segundos.
                             const statusRes = await fetch(`https://graph.facebook.com/v19.0/${igMediaData.id}?fields=status_code&access_token=${plainToken}`);
                             const statusData = await statusRes.json();
                             if (statusData.status_code === 'FINISHED') {
