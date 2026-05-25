@@ -8,9 +8,9 @@ export async function POST(req: NextRequest) {
         const { idea, businessType, type, carouselCount, userPlan, email, phone } = body;
         let n8nUrl = process.env.NEXT_PUBLIC_N8N_PREVIEW_URL;
 
-        // Fallback to test URL as requested
+        // Fallback to production URL if env is missing to ensure it works out-of-the-box
         if (!n8nUrl) {
-            n8nUrl = 'https://n8n.santisoft.cl/webhook-test/img-rrss-auto';
+            n8nUrl = 'https://n8n.santisoft.cl/webhook/img-rrss-auto';
         }
 
         let videoPrompt = "";
