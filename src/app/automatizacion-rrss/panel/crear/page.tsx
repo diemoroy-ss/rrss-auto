@@ -501,13 +501,23 @@ export default function RrssCreatePost() {
               }
               
               // Si todo salió bien, informamos al usuario
-              setStatusModal({
-                isOpen: true,
-                type: "success",
-                title: "¡Publicado!",
-                message: `Tu contenido ya está en el aire en: ${pubData.published.join(', ')}.`,
-                onConfirm: () => router.push("/automatizacion-rrss/panel")
-              });
+              if (pubData.status === 'publishing') {
+                  setStatusModal({
+                    isOpen: true,
+                    type: "success",
+                    title: "Publicando...",
+                    message: "Tu contenido se está publicando en segundo plano. El bot actualizará el estado en unos segundos.",
+                    onConfirm: () => router.push("/automatizacion-rrss/panel")
+                  });
+              } else {
+                  setStatusModal({
+                    isOpen: true,
+                    type: "success",
+                    title: "¡Publicado!",
+                    message: `Tu contenido ya está en el aire en: ${pubData.published.join(', ')}.`,
+                    onConfirm: () => router.push("/automatizacion-rrss/panel")
+                  });
+              }
           } catch (pubErr: any) {
               console.error("Error en publicación inmediata:", pubErr);
               setStatusModal({

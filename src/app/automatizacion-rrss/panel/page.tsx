@@ -147,6 +147,8 @@ export default function RrssDashboard() {
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [confirmModalState, setConfirmModalState] = useState<{ isOpen: boolean; title: string; desc: string; confirmText: string; cancelText: string; isDanger: boolean; onConfirm: () => void; } | null>(null);
+  const [storyFormatWarning, setStoryFormatWarning] = useState<{ isOpen: boolean; post: SocialPost; imageUrl: string; } | null>(null);
+  const [isRegeneratingStoryMedia, setIsRegeneratingStoryMedia] = useState(false);
 
   const requestConfirmation = (title: string, desc: string, onConfirm: () => void, isDanger: boolean = false) => {
     setConfirmModalState({
@@ -551,6 +553,8 @@ export default function RrssDashboard() {
             errors: errMsg
           });
           setMessage({ type: 'error', text: errMsg });
+        } else if (data.status === 'publishing') {
+          setMessage({ type: 'success', text: '¡Publicación iniciada! El bot está enviando tu contenido en segundo plano. Podrás ver el estado en tu panel.' });
         } else {
           const hasErrors = !!data.errors;
           setPublishResult({
@@ -582,7 +586,88 @@ export default function RrssDashboard() {
     });
   };
 
-  const handlePublishStory = async (postId: string) => {
+  const checkImageAspectIsVertical = (url: string): Promise<boolean> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.src = url;
+      img.onload = () => {
+        const ratio = img.naturalWidth / img.naturalHeight;
+        resolve(ratio < 0.8); // Vertical/tall if width/height < 0.8
+      };
+      img.onerror = () => {
+        resolve(true); // Default to true on error to not block flow
+      };
+    });
+  };
+
+  const handleRegenerateStoryImage = async (post: SocialPost) => {
+    setIsRegeneratingStoryMedia(true);
+    try {
+      setMessage({ type: 'info', text: 'Generando nueva imagen vertical 9:16...' });
+      const response = await fetch('/api/ai/generate-preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          idea: post.idea || post.copy || '',
+          userPlan: userPlan,
+          businessType: activeProfile?.rubro || '',
+          type: 'Historia',
+          carouselCount: 1,
+          profileId: activeProfile?.id || 'default',
+          email: activeProfile?.email || '',
+          phone: activeProfile?.phone || ''
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('No se pudo regenerar el diseño.');
+      }
+
+      const data = await response.json();
+      const newImageUrl = data.imageUrl;
+
+      if (!newImageUrl) {
+        throw new Error('La IA no devolvió una imagen válida.');
+      }
+
+      // Actualizar el documento en Firestore
+      await updateDoc(doc(db, "social_posts", post.id), {
+        imageUrl: newImageUrl
+      });
+
+      setMessage({ type: 'success', text: '¡Imagen adaptada a formato vertical 9:16 con éxito!' });
+      
+      // Actualizar localmente el selectedPost para reflejar la nueva imagen
+      setSelectedPost(prev => prev ? { ...prev, imageUrl: newImageUrl } : null);
+
+      setStoryFormatWarning(null);
+
+      // Proceder con la publicación de la historia ahora que tiene el formato correcto
+      handlePublishStory(post.id, true);
+
+    } catch (err: any) {
+      console.error(err);
+      setMessage({ type: 'error', text: err.message || 'Error adaptando la imagen' });
+    } finally {
+      setIsRegeneratingStoryMedia(false);
+    }
+  };
+
+  const handlePublishStory = async (postId: string, forceAsIs: boolean = false) => {
+    const post = posts.find(p => p.id === postId);
+    if (!post) return;
+
+    const imageUrl = post.imageUrl || (post.imageUrls && post.imageUrls[0]);
+
+    if (!forceAsIs && imageUrl) {
+      // Verificar formato vertical
+      const isVertical = await checkImageAspectIsVertical(imageUrl);
+      if (!isVertical) {
+        setStoryFormatWarning({ isOpen: true, post, imageUrl });
+        return;
+      }
+    }
+
     requestConfirmation(
       "¿Compartir como Historia?",
       "La imagen de esta publicación se compartirá de inmediato como Historia en tu Instagram Business y Facebook Page. ¿Deseas continuar?",
@@ -606,6 +691,11 @@ export default function RrssDashboard() {
             type: 'success', 
             text: `¡Historia publicada con éxito en: ${data.published.join(', ')}!` 
           });
+          
+          // Incrementar el conteo de cuota mensual usado
+          const netsCount = data.published?.length || 1;
+          setQuotaUsed(prev => prev + netsCount);
+          
           setSelectedPost(null);
         } catch (err: any) {
           console.error(err);
@@ -957,6 +1047,7 @@ export default function RrssDashboard() {
             const statusConfig = {
               pending: { color: 'text-amber-600 bg-amber-50 border-amber-200', text: '⏸️ Pausado / Borrador' },
               confirmed: { color: 'text-indigo-600 bg-indigo-50 border-indigo-200', text: '⏳ Agendado por Santisoft' },
+              publishing: { color: 'text-blue-600 bg-blue-50 border-blue-200 shadow-sm animate-pulse', text: '⚡ Publicando...' },
               published: { color: 'text-emerald-600 bg-emerald-50 border-emerald-200', text: '✅ Publicado' },
               error: { color: 'text-rose-600 bg-rose-50 border-rose-200', text: '❌ Error' }
             }[post.status] || { color: 'text-slate-600 bg-slate-50 border-slate-200', text: post.status };
@@ -1268,8 +1359,8 @@ export default function RrssDashboard() {
                           );
                         })}
                      </div>
-                     <span className={`text-[10px] uppercase font-black tracking-widest px-4 py-2 rounded-xl border ${selectedPost.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-200' : selectedPost.status === 'confirmed' ? 'bg-indigo-50 text-indigo-600 border-indigo-200' : selectedPost.status === 'published' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>
-                        Estado: {selectedPost.status === 'pending' ? 'Borrador' : selectedPost.status === 'confirmed' ? 'Confirmado' : selectedPost.status === 'published' ? 'Publicado' : selectedPost.status}
+                     <span className={`text-[10px] uppercase font-black tracking-widest px-4 py-2 rounded-xl border ${selectedPost.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-200' : selectedPost.status === 'confirmed' ? 'bg-indigo-50 text-indigo-600 border-indigo-200' : selectedPost.status === 'publishing' ? 'bg-blue-50 text-blue-600 border-blue-200 shadow-sm animate-pulse' : selectedPost.status === 'published' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>
+                        Estado: {selectedPost.status === 'pending' ? 'Borrador' : selectedPost.status === 'confirmed' ? 'Confirmado' : selectedPost.status === 'publishing' ? 'Publicando...' : selectedPost.status === 'published' ? 'Publicado' : selectedPost.status}
                      </span>
                    </div>
 
@@ -1396,23 +1487,23 @@ export default function RrssDashboard() {
                     <>
                       <button
                         onClick={() => handlePublishNow(selectedPost.id)}
-                        disabled={publishingPostId === selectedPost.id || !selectedPost.imageUrl}
+                        disabled={publishingPostId === selectedPost.id || !selectedPost.imageUrl || selectedPost.status === 'publishing'}
                         className="flex-1 bg-gradient-to-br from-slate-800 to-black text-white px-8 py-4 md:py-5 rounded-2xl md:rounded-[28px] font-black text-[13px] uppercase tracking-[0.1em] hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-40 disabled:grayscale disabled:cursor-not-allowed group/publish shadow-2xl shadow-slate-900/30 overflow-hidden relative"
                       >
                         <div className="absolute inset-0 bg-gradient-to-tr from-orange-500/10 to-transparent opacity-0 group-hover/publish:opacity-100 transition-opacity"></div>
-                        {publishingPostId === selectedPost.id ? (
+                        {(publishingPostId === selectedPost.id || selectedPost.status === 'publishing') ? (
                            <div className="w-5 h-5 border-2 border-white/30 border-t-white animate-spin rounded-full" />
                         ) : (
                            <span className="text-2xl group-hover/publish:scale-125 transition-transform duration-300 drop-shadow-[0_0_8px_rgba(249,115,22,0.6)]">
                              🔥
                            </span>
                         )}
-                        <span className="relative z-10">Publicar Ahora!!!</span>
+                        <span className="relative z-10">{selectedPost.status === 'publishing' ? 'Publicando...' : 'Publicar Ahora!!!'}</span>
                       </button>
 
                       <button
                         onClick={() => handleUpdateStatus(selectedPost.id, selectedPost.status === 'confirmed' ? 'pending' : 'confirmed')}
-                        disabled={isUpdatingStatus}
+                        disabled={isUpdatingStatus || selectedPost.status === 'publishing'}
                         className="flex-1 bg-gradient-to-br from-indigo-600 to-violet-700 text-white px-8 py-4 md:py-5 rounded-2xl md:rounded-[28px] font-black text-[13px] uppercase tracking-[0.1em] hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-40 disabled:cursor-not-allowed group/bot shadow-2xl shadow-indigo-600/30 overflow-hidden relative"
                       >
                         <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-0 group-hover/bot:opacity-100 transition-opacity"></div>
@@ -1589,6 +1680,61 @@ export default function RrssDashboard() {
                   Entendido, cerrar
                 </button>
             </div>
+        </div>
+      )}
+
+      {/* Story format aspect-ratio warning modal */}
+      {storyFormatWarning?.isOpen && (
+        <div className="fixed inset-0 z-[1002] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="absolute inset-0" onClick={() => !isRegeneratingStoryMedia && setStoryFormatWarning(null)}></div>
+          <div className="bg-white rounded-[32px] shadow-2xl relative z-10 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-300">
+             <div className="bg-gradient-to-br from-amber-500 to-orange-600 p-8 text-center text-white">
+                <div className="text-5xl mb-4">⚠️</div>
+                <h3 className="text-2xl font-black leading-tight">Formato de Imagen<br/>No Óptimo</h3>
+             </div>
+             <div className="p-8 text-center">
+               {isRegeneratingStoryMedia ? (
+                 <div className="flex flex-col items-center justify-center py-6 animate-pulse">
+                   <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
+                   <h4 className="font-black text-sm text-slate-700 uppercase tracking-widest">Adaptando Imagen a 9:16...</h4>
+                   <p className="text-xs text-slate-400 mt-2">La IA está rediseñando tu imagen a formato vertical. Esto puede tomar unos segundos.</p>
+                 </div>
+               ) : (
+                 <>
+                   <p className="text-slate-500 font-medium mb-4 leading-relaxed">
+                     Detectamos que la imagen actual de tu post es <b>horizontal o cuadrada</b>.
+                   </p>
+                   <p className="text-slate-500 font-medium mb-8 leading-relaxed text-xs">
+                     Las historias de Instagram y Facebook requieren formato vertical <b>9:16 (1080x1920)</b>. Publicarla horizontal puede recortarla, añadir franjas o dar error en la app de Instagram.
+                   </p>
+                   <div className="flex flex-col gap-3">
+                      <button 
+                        onClick={() => handleRegenerateStoryImage(storyFormatWarning.post)}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-xl font-bold shadow-lg transition-all"
+                      >
+                        ✨ Adaptar a 9:16 con IA (Regenerar)
+                      </button>
+                      <button 
+                        onClick={() => {
+                          const postId = storyFormatWarning.post.id;
+                          setStoryFormatWarning(null);
+                          handlePublishStory(postId, true);
+                        }}
+                        className="bg-slate-900 hover:bg-slate-800 text-white py-3.5 rounded-xl font-bold transition-all"
+                      >
+                        Publicar Horizontal de todos modos
+                      </button>
+                      <button 
+                        onClick={() => setStoryFormatWarning(null)} 
+                        className="py-3 text-slate-400 font-bold hover:text-slate-600 transition-all"
+                      >
+                        Cancelar
+                      </button>
+                   </div>
+                 </>
+               )}
+             </div>
+          </div>
         </div>
       )}
 

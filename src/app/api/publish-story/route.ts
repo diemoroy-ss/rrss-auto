@@ -163,6 +163,34 @@ export async function POST(req: Request) {
                 storyPublishedAt: new Date(),
                 storyPublishError: errorLog || null
             });
+
+            // Generar una nueva tarjeta (card) para la historia en la lista de publicaciones
+            try {
+                const storyPostData = {
+                    userId: uid,
+                    profileId: profileId || 'default',
+                    idea: `Historia: ${post.idea || (post.copy ? post.copy.slice(0, 30) : 'Sin título')}`,
+                    type: 'Historia',
+                    carouselCount: 1,
+                    businessType: post.businessType || '',
+                    scheduledFor: new Date(),
+                    networks: successNetworks,
+                    status: 'published',
+                    createdAt: new Date(),
+                    publishedAt: new Date(),
+                    publishedIn: successNetworks,
+                    copy: post.copy || '',
+                    imageUrl: imageUrl,
+                    generatedBy: post.generatedBy || 'manual',
+                    isStoryShare: true,
+                    parentPostId: postId
+                };
+                await adminDb.collection("social_posts").add(storyPostData);
+                console.log(`[Story API] Successfully created post card for story ${postId}`);
+            } catch (errDb: any) {
+                console.error("[Story API] Error creating social_posts card for story:", errDb.message);
+            }
+
             return NextResponse.json({ success: true, published: successNetworks, errors: errorLog || null });
         } else {
             return NextResponse.json({ error: errorLog || "No se pudo publicar la historia en ninguna red." }, { status: 500 });

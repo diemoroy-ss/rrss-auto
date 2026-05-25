@@ -36,7 +36,7 @@ export async function POST(req: Request) {
 
         if (!postSnap.exists) return NextResponse.json({ error: "Post no encontrado" }, { status: 404 });
 
-        const post = postSnap.data();
+        const post = postSnap.data()!;
         
         if (!post.imageUrl) return NextResponse.json({ error: "Imagen no generada. Debes generar la multimedia primero." }, { status: 400 });
 
@@ -46,7 +46,7 @@ export async function POST(req: Request) {
         const userSnap = await adminDb.collection("users").doc(uid).get();
         if (!userSnap.exists) return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
 
-        const userData = userSnap.data();
+        const userData = userSnap.data()!;
         let targetProfile: any = null;
         const targetProfileId = profileId || 'default';
         if (Array.isArray(userData.profiles)) {
@@ -64,437 +64,160 @@ export async function POST(req: Request) {
         }
         // -------------------
 
-        let successNetworks = [];
-        let errorLog = '';
-        let infoLog = '';
-
-        const caption = post.copy || post.text || post.idea || '';
-        const imageUrl = post.imageUrl;
-
-        if (!post.networks || post.networks.length === 0) {
-            errorLog += "No se seleccionó ninguna red social para publicar. ";
-        }
-
-        // FACEBOOK
+        // Check credentials decrypt validity beforehand (so we fail immediately if tokens are invalid)
+        // Decrypt Facebook
+        let plainFbToken = null;
+        let pageId = null;
         if (post.networks?.includes('facebook')) {
             const fbToken = targetProfile.facebookToken_enc || userData.facebookToken_enc;
             const ivFb = targetProfile.iv_fb || userData.iv_fb;
             const tagFb = targetProfile.tag_fb || userData.tag_fb;
-            const pageId = targetProfile.facebookPageId || userData.facebookPageId;
-
-            if (fbToken) {
-                try {
-                    const plainToken = decrypt(fbToken, ivFb, tagFb);
-                    
-                    if (post.type === 'Carrusel' && post.imageUrls && post.imageUrls.length > 1) {
-                        const attachedMedia = [];
-                        for (const url of post.imageUrls) {
-                            const photoData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${pageId}/photos`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    url: url,
-                                    published: false,
-                                    access_token: plainToken
-                                })
-                            });
-                            attachedMedia.push({ media_fbid: photoData.id });
-                        }
-                        
-                        const fbData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${pageId}/feed`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                message: caption,
-                                attached_media: attachedMedia,
-                                access_token: plainToken
-                            })
-                        });
-                        
-                        await adminDb.collection('external_posts').doc(fbData.id).set({
-                           userId: uid,
-                           profileId: profileId || 'default',
-                           network: 'facebook',
-                           caption: caption,
-                           media_type: 'CAROUSEL_ALBUM',
-                           likes: 0,
-                           comments: 0,
-                           shares: 0,
-                           reach: 0,
-                           impressions: 0,
-                           created_time: new Date().toISOString(),
-                           timestamp: new Date()
-                        });
-                    } else if (post.type === 'Reel') {
-                        const fbData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${pageId}/videos`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                file_url: imageUrl,
-                                description: caption,
-                                access_token: plainToken
-                            })
-                        });
-                        
-                        await adminDb.collection('external_posts').doc(fbData.id).set({
-                           userId: uid,
-                           profileId: profileId || 'default',
-                           network: 'facebook',
-                           caption: caption,
-                           media_type: 'VIDEO',
-                           likes: 0,
-                           comments: 0,
-                           shares: 0,
-                           reach: 0,
-                           impressions: 0,
-                           created_time: new Date().toISOString(),
-                           timestamp: new Date()
-                        });
-                    } else {
-                        const fbData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${pageId}/photos`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                url: imageUrl,
-                                message: caption,
-                                access_token: plainToken
-                            })
-                        });
-                        
-                        await adminDb.collection('external_posts').doc(fbData.id).set({
-                           userId: uid,
-                           profileId: profileId || 'default',
-                           network: 'facebook',
-                           caption: caption,
-                           media_type: 'POST',
-                           likes: 0,
-                           comments: 0,
-                           shares: 0,
-                           reach: 0,
-                           impressions: 0,
-                           created_time: new Date().toISOString(),
-                           timestamp: new Date()
-                        });
-                    }
-
-                    successNetworks.push('facebook');
-                } catch (e: any) {
-                    console.error("FB Publish Error:", e.message);
-                    errorLog += `FB: ${e.message}. `;
-                }
-            } else {
-                errorLog += `Facebook: Cuenta no vinculada o token faltante. `;
+            pageId = targetProfile.facebookPageId || userData.facebookPageId;
+            if (!fbToken || !pageId) {
+                return NextResponse.json({ error: "Facebook: Cuenta no vinculada o configuración faltante." }, { status: 400 });
+            }
+            try {
+                plainFbToken = decrypt(fbToken, ivFb, tagFb);
+            } catch (e: any) {
+                return NextResponse.json({ error: "Facebook: Error al desencriptar el token de acceso." }, { status: 500 });
             }
         }
 
-        // INSTAGRAM
+        // Decrypt Instagram
+        let plainIgToken = null;
+        let igAccountId = null;
         if (post.networks?.includes('instagram')) {
             const igToken = targetProfile.instagramToken_enc || userData.instagramToken_enc;
             const ivIg = targetProfile.iv_ig || userData.iv_ig;
             const tagIg = targetProfile.tag_ig || userData.tag_ig;
-            const igAccountId = targetProfile.instagramAccountId || userData.instagramAccountId;
-
-            if (igToken) {
-                try {
-                    const plainToken = decrypt(igToken, ivIg, tagIg);
-                    
-                    if (post.type === 'Carrusel' && post.imageUrls && post.imageUrls.length > 1) {
-                        const childrenIds = [];
-                        for (const url of post.imageUrls) {
-                            const itemData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${igAccountId}/media`, {
-                               method: 'POST',
-                               headers: { 'Content-Type': 'application/json' },
-                               body: JSON.stringify({
-                                   image_url: url,
-                                   is_carousel_item: true,
-                                   access_token: plainToken
-                               })
-                            });
-                            childrenIds.push(itemData.id);
-                        }
-
-                        const igMediaData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${igAccountId}/media`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                               media_type: 'CAROUSEL',
-                               children: childrenIds,
-                               caption: caption,
-                               access_token: plainToken
-                            })
-                        });
-                        
-                        const igPubData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${igAccountId}/media_publish`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                creation_id: igMediaData.id,
-                                access_token: plainToken
-                            })
-                        });
-
-                        await adminDb.collection('external_posts').doc(igPubData.id).set({
-                           userId: uid,
-                           profileId: profileId || 'default',
-                           network: 'instagram',
-                           caption: caption,
-                           media_type: 'CAROUSEL',
-                           likes: 0,
-                           comments: 0,
-                           shares: 0,
-                           reach: 0,
-                           impressions: 0,
-                           created_time: new Date().toISOString(),
-                           timestamp: new Date()
-                        });
-                    } else if (post.type === 'Reel') {
-                        // 1. Create Reels Container
-                        const igMediaData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${igAccountId}/media`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                video_url: imageUrl,
-                                caption: caption,
-                                media_type: 'REELS',
-                                access_token: plainToken
-                            })
-                        });
-                        
-                        // 2. Poll for Processing Status (Wait up to 60 seconds)
-                        let isReady = false;
-                        for (let i = 0; i < 12; i++) { // Esperar hasta 60 segundos.
-                            await new Promise(r => setTimeout(r, 5000));
-                            const statusRes = await fetch(`https://graph.facebook.com/v19.0/${igMediaData.id}?fields=status_code&access_token=${plainToken}`);
-                            const statusData = await statusRes.json();
-                            if (statusData.status_code === 'FINISHED') {
-                                isReady = true;
-                                break;
-                            } else if (statusData.status_code === 'ERROR') {
-                                throw new Error("Instagram Graph API falló al procesar el video del Reel transcurrido.");
-                            }
-                        }
-                        if (!isReady) throw new Error("Tiempo de espera agotado procesando el Reel de Instagram en los servidores de Meta.");
-
-                        // 3. Publish Media
-                        const igPubData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${igAccountId}/media_publish`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                creation_id: igMediaData.id,
-                                access_token: plainToken
-                            })
-                        });
-
-                        await adminDb.collection('external_posts').doc(igPubData.id).set({
-                           userId: uid,
-                           profileId: profileId || 'default',
-                           network: 'instagram',
-                           caption: caption,
-                           media_type: 'REELS',
-                           likes: 0,
-                           comments: 0,
-                           shares: 0,
-                           reach: 0,
-                           impressions: 0,
-                           created_time: new Date().toISOString(),
-                           timestamp: new Date()
-                        });
-                    } else {
-                        const isStory = post.type?.toLowerCase().includes('stor') || post.type?.toLowerCase().includes('historia');
-                        
-                        const containerBody: any = {
-                            image_url: imageUrl,
-                            access_token: plainToken
-                        };
-
-                        if (isStory) {
-                            containerBody.media_type = 'STORIES';
-                        } else if (caption) {
-                            containerBody.caption = caption;
-                        }
-
-                        // 1. Create Media Container
-                        const igMediaData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${igAccountId}/media`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(containerBody)
-                        });
-                        
-                        // 2. Publish Media with retry logic if the container is not ready yet (avoiding status_code polling timeout issues)
-                        let igPubData = null;
-                        let lastPublishError = null;
-                        
-                        for (let attempt = 0; attempt < 8; attempt++) { // Intentar hasta 8 veces (24 segundos total)
-                            try {
-                                console.log(`[Instagram Publish] Attempting to publish container ${igMediaData.id} (attempt ${attempt + 1})...`);
-                                igPubData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${igAccountId}/media_publish`, {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({
-                                        creation_id: igMediaData.id,
-                                        access_token: plainToken
-                                    })
-                                });
-                                break; // Succeeded! Break the retry loop
-                            } catch (err: any) {
-                                lastPublishError = err;
-                                const isNotReady = err.message.toLowerCase().includes('ready') || 
-                                                   err.message.toLowerCase().includes('processed') || 
-                                                   err.message.toLowerCase().includes('wait') || 
-                                                   err.message.includes('2207027');
-                                if (isNotReady && attempt < 7) {
-                                    console.warn(`[Instagram Publish] Container not ready yet. Waiting 3 seconds before retry...`);
-                                    await new Promise(r => setTimeout(r, 3000));
-                                } else {
-                                    throw err; // Real error or final timeout, throw it
-                                }
-                            }
-                        }
-                        
-                        if (!igPubData) {
-                            throw new Error(lastPublishError?.message || "Tiempo de espera agotado procesando la imagen en los servidores de Meta.");
-                        }
-
-                        await adminDb.collection('external_posts').doc(igPubData.id).set({
-                           userId: uid,
-                           profileId: profileId || 'default',
-                           network: 'instagram',
-                           caption: caption,
-                           media_type: isStory ? 'STORIES' : 'IMAGE',
-                           likes: 0,
-                           comments: 0,
-                           shares: 0,
-                           reach: 0,
-                           impressions: 0,
-                           created_time: new Date().toISOString(),
-                           timestamp: new Date()
-                        });
-                    }
-
-                    successNetworks.push('instagram');
-                } catch (e: any) {
-                    console.error("IG Publish Error:", e.message);
-                    errorLog += `IG: ${e.message}. `;
-                }
-            } else {
-                errorLog += `Instagram: Cuenta no vinculada o token faltante. `;
+            igAccountId = targetProfile.instagramAccountId || userData.instagramAccountId;
+            if (!igToken || !igAccountId) {
+                return NextResponse.json({ error: "Instagram: Cuenta no vinculada o configuración faltante." }, { status: 400 });
+            }
+            try {
+                plainIgToken = decrypt(igToken, ivIg, tagIg);
+            } catch (e: any) {
+                return NextResponse.json({ error: "Instagram: Error al desencriptar el token de acceso." }, { status: 500 });
             }
         }
 
-        // LINKEDIN
+        // Decrypt LinkedIn
+        let plainLiToken = null;
+        let authorUrn = null;
         if (post.networks?.includes('linkedin')) {
             const liToken = targetProfile.linkedinUserToken_enc || targetProfile.linkedinToken_enc || userData.linkedinUserToken_enc || userData.linkedinToken_enc;
             const ivLi = targetProfile.iv_li_user || targetProfile.iv_li_token || userData.iv_li_user || userData.iv_li_token;
             const tagLi = targetProfile.tag_li_user || targetProfile.tag_li_token || userData.tag_li_user || userData.tag_li_token;
             const personUrn = targetProfile.linkedinPersonUrn || userData.linkedinPersonUrn;
-            const authorUrn = targetProfile.linkedinCompanyUrn || personUrn;
+            authorUrn = targetProfile.linkedinCompanyUrn || personUrn;
+            if (!liToken || !authorUrn) {
+                return NextResponse.json({ error: "LinkedIn: Cuenta no vinculada o configuración faltante." }, { status: 400 });
+            }
+            try {
+                plainLiToken = decrypt(liToken, ivLi, tagLi);
+            } catch (e: any) {
+                return NextResponse.json({ error: "LinkedIn: Error al desencriptar el token de acceso." }, { status: 500 });
+            }
+        }
 
-            if (liToken && authorUrn) {
-                try {
-                    const plainToken = decrypt(liToken, ivLi, tagLi);
-                    
-                    let mediaAssetUrn = null;
+        // Decrypt TikTok
+        let plainTtToken = null;
+        if (post.networks?.includes('tiktok')) {
+            const ttToken = targetProfile.tiktokToken_enc || userData.tiktokToken_enc;
+            const ivTt = targetProfile.iv_tt || userData.iv_tt;
+            const tagTt = targetProfile.tag_tt || userData.tag_tt;
+            if (!ttToken) {
+                return NextResponse.json({ error: "TikTok: Cuenta no vinculada o configuración faltante." }, { status: 400 });
+            }
+            try {
+                plainTtToken = decrypt(ttToken, ivTt, tagTt);
+            } catch (e: any) {
+                return NextResponse.json({ error: "TikTok: Error al desencriptar el token de acceso." }, { status: 500 });
+            }
+        }
 
-                    // Si hay imagen, tenemos que subirla a LinkedIn Assets
-                    if (imageUrl && !post.type?.toLowerCase().includes('reel')) {
-                        // 1. Register Upload
-                        const regRes = await fetch("https://api.linkedin.com/v2/assets?action=registerUpload", {
+        if (!post.networks || post.networks.length === 0) {
+            return NextResponse.json({ error: "No se seleccionó ninguna red social para publicar." }, { status: 400 });
+        }
+
+        // --- UPDATE STATUS TO PUBLISHING ---
+        await postRef.update({
+            status: 'publishing',
+            publishError: null,
+            publishInfo: null
+        });
+
+        // --- RUN PUBLISH PROCESS IN BACKGROUND ---
+        publishInBackground(postId, post, {
+            plainFbToken, pageId,
+            plainIgToken, igAccountId,
+            plainLiToken, authorUrn,
+            plainTtToken,
+            uid, profileId
+        }).catch(err => {
+            console.error(`[CRITICAL] Background publish process failed for post ${postId}:`, err);
+        });
+
+        return NextResponse.json({ success: true, status: 'publishing' });
+
+    } catch (e: any) {
+        console.error("Immediate Publish Setup Error:", e.message);
+        return NextResponse.json({ error: e.message }, { status: 500 });
+    }
+}
+
+async function publishInBackground(postId: string, post: any, creds: {
+    plainFbToken: string | null; pageId: string | null;
+    plainIgToken: string | null; igAccountId: string | null;
+    plainLiToken: string | null; authorUrn: string | null;
+    plainTtToken: string | null;
+    uid: string; profileId: string | null;
+}) {
+    const postRef = adminDb.collection("social_posts").doc(postId);
+    let successNetworks: string[] = [];
+    let errorLog = '';
+    let infoLog = '';
+
+    const caption = post.copy || post.text || post.idea || '';
+    const imageUrl = post.imageUrl;
+
+    try {
+        // FACEBOOK
+        if (post.networks?.includes('facebook') && creds.plainFbToken && creds.pageId) {
+            const plainToken = creds.plainFbToken;
+            const pageId = creds.pageId;
+            try {
+                if (post.type === 'Carrusel' && post.imageUrls && post.imageUrls.length > 1) {
+                    const attachedMedia = [];
+                    for (const url of post.imageUrls) {
+                        const photoData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${pageId}/photos`, {
                             method: 'POST',
-                            headers: {
-                                'Authorization': `Bearer ${plainToken}`,
-                                'Content-Type': 'application/json',
-                                'X-Restli-Protocol-Version': '2.0.0'
-                            },
+                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
-                              "registerUploadRequest": {
-                                "recipes": ["urn:li:digitalmediaRecipe:feedshare-image"],
-                                "owner": authorUrn,
-                                "serviceRelationships": [
-                                  {
-                                    "relationshipType": "OWNER",
-                                    "identifier": "urn:li:userGeneratedContent"
-                                  }
-                                ]
-                              }
+                                url: url,
+                                published: false,
+                                access_token: plainToken
                             })
                         });
-                        const regData = await regRes.json();
-                        
-                        if (regData.value?.asset && regData.value?.uploadMechanism?.["com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest"]?.uploadUrl) {
-                            mediaAssetUrn = regData.value.asset;
-                            const uploadUrl = regData.value.uploadMechanism["com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest"].uploadUrl;
-                            
-                            // 2. Download Image into memory
-                            const imgRes = await fetch(imageUrl);
-                            const imgBuffer = await imgRes.arrayBuffer();
-                            
-                            // 3. Upload Image to LinkedIn
-                            const uploadRes = await fetch(uploadUrl, {
-                                method: 'PUT',
-                                headers: {
-                                    'Authorization': `Bearer ${plainToken}`
-                                },
-                                body: imgBuffer
-                            });
-                            
-                            if (!uploadRes.ok) {
-                                 throw new Error("Failed to upload image bytes to LinkedIn.");
-                            }
-                        }
+                        attachedMedia.push({ media_fbid: photoData.id });
                     }
-
-                    // Prepare Share payload
-                    const sharePayload: any = {
-                        "author": authorUrn,
-                        "lifecycleState": "PUBLISHED",
-                        "specificContent": {
-                            "com.linkedin.ugc.ShareContent": {
-                                "shareCommentary": {
-                                    "text": caption
-                                },
-                                "shareMediaCategory": mediaAssetUrn ? "IMAGE" : "NONE"
-                            }
-                        },
-                        "visibility": {
-                            "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"
-                        }
-                    };
-
-                    if (mediaAssetUrn) {
-                        sharePayload.specificContent["com.linkedin.ugc.ShareContent"].media = [
-                            {
-                                "status": "READY",
-                                "description": { "text": caption },
-                                "media": mediaAssetUrn,
-                                "title": { "text": "Publicación de Santisoft" }
-                            }
-                        ];
-                    }
-
-                    // 4. Create Post
-                    const postRes = await fetch("https://api.linkedin.com/v2/ugcPosts", {
+                    
+                    const fbData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${pageId}/feed`, {
                         method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${plainToken}`,
-                            'Content-Type': 'application/json',
-                            'X-Restli-Protocol-Version': '2.0.0'
-                        },
-                        body: JSON.stringify(sharePayload)
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            message: caption,
+                            attached_media: attachedMedia,
+                            access_token: plainToken
+                        })
                     });
-                    const postData = await postRes.json();
                     
-                    if (postData.error || postData.message) {
-                        throw new Error(postData.message || postData.error);
-                    }
-
-                    successNetworks.push('linkedin');
-                    
-                    await adminDb.collection('external_posts').doc(postData.id || `li_${Date.now()}`).set({
-                       userId: uid,
-                       profileId: profileId || 'default',
-                       network: 'linkedin',
+                    await adminDb.collection('external_posts').doc(fbData.id).set({
+                       userId: creds.uid,
+                       profileId: creds.profileId || 'default',
+                       network: 'facebook',
                        caption: caption,
-                       media_type: mediaAssetUrn ? 'IMAGE' : 'TEXT',
+                       media_type: 'CAROUSEL_ALBUM',
                        likes: 0,
                        comments: 0,
                        shares: 0,
@@ -503,37 +226,412 @@ export async function POST(req: Request) {
                        created_time: new Date().toISOString(),
                        timestamp: new Date()
                     });
-                } catch (e: any) {
-                    console.error("LI Publish Error:", e.message);
-                    errorLog += `LI: ${e.message}. `;
+                } else if (post.type === 'Reel') {
+                    const fbData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${pageId}/videos`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            file_url: imageUrl,
+                            description: caption,
+                            access_token: plainToken
+                        })
+                    });
+                    
+                    await adminDb.collection('external_posts').doc(fbData.id).set({
+                       userId: creds.uid,
+                       profileId: creds.profileId || 'default',
+                       network: 'facebook',
+                       caption: caption,
+                       media_type: 'VIDEO',
+                       likes: 0,
+                       comments: 0,
+                       shares: 0,
+                       reach: 0,
+                       impressions: 0,
+                       created_time: new Date().toISOString(),
+                       timestamp: new Date()
+                    });
+                } else {
+                    const fbData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${pageId}/photos`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            url: imageUrl,
+                            message: caption,
+                            access_token: plainToken
+                        })
+                    });
+                    
+                    await adminDb.collection('external_posts').doc(fbData.id).set({
+                       userId: creds.uid,
+                       profileId: creds.profileId || 'default',
+                       network: 'facebook',
+                       caption: caption,
+                       media_type: 'POST',
+                       likes: 0,
+                       comments: 0,
+                       shares: 0,
+                       reach: 0,
+                       impressions: 0,
+                       created_time: new Date().toISOString(),
+                       timestamp: new Date()
+                    });
                 }
-            } else {
-                errorLog += `LinkedIn: Cuenta no vinculada o token faltante. `;
+
+                successNetworks.push('facebook');
+            } catch (e: any) {
+                console.error("FB Publish Error:", e.message);
+                errorLog += `FB: ${e.message}. `;
+            }
+        }
+
+        // INSTAGRAM
+        if (post.networks?.includes('instagram') && creds.plainIgToken && creds.igAccountId) {
+            const plainToken = creds.plainIgToken;
+            const igAccountId = creds.igAccountId;
+            try {
+                if (post.type === 'Carrusel' && post.imageUrls && post.imageUrls.length > 1) {
+                    const childrenIds = [];
+                    for (const url of post.imageUrls) {
+                        const itemData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${igAccountId}/media`, {
+                           method: 'POST',
+                           headers: { 'Content-Type': 'application/json' },
+                           body: JSON.stringify({
+                               image_url: url,
+                               is_carousel_item: true,
+                               access_token: plainToken
+                           })
+                        });
+                        childrenIds.push(itemData.id);
+                    }
+
+                    const igMediaData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${igAccountId}/media`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                           media_type: 'CAROUSEL',
+                           children: childrenIds,
+                           caption: caption,
+                           access_token: plainToken
+                        })
+                    });
+                    
+                    const igPubData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${igAccountId}/media_publish`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            creation_id: igMediaData.id,
+                            access_token: plainToken
+                        })
+                    });
+
+                    await adminDb.collection('external_posts').doc(igPubData.id).set({
+                       userId: creds.uid,
+                       profileId: creds.profileId || 'default',
+                       network: 'instagram',
+                       caption: caption,
+                       media_type: 'CAROUSEL',
+                       likes: 0,
+                       comments: 0,
+                       shares: 0,
+                       reach: 0,
+                       impressions: 0,
+                       created_time: new Date().toISOString(),
+                       timestamp: new Date()
+                    });
+                } else if (post.type === 'Reel') {
+                    // 1. Create Reels Container
+                    const igMediaData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${igAccountId}/media`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            video_url: imageUrl,
+                            caption: caption,
+                            media_type: 'REELS',
+                            access_token: plainToken
+                        })
+                    });
+                    
+                    // 2. Poll for Processing Status (Wait up to 60 seconds)
+                    let isReady = false;
+                    for (let i = 0; i < 12; i++) { // Esperar hasta 60 segundos.
+                        await new Promise(r => setTimeout(r, 5000));
+                        const statusRes = await fetch(`https://graph.facebook.com/v19.0/${igMediaData.id}?fields=status_code&access_token=${plainToken}`);
+                        const statusData = await statusRes.json();
+                        if (statusData.status_code === 'FINISHED') {
+                            isReady = true;
+                            break;
+                        } else if (statusData.status_code === 'ERROR') {
+                            throw new Error("Instagram Graph API falló al procesar el video del Reel transcurrido.");
+                        }
+                    }
+                    if (!isReady) throw new Error("Tiempo de espera agotado procesando el Reel de Instagram en los servidores de Meta.");
+
+                    // 3. Publish Media
+                    const igPubData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${igAccountId}/media_publish`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            creation_id: igMediaData.id,
+                            access_token: plainToken
+                        })
+                    });
+
+                    await adminDb.collection('external_posts').doc(igPubData.id).set({
+                       userId: creds.uid,
+                       profileId: creds.profileId || 'default',
+                       network: 'instagram',
+                       caption: caption,
+                       media_type: 'REELS',
+                       likes: 0,
+                       comments: 0,
+                       shares: 0,
+                       reach: 0,
+                       impressions: 0,
+                       created_time: new Date().toISOString(),
+                       timestamp: new Date()
+                    });
+                } else {
+                    const isStory = post.type?.toLowerCase().includes('stor') || post.type?.toLowerCase().includes('historia');
+                    
+                    const containerBody: any = {
+                        image_url: imageUrl,
+                        access_token: plainToken
+                    };
+
+                    if (isStory) {
+                        containerBody.media_type = 'STORIES';
+                    } else if (caption) {
+                        containerBody.caption = caption;
+                    }
+
+                    // 1. Create Media Container
+                    const igMediaData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${igAccountId}/media`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(containerBody)
+                    });
+                    
+                    // 2. Publish Media with retry logic
+                    let igPubData = null;
+                    let lastPublishError = null;
+                    
+                    for (let attempt = 0; attempt < 8; attempt++) {
+                        try {
+                            console.log(`[Instagram Publish] Attempting to publish container ${igMediaData.id} (attempt ${attempt + 1})...`);
+                            igPubData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${igAccountId}/media_publish`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    creation_id: igMediaData.id,
+                                    access_token: plainToken
+                                })
+                            });
+                            break;
+                        } catch (err: any) {
+                            lastPublishError = err;
+                            const isNotReady = err.message.toLowerCase().includes('ready') || 
+                                               err.message.toLowerCase().includes('processed') || 
+                                               err.message.toLowerCase().includes('wait') || 
+                                               err.message.includes('2207027');
+                            if (isNotReady && attempt < 7) {
+                                console.warn(`[Instagram Publish] Container not ready yet. Waiting 3 seconds before retry...`);
+                                await new Promise(r => setTimeout(r, 3000));
+                            } else {
+                                throw err;
+                            }
+                        }
+                    }
+                    
+                    if (!igPubData) {
+                        throw new Error(lastPublishError?.message || "Tiempo de espera agotado procesando la imagen en los servidores de Meta.");
+                    }
+
+                    await adminDb.collection('external_posts').doc(igPubData.id).set({
+                       userId: creds.uid,
+                       profileId: creds.profileId || 'default',
+                       network: 'instagram',
+                       caption: caption,
+                       media_type: isStory ? 'STORIES' : 'IMAGE',
+                       likes: 0,
+                       comments: 0,
+                       shares: 0,
+                       reach: 0,
+                       impressions: 0,
+                       created_time: new Date().toISOString(),
+                       timestamp: new Date()
+                    });
+                }
+
+                successNetworks.push('instagram');
+            } catch (e: any) {
+                console.error("IG Publish Error:", e.message);
+                errorLog += `IG: ${e.message}. `;
+            }
+        }
+
+        // LINKEDIN
+        if (post.networks?.includes('linkedin') && creds.plainLiToken && creds.authorUrn) {
+            const plainToken = creds.plainLiToken;
+            const authorUrn = creds.authorUrn;
+            try {
+                let mediaAssetUrn = null;
+
+                if (imageUrl && !post.type?.toLowerCase().includes('reel')) {
+                    const regRes = await fetch("https://api.linkedin.com/v2/assets?action=registerUpload", {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${plainToken}`,
+                            'Content-Type': 'application/json',
+                            'X-Restli-Protocol-Version': '2.0.0'
+                        },
+                        body: JSON.stringify({
+                          "registerUploadRequest": {
+                            "recipes": ["urn:li:digitalmediaRecipe:feedshare-image"],
+                            "owner": authorUrn,
+                            "serviceRelationships": [
+                              {
+                                "relationshipType": "OWNER",
+                                "identifier": "urn:li:userGeneratedContent"
+                              }
+                            ]
+                          }
+                        })
+                    });
+                    const regData = await regRes.json();
+                    
+                    if (regData.value?.asset && regData.value?.uploadMechanism?.["com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest"]?.uploadUrl) {
+                        mediaAssetUrn = regData.value.asset;
+                        const uploadUrl = regData.value.uploadMechanism["com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest"].uploadUrl;
+                        
+                        const imgRes = await fetch(imageUrl);
+                        const imgBuffer = await imgRes.arrayBuffer();
+                        
+                        const uploadRes = await fetch(uploadUrl, {
+                            method: 'PUT',
+                            headers: {
+                                'Authorization': `Bearer ${plainToken}`
+                            },
+                            body: imgBuffer
+                        });
+                        
+                        if (!uploadRes.ok) {
+                             throw new Error("Failed to upload image bytes to LinkedIn.");
+                        }
+                    }
+                }
+
+                const sharePayload: any = {
+                    "author": authorUrn,
+                    "lifecycleState": "PUBLISHED",
+                    "specificContent": {
+                        "com.linkedin.ugc.ShareContent": {
+                            "shareCommentary": {
+                                "text": caption
+                            },
+                            "shareMediaCategory": mediaAssetUrn ? "IMAGE" : "NONE"
+                        }
+                    },
+                    "visibility": {
+                        "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"
+                    }
+                };
+
+                if (mediaAssetUrn) {
+                    sharePayload.specificContent["com.linkedin.ugc.ShareContent"].media = [
+                        {
+                            "status": "READY",
+                            "description": { "text": caption },
+                            "media": mediaAssetUrn,
+                            "title": { "text": "Publicación de Santisoft" }
+                        }
+                    ];
+                }
+
+                const postRes = await fetch("https://api.linkedin.com/v2/ugcPosts", {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${plainToken}`,
+                        'Content-Type': 'application/json',
+                        'X-Restli-Protocol-Version': '2.0.0'
+                    },
+                    body: JSON.stringify(sharePayload)
+                });
+                const postData = await postRes.json();
+                
+                if (postData.error || postData.message) {
+                    throw new Error(postData.message || postData.error);
+                }
+
+                successNetworks.push('linkedin');
+                
+                await adminDb.collection('external_posts').doc(postData.id || `li_${Date.now()}`).set({
+                   userId: creds.uid,
+                   profileId: creds.profileId || 'default',
+                   network: 'linkedin',
+                   caption: caption,
+                   media_type: mediaAssetUrn ? 'IMAGE' : 'TEXT',
+                   likes: 0,
+                   comments: 0,
+                   shares: 0,
+                   reach: 0,
+                   impressions: 0,
+                   created_time: new Date().toISOString(),
+                   timestamp: new Date()
+                });
+            } catch (e: any) {
+                console.error("LI Publish Error:", e.message);
+                errorLog += `LI: ${e.message}. `;
             }
         }
 
         // TIKTOK
-        if (post.networks?.includes('tiktok')) {
-            const ttToken = targetProfile.tiktokToken_enc || userData.tiktokToken_enc;
-            const ivTt = targetProfile.iv_tt || userData.iv_tt;
-            const tagTt = targetProfile.tag_tt || userData.tag_tt;
+        if (post.networks?.includes('tiktok') && creds.plainTtToken) {
+            const plainToken = creds.plainTtToken;
+            try {
+                console.log(`[TikTok Publish] Downloading video from: ${imageUrl}`);
+                const videoRes = await fetch(imageUrl);
+                if (!videoRes.ok) throw new Error(`No se pudo descargar el video: HTTP ${videoRes.status}`);
+                
+                const videoBuffer = await videoRes.arrayBuffer();
+                const videoSize = videoBuffer.byteLength;
+                
+                console.log(`[TikTok Publish] Video downloaded. Size: ${videoSize} bytes`);
 
-            if (ttToken && imageUrl) {
-                try {
-                    const plainToken = decrypt(ttToken, ivTt, tagTt);
-                    
-                    // --- Paso 1: Descargar el video desde Firebase Storage al servidor ---
-                    console.log(`[TikTok Publish] Downloading video from: ${imageUrl}`);
-                    const videoRes = await fetch(imageUrl);
-                    if (!videoRes.ok) throw new Error(`No se pudo descargar el video: HTTP ${videoRes.status}`);
-                    
-                    const videoBuffer = await videoRes.arrayBuffer();
-                    const videoSize = videoBuffer.byteLength;
-                    
-                    console.log(`[TikTok Publish] Video downloaded. Size: ${videoSize} bytes`);
+                let initRes = await fetch("https://open.tiktokapis.com/v2/post/publish/video/init/", {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${plainToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        post_info: {
+                            title: caption.slice(0, 150) || 'Publicación',
+                            privacy_level: "PUBLIC_TO_EVERYONE",
+                            disable_comment: false,
+                            disable_duet: false,
+                            disable_stitch: false
+                        },
+                        source_info: {
+                            source: "FILE_UPLOAD",
+                            video_size: videoSize,
+                            chunk_size: videoSize,
+                            total_chunk_count: 1
+                        }
+                    })
+                });
 
-                    // --- Paso 2: Inicializar la publicación con FILE_UPLOAD ---
-                    let initRes = await fetch("https://open.tiktokapis.com/v2/post/publish/video/init/", {
+                let initData = await initRes.json();
+                console.log('[TikTok Publish] First Init response:', JSON.stringify(initData));
+
+                const isGuidelinesError = initData.error?.message?.toLowerCase().includes('guidelines') || 
+                                          JSON.stringify(initData).toLowerCase().includes('guidelines') ||
+                                          initData.error?.code === 'spam_or_sensitive_content' || 
+                                          initData.error?.code === 'unaudited_client_can_only_post_to_private_accounts';
+
+                if (isGuidelinesError) {
+                    console.warn('[TikTok Publish] Detected Sandbox mode or integration guidelines restriction. Retrying with SELF_ONLY privacy level...');
+                    initRes = await fetch("https://open.tiktokapis.com/v2/post/publish/video/init/", {
                         method: 'POST',
                         headers: {
                             'Authorization': `Bearer ${plainToken}`,
@@ -542,7 +640,7 @@ export async function POST(req: Request) {
                         body: JSON.stringify({
                             post_info: {
                                 title: caption.slice(0, 150) || 'Publicación',
-                                privacy_level: "PUBLIC_TO_EVERYONE",
+                                privacy_level: "SELF_ONLY",
                                 disable_comment: false,
                                 disable_duet: false,
                                 disable_stitch: false
@@ -555,103 +653,64 @@ export async function POST(req: Request) {
                             }
                         })
                     });
-
-                    let initData = await initRes.json();
-                    console.log('[TikTok Publish] First Init response:', JSON.stringify(initData));
-
-                    // Si falla por las pautas de integración (generalmente porque la app está en modo Sandbox y requiere SELF_ONLY)
-                    const isGuidelinesError = initData.error?.message?.toLowerCase().includes('guidelines') || 
-                                              JSON.stringify(initData).toLowerCase().includes('guidelines') ||
-                                              initData.error?.code === 'spam_or_sensitive_content' || 
-                                              initData.error?.code === 'unaudited_client_can_only_post_to_private_accounts';
-
-                    if (isGuidelinesError) {
-                        console.warn('[TikTok Publish] Detected Sandbox mode or integration guidelines restriction. Retrying with SELF_ONLY privacy level...');
-                        initRes = await fetch("https://open.tiktokapis.com/v2/post/publish/video/init/", {
-                            method: 'POST',
-                            headers: {
-                                'Authorization': `Bearer ${plainToken}`,
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                post_info: {
-                                    title: caption.slice(0, 150) || 'Publicación',
-                                    privacy_level: "SELF_ONLY", // Modo privado para pruebas en Sandbox
-                                    disable_comment: false,
-                                    disable_duet: false,
-                                    disable_stitch: false
-                                },
-                                source_info: {
-                                    source: "FILE_UPLOAD",
-                                    video_size: videoSize,
-                                    chunk_size: videoSize,
-                                    total_chunk_count: 1
-                                }
-                            })
-                        });
-                        initData = await initRes.json();
-                        console.log('[TikTok Publish] Sandbox retry Init response:', JSON.stringify(initData));
-                        
-                        if (initData.error?.code === 'ok' && initData.data?.upload_url) {
-                            infoLog += "TikTok Sandbox: El video se subió exitosamente en modo privado 'Solo Yo' (Para hacerlo público de forma automática a todo el mundo en futuros videos, debes solicitar la revisión de tu App en el panel de desarrolladores de TikTok). ";
-                        }
+                    initData = await initRes.json();
+                    console.log('[TikTok Publish] Sandbox retry Init response:', JSON.stringify(initData));
+                    
+                    if (initData.error?.code === 'ok' && initData.data?.upload_url) {
+                        infoLog += "TikTok Sandbox: El video se subió exitosamente en modo privado 'Solo Yo' (Para hacerlo público de forma automática a todo el mundo en futuros videos, debes solicitar la revisión de tu App en el panel de desarrolladores de TikTok). ";
                     }
-
-                    if (initData.error?.code !== 'ok' || !initData.data?.upload_url) {
-                        const errMessage = initData.error?.message || JSON.stringify(initData);
-                        throw new Error(`TikTok API error: ${errMessage} (Nota de Sandbox: Si tu App de TikTok está en modo de pruebas, TikTok exige que tu cuenta de TikTok esté configurada como 'Cuenta Privada' en tu celular para poder recibir videos de prueba).`);
-                    }
-
-                    const uploadUrl = initData.data.upload_url;
-                    const publishId = initData.data.publish_id;
-
-                    // --- Paso 3: Subir el video en un solo chunk ---
-                    console.log(`[TikTok Publish] Uploading video chunk to: ${uploadUrl}`);
-                    const uploadRes = await fetch(uploadUrl, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'video/mp4',
-                            'Content-Range': `bytes 0-${videoSize - 1}/${videoSize}`,
-                            'Content-Length': String(videoSize)
-                        },
-                        body: videoBuffer
-                    });
-
-                    if (!uploadRes.ok) {
-                        const uploadErr = await uploadRes.text();
-                        throw new Error(`Error subiendo video a TikTok: ${uploadRes.status} - ${uploadErr}`);
-                    }
-
-                    console.log(`[TikTok Publish] Upload successful. publish_id: ${publishId}`);
-                    successNetworks.push('tiktok');
-
-                    await adminDb.collection('external_posts').doc(publishId || `tt_${Date.now()}`).set({
-                       userId: uid,
-                       profileId: profileId || 'default',
-                       network: 'tiktok',
-                       caption: caption,
-                       media_type: 'VIDEO',
-                       publish_id: publishId,
-                       likes: 0,
-                       comments: 0,
-                       shares: 0,
-                       reach: 0,
-                       impressions: 0,
-                       created_time: new Date().toISOString(),
-                       timestamp: new Date()
-                    });
-
-                } catch (e: any) {
-                    console.error("TikTok Publish Error:", e.message);
-                    errorLog += `TikTok: ${e.message}. `;
                 }
-            } else if (!imageUrl) {
-                errorLog += `TikTok: Falta la URL del video para publicar. `;
-            } else {
-                errorLog += `TikTok: Cuenta no vinculada o token faltante. `;
+
+                if (initData.error?.code !== 'ok' || !initData.data?.upload_url) {
+                    const errMessage = initData.error?.message || JSON.stringify(initData);
+                    throw new Error(`TikTok API error: ${errMessage} (Nota de Sandbox: Si tu App de TikTok está en modo de pruebas, TikTok exige que tu cuenta de TikTok esté configurada como 'Cuenta Privada' en tu celular para poder recibir videos de prueba).`);
+                }
+
+                const uploadUrl = initData.data.upload_url;
+                const publishId = initData.data.publish_id;
+
+                console.log(`[TikTok Publish] Uploading video chunk to: ${uploadUrl}`);
+                const uploadRes = await fetch(uploadUrl, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'video/mp4',
+                        'Content-Range': `bytes 0-${videoSize - 1}/${videoSize}`,
+                        'Content-Length': String(videoSize)
+                    },
+                    body: videoBuffer
+                });
+
+                if (!uploadRes.ok) {
+                    const uploadErr = await uploadRes.text();
+                    throw new Error(`Error subiendo video a TikTok: ${uploadRes.status} - ${uploadErr}`);
+                }
+
+                console.log(`[TikTok Publish] Upload successful. publish_id: ${publishId}`);
+                successNetworks.push('tiktok');
+
+                await adminDb.collection('external_posts').doc(publishId || `tt_${Date.now()}`).set({
+                   userId: creds.uid,
+                   profileId: creds.profileId || 'default',
+                   network: 'tiktok',
+                   caption: caption,
+                   media_type: 'VIDEO',
+                   publish_id: publishId,
+                   likes: 0,
+                   comments: 0,
+                   shares: 0,
+                   reach: 0,
+                   impressions: 0,
+                   created_time: new Date().toISOString(),
+                   timestamp: new Date()
+                });
+
+            } catch (e: any) {
+                console.error("TikTok Publish Error:", e.message);
+                errorLog += `TikTok: ${e.message}. `;
             }
         }
 
+        // --- UPDATE STATUS AT END ---
         if (successNetworks.length > 0) {
             await postRef.update({
                 status: 'published',
@@ -660,17 +719,20 @@ export async function POST(req: Request) {
                 publishInfo: infoLog || null,
                 publishedIn: successNetworks
             });
-            return NextResponse.json({ success: true, published: successNetworks, errors: errorLog || null, info: infoLog || null });
-
+            console.log(`[Background Publish] Post ${postId} finished successfully. Published in: ${successNetworks.join(', ')}`);
         } else {
             await postRef.update({
                 status: 'error',
                 publishError: errorLog || 'No se pudo publicar en ninguna red'
             });
-            return NextResponse.json({ error: errorLog || "Error desconocido al publicar" }, { status: 500 });
+            console.log(`[Background Publish] Post ${postId} failed. Errors: ${errorLog}`);
         }
 
     } catch (e: any) {
-        return NextResponse.json({ error: e.message }, { status: 500 });
+        console.error(`[Background Publish Exception] Critical error for post ${postId}:`, e.message);
+        await postRef.update({
+            status: 'error',
+            publishError: `Critical Error: ${e.message}`
+        });
     }
 }
