@@ -320,30 +320,40 @@ export async function POST(req: Request) {
                             body: JSON.stringify(containerBody)
                         });
                         
-                        // 2. Poll for Processing Status (Ensures Meta has downloaded the image - Wait up to 60 seconds)
-                        let isReady = false;
-                        for (let i = 0; i < 30; i++) { // Esperar hasta 60 segundos.
-                            const statusRes = await fetch(`https://graph.facebook.com/v19.0/${igMediaData.id}?fields=status_code&access_token=${plainToken}`);
-                            const statusData = await statusRes.json();
-                            if (statusData.status_code === 'FINISHED') {
-                                isReady = true;
-                                break;
-                            } else if (statusData.status_code === 'ERROR') {
-                                throw new Error("Instagram Graph API falló al procesar la imagen.");
+                        // 2. Publish Media with retry logic if the container is not ready yet (avoiding status_code polling timeout issues)
+                        let igPubData = null;
+                        let lastPublishError = null;
+                        
+                        for (let attempt = 0; attempt < 8; attempt++) { // Intentar hasta 8 veces (24 segundos total)
+                            try {
+                                console.log(`[Instagram Publish] Attempting to publish container ${igMediaData.id} (attempt ${attempt + 1})...`);
+                                igPubData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${igAccountId}/media_publish`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        creation_id: igMediaData.id,
+                                        access_token: plainToken
+                                    })
+                                });
+                                break; // Succeeded! Break the retry loop
+                            } catch (err: any) {
+                                lastPublishError = err;
+                                const isNotReady = err.message.toLowerCase().includes('ready') || 
+                                                   err.message.toLowerCase().includes('processed') || 
+                                                   err.message.toLowerCase().includes('wait') || 
+                                                   err.message.includes('2207027');
+                                if (isNotReady && attempt < 7) {
+                                    console.warn(`[Instagram Publish] Container not ready yet. Waiting 3 seconds before retry...`);
+                                    await new Promise(r => setTimeout(r, 3000));
+                                } else {
+                                    throw err; // Real error or final timeout, throw it
+                                }
                             }
-                            await new Promise(r => setTimeout(r, 2000));
                         }
-                        if (!isReady) throw new Error("Tiempo de espera agotado procesando la imagen en los servidores de Meta.");
-
-                        // 3. Publish Media
-                        const igPubData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${igAccountId}/media_publish`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                creation_id: igMediaData.id,
-                                access_token: plainToken
-                            })
-                        });
+                        
+                        if (!igPubData) {
+                            throw new Error(lastPublishError?.message || "Tiempo de espera agotado procesando la imagen en los servidores de Meta.");
+                        }
 
                         await adminDb.collection('external_posts').doc(igPubData.id).set({
                            userId: uid,
