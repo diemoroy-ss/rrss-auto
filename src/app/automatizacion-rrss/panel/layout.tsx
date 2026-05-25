@@ -84,7 +84,7 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
         <div className="px-5 py-5 border-b border-slate-800 bg-slate-950/30">
           <Link href="/automatizacion-rrss/panel">
             <h2 className="text-base font-black tracking-tight text-white flex items-center gap-2.5 hover:text-indigo-400 transition-all">
-              <span className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shadow-md shadow-indigo-600/30 text-base">🤖</span>
+              <img src="/favicon.png" alt="Logo" className="w-8 h-8 rounded-lg object-contain shadow-md shadow-indigo-600/10" />
               <span>Santisoft AI</span>
             </h2>
           </Link>
@@ -160,9 +160,12 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
         {/* Mobile Header & Tabs */}
         <div className="md:hidden relative z-[90] print:hidden">
           <div className="bg-slate-900 text-white p-5 flex items-center justify-between shadow-lg">
-             <Link href="/automatizacion-rrss/panel" className="shrink-0 mr-4">
-               <h2 className="text-xl font-black tracking-tight flex items-center gap-2">🤖 <span className="text-indigo-400">Santisoft</span> AI</h2>
-             </Link>
+              <Link href="/automatizacion-rrss/panel" className="shrink-0 mr-4">
+                <h2 className="text-xl font-black tracking-tight flex items-center gap-2">
+                  <img src="/favicon.png" alt="Logo" className="w-6 h-6 rounded-md object-contain" />
+                  <span className="text-indigo-400">Santisoft</span> AI
+                </h2>
+              </Link>
              <div className="flex items-center">
                 <NetworkSwitcher />
                 <ProfileMenu user={user} userDoc={userDoc} />

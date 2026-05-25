@@ -94,7 +94,8 @@ export default function Home() {
       <nav>
         <div className="nav-in">
           <Link href="/" className="logo">
-            <span className="logo-dot"></span>SANTISOFT AI
+            <img src="/favicon.png" alt="Logo" style={{ width: '22px', height: '22px', objectFit: 'contain', borderRadius: '6px' }} />
+            SANTISOFT AI
           </Link>
           <Link href="/login" className="nav-btn">
             Empezar Gratis
