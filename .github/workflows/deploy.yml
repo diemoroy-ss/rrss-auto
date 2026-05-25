@@ -19,6 +19,7 @@ jobs:
           username: ${{ secrets.DO_USERNAME }}
           password: ${{ secrets.DO_PASSWORD }}
           envs: GITHUB_TOKEN
+          command_timeout: 20m
           script: |
             set -e
             # Cargar NVM y Node.js para entorno SSH no interactivo
@@ -35,6 +36,8 @@ jobs:
             npm install
             
             echo "Construyendo la aplicación..."
+            # Limitamos la memoria de Node.js para evitar el swapping y congelamiento en VPS de bajos recursos
+            export NODE_OPTIONS="--max-old-space-size=768"
             npm run build
             
             echo "Reiniciando PM2..."
