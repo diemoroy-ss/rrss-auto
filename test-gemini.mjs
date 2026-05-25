@@ -1,9 +1,20 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const apiKey = "AIzaSyCJOfOy8GzJT89W4iwWCf9werrG8zaWwmE";
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const envPath = path.join(__dirname, '.env.local');
+const envContent = fs.readFileSync(envPath, 'utf8');
+const apiKeyMatch = envContent.match(/GOOGLE_GENAI_API_KEY=(.*)/);
+const apiKey = apiKeyMatch ? apiKeyMatch[1].trim() : null;
+
 const genAI = new GoogleGenerativeAI(apiKey);
 const model = genAI.getGenerativeModel({ 
-    model: "gemini-1.5-flash",
+    model: "gemini-3.1-flash-lite",
     systemInstruction: `Eres un Community Manager Experto y Copywriter persuasivo. 
     Tu misión es redactar el texto O "Pie de Foto" (copy) que acompañará a la imagen publicitaria en redes sociales (Facebook/Instagram).
     
