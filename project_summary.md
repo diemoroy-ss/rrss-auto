@@ -22,6 +22,24 @@ Este documento sirve como guía de contexto rápida para desarrolladores y asist
 
 ---
 
+## 🤖 2.1. Modelos de Inteligencia Artificial (Configuración)
+
+La plataforma utiliza dos integraciones de Google para interactuar con modelos de lenguaje. A continuación se detalla qué modelo usa cada componente y dónde se configura:
+
+### A. Google Generative AI (Developer API)
+Es la integración principal, utilizada para los agentes de LangGraph, generación de contenido, estrategias de marketing, chat y prompts de video.
+* **Modelo Principal**: `gemini-3.1-flash-lite`
+* **Archivo de Configuración**: [gemini-free.ts](file:///C:/Users/diemo/Desktop/Apps/santisoft-automatizacion/src/lib/gemini-free.ts)
+  * Modifica la constante `FREE_MODEL_NAME` para cambiar el modelo por defecto.
+  * Modifica el arreglo `FALLBACK_MODELS` para ordenar la prioridad de modelos alternativos de respaldo (ej. si el principal falla o supera límites de cuota, el sistema intentará con los siguientes en la lista).
+
+### B. Google Cloud Vertex AI (Service Account)
+Se utiliza para tareas específicas de comunicación con n8n (`request-image` y `update-image`) para generar descripciones técnicas estructuradas de imágenes y copys a partir de ideas principales.
+* **Modelo Principal**: `gemini-2.5-flash`
+* **Archivo de Configuración**: [vertexai.ts](file:///C:/Users/diemo/Desktop/Apps/santisoft-automatizacion/src/lib/vertexai.ts)
+  * Modifica el parámetro por defecto `modelName = 'gemini-2.5-flash'` en la función `getVertexModel`.
+
+---
 ## 📁 3. Estructura del Directorio
 El código está organizado modularmente bajo `src/`:
 ```
