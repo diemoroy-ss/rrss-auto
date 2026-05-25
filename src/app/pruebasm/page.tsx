@@ -292,7 +292,7 @@ const questions: Question[] = [
       { key: "a", text: "El Product Owner" },
       { key: "b", text: "El Scrum Master" },
       { key: "c", text: "Los Desarrolladores" },
-      { key: "d", text: "El Product Owner, en consulta con los Desarrolladores y el Scrum Master" }
+      { key: "d", text: "El Product Owner, in consulta con los Desarrolladores y el Scrum Master" }
     ],
     correctAnswers: ["c"],
     explanation: "Los Desarrolladores son completamente autónomos en cuanto a las decisiones técnicas y operativas necesarias para implementar y finalizar los ítems de backlog comprometidos durante el Sprint."
@@ -654,9 +654,11 @@ export default function PruebasMPage() {
   const [confirmed, setConfirmed] = useState<Record<number, boolean>>({});
   const [finished, setFinished] = useState(false);
   const [filterType, setFilterType] = useState<"all" | "correct" | "incorrect">("all");
+  const [activeQuestions, setActiveQuestions] = useState<Question[]>(questions);
+  const [isReviewMode, setIsReviewMode] = useState(false);
 
-  const currentQuestion = questions[currentIdx];
-  const totalQuestions = questions.length;
+  const currentQuestion = activeQuestions[currentIdx];
+  const totalQuestions = activeQuestions.length;
   const isMulti = currentQuestion ? currentQuestion.correctAnswers.length > 1 : false;
   const isCurrentConfirmed = currentQuestion ? !!confirmed[currentQuestion.id] : false;
 
@@ -678,7 +680,6 @@ export default function PruebasMPage() {
       } else {
         // For single select, auto-confirm once selected
         const updated = { ...prev, [qId]: [key] };
-        // Set confirmed state immediately
         setConfirmed(c => ({ ...c, [qId]: true }));
         return updated;
       }
@@ -711,11 +712,47 @@ export default function PruebasMPage() {
     setCurrentIdx(0);
     setFinished(false);
     setStarted(false);
+    setActiveQuestions(questions);
+    setIsReviewMode(false);
+  };
+
+  const retryIncorrect = () => {
+    // Filter questions that were answered incorrectly in the current active session
+    const incorrect = activeQuestions.filter((q) => {
+      const userAns = answers[q.id] || [];
+      const correct = q.correctAnswers;
+      const isCorrect = userAns.length === correct.length && correct.every((c) => userAns.includes(c));
+      return !isCorrect;
+    });
+
+    if (incorrect.length > 0) {
+      // Clear answers and confirmed status only for these incorrect questions
+      setAnswers((prev) => {
+        const copy = { ...prev };
+        incorrect.forEach((q) => {
+          delete copy[q.id];
+        });
+        return copy;
+      });
+      setConfirmed((prev) => {
+        const copy = { ...prev };
+        incorrect.forEach((q) => {
+          delete copy[q.id];
+        });
+        return copy;
+      });
+
+      setActiveQuestions(incorrect);
+      setCurrentIdx(0);
+      setFinished(false);
+      setStarted(true);
+      setIsReviewMode(true);
+    }
   };
 
   // Evaluate scorecard
   let score = 0;
-  questions.forEach((q) => {
+  activeQuestions.forEach((q) => {
     const userAns = answers[q.id] || [];
     const correct = q.correctAnswers;
     if (userAns.length === correct.length && correct.every((c) => userAns.includes(c))) {
@@ -727,7 +764,7 @@ export default function PruebasMPage() {
   const passed = percent >= 85;
 
   const getFilteredQuestions = () => {
-    return questions.filter((q) => {
+    return activeQuestions.filter((q) => {
       const userAns = answers[q.id] || [];
       const correct = q.correctAnswers;
       const isCorrect = userAns.length === correct.length && correct.every((c) => userAns.includes(c));
@@ -757,7 +794,7 @@ export default function PruebasMPage() {
             <span className="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">Scrum Master (PSM I)</span>
           </h1>
           <p className="text-slate-400 font-medium text-base mb-8 leading-relaxed">
-            Pon a prueba tus conocimientos con este simulador interactivo. Ahora con **retroalimentación y explicaciones inmediatas** para cada pregunta.
+            Pon a prueba tus conocimientos con este simulador interactivo de 50 preguntas. Ahora con retroalimentación y explicaciones inmediatas.
           </p>
 
           <div className="grid grid-cols-3 gap-4 mb-10 text-left bg-slate-950/40 p-5 rounded-2xl border border-slate-800/60">
@@ -777,7 +814,10 @@ export default function PruebasMPage() {
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
-              onClick={() => setStarted(true)}
+              onClick={() => {
+                setActiveQuestions(questions);
+                setStarted(true);
+              }}
               className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-2xl shadow-xl shadow-indigo-600/20 transition-all transform hover:-translate-y-0.5"
             >
               🚀 Comenzar Prueba
@@ -795,6 +835,8 @@ export default function PruebasMPage() {
   }
 
   if (finished) {
+    const incorrectCount = totalQuestions - score;
+
     return (
       <div className="min-h-screen bg-[#0b0f19] text-slate-100 py-16 px-6 font-sans relative overflow-hidden">
         <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-900/30 rounded-full blur-[120px]" />
@@ -807,9 +849,13 @@ export default function PruebasMPage() {
               <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider mb-4 ${passed ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}`}>
                 {passed ? "🏆 Aprobado" : "❌ No Aprobado"}
               </span>
-              <h1 className="text-4xl font-extrabold text-white tracking-tight">Resultado de la Prueba</h1>
+              <h1 className="text-4xl font-extrabold text-white tracking-tight">
+                {isReviewMode ? "Revisión del Repaso" : "Resultado de la Prueba"}
+              </h1>
               <p className="text-slate-400 mt-2 font-medium">
-                Has contestado correctamente {score} de {totalQuestions} preguntas.
+                {isReviewMode 
+                  ? `Has corregido y contestado bien ${score} de ${totalQuestions} preguntas erróneas.` 
+                  : `Has contestado correctamente ${score} de ${totalQuestions} preguntas.`}
               </p>
             </div>
 
@@ -836,13 +882,31 @@ export default function PruebasMPage() {
             </div>
           </div>
 
-          <div className="flex gap-4 justify-between items-center mb-12">
-            <h2 className="text-xl font-bold text-white">Revisión de Preguntas</h2>
-            <div className="flex gap-2">
-              <button onClick={resetQuiz} className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs transition-all">
-                🔄 Reiniciar Prueba
+          {/* Action Choice Panel */}
+          <div className="flex flex-col sm:flex-row gap-6 sm:items-center justify-between mb-12 bg-slate-900/40 p-6 md:p-8 rounded-[24px] border border-slate-800">
+            <div>
+              <h2 className="text-lg font-bold text-white">¿Qué quieres hacer ahora?</h2>
+              <p className="text-xs text-slate-400 mt-1 font-medium">Puedes reintentar responder las preguntas en las que fallaste o empezar un test de 50 preguntas desde cero.</p>
+            </div>
+            <div className="flex flex-wrap gap-3 shrink-0">
+              {incorrectCount > 0 && (
+                <button
+                  onClick={retryIncorrect}
+                  className="px-5 py-3 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white font-bold rounded-xl text-xs shadow-lg shadow-amber-600/20 transition-all flex items-center gap-1.5"
+                >
+                  🔄 Volver a responder las erróneas ({incorrectCount})
+                </button>
+              )}
+              <button
+                onClick={resetQuiz}
+                className="px-5 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs transition-all flex items-center gap-1"
+              >
+                📝 Iniciar test completo
               </button>
-              <Link href="/automatizacion-rrss/panel" className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl border border-slate-700/50 text-xs transition-all">
+              <Link
+                href="/automatizacion-rrss/panel"
+                className="px-5 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl border border-slate-700/50 text-xs transition-all flex items-center justify-center"
+              >
                 Salir
               </Link>
             </div>
@@ -865,7 +929,7 @@ export default function PruebasMPage() {
               onClick={() => setFilterType("incorrect")}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${filterType === "incorrect" ? "bg-rose-500/10 text-rose-400 border border-rose-500/20" : "text-slate-400 hover:text-slate-200"}`}
             >
-              Incorrectas ({totalQuestions - score})
+              Incorrectas ({incorrectCount})
             </button>
           </div>
 
@@ -915,7 +979,6 @@ export default function PruebasMPage() {
                     })}
                   </div>
 
-                  {/* Explanation card */}
                   <div className="mt-6 p-5 bg-indigo-950/20 border border-indigo-900/30 rounded-xl">
                     <h4 className="text-xs font-black text-indigo-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                       💡 Explicación:
@@ -945,8 +1008,13 @@ export default function PruebasMPage() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold text-slate-400 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-full">
-              Pregunta {currentIdx + 1} de {totalQuestions}
+              {isReviewMode ? "Repasando Errónea" : "Pregunta"} {currentIdx + 1} de {totalQuestions}
             </span>
+            {isReviewMode && (
+              <span className="text-xs font-black text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-full uppercase tracking-wider">
+                Modo Repaso 🔄
+              </span>
+            )}
             {isMulti && (
               <span className="text-xs font-black text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1.5 rounded-full uppercase tracking-wider">
                 Selecciona {currentQuestion.correctAnswers.length} opciones
