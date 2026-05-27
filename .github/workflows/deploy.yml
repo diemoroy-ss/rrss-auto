@@ -15,9 +15,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          host: ${{ secrets.DO_HOST }}
-          username: ${{ secrets.DO_USERNAME }}
-          password: ${{ secrets.DO_PASSWORD }}
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
           envs: GITHUB_TOKEN
           command_timeout: 20m
           script: |
@@ -26,8 +26,8 @@ jobs:
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
-            # Ruta de producción en DigitalOcean
-            cd /var/www/santisoft-rrss
+            # Ruta de producción en Lightsail
+            cd /var/www/santisoft-auto
             
             echo "Descargando últimos cambios de GitHub..."
             git pull https://x-access-token:${GITHUB_TOKEN}@github.com/diemoroy-ss/rrss-auto.git main
@@ -41,8 +41,6 @@ jobs:
             npm run build
             
             echo "Reiniciando PM2..."
-            # Si es la primera vez que se ejecuta, pm2 restart fallará, así que usamos un respaldo lógico.
-            # Asegúrate del puerto que vas a usar en producción.
-            pm2 restart santisoft-rrss || pm2 start npm --name "santisoft-rrss" -- run start -- -p 3002
+            pm2 reload ecosystem.config.js --env production || pm2 start ecosystem.config.js --env production
             
             echo "¡Despliegue completado con éxito!"
