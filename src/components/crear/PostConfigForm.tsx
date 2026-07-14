@@ -4,12 +4,34 @@ import React from "react";
 import Link from "next/link";
 import VoiceMic from "../VoiceMic";
 import StatusModal from "../StatusModal";
+import PosterSection from "./PosterSection";
+import type { PosterConfig } from "../../types/poster";
+
+// Tipo estricto para templates (reemplaza 'any')
+interface UserTemplateItem {
+  id: string;
+  url: string;
+  type?: 'image' | 'video';
+  createdAt?: Date;
+}
 
 interface PostConfigFormProps {
+  // Campos de idea y contenido (siempre visibles en modo IA)
   idea: string;
   setIdea: (val: string) => void;
   imageExpectation: string;
   setImageExpectation: (val: string) => void;
+  /** Texto/copy explícito de la publicación (nuevo campo) */
+  postText: string;
+  setPostText: (val: string) => void;
+  /** Configuración del cartel publicitario (nuevo) */
+  posterConfig: PosterConfig;
+  setPosterConfig: (config: PosterConfig) => void;
+  /** Datos del perfil para pre-llenar el cartel (nuevos) */
+  activeProfileLogoUrl?: string;
+  activeProfileName?: string;
+  activeProfilePhone?: string;
+  activeProfileEmail?: string;
   postType: string;
   setPostType: (val: string) => void;
   carouselCount: number;
@@ -29,7 +51,7 @@ interface PostConfigFormProps {
   needsConnection: boolean;
   handleImproveWithAI: () => void;
   handleGeneratePreview: () => void;
-  handleSubmit: (e: React.FormEvent) => void;
+  handleSubmit: (e?: React.FormEvent, publishNow?: boolean) => void;
   improveLoading: boolean;
   previewLoading: boolean;
   loading: boolean;
@@ -42,12 +64,12 @@ interface PostConfigFormProps {
   manualCaption: string;
   setManualCaption: (val: string) => void;
   isAdmin?: boolean;
-  manualTemplates?: any[];
-  selectedTemplate?: any | null;
-  setSelectedTemplate?: (val: any | null) => void;
+  manualTemplates?: UserTemplateItem[];
+  selectedTemplate?: UserTemplateItem | null;
+  setSelectedTemplate?: (val: UserTemplateItem | null) => void;
   loadingTemplates?: boolean;
   onUploadNewTemplate?: (file: File) => void;
-  onDeleteTemplate?: (tmpl: any) => Promise<void>;
+  onDeleteTemplate?: (tmpl: UserTemplateItem) => Promise<void>;
   hideSubmit?: boolean;
   showScheduler?: boolean;
   setShowScheduler?: (val: boolean) => void;
@@ -57,6 +79,9 @@ interface PostConfigFormProps {
 export default function PostConfigForm({
   idea, setIdea,
   imageExpectation, setImageExpectation,
+  postText, setPostText,
+  posterConfig, setPosterConfig,
+  activeProfileLogoUrl, activeProfileName, activeProfilePhone, activeProfileEmail,
   postType, setPostType,
   carouselCount, setCarouselCount,
   businessType, setBusinessType,
@@ -95,7 +120,7 @@ export default function PostConfigForm({
   }, [networks.tiktok, postType, setPostType]);
 
   const maxChars = constraints?.safeCharLimit || 1000;
-  const currentLength = creationMode === 'ai' ? idea.length : manualCaption.length;
+  const currentLength = creationMode === 'ai' ? postText.length : manualCaption.length;
   const isOverLimit = currentLength > maxChars;
 
 
@@ -299,94 +324,169 @@ export default function PostConfigForm({
              </div>
           </div>
         )}
-        {/* ¿QUÉ ESPERAS COMO IMAGEN? (SOLO EN MODO IA) */}
+        {/* ============================================================ */}
+        {/* SECCIÓN PRINCIPAL DE CONTENIDO — SIEMPRE VISIBLE EN MODO IA  */}
+        {/* ============================================================ */}
         {creationMode === 'ai' && (
-          <div className="animate-in slide-in-from-top-4 fade-in pt-4">
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
-              ¿Qué esperas como imagen? (Estilo Visual)
-            </label>
-            <div className="space-y-3">
-              <textarea 
-                value={imageExpectation} 
-                onChange={e => setImageExpectation(e.target.value)}
-                placeholder="Ej: Un plato de sushi gourmet con fondo oscuro, luces de neón azul y estilo fotográfico cinematográfico, sin texto..."
-                className="w-full bg-slate-50 border-2 border-slate-100 px-6 py-4 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-medium leading-relaxed transition-all text-slate-700 hover:border-slate-200 min-h-[90px] resize-none"
-              />
-              <div className="flex justify-end">
-                <VoiceMic 
-                  onResult={(text) => setImageExpectation(imageExpectation + (imageExpectation ? " " : "") + text)} 
-                  className="relative"
+          <div className="space-y-6 animate-in slide-in-from-top-4 fade-in">
+
+            {/* CAMPO 1: ¿QUÉ IMAGEN QUIERES GENERAR? */}
+            <div>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
+                💡 ¿Qué imagen quieres generar?
+              </label>
+              <div className="space-y-3">
+                <textarea
+                  value={imageExpectation}
+                  onChange={e => setImageExpectation(e.target.value)}
+                  placeholder="Describe la imagen que necesitas... Ej: Un café humeante sobre mesa de madera con fondo cálido, luz de mañana, estilo fotográfico."
+                  className="w-full bg-slate-50 border-2 border-slate-100 px-6 py-4 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-medium leading-relaxed transition-all text-slate-700 hover:border-slate-200 min-h-[100px] resize-none"
                 />
+                <div className="flex justify-end">
+                  <VoiceMic
+                    onResult={(text) => setImageExpectation(imageExpectation + (imageExpectation ? " " : "") + text)}
+                    className="relative"
+                  />
+                </div>
               </div>
             </div>
+
+            {/* CAMPO 2: TEXTO DE LA PUBLICACIÓN (COPY) */}
+            <div id="tour-step-idea">
+              <div className="flex flex-wrap justify-between items-end gap-4 mb-4">
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                  ✍️ Texto de la publicación
+                </label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleImproveWithAI}
+                    disabled={improveLoading || !idea}
+                    className="bg-indigo-50 hover:bg-indigo-100 disabled:bg-slate-100 text-indigo-700 text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl transition-all flex items-center gap-2 border border-indigo-200 shadow-sm"
+                    title="Genera el texto del post con IA a partir de tu idea"
+                  >
+                    {improveLoading ? 'Generando...' : '✨ Generar con IA'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleGeneratePreview}
+                    disabled={previewLoading || !imageExpectation}
+                    className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-indigo-200"
+                    title="Genera la previsualización de imagen con IA"
+                  >
+                    {previewLoading ? 'Generando...' : (postType === 'Reel' || networks.tiktok) ? '🎬 Generar Prompts y Audio' : '🖼️ Ver Previsualización'}
+                  </button>
+                </div>
+              </div>
+              <div className={`border-2 rounded-[28px] bg-slate-50/50 focus-within:ring-4 focus-within:ring-indigo-500/10 transition-all overflow-hidden flex flex-col ${
+                isOverLimit ? 'border-rose-300 focus-within:border-rose-400' : 'border-slate-100 focus-within:border-indigo-500/50'
+              }`}>
+                <div className="flex items-start">
+                  <span className="pl-6 pt-6 text-xl">✍️</span>
+                  <textarea
+                    value={postText}
+                    onChange={e => setPostText(e.target.value)}
+                    placeholder="Escribe el texto que acompañará tu publicación... o usa 'Generar con IA' para que lo cree automáticamente."
+                    className={`w-full bg-transparent px-4 py-6 text-base outline-none placeholder:text-slate-400 min-h-[140px] resize-none font-medium leading-relaxed ${
+                      isOverLimit ? 'text-rose-600' : 'text-slate-800'
+                    }`}
+                    maxLength={maxChars + 500}
+                  />
+                </div>
+                <div className="px-6 py-4 bg-white/50 border-t border-slate-100 flex items-center justify-between">
+                  <VoiceMic
+                    onResult={(text) => setPostText(postText + (postText ? " " : "") + text)}
+                    className="relative"
+                  />
+                  <p className={`text-[10px] font-black uppercase tracking-widest ${
+                    isOverLimit ? 'text-rose-600' : 'text-slate-400'
+                  }`}>
+                    {postText.length} / {maxChars} Caracteres {isOverLimit && "(Límite Excedido)"}
+                  </p>
+                  {(() => {
+                    const hashtags = postText.match(/#[a-z0-9_]+/gi) || [];
+                    const maxHashtags = constraints?.warnings?.some(w => w.includes('LinkedIn')) ? 3 : 5;
+                    if (hashtags.length > maxHashtags) {
+                      return (
+                        <p className="text-[9px] font-bold text-amber-600 animate-pulse ml-4">
+                          ⚠️ Usa solo {maxHashtags} hashtags para mejor alcance.
+                        </p>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
+              </div>
+            </div>
+
+            {/* SECCIÓN DE CARTEL PUBLICITARIO (OPCIONAL) */}
+            <PosterSection
+              config={posterConfig}
+              setConfig={setPosterConfig}
+              profileLogoUrl={activeProfileLogoUrl}
+              profileName={activeProfileName}
+              profilePhone={activeProfilePhone}
+              profileEmail={activeProfileEmail}
+            />
+
           </div>
         )}
 
-        {/* SECCIÓN DE IDEA / CAPTION / IA (PERMANENTE) */}
-        <div id="tour-step-idea">
-          <div className="flex flex-wrap justify-between items-end gap-4 mb-4">
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
-              {creationMode === 'ai' ? 'Tu Idea Base' : 'Texto de la publicación (Caption)'}
-            </label>
-            <div className="flex gap-2">
-              <button 
+        {/* MODO MANUAL: Caption */}
+        {creationMode === 'manual' && (
+          <div id="tour-step-idea">
+            <div className="flex flex-wrap justify-between items-end gap-4 mb-4">
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                ✍️ Texto de la publicación (Caption)
+              </label>
+              <button
                 type="button"
                 onClick={handleImproveWithAI}
-                disabled={improveLoading || (creationMode === 'ai' ? !idea : !manualCaption)}
+                disabled={improveLoading || !manualCaption}
                 className="bg-indigo-50 hover:bg-indigo-100 disabled:bg-slate-100 text-indigo-700 text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl transition-all flex items-center gap-2 border border-indigo-200 shadow-sm"
               >
                 {improveLoading ? 'Refinando...' : '✨ Mejorar con IA'}
               </button>
-              {creationMode === 'ai' && (
-                <button 
-                  type="button"
-                  onClick={handleGeneratePreview}
-                  disabled={previewLoading || !idea}
-                  className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-indigo-200"
-                >
-                  {previewLoading ? 'Generando...' : (postType === 'Reel' || networks.tiktok) ? '🎬 Generar Prompts y Audio' : '🖼️ Ver Previsualización'}
-                </button>
-              )}
             </div>
-          </div>
-          <div className="border-2 border-slate-100 rounded-[28px] bg-slate-50/50 focus-within:ring-4 focus-within:ring-indigo-500/10 focus-within:border-indigo-500/50 transition-all overflow-hidden flex flex-col">
+            <div className="border-2 border-slate-100 rounded-[28px] bg-slate-50/50 focus-within:ring-4 focus-within:ring-indigo-500/10 focus-within:border-indigo-500/50 transition-all overflow-hidden flex flex-col">
               <div className="flex items-start">
-                <span className="pl-6 pt-6 text-xl">{creationMode === 'ai' ? '💡' : '✍️'}</span>
+                <span className="pl-6 pt-6 text-xl">✍️</span>
                 <textarea
-                  value={creationMode === 'ai' ? idea : manualCaption}
-                  onChange={e => creationMode === 'ai' ? setIdea(e.target.value) : setManualCaption(e.target.value)}
-                  placeholder={creationMode === 'ai' ? "Describe lo que quieres publicar..." : "Escribe el texto que acompañará tu post..."}
-                  className={`w-full bg-transparent px-4 py-6 text-base outline-none placeholder:text-slate-400 min-h-[160px] resize-none font-medium leading-relaxed ${isOverLimit ? 'text-rose-600' : 'text-slate-800'}`}
+                  value={manualCaption}
+                  onChange={e => setManualCaption(e.target.value)}
+                  placeholder="Escribe el texto que acompañará tu post..."
+                  className={`w-full bg-transparent px-4 py-6 text-base outline-none placeholder:text-slate-400 min-h-[160px] resize-none font-medium leading-relaxed ${
+                    isOverLimit ? 'text-rose-600' : 'text-slate-800'
+                  }`}
                   maxLength={maxChars + 500}
                 />
               </div>
               <div className="px-6 py-4 bg-white/50 border-t border-slate-100 flex items-center justify-between">
-                <VoiceMic 
-                  onResult={(text) => {
-                    if (creationMode === 'ai') setIdea(idea + (idea ? " " : "") + text);
-                    else setManualCaption(manualCaption + (manualCaption ? " " : "") + text);
-                  }} 
+                <VoiceMic
+                  onResult={(text) => setManualCaption(manualCaption + (manualCaption ? " " : "") + text)}
                   className="relative"
                 />
-                <p className={`text-[10px] font-black uppercase tracking-widest ${isOverLimit ? 'text-rose-600' : 'text-slate-400'}`}>
-                  {currentLength} / {maxChars} Caracteres {isOverLimit && "(Límite Excedido)"}
+                <p className={`text-[10px] font-black uppercase tracking-widest ${
+                  isOverLimit ? 'text-rose-600' : 'text-slate-400'
+                }`}>
+                  {manualCaption.length} / {maxChars} Caracteres {isOverLimit && "(Límite Excedido)"}
                 </p>
-                {/* Hashtag Rule Check */}
                 {(() => {
-                   const hashtags = (creationMode === 'ai' ? idea : manualCaption).match(/#[a-z0-9_]+/gi) || [];
-                   const maxHashtags = constraints?.warnings?.some(w => w.includes('LinkedIn')) ? 3 : 5;
-                   if (hashtags.length > maxHashtags) {
-                      return (
-                        <p className="text-[9px] font-bold text-amber-600 animate-pulse ml-4">
-                           ⚠️ Sugerencia: Usa solo {maxHashtags} hashtags para mejor alcance.
-                        </p>
-                      );
-                   }
-                   return null;
+                  const hashtags = manualCaption.match(/#[a-z0-9_]+/gi) || [];
+                  const maxHashtags = constraints?.warnings?.some(w => w.includes('LinkedIn')) ? 3 : 5;
+                  if (hashtags.length > maxHashtags) {
+                    return (
+                      <p className="text-[9px] font-bold text-amber-600 animate-pulse ml-4">
+                        ⚠️ Usa solo {maxHashtags} hashtags para mejor alcance.
+                      </p>
+                    );
+                  }
+                  return null;
                 })()}
               </div>
+            </div>
           </div>
-        </div>
+        )}
 
 
         {/* GALERÍA MANUAL (SOLO SI EL MODO ES MANUAL) */}

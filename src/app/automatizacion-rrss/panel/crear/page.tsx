@@ -10,6 +10,7 @@ import Link from "next/link";
 import { useProfile } from "../../../../contexts/ProfileContext";
 import { getQuotaUsage, getPlanLimit, getVideoPlanLimit } from "../../../../lib/quota";
 import { fetchSocialRules, getCombinedConstraints, SocialRules, DEFAULT_SOCIAL_RULES } from "../../../../lib/socialRules";
+import { type PosterConfig, DEFAULT_POSTER_CONFIG, buildPosterPromptSuffix } from "../../../../types/poster";
 
 import PostConfigForm from "../../../../components/crear/PostConfigForm";
 import CarouselWizard, { CarouselSlide } from "../../../../components/crear/CarouselWizard";
@@ -45,6 +46,10 @@ export default function RrssCreatePost() {
   const [manualCaption, setManualCaption] = useState("");
   const [idea, setIdea] = useState("");
   const [imageExpectation, setImageExpectation] = useState("");
+  /** Texto/copy explícito que el usuario escribe o genera con IA */
+  const [postText, setPostText] = useState("");
+  /** Configuración del cartel publicitario (opcional) */
+  const [posterConfig, setPosterConfig] = useState<PosterConfig>(DEFAULT_POSTER_CONFIG);
   const [postType, setPostType] = useState("Post");
   const [carouselCount, setCarouselCount] = useState(3);
   const [businessType, setBusinessType] = useState("");
@@ -216,10 +221,9 @@ export default function RrssCreatePost() {
       if (!response.ok) {
         const errJson = await response.json().catch(() => ({}));
         const e = new Error(errJson.error || "Error interno del servidor en LangGraph.");
-        (e as any).detail = errJson.detail;
+        (e as Error & { detail?: string }).detail = errJson.detail;
         throw e;
       }
-
 
       const data = await response.json();
       
@@ -228,34 +232,38 @@ export default function RrssCreatePost() {
           setShowOptionsModal(true);
       } else {
           const improvedText = data.data?.finalPost || data.improvedIdea || currentIdea;
+          // Actualiza el campo de texto de la publicación (postText para modo IA)
           if (creationMode === 'ai') {
-              setIdea(improvedText);
+              setPostText(improvedText);
+              setIdea(improvedText); // Mantiene idea sincronizada para el prompt
           } else {
               setManualCaption(improvedText);
           }
       }
-    } catch (err: any) {
-
-      console.error("Error en LangGraph:", err);
-      const detailedError = err.message + (err.detail ? ` (${err.detail})` : "");
+    } catch (err: unknown) {
+      const e = err as Error & { detail?: string };
+      console.error("Error en LangGraph:", e);
+      const detailedError = e.message + (e.detail ? ` (${e.detail})` : "");
       setError(detailedError);
-
     } finally {
       setImproveLoading(false);
     }
   };
 
   const handleGeneratePreview = async (regenerate: boolean = false) => {
-    if (!idea) { setError("Por favor ingresa una idea para generar la previsualización."); return; }
+    if (!imageExpectation) { setError("Por favor describe la imagen que quieres generar."); return; }
     setPromptLoading(true);
     setError("");
     try {
+      // Si hay cartel activo, enriquecer imageExpectation con los datos del cartel
+      const enrichedExpectation = imageExpectation + buildPosterPromptSuffix(posterConfig);
+
       const response = await fetch('/api/ai/generate-prompt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          idea,
-          imageExpectation,
+          idea: enrichedExpectation,
+          imageExpectation: enrichedExpectation,
           businessType,
           type: postType,
           carouselCount: postType === 'Carrusel' ? carouselCount : 1,
@@ -272,9 +280,10 @@ export default function RrssCreatePost() {
       setPendingPrompts(resData.data);
       setShowPromptModal(true);
 
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || "No pudimos conectar con el motor de IA. Revisa tu conexión.");
+    } catch (err: unknown) {
+      const e = err as Error;
+      console.error(e);
+      setError(e.message || "No pudimos conectar con el motor de IA. Revisa tu conexión.");
     } finally {
       setPromptLoading(false);
     }
@@ -291,7 +300,7 @@ export default function RrssCreatePost() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          idea,
+          idea: imageExpectation,
           promptEnglish: pendingPrompts.prompt_english || "",
           promptsEnglish: pendingPrompts.prompts_english || [],
           videoPrompt: pendingPrompts.video_prompt || "",
@@ -302,7 +311,10 @@ export default function RrssCreatePost() {
           carouselCount: postType === 'Carrusel' ? carouselCount : 1,
           profileId: activeProfile?.id || 'default',
           email: activeProfile?.email || '',
-          phone: activeProfile?.phone || ''
+          phone: activeProfile?.phone || '',
+          // Campos nuevos: copy del usuario y config de cartel
+          userProvidedCopy: postText.trim() || '',
+          posterConfig: posterConfig.enabled ? posterConfig : null,
         })
       });
 
@@ -314,11 +326,14 @@ export default function RrssCreatePost() {
       const data = await response.json();
       const newSlides: CarouselSlide[] = [];
       
+      // Si el usuario ya escribió el copy, usarlo; de lo contrario usar el de Gemini
+      const finalCopy = postText.trim() || data.suggestedCopy || imageExpectation;
+      
       if (postType === 'Reel') {
           setVideoPrompt(data.videoPrompt || "");
           setVoiceoverScript(data.voiceoverScript || "");
           setAudioUrl(data.audioUrl || "");
-          newSlides.push({ url: data.imageUrl || "", copy: data.suggestedCopy || idea });
+          newSlides.push({ url: data.imageUrl || "", copy: finalCopy });
           setShowReelWorkspace(true);
       } else {
           setVideoPrompt("");
@@ -326,10 +341,10 @@ export default function RrssCreatePost() {
           setAudioUrl("");
           if (data.imageUrls && Array.isArray(data.imageUrls)) {
               data.imageUrls.forEach((url: string) => {
-                  newSlides.push({ url, copy: data.suggestedCopy || idea });
+                  newSlides.push({ url, copy: finalCopy });
               });
           } else if (data.imageUrl) {
-              newSlides.push({ url: data.imageUrl, copy: data.suggestedCopy || idea });
+              newSlides.push({ url: data.imageUrl, copy: finalCopy });
           }
       }
 
@@ -338,10 +353,15 @@ export default function RrssCreatePost() {
       }
 
       setPreviewSlides(newSlides);
+      // Actualizar postText con el copy final si el usuario no había escrito nada
+      if (!postText.trim() && data.suggestedCopy) {
+        setPostText(data.suggestedCopy);
+      }
 
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || "Error al generar la previsualización del diseño.");
+    } catch (err: unknown) {
+      const e = err as Error;
+      console.error(e);
+      setError(e.message || "Error al generar la previsualización del diseño.");
     } finally {
       setPreviewLoading(false);
     }
@@ -640,6 +660,12 @@ export default function RrssCreatePost() {
             <PostConfigForm 
               idea={idea} setIdea={setIdea}
               imageExpectation={imageExpectation} setImageExpectation={setImageExpectation}
+              postText={postText} setPostText={setPostText}
+              posterConfig={posterConfig} setPosterConfig={setPosterConfig}
+              activeProfileLogoUrl={activeProfile?.logoUrl || ''}
+              activeProfileName={activeProfile?.name || ''}
+              activeProfilePhone={activeProfile?.phone || ''}
+              activeProfileEmail={activeProfile?.email || ''}
               postType={postType} setPostType={setPostType}
               hideSubmit={true}
               carouselCount={carouselCount} setCarouselCount={setCarouselCount}
