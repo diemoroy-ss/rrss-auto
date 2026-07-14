@@ -860,7 +860,7 @@ export default function RrssCreatePost() {
         isOpen={showOptionsModal}
         options={aiOptions}
         onSelect={(opt) => {
-            if (creationMode === 'ai') setIdea(opt);
+            if (creationMode === 'ai') setPostText(opt);
             else setManualCaption(opt);
             setShowOptionsModal(false);
         }}
