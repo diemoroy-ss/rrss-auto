@@ -145,6 +145,12 @@ Texto de la opción 3...`;
   // Parser simple para extraer las opciones
   const options: string[] = [];
   const parts = text.split(/\[\[OPCION \d\]\]/i);
+  
+  // Si se encontró al menos una etiqueta [[OPCION X]], el primer elemento (parts[0]) es el preámbulo y lo descartamos.
+  if (parts.length > 1) {
+      parts.shift();
+  }
+
   for (const part of parts) {
       const trimmed = part.trim();
       if (trimmed) options.push(trimmed);

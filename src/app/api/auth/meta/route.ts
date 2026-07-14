@@ -31,7 +31,7 @@ export async function GET(req: Request) {
         const state = encodeURIComponent(`${decodedToken.uid}|${profileId}|${origin}`);
 
         const configId = process.env.META_CONFIG_ID;
-        let url = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}&response_type=code`;
+        let url = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}&response_type=code&auth_type=rerequest`;
         
         if (configId) {
             url += `&config_id=${configId}`;

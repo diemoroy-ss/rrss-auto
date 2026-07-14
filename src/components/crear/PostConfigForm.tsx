@@ -8,6 +8,8 @@ import StatusModal from "../StatusModal";
 interface PostConfigFormProps {
   idea: string;
   setIdea: (val: string) => void;
+  imageExpectation: string;
+  setImageExpectation: (val: string) => void;
   postType: string;
   setPostType: (val: string) => void;
   carouselCount: number;
@@ -54,6 +56,7 @@ interface PostConfigFormProps {
 
 export default function PostConfigForm({
   idea, setIdea,
+  imageExpectation, setImageExpectation,
   postType, setPostType,
   carouselCount, setCarouselCount,
   businessType, setBusinessType,
@@ -294,6 +297,28 @@ export default function PostConfigForm({
                 <div className="text-xl font-black text-indigo-700 w-6 items-center flex justify-center">{carouselCount}</div>
                 <span className="text-xs font-bold text-indigo-500 uppercase tracking-widest">Imágenes</span>
              </div>
+          </div>
+        )}
+        {/* ¿QUÉ ESPERAS COMO IMAGEN? (SOLO EN MODO IA) */}
+        {creationMode === 'ai' && (
+          <div className="animate-in slide-in-from-top-4 fade-in pt-4">
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
+              ¿Qué esperas como imagen? (Estilo Visual)
+            </label>
+            <div className="space-y-3">
+              <textarea 
+                value={imageExpectation} 
+                onChange={e => setImageExpectation(e.target.value)}
+                placeholder="Ej: Un plato de sushi gourmet con fondo oscuro, luces de neón azul y estilo fotográfico cinematográfico, sin texto..."
+                className="w-full bg-slate-50 border-2 border-slate-100 px-6 py-4 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-medium leading-relaxed transition-all text-slate-700 hover:border-slate-200 min-h-[90px] resize-none"
+              />
+              <div className="flex justify-end">
+                <VoiceMic 
+                  onResult={(text) => setImageExpectation(imageExpectation + (imageExpectation ? " " : "") + text)} 
+                  className="relative"
+                />
+              </div>
+            </div>
           </div>
         )}
 

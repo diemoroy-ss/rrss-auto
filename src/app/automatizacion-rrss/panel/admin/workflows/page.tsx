@@ -82,23 +82,6 @@ const WORKFLOWS: N8NWorkflow[] = [
         expectedReturn: 'HTTP 200 OK',
         nodeFlow: ['Webhook POST', 'Send Email Node (SMTP/GMail)', 'Respond to Webhook']
     },
-
-    {
-        id: 'sincronizar-metricas',
-        name: 'Sincronizar Métricas Meta',
-        description: 'Pide a N8N que extraiga las analíticas recientes de IG/FB.',
-        url: 'https://n8n.santisoft.cl/webhook-test/sincronizar-metricas',
-        method: 'POST',
-        authStrategy: 'Ninguna',
-        variablesSent: {
-            userId: 'String',
-            profileId: 'String',
-            facebookUrl: 'String',
-            instagramUrl: 'String'
-        },
-        expectedReturn: '{ success: true, ...métricas }',
-        nodeFlow: ['Webhook POST', 'HTTP Request (Meta Graph API)', 'Format Data', 'Respond JSON']
-    },
     {
         id: 'img-rrss-auto-test',
         name: 'Preview AI Generator (Dashboard)',

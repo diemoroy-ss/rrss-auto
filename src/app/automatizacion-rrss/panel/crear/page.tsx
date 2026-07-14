@@ -44,6 +44,7 @@ export default function RrssCreatePost() {
   const [manualFiles, setManualFiles] = useState<File[]>([]);
   const [manualCaption, setManualCaption] = useState("");
   const [idea, setIdea] = useState("");
+  const [imageExpectation, setImageExpectation] = useState("");
   const [postType, setPostType] = useState("Post");
   const [carouselCount, setCarouselCount] = useState(3);
   const [businessType, setBusinessType] = useState("");
@@ -57,6 +58,9 @@ export default function RrssCreatePost() {
 
   const [previewLoading, setPreviewLoading] = useState(false);
   const [improveLoading, setImproveLoading] = useState(false);
+  const [showPromptModal, setShowPromptModal] = useState(false);
+  const [promptLoading, setPromptLoading] = useState(false);
+  const [pendingPrompts, setPendingPrompts] = useState<any>(null);
 
   const [userPlan, setUserPlan] = useState("free");
   const [postsThisMonth, setPostsThisMonth] = useState(0);
@@ -241,16 +245,57 @@ export default function RrssCreatePost() {
     }
   };
 
-  const handleGeneratePreview = async () => {
+  const handleGeneratePreview = async (regenerate: boolean = false) => {
     if (!idea) { setError("Por favor ingresa una idea para generar la previsualización."); return; }
+    setPromptLoading(true);
+    setError("");
+    try {
+      const response = await fetch('/api/ai/generate-prompt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          idea,
+          imageExpectation,
+          businessType,
+          type: postType,
+          carouselCount: postType === 'Carrusel' ? carouselCount : 1,
+          regenerate,
+        })
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || "No se pudo generar la propuesta de diseño de la IA.");
+      }
+
+      const resData = await response.json();
+      setPendingPrompts(resData.data);
+      setShowPromptModal(true);
+
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "No pudimos conectar con el motor de IA. Revisa tu conexión.");
+    } finally {
+      setPromptLoading(false);
+    }
+  };
+
+  const handleConfirmPreview = async () => {
+    if (!pendingPrompts) return;
+    setShowPromptModal(false);
     setPreviewLoading(true);
     setError("");
+
     try {
       const response = await fetch('/api/ai/generate-preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           idea,
+          promptEnglish: pendingPrompts.prompt_english || "",
+          promptsEnglish: pendingPrompts.prompts_english || [],
+          videoPrompt: pendingPrompts.video_prompt || "",
+          voiceoverScript: pendingPrompts.voiceover_script || "",
           userPlan,
           businessType,
           type: postType,
@@ -260,9 +305,10 @@ export default function RrssCreatePost() {
           phone: activeProfile?.phone || ''
         })
       });
+
       if (!response.ok) {
         const errData = await response.json();
-        throw new Error(errData.error || "No se pudo generar la previsualización. Por favor, inténtalo de nuevo.");
+        throw new Error(errData.error || "No se pudo completar la generación del diseño en n8n.");
       }
       
       const data = await response.json();
@@ -295,9 +341,9 @@ export default function RrssCreatePost() {
 
     } catch (err: any) {
       console.error(err);
-      setError(err.message || "No pudimos generar la previsualización. Revisa tu conexión.");
+      setError(err.message || "Error al generar la previsualización del diseño.");
     } finally {
-        setPreviewLoading(false);
+      setPreviewLoading(false);
     }
   };
 
@@ -593,6 +639,7 @@ export default function RrssCreatePost() {
           <div className="lg:col-span-7 space-y-8 max-w-2xl w-full">
             <PostConfigForm 
               idea={idea} setIdea={setIdea}
+              imageExpectation={imageExpectation} setImageExpectation={setImageExpectation}
               postType={postType} setPostType={setPostType}
               hideSubmit={true}
               carouselCount={carouselCount} setCarouselCount={setCarouselCount}
@@ -606,7 +653,7 @@ export default function RrssCreatePost() {
               handleGeneratePreview={handleGeneratePreview}
               handleSubmit={handleSubmit}
               improveLoading={improveLoading}
-              previewLoading={previewLoading}
+              previewLoading={previewLoading || promptLoading}
               loading={loading}
               error={error}
               isAdmin={isAdmin}
@@ -799,6 +846,73 @@ export default function RrssCreatePost() {
         }}
         onClose={() => setShowOptionsModal(false)}
       />
+
+      {/* MODAL INTERACTIVO DE CONFIRMACIÓN DE PROMPT EN ESPAÑOL */}
+      {showPromptModal && pendingPrompts && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
+          <div className="bg-white rounded-[32px] border border-slate-100 shadow-2xl w-full max-w-lg p-8 md:p-10 animate-in zoom-in duration-300 space-y-6">
+            <div className="flex items-center gap-4">
+              <span className="w-12 h-12 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-center text-2xl shadow-inner">🎨</span>
+              <div>
+                <h3 className="text-xl font-black text-slate-900 tracking-tight">Propuesta de la IA</h3>
+                <p className="text-xs font-medium text-slate-400 uppercase tracking-widest mt-0.5">Revisión de Estilo Visual</p>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 shadow-inner space-y-4">
+              <h4 className="text-xs font-black text-slate-500 uppercase tracking-wider">Esto es lo que diseñaremos para ti:</h4>
+              <p className="text-slate-700 text-sm font-semibold leading-relaxed italic animate-in fade-in duration-500">
+                "{pendingPrompts.prompt_spanish || pendingPrompts.prompts_spanish?.[0] || 'Una imagen creativa alineada a tus indicaciones.'}"
+              </p>
+              
+              {postType === 'Carrusel' && pendingPrompts.prompts_spanish && (
+                <div className="pt-2 border-t border-slate-200 space-y-2">
+                  <p className="text-[10px] font-black uppercase text-indigo-500 tracking-wider">Secuencia de imágenes del carrusel:</p>
+                  <ul className="list-decimal pl-4 text-xs font-medium text-slate-500 space-y-1">
+                    {pendingPrompts.prompts_spanish.map((p: string, idx: number) => (
+                      <li key={idx} className="line-clamp-1">{p}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {postType === 'Reel' && pendingPrompts.voiceover_script && (
+                <div className="pt-2 border-t border-slate-200 space-y-1 text-xs">
+                  <p className="text-[10px] font-black uppercase text-rose-500 tracking-wider">🎙️ Guion de voz en off (Reel):</p>
+                  <p className="font-semibold text-slate-600">"{pendingPrompts.voiceover_script}"</p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button 
+                type="button" 
+                onClick={() => setShowPromptModal(false)}
+                className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-4 rounded-2xl transition-all text-xs"
+              >
+                Cancelar
+              </button>
+              <button 
+                type="button" 
+                onClick={() => {
+                  setShowPromptModal(false);
+                  handleGeneratePreview(true);
+                }}
+                className="flex-1 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200/50 font-bold py-4 rounded-2xl transition-all text-xs flex items-center justify-center gap-1"
+              >
+                🔄 Volver a Pensar
+              </button>
+              <button 
+                type="button" 
+                onClick={handleConfirmPreview}
+                className="flex-[1.4] bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 px-3 rounded-2xl transition-all shadow-xl shadow-indigo-600/20 hover:-translate-y-0.5 flex items-center justify-center gap-1.5 text-xs"
+              >
+                🚀 Confirmar y Diseñar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <StatusModal 
         isOpen={statusModal.isOpen}
