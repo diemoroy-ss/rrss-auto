@@ -394,7 +394,7 @@ function ConfigContent() {
         });
         const data = await res.json();
         if (data.url) {
-            window.open(data.url, '_blank');
+            window.location.href = data.url;
         } else {
             throw new Error(data.error || "No se pudo generar la URL de Meta");
         }
@@ -413,7 +413,7 @@ function ConfigContent() {
         });
         const data = await res.json();
         if (data.url) {
-            window.open(data.url, '_blank');
+            window.location.href = data.url;
         } else {
             throw new Error(data.error || "No se pudo generar la URL de LinkedIn");
         }
@@ -432,7 +432,7 @@ function ConfigContent() {
         });
         const data = await res.json();
         if (data.url) {
-            window.open(data.url, '_blank');
+            window.location.href = data.url;
         } else {
             throw new Error(data.error || "No se pudo generar la URL de TikTok");
         }
