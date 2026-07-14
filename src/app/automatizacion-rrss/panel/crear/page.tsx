@@ -237,6 +237,9 @@ export default function RrssCreatePost() {
     const targetExpectation = imageExpectation.trim() || postText.trim() || idea.trim();
     if (!targetIdea) return;
     
+    const webhookUrl = process.env.NEXT_PUBLIC_N8N_PREVIEW_URL || 'https://n8n.santisoft.cl/webhook/img-rrss-auto';
+    console.log(`🚀 [PREVISUALIZAR] Iniciando flujo hacia webhook n8n: ${webhookUrl}`);
+
     setPromptLoading(true);
     setError("");
 
