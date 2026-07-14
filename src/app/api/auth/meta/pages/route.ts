@@ -37,27 +37,9 @@ export async function GET(req: Request) {
              return NextResponse.json({ error: "Error decoding Token" }, { status: 500 });
         }
 
-        // Consultar páginas
-        const pagesUrl = `https://graph.facebook.com/v19.0/me/accounts?fields=id,name,access_token,instagram_business_account{id,username,profile_picture_url}&access_token=${userAccessToken}`;
+        // Consultar páginas (incluyendo la foto de perfil de Facebook y de Instagram)
+        const pagesUrl = `https://graph.facebook.com/v19.0/me/accounts?fields=id,name,access_token,picture{url},instagram_business_account{id,username,profile_picture_url}&access_token=${userAccessToken}`;
         
-        // Consultar permisos del token para depurar
-        try {
-            const permRes = await fetch(`https://graph.facebook.com/v19.0/me/permissions?access_token=${userAccessToken}`);
-            const permData = await permRes.json();
-            console.log("DEBUG FB me/permissions response:", JSON.stringify(permData));
-        } catch (e) {
-            console.error("Error fetching permissions:", e);
-        }
-
-        // PRUEBA: Consultar páginas sin campos de Instagram para depurar
-        try {
-            const simpleRes = await fetch(`https://graph.facebook.com/v19.0/me/accounts?fields=id,name,access_token&access_token=${userAccessToken}`);
-            const simpleData = await simpleRes.json();
-            console.log("DEBUG FB me/accounts SIMPLE response:", JSON.stringify(simpleData));
-        } catch (e) {
-            console.error("Error in simple accounts query:", e);
-        }
-
         const res = await fetch(pagesUrl);
         const data = await res.json();
 
