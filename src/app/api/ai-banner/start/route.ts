@@ -11,8 +11,8 @@ export async function POST(req: NextRequest) {
     console.log("[START ROUTE] Disparando fetch a n8n banner-ia en background...");
     console.log(`[START ROUTE] Enviando a n8n banner-ia para ticket: ${ticketId}`);
     
-    // Cambiado a URL de producción
-    const n8nUrl = "https://n8n.santisoft.cl/webhook/banner-ia";
+    // Configurado dinámicamente mediante variables de entorno
+    const n8nUrl = process.env.NEXT_PUBLIC_N8N_BANNER_START_URL || "https://n8n.santisoft.cl/webhook/banner-ia";
 
     fetch(n8nUrl, {
       method: "POST",

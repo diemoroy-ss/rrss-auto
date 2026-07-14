@@ -21,9 +21,9 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Faltan datos obligatorios (PDF o Destino)" }, { status: 400 });
         }
 
-        // Determinar la URL de n8n según el tipo de destino
-        const N8N_WS_URL = "https://n8n.santisoft.cl/webhook-test/auto-rrss-ws";
-        const N8N_EMAIL_URL = "https://n8n.santisoft.cl/webhook-test/auto-rrss-email";
+        // Determinar la URL de n8n según el tipo de destino (utilizando variables de entorno)
+        const N8N_WS_URL = process.env.NEXT_PUBLIC_N8N_WS_REPORT_URL || "https://n8n.santisoft.cl/webhook/auto-rrss-ws";
+        const N8N_EMAIL_URL = process.env.NEXT_PUBLIC_N8N_EMAIL_REPORT_URL || "https://n8n.santisoft.cl/webhook/auto-rrss-email";
         
         const webhookUrl = targetType === 'whatsapp' ? N8N_WS_URL : N8N_EMAIL_URL;
         const SECRET = process.env.CRON_SECRET || 'santisoft-n8n-cron-key-123';

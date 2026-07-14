@@ -12,9 +12,13 @@ export async function GET(req: NextRequest) {
 
   try {
     console.log(`[STATUS ROUTE] Consultando n8n banner-ia-status para ticket: ${ticketId}`);
+    
+    // Configurado dinámicamente mediante variables de entorno
+    const baseBannerStatusUrl = process.env.NEXT_PUBLIC_N8N_BANNER_STATUS_URL || "https://n8n.santisoft.cl/webhook/banner-ia-status";
+    
     // AHORA n8n espera un GET con el ticketId en la query param
     const n8nResp = await fetch(
-      `https://n8n.santisoft.cl/webhook/banner-ia-status?ticketId=${ticketId}`,
+      `${baseBannerStatusUrl}?ticketId=${ticketId}`,
       { method: "GET" }
     );
 
@@ -53,6 +57,3 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ status: "pending", _debug: err.message });
   }
 }
-
-
-
