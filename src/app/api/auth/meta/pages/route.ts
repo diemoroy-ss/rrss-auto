@@ -49,6 +49,15 @@ export async function GET(req: Request) {
             console.error("Error fetching permissions:", e);
         }
 
+        // PRUEBA: Consultar páginas sin campos de Instagram para depurar
+        try {
+            const simpleRes = await fetch(`https://graph.facebook.com/v19.0/me/accounts?fields=id,name,access_token&access_token=${userAccessToken}`);
+            const simpleData = await simpleRes.json();
+            console.log("DEBUG FB me/accounts SIMPLE response:", JSON.stringify(simpleData));
+        } catch (e) {
+            console.error("Error in simple accounts query:", e);
+        }
+
         const res = await fetch(pagesUrl);
         const data = await res.json();
 
