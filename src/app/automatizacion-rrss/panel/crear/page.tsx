@@ -17,8 +17,7 @@ import CarouselWizard, { CarouselSlide } from "../../../../components/crear/Caro
 import CanvasEditor from "../../../../components/crear/CanvasEditor";
 import StatusModal from "../../../../components/StatusModal";
 import AIOptionsModal from "../../../../components/crear/AIOptionsModal";
-
-
+import PosterSection from "../../../../components/crear/PosterSection";
 
 export interface UserTemplate { id: string; url: string; type?: 'image' | 'video'; createdAt: Date; }
 
@@ -59,47 +58,51 @@ export default function RrssCreatePost() {
 
   // Wizard state
   const [previewSlides, setPreviewSlides] = useState<CarouselSlide[]>([]);
-  const [userLogo, setUserLogo] = useState("");
-
   const [previewLoading, setPreviewLoading] = useState(false);
-  const [improveLoading, setImproveLoading] = useState(false);
-  const [showPromptModal, setShowPromptModal] = useState(false);
   const [promptLoading, setPromptLoading] = useState(false);
+  const [voiceoverScript, setVoiceoverScript] = useState("");
+  const [videoPrompt, setVideoPrompt] = useState("");
+  const [audioUrl, setAudioUrl] = useState("");
+
+  const [showReelWorkspace, setShowReelWorkspace] = useState(false);
+  const [reelVideoUploading, setReelVideoUploading] = useState(false);
+
+  const [showPromptModal, setShowPromptModal] = useState(false);
   const [pendingPrompts, setPendingPrompts] = useState<any>(null);
 
-  const [userPlan, setUserPlan] = useState("free");
-  const [postsThisMonth, setPostsThisMonth] = useState(0);
-  const [quotaExceeded, setQuotaExceeded] = useState(false);
-  const [videoLimit, setVideoLimit] = useState(0);
-  const [showScheduler, setShowScheduler] = useState(false);
-
-  const [aiOptions, setAiOptions] = useState<string[]>([]);
+  // AI Dialog
   const [showOptionsModal, setShowOptionsModal] = useState(false);
-  const [videoPrompt, setVideoPrompt] = useState("");
-  const [voiceoverScript, setVoiceoverScript] = useState("");
-  const [audioUrl, setAudioUrl] = useState("");
-  const [reelVideoUploading, setReelVideoUploading] = useState(false);
-  const [showReelWorkspace, setShowReelWorkspace] = useState(false);
-  
-  const [socialRules, setSocialRules] = useState<SocialRules>(DEFAULT_SOCIAL_RULES);
-  const [constraints, setConstraints] = useState({ safeCharLimit: 2200, allowedMediaTypes: ["image", "video"], warnings: [] as string[], forcedType: "" });
+  const [aiOptions, setAiOptions] = useState<string[]>([]);
+  const [improveLoading, setImproveLoading] = useState(false);
 
+  // Status Modals
   const [statusModal, setStatusModal] = useState<{
-
     isOpen: boolean;
-    type: "success" | "error" | "info" | "confirm";
+    type: "success" | "error" | "info";
     title: string;
     message: string;
-    onConfirm?: () => void;
-  }>({
-    isOpen: false,
-    type: "info",
-    title: "",
-    message: ""
-  });
+    onConfirm: (() => void) | null;
+  }>({ isOpen: false, type: "success", title: "", message: "", onConfirm: null });
 
+  // Active business profile
   const { activeProfile } = useProfile();
+  const [userLogo, setUserLogo] = useState("");
 
+  // Plan limits & rules
+  const [socialRules, setSocialRules] = useState<SocialRules>(DEFAULT_SOCIAL_RULES);
+  const [postsThisMonth, setPostsThisMonth] = useState(0);
+  const [postLimit, setPostLimit] = useState(5);
+  const [videoLimit, setVideoLimit] = useState(0);
+  const [showScheduler, setShowScheduler] = useState(false);
+  const [quotaExceeded, setQuotaExceeded] = useState(false);
+  const [userPlan, setUserPlan] = useState("free");
+
+  const [constraints, setConstraints] = useState<any>({
+    safeCharLimit: 1000,
+    allowedMediaTypes: ["image/*"],
+    warnings: [],
+    forcedType: ""
+  });
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async u => {
@@ -135,6 +138,7 @@ export default function RrssCreatePost() {
             setPostsThisMonth(used);
             
             const planLimit = await getPlanLimit(plan);
+            setPostLimit(planLimit);
             if (used >= planLimit) {
                 setQuotaExceeded(true);
             }
@@ -192,103 +196,78 @@ export default function RrssCreatePost() {
     }
   }, [networks, postType, socialRules]);
 
+  // AI copywriting generator
   const handleImproveWithAI = async () => {
-    const currentIdea = creationMode === 'ai' ? idea : manualCaption;
-    if (!currentIdea) { setError("Por favor ingresa una idea o caption base para mejorarla."); return; }
-    
+    const textToImprove = creationMode === 'ai' ? idea : manualCaption;
+    if (!textToImprove.trim()) return;
     setImproveLoading(true);
-    setError("");
-    
     try {
-      // Determinamos la plataforma destino según las redes seleccionadas
-      let targetPlatform = "LinkedIn";
-      if (networks.tiktok) targetPlatform = "TikTok";
-      else if (networks.instagram) targetPlatform = "Instagram";
-      else if (networks.facebook) targetPlatform = "Facebook";
-
-      const topicStr = `Rubro o negocio: ${businessType || "General"}. Idea/Tema: ${currentIdea}`;
-
-      const response = await fetch('/api/ai/langgraph', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-            action: 'generate_full',
-            topic: topicStr, 
-            platform: targetPlatform
+      const idToken = await auth.currentUser?.getIdToken();
+      const res = await fetch("/api/ai/copywriter", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${idToken}`
+        },
+        body: JSON.stringify({
+           prompt: textToImprove,
+           businessType,
+           postType,
+           maxWords: postType === 'Historia' ? 30 : 150
         })
       });
-
-      if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        const e = new Error(errJson.error || "Error interno del servidor en LangGraph.");
-        (e as Error & { detail?: string }).detail = errJson.detail;
-        throw e;
+      const data = await res.json();
+      if (data.options) {
+        setAiOptions(data.options);
+        setShowOptionsModal(true);
       }
-
-      const data = await response.json();
-      
-      if (data.data?.options && data.data.options.length > 1) {
-          setAiOptions(data.data.options);
-          setShowOptionsModal(true);
-      } else {
-          const improvedText = data.data?.finalPost || data.improvedIdea || currentIdea;
-          // Actualiza el campo de texto de la publicación (postText para modo IA)
-          if (creationMode === 'ai') {
-              setPostText(improvedText);
-              setIdea(improvedText); // Mantiene idea sincronizada para el prompt
-          } else {
-              setManualCaption(improvedText);
-          }
-      }
-    } catch (err: unknown) {
-      const e = err as Error & { detail?: string };
-      console.error("Error en LangGraph:", e);
-      const detailedError = e.message + (e.detail ? ` (${e.detail})` : "");
-      setError(detailedError);
+    } catch(err) {
+      console.error(err);
+      setError("No pudimos generar sugerencias con IA en este momento.");
     } finally {
       setImproveLoading(false);
     }
   };
 
-  const handleGeneratePreview = async (regenerate: boolean = false) => {
-    if (!imageExpectation) { setError("Por favor describe la imagen que quieres generar."); return; }
+  // Generate prompts / copy fallback
+  const handleGeneratePreview = async (forceReplan = false) => {
+    if (!imageExpectation.trim()) return;
     setPromptLoading(true);
     setError("");
-    try {
-      // Si hay cartel activo, enriquecer imageExpectation con los datos del cartel
-      const enrichedExpectation = imageExpectation + buildPosterPromptSuffix(posterConfig);
 
-      const response = await fetch('/api/ai/generate-prompt', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+    try {
+      const idToken = await auth.currentUser?.getIdToken();
+      const res = await fetch("/api/ai/prompt-architect", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${idToken}`
+        },
         body: JSON.stringify({
-          idea: enrichedExpectation,
-          imageExpectation: enrichedExpectation,
+          idea: imageExpectation,
           businessType,
-          type: postType,
-          carouselCount: postType === 'Carrusel' ? carouselCount : 1,
-          regenerate,
+          postType,
+          carouselCount,
+          forceReplan
         })
       });
-
-      if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.error || "No se pudo generar la propuesta de diseño de la IA.");
+      
+      if (!res.ok) {
+        throw new Error("El planificador visual de IA ha fallado.");
       }
 
-      const resData = await response.json();
-      setPendingPrompts(resData.data);
+      const data = await res.json();
+      setPendingPrompts(data);
       setShowPromptModal(true);
 
-    } catch (err: unknown) {
-      const e = err as Error;
-      console.error(e);
-      setError(e.message || "No pudimos conectar con el motor de IA. Revisa tu conexión.");
+    } catch (err: any) {
+      setError(err.message || "Error al diseñar la propuesta visual con IA.");
     } finally {
       setPromptLoading(false);
     }
   };
 
+  // Trigger n8n Image Pipeline with approved prompt suffix
   const handleConfirmPreview = async () => {
     if (!pendingPrompts) return;
     setShowPromptModal(false);
@@ -296,293 +275,277 @@ export default function RrssCreatePost() {
     setError("");
 
     try {
-      const response = await fetch('/api/ai/generate-preview', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const idToken = await auth.currentUser?.getIdToken();
+
+      // Enriquecer el prompt del cartel si está habilitado
+      const posterPromptSuffix = posterConfig.enabled ? buildPosterPromptSuffix(posterConfig) : "";
+
+      const promptEnglish = pendingPrompts.prompt_english 
+        ? `${pendingPrompts.prompt_english}. ${posterPromptSuffix}`.trim()
+        : "";
+
+      const promptsEnglish = pendingPrompts.prompts_english?.map((p: string) => 
+        `${p}. ${posterPromptSuffix}`.trim()
+      ) || [];
+
+      // Llamar al endpoint local proxy de previsualización
+      const res = await fetch("/api/ai/generate-preview", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${idToken}`
+        },
         body: JSON.stringify({
           idea: imageExpectation,
-          promptEnglish: pendingPrompts.prompt_english || "",
-          promptsEnglish: pendingPrompts.prompts_english || [],
+          promptEnglish,
+          promptsEnglish,
           videoPrompt: pendingPrompts.video_prompt || "",
           voiceoverScript: pendingPrompts.voiceover_script || "",
-          userPlan,
           businessType,
           type: postType,
-          carouselCount: postType === 'Carrusel' ? carouselCount : 1,
-          profileId: activeProfile?.id || 'default',
-          email: activeProfile?.email || '',
-          phone: activeProfile?.phone || '',
-          // Campos nuevos: copy del usuario y config de cartel
-          userProvidedCopy: postText.trim() || '',
-          posterConfig: posterConfig.enabled ? posterConfig : null,
+          carouselCount,
+          email: activeProfile?.email || "",
+          phone: activeProfile?.phone || "",
+          profileId: activeProfile?.id || "",
+          userProvidedCopy: postText,
+          posterConfig,
         })
       });
 
-      if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.error || "No se pudo completar la generación del diseño en n8n.");
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Fallo en la previsualización del diseño.");
       }
+
+      const data = await res.json();
       
-      const data = await response.json();
-      const newSlides: CarouselSlide[] = [];
-      
-      // Si el usuario ya escribió el copy, usarlo; de lo contrario usar el de Gemini
-      const finalCopy = postText.trim() || data.suggestedCopy || imageExpectation;
-      
-      if (postType === 'Reel') {
-          setVideoPrompt(data.videoPrompt || "");
-          setVoiceoverScript(data.voiceoverScript || "");
-          setAudioUrl(data.audioUrl || "");
-          newSlides.push({ url: data.imageUrl || "", copy: finalCopy });
-          setShowReelWorkspace(true);
+      // Adaptar respuesta
+      if (postType === 'Carrusel' && data.imageUrls && Array.isArray(data.imageUrls)) {
+         const slides: CarouselSlide[] = data.imageUrls.map((url: string) => ({
+             url,
+             copy: data.suggestedCopy || ""
+         }));
+         setPreviewSlides(slides);
       } else {
-          setVideoPrompt("");
-          setVoiceoverScript("");
-          setAudioUrl("");
-          if (data.imageUrls && Array.isArray(data.imageUrls)) {
-              data.imageUrls.forEach((url: string) => {
-                  newSlides.push({ url, copy: finalCopy });
-              });
-          } else if (data.imageUrl) {
-              newSlides.push({ url: data.imageUrl, copy: finalCopy });
-          }
+         setPreviewSlides([{
+             url: data.imageUrl,
+             copy: data.suggestedCopy || ""
+         }]);
       }
 
-      if (newSlides.length === 0) {
-          throw new Error("No se devolvieron imágenes desde n8n.");
+      // Si es Reel, guardar assets
+      if (postType === 'Reel') {
+         setVoiceoverScript(data.voiceoverScript || "");
+         setVideoPrompt(data.videoPrompt || "");
+         setAudioUrl(data.audioUrl || "");
+         setShowReelWorkspace(true);
+      } else {
+         // Si la IA generó un copy sugerido y el usuario no tenía uno explícito escrito, lo prellenamos
+         if (data.suggestedCopy && !postText.trim()) {
+            setPostText(data.suggestedCopy);
+         }
       }
 
-      setPreviewSlides(newSlides);
-      // Actualizar postText con el copy final si el usuario no había escrito nada
-      if (!postText.trim() && data.suggestedCopy) {
-        setPostText(data.suggestedCopy);
-      }
-
-    } catch (err: unknown) {
-      const e = err as Error;
-      console.error(e);
-      setError(e.message || "Error al generar la previsualización del diseño.");
+    } catch (err: any) {
+      setError(err.message || "Error al renderizar el diseño final.");
     } finally {
       setPreviewLoading(false);
     }
   };
 
-  const updateSlideFinalUrl = (slideIndex: number, finalUrl: string) => {
-      setPreviewSlides(prev => {
-          const copy = [...prev];
-          if (copy[slideIndex]) {
-              copy[slideIndex].finalUrl = finalUrl;
-          }
-          return copy;
-      });
+  const updateSlideFinalUrl = (index: number, finalUrl: string) => {
+      setPreviewSlides(prev => prev.map((s, idx) => idx === index ? { ...s, url: finalUrl } : s));
   };
 
-  const handleSaveEditedTemplate = async (finalUrl: string) => {
+  // Upload templates manual/gallery
+  const handleUploadNewTemplate = async (file: File) => {
+     setLoadingTemplates(true);
+     try {
+         const ext = file.name.split('.').pop();
+         const filename = `template_${Date.now()}.${ext}`;
+         const storageRef = ref(storage, `social_media_templates/${user?.uid}/${filename}`);
+         await uploadBytes(storageRef, file);
+         const downloadUrl = await getDownloadURL(storageRef);
+
+         const isVideo = file.type.startsWith('video/');
+
+         const newDoc = await addDoc(collection(db, "user_templates"), {
+             userId: user.uid,
+             url: downloadUrl,
+             type: isVideo ? 'video' : 'image',
+             createdAt: new Date()
+         });
+
+         const newTmpl: UserTemplate = {
+             id: newDoc.id,
+             url: downloadUrl,
+             type: isVideo ? 'video' : 'image',
+             createdAt: new Date()
+         };
+
+         setManualTemplates(prev => [newTmpl, ...prev]);
+         setSelectedTemplate(newTmpl);
+         setCreationMode('manual');
+     } catch (err) {
+         console.error("Error al subir archivo:", err);
+         setError("No pudimos guardar la imagen en tu galería.");
+     } finally {
+         setLoadingTemplates(false);
+     }
+  };
+
+  // Save CanvasEditor modifications to Firestore templates
+  const handleSaveEditedTemplate = async (editedDataUrl: string) => {
+      setLoading(true);
       try {
+          const blob = await (await fetch(editedDataUrl)).blob();
+          const filename = `edited_canvas_${Date.now()}.png`;
+          const storageRef = ref(storage, `social_media_templates/${user?.uid}/${filename}`);
+          await uploadBytes(storageRef, blob);
+          const downloadUrl = await getDownloadURL(storageRef);
+
           const newDoc = await addDoc(collection(db, "user_templates"), {
               userId: user.uid,
-              url: finalUrl,
+              url: downloadUrl,
               type: 'image',
               createdAt: new Date()
           });
-          const newTmpl: UserTemplate = { id: newDoc.id, url: finalUrl, type: 'image', createdAt: new Date() };
-          setManualTemplates(prev => [newTmpl, ...prev]);
-          setSelectedTemplate(newTmpl);
-      } catch (e) {
-          console.error("Error saving manual template", e);
-      }
-  };
 
-  const handleUploadNewTemplate = async (file: File) => {
-      setLoadingTemplates(true);
-      try {
-          const ext = file.name.split('.').pop();
-          const filename = `manual_post_${Date.now()}.${ext}`;
-          const storageRef = ref(storage, `social_media_uploads/${user.uid}/${filename}`);
-          await uploadBytes(storageRef, file);
-          const url = await getDownloadURL(storageRef);
-          
-          const isVideo = file.type.startsWith('video/');
-          const newDoc = await addDoc(collection(db, "user_templates"), {
-              userId: user.uid,
-              url: url,
-              type: isVideo ? 'video' : 'image',
+          const newTmpl: UserTemplate = {
+              id: newDoc.id,
+              url: downloadUrl,
+              type: 'image',
               createdAt: new Date()
-          });
-          const newTmpl: UserTemplate = { id: newDoc.id, url: url, type: isVideo ? 'video' : 'image', createdAt: new Date() };
+          };
+
           setManualTemplates(prev => [newTmpl, ...prev]);
           setSelectedTemplate(newTmpl);
-      } catch (e) {
-          console.error(e);
-          setError("Error subiendo el archivo manual.");
+          
+          setStatusModal({
+              isOpen: true,
+              type: "success",
+              title: "¡Diseño Guardado!",
+              message: "Tu imagen editada se guardó y pre-seleccionó en la galería.",
+              onConfirm: () => setStatusModal(prev => ({ ...prev, isOpen: false }))
+          });
+      } catch (err) {
+          console.error("Error al guardar canvas:", err);
+          setError("No pudimos guardar el diseño editado.");
       } finally {
-          setLoadingTemplates(false);
+          setLoading(false);
       }
   };
 
+  // Delete manual template
   const handleDeleteTemplate = async (tmpl: UserTemplate) => {
-      setLoadingTemplates(true);
       try {
-          // 1. Delete from Firestore
+          // Delete firestore
           await deleteDoc(doc(db, "user_templates", tmpl.id));
-
-          // 2. Delete from Storage if it's hosted in our Firebase Storage
-          if (tmpl.url.includes("firebasestorage.googleapis.com")) {
-              try {
-                  const decodedUrl = decodeURIComponent(tmpl.url);
-                  const pathStart = decodedUrl.indexOf("/o/") + 3;
-                  const pathEnd = decodedUrl.indexOf("?");
-                  const storagePath = decodedUrl.substring(pathStart, pathEnd > -1 ? pathEnd : undefined);
-                  const fileRef = ref(storage, storagePath);
-                  await deleteObject(fileRef);
-              } catch (storageErr) {
-                  console.warn("[Firebase Storage] No se pudo borrar el archivo binario:", storageErr);
-              }
-          }
-
-          // 3. Update local states
+          // Remove from local list
           setManualTemplates(prev => prev.filter(t => t.id !== tmpl.id));
           if (selectedTemplate?.id === tmpl.id) {
               setSelectedTemplate(null);
           }
-      } catch (e: any) {
-          console.error("Error al borrar el template:", e);
-          setError("No se pudo eliminar el archivo de la galería.");
-      } finally {
-          setLoadingTemplates(false);
+          // Try storage delete
+          try {
+              const fileRef = ref(storage, tmpl.url);
+              await deleteObject(fileRef);
+          } catch(storageErr) {
+              console.log("No storage clean needed or file not found in path", storageErr);
+          }
+      } catch(err) {
+          console.error("Error deleting template:", err);
       }
   };
 
-  const handleSubmit = async (e?: React.FormEvent, publishNow: boolean = false) => {
+  // Main Submit Handler (Publish Now or Schedule)
+  const handleSubmit = async (e?: React.FormEvent, publishNow = false) => {
     if (e) e.preventDefault();
-    if (creationMode === 'ai' && !idea) { setError("Por favor ingresa una idea para tu publicación."); return; }
-    if (creationMode === 'manual' && (!selectedTemplate && manualFiles.length === 0)) { setError("Selecciona o sube un archivo (imagen o video) manual primero."); return; }
-    if (!publishNow && (!date || !time)) { setError("Selecciona fecha y hora para agendar."); return; }
-    
-    const nets: string[] = [];
-    if (networks.facebook && hasFb) nets.push('facebook');
-    if (networks.instagram && hasIg) nets.push('instagram');
-    if (networks.linkedin && hasLi) nets.push('linkedin');
-    if (networks.tiktok && hasTt) nets.push('tiktok');
+    setError("");
 
-    if (nets.length === 0 && (hasFb || hasIg || hasLi || hasTt)) { 
-        setError("Selecciona al menos una red social destino."); 
-        return; 
+    const hasTextText = creationMode === 'ai' ? idea.trim().length > 0 : manualCaption.trim().length > 0;
+    const isReel = postType === 'Reel';
+    const hasReelVideo = isReel 
+      ? (creationMode === 'ai' 
+          ? (previewSlides[0]?.url?.match(/\.(mp4|mov|webm|quicktime)/i) || previewSlides[0]?.url?.includes('video')) 
+          : !!selectedTemplate) 
+      : true;
+    const hasMedia = (creationMode === 'manual' && !!selectedTemplate) || (creationMode === 'ai' && previewSlides.length > 0 && hasReelVideo);
+
+    if (!hasTextText) {
+      setError("Por favor escribe tu idea o descripción.");
+      return;
+    }
+    if (!hasMedia) {
+      setError("Previsualiza tu post con IA o selecciona un archivo de la galería antes de agendar.");
+      return;
     }
 
-    // Business Rules Validation
-    const currentText = creationMode === 'ai' ? idea : manualCaption;
-    if (currentText.length > constraints.safeCharLimit) {
-        setError(`El texto es demasiado largo para las redes seleccionadas (Máx: ${constraints.safeCharLimit} caracteres).`);
-        return;
-    }
+    const currentLength = creationMode === 'ai' ? postText.length : manualCaption.length;
+    const isOverLimit = currentLength > constraints.safeCharLimit;
 
-    if (creationMode === 'manual') {
-        const isVideo = selectedTemplate?.type === 'video' || (manualFiles[0]?.type.startsWith('video/'));
-        if (isVideo && !constraints.allowedMediaTypes.includes('video')) {
-            setError("Una de las redes seleccionadas no acepta video en este formato.");
-            return;
-        }
-        if (!isVideo && !constraints.allowedMediaTypes.includes('image')) {
-            setError("Una de las redes seleccionadas (ej: TikTok) requiere que el contenido sea un video.");
-            return;
-        }
+    // Warnings block
+    if (isOverLimit) {
+      setError(`Tu publicación supera el límite de caracteres sugerido para las redes seleccionadas.`);
+      return;
     }
 
     setLoading(true);
-    setError("");
 
     try {
-      let scheduledDate = new Date();
-      if (!publishNow) {
-          scheduledDate = new Date(`${date}T${time}:00`);
-          if (scheduledDate < new Date()) {
-              setError("La fecha agendada debe ser en el futuro.");
-              setLoading(false);
-              return;
-          }
+      let finalMediaUrls: string[] = [];
+      let finalCaption = "";
+
+      if (creationMode === 'manual' && selectedTemplate) {
+          finalMediaUrls = [selectedTemplate.url];
+          finalCaption = manualCaption;
       } else {
-          // Si es para ahora, usamos el tiempo actual
-          scheduledDate = new Date();
+          finalMediaUrls = previewSlides.map(s => s.url);
+          finalCaption = postText;
       }
 
-      let finalUrls: string[] = [];
+      const scheduledDate = showScheduler && date && time ? new Date(`${date}T${time}`) : new Date();
 
-      if (creationMode === 'manual') {
-          if (selectedTemplate) {
-              finalUrls.push(selectedTemplate.url);
-          } else {
-              for (let i = 0; i < manualFiles.length; i++) {
-                  const file = manualFiles[i];
-                  const ext = file.name.split('.').pop();
-                  const filename = `manual_post_${Date.now()}_${i}.${ext}`;
-                  const storageRef = ref(storage, `social_media_uploads/${user.uid}/${filename}`);
-                  await uploadBytes(storageRef, file);
-                  const url = await getDownloadURL(storageRef);
-                  finalUrls.push(url);
-              }
-          }
-      } else {
-          finalUrls = previewSlides.map(slide => slide.finalUrl || slide.url);
-      }
-
+      // Guardar el post en Firebase
       const postPayload: any = {
         userId: user.uid,
-        profileId: activeProfile?.id || 'default',
-        idea: creationMode === 'manual' ? 'Subida manual: ' + manualCaption.slice(0, 50) : idea,
-        type: postType,
+        profileId: activeProfile?.id || "default",
+        businessType: businessType || "General",
+        creationMode,
+        idea: creationMode === 'ai' ? idea : "",
+        imageExpectation: creationMode === 'ai' ? imageExpectation : "",
+        postText: finalCaption,
+        postType,
         carouselCount: postType === 'Carrusel' ? carouselCount : 1,
-        businessType,
+        networks,
+        mediaUrls: finalMediaUrls,
+        status: publishNow ? "publishing" : "confirmed",
         scheduledFor: scheduledDate,
-        networks: nets,
-        status: publishNow ? 'publishing' : 'pending',
         createdAt: new Date(),
-        copy: creationMode === 'manual' ? manualCaption : (previewSlides[0]?.copy || idea),
-        generatedBy: creationMode === 'manual' ? 'manual' : 'ai'
+        // Si hay cartel
+        posterConfig: posterConfig.enabled ? posterConfig : null
       };
 
-      if (finalUrls.length > 0) {
-          postPayload.imageUrl = finalUrls[0];
-          if (finalUrls.length > 1) {
-              postPayload.imageUrls = finalUrls;
-          }
-      } else {
-          postPayload.imageUrl = "";
-      }
+      const newPostRef = await addDoc(collection(db, "posts"), postPayload);
 
-      const newPostRef = await addDoc(collection(db, "social_posts"), postPayload);
-      
+      // Si es publicacion inmediata
       if (publishNow) {
-          // Publicar de inmediato llamando a la API
           try {
-              const pubRes = await fetch('/api/publish-now', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
+              const idToken = await auth.currentUser?.getIdToken();
+              const publishRes = await fetch("/api/social/publish-now", {
+                  method: "POST",
+                  headers: {
+                      "Content-Type": "application/json",
+                      "Authorization": `Bearer ${idToken}`
+                  },
                   body: JSON.stringify({ postId: newPostRef.id })
               });
-              const pubData = await pubRes.json();
-              
-              if (!pubRes.ok || pubData.error) {
-                  throw new Error(pubData.error || "Error al publicar en las redes sociales.");
-              }
-              
-              // Si todo salió bien, informamos al usuario
-              if (pubData.status === 'publishing') {
-                  setStatusModal({
-                    isOpen: true,
-                    type: "success",
-                    title: "Publicando...",
-                    message: "Tu contenido se está publicando en segundo plano. El bot actualizará el estado en unos segundos.",
-                    onConfirm: () => router.push("/automatizacion-rrss/panel")
-                  });
+
+              if (publishRes.ok) {
+                  router.push("/automatizacion-rrss/panel");
               } else {
-                  setStatusModal({
-                    isOpen: true,
-                    type: "success",
-                    title: "¡Publicado!",
-                    message: `Tu contenido ya está en el aire en: ${pubData.published.join(', ')}.`,
-                    onConfirm: () => router.push("/automatizacion-rrss/panel")
-                  });
+                  const pubData = await publishRes.json();
+                  throw new Error(pubData.error || "Error publicando inmediatamente.");
               }
           } catch (pubErr: any) {
               console.error("Error en publicación inmediata:", pubErr);
@@ -590,7 +553,8 @@ export default function RrssCreatePost() {
                 isOpen: true,
                 type: "error",
                 title: "Error al Publicar",
-                message: pubErr.message || "No pudimos conectar con las redes sociales ahora mismo."
+                message: pubErr.message || "No pudimos conectar con las redes sociales ahora mismo.",
+                onConfirm: () => setStatusModal(prev => ({ ...prev, isOpen: false }))
               });
               setLoading(false);
           }
@@ -623,7 +587,6 @@ export default function RrssCreatePost() {
     }
   };
 
-
   const hasText = creationMode === 'ai' ? idea.trim().length > 0 : manualCaption.trim().length > 0;
   const isReel = postType === 'Reel';
   const hasReelVideo = isReel 
@@ -636,7 +599,6 @@ export default function RrssCreatePost() {
 
   if (loadingInitial) return <div className="animate-pulse space-y-4 max-w-2xl"><div className="h-10 bg-slate-200 rounded w-1/3"></div><div className="h-64 bg-slate-200 rounded"></div></div>;
   const needsConnection = !hasFb && !hasIg && !hasLi && !hasTt;
-  const isPreviewVisible = (creationMode === 'manual' && !!selectedTemplate) || (creationMode === 'ai' && previewSlides.length > 0);
 
   return (
     <div className="max-w-[1400px] mx-auto lg:mx-0">
@@ -655,209 +617,242 @@ export default function RrssCreatePost() {
         </div>
       )}
 
-      <div className="grid lg:grid-cols-12 gap-10 items-start">
-          <div className="lg:col-span-7 space-y-8 max-w-2xl w-full">
-            <PostConfigForm 
-              idea={idea} setIdea={setIdea}
-              imageExpectation={imageExpectation} setImageExpectation={setImageExpectation}
-              postText={postText} setPostText={setPostText}
-              posterConfig={posterConfig} setPosterConfig={setPosterConfig}
-              activeProfileLogoUrl={activeProfile?.logoUrl || ''}
-              activeProfileName={activeProfile?.name || ''}
-              activeProfilePhone={activeProfile?.phone || ''}
-              activeProfileEmail={activeProfile?.email || ''}
-              postType={postType} setPostType={setPostType}
-              hideSubmit={true}
-              carouselCount={carouselCount} setCarouselCount={setCarouselCount}
-              businessType={businessType} setBusinessType={setBusinessType}
-              date={date} setDate={setDate}
-              time={time} setTime={setTime}
-              networks={networks} setNetworks={setNetworks}
-              hasFb={hasFb} hasIg={hasIg} hasLi={hasLi} hasTt={hasTt}
-              needsConnection={needsConnection}
-              handleImproveWithAI={handleImproveWithAI}
-              handleGeneratePreview={handleGeneratePreview}
-              handleSubmit={handleSubmit}
-              improveLoading={improveLoading}
-              previewLoading={previewLoading || promptLoading}
-              loading={loading}
-              error={error}
-              isAdmin={isAdmin}
-              allowVideo={videoLimit > 0 || isAdmin}
-              creationMode={creationMode}
-              setCreationMode={setCreationMode}
-              manualFiles={manualFiles}
-              setManualFiles={setManualFiles}
-              manualCaption={manualCaption}
-              setManualCaption={setManualCaption}
-              manualTemplates={manualTemplates}
-              selectedTemplate={selectedTemplate}
-              setSelectedTemplate={setSelectedTemplate}
-              loadingTemplates={loadingTemplates}
-              onUploadNewTemplate={handleUploadNewTemplate}
-              onDeleteTemplate={handleDeleteTemplate}
-              showScheduler={showScheduler}
-              setShowScheduler={setShowScheduler}
-              constraints={constraints}
-            />
-          </div>
+      {/* 1. SECCIÓN SUPERIOR: CARTEL PUBLICITARIO (PANTALLA COMPLETA) */}
+      <div className="w-full">
+        <PosterSection
+          config={posterConfig}
+          setConfig={setPosterConfig}
+          profileLogoUrl={activeProfile?.logoUrl}
+          profileName={activeProfile?.name}
+          profilePhone={activeProfile?.phone}
+          profileEmail={activeProfile?.email}
+        />
+      </div>
 
-          <div className="lg:col-span-5 relative">
-            {creationMode === 'manual' ? (
-                selectedTemplate ? (
-                    <div className="lg:sticky lg:top-24 mt-8 lg:mt-0 space-y-6 animate-in fade-in duration-300">
-                        {selectedTemplate.type === 'video' || selectedTemplate.url.match(/\.(mp4|mov|webm|quicktime)/i) || selectedTemplate.url.includes("video") ? (
-                            <div className="p-8 bg-slate-50 rounded-[32px] border-2 border-slate-100 animate-in zoom-in duration-500 space-y-6 shadow-xl shadow-slate-200/50">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                       <span className="text-xl">🎬</span>
-                                       <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest">Video de Publicación</h4>
-                                    </div>
-                                </div>
-                                <div className="aspect-[9/16] max-h-[60vh] rounded-[24px] overflow-hidden bg-black border-4 border-white shadow-xl relative group mx-auto flex items-center justify-center">
-                                    <video src={selectedTemplate.url} autoPlay loop muted playsInline controls className="w-full h-full object-cover animate-in fade-in" />
-                                </div>
-                                <div>
-                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Copy para Redes</label>
-                                    <div className="p-6 bg-white rounded-2xl border border-slate-200 text-slate-600 text-sm font-medium leading-relaxed italic shadow-inner">
-                                       "{manualCaption || 'Escribe el texto que acompañará tu video a la izquierda...'}"
-                                    </div>
+      {/* 2. SECCIÓN MEDIA: GRID DE 2 COLUMNAS (PARÁMETROS A LA IZQ Y CONTENIDO A LA DER) */}
+      <div className="grid lg:grid-cols-12 gap-8 items-start mb-10">
+        {/* Columna Izquierda: Parámetros del post */}
+        <div className="lg:col-span-6 space-y-6 w-full">
+          <PostConfigForm 
+            idea={idea} setIdea={setIdea}
+            imageExpectation={imageExpectation} setImageExpectation={setImageExpectation}
+            postText={postText} setPostText={setPostText}
+            postType={postType} setPostType={setPostType}
+            hideSubmit={true}
+            carouselCount={carouselCount} setCarouselCount={setCarouselCount}
+            businessType={businessType} setBusinessType={setBusinessType}
+            date={date} setDate={setDate}
+            time={time} setTime={setTime}
+            networks={networks} setNetworks={setNetworks}
+            hasFb={hasFb} hasIg={hasIg} hasLi={hasLi} hasTt={hasTt}
+            needsConnection={needsConnection}
+            handleImproveWithAI={handleImproveWithAI}
+            handleGeneratePreview={handleGeneratePreview}
+            handleSubmit={handleSubmit}
+            improveLoading={improveLoading}
+            previewLoading={previewLoading || promptLoading}
+            loading={loading}
+            error={error}
+            isAdmin={isAdmin}
+            allowVideo={videoLimit > 0 || isAdmin}
+            creationMode={creationMode}
+            setCreationMode={setCreationMode}
+            manualFiles={manualFiles}
+            setManualFiles={setManualFiles}
+            manualCaption={manualCaption}
+            setManualCaption={setManualCaption}
+            manualTemplates={manualTemplates}
+            selectedTemplate={selectedTemplate}
+            setSelectedTemplate={setSelectedTemplate}
+            loadingTemplates={loadingTemplates}
+            onUploadNewTemplate={handleUploadNewTemplate}
+            onDeleteTemplate={handleDeleteTemplate}
+            showScheduler={showScheduler}
+            setShowScheduler={setShowScheduler}
+            constraints={constraints}
+            renderSection="parameters"
+          />
+        </div>
+
+        {/* Columna Derecha: Texto y contenido */}
+        <div className="lg:col-span-6 space-y-6 w-full">
+          <PostConfigForm 
+            idea={idea} setIdea={setIdea}
+            imageExpectation={imageExpectation} setImageExpectation={setImageExpectation}
+            postText={postText} setPostText={setPostText}
+            postType={postType} setPostType={setPostType}
+            hideSubmit={true}
+            carouselCount={carouselCount} setCarouselCount={setCarouselCount}
+            businessType={businessType} setBusinessType={setBusinessType}
+            date={date} setDate={setDate}
+            time={time} setTime={setTime}
+            networks={networks} setNetworks={setNetworks}
+            hasFb={hasFb} hasIg={hasIg} hasLi={hasLi} hasTt={hasTt}
+            needsConnection={needsConnection}
+            handleImproveWithAI={handleImproveWithAI}
+            handleGeneratePreview={handleGeneratePreview}
+            handleSubmit={handleSubmit}
+            improveLoading={improveLoading}
+            previewLoading={previewLoading || promptLoading}
+            loading={loading}
+            error={error}
+            isAdmin={isAdmin}
+            allowVideo={videoLimit > 0 || isAdmin}
+            creationMode={creationMode}
+            setCreationMode={setCreationMode}
+            manualFiles={manualFiles}
+            setManualFiles={setManualFiles}
+            manualCaption={manualCaption}
+            setManualCaption={setManualCaption}
+            manualTemplates={manualTemplates}
+            selectedTemplate={selectedTemplate}
+            setSelectedTemplate={setSelectedTemplate}
+            loadingTemplates={loadingTemplates}
+            onUploadNewTemplate={handleUploadNewTemplate}
+            onDeleteTemplate={handleDeleteTemplate}
+            showScheduler={showScheduler}
+            setShowScheduler={setShowScheduler}
+            constraints={constraints}
+            renderSection="content"
+          />
+        </div>
+      </div>
+
+      {/* 3. SECCIÓN INFERIOR: ÁREA DE VISUALIZACIÓN A PANTALLA COMPLETA ABAJO */}
+      <div className="w-full border-t border-slate-200/80 pt-8 mt-10">
+        <h3 className="text-lg font-black text-slate-800 mb-6 uppercase tracking-wider">
+          Previsualización y Edición
+        </h3>
+        
+        {creationMode === 'manual' ? (
+            selectedTemplate ? (
+                <div className="space-y-6 animate-in fade-in duration-300 w-full">
+                    {selectedTemplate.type === 'video' || selectedTemplate.url.match(/\.(mp4|mov|webm|quicktime)/i) || selectedTemplate.url.includes("video") ? (
+                        <div className="p-8 bg-slate-50 rounded-[32px] border-2 border-slate-100 animate-in zoom-in duration-500 space-y-6 shadow-xl shadow-slate-200/50 max-w-4xl mx-auto">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                   <span className="text-xl">🎬</span>
+                                   <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest">Video de Publicación</h4>
                                 </div>
                             </div>
-                        ) : (
-                            <CanvasEditor 
-                               baseImageUrl={selectedTemplate.url}
-                               suggestedCopy={manualCaption || "Previsualización manual"}
-                               initialLogoUrl={userLogo}
-                               userId={user?.uid}
-                               onSave={handleSaveEditedTemplate}
-                            />
-                        )}
-                        {isReady && !showScheduler ? (
-                           <div className="grid grid-cols-2 gap-4">
-                              <button type="button" onClick={() => handleSubmit(undefined, true)} disabled={loading} className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-black text-[14px] py-4 rounded-[20px] transition-all flex items-center justify-center gap-2">
-                                 {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : '⚡ Publicar Ahora'}
-                              </button>
-                              <button type="button" onClick={() => setShowScheduler(true)} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[14px] py-4 rounded-[20px] transition-all flex items-center justify-center gap-2">
-                                 📅 Aprobar y Agendar
-                              </button>
-                           </div>
-                        ) : (
-                           <div className="flex gap-3">
-                              <button type="button" onClick={() => setShowScheduler(false)} disabled={loading} className="w-1/3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-[14px] py-4 rounded-[20px] transition-all flex items-center justify-center">
-                                 Cancelar
-                              </button>
-                              {isReady && (
-                                 <button onClick={(e) => handleSubmit(e, false)} disabled={loading} className="w-2/3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-black text-[15px] py-4 px-6 rounded-[20px] transition-all shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 hover:-translate-y-1">
-                                    {loading ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : '✅ Confirmar Agendamiento'}
-                                 </button>
-                              )}
-                           </div>
-                        )}
-                    </div>
-                ) : (
-                    <div className="p-8 border-4 border-dashed border-indigo-100 rounded-[32px] text-center flex flex-col items-center justify-center min-h-[500px] text-indigo-400 bg-indigo-50/20 lg:sticky lg:top-24 mt-8 lg:mt-0 transition-all">
-                      <div className="text-6xl mb-4 opacity-80">📱</div>
-                      <h4 className="font-black text-lg mb-2 text-indigo-700">Galería Manual Activa</h4>
-                      <p className="font-medium text-sm max-w-xs leading-relaxed mb-8">Selecciona uno de tus diseños o videos previos a la izquierda o sube uno nuevo para empezar.</p>
-                      
-                      <label className="flex flex-col items-center justify-center bg-white border-2 border-dashed border-indigo-300 hover:bg-indigo-50 hover:border-indigo-500 rounded-2xl cursor-pointer group hover:scale-105 transition-all text-indigo-600 px-10 py-6 shadow-xl shadow-indigo-100/50">
-                          <input 
-                              type="file" 
-                              accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm" 
-                              onChange={(e) => {
-                                  if (e.target.files && e.target.files[0] && handleUploadNewTemplate) {
-                                      const f = e.target.files[0];
-                                      const isVideo = f.type.startsWith('video/');
-                                      const maxSize = isVideo ? 100 : 10;
-                                      if (f.size / (1024*1024) > maxSize) {
-                                          setStatusModal({
-                                              isOpen: true,
-                                              type: "error",
-                                              title: "Archivo demasiado grande",
-                                              message: isVideo ? `Video demasiado grande. Máx ${maxSize}MB` : `Imagen demasiado grande. Máx ${maxSize}MB`
-                                          });
-                                          return;
-                                      }
-                                      handleUploadNewTemplate(f);
-                                  }
-                              }}
-                              className="hidden" 
+                            <div className="aspect-[9/16] max-h-[60vh] rounded-[24px] overflow-hidden bg-black border-4 border-white shadow-xl relative group mx-auto flex items-center justify-center">
+                                <video src={selectedTemplate.url} autoPlay loop muted playsInline controls className="w-full h-full object-cover animate-in fade-in" />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Copy para Redes</label>
+                                <div className="p-6 bg-white rounded-2xl border border-slate-200 text-slate-600 text-sm font-medium leading-relaxed italic shadow-inner">
+                                   "{manualCaption || 'Escribe el texto que acompañará tu video...'}"
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="w-full">
+                          <CanvasEditor 
+                             baseImageUrl={selectedTemplate.url}
+                             suggestedCopy={manualCaption || "Previsualización manual"}
+                             initialLogoUrl={userLogo}
+                             userId={user?.uid}
+                             onSave={handleSaveEditedTemplate}
                           />
-                          <span className="text-4xl mb-2 group-hover:rotate-12 transition-transform">📸</span>
-                          <span className="text-sm font-black uppercase tracking-widest text-center">Subir Foto o Video</span>
-                      </label>
-                    </div>
-                )
-            ) : previewSlides.length > 0 ? (
-                postType === 'Reel' ? (
-                   <div className="lg:sticky lg:top-24 mt-8 lg:mt-0 space-y-6 animate-in fade-in duration-300">
-                     <div className="premium-card p-8 text-center flex flex-col items-center justify-center min-h-[450px] bg-slate-50/50 border-2 border-slate-100 rounded-[32px] shadow-sm">
-                       {previewSlides[0]?.url && !previewSlides[0].url.match(/\.(mp4|mov|webm|quicktime)/i) ? (
-                         <div className="aspect-[9/16] w-full max-w-[200px] rounded-2xl overflow-hidden bg-slate-100 border-4 border-white shadow-md relative mb-6">
-                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                           <img src={previewSlides[0].url} alt="Cover Reference" className="w-full h-full object-cover" />
-                         </div>
-                       ) : (
-                         <div className="text-6xl mb-6 opacity-80">🎬</div>
-                       )}
-                       <h4 className="font-black text-lg mb-2 text-slate-800 uppercase tracking-tight">Reel en Producción</h4>
-                       <p className="font-medium text-slate-500 text-sm max-w-xs leading-relaxed mb-6">
-                         Ya hemos generado tu portada, prompt de animación y locución de audio.
-                       </p>
-                       <button
-                         type="button"
-                         onClick={() => setShowReelWorkspace(true)}
-                         className="w-full max-w-xs bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm py-4 px-6 rounded-2xl transition-all shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2"
-                       >
-                         🎬 Abrir Espacio de Producción
-                       </button>
-                     </div>
-                   </div>
-                ) : (
-                    <div className="lg:sticky lg:top-24 mt-8 lg:mt-0">
-                     <CarouselWizard 
-                        slides={previewSlides}
-                        onUpdateSlide={updateSlideFinalUrl}
-                        userLogo={userLogo}
-                        userId={user?.uid}
-                     />
-                     {isReady && !showScheduler ? (
-                        <div className="grid grid-cols-2 gap-4 mt-6">
-                           <button type="button" onClick={() => handleSubmit(undefined, true)} disabled={loading} className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-black text-[14px] py-4 rounded-[20px] transition-all flex items-center justify-center gap-2">
-                              {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : '⚡ Publicar Ahora'}
-                           </button>
-                           <button type="button" onClick={() => setShowScheduler(true)} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[14px] py-4 rounded-[20px] transition-all flex items-center justify-center gap-2">
-                              📅 Aprobar y Agendar
-                           </button>
                         </div>
-                     ) : (
-                        <div className="flex gap-3 mt-6">
-                           <button type="button" onClick={() => setShowScheduler(false)} disabled={loading} className="w-1/3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-[14px] py-4 rounded-[20px] transition-all flex items-center justify-center">
-                              Cancelar
-                           </button>
-                           <button onClick={(e) => handleSubmit(e, false)} disabled={loading} className="w-2/3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-black text-[15px] py-4 px-6 rounded-[20px] transition-all shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 hover:-translate-y-1">
-                              {loading ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : '✅ Confirmar Agendamiento'}
-                           </button>
-                        </div>
-                     )}
-                   </div>
-                )
-            ) : previewLoading ? (
-                <div className="p-8 bg-slate-50 border-2 border-slate-100 rounded-[32px] text-center flex flex-col items-center justify-center min-h-[500px] text-indigo-700 lg:sticky lg:top-24 mt-8 lg:mt-0 shadow-lg shadow-indigo-100/50 animate-pulse">
-                  <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-6"></div>
-                  <h4 className="font-black text-lg mb-2 uppercase tracking-widest">Generando Diseño...</h4>
-                  <p className="font-medium text-sm max-w-xs leading-relaxed text-indigo-500">Estamos hablando con nuestra IA y renderizando tus imágenes. Esto puede tomar unos segundos.</p>
+                    )}
+                    {isReady && !showScheduler ? (
+                       <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
+                          <button type="button" onClick={() => handleSubmit(undefined, true)} disabled={loading} className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-black text-[14px] py-4 rounded-[20px] transition-all flex items-center justify-center gap-2">
+                             {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : '⚡ Publicar Ahora'}
+                          </button>
+                          <button type="button" onClick={() => setShowScheduler(true)} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[14px] py-4 rounded-[20px] transition-all flex items-center justify-center gap-2">
+                             📅 Aprobar y Agendar
+                          </button>
+                       </div>
+                    ) : (
+                       <div className="flex gap-3 max-w-md mx-auto">
+                          <button type="button" onClick={() => setShowScheduler(false)} disabled={loading} className="w-1/3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-[14px] py-4 rounded-[20px] transition-all flex items-center justify-center">
+                             Cancelar
+                          </button>
+                          {isReady && (
+                             <button onClick={(e) => handleSubmit(e, false)} disabled={loading} className="w-2/3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-black text-[15px] py-4 px-6 rounded-[20px] transition-all shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 hover:-translate-y-1">
+                                {loading ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : '✅ Confirmar Agendamiento'}
+                             </button>
+                          )}
+                       </div>
+                    )}
                 </div>
             ) : (
-                <div className="p-8 border-2 border-dashed border-slate-200 rounded-[32px] text-center flex flex-col items-center justify-center min-h-[500px] text-slate-400 lg:sticky lg:top-24 mt-8 lg:mt-0 transition-all hover:bg-slate-50 hover:border-slate-300">
-                  <div className="text-6xl mb-4 opacity-50">🖼️</div>
-                  <h4 className="font-black text-lg mb-2 text-slate-600">Área de Visualización</h4>
-                  <p className="font-medium text-sm max-w-xs leading-relaxed">Describe tu idea a la izquierda y presiona "Ver Previsualización" para ver cómo quedará tu post.</p>
+                <div className="p-8 border-4 border-dashed border-indigo-100 rounded-[32px] text-center flex flex-col items-center justify-center min-h-[300px] text-indigo-400 bg-indigo-50/20 transition-all w-full">
+                  <div className="text-6xl mb-4 opacity-80">📸</div>
+                  <h4 className="font-black text-lg mb-2 text-indigo-700">Galería Manual Activa</h4>
+                  <p className="font-medium text-sm max-w-xs leading-relaxed mb-4">Selecciona uno de tus diseños o videos previos o sube uno nuevo para empezar.</p>
                 </div>
-            )}
-          </div>
+            )
+        ) : previewSlides.length > 0 ? (
+            postType === 'Reel' ? (
+               <div className="space-y-6 animate-in fade-in duration-300 w-full">
+                 <div className="premium-card p-8 text-center flex flex-col items-center justify-center min-h-[350px] bg-slate-50/50 border-2 border-slate-100 rounded-[32px] shadow-sm max-w-md mx-auto">
+                   {previewSlides[0]?.url && !previewSlides[0].url.match(/\.(mp4|mov|webm|quicktime)/i) ? (
+                     <div className="aspect-[9/16] w-full max-w-[180px] rounded-2xl overflow-hidden bg-slate-100 border-4 border-white shadow-md relative mb-6">
+                       <img src={previewSlides[0].url} alt="Cover Reference" className="w-full h-full object-cover" />
+                     </div>
+                   ) : (
+                     <div className="text-6xl mb-6 opacity-80">🎬</div>
+                   )}
+                   <h4 className="font-black text-lg mb-2 text-slate-800 uppercase tracking-tight">Reel en Producción</h4>
+                   <p className="font-medium text-slate-500 text-sm max-w-xs leading-relaxed mb-6">
+                     Hemos generado tu portada, prompt de animación y locución de audio.
+                   </p>
+                   <button
+                     type="button"
+                     onClick={() => setShowReelWorkspace(true)}
+                     className="w-full max-w-xs bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm py-4 px-6 rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2"
+                   >
+                     🎬 Abrir Espacio de Producción
+                   </button>
+                 </div>
+               </div>
+            ) : (
+                <div className="w-full">
+                 <CarouselWizard 
+                    slides={previewSlides}
+                    onUpdateSlide={updateSlideFinalUrl}
+                    userLogo={userLogo}
+                    userId={user?.uid}
+                 />
+                 {isReady && !showScheduler ? (
+                    <div className="grid grid-cols-2 gap-4 mt-6 max-w-md mx-auto">
+                       <button type="button" onClick={() => handleSubmit(undefined, true)} disabled={loading} className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-black text-[14px] py-4 rounded-[20px] transition-all flex items-center justify-center gap-2">
+                          {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : '⚡ Publicar Ahora'}
+                       </button>
+                       <button type="button" onClick={() => setShowScheduler(true)} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[14px] py-4 rounded-[20px] transition-all flex items-center justify-center gap-2">
+                          📅 Aprobar y Agendar
+                       </button>
+                    </div>
+                 ) : (
+                    <div className="flex gap-3 mt-6 max-w-md mx-auto">
+                       <button type="button" onClick={() => setShowScheduler(false)} disabled={loading} className="w-1/3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-[14px] py-4 rounded-[20px] transition-all flex items-center justify-center">
+                          Cancelar
+                       </button>
+                       <button onClick={(e) => handleSubmit(e, false)} disabled={loading} className="w-2/3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-black text-[15px] py-4 px-6 rounded-[20px] transition-all shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 hover:-translate-y-1">
+                          {loading ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : '✅ Confirmar Agendamiento'}
+                       </button>
+                    </div>
+                 )}
+               </div>
+            )
+        ) : previewLoading ? (
+            <div className="p-8 bg-slate-50 border border-slate-200 rounded-[32px] text-center flex flex-col items-center justify-center min-h-[300px] text-indigo-750 shadow-md animate-pulse w-full">
+              <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
+              <h4 className="font-black text-md mb-1 uppercase tracking-widest">Generando Diseño...</h4>
+              <p className="font-medium text-xs max-w-xs leading-relaxed text-indigo-500">Renderizando imágenes e integrando copys. Esto puede tomar unos segundos.</p>
+            </div>
+        ) : (
+            <div className="p-8 border-2 border-dashed border-slate-250 rounded-[32px] text-center flex flex-col items-center justify-center min-h-[300px] text-slate-400 transition-all hover:bg-slate-50 w-full">
+              <div className="text-5xl mb-3 opacity-50">🖼️</div>
+              <h4 className="font-black text-md mb-1 text-slate-600">Área de Visualización Activa</h4>
+              <p className="font-medium text-xs max-w-xs leading-relaxed">Genera un post a la derecha y aquí podrás editar la composición final de tu diseño.</p>
+            </div>
+        )}
       </div>
+
       <AIOptionsModal 
         isOpen={showOptionsModal}
         options={aiOptions}
@@ -949,7 +944,7 @@ export default function RrssCreatePost() {
             if (statusModal.onConfirm) {
                 statusModal.onConfirm();
             } else {
-                setStatusModal(prev => ({ ...prev, isOpen: false }));
+                setStatusModal(prev => ({ ...prev, isOpen: false, type: "success", title: "", message: "", onConfirm: null }));
             }
         }}
       />
@@ -996,11 +991,11 @@ export default function RrssCreatePost() {
                     </div>
                     
                     {previewSlides[0]?.url && !previewSlides[0].url.match(/\.(mp4|mov|webm|quicktime)/i) ? (
-                      <div className="aspect-[9/16] max-h-[50vh] rounded-2xl overflow-hidden bg-slate-100 border-4 border-white shadow-md relative mx-auto flex items-center justify-center">
+                      <div className="aspect-[9/16] max-h-[50vh] rounded-[24px] overflow-hidden bg-slate-100 border-4 border-white shadow-md relative mx-auto flex items-center justify-center">
                         <img src={previewSlides[0].url} alt="Cover Reference" className="w-full h-full object-cover" />
                         <div className="absolute inset-0 bg-slate-900/10 backdrop-blur-[0.5px]"></div>
                         <div className="absolute bottom-4 left-4 right-4 text-center bg-slate-900/90 backdrop-blur-md py-2.5 px-3 rounded-xl border border-white/10 text-white font-black text-[10px] uppercase tracking-wider">
-                          Usa esta imagen en tu herramienta de video
+                          Usa esta imagen in tu herramienta de video
                         </div>
                       </div>
                     ) : (
@@ -1020,8 +1015,8 @@ export default function RrssCreatePost() {
                     <label className="flex flex-col items-center justify-center bg-white border-2 border-dashed border-slate-200 hover:bg-slate-50 hover:border-indigo-500/50 rounded-2xl cursor-pointer group hover:scale-[1.01] transition-all text-indigo-600 py-10 px-4 shadow-sm relative">
                       {reelVideoUploading ? (
                         <div className="flex flex-col items-center gap-3">
-                          <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
-                          <span className="text-xs font-black uppercase text-indigo-600">Subiendo video a Firebase Storage...</span>
+                           <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                           <span className="text-xs font-black uppercase text-indigo-600">Subiendo video a Firebase Storage...</span>
                         </div>
                       ) : (
                         <>
@@ -1036,7 +1031,8 @@ export default function RrssCreatePost() {
                                     isOpen: true,
                                     type: "error",
                                     title: "Video demasiado grande",
-                                    message: "El video no puede superar los 100MB."
+                                    message: "El video no puede superar los 100MB.",
+                                    onConfirm: () => setStatusModal(prev => ({ ...prev, isOpen: false }))
                                   });
                                   return;
                                 }
@@ -1048,7 +1044,6 @@ export default function RrssCreatePost() {
                                   await uploadBytes(storageRef, f);
                                   const downloadUrl = await getDownloadURL(storageRef);
                                   
-                                  // 1. Guardar el video en la base de datos de templates/galería del usuario
                                   const newDoc = await addDoc(collection(db, "user_templates"), {
                                       userId: user.uid,
                                       url: downloadUrl,
@@ -1058,21 +1053,19 @@ export default function RrssCreatePost() {
                                   const newTmpl: UserTemplate = { id: newDoc.id, url: downloadUrl, type: 'video', createdAt: new Date() };
                                   setManualTemplates(prev => [newTmpl, ...prev]);
 
-                                  // 2. Pre-seleccionar en Modo Subida Manual
                                   setCreationMode('manual');
                                   setSelectedTemplate(newTmpl);
                                   
-                                  // 3. Pre-llenar el caption con la sugerencia optimizada o la idea
                                   const finalCopy = previewSlides[0]?.copy || idea;
                                   setManualCaption(finalCopy);
 
-                                  // 4. Cerrar workspace y avisar
                                   setShowReelWorkspace(false);
                                   setStatusModal({
                                     isOpen: true,
                                     type: "success",
                                     title: "¡Video subido y seleccionado!",
-                                    message: "Tu video se ha guardado en la galería. Ahora estás en modo Subida Manual con el video seleccionado y el texto de publicación listo."
+                                    message: "Tu video se ha guardado en la galería. Ahora estás en modo Subida Manual con el video seleccionado y el texto de publicación listo.",
+                                    onConfirm: () => setStatusModal(prev => ({ ...prev, isOpen: false }))
                                   });
                                 } catch (uploadErr) {
                                   console.error(uploadErr);
@@ -1080,7 +1073,8 @@ export default function RrssCreatePost() {
                                     isOpen: true,
                                     type: "error",
                                     title: "Error de carga",
-                                    message: "Hubo un error subiendo el archivo de video."
+                                    message: "Hubo un error subiendo el archivo de video.",
+                                    onConfirm: () => setStatusModal(prev => ({ ...prev, isOpen: false }))
                                   });
                                 } finally {
                                   setReelVideoUploading(false);
@@ -1114,7 +1108,8 @@ export default function RrssCreatePost() {
                                isOpen: true,
                                type: "success",
                                title: "Copiado",
-                               message: "¡Prompt copiado al portapapeles!"
+                               message: "¡Prompt copiado al portapapeles!",
+                               onConfirm: () => setStatusModal(prev => ({ ...prev, isOpen: false }))
                            });
                          }}
                          className="text-[10px] font-black uppercase bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-4 py-2 rounded-xl border border-indigo-200 transition-all"
@@ -1185,4 +1180,3 @@ export default function RrssCreatePost() {
     </div>
   );
 }
-
