@@ -290,6 +290,16 @@ export default function RrssCreatePost() {
         `${p}. ${posterPromptSuffix}`.trim()
       ) || [];
 
+      // console.log del webhook n8n que se llamará a través del proxy
+      const webhookUrl = process.env.NEXT_PUBLIC_N8N_PREVIEW_URL || 'https://n8n.santisoft.cl/webhook/img-rrss-auto';
+      console.log(`🚀 [GENERAR IMAGEN] Gatillando webhook de n8n en: ${webhookUrl}`, {
+        idea: imageExpectation,
+        promptEnglish,
+        businessType,
+        postType,
+        posterConfig
+      });
+
       // Llamar al endpoint local proxy de previsualización
       const res = await fetch("/api/ai/generate-preview", {
         method: "POST",
