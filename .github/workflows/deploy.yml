@@ -29,8 +29,10 @@ jobs:
             # Ruta de producción en Lightsail
             cd /var/www/santisoft-auto
             
-            echo "Descargando últimos cambios de GitHub..."
-            git pull https://x-access-token:${GITHUB_TOKEN}@github.com/diemoroy-ss/rrss-auto.git main
+            echo "Descargando últimos cambios de GitHub y limpiando espacio de trabajo..."
+            git fetch https://x-access-token:${GITHUB_TOKEN}@github.com/diemoroy-ss/rrss-auto.git main
+            git reset --hard FETCH_HEAD
+            git clean -fd
             
             echo "Instalando dependencias..."
             npm install
