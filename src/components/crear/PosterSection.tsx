@@ -66,6 +66,18 @@ export default function PosterSection({
     }
   };
 
+  // Determinar qué valores se han configurado para mostrarlos en el resumen
+  const hasConfiguredOptions = config.enabled && (
+    config.includeLogo || 
+    config.includeBusinessName || 
+    config.includePrice || 
+    config.includeContact || 
+    config.includeSlogan || 
+    config.ctaText || 
+    config.visualStyle || 
+    config.additionalNotes
+  );
+
   return (
     <div className="w-full bg-white border border-slate-200/85 rounded-[28px] p-6 shadow-sm mb-8 animate-in slide-in-from-top-4 fade-in">
       {/* TOGGLE HEADER CON ACTIVACIÓN Y APERTURA DE MODAL */}
@@ -106,6 +118,56 @@ export default function PosterSection({
           </button>
         </div>
       </div>
+
+      {/* RESUMEN DE OPCIONES CONFIGURADAS */}
+      {config.enabled && hasConfiguredOptions && (
+        <div className="mt-4 p-4 bg-slate-50 rounded-2xl border border-slate-200/60 animate-in fade-in duration-300">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2.5">📋 Configuración activa del cartel:</p>
+          <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
+            {config.visualStyle && (
+              <span className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl flex items-center gap-1 shadow-sm">
+                🎨 Estilo: <strong className="text-slate-800">{config.visualStyle}</strong>
+              </span>
+            )}
+            {config.includeLogo && profileLogoUrl && (
+              <span className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl flex items-center gap-1 shadow-sm">
+                🖼️ Logo Incluido
+              </span>
+            )}
+            {config.includeBusinessName && config.businessName && (
+              <span className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl flex items-center gap-1 shadow-sm">
+                🏢 Negocio: <strong className="text-slate-800">{config.businessName}</strong>
+              </span>
+            )}
+            {config.includePrice && config.priceText && (
+              <span className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl flex items-center gap-1 shadow-sm">
+                💲 Promoción: <strong className="text-slate-800">{config.priceText}</strong>
+              </span>
+            )}
+            {config.includeContact && config.contactValue && (
+              <span className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl flex items-center gap-1 shadow-sm">
+                📱 Contacto: <strong className="text-slate-800">{config.contactValue} ({config.contactType})</strong>
+              </span>
+            )}
+            {config.includeSlogan && config.sloganText && (
+              <span className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl flex items-center gap-1 shadow-sm">
+                💬 Slogan: <strong className="text-slate-800">"{config.sloganText}"</strong>
+              </span>
+            )}
+            {config.ctaText && (
+              <span className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl flex items-center gap-1 shadow-sm">
+                📣 CTA: <strong className="text-slate-800">"{config.ctaText}"</strong>
+              </span>
+            )}
+            {config.additionalNotes && (
+              <span className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl w-full flex flex-col gap-0.5 shadow-sm">
+                <span className="text-[10px] text-slate-400 font-bold uppercase">Notas extras:</span>
+                <strong className="text-slate-700 font-medium italic">"{config.additionalNotes}"</strong>
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* MODAL EXPANDIDO A PANTALLA COMPLETA */}
       {isModalOpen && (
