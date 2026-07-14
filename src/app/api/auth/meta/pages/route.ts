@@ -43,6 +43,8 @@ export async function GET(req: Request) {
         const res = await fetch(pagesUrl);
         const data = await res.json();
 
+        console.log("DEBUG FB me/accounts response:", JSON.stringify(data));
+
         if (data.error) {
              return NextResponse.json({ error: data.error.message }, { status: 500 });
         }
