@@ -40,6 +40,15 @@ export async function GET(req: Request) {
         // Consultar páginas
         const pagesUrl = `https://graph.facebook.com/v19.0/me/accounts?fields=id,name,access_token,instagram_business_account{id,username,profile_picture_url}&access_token=${userAccessToken}`;
         
+        // Consultar permisos del token para depurar
+        try {
+            const permRes = await fetch(`https://graph.facebook.com/v19.0/me/permissions?access_token=${userAccessToken}`);
+            const permData = await permRes.json();
+            console.log("DEBUG FB me/permissions response:", JSON.stringify(permData));
+        } catch (e) {
+            console.error("Error fetching permissions:", e);
+        }
+
         const res = await fetch(pagesUrl);
         const data = await res.json();
 
