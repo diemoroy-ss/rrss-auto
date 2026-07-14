@@ -305,12 +305,20 @@ export default function PostConfigForm({
               />
             </div>
 
-            {/* CAMPO 2: TEXTO DE LA PUBLICACIÓN */}
+            {/* CAMPO 2: TEXTO DE LA PUBLICACIÓN (BOTÓN MEJORAR CON IA AL LADO DEL TEXTO) */}
             <div className="space-y-3">
               <div className="flex justify-between items-center mb-1">
                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
                   ✍️ Texto de la publicación
                 </label>
+                <button
+                  type="button"
+                  onClick={handleImproveWithAI}
+                  disabled={improveLoading}
+                  className="bg-indigo-50 border border-indigo-200 text-indigo-700 text-[10px] font-black px-3.5 py-1.5 rounded-xl uppercase tracking-wider disabled:bg-slate-100 disabled:text-slate-400 transition-all hover:bg-indigo-100/50 shadow-sm"
+                >
+                  {improveLoading ? 'Creando...' : '✨ Mejorar con IA'}
+                </button>
               </div>
 
               <div className={`border rounded-xl bg-slate-50/50 overflow-hidden flex flex-col focus-within:border-indigo-400 ${
@@ -336,21 +344,13 @@ export default function PostConfigForm({
                 </div>
               </div>
 
-              {/* BOTONES DE IA ABAJO DEL CUADRO DE TEXTO */}
+              {/* BOTÓN GENERAR PREVISUALIZACIÓN ABAJO DEL TEXTO */}
               <div className="flex gap-2.5 justify-end pt-1">
-                <button
-                  type="button"
-                  onClick={handleImproveWithAI}
-                  disabled={improveLoading || !idea}
-                  className="bg-indigo-50 border border-indigo-200 text-indigo-700 text-[11px] font-black px-4 py-2.5 rounded-xl uppercase tracking-wider disabled:bg-slate-100 disabled:text-slate-400 transition-all hover:bg-indigo-100 flex items-center gap-1.5 shadow-sm"
-                >
-                  {improveLoading ? 'Creando...' : '✨ Generar con IA'}
-                </button>
                 <button
                   type="button"
                   onClick={handleGeneratePreview}
                   disabled={previewLoading || !imageExpectation}
-                  className="bg-indigo-600 text-white text-[11px] font-black px-5 py-2.5 rounded-xl uppercase tracking-wider disabled:bg-slate-200 disabled:text-slate-400 shadow-lg shadow-indigo-600/20 hover:bg-indigo-750 transition-all"
+                  className="bg-indigo-600 text-white text-[11px] font-black px-5 py-2.5 rounded-xl uppercase tracking-wider disabled:bg-slate-200 disabled:text-slate-400 shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 transition-all"
                 >
                   {previewLoading ? 'Generando...' : (postType === 'Reel' || networks.tiktok) ? '🎬 Crear Video' : '🖼️ Previsualizar'}
                 </button>
@@ -368,7 +368,7 @@ export default function PostConfigForm({
                 type="button"
                 onClick={handleImproveWithAI}
                 disabled={improveLoading || !manualCaption}
-                className="bg-indigo-50 border border-indigo-200 text-indigo-700 text-[9px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider"
+                className="bg-indigo-50 border border-indigo-200 text-indigo-700 text-[10px] font-black px-3.5 py-1.5 rounded-xl uppercase tracking-wider disabled:bg-slate-100 disabled:text-slate-400 transition-all hover:bg-indigo-100/50 shadow-sm"
               >
                 {improveLoading ? 'Mejorando...' : '✨ Mejorar con IA'}
               </button>

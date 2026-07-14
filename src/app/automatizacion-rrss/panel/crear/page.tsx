@@ -198,8 +198,8 @@ export default function RrssCreatePost() {
 
   // AI copywriting generator
   const handleImproveWithAI = async () => {
-    const textToImprove = creationMode === 'ai' ? idea : manualCaption;
-    if (!textToImprove.trim()) return;
+    const textToImprove = creationMode === 'ai' ? postText : manualCaption;
+    const baseIdea = creationMode === 'ai' ? idea : manualCaption;
     setImproveLoading(true);
     try {
       const idToken = await auth.currentUser?.getIdToken();
@@ -211,8 +211,10 @@ export default function RrssCreatePost() {
         },
         body: JSON.stringify({
            prompt: textToImprove,
+           idea: baseIdea,
            businessType,
            postType,
+           posterConfig,
            maxWords: postType === 'Historia' ? 30 : 150
         })
       });
@@ -714,6 +716,7 @@ export default function RrssCreatePost() {
             setShowScheduler={setShowScheduler}
             constraints={constraints}
             renderSection="content"
+            posterConfig={posterConfig}
           />
         </div>
       </div>
@@ -848,7 +851,7 @@ export default function RrssCreatePost() {
             <div className="p-8 border-2 border-dashed border-slate-250 rounded-[32px] text-center flex flex-col items-center justify-center min-h-[300px] text-slate-400 transition-all hover:bg-slate-50 w-full">
               <div className="text-5xl mb-3 opacity-50">🖼️</div>
               <h4 className="font-black text-md mb-1 text-slate-600">Área de Visualización Activa</h4>
-              <p className="font-medium text-xs max-w-xs leading-relaxed">Genera un post a la derecha y aquí podrás editar la composición final de tu diseño.</p>
+              <p className="font-medium text-xs max-w-xs leading-relaxed">Genera un post a la derecha y aquí podrás editar la composición final de tu design.</p>
             </div>
         )}
       </div>
