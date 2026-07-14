@@ -233,24 +233,28 @@ export default function RrssCreatePost() {
 
   // Generate prompts / copy fallback
   const handleGeneratePreview = async (forceReplan = false) => {
-    if (!imageExpectation.trim()) return;
+    const targetIdea = idea.trim() || postText.trim() || imageExpectation.trim();
+    const targetExpectation = imageExpectation.trim() || postText.trim() || idea.trim();
+    if (!targetIdea) return;
+    
     setPromptLoading(true);
     setError("");
 
     try {
       const idToken = await auth.currentUser?.getIdToken();
-      const res = await fetch("/api/ai/prompt-architect", {
+      const res = await fetch("/api/ai/generate-prompt", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${idToken}`
         },
         body: JSON.stringify({
-          idea: imageExpectation,
+          idea: targetIdea,
+          imageExpectation: targetExpectation,
           businessType,
-          postType,
+          type: postType,
           carouselCount,
-          forceReplan
+          regenerate: forceReplan
         })
       });
       
@@ -293,7 +297,7 @@ export default function RrssCreatePost() {
       // console.log del webhook n8n que se llamará a través del proxy
       const webhookUrl = process.env.NEXT_PUBLIC_N8N_PREVIEW_URL || 'https://n8n.santisoft.cl/webhook/img-rrss-auto';
       console.log(`🚀 [GENERAR IMAGEN] Gatillando webhook de n8n en: ${webhookUrl}`, {
-        idea: imageExpectation,
+        idea: imageExpectation.trim() || postText.trim() || idea.trim(),
         promptEnglish,
         businessType,
         postType,
@@ -308,7 +312,7 @@ export default function RrssCreatePost() {
           "Authorization": `Bearer ${idToken}`
         },
         body: JSON.stringify({
-          idea: imageExpectation,
+          idea: imageExpectation.trim() || postText.trim() || idea.trim(),
           promptEnglish,
           promptsEnglish,
           videoPrompt: pendingPrompts.video_prompt || "",
