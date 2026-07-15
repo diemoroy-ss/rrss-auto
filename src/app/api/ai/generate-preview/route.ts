@@ -268,33 +268,29 @@ export async function POST(req: NextRequest) {
 
         // ═══════════════════════════════════════════════════════
         // 3. PAYLOAD FINAL AL WEBHOOK DE N8N
-        //    Se envía el prompt enriquecido y todos los metadatos
-        //    necesarios para que n8n complete el flujo.
         // ═══════════════════════════════════════════════════════
-        const n8nPayload = {
-            // Contexto humano original (útil para n8n en logs/debugging)
+        const n8nPayload: any = {
             idea,
             imageExpectation: imageExpectation || "",
             userProvidedCopy: userProvidedCopy || "",
-            // PROMPTS ENRIQUECIDOS PARA GEMINI — listos para enviar a Imagen API
-            promptsEnglish: enrichedPrompts,
-            // Alias singular para compatibilidad con flujos que esperan un solo prompt
+            // Enviamos el prompt principal como string plano para evitar confusión en n8n
             promptEnglish: enrichedPrompts[0] || "",
-            // Assets multimedia del Reel
             videoPrompt: videoPrompt || "",
             audioUrl: audioUrl || "",
             voiceoverScript: voiceoverScript || "",
-            // Metadata del post
             businessType,
             type,
             carouselCount: type === 'Carrusel' ? (carouselCount || 3) : 1,
-            // Datos del perfil
             email,
             phone,
             profileId,
-            // Configuración del cartel (por si n8n quiere agregar overlays)
             posterConfig: posterConfig?.enabled ? posterConfig : null,
         };
+
+        // Si es carrusel, agregamos la secuencia por separado por si n8n la requiere
+        if (type === 'Carrusel') {
+            n8nPayload.promptsEnglish = enrichedPrompts;
+        }
 
         const response = await fetch(n8nUrl, {
             method: 'POST',
@@ -314,6 +310,10 @@ export async function POST(req: NextRequest) {
 
     } catch (err: any) {
         console.error("[GENERATE-PREVIEW API PROXY Error]:", err);
-        return NextResponse.json({ error: err.message || "Failed to communicate with pipeline" }, { status: 500 });
+        return NextResponse.json({ 
+            error: err.message || "Failed to communicate with pipeline",
+            stack: err.stack,
+            message: "Error al comunicarse con el pipeline de n8n."
+        }, { status: 500 });
     }
 }
