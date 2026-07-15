@@ -183,6 +183,22 @@ export default function CanvasEditor({
        
        {error && <div className="text-xs font-bold text-rose-600 bg-rose-50 p-3 rounded-xl border border-rose-100">{error}</div>}
 
+       {/* CTA: Invitar a abrir el editor para agregar logo u otros elementos */}
+       {!showEditor && !finalImageUrl && (
+         <button
+           type="button"
+           onClick={() => setShowEditor(true)}
+           className="w-full flex items-center gap-3 px-5 py-3.5 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 transition-all duration-200 shadow-lg shadow-indigo-500/25 group"
+         >
+           <span className="text-xl animate-bounce group-hover:animate-none">🖼️</span>
+           <div className="flex-1 text-left">
+             <p className="text-white text-xs font-black uppercase tracking-wider leading-none">¿Quieres agregar tu logo?</p>
+             <p className="text-indigo-200 text-[10px] font-medium mt-0.5">Abre el editor para agregar imágenes, textos y más encima del diseño</p>
+           </div>
+           <span className="text-white/70 text-xs font-bold shrink-0 group-hover:translate-x-1 transition-transform">Abrir Editor →</span>
+         </button>
+       )}
+
        <div 
           ref={previewContainerRef}
           onMouseMove={handleMouseMove}
@@ -242,7 +258,7 @@ export default function CanvasEditor({
               }}
             >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={userLogo} alt="Corporate Logo" className="max-w-full max-h-full object-contain" />
+                <img src={userLogo} alt="Logo o Imagen Adicional" className="max-w-full max-h-full object-contain" />
                 {showEditor && !isDragging && (
                    <div className="absolute -inset-1 border-2 border-dashed border-indigo-400/50 rounded-lg animate-pulse pointer-events-none" />
                 )}
@@ -335,7 +351,7 @@ export default function CanvasEditor({
             <div className="flex flex-col gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
                 <div className="flex gap-2 items-center">
                    <input type="checkbox" id="logoToggle" checked={useLogo} onChange={e => setUseLogo(e.target.checked)} disabled={isOverlaying} className="w-4 h-4 rounded text-indigo-600 disabled:opacity-50" />
-                   <label htmlFor="logoToggle" className={`text-xs font-bold cursor-pointer ${isOverlaying ? 'text-slate-400' : 'text-slate-600'}`}>Incluir logo corporativo</label>
+                   <label htmlFor="logoToggle" className={`text-xs font-bold cursor-pointer ${isOverlaying ? 'text-slate-400' : 'text-slate-600'}`}>Incluir logo o imagen adicional</label>
                 </div>
                 
                 {useLogo && (
@@ -344,13 +360,13 @@ export default function CanvasEditor({
                          <div className="flex items-center gap-3">
                             <div className="w-12 h-12 rounded-lg border border-slate-200 bg-white p-1 flex items-center justify-center overflow-hidden">
                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                               <img src={userLogo} alt="Logo" className="max-w-full max-h-full object-contain" />
+                               <img src={userLogo} alt="Logo o Imagen" className="max-w-full max-h-full object-contain" />
                             </div>
-                            <button type="button" onClick={() => logoInputRef.current?.click()} className="text-[10px] font-black text-indigo-600 uppercase hover:underline">Cambiar</button>
+                            <button type="button" onClick={() => logoInputRef.current?.click()} className="text-[10px] font-black text-indigo-600 uppercase hover:underline">Cambiar imagen</button>
                          </div>
                       ) : (
                          <button type="button" onClick={() => logoInputRef.current?.click()} disabled={isUploadingLogo} className="w-full py-2 border-2 border-dashed border-slate-200 rounded-xl text-[10px] font-black text-slate-400 uppercase hover:border-indigo-400 hover:text-indigo-400 transition-all flex items-center justify-center gap-2">
-                            {isUploadingLogo ? <div className="w-3 h-3 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" /> : '➕ Subir Logo'}
+                            {isUploadingLogo ? <div className="w-3 h-3 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" /> : '➕ Adjuntar Imagen / Logo'}
                          </button>
                       )}
                       <input type="file" ref={logoInputRef} onChange={handleLogoUpload} className="hidden" accept="image/*" />

@@ -3,18 +3,46 @@ import { generateElevenLabsAudio } from "../../../../lib/elevenlabs";
 import type { PosterConfig } from "../../../../types/poster";
 
 // ═══════════════════════════════════════════════════════════════
-// INGENIERÍA DE PROMPTS — construye el prompt definitivo para
-// Gemini Imagen / DALL-E 3 que se envía al workflow de n8n.
-// El objetivo es ser lo más descriptivo y específico posible,
-// combinando TODA la información contextual disponible.
+// EXTRACTOR DE CONCEPTO VISUAL
+// Analiza el texto libre del usuario y extrae solo el concepto
+// visual esencial, quitando verbos de comando y frases genéricas.
+// Ej: "Generar cartel donde todos nuestros servicios tienen 50% OFF"
+//   → "servicios con 50% de descuento"
 // ═══════════════════════════════════════════════════════════════
+function extractVisualConcept(text: string): string {
+    if (!text || text.trim().length < 3) return text;
+
+    let cleaned = text.trim();
+
+    // 1. Eliminar frases de comando al inicio (español e inglés)
+    const commandPrefixes = [
+        /^(genera[r]?|crea[r]?|haz|diseña[r]?|muestra[r]?|pon|agrega[r]?|incluye[r]?|quiero|necesito|hacer|produce|create|generate|design|make|show|add|include|put)\s+/i,
+        /^(un|una|el|la|los|las|a|an|the)\s+/i,
+        /^(cartel|banner|imagen|foto|diseño|poster|flyer|publicación|post|anuncio)\s+(publicitario|de|del|para|con)?\s*/i,
+        /^(donde|en\s+el\s+que|que\s+muestre|con\s+texto|indicando)\s+/i,
+    ];
+
+    for (const prefix of commandPrefixes) {
+        cleaned = cleaned.replace(prefix, "");
+    }
+
+    // 2. Limpiar múltiples espacios
+    cleaned = cleaned.replace(/\s+/g, " ").trim();
+
+    // 3. Si el resultado quedó vacío o muy corto, usar el texto original
+    if (cleaned.length < 5) return text.trim();
+
+    // 4. Capitalizar primera letra
+    return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+}
+
 function buildEnrichedGeminiPrompt(params: {
-    rawIdeaPrompt: string;      // Prompt en inglés generado por generate-prompt (Director de Arte IA)
-    idea: string;               // Idea original del usuario
-    imageExpectation: string;   // Descripción visual explícita del usuario
-    userProvidedCopy: string;   // Texto/copy de la publicación
-    businessType: string;       // Rubro del negocio
-    postType: string;           // Post | Historia | Carrusel | Reel
+    rawIdeaPrompt: string;
+    idea: string;
+    imageExpectation: string;
+    userProvidedCopy: string;
+    businessType: string;
+    postType: string;
     posterConfig?: PosterConfig | null;
 }): string {
     const {
@@ -53,9 +81,14 @@ function buildEnrichedGeminiPrompt(params: {
         ? rawIdeaPrompt
         : `A high-quality advertising image for a ${businessType || "business"} related to: ${idea}`;
 
-    // Enriquecer con la expectativa visual explícita del usuario
-    const userVisualContext = imageExpectation
-        ? `Client visual direction: ${imageExpectation}.`
+    // Analizar y extraer el concepto visual esencial del texto del usuario
+    // En vez de incluir el texto completo (ej: "Generar cartel donde..."), extraemos solo
+    // el concepto clave (ej: "servicios con 50% de descuento hasta fin de mes")
+    const visualConcept = extractVisualConcept(imageExpectation);
+
+    // Enriquecer con la expectativa visual interpretada del usuario
+    const userVisualContext = visualConcept
+        ? `Visual concept to highlight: ${visualConcept}.`
         : "";
 
     // Contexto del copy de la publicación para alinear el tono visual
@@ -92,19 +125,26 @@ function buildEnrichedGeminiPrompt(params: {
         }
 
         if (posterConfig.includeBusinessName && posterConfig.businessName) {
-            posterParts.push(`Include the business name typography integrated into the design: "${posterConfig.businessName}".`);
+            posterParts.push(`Include the business name prominently in the poster: "${posterConfig.businessName}".`);
         }
 
         if (posterConfig.includePrice && posterConfig.priceText) {
-            posterParts.push(`Render this promotional text clearly in a badge or main title: "${posterConfig.priceText}".`);
+            // Combinamos el priceText del cartel con el concepto visual extraído del usuario
+            const fullPromoMessage = visualConcept
+                ? `${posterConfig.priceText} — ${visualConcept}`
+                : posterConfig.priceText;
+            posterParts.push(`MAIN PROMOTIONAL HEADLINE of the poster (render this text large and prominently): "${fullPromoMessage}".`);
+        } else if (visualConcept) {
+            // Si no hay precio configurado pero sí hay una expectativa del usuario, úsala como headline
+            posterParts.push(`MAIN HEADLINE of the poster (render this text prominently in the design): "${visualConcept}".`);
         }
 
         if (posterConfig.includeSlogan && posterConfig.sloganText) {
-            posterParts.push(`Integrate this key slogan into the layout: "${posterConfig.sloganText}".`);
+            posterParts.push(`Integrate this key slogan as a subtitle in the layout: "${posterConfig.sloganText}".`);
         }
 
         if (posterConfig.ctaText) {
-            posterParts.push(`Render a clear call-to-action button or banner saying: "${posterConfig.ctaText}".`);
+            posterParts.push(`Render a clear call-to-action button or banner at the bottom saying: "${posterConfig.ctaText}".`);
         }
 
         if (posterConfig.additionalNotes) {
@@ -112,7 +152,7 @@ function buildEnrichedGeminiPrompt(params: {
         }
 
         if (posterParts.length > 0) {
-            posterSpecs = `POSTER & ADVERTISING LAYOUT SPECIFICATIONS (RENDER TEXT AND GRAPHICS DIRECTLY IN THE IMAGE):\n${posterParts.map(p => `- ${p}`).join("\n")}`;
+            posterSpecs = `POSTER & ADVERTISING LAYOUT SPECIFICATIONS (RENDER ALL TEXT AND GRAPHICS DIRECTLY INTEGRATED IN THE IMAGE):\n${posterParts.map(p => `- ${p}`).join("\n")}`;
         }
     }
 
@@ -238,9 +278,8 @@ export async function POST(req: NextRequest) {
 
         // ═══════════════════════════════════════════════════════
         // 2. CONSTRUIR PROMPTS ENRIQUECIDOS PARA GEMINI
-        //    Combinamos el prompt del Director de Arte IA con
-        //    toda la información contextual del usuario.
         // ═══════════════════════════════════════════════════════
+        // Extraer contexto compartido para los builders de prompts
         const sharedContext = {
             idea: idea || "",
             imageExpectation: imageExpectation || "",
@@ -279,7 +318,7 @@ export async function POST(req: NextRequest) {
             idea,
             imageExpectation: imageExpectation || "",
             userProvidedCopy: userProvidedCopy || "",
-            // Enviamos el prompt principal como string plano para evitar confusión en n8n
+            // Prompt principal como string plano
             promptEnglish: enrichedPrompts[0] || "",
             videoPrompt: videoPrompt || "",
             audioUrl: audioUrl || "",

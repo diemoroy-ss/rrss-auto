@@ -200,19 +200,6 @@ export default function PosterSection({
                   Elementos a incluir en el diseño
                 </label>
 
-                <div className="space-y-2.5">
-                  {profileLogoUrl && (
-                    <label className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 bg-slate-50 cursor-pointer transition-all hover:bg-slate-100/50">
-                      <input
-                        type="checkbox"
-                        checked={config.includeLogo}
-                        onChange={(e) => update("includeLogo", e.target.checked)}
-                        className="w-4 h-4 accent-amber-500 rounded"
-                      />
-                      <img src={profileLogoUrl} alt="Logo" className="w-8 h-8 rounded-lg object-contain border bg-white" />
-                      <span className="text-xs font-bold text-slate-700">Logo corporativo</span>
-                    </label>
-                  )}
 
                   <label className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 bg-slate-50 cursor-pointer transition-all hover:bg-slate-100/50">
                     <input
