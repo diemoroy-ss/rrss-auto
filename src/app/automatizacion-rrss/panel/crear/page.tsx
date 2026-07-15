@@ -5,7 +5,7 @@ import { auth, db, storage } from "../../../../lib/firebase";
 import { collection, addDoc, getDoc, doc, query, where, getDocs, orderBy, deleteDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { onAuthStateChanged } from "firebase/auth";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useProfile } from "../../../../contexts/ProfileContext";
 import { getQuotaUsage, getPlanLimit, getVideoPlanLimit } from "../../../../lib/quota";
@@ -198,6 +198,26 @@ export default function RrssCreatePost() {
     });
     return () => unsub();
   }, [activeProfile?.id]);
+
+  const searchParams = useSearchParams();
+  const templateUrlParam = searchParams.get("templateUrl");
+  const hideAIParam = searchParams.get("hideAI") === "true";
+  const openEditorParam = searchParams.get("openEditor") === "true";
+
+  useEffect(() => {
+    if (templateUrlParam) {
+      setCreationMode('manual');
+      const decodedUrl = decodeURIComponent(templateUrlParam);
+      const tempTmpl: UserTemplate = {
+        id: "temp-library",
+        url: decodedUrl,
+        type: 'image',
+        createdAt: new Date()
+      };
+      setSelectedTemplate(tempTmpl);
+      setPreviewSlides([{ url: decodedUrl, copy: "" }]);
+    }
+  }, [templateUrlParam]);
 
   useEffect(() => {
     const selectedNets = Object.entries(networks).filter(([_, val]) => val).map(([key]) => key);
@@ -861,6 +881,7 @@ export default function RrssCreatePost() {
             setShowScheduler={setShowScheduler}
             constraints={constraints}
             renderSection="parameters"
+            hideAI={hideAIParam}
           />
         </div>
 
@@ -905,6 +926,7 @@ export default function RrssCreatePost() {
             constraints={constraints}
             renderSection="content"
             posterConfig={posterConfig}
+            hideAI={hideAIParam}
           />
         </div>
       </div>
@@ -944,6 +966,7 @@ export default function RrssCreatePost() {
                              initialLogoUrl={userLogo}
                              userId={user?.uid}
                              onSave={handleSaveEditedTemplate}
+                             forceOpenEditor={openEditorParam}
                           />
                         </div>
                     )}
@@ -1007,6 +1030,7 @@ export default function RrssCreatePost() {
                     onUpdateSlide={updateSlideFinalUrl}
                     userLogo={userLogo}
                     userId={user?.uid}
+                    forceOpenEditor={openEditorParam}
                  />
                  {isReady && !showScheduler ? (
                     <div className="grid grid-cols-2 gap-4 mt-6 max-w-md mx-auto">

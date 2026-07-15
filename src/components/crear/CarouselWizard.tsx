@@ -14,13 +14,15 @@ interface CarouselWizardProps {
   onUpdateSlide: (index: number, finalUrl: string) => void;
   userLogo: string;
   userId: string;
+  forceOpenEditor?: boolean;
 }
 
 export default function CarouselWizard({
   slides,
   onUpdateSlide,
   userLogo,
-  userId
+  userId,
+  forceOpenEditor = false
 }: CarouselWizardProps) {
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -69,6 +71,7 @@ export default function CarouselWizard({
         initialLogoUrl={userLogo}
         userId={userId}
         onSave={(finalUrl) => onUpdateSlide(activeIndex, finalUrl)}
+        forceOpenEditor={forceOpenEditor}
       />
       
       {isMulti && (

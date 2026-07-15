@@ -270,25 +270,42 @@ export default function BibliotecaPage() {
               </div>
 
               {/* Acciones */}
-              <div className="p-3.5 bg-white border-t border-slate-100 flex items-center justify-between gap-2.5 shrink-0">
-                <span className="text-[10px] font-bold text-slate-400">
-                  {img.createdAt.toLocaleDateString()}
-                </span>
-                <div className="flex gap-2">
-                  <button 
-                    onClick={() => downloadImage(img.url, `diseño_santisoft_${img.id}.png`)}
-                    className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-800 transition-colors"
-                    title="Descargar imagen"
+              <div className="p-3.5 bg-white border-t border-slate-100 flex flex-col gap-2 shrink-0">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-slate-400">
+                    {img.createdAt.toLocaleDateString()}
+                  </span>
+                  <div className="flex gap-1">
+                    <button 
+                      onClick={() => downloadImage(img.url, `diseño_santisoft_${img.id}.png`)}
+                      className="p-1.5 hover:bg-slate-100 rounded-lg text-xs"
+                      title="Descargar imagen"
+                    >
+                      📥
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(img.id)}
+                      className="p-1.5 hover:bg-rose-50 rounded-lg text-xs text-rose-550"
+                      title="Eliminar de la biblioteca"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100/50">
+                  <Link
+                    href={`/automatizacion-rrss/panel/crear?templateUrl=${encodeURIComponent(img.url)}&hideAI=true`}
+                    className="py-2 px-2 text-center rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-black text-[9px] uppercase tracking-wider transition-all"
                   >
-                    📥
-                  </button>
-                  <button 
-                    onClick={() => handleDelete(img.id)}
-                    className="p-2 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors"
-                    title="Eliminar de la biblioteca"
+                    🚀 Postear
+                  </Link>
+                  <Link
+                    href={`/automatizacion-rrss/panel/crear?templateUrl=${encodeURIComponent(img.url)}&openEditor=true&hideAI=true`}
+                    className="py-2 px-2 text-center rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-[9px] uppercase tracking-wider transition-all"
                   >
-                    🗑️
-                  </button>
+                    ✏️ Editar
+                  </Link>
                 </div>
               </div>
             </div>

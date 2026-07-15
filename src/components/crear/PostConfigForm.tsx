@@ -116,8 +116,9 @@ export default function PostConfigForm({
   setShowScheduler,
   constraints,
   hideSubmit = false,
-  renderSection
-}: PostConfigFormProps) {
+  renderSection,
+  hideAI = false
+}: PostConfigFormProps & { hideAI?: boolean }) {
 
   const maxChars = constraints.safeCharLimit;
   const isOverLimit = creationMode === 'ai' ? postText.length > maxChars : manualCaption.length > maxChars;
@@ -126,34 +127,35 @@ export default function PostConfigForm({
   if (renderSection === 'parameters') {
     return (
       <div className="premium-card space-y-6">
-        {/* MODO DE CREACIÓN */}
-        <div>
-          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Modo de Creación</label>
-          <div className="grid grid-cols-2 gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
-            <button
-              type="button"
-              onClick={() => setCreationMode('ai')}
-              className={`py-3 px-4 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 ${
-                creationMode === 'ai'
-                  ? 'bg-white text-indigo-700 shadow-sm border border-slate-200/50'
-                  : 'text-slate-550 hover:text-slate-800'
-              }`}
-            >
-              🤖 Generar con IA
-            </button>
-            <button
-              type="button"
-              onClick={() => setCreationMode('manual')}
-              className={`py-3 px-4 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 ${
-                creationMode === 'manual'
-                  ? 'bg-white text-indigo-700 shadow-sm border border-slate-200/50'
-                  : 'text-slate-550 hover:text-slate-800'
-              }`}
-            >
-              📥 Subida Manual
-            </button>
+        {!hideAI && (
+          <div>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Modo de Creación</label>
+            <div className="grid grid-cols-2 gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
+              <button
+                type="button"
+                onClick={() => setCreationMode('ai')}
+                className={`py-3 px-4 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 ${
+                  creationMode === 'ai'
+                    ? 'bg-white text-indigo-700 shadow-sm border border-slate-200/50'
+                    : 'text-slate-550 hover:text-slate-800'
+                }`}
+              >
+                🤖 Generar con IA
+              </button>
+              <button
+                type="button"
+                onClick={() => setCreationMode('manual')}
+                className={`py-3 px-4 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 ${
+                  creationMode === 'manual'
+                    ? 'bg-white text-indigo-700 shadow-sm border border-slate-200/50'
+                    : 'text-slate-550 hover:text-slate-800'
+                }`}
+              >
+                📥 Subida Manual
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* REDES DE DESTINO */}
         <div>

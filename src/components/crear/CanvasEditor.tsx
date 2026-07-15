@@ -11,6 +11,7 @@ interface CanvasEditorProps {
   initialLogoUrl: string;
   userId: string;
   onSave: (finalUrl: string) => void;
+  forceOpenEditor?: boolean;
 }
 
 interface TextLayer {
@@ -27,9 +28,10 @@ export default function CanvasEditor({
   suggestedCopy,
   initialLogoUrl,
   userId,
-  onSave
+  onSave,
+  forceOpenEditor = false
 }: CanvasEditorProps) {
-  const [showEditor, setShowEditor] = useState(false);
+  const [showEditor, setShowEditor] = useState(forceOpenEditor);
   const [activeLayerIndex, setActiveLayerIndex] = useState(0);
   const [textLayers, setTextLayers] = useState<TextLayer[]>([
     { text: "", color: "#ffffff", font: "Montserrat", size: "40", x: 50, y: 40 },
