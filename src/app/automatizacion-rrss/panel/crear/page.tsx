@@ -526,6 +526,15 @@ export default function RrssCreatePost() {
         setPreviewSlides([{ url: resolvedImageUrl, copy: resolvedCopy }]);
       }
 
+      // Mostrar modal de aviso informando que ya está guardado en biblioteca
+      setStatusModal({
+        isOpen: true,
+        type: "success",
+        title: "¡Diseño Guardado en Biblioteca!",
+        message: "Tu nueva imagen se ha generado exitosamente. Ya la tienes disponible en el menú Biblioteca para editar o postear cuando gustes.",
+        onConfirm: () => setStatusModal(prev => ({ ...prev, isOpen: false }))
+      });
+
       // Si es Reel, guardar assets
       if (postType === 'Reel') {
         setVoiceoverScript(data.voiceoverScript || data.voiceover_script || "");
