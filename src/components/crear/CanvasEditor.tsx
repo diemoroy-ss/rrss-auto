@@ -369,12 +369,6 @@ export default function CanvasEditor({
         </div>
     )}
 
-       <div>
-          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Copy Sugerido para Redes</label>
-          <div className="p-6 bg-white rounded-2xl border border-slate-200 text-slate-600 text-sm font-medium leading-relaxed italic shadow-inner">
-             "{suggestedCopy}"
-          </div>
-       </div>
     </div>
   );
 }
