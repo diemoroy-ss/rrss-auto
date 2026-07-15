@@ -103,8 +103,10 @@ export default async function RenderPreviewPage(props: {
               top: `${data.logoY}%`,
               transform: "translate(-50%, -50%)",
               zIndex: 50,
-              width: "120px",
-              height: "120px",
+              // Escala proporcional: logoWidth viene en px basados en un ancho de preview de aprox 450px.
+              // Para el lienzo de 1080px en Butterfly, escalamos el logo correspondientemente (multiplicado por 2.4).
+              width: data.logoWidth ? `${Math.round(data.logoWidth * 2.4)}px` : "160px",
+              height: data.logoWidth ? `${Math.round(data.logoWidth * 2.4)}px` : "160px",
               backgroundColor: "white",
               borderRadius: "15px",
               padding: "10px",

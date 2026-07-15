@@ -48,7 +48,8 @@ export default function CanvasEditor({
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [logoX, setLogoX] = useState(10);
   const [logoY, setLogoY] = useState(10);
-  const [dragTarget, setDragTarget] = useState<'text' | 'logo' | null>(null);
+  const [logoWidth, setLogoWidth] = useState(80); // Ancho en píxeles del logo/imagen
+  const [dragTarget, setDragTarget] = useState<'text' | 'logo' | 'resize' | null>(null);
   const [draggingLayerIndex, setDraggingLayerIndex] = useState<number | null>(null);
   
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -59,7 +60,7 @@ export default function CanvasEditor({
     setUserLogo(initialLogoUrl);
   }, [initialLogoUrl]);
 
-  const handleMouseDown = (target: 'text' | 'logo', index?: number) => {
+  const handleMouseDown = (target: 'text' | 'logo' | 'resize', index?: number) => {
     if (!showEditor || isOverlaying) return;
     setDragTarget(target);
     if (target === 'text' && index !== undefined) {
@@ -87,6 +88,14 @@ export default function CanvasEditor({
     } else if (dragTarget === 'logo') {
         setLogoX(clampedX);
         setLogoY(clampedY);
+    } else if (dragTarget === 'resize') {
+        // Redimensionar el logo según el movimiento del mouse
+        // Calculamos la distancia del cursor con respecto al centro del logo (logoX, logoY)
+        const logoCenterX = (logoX / 100) * rect.width;
+        const cursorRelativeX = e.clientX - rect.left;
+        // El nuevo ancho será el doble de la distancia horizontal al centro
+        const newWidth = Math.max(30, Math.min(300, Math.abs(cursorRelativeX - logoCenterX) * 2));
+        setLogoWidth(Math.round(newWidth));
     }
   };
 
@@ -143,6 +152,7 @@ export default function CanvasEditor({
           logoUrl: userLogo,
           logoX,
           logoY,
+          logoWidth, // Guardamos el ancho personalizado
           createdAt: new Date()
        });
 
@@ -244,10 +254,10 @@ export default function CanvasEditor({
               style={{ 
                   left: `${logoX}%`,
                   top: `${logoY}%`,
-                  transform: `translate(-50%, -50%) ${isDragging && dragTarget === 'logo' ? 'scale(1.1)' : ''}`,
+                  transform: `translate(-50%, -50%) ${isDragging && dragTarget === 'logo' ? 'scale(1.05)' : ''}`,
                   position: 'absolute',
-                  width: '60px',
-                  height: '60px',
+                  width: `${logoWidth}px`,
+                  height: `${logoWidth}px`,
                   backgroundColor: 'white',
                   borderRadius: '8px',
                   padding: '4px',
@@ -258,7 +268,22 @@ export default function CanvasEditor({
               }}
             >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={userLogo} alt="Logo o Imagen Adicional" className="max-w-full max-h-full object-contain" />
+                <img src={userLogo} alt="Logo o Imagen Adicional" className="max-w-full max-h-full object-contain pointer-events-none select-none" />
+                
+                {/* Tirador de redimensionamiento (resize handle) en la esquina inferior derecha */}
+                {showEditor && !isOverlaying && (
+                  <div 
+                    onMouseDown={(e) => {
+                      e.stopPropagation(); // Evitar arrastrar el logo completo
+                      handleMouseDown('resize');
+                    }}
+                    className="absolute bottom-[-6px] right-[-6px] w-4 h-4 bg-indigo-600 border border-white rounded-full cursor-se-resize shadow-md flex items-center justify-center hover:scale-125 hover:bg-indigo-700 transition-all z-30"
+                  >
+                    {/* Icono de redimensionamiento */}
+                    <span className="text-[8px] text-white font-bold pointer-events-none">↗</span>
+                  </div>
+                )}
+
                 {showEditor && !isDragging && (
                    <div className="absolute -inset-1 border-2 border-dashed border-indigo-400/50 rounded-lg animate-pulse pointer-events-none" />
                 )}

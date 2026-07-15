@@ -200,7 +200,7 @@ export default function PosterSection({
                   Elementos a incluir en el diseño
                 </label>
 
-
+                <div className="space-y-2.5">
                   <label className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 bg-slate-50 cursor-pointer transition-all hover:bg-slate-100/50">
                     <input
                       type="checkbox"
