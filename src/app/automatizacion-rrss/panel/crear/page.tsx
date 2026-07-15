@@ -466,6 +466,35 @@ export default function RrssCreatePost() {
       setGeneratingOpen(false);
       setGeneratingSteps([]);
 
+      // ── PERSISTENCIA: Guardar las imágenes en la Biblioteca de Firestore ──
+      try {
+        if (postType === 'Carrusel' && resolvedImageUrls.length > 0) {
+          for (const url of resolvedImageUrls) {
+            await addDoc(collection(db, "generated_images"), {
+              userId: user?.uid || "anonymous",
+              profileId: activeProfile?.id || "default",
+              url,
+              createdAt: new Date(),
+              source: "ia",
+              type: postType,
+              prompt: promptEnglish || (promptsEnglish.length > 0 ? promptsEnglish[0] : "")
+            });
+          }
+        } else if (resolvedImageUrl) {
+          await addDoc(collection(db, "generated_images"), {
+            userId: user?.uid || "anonymous",
+            profileId: activeProfile?.id || "default",
+            url: resolvedImageUrl,
+            createdAt: new Date(),
+            source: "ia",
+            type: postType,
+            prompt: promptEnglish || (promptsEnglish.length > 0 ? promptsEnglish[0] : "")
+          });
+        }
+      } catch (persistErr) {
+        console.error("Error al persistir imagen en biblioteca:", persistErr);
+      }
+
       // Adaptar respuesta al estado de slides
       if (postType === 'Carrusel' && resolvedImageUrls.length > 0) {
         const slides: CarouselSlide[] = resolvedImageUrls.map((url: string) => ({
@@ -499,8 +528,23 @@ export default function RrssCreatePost() {
   };
 
 
-  const updateSlideFinalUrl = (index: number, finalUrl: string) => {
+  const updateSlideFinalUrl = async (index: number, finalUrl: string) => {
       setPreviewSlides(prev => prev.map((s, idx) => idx === index ? { ...s, url: finalUrl } : s));
+
+      // Guardar el render editado por el usuario en la biblioteca
+      try {
+        await addDoc(collection(db, "generated_images"), {
+          userId: user?.uid || "anonymous",
+          profileId: activeProfile?.id || "default",
+          url: finalUrl,
+          createdAt: new Date(),
+          source: "editor",
+          type: postType,
+          prompt: "Edición manual de usuario en editor visual"
+        });
+      } catch (persistErr) {
+        console.error("Error al guardar imagen editada en biblioteca:", persistErr);
+      }
   };
 
   // Upload templates manual/gallery
