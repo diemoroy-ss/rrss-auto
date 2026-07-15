@@ -180,15 +180,40 @@ export default function CanvasEditor({
              <span className="text-xl">✨</span>
              <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest">Diseño de Imagen</h4>
           </div>
-          {finalImageUrl ? (
-             <button onClick={() => setFinalImageUrl("")} className="text-[10px] font-black uppercase bg-amber-100 text-amber-700 px-3 py-1.5 rounded-lg hover:bg-amber-200 transition-colors">
-                Deshacer / Reset
-             </button>
-          ) : (
-             <button onClick={() => setShowEditor(!showEditor)} className="text-[10px] font-black uppercase bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg hover:bg-indigo-200 transition-colors">
-                {showEditor ? 'Cerrar Edición' : 'Editar Imagen'}
-             </button>
-          )}
+           {finalImageUrl ? (
+             <div className="flex gap-2">
+                <button 
+                  onClick={() => {
+                    // Volver a editar conservando el estado anterior
+                    setFinalImageUrl("");
+                    setShowEditor(true);
+                  }} 
+                  className="text-[10px] font-black uppercase bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg hover:bg-indigo-200 transition-colors"
+                >
+                   Volver a Editar
+                </button>
+                <button 
+                  onClick={() => {
+                    // Limpiar y resetear el editor completo
+                    setFinalImageUrl("");
+                    setShowEditor(false);
+                    setTextLayers([
+                      { text: "", color: "#ffffff", font: "Montserrat", size: "40", x: 50, y: 40 },
+                      { text: "", color: "#ffffff", font: "Montserrat", size: "30", x: 50, y: 50 },
+                      { text: "", color: "#ffffff", font: "Montserrat", size: "20", x: 50, y: 60 },
+                    ]);
+                    setUseLogo(false);
+                  }} 
+                  className="text-[10px] font-black uppercase bg-rose-100 text-rose-700 px-3 py-1.5 rounded-lg hover:bg-rose-200 transition-colors"
+                >
+                   Resetear Todo
+                </button>
+             </div>
+           ) : (
+              <button onClick={() => setShowEditor(!showEditor)} className="text-[10px] font-black uppercase bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg hover:bg-indigo-200 transition-colors">
+                 {showEditor ? 'Cerrar Edición' : 'Editar Imagen'}
+              </button>
+           )}
        </div>
        
        {error && <div className="text-xs font-bold text-rose-600 bg-rose-50 p-3 rounded-xl border border-rose-100">{error}</div>}
