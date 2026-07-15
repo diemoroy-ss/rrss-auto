@@ -430,7 +430,7 @@ export default function CanvasEditor({
                 disabled={isOverlaying || (textLayers.every(l => !l.text) && !useLogo)} 
                 className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-bold py-2.5 rounded-xl text-xs uppercase tracking-widest transition-colors mt-4 flex items-center justify-center gap-2"
             >
-                {isOverlaying ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : 'Aplicar Capas 🦋'}
+                {isOverlaying ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : 'Aplicar Cambios 🦋'}
             </button>
         </div>
     )}
