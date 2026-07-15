@@ -68,55 +68,59 @@ function buildEnrichedGeminiPrompt(params: {
         ? `Industry/Business type: ${businessType}.`
         : "";
 
+    const isPoster = !!posterConfig?.enabled;
+
     // Poster/banner specifications
     let posterSpecs = "";
-    if (posterConfig?.enabled) {
+    if (isPoster) {
         const posterParts: string[] = [];
 
         if (posterConfig.visualStyle) {
             const styleMap: Record<string, string> = {
-                "Moderno":      "clean modern aesthetic with geometric elements",
-                "Minimalista":  "minimalist design with negative space and clean lines",
-                "Llamativo":    "bold eye-catching design with high contrast colors",
-                "Elegante":     "elegant luxury style with premium feel and serif typography",
-                "Profesional":  "professional corporate style with structured layout",
-                "Vibrante":     "vibrant energetic design with saturated colors and dynamic composition",
+                "Moderno":      "modern layout with professional typography, geometric layout, and clean marketing design",
+                "Minimalista":  "minimalist clean ad with elegant negative space and clear focus",
+                "Llamativo":    "high-impact bold banner with vibrant contrast and eye-catching advertisement text",
+                "Elegante":     "sophisticated luxury print ad style with premium serif fonts and high-end aesthetics",
+                "Profesional":  "clean corporate business flyer layout, very organized design",
+                "Vibrante":     "vibrant energetic design with colorful branding overlays and modern typography",
             };
-            posterParts.push(`Visual style: ${styleMap[posterConfig.visualStyle] || posterConfig.visualStyle}.`);
+            posterParts.push(`Poster Visual Style: ${styleMap[posterConfig.visualStyle] || posterConfig.visualStyle}.`);
         }
 
         if (posterConfig.primaryColor) {
-            posterParts.push(`Brand primary color accent: ${posterConfig.primaryColor}.`);
+            posterParts.push(`Dominant brand color palette: ${posterConfig.primaryColor}.`);
         }
 
         if (posterConfig.includeBusinessName && posterConfig.businessName) {
-            posterParts.push(`Leave space for business name overlay: "${posterConfig.businessName}".`);
+            posterParts.push(`Include the business name typography integrated into the design: "${posterConfig.businessName}".`);
         }
 
         if (posterConfig.includePrice && posterConfig.priceText) {
-            posterParts.push(`Promotional message visible: "${posterConfig.priceText}" — design should emphasize urgency and value.`);
+            posterParts.push(`Render this promotional text clearly in a badge or main title: "${posterConfig.priceText}".`);
         }
 
         if (posterConfig.includeSlogan && posterConfig.sloganText) {
-            posterParts.push(`Brand slogan context: "${posterConfig.sloganText}".`);
+            posterParts.push(`Integrate this key slogan into the layout: "${posterConfig.sloganText}".`);
         }
 
         if (posterConfig.ctaText) {
-            posterParts.push(`Call-to-action intent: "${posterConfig.ctaText}" — the composition should visually guide the viewer toward this action.`);
+            posterParts.push(`Render a clear call-to-action button or banner saying: "${posterConfig.ctaText}".`);
         }
 
         if (posterConfig.additionalNotes) {
-            posterParts.push(`Additional design notes: ${posterConfig.additionalNotes}.`);
+            posterParts.push(`Additional flyer requirements: ${posterConfig.additionalNotes}.`);
         }
 
         if (posterParts.length > 0) {
-            posterSpecs = `POSTER/BANNER SPECIFICATIONS: ${posterParts.join(" ")}`;
+            posterSpecs = `POSTER & ADVERTISING LAYOUT SPECIFICATIONS (RENDER TEXT AND GRAPHICS DIRECTLY IN THE IMAGE):\n${posterParts.map(p => `- ${p}`).join("\n")}`;
         }
     }
 
     // Ensamblado final del prompt
     const promptParts = [
-        `${qualityBase},`,
+        isPoster 
+            ? "commercial advertising flyer poster design, professional graphic design layout, high-quality promotional banner"
+            : `${qualityBase},`,
         `${formatDescription}.`,
         ``,
         `MAIN VISUAL CONCEPT:`,
@@ -129,13 +133,15 @@ function buildEnrichedGeminiPrompt(params: {
     if (businessContext)    promptParts.push(businessContext);
     if (posterSpecs)        promptParts.push(``, posterSpecs);
 
+    // Ajustar los requerimientos técnicos según si es cartel publicitario o imagen lifestyle
     promptParts.push(
         ``,
         `TECHNICAL REQUIREMENTS:`,
-        `- Photorealistic commercial quality.`,
+        `- Professional graphic design and composition.`,
         `- Composition optimized for social media ${formatDescription}.`,
-        `- NO text, letters, words, or typography rendered inside the image.`,
-        `- Background should complement the subject without overwhelming it.`,
+        isPoster 
+            ? `- Integrate the promotional text, values, and branding seamlessly as a professional graphic designer would.\n- Ensure high contrast and absolute legibility of all written details.\n- The final image should look like a complete, ready-to-post advertising banner with text.`
+            : `- NO text, letters, words, or typography rendered inside the image.\n- Background should complement the subject without overwhelming it.`,
         `- Lighting should be dramatic and cinematic, highlighting the main subject.`,
         `- Color grading: vibrant yet professional, suitable for advertising.`,
     );
