@@ -32,7 +32,7 @@ jobs:
             echo "Descargando últimos cambios de GitHub y limpiando espacio de trabajo..."
             git fetch https://x-access-token:${GITHUB_TOKEN}@github.com/diemoroy-ss/rrss-auto.git main
             git reset --hard FETCH_HEAD
-            git clean -fd
+            git clean -fd -e .env.local
             
             echo "Instalando dependencias..."
             npm install
