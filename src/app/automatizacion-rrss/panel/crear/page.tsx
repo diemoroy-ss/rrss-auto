@@ -18,6 +18,7 @@ import CanvasEditor from "../../../../components/crear/CanvasEditor";
 import StatusModal from "../../../../components/StatusModal";
 import AIOptionsModal from "../../../../components/crear/AIOptionsModal";
 import PosterSection from "../../../../components/crear/PosterSection";
+import GeneratingModal, { type GeneratingStep } from "../../../../components/crear/GeneratingModal";
 
 export interface UserTemplate { id: string; url: string; type?: 'image' | 'video'; createdAt: Date; }
 
@@ -69,6 +70,18 @@ export default function RrssCreatePost() {
 
   const [showPromptModal, setShowPromptModal] = useState(false);
   const [pendingPrompts, setPendingPrompts] = useState<any>(null);
+
+  // ── GeneratingModal state ──────────────────────────────────────
+  const [generatingOpen, setGeneratingOpen] = useState(false);
+  const [generatingSteps, setGeneratingSteps] = useState<GeneratingStep[]>([]);
+  const [generatingCurrentId, setGeneratingCurrentId] = useState<string | null>(null);
+
+  const updateStep = (id: string, status: GeneratingStep["status"], sublabel?: string) => {
+    setGeneratingSteps(prev =>
+      prev.map(s => s.id === id ? { ...s, status, sublabel: sublabel ?? s.sublabel } : s)
+    );
+    if (status === "running") setGeneratingCurrentId(id);
+  };
 
   // AI Dialog
   const [showOptionsModal, setShowOptionsModal] = useState(false);
@@ -231,26 +244,38 @@ export default function RrssCreatePost() {
     }
   };
 
-  // Generate prompts / copy fallback
+  // ──────────────────────────────────────────────────────────────
+  // FLUJO PRINCIPAL DE GENERACIÓN CON REVISIÓN INTERNA DE PROMPTS
+  // ──────────────────────────────────────────────────────────────
   const handleGeneratePreview = async (forceReplan = false) => {
     const targetIdea = idea.trim() || postText.trim() || imageExpectation.trim();
     const targetExpectation = imageExpectation.trim() || postText.trim() || idea.trim();
     if (!targetIdea) return;
-    
+
     const webhookUrl = process.env.NEXT_PUBLIC_N8N_PREVIEW_URL || 'https://n8n.santisoft.cl/webhook/img-rrss-auto';
     console.log(`🚀 [PREVISUALIZAR] Iniciando flujo hacia webhook n8n: ${webhookUrl}`);
 
+    // Definir los pasos del modal
+    const isCarousel = postType === 'Carrusel';
+    const initialSteps: GeneratingStep[] = [
+      { id: 'generate',  label: 'Diseñando propuesta visual con IA',   icon: '🎨', status: 'pending' },
+      { id: 'review1',   label: 'Revisando calidad del prompt',         icon: '🔍', status: 'pending', sublabel: 'Iteración 1/3' },
+      { id: 'review2',   label: 'Optimizando prompt',                   icon: '⚡', status: 'pending', sublabel: 'Iteración 2/3' },
+      { id: 'review3',   label: 'Refinamiento final',                   icon: '✨', status: 'pending', sublabel: 'Iteración 3/3' },
+    ];
+    setGeneratingSteps(initialSteps);
+    setGeneratingOpen(true);
     setPromptLoading(true);
     setError("");
 
     try {
       const idToken = await auth.currentUser?.getIdToken();
-      const res = await fetch("/api/ai/generate-prompt", {
+
+      // ── PASO 1: Generar prompt base con el Director de Arte IA ──
+      updateStep('generate', 'running');
+      const promptRes = await fetch("/api/ai/generate-prompt", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${idToken}`
-        },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` },
         body: JSON.stringify({
           idea: targetIdea,
           imageExpectation: targetExpectation,
@@ -260,62 +285,147 @@ export default function RrssCreatePost() {
           regenerate: forceReplan
         })
       });
-      
-      if (!res.ok) {
-        throw new Error("El planificador visual de IA ha fallado.");
+
+      if (!promptRes.ok) throw new Error("El Director de Arte IA no pudo generar una propuesta visual.");
+
+      const promptData = await promptRes.json();
+      const promptPayload = promptData.data || promptData;
+      updateStep('generate', 'done');
+
+      console.log(`📝 [PROMPT BASE GENERADO]`, promptPayload);
+
+      // ── PASOS 2-4: Agente Revisor de Prompts (hasta 3 iteraciones) ──
+      const reviewStepIds = ['review1', 'review2', 'review3'];
+      let currentPrompt: string =
+        promptPayload.prompt_english ||
+        promptPayload.prompts_english?.[0] ||
+        targetIdea;
+
+      let reviewedPrompts = { ...promptPayload };
+
+      for (let i = 0; i < 3; i++) {
+        const stepId = reviewStepIds[i];
+        const stepLabels = [
+          'Revisando calidad del prompt',
+          'Optimizando prompt',
+          'Refinamiento final'
+        ];
+        updateStep(stepId, 'running', `Agente revisor — iteración ${i + 1}/3`);
+
+        try {
+          const reviewRes = await fetch("/api/ai/review-prompt", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` },
+            body: JSON.stringify({
+              prompt: currentPrompt,
+              idea: targetIdea,
+              imageExpectation: targetExpectation,
+              businessType,
+              postType,
+              iteration: i + 1
+            })
+          });
+
+          const reviewData = await reviewRes.json();
+          console.log(`🔍 [REVISIÓN ${i + 1}] Score: ${reviewData.score}/10 | Mejora: ${reviewData.needsImprovement}`, reviewData.feedback);
+
+          if (reviewData.needsImprovement && reviewData.improvedPrompt) {
+            currentPrompt = reviewData.improvedPrompt;
+            // Actualizar el payload con el prompt mejorado
+            if (promptPayload.prompts_english?.length > 0) {
+              reviewedPrompts = {
+                ...reviewedPrompts,
+                prompts_english: [reviewData.improvedPrompt, ...(promptPayload.prompts_english?.slice(1) || [])]
+              };
+            } else {
+              reviewedPrompts = { ...reviewedPrompts, prompt_english: reviewData.improvedPrompt };
+            }
+            updateStep(stepId, 'done', `Mejorado — score ${reviewData.score}/10`);
+          } else {
+            // El prompt es suficientemente bueno, marcar como OK y saltar restantes
+            updateStep(stepId, 'done', `Aprobado — score ${reviewData.score}/10`);
+            // Marcar los pasos restantes como done también
+            for (let j = i + 1; j < 3; j++) {
+              updateStep(reviewStepIds[j], 'done', 'No requirió revisión');
+            }
+            break;
+          }
+        } catch (reviewErr) {
+          console.warn(`[REVIEW ${i + 1}] Error en revisión, continuando con prompt actual:`, reviewErr);
+          updateStep(stepId, 'done', 'Revisión omitida');
+          break;
+        }
       }
 
-      const data = await res.json();
-      setPendingPrompts(data);
+      // Cerrar el modal de generación y mostrar el modal de confirmación
+      setGeneratingOpen(false);
+      setGeneratingSteps([]);
+      setPendingPrompts(reviewedPrompts);
       setShowPromptModal(true);
 
     } catch (err: any) {
+      setGeneratingOpen(false);
       setError(err.message || "Error al diseñar la propuesta visual con IA.");
     } finally {
       setPromptLoading(false);
     }
   };
 
-  // Trigger n8n Image Pipeline with approved prompt suffix
+  // ─────────────────────────────────────────────────────────────────────────
+  // CONFIRMAR: enviar al webhook n8n con modal de progreso de generación
+  // ─────────────────────────────────────────────────────────────────────────
   const handleConfirmPreview = async () => {
     if (!pendingPrompts) return;
     setShowPromptModal(false);
-    setPreviewLoading(true);
     setError("");
+
+    // Pasos del modal de generación de imagen
+    const confirmSteps: GeneratingStep[] = [
+      { id: 'prep',     label: 'Preparando prompt enriquecido',          icon: '🧪', status: 'pending' },
+      { id: 'send',     label: 'Enviando flujo a n8n',                   icon: '📡', status: 'pending' },
+      { id: 'generate', label: 'Generando imagen con IA',                icon: '🖼️', status: 'pending', sublabel: 'Gemini Imagen procesando...' },
+      { id: 'done',     label: 'Imagen lista',                           icon: '✅', status: 'pending' },
+    ];
+    setGeneratingSteps(confirmSteps);
+    setGeneratingOpen(true);
+    setPreviewLoading(true);
 
     try {
       const idToken = await auth.currentUser?.getIdToken();
 
-      // Enriquecer el prompt del cartel si está habilitado
+      // ── PREP: Enriquecer el prompt del cartel si está habilitado ──
+      updateStep('prep', 'running');
       const posterPromptSuffix = posterConfig.enabled ? buildPosterPromptSuffix(posterConfig) : "";
 
-      const promptEnglish = pendingPrompts.prompt_english 
+      const promptEnglish = pendingPrompts.prompt_english
         ? `${pendingPrompts.prompt_english}. ${posterPromptSuffix}`.trim()
         : "";
 
-      const promptsEnglish = pendingPrompts.prompts_english?.map((p: string) => 
+      const promptsEnglish = pendingPrompts.prompts_english?.map((p: string) =>
         `${p}. ${posterPromptSuffix}`.trim()
       ) || [];
 
-      // console.log del webhook n8n que se llamará a través del proxy
       const webhookUrl = process.env.NEXT_PUBLIC_N8N_PREVIEW_URL || 'https://n8n.santisoft.cl/webhook/img-rrss-auto';
-      console.log(`🚀 [GENERAR IMAGEN] Gatillando webhook de n8n en: ${webhookUrl}`, {
-        idea: imageExpectation.trim() || postText.trim() || idea.trim(),
-        promptEnglish,
+      console.log(`🚀 [GENERAR IMAGEN] Gatillando webhook de n8n en: ${webhookUrl}`);
+      console.log(`📝 [PROMPT FINAL ENVIADO A N8N]`, {
+        promptEnglish: promptEnglish || promptsEnglish,
+        idea: idea.trim(),
+        imageExpectation: imageExpectation.trim(),
+        postText: postText.trim(),
         businessType,
         postType,
-        posterConfig
+        posterConfig: posterConfig.enabled ? posterConfig : null,
       });
+      updateStep('prep', 'done');
 
-      // Llamar al endpoint local proxy de previsualización
+      // ── SEND: Llamar al proxy → webhook n8n ──
+      updateStep('send', 'running', `Webhook: ${webhookUrl}`);
       const res = await fetch("/api/ai/generate-preview", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${idToken}`
-        },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` },
         body: JSON.stringify({
-          idea: imageExpectation.trim() || postText.trim() || idea.trim(),
+          idea: idea.trim(),
+          imageExpectation: imageExpectation.trim(),
           promptEnglish,
           promptsEnglish,
           videoPrompt: pendingPrompts.video_prompt || "",
@@ -330,47 +440,64 @@ export default function RrssCreatePost() {
           posterConfig,
         })
       });
+      updateStep('send', 'done');
+
+      // ── GENERATE: Esperando respuesta de n8n con la imagen ──
+      updateStep('generate', 'running', 'Procesando en el servidor de IA...');
 
       if (!res.ok) {
-        const errorData = await res.json();
+        const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData.error || "Fallo en la previsualización del diseño.");
       }
 
       const data = await res.json();
-      
-      // Adaptar respuesta
-      if (postType === 'Carrusel' && data.imageUrls && Array.isArray(data.imageUrls)) {
-         const slides: CarouselSlide[] = data.imageUrls.map((url: string) => ({
-             url,
-             copy: data.suggestedCopy || ""
-         }));
-         setPreviewSlides(slides);
+      console.log(`✅ [N8N RESPONSE]`, data);
+
+      // Soportar tanto { imageUrl } como { status: ok, img_url: "..." }
+      const resolvedImageUrl: string = data.img_url || data.imageUrl || "";
+      const resolvedImageUrls: string[] = data.img_urls || data.imageUrls || (resolvedImageUrl ? [resolvedImageUrl] : []);
+      const resolvedCopy: string = data.suggestedCopy || data.copy || "";
+
+      updateStep('generate', 'done');
+      updateStep('done', 'done', '¡Diseño listo!');
+
+      // Pequeña pausa para que el usuario vea el estado final
+      await new Promise(r => setTimeout(r, 800));
+      setGeneratingOpen(false);
+      setGeneratingSteps([]);
+
+      // Adaptar respuesta al estado de slides
+      if (postType === 'Carrusel' && resolvedImageUrls.length > 0) {
+        const slides: CarouselSlide[] = resolvedImageUrls.map((url: string) => ({
+          url,
+          copy: resolvedCopy
+        }));
+        setPreviewSlides(slides);
       } else {
-         setPreviewSlides([{
-             url: data.imageUrl,
-             copy: data.suggestedCopy || ""
-         }]);
+        setPreviewSlides([{ url: resolvedImageUrl, copy: resolvedCopy }]);
       }
 
       // Si es Reel, guardar assets
       if (postType === 'Reel') {
-         setVoiceoverScript(data.voiceoverScript || "");
-         setVideoPrompt(data.videoPrompt || "");
-         setAudioUrl(data.audioUrl || "");
-         setShowReelWorkspace(true);
+        setVoiceoverScript(data.voiceoverScript || data.voiceover_script || "");
+        setVideoPrompt(data.videoPrompt || data.video_prompt || "");
+        setAudioUrl(data.audioUrl || data.audio_url || "");
+        setShowReelWorkspace(true);
       } else {
-         // Si la IA generó un copy sugerido y el usuario no tenía uno explícito escrito, lo prellenamos
-         if (data.suggestedCopy && !postText.trim()) {
-            setPostText(data.suggestedCopy);
-         }
+        if (resolvedCopy && !postText.trim()) {
+          setPostText(resolvedCopy);
+        }
       }
 
     } catch (err: any) {
+      setGeneratingOpen(false);
+      setGeneratingSteps([]);
       setError(err.message || "Error al renderizar el diseño final.");
     } finally {
       setPreviewLoading(false);
     }
   };
+
 
   const updateSlideFinalUrl = (index: number, finalUrl: string) => {
       setPreviewSlides(prev => prev.map((s, idx) => idx === index ? { ...s, url: finalUrl } : s));
@@ -954,6 +1081,19 @@ export default function RrssCreatePost() {
           </div>
         </div>
       )}
+
+      {/* MODAL DE PROGRESO DE GENERACIÓN IA */}
+      <GeneratingModal
+        isOpen={generatingOpen}
+        steps={generatingSteps}
+        currentStepId={generatingCurrentId}
+        onCancel={() => {
+          // Solo cerramos el modal visual; el proceso ya no se puede cancelar en el servidor
+          setGeneratingOpen(false);
+          setPromptLoading(false);
+          setPreviewLoading(false);
+        }}
+      />
 
       <StatusModal 
         isOpen={statusModal.isOpen}
