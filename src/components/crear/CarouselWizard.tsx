@@ -15,6 +15,7 @@ interface CarouselWizardProps {
   userLogo: string;
   userId: string;
   forceOpenEditor?: boolean;
+  onRetouch?: (index: number, instruction: string) => void;
 }
 
 export default function CarouselWizard({
@@ -22,7 +23,8 @@ export default function CarouselWizard({
   onUpdateSlide,
   userLogo,
   userId,
-  forceOpenEditor = false
+  forceOpenEditor = false,
+  onRetouch
 }: CarouselWizardProps) {
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -72,6 +74,7 @@ export default function CarouselWizard({
         userId={userId}
         onSave={(finalUrl) => onUpdateSlide(activeIndex, finalUrl)}
         forceOpenEditor={forceOpenEditor}
+        onRetouch={(inst) => onRetouch?.(activeIndex, inst)}
       />
       
       {isMulti && (

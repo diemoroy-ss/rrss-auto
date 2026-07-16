@@ -70,6 +70,8 @@ export default function RrssCreatePost() {
 
   const [showPromptModal, setShowPromptModal] = useState(false);
   const [pendingPrompts, setPendingPrompts] = useState<any>(null);
+  const [editablePromptSpanish, setEditablePromptSpanish] = useState("");
+  const [showFinalPostModal, setShowFinalPostModal] = useState(false);
 
   // ── GeneratingModal state ──────────────────────────────────────
   const [generatingOpen, setGeneratingOpen] = useState(false);
@@ -381,6 +383,7 @@ export default function RrssCreatePost() {
       setGeneratingOpen(false);
       setGeneratingSteps([]);
       setPendingPrompts(reviewedPrompts);
+      setEditablePromptSpanish(reviewedPrompts.prompt_spanish || reviewedPrompts.prompts_spanish?.[0] || "");
       setShowPromptModal(true);
 
     } catch (err: any) {
@@ -415,10 +418,31 @@ export default function RrssCreatePost() {
 
       // ── PREP: Enriquecer el prompt del cartel si está habilitado ──
       updateStep('prep', 'running');
+      let baseEnglishPrompt = pendingPrompts.prompt_english;
+
+      // Si el usuario editó el prompt en español, lo traducimos antes de enviarlo
+      const originalSpanish = pendingPrompts.prompt_spanish || pendingPrompts.prompts_spanish?.[0] || "";
+      if (editablePromptSpanish.trim() !== originalSpanish.trim()) {
+         try {
+           updateStep('prep', 'running', 'Traduciendo modificaciones...');
+           const transRes = await fetch("/api/ai/translate-prompt", {
+             method: "POST",
+             headers: { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` },
+             body: JSON.stringify({ prompt: editablePromptSpanish })
+           });
+           if (transRes.ok) {
+             const transData = await transRes.json();
+             baseEnglishPrompt = transData.prompt_english;
+           }
+         } catch (e) {
+           console.warn("Fallo al traducir el prompt modificado", e);
+         }
+      }
+
       const posterPromptSuffix = posterConfig.enabled ? buildPosterPromptSuffix(posterConfig) : "";
 
-      const promptEnglish = pendingPrompts.prompt_english
-        ? `${pendingPrompts.prompt_english}. ${posterPromptSuffix}`.trim()
+      const promptEnglish = baseEnglishPrompt
+        ? `${baseEnglishPrompt}. ${posterPromptSuffix}`.trim()
         : "";
 
       const promptsEnglish = pendingPrompts.prompts_english?.map((p: string) =>
@@ -553,6 +577,86 @@ export default function RrssCreatePost() {
       setError(err.message || "Error al renderizar el diseño final.");
     } finally {
       setPreviewLoading(false);
+    }
+  };
+
+  const handleRetouchImage = async (index: number | null, instruction: string) => {
+    if (!pendingPrompts) return;
+    setPreviewLoading(true);
+    
+    try {
+      const idToken = await auth.currentUser?.getIdToken();
+      let currentPrompt = "";
+      if (index !== null && pendingPrompts.prompts_english && pendingPrompts.prompts_english.length > index) {
+         currentPrompt = pendingPrompts.prompts_english[index];
+      } else {
+         currentPrompt = pendingPrompts.prompt_english || (pendingPrompts.prompts_english?.[0] || "");
+      }
+
+      // 1. Obtener prompt corregido
+      const retouchRes = await fetch("/api/ai/retouch-prompt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` },
+        body: JSON.stringify({ prompt: currentPrompt, instruction })
+      });
+      if (!retouchRes.ok) throw new Error("Error al ajustar el prompt con la IA");
+      const retouchData = await retouchRes.json();
+      const newPrompt = retouchData.prompt_english;
+
+      // 2. Generar nueva imagen en n8n
+      const posterPromptSuffix = posterConfig.enabled ? buildPosterPromptSuffix(posterConfig) : "";
+      const finalPrompt = `${newPrompt}. ${posterPromptSuffix}`.trim();
+
+      const webhookUrl = process.env.NEXT_PUBLIC_N8N_PREVIEW_URL || 'https://n8n.santisoft.cl/webhook/img-rrss-auto';
+      const payload: any = {
+        idea: idea.trim(),
+        imageExpectation: imageExpectation.trim(),
+        postText: postText.trim(),
+        businessType,
+        postType,
+      };
+
+      if (index !== null && postType === 'Carrusel') {
+         // Re-generamos solo esa slide pasando los prompts pero modificando el de ese index
+         const newPrompts = [...(pendingPrompts.prompts_english || [])];
+         newPrompts[index] = newPrompt;
+         payload.promptsEnglish = newPrompts.map(p => `${p}. ${posterPromptSuffix}`.trim());
+      } else {
+         payload.promptEnglish = finalPrompt;
+      }
+
+      const res = await fetch("/api/ai/generate-preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) throw new Error("Error en webhook de regeneración");
+      const data = await res.json();
+      
+      const newImageUrl = data.imageUrl || data.image_url || data.output?.imageUrl || data.output?.image_url;
+      const newImageUrls = data.imageUrls || data.image_urls || data.output?.imageUrls || data.output?.image_urls || [];
+
+      if (postType === 'Carrusel' && newImageUrls.length > 0) {
+         const slides: CarouselSlide[] = newImageUrls.map((url: string, i: number) => ({
+           url,
+           copy: previewSlides[i]?.copy || ""
+         }));
+         setPreviewSlides(slides);
+      } else if (newImageUrl) {
+         if (index !== null && previewSlides.length > index) {
+            const newSlides = [...previewSlides];
+            newSlides[index].url = newImageUrl;
+            setPreviewSlides(newSlides);
+         } else {
+            setPreviewSlides([{ url: newImageUrl, copy: previewSlides[0]?.copy || "" }]);
+         }
+      }
+    } catch (e: any) {
+       console.error("Retouch error:", e);
+       setError(e.message || "Hubo un error al retocar la imagen.");
+    } finally {
+       setPreviewLoading(false);
     }
   };
 
@@ -976,28 +1080,15 @@ export default function RrssCreatePost() {
                              userId={user?.uid}
                              onSave={handleSaveEditedTemplate}
                              forceOpenEditor={openEditorParam}
+                             onRetouch={(inst) => handleRetouchImage(null, inst)}
                           />
                         </div>
                     )}
-                    {isReady && !showScheduler ? (
-                       <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
-                          <button type="button" onClick={() => handleSubmit(undefined, true)} disabled={loading} className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-black text-[14px] py-4 rounded-[20px] transition-all flex items-center justify-center gap-2">
-                             {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : '⚡ Publicar Ahora'}
+                    {isReady && (
+                       <div className="max-w-md mx-auto mt-6">
+                          <button type="button" onClick={() => setShowFinalPostModal(true)} disabled={loading} className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 disabled:from-slate-400 disabled:to-slate-400 text-white font-black text-[16px] py-4 rounded-[20px] transition-all shadow-xl shadow-indigo-500/30 flex items-center justify-center gap-2 hover:-translate-y-1">
+                             {loading ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : '🚀 POSTEAR'}
                           </button>
-                          <button type="button" onClick={() => setShowScheduler(true)} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[14px] py-4 rounded-[20px] transition-all flex items-center justify-center gap-2">
-                             📅 Aprobar y Agendar
-                          </button>
-                       </div>
-                    ) : (
-                       <div className="flex gap-3 max-w-md mx-auto">
-                          <button type="button" onClick={() => setShowScheduler(false)} disabled={loading} className="w-1/3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-[14px] py-4 rounded-[20px] transition-all flex items-center justify-center">
-                             Cancelar
-                          </button>
-                          {isReady && (
-                             <button onClick={(e) => handleSubmit(e, false)} disabled={loading} className="w-2/3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-black text-[15px] py-4 px-6 rounded-[20px] transition-all shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 hover:-translate-y-1">
-                                {loading ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : '✅ Confirmar Agendamiento'}
-                             </button>
-                          )}
                        </div>
                     )}
                 </div>
@@ -1041,22 +1132,10 @@ export default function RrssCreatePost() {
                     userId={user?.uid}
                     forceOpenEditor={openEditorParam}
                  />
-                 {isReady && !showScheduler ? (
-                    <div className="grid grid-cols-2 gap-4 mt-6 max-w-md mx-auto">
-                       <button type="button" onClick={() => handleSubmit(undefined, true)} disabled={loading} className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-black text-[14px] py-4 rounded-[20px] transition-all flex items-center justify-center gap-2">
-                          {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : '⚡ Publicar Ahora'}
-                       </button>
-                       <button type="button" onClick={() => setShowScheduler(true)} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[14px] py-4 rounded-[20px] transition-all flex items-center justify-center gap-2">
-                          📅 Aprobar y Agendar
-                       </button>
-                    </div>
-                 ) : (
-                    <div className="flex gap-3 mt-6 max-w-md mx-auto">
-                       <button type="button" onClick={() => setShowScheduler(false)} disabled={loading} className="w-1/3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-[14px] py-4 rounded-[20px] transition-all flex items-center justify-center">
-                          Cancelar
-                       </button>
-                       <button onClick={(e) => handleSubmit(e, false)} disabled={loading} className="w-2/3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-black text-[15px] py-4 px-6 rounded-[20px] transition-all shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 hover:-translate-y-1">
-                          {loading ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : '✅ Confirmar Agendamiento'}
+                 {isReady && (
+                    <div className="max-w-md mx-auto mt-6">
+                       <button type="button" onClick={() => setShowFinalPostModal(true)} disabled={loading} className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 disabled:from-slate-400 disabled:to-slate-400 text-white font-black text-[16px] py-4 rounded-[20px] transition-all shadow-xl shadow-indigo-500/30 flex items-center justify-center gap-2 hover:-translate-y-1">
+                          {loading ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : '🚀 POSTEAR'}
                        </button>
                     </div>
                  )}
@@ -1106,9 +1185,12 @@ export default function RrssCreatePost() {
 
             <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 shadow-inner space-y-4">
               <h4 className="text-xs font-black text-slate-500 uppercase tracking-wider">Esto es lo que diseñaremos para ti:</h4>
-              <p className="text-slate-700 text-sm font-semibold leading-relaxed italic animate-in fade-in duration-500">
-                "{pendingPrompts.prompt_spanish || pendingPrompts.prompts_spanish?.[0] || 'Una imagen creativa alineada a tus indicaciones.'}"
-              </p>
+              <textarea 
+                value={editablePromptSpanish}
+                onChange={(e) => setEditablePromptSpanish(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-xl p-3 text-slate-700 text-sm font-semibold leading-relaxed focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all resize-none shadow-sm"
+                rows={4}
+              />
               
               {postType === 'Carrusel' && pendingPrompts.prompts_spanish && (
                 <div className="pt-2 border-t border-slate-200 space-y-2">
@@ -1414,6 +1496,86 @@ export default function RrssCreatePost() {
            </div>
         </div>
       )}
+
+      {/* FINAL POST MODAL */}
+      {showFinalPostModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
+          <div className="bg-white rounded-[32px] border border-slate-100 shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+            
+            {/* Header */}
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">📱</span>
+                <div>
+                  <h3 className="text-lg font-black text-slate-900 tracking-tight leading-none">Previsualización Final</h3>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Así se verá tu post en redes</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowFinalPostModal(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-200 hover:bg-slate-300 text-slate-600 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Content (Scrollable) */}
+            <div className="p-6 overflow-y-auto flex-1 space-y-6 custom-scrollbar">
+              
+              {/* Imagen/Video */}
+              <div className="w-full aspect-square bg-slate-100 rounded-2xl overflow-hidden border-4 border-white shadow-md">
+                 {(creationMode === 'manual' ? selectedTemplate?.url : previewSlides[0]?.url) ? (
+                    (creationMode === 'manual' && (selectedTemplate?.type === 'video' || selectedTemplate?.url.match(/\.(mp4|mov|webm|quicktime)/i))) ? (
+                       <video src={selectedTemplate?.url} autoPlay loop muted playsInline className="w-full h-full object-cover" />
+                    ) : (
+                       // eslint-disable-next-line @next/next/no-img-element
+                       <img src={creationMode === 'manual' ? selectedTemplate?.url : previewSlides[0]?.url} alt="Final Post" className="w-full h-full object-cover" />
+                    )
+                 ) : (
+                    <div className="w-full h-full flex items-center justify-center text-slate-300 text-4xl">📸</div>
+                 )}
+              </div>
+
+              {/* Copy */}
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 shadow-inner relative">
+                 <div className="absolute -top-3 left-4 bg-white px-2 py-0.5 border border-slate-200 rounded-full text-[9px] font-black uppercase text-indigo-500 tracking-wider">
+                    Copy del Post
+                 </div>
+                 <p className="text-slate-600 text-sm font-medium leading-relaxed whitespace-pre-wrap mt-2">
+                    {creationMode === 'manual' ? manualCaption : postText}
+                 </p>
+              </div>
+
+            </div>
+
+            {/* Footer Buttons */}
+            <div className="p-6 bg-white border-t border-slate-100 flex gap-3">
+               <button 
+                  onClick={() => {
+                     setShowFinalPostModal(false);
+                     setShowScheduler(true);
+                     window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-4 rounded-2xl transition-all text-xs flex items-center justify-center gap-2"
+               >
+                  📅 Agendar Post
+               </button>
+               <button 
+                  onClick={() => {
+                     setShowFinalPostModal(false);
+                     handleSubmit(undefined, true);
+                  }}
+                  disabled={loading}
+                  className="flex-1 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-indigo-500/25 text-xs flex items-center justify-center gap-2"
+               >
+                  {loading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : '⚡ Publicar Ahora'}
+               </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

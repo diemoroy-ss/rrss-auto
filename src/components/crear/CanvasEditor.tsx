@@ -12,6 +12,7 @@ interface CanvasEditorProps {
   userId: string;
   onSave: (finalUrl: string) => void;
   forceOpenEditor?: boolean;
+  onRetouch?: (instruction: string) => void;
 }
 
 interface TextLayer {
@@ -43,6 +44,7 @@ export default function CanvasEditor({
   const [finalImageUrl, setFinalImageUrl] = useState("");
   const [isOverlaying, setIsOverlaying] = useState(false);
   const [error, setError] = useState("");
+  const [retouchInstruction, setRetouchInstruction] = useState("");
 
   const [isDragging, setIsDragging] = useState(false);
 
@@ -234,6 +236,45 @@ export default function CanvasEditor({
            </div>
            <span className="text-white/70 text-xs font-bold shrink-0 group-hover:translate-x-1 transition-transform">Abrir Editor →</span>
          </button>
+       )}
+
+       {/* Retoque de Imagen con IA */}
+       {!showEditor && !finalImageUrl && onRetouch && (
+         <div className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col gap-2">
+           <div className="flex items-center gap-2 mb-1">
+             <span className="text-sm">🪄</span>
+             <p className="text-slate-700 text-xs font-black uppercase tracking-wider">¿Retocar imagen con IA?</p>
+           </div>
+           <p className="text-slate-500 text-[10px] font-medium leading-relaxed">
+             Si la imagen tiene un error o texto extraño, pídele a la IA que lo corrija.
+           </p>
+           <div className="flex items-stretch gap-2 mt-1">
+             <input
+               type="text"
+               value={retouchInstruction}
+               onChange={(e) => setRetouchInstruction(e.target.value)}
+               placeholder="Ej: Quítale el texto del fondo"
+               className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+               onKeyDown={(e) => {
+                 if (e.key === 'Enter' && retouchInstruction.trim()) {
+                   onRetouch(retouchInstruction.trim());
+                   setRetouchInstruction("");
+                 }
+               }}
+             />
+             <button
+               type="button"
+               disabled={!retouchInstruction.trim()}
+               onClick={() => {
+                 onRetouch(retouchInstruction.trim());
+                 setRetouchInstruction("");
+               }}
+               className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-bold px-4 rounded-xl text-[10px] uppercase tracking-wider transition-colors shrink-0"
+             >
+               Regenerar
+             </button>
+           </div>
+         </div>
        )}
 
        <div 
