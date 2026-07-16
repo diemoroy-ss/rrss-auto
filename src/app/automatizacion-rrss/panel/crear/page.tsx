@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { auth, db, storage } from "../../../../lib/firebase";
-import { collection, addDoc, getDoc, doc, query, where, getDocs, orderBy, deleteDoc } from "firebase/firestore";
+import { collection, addDoc, getDoc, doc, query, where, getDocs, orderBy, deleteDoc, limit } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { onAuthStateChanged } from "firebase/auth";
 import { useRouter, useSearchParams } from "next/navigation";
