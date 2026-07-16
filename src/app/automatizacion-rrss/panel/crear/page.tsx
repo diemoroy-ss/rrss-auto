@@ -232,6 +232,34 @@ export default function RrssCreatePost() {
   }, [templateUrlParam, hideAIParam, openEditorParam]);
 
   useEffect(() => {
+    if (selectedTemplate && selectedTemplate.url) {
+      const findPrompt = async () => {
+        try {
+          const qImg = query(
+            collection(db, "generated_images"), 
+            where("url", "==", selectedTemplate.url), 
+            limit(1)
+          );
+          const snapImg = await getDocs(qImg);
+          if (!snapImg.empty) {
+            const data = snapImg.docs[0].data();
+            if (data.prompt) {
+              setPendingPrompts({
+                prompt_english: data.prompt,
+                prompt_spanish: "Imagen seleccionada de la biblioteca"
+              });
+              setEditablePromptSpanish(data.prompt_spanish || "Imagen seleccionada");
+            }
+          }
+        } catch (e) {
+          console.warn("Error finding prompt for selected template:", e);
+        }
+      };
+      findPrompt();
+    }
+  }, [selectedTemplate]);
+
+  useEffect(() => {
     const selectedNets = Object.entries(networks).filter(([_, val]) => val).map(([key]) => key);
     const newConstraints = getCombinedConstraints(selectedNets, socialRules, postType);
     setConstraints(newConstraints);
@@ -591,7 +619,10 @@ export default function RrssCreatePost() {
   };
 
   const handleRetouchImage = async (index: number | null, instruction: string) => {
-    if (!pendingPrompts) return;
+    if (!pendingPrompts) {
+      setError("No se puede retocar esta imagen porque no proviene de una generación con IA o no se encontró su prompt original.");
+      return;
+    }
     setPreviewLoading(true);
     
     try {
