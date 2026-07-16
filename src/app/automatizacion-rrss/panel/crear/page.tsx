@@ -856,7 +856,7 @@ export default function RrssCreatePost() {
         posterConfig: posterConfig.enabled ? posterConfig : null
       };
 
-      const newPostRef = await addDoc(collection(db, "posts"), postPayload);
+      const newPostRef = await addDoc(collection(db, "social_posts"), postPayload);
 
       // Si es publicacion inmediata
       if (publishNow) {
