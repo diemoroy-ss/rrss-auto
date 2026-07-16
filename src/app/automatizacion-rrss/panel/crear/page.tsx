@@ -19,6 +19,7 @@ import StatusModal from "../../../../components/StatusModal";
 import AIOptionsModal from "../../../../components/crear/AIOptionsModal";
 import PosterSection from "../../../../components/crear/PosterSection";
 import GeneratingModal, { type GeneratingStep } from "../../../../components/crear/GeneratingModal";
+import { FaFacebookF, FaInstagram, FaLinkedinIn, FaTiktok } from "react-icons/fa";
 
 export interface UserTemplate { id: string; url: string; type?: 'image' | 'video'; createdAt: Date; }
 
@@ -931,9 +932,32 @@ export default function RrssCreatePost() {
 
   return (
     <div className="max-w-[1400px] mx-auto lg:mx-0">
-      <div className="mb-10">
-        <h1 className="text-4xl font-black text-slate-900 tracking-tight">Nueva Publicación</h1>
-        <p className="text-slate-500 mt-3 font-medium text-lg">Danos una idea y el bot se encarga del diseño (IA) y la publicación.</p>
+      <div className="mb-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-4xl font-black text-slate-900 tracking-tight">Nueva Publicación</h1>
+          <p className="text-slate-500 mt-3 font-medium text-lg">Danos una idea y el bot se encarga del diseño (IA) y la publicación.</p>
+        </div>
+        {(previewSlides.length > 0 || selectedTemplate) && (
+          <button
+            onClick={() => {
+              setIdea("");
+              setImageExpectation("");
+              setPostText("");
+              setManualCaption("");
+              setPreviewSlides([]);
+              setSelectedTemplate(null);
+              setPosterConfig(DEFAULT_POSTER_CONFIG);
+              setCreationMode('ai');
+              // Limpiar params de la url si venía de la biblioteca
+              if (templateUrlParam || hideAIParam || openEditorParam) {
+                router.replace('/automatizacion-rrss/panel/crear');
+              }
+            }}
+            className="px-5 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-black rounded-xl transition-all shadow-sm flex items-center gap-2 text-sm uppercase tracking-wider"
+          >
+            <span className="text-lg">🗑️</span> Limpiar
+          </button>
+        )}
       </div>
 
       {quotaExceeded && (
@@ -947,18 +971,16 @@ export default function RrssCreatePost() {
       )}
 
       {/* 1. SECCIÓN SUPERIOR: CARTEL PUBLICITARIO (PANTALLA COMPLETA) */}
-      {!hideAIParam && (
-        <div className="w-full">
-          <PosterSection
-            config={posterConfig}
-            setConfig={setPosterConfig}
-            profileLogoUrl={activeProfile?.logoUrl}
-            profileName={activeProfile?.name}
-            profilePhone={activeProfile?.phone}
-            profileEmail={activeProfile?.email}
-          />
-        </div>
-      )}
+      <div className="w-full">
+        <PosterSection
+          config={posterConfig}
+          setConfig={setPosterConfig}
+          profileLogoUrl={activeProfile?.logoUrl}
+          profileName={activeProfile?.name}
+          profilePhone={activeProfile?.phone}
+          profileEmail={activeProfile?.email}
+        />
+      </div>
 
       {/* 2. SECCIÓN MEDIA: GRID DE 2 COLUMNAS (PARÁMETROS A LA IZQ Y CONTENIDO A LA DER) */}
       {!openEditorParam && (
@@ -1563,45 +1585,45 @@ export default function RrssCreatePost() {
                             <button
                             type="button"
                             onClick={() => setNetworks({ ...networks, facebook: !networks.facebook })}
-                            className={`w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg font-black transition-all ${
-                                networks.facebook ? 'bg-blue-600 scale-105 shadow-md shadow-blue-500/20' : 'bg-slate-200 opacity-60 hover:opacity-100'
+                            className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-all ${
+                                networks.facebook ? 'bg-[#1877F2] text-white scale-105 shadow-md shadow-blue-500/20' : 'bg-slate-200 text-slate-400 opacity-60 hover:opacity-100 hover:text-slate-600'
                             }`}
                             >
-                            f
+                            <FaFacebookF />
                             </button>
                         )}
                         {hasIg && (
                             <button
                             type="button"
                             onClick={() => setNetworks({ ...networks, instagram: !networks.instagram })}
-                            className={`w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg font-black transition-all ${
-                                networks.instagram ? 'bg-pink-600 scale-105 shadow-md shadow-pink-500/20' : 'bg-slate-200 opacity-60 hover:opacity-100'
+                            className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-all ${
+                                networks.instagram ? 'text-white scale-105 shadow-md shadow-pink-500/20' : 'bg-slate-200 text-slate-400 opacity-60 hover:opacity-100 hover:text-slate-600'
                             }`}
                             style={networks.instagram ? { background: 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)' } : {}}
                             >
-                            📸
+                            <FaInstagram className="text-xl" />
                             </button>
                         )}
                         {hasLi && (
                             <button
                             type="button"
                             onClick={() => setNetworks({ ...networks, linkedin: !networks.linkedin })}
-                            className={`w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg font-black transition-all ${
-                                networks.linkedin ? 'bg-indigo-700 scale-105 shadow-md shadow-indigo-650/20' : 'bg-slate-200 opacity-60 hover:opacity-100'
+                            className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-all ${
+                                networks.linkedin ? 'bg-[#0077b5] text-white scale-105 shadow-md shadow-[#0077b5]/20' : 'bg-slate-200 text-slate-400 opacity-60 hover:opacity-100 hover:text-slate-600'
                             }`}
                             >
-                            in
+                            <FaLinkedinIn />
                             </button>
                         )}
                         {hasTt && (
                             <button
                             type="button"
                             onClick={() => setNetworks({ ...networks, tiktok: !networks.tiktok })}
-                            className={`w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg font-black transition-all ${
-                                networks.tiktok ? 'bg-slate-900 scale-105 shadow-md shadow-black/20' : 'bg-slate-200 opacity-60 hover:opacity-100'
+                            className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-all ${
+                                networks.tiktok ? 'bg-black text-white scale-105 shadow-md shadow-black/20' : 'bg-slate-200 text-slate-400 opacity-60 hover:opacity-100 hover:text-slate-600'
                             }`}
                             >
-                            🎵
+                            <FaTiktok />
                             </button>
                         )}
                         </div>

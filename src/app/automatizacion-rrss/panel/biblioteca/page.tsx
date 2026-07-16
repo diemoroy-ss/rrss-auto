@@ -11,7 +11,7 @@ interface GeneratedImage {
   id: string;
   url: string;
   createdAt: Date;
-  source: "ia" | "editor";
+  source: "ia" | "editor" | "upload";
   type: string;
   prompt?: string;
 }
@@ -21,7 +21,7 @@ export default function BibliotecaPage() {
   const [userPlan, setUserPlan] = useState("free");
   const [images, setImages] = useState<GeneratedImage[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filterSource, setFilterSource] = useState<"all" | "ia" | "editor">("all");
+  const [filterSource, setFilterSource] = useState<"all" | "ia" | "editor" | "upload">("all");
   const [filterType, setFilterType] = useState<"all" | "Post" | "Historia" | "Carrusel" | "Reel">("all");
   const [error, setError] = useState("");
   const { activeProfile } = useProfile();
@@ -64,8 +64,16 @@ export default function BibliotecaPage() {
         orderBy("createdAt", "desc")
       );
       
-      const snap = await getDocs(q);
+      const qUploads = query(
+        collection(db, "user_templates"),
+        where("userId", "==", uid),
+        orderBy("createdAt", "desc")
+      );
+      
+      const [snap, snapUploads] = await Promise.all([getDocs(q), getDocs(qUploads)]);
+      
       const list: GeneratedImage[] = [];
+      
       snap.forEach((d) => {
         const data = d.data();
         list.push({
@@ -77,6 +85,21 @@ export default function BibliotecaPage() {
           prompt: data.prompt || ""
         });
       });
+
+      snapUploads.forEach((d) => {
+        const data = d.data();
+        list.push({
+          id: d.id,
+          url: data.url,
+          createdAt: data.createdAt?.toDate() || new Date(),
+          source: "upload",
+          type: data.type === "video" ? "Reel" : "Post",
+          prompt: "Subida manual"
+        });
+      });
+      
+      list.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      
       setImages(list);
     } catch (e: any) {
       console.error("Error loading generated images:", e);
@@ -86,10 +109,11 @@ export default function BibliotecaPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string, source: string) => {
     if (!confirm("¿Estás seguro de que quieres eliminar esta imagen de tu biblioteca?")) return;
     try {
-      await deleteDoc(doc(db, "generated_images", id));
+      const collectionName = source === "upload" ? "user_templates" : "generated_images";
+      await deleteDoc(doc(db, collectionName, id));
       setImages((prev) => prev.filter((img) => img.id !== id));
     } catch (e) {
       console.error("Error deleting image:", e);
@@ -184,6 +208,12 @@ export default function BibliotecaPage() {
             >
               Editados
             </button>
+            <button
+              onClick={() => setFilterSource("upload")}
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${filterSource === "upload" ? "bg-white text-indigo-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+            >
+              Subidos
+            </button>
           </div>
 
           {/* Filtro Formatos */}
@@ -248,9 +278,11 @@ export default function BibliotecaPage() {
                 <span className={`absolute top-3 left-3 text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border shadow-sm z-10 ${
                   img.source === "ia" 
                     ? "bg-indigo-50 border-indigo-200 text-indigo-700" 
+                    : img.source === "upload"
+                    ? "bg-amber-50 border-amber-200 text-amber-700"
                     : "bg-emerald-50 border-emerald-200 text-emerald-700"
                 }`}>
-                  {img.source === "ia" ? "🤖 IA" : "🎨 Editado"}
+                  {img.source === "ia" ? "🤖 IA" : img.source === "upload" ? "📥 Subido" : "🎨 Editado"}
                 </span>
 
                 {/* Badge de formato */}
@@ -284,7 +316,7 @@ export default function BibliotecaPage() {
                       📥
                     </button>
                     <button 
-                      onClick={() => handleDelete(img.id)}
+                      onClick={() => handleDelete(img.id, img.source)}
                       className="p-1.5 hover:bg-rose-50 rounded-lg text-xs text-rose-550"
                       title="Eliminar de la biblioteca"
                     >
@@ -295,13 +327,13 @@ export default function BibliotecaPage() {
 
                 <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100/50">
                   <Link
-                    href={`/automatizacion-rrss/panel/crear?templateUrl=${encodeURIComponent(img.url)}&hideAI=true`}
+                    href={`/automatizacion-rrss/panel/crear?templateUrl=${encodeURIComponent(img.url)}`}
                     className="py-2 px-2 text-center rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-black text-[9px] uppercase tracking-wider transition-all"
                   >
                     🚀 Postear
                   </Link>
                   <Link
-                    href={`/automatizacion-rrss/panel/crear?templateUrl=${encodeURIComponent(img.url)}&openEditor=true&hideAI=true`}
+                    href={`/automatizacion-rrss/panel/crear?templateUrl=${encodeURIComponent(img.url)}&openEditor=true`}
                     className="py-2 px-2 text-center rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-[9px] uppercase tracking-wider transition-all"
                   >
                     ✏️ Editar

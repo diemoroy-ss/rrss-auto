@@ -127,11 +127,10 @@ export default function PostConfigForm({
   if (renderSection === 'parameters') {
     return (
       <div className="premium-card space-y-6">
-        {!hideAI && (
-          <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Modo de Creación</label>
-            <div className="grid grid-cols-2 gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
-              <button
+        <div>
+          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Modo de Creación</label>
+          <div className="grid grid-cols-2 gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
+            <button
                 type="button"
                 onClick={() => setCreationMode('ai')}
                 className={`py-3 px-4 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 ${
@@ -155,7 +154,6 @@ export default function PostConfigForm({
               </button>
             </div>
           </div>
-        )}
 
         {/* REDES DE DESTINO */}
         <div>
@@ -394,8 +392,8 @@ export default function PostConfigForm({
             {/* GALERÍA MANUAL */}
             <div className="pt-2 border-t border-slate-100">
               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Galería</label>
-              <div className="grid grid-cols-4 gap-2">
-                <label className="flex flex-col items-center justify-center bg-white border border-dashed border-indigo-200 hover:bg-indigo-50 rounded-xl cursor-pointer aspect-square text-indigo-500 shadow-inner">
+              <div className="grid grid-cols-5 gap-2">
+                <label className="flex flex-col items-center justify-center bg-white border border-dashed border-indigo-200 hover:bg-indigo-50 rounded-xl cursor-pointer aspect-square text-indigo-500 shadow-inner transition-colors">
                   <input 
                     type="file" 
                     accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm" 
@@ -407,8 +405,16 @@ export default function PostConfigForm({
                     className="hidden" 
                   />
                   <span className="text-xl">➕</span>
-                  <span className="text-[9px] font-bold mt-1">SUBIR</span>
+                  <span className="text-[9px] font-bold mt-1 text-center leading-tight">SUBIR</span>
                 </label>
+
+                <Link
+                  href="/automatizacion-rrss/panel/biblioteca"
+                  className="flex flex-col items-center justify-center bg-white border border-dashed border-indigo-200 hover:bg-indigo-50 rounded-xl aspect-square text-indigo-500 shadow-inner transition-colors"
+                >
+                  <span className="text-xl">🖼️</span>
+                  <span className="text-[9px] font-bold mt-1 text-center leading-tight">DESDE<br/>BIBLIOTECA</span>
+                </Link>
 
                 {loadingTemplates ? (
                    <div className="col-span-3 flex items-center justify-center text-xs text-slate-400 font-bold">Cargando galería...</div>
