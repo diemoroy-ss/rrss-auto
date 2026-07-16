@@ -168,45 +168,45 @@ export default function PostConfigForm({
                 <button
                   type="button"
                   onClick={() => setNetworks({ ...networks, facebook: !networks.facebook })}
-                  className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white text-xl font-black transition-all ${
-                    networks.facebook ? 'bg-blue-600 scale-105 shadow-md shadow-blue-500/20' : 'bg-slate-200 opacity-60 hover:opacity-100'
+                  className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all ${
+                    networks.facebook ? 'bg-[#1877F2] text-white scale-105 shadow-md shadow-blue-500/20' : 'bg-slate-200 text-slate-400 opacity-60 hover:opacity-100 hover:text-slate-650'
                   }`}
                 >
-                  f
+                  <FaFacebookF />
                 </button>
               )}
               {hasIg && (
                 <button
                   type="button"
                   onClick={() => setNetworks({ ...networks, instagram: !networks.instagram })}
-                  className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white text-xl font-black transition-all ${
-                    networks.instagram ? 'bg-pink-600 scale-105 shadow-md shadow-pink-500/20' : 'bg-slate-200 opacity-60 hover:opacity-100'
+                  className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all ${
+                    networks.instagram ? 'text-white scale-105 shadow-md shadow-pink-500/20' : 'bg-slate-200 text-slate-400 opacity-60 hover:opacity-100 hover:text-slate-650'
                   }`}
                   style={networks.instagram ? { background: 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)' } : {}}
                 >
-                  📸
+                  <FaInstagram className="text-2xl" />
                 </button>
               )}
               {hasLi && (
                 <button
                   type="button"
                   onClick={() => setNetworks({ ...networks, linkedin: !networks.linkedin })}
-                  className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white text-xl font-black transition-all ${
-                    networks.linkedin ? 'bg-indigo-700 scale-105 shadow-md shadow-indigo-650/20' : 'bg-slate-200 opacity-60 hover:opacity-100'
+                  className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all ${
+                    networks.linkedin ? 'bg-[#0077b5] text-white scale-105 shadow-md shadow-[#0077b5]/20' : 'bg-slate-200 text-slate-400 opacity-60 hover:opacity-100 hover:text-slate-650'
                   }`}
                 >
-                  in
+                  <FaLinkedinIn />
                 </button>
               )}
               {hasTt && (
                 <button
                   type="button"
                   onClick={() => setNetworks({ ...networks, tiktok: !networks.tiktok })}
-                  className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white text-xl font-black transition-all ${
-                    networks.tiktok ? 'bg-slate-900 scale-105 shadow-md shadow-black/20' : 'bg-slate-200 opacity-60 hover:opacity-100'
+                  className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all ${
+                    networks.tiktok ? 'bg-black text-white scale-105 shadow-md shadow-black/20' : 'bg-slate-200 text-slate-400 opacity-60 hover:opacity-100 hover:text-slate-650'
                   }`}
                 >
-                  🎵
+                  <FaTiktok />
                 </button>
               )}
             </div>
