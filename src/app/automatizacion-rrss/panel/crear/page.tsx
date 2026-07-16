@@ -1546,6 +1546,69 @@ export default function RrssCreatePost() {
                  )}
               </div>
 
+              {/* Redes Sociales */}
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 shadow-inner relative flex flex-col">
+                 <div className="absolute -top-3 left-4 bg-white px-2 py-0.5 border border-slate-200 rounded-full text-[9px] font-black uppercase text-indigo-500 tracking-wider">
+                    Redes de Destino
+                 </div>
+                 
+                 <div className="mt-2">
+                    {needsConnection ? (
+                        <div className="p-3 bg-amber-50 border border-amber-250/60 rounded-xl text-xs text-amber-800 font-semibold leading-relaxed">
+                        ⚠️ No tienes cuentas vinculadas. Ve a la sección de <Link href="/automatizacion-rrss/panel/cuentas" className="underline font-bold text-amber-900 hover:text-amber-950">Conexiones</Link> para enlazar tus redes.
+                        </div>
+                    ) : (
+                        <div className="flex gap-3 justify-center">
+                        {hasFb && (
+                            <button
+                            type="button"
+                            onClick={() => setNetworks({ ...networks, facebook: !networks.facebook })}
+                            className={`w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg font-black transition-all ${
+                                networks.facebook ? 'bg-blue-600 scale-105 shadow-md shadow-blue-500/20' : 'bg-slate-200 opacity-60 hover:opacity-100'
+                            }`}
+                            >
+                            f
+                            </button>
+                        )}
+                        {hasIg && (
+                            <button
+                            type="button"
+                            onClick={() => setNetworks({ ...networks, instagram: !networks.instagram })}
+                            className={`w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg font-black transition-all ${
+                                networks.instagram ? 'bg-pink-600 scale-105 shadow-md shadow-pink-500/20' : 'bg-slate-200 opacity-60 hover:opacity-100'
+                            }`}
+                            style={networks.instagram ? { background: 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)' } : {}}
+                            >
+                            📸
+                            </button>
+                        )}
+                        {hasLi && (
+                            <button
+                            type="button"
+                            onClick={() => setNetworks({ ...networks, linkedin: !networks.linkedin })}
+                            className={`w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg font-black transition-all ${
+                                networks.linkedin ? 'bg-indigo-700 scale-105 shadow-md shadow-indigo-650/20' : 'bg-slate-200 opacity-60 hover:opacity-100'
+                            }`}
+                            >
+                            in
+                            </button>
+                        )}
+                        {hasTt && (
+                            <button
+                            type="button"
+                            onClick={() => setNetworks({ ...networks, tiktok: !networks.tiktok })}
+                            className={`w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg font-black transition-all ${
+                                networks.tiktok ? 'bg-slate-900 scale-105 shadow-md shadow-black/20' : 'bg-slate-200 opacity-60 hover:opacity-100'
+                            }`}
+                            >
+                            🎵
+                            </button>
+                        )}
+                        </div>
+                    )}
+                 </div>
+              </div>
+
               {/* Copy */}
               <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 shadow-inner relative flex flex-col">
                  <div className="absolute -top-3 left-4 bg-white px-2 py-0.5 border border-slate-200 rounded-full text-[9px] font-black uppercase text-indigo-500 tracking-wider">
