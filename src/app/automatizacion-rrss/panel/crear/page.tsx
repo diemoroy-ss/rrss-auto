@@ -865,7 +865,7 @@ export default function RrssCreatePost() {
       if (publishNow) {
           try {
               const idToken = await auth.currentUser?.getIdToken();
-              const publishRes = await fetch("/api/social/publish-now", {
+              const publishRes = await fetch("/api/publish-now", {
                   method: "POST",
                   headers: {
                       "Content-Type": "application/json",
