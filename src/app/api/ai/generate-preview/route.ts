@@ -129,14 +129,10 @@ function buildEnrichedGeminiPrompt(params: {
         }
 
         if (posterConfig.includePrice && posterConfig.priceText) {
-            // Combinamos el priceText del cartel con el concepto visual extraído del usuario
-            const fullPromoMessage = visualConcept
-                ? `${posterConfig.priceText} — ${visualConcept}`
-                : posterConfig.priceText;
-            posterParts.push(`MAIN PROMOTIONAL HEADLINE of the poster (render this text large and prominently): "${fullPromoMessage}".`);
-        } else if (visualConcept) {
-            // Si no hay precio configurado pero sí hay una expectativa del usuario, úsala como headline
-            posterParts.push(`MAIN HEADLINE of the poster (render this text prominently in the design): "${visualConcept}".`);
+            // Renderizamos solo el texto del precio/promoción especificado,
+            // sin concatenar todo el texto descriptivo del cliente, para evitar
+            // que la IA escriba todo el prompt en el diseño.
+            posterParts.push(`MAIN PROMOTIONAL HEADLINE of the poster (render this text large and prominently): "${posterConfig.priceText}".`);
         }
 
         if (posterConfig.includeSlogan && posterConfig.sloganText) {
