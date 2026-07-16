@@ -19,7 +19,7 @@ import StatusModal from "../../../../components/StatusModal";
 import AIOptionsModal from "../../../../components/crear/AIOptionsModal";
 import PosterSection from "../../../../components/crear/PosterSection";
 import GeneratingModal, { type GeneratingStep } from "../../../../components/crear/GeneratingModal";
-import { FaFacebookF, FaInstagram, FaLinkedinIn, FaTiktok } from "react-icons/fa";
+import { FaFacebookF, FaInstagram, FaLinkedinIn, FaTiktok, FaGoogle } from "react-icons/fa";
 
 export interface UserTemplate { id: string; url: string; type?: 'image' | 'video'; createdAt: Date; }
 
@@ -33,6 +33,7 @@ export default function RrssCreatePost() {
   const [hasIg, setHasIg] = useState(false);
   const [hasLi, setHasLi] = useState(false);
   const [hasTt, setHasTt] = useState(false);
+  const [hasGbp, setHasGbp] = useState(false);
   const [loadingInitial, setLoadingInitial] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -56,7 +57,7 @@ export default function RrssCreatePost() {
   const [businessType, setBusinessType] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
-  const [networks, setNetworks] = useState({ facebook: true, instagram: true, linkedin: true, tiktok: true });
+  const [networks, setNetworks] = useState({ facebook: true, instagram: true, linkedin: false, tiktok: true, googleBusiness: true });
 
   // Wizard state
   const [previewSlides, setPreviewSlides] = useState<CarouselSlide[]>([]);
@@ -137,15 +138,17 @@ export default function RrssCreatePost() {
             const igOK = !!activeProfile?.instagramToken_enc || (isDefault && !!data.instagramToken_enc);
             const liOK = !!activeProfile?.linkedinUserToken_enc || !!activeProfile?.linkedinToken_enc || (isDefault && (!!data.linkedinUserToken_enc || !!data.linkedinToken_enc));
             const ttOK = !!activeProfile?.tiktokToken_enc || (isDefault && !!data.tiktokToken_enc);
+            const gbpOK = !!activeProfile?.googleBusinessToken_enc || (isDefault && !!data.googleBusinessToken_enc);
             
             setHasFb(fbOK);
             setHasIg(igOK);
             setHasLi(liOK);
             setHasTt(ttOK);
+            setHasGbp(gbpOK);
             setBusinessType(activeProfile?.rubro || (isDefault ? data.rubro : "") || "");
             setUserLogo(activeProfile?.logoUrl || (isDefault ? data.logoUrl : "") || "");
             
-            setNetworks({ facebook: fbOK, instagram: igOK, linkedin: liOK, tiktok: ttOK });
+            setNetworks({ facebook: fbOK, instagram: igOK, linkedin: false, tiktok: ttOK, googleBusiness: gbpOK });
             
             const plan = data.plan || "free";
             setUserPlan(plan);
@@ -998,7 +1001,7 @@ export default function RrssCreatePost() {
               date={date} setDate={setDate}
               time={time} setTime={setTime}
               networks={networks} setNetworks={setNetworks}
-              hasFb={hasFb} hasIg={hasIg} hasLi={hasLi} hasTt={hasTt}
+              hasFb={hasFb} hasIg={hasIg} hasLi={hasLi} hasTt={hasTt} hasGbp={hasGbp}
               needsConnection={needsConnection}
               handleImproveWithAI={handleImproveWithAI}
               handleGeneratePreview={handleGeneratePreview}
@@ -1042,7 +1045,7 @@ export default function RrssCreatePost() {
             date={date} setDate={setDate}
             time={time} setTime={setTime}
             networks={networks} setNetworks={setNetworks}
-            hasFb={hasFb} hasIg={hasIg} hasLi={hasLi} hasTt={hasTt}
+            hasFb={hasFb} hasIg={hasIg} hasLi={hasLi} hasTt={hasTt} hasGbp={hasGbp}
             needsConnection={needsConnection}
             handleImproveWithAI={handleImproveWithAI}
             handleGeneratePreview={handleGeneratePreview}
@@ -1604,6 +1607,7 @@ export default function RrssCreatePost() {
                             <FaInstagram className="text-xl" />
                             </button>
                         )}
+                        {/* LinkedIn - Deshabilitado temporalmente hasta pasar verificación legal
                         {hasLi && (
                             <button
                             type="button"
@@ -1615,6 +1619,7 @@ export default function RrssCreatePost() {
                             <FaLinkedinIn />
                             </button>
                         )}
+                        */}
                         {hasTt && (
                             <button
                             type="button"
@@ -1624,6 +1629,18 @@ export default function RrssCreatePost() {
                             }`}
                             >
                             <FaTiktok />
+                            </button>
+                        )}
+                        {hasGbp && (
+                            <button
+                            type="button"
+                            onClick={() => setNetworks({ ...networks, googleBusiness: !networks.googleBusiness })}
+                            className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-all ${
+                                networks.googleBusiness ? 'bg-[#EA4335] text-white scale-105 shadow-md shadow-[#EA4335]/20' : 'bg-slate-200 text-slate-400 opacity-60 hover:opacity-100 hover:text-slate-600'
+                            }`}
+                            title="Google Business Profile"
+                            >
+                            <FaGoogle />
                             </button>
                         )}
                         </div>

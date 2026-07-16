@@ -5,7 +5,7 @@ import VoiceMic from "../VoiceMic";
 import Link from "next/link";
 import { type PosterConfig } from "../../types/poster";
 import { UserTemplate } from "../../app/automatizacion-rrss/panel/crear/page";
-import { FaFacebookF, FaInstagram, FaLinkedinIn, FaTiktok } from "react-icons/fa";
+import { FaFacebookF, FaInstagram, FaLinkedinIn, FaTiktok, FaGoogle } from "react-icons/fa";
 
 interface PostConfigFormProps {
   // AI states
@@ -41,8 +41,8 @@ interface PostConfigFormProps {
   setDate: (val: string) => void;
   time: string;
   setTime: (val: string) => void;
-  networks: { facebook: boolean; instagram: boolean; linkedin: boolean; tiktok: boolean };
-  setNetworks: React.Dispatch<React.SetStateAction<{ facebook: boolean; instagram: boolean; linkedin: boolean; tiktok: boolean }>>;
+  networks: { facebook: boolean; instagram: boolean; linkedin?: boolean; tiktok: boolean; googleBusiness: boolean };
+  setNetworks: React.Dispatch<React.SetStateAction<{ facebook: boolean; instagram: boolean; linkedin?: boolean; tiktok: boolean; googleBusiness: boolean }>>;
 
   // Poster configuration (For references/logo defaults)
   posterConfig?: PosterConfig;
@@ -57,6 +57,7 @@ interface PostConfigFormProps {
   hasIg: boolean;
   hasLi: boolean;
   hasTt: boolean;
+  hasGbp?: boolean;
   needsConnection: boolean;
   handleImproveWithAI: () => void;
   handleGeneratePreview: () => void;
@@ -102,7 +103,7 @@ export default function PostConfigForm({
   date, setDate,
   time, setTime,
   networks, setNetworks,
-  hasFb, hasIg, hasLi, hasTt,
+  hasFb, hasIg, hasLi, hasTt, hasGbp,
   needsConnection,
   handleImproveWithAI,
   handleGeneratePreview,
@@ -161,7 +162,7 @@ export default function PostConfigForm({
           <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Redes de Destino</label>
           {needsConnection ? (
             <div className="p-4 bg-amber-50 border border-amber-250/60 rounded-2xl text-xs text-amber-800 font-semibold leading-relaxed">
-              ⚠️ No tienes cuentas vinculadas. Ve a la sección de <Link href="/automatizacion-rrss/panel/cuentas" className="underline font-bold text-amber-900 hover:text-amber-950">Conexiones</Link> para enlazar tus redes.
+              ⚠️ No tienes cuentas vinculadas. Ve a la sección de <Link href="/automatizacion-rrss/panel/configuracion" className="underline font-bold text-amber-900 hover:text-amber-950">Conexiones</Link> para enlazar tus redes.
             </div>
           ) : (
             <div className="flex gap-3">
@@ -188,6 +189,7 @@ export default function PostConfigForm({
                   <FaInstagram className="text-2xl" />
                 </button>
               )}
+              {/* LinkedIn - Deshabilitado temporalmente hasta pasar verificación legal
               {hasLi && (
                 <button
                   type="button"
@@ -199,6 +201,7 @@ export default function PostConfigForm({
                   <FaLinkedinIn />
                 </button>
               )}
+              */}
               {hasTt && (
                 <button
                   type="button"
@@ -208,6 +211,18 @@ export default function PostConfigForm({
                   }`}
                 >
                   <FaTiktok />
+                </button>
+              )}
+              {hasGbp && (
+                <button
+                  type="button"
+                  onClick={() => setNetworks({ ...networks, googleBusiness: !networks.googleBusiness })}
+                  className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all ${
+                    networks.googleBusiness ? 'bg-[#EA4335] text-white scale-105 shadow-md shadow-[#EA4335]/20' : 'bg-slate-200 text-slate-400 opacity-60 hover:opacity-100 hover:text-slate-650'
+                  }`}
+                  title="Google Business Profile"
+                >
+                  <FaGoogle />
                 </button>
               )}
             </div>

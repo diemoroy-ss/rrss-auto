@@ -225,6 +225,7 @@ function ConfigContent() {
   const [igStatus, setIgStatus] = useState(false);
   const [liStatus, setLiStatus] = useState(false);
   const [ttStatus, setTtStatus] = useState(false);
+  const [gbpStatus, setGbpStatus] = useState(false);
 
   // Connection Modals State
   const [showMetaModal, setShowMetaModal] = useState(false);
@@ -257,6 +258,7 @@ function ConfigContent() {
       setIgStatus(!!activeProfile.instagramToken_enc);
       setLiStatus(!!activeProfile.linkedinUserToken_enc);
       setTtStatus(!!activeProfile.tiktokToken_enc);
+      setGbpStatus(!!activeProfile.googleBusinessToken_enc);
 
       // Only set these if they are different to avoid unnecessary re-renders
       if (activeProfile.name !== brandName) setBrandName(activeProfile.name || "");
@@ -426,6 +428,45 @@ function ConfigContent() {
     } catch (e: any) {
         setErrorMsg(e.message);
     }
+  };
+
+  const handleConnectGBP = async () => {
+    if (!user || !activeProfile) return;
+    try {
+        const idToken = await user.getIdToken();
+        const origin = window.location.origin;
+        const res = await fetch(`/api/auth/google-business?profileId=${activeProfile.id}&origin=${encodeURIComponent(origin)}`, {
+            headers: { "Authorization": `Bearer ${idToken}` }
+        });
+        const data = await res.json();
+        if (data.url) {
+            window.location.href = data.url;
+        } else {
+            throw new Error(data.error || "No se pudo generar la URL de Google Business Profile");
+        }
+    } catch (e: any) {
+        setErrorMsg(e.message);
+    }
+  };
+
+  const handleDisconnectGBP = async () => {
+    showModal("confirm", "Desconectar Google Business Profile", "¿Seguro que quieres desconectar Google Business Profile?", async () => {
+        setModal(prev => ({ ...prev, isOpen: false }));
+        setSaving(true);
+        try {
+            const idToken = await user.getIdToken();
+            await fetch("/api/social-auth", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ idToken, uid: user.uid, profileId: activeProfile.id, setAccounts: { googleBusiness: { disconnect: true } } })
+            });
+            await loadProfiles();
+            showModal("success", "Desconectado", "Google Business Profile desconectado.");
+        } catch (e) { 
+            showModal("error", "Error", "No se pudo desconectar Google Business Profile.");
+        }
+        setSaving(false);
+    });
   };
 
   const handleConnectTikTok = async () => {
@@ -719,7 +760,8 @@ function ConfigContent() {
                    )}
                 </div>
 
-                {/* LinkedIn */}
+                {/* LinkedIn - Comentado temporalmente por verificación legal */}
+                {/* 
                 <div className="p-5 border-2 border-slate-100 rounded-2xl bg-slate-50 flex flex-col justify-between">
                    <div>
                        <div className="flex items-center gap-3 mb-2">
@@ -757,6 +799,48 @@ function ConfigContent() {
                    ) : (
                        <button type="button" onClick={handleConnectLinkedIn} className="w-full bg-[#0077b5] hover:bg-[#005582] text-white font-bold py-2.5 rounded-xl shadow-md text-sm transition-colors mt-auto">
                            Conectar con LinkedIn
+                       </button>
+                   )}
+                </div>
+                */}
+
+                {/* Google Business Profile */}
+                <div className="p-5 border-2 border-slate-100 rounded-2xl bg-slate-50 flex flex-col justify-between">
+                   <div>
+                       <div className="flex items-center gap-3 mb-2">
+                           <span className="w-8 h-8 bg-amber-100 text-amber-600 rounded-lg flex items-center justify-center font-bold">
+                              G
+                           </span>
+                           <h5 className="font-black text-slate-900 font-sans">Google Business Profile</h5>
+                       </div>
+                       <p className="text-xs text-slate-500 font-medium mb-4">Publica actualizaciones y fotos directamente en tu ficha de Google Maps.</p>
+                   </div>
+                   
+                   {gbpStatus ? (
+                       <div className="flex flex-col h-full justify-end">
+                           <div className="flex items-center justify-between mb-3">
+                               <div className="flex items-center gap-2">
+                                   <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                                   <span className="text-xs font-bold text-emerald-600">Conectado</span>
+                               </div>
+                           </div>
+                           {activeProfile?.googleBusinessName && (
+                               <div className="mb-3 p-3 bg-white border border-slate-100 rounded-xl space-y-1.5 shadow-sm text-left">
+                                   <div className="text-[11px] font-bold text-slate-700 flex items-center gap-2">
+                                       <span className="text-amber-500 shrink-0">📍</span>
+                                       <span className="text-slate-400 font-medium tracking-wide">Local:</span>
+                                       <span className="text-slate-700 font-bold truncate">{activeProfile.googleBusinessName}</span>
+                                   </div>
+                                </div>
+                           )}
+                           <div className="flex gap-2">
+                               <button type="button" onClick={handleConnectGBP} className="flex-1 bg-white border-2 border-slate-200 hover:border-amber-500 text-slate-700 text-[10px] sm:text-xs font-bold py-2 rounded-xl transition-colors truncate">Actualizar</button>
+                               <button type="button" onClick={handleDisconnectGBP} className="px-3 bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold rounded-xl text-xs transition-colors" title="Desconectar">X</button>
+                           </div>
+                       </div>
+                   ) : (
+                       <button type="button" onClick={handleConnectGBP} className="w-full bg-[#EA4335] hover:bg-[#d63022] text-white font-bold py-2.5 rounded-xl shadow-md text-sm transition-colors mt-auto">
+                           Conectar con Google
                        </button>
                    )}
                 </div>
