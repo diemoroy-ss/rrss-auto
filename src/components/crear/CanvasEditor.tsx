@@ -240,7 +240,7 @@ export default function CanvasEditor({
        )}
 
        {/* Retoque de Imagen con IA */}
-       {!showEditor && !finalImageUrl && onRetouch && (
+       {!finalImageUrl && onRetouch && (
          <div className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col gap-2">
            <div className="flex items-center gap-2 mb-1">
              <span className="text-sm">🪄</span>

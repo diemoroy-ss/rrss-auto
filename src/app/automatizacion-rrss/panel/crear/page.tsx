@@ -1551,10 +1551,22 @@ export default function RrssCreatePost() {
                  <div className="absolute -top-3 left-4 bg-white px-2 py-0.5 border border-slate-200 rounded-full text-[9px] font-black uppercase text-indigo-500 tracking-wider">
                     Copy del Post
                  </div>
+                 
+                 <div className="flex justify-end mt-1 mb-2">
+                    <button
+                        type="button"
+                        onClick={handleImproveWithAI}
+                        disabled={improveLoading}
+                        className="text-[10px] font-black text-violet-600 hover:text-violet-700 bg-violet-50 hover:bg-violet-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 uppercase tracking-wider shadow-sm"
+                    >
+                        {improveLoading ? <div className="w-3 h-3 border-2 border-violet-600 border-t-transparent rounded-full animate-spin" /> : '✨ Mejorar con IA'}
+                    </button>
+                 </div>
+
                  <textarea
                     value={creationMode === 'manual' ? manualCaption : postText}
                     onChange={(e) => creationMode === 'manual' ? setManualCaption(e.target.value) : setPostText(e.target.value)}
-                    className="w-full bg-transparent text-slate-600 text-sm font-medium leading-relaxed resize-none outline-none mt-2 custom-scrollbar min-h-[120px]"
+                    className="w-full bg-transparent text-slate-600 text-sm font-medium leading-relaxed resize-none outline-none custom-scrollbar min-h-[120px]"
                     placeholder="Escribe el texto de tu publicación aquí..."
                  />
               </div>
