@@ -30,7 +30,8 @@ export default function CanvasEditor({
   initialLogoUrl,
   userId,
   onSave,
-  forceOpenEditor = false
+  forceOpenEditor = false,
+  onRetouch
 }: CanvasEditorProps) {
   const [showEditor, setShowEditor] = useState(forceOpenEditor);
   const [activeLayerIndex, setActiveLayerIndex] = useState(0);

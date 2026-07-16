@@ -218,8 +218,14 @@ export default function RrssCreatePost() {
       };
       setSelectedTemplate(tempTmpl);
       setPreviewSlides([{ url: decodedUrl, copy: "" }]);
+      
+      // Si venimos de la biblioteca y seleccionamos "Postear" (hideAI=true pero no openEditor)
+      if (hideAIParam && !openEditorParam) {
+          // Un pequeño delay para asegurar que el estado esté listo
+          setTimeout(() => setShowFinalPostModal(true), 200);
+      }
     }
-  }, [templateUrlParam]);
+  }, [templateUrlParam, hideAIParam, openEditorParam]);
 
   useEffect(() => {
     const selectedNets = Object.entries(networks).filter(([_, val]) => val).map(([key]) => key);
@@ -941,50 +947,53 @@ export default function RrssCreatePost() {
       )}
 
       {/* 1. SECCIÓN SUPERIOR: CARTEL PUBLICITARIO (PANTALLA COMPLETA) */}
-      <div className="w-full">
-        <PosterSection
-          config={posterConfig}
-          setConfig={setPosterConfig}
-          profileLogoUrl={activeProfile?.logoUrl}
-          profileName={activeProfile?.name}
-          profilePhone={activeProfile?.phone}
-          profileEmail={activeProfile?.email}
-        />
-      </div>
+      {!hideAIParam && (
+        <div className="w-full">
+          <PosterSection
+            config={posterConfig}
+            setConfig={setPosterConfig}
+            profileLogoUrl={activeProfile?.logoUrl}
+            profileName={activeProfile?.name}
+            profilePhone={activeProfile?.phone}
+            profileEmail={activeProfile?.email}
+          />
+        </div>
+      )}
 
       {/* 2. SECCIÓN MEDIA: GRID DE 2 COLUMNAS (PARÁMETROS A LA IZQ Y CONTENIDO A LA DER) */}
-      <div className="grid lg:grid-cols-12 gap-8 items-start mb-10">
-        {/* Columna Izquierda: Parámetros del post */}
-        <div className="lg:col-span-6 space-y-6 w-full">
-          <PostConfigForm 
-            idea={idea} setIdea={setIdea}
-            imageExpectation={imageExpectation} setImageExpectation={setImageExpectation}
-            postText={postText} setPostText={setPostText}
-            postType={postType} setPostType={setPostType}
-            hideSubmit={true}
-            carouselCount={carouselCount} setCarouselCount={setCarouselCount}
-            businessType={businessType} setBusinessType={setBusinessType}
-            date={date} setDate={setDate}
-            time={time} setTime={setTime}
-            networks={networks} setNetworks={setNetworks}
-            hasFb={hasFb} hasIg={hasIg} hasLi={hasLi} hasTt={hasTt}
-            needsConnection={needsConnection}
-            handleImproveWithAI={handleImproveWithAI}
-            handleGeneratePreview={handleGeneratePreview}
-            handleSubmit={handleSubmit}
-            improveLoading={improveLoading}
-            previewLoading={previewLoading || promptLoading}
-            loading={loading}
-            error={error}
-            isAdmin={isAdmin}
-            allowVideo={videoLimit > 0 || isAdmin}
-            creationMode={creationMode}
-            setCreationMode={setCreationMode}
-            manualFiles={manualFiles}
-            setManualFiles={setManualFiles}
-            manualCaption={manualCaption}
-            setManualCaption={setManualCaption}
-            manualTemplates={manualTemplates}
+      {!openEditorParam && (
+        <div className="grid lg:grid-cols-12 gap-8 items-start mb-10">
+          {/* Columna Izquierda: Parámetros del post */}
+          <div className="lg:col-span-6 space-y-6 w-full">
+            <PostConfigForm 
+              idea={idea} setIdea={setIdea}
+              imageExpectation={imageExpectation} setImageExpectation={setImageExpectation}
+              postText={postText} setPostText={setPostText}
+              postType={postType} setPostType={setPostType}
+              hideSubmit={true}
+              carouselCount={carouselCount} setCarouselCount={setCarouselCount}
+              businessType={businessType} setBusinessType={setBusinessType}
+              date={date} setDate={setDate}
+              time={time} setTime={setTime}
+              networks={networks} setNetworks={setNetworks}
+              hasFb={hasFb} hasIg={hasIg} hasLi={hasLi} hasTt={hasTt}
+              needsConnection={needsConnection}
+              handleImproveWithAI={handleImproveWithAI}
+              handleGeneratePreview={handleGeneratePreview}
+              handleSubmit={handleSubmit}
+              improveLoading={improveLoading}
+              previewLoading={previewLoading || promptLoading}
+              loading={loading}
+              error={error}
+              isAdmin={isAdmin}
+              allowVideo={videoLimit > 0 || isAdmin}
+              creationMode={creationMode}
+              setCreationMode={setCreationMode}
+              manualFiles={manualFiles}
+              setManualFiles={setManualFiles}
+              manualCaption={manualCaption}
+              setManualCaption={setManualCaption}
+              manualTemplates={manualTemplates}
             selectedTemplate={selectedTemplate}
             setSelectedTemplate={setSelectedTemplate}
             loadingTemplates={loadingTemplates}
@@ -1043,6 +1052,7 @@ export default function RrssCreatePost() {
           />
         </div>
       </div>
+      )}
 
       {/* 3. SECCIÓN INFERIOR: ÁREA DE VISUALIZACIÓN A PANTALLA COMPLETA ABAJO */}
       <div className="w-full border-t border-slate-200/80 pt-8 mt-10">
@@ -1537,13 +1547,16 @@ export default function RrssCreatePost() {
               </div>
 
               {/* Copy */}
-              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 shadow-inner relative">
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 shadow-inner relative flex flex-col">
                  <div className="absolute -top-3 left-4 bg-white px-2 py-0.5 border border-slate-200 rounded-full text-[9px] font-black uppercase text-indigo-500 tracking-wider">
                     Copy del Post
                  </div>
-                 <p className="text-slate-600 text-sm font-medium leading-relaxed whitespace-pre-wrap mt-2">
-                    {creationMode === 'manual' ? manualCaption : postText}
-                 </p>
+                 <textarea
+                    value={creationMode === 'manual' ? manualCaption : postText}
+                    onChange={(e) => creationMode === 'manual' ? setManualCaption(e.target.value) : setPostText(e.target.value)}
+                    className="w-full bg-transparent text-slate-600 text-sm font-medium leading-relaxed resize-none outline-none mt-2 custom-scrollbar min-h-[120px]"
+                    placeholder="Escribe el texto de tu publicación aquí..."
+                 />
               </div>
 
             </div>
