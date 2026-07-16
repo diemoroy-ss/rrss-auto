@@ -176,7 +176,7 @@ function buildEnrichedGeminiPrompt(params: {
         `- Professional graphic design and composition.`,
         `- Composition optimized for social media ${formatDescription}.`,
         isPoster 
-            ? `- Integrate the promotional text, values, and branding seamlessly as a professional graphic designer would.\n- Ensure high contrast and absolute legibility of all written details.\n- The final image should look like a complete, ready-to-post advertising banner with text.`
+            ? `- Integrate the promotional text, values, and branding seamlessly as a professional graphic designer would.\n- Ensure high contrast and absolute legibility of all written details.\n- The final image should look like a complete, ready-to-post advertising banner with text.\n- VERY IMPORTANT: ALL TEXT WRITTEN IN THE IMAGE MUST BE STRICTLY IN SPANISH (ESPAÑOL). DO NOT USE ENGLISH WORDS FOR ANY PROMOTIONAL TEXT OR HEADLINES.`
             : `- NO text, letters, words, or typography rendered inside the image.\n- Background should complement the subject without overwhelming it.`,
         `- Lighting should be dramatic and cinematic, highlighting the main subject.`,
         `- Color grading: vibrant yet professional, suitable for advertising.`,

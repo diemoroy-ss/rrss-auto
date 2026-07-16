@@ -691,6 +691,9 @@ export default function RrssCreatePost() {
             setPreviewSlides(newSlides);
          } else {
             setPreviewSlides([{ url: newImageUrl, copy: previewSlides[0]?.copy || "" }]);
+            if (creationMode === 'manual' && selectedTemplate) {
+               setSelectedTemplate({ ...selectedTemplate, url: newImageUrl });
+            }
          }
       }
     } catch (e: any) {
@@ -951,7 +954,7 @@ export default function RrssCreatePost() {
     }
   };
 
-  const hasText = creationMode === 'ai' ? idea.trim().length > 0 : manualCaption.trim().length > 0;
+  const hasText = creationMode === 'ai' ? (idea.trim().length > 0 || postText.trim().length > 0) : manualCaption.trim().length > 0;
   const isReel = postType === 'Reel';
   const hasReelVideo = isReel 
     ? (creationMode === 'ai' 
