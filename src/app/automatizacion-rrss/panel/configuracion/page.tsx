@@ -281,6 +281,7 @@ function ConfigContent() {
     const metaParam = searchParams.get('meta');
     const linkedinParam = searchParams.get('linkedin');
     const tiktokParam = searchParams.get('tiktok');
+    const gbpParam = searchParams.get('google-business');
     let shouldReplace = false;
 
     if (metaParam === 'success' && activeProfile.metaUserToken_enc && !activeProfile.facebookToken_enc) {
@@ -297,8 +298,13 @@ function ConfigContent() {
         setMessage({ type: 'success', text: "¡TikTok conectado correctamente!" });
         shouldReplace = true;
     }
+
+    if (gbpParam === 'success') {
+        setMessage({ type: 'success', text: "¡Google Business Profile conectado correctamente!" });
+        shouldReplace = true;
+    }
     
-    if (metaParam === 'error' || linkedinParam === 'error' || tiktokParam === 'error') {
+    if (metaParam === 'error' || linkedinParam === 'error' || tiktokParam === 'error' || gbpParam === 'error') {
         setErrorMsg("Hubo un error al conectar la red social.");
         shouldReplace = true;
     }

@@ -175,6 +175,19 @@ export async function POST(req: Request) {
                         newP.tiktokTokenExpiresAt = null;
                     }
                 }
+
+                if (setAccounts.googleBusiness) {
+                    const { disconnect } = setAccounts.googleBusiness;
+                    if (disconnect === true) {
+                        newP.googleBusinessToken_enc = "";
+                        newP.iv_gb = "";
+                        newP.tag_gb = "";
+                        newP.googleBusinessName = "";
+                        newP.googleBusinessRefreshToken_enc = "";
+                        newP.iv_gb_refresh = "";
+                        newP.tag_gb_refresh = "";
+                    }
+                }
                 
                 return newP;
             }
