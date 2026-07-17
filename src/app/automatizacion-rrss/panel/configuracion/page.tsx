@@ -179,7 +179,7 @@ function LinkedInSelectionModal({ isOpen, onClose, onSelect, profileId }: any) {
 
 
 function ConfigContent() {
-  const { activeProfile, loadProfiles } = useProfile();
+  const { activeProfile, loadProfiles, isBusiness, planConfig } = useProfile();
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -296,6 +296,11 @@ function ConfigContent() {
     
     if (tiktokParam === 'success') {
         setMessage({ type: 'success', text: "¡TikTok conectado correctamente!" });
+        shouldReplace = true;
+    }
+
+    if (tiktokParam === 'locked') {
+        setMessage({ type: 'error', text: "🔒 Tu cuenta ya está vinculada a otro perfil de TikTok. Para gestionar múltiples cuentas, actualiza al Plan Business." });
         shouldReplace = true;
     }
 
@@ -643,6 +648,41 @@ function ConfigContent() {
         }`}>
           <span>{message.type === 'error' ? '⚠️' : '✅'}</span>
           {message.text}
+        </div>
+      )}
+
+      {/* Account Lock Banner: shown to non-business users who have locked accounts */}
+      {!isBusiness && activeProfile?.accountLocks && Object.keys((activeProfile as any).accountLocks).length > 0 && (
+        <div className="mb-8 p-5 bg-amber-50 border border-amber-200 rounded-[24px] animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-start gap-4">
+            <span className="text-2xl mt-0.5">🔒</span>
+            <div className="flex-1">
+              <h4 className="font-black text-amber-800 text-sm mb-1">Cuentas vinculadas a este perfil</h4>
+              <p className="text-amber-700 text-xs font-medium leading-relaxed">
+                Tu plan actual permite <strong>una sola cuenta por red social</strong>. Las siguientes cuentas quedaron vinculadas porque ya publicaste con ellas:
+              </p>
+              <div className="flex flex-wrap gap-2 mt-3">
+                {(activeProfile as any).accountLocks?.facebook && (
+                  <span className="bg-blue-100 text-blue-700 text-[10px] font-black px-3 py-1 rounded-full">
+                    📘 Facebook: {activeProfile.facebookPageName || (activeProfile as any).accountLocks.facebook}
+                  </span>
+                )}
+                {(activeProfile as any).accountLocks?.instagram && (
+                  <span className="bg-pink-100 text-pink-700 text-[10px] font-black px-3 py-1 rounded-full">
+                    📸 Instagram: @{activeProfile.instagramUsername || (activeProfile as any).accountLocks.instagram}
+                  </span>
+                )}
+                {(activeProfile as any).accountLocks?.tiktok && (
+                  <span className="bg-slate-100 text-slate-700 text-[10px] font-black px-3 py-1 rounded-full">
+                    🎵 TikTok: {(activeProfile as any).accountLocks.tiktok}
+                  </span>
+                )}
+              </div>
+              <p className="text-amber-700 text-xs font-medium mt-3">
+                ¿Necesitas gestionar <strong>múltiples negocios</strong>? Pasa al <strong className="text-amber-900">Plan Business</strong> y tendrás hasta 5 marcas independientes, cada una con sus propias redes sociales.
+              </p>
+            </div>
+          </div>
         </div>
       )}
 

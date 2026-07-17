@@ -71,7 +71,41 @@ export async function POST(req: Request) {
 
         const userData = userDoc.data() || {};
         let profiles = userData.profiles || [];
-        
+
+        // --- ACCOUNT LOCK VALIDATION (non-business plans) ---
+        // Fetch plan config
+        const plansDoc = await adminDb.collection('system_config').doc('plans').get();
+        const allPlans = plansDoc.exists ? plansDoc.data() as any : {};
+        const userPlan = userData.plan || 'free';
+        const planInfo = allPlans[userPlan] || {};
+        const isBusinessPlan = !!planInfo.multiAccount;
+
+        if (!isBusinessPlan) {
+            const targetProfile = profiles.find((p: any) => p.id === profileId);
+            if (targetProfile) {
+                const locks = targetProfile.accountLocks || {};
+
+                // Facebook lock check
+                if (setAccounts.facebook?.pageId && setAccounts.facebook.pageId !== "" && locks.facebook && locks.facebook !== setAccounts.facebook.pageId) {
+                    return NextResponse.json({
+                        error: `🔒 Tu cuenta ya está vinculada a la página "${targetProfile.facebookPageName || locks.facebook}". Para gestionar múltiples cuentas de Facebook, actualiza al Plan Business.`,
+                        errorCode: 'ACCOUNT_LOCKED',
+                        upgradeRequired: true
+                    }, { status: 403 });
+                }
+
+                // Instagram lock check
+                if (setAccounts.instagram?.accountId && setAccounts.instagram.accountId !== "" && locks.instagram && locks.instagram !== setAccounts.instagram.accountId) {
+                    return NextResponse.json({
+                        error: `🔒 Tu cuenta ya está vinculada al perfil de Instagram "@${targetProfile.instagramUsername || locks.instagram}". Para gestionar múltiples cuentas, actualiza al Plan Business.`,
+                        errorCode: 'ACCOUNT_LOCKED',
+                        upgradeRequired: true
+                    }, { status: 403 });
+                }
+            }
+        }
+        // ---------------------------------------------------
+
         let profileFound = false;
         
         profiles = profiles.map((p: any) => {

@@ -91,6 +91,24 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: "Profile not found" }, { status: 404 });
         }
 
+        // --- ACCOUNT LOCK VALIDATION ---
+        const plansDoc = await adminDb.collection('system_config').doc('plans').get();
+        const allPlans = plansDoc.exists ? plansDoc.data() as any : {};
+        const userPlan = userDoc.data()?.plan || 'free';
+        const planInfo = allPlans[userPlan] || {};
+        const isBusinessPlan = !!planInfo.multiAccount;
+
+        if (!isBusinessPlan) {
+            const targetProfile = profiles[index];
+            const locks = targetProfile.accountLocks || {};
+            const newTiktokUsername = username;
+            // Lock is based on username. If locked and different → block.
+            if (locks.tiktok && locks.tiktok !== newTiktokUsername) {
+                return NextResponse.redirect(`${origin}/automatizacion-rrss/panel/configuracion?tiktok=locked`);
+            }
+        }
+        // --------------------------------
+
         const encToken = encrypt(accessToken);
         const tiktokTokenExpiresAt = expiresIn ? Date.now() + expiresIn * 1000 : null;
 

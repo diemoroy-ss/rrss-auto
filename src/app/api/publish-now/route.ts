@@ -880,6 +880,44 @@ async function publishInBackground(postId: string, post: any, creds: {
             }
         }
 
+        // --- SEAL ACCOUNT LOCKS ON SUCCESSFUL PUBLISH (non-business plans) ---
+        if (successNetworks.length > 0) {
+            try {
+                const userRef = adminDb.collection('users').doc(creds.uid);
+                const freshUserDoc = await userRef.get();
+                const freshData = freshUserDoc.data() || {};
+                const plansDoc = await adminDb.collection('system_config').doc('plans').get();
+                const allPlans = plansDoc.exists ? plansDoc.data() as any : {};
+                const planInfo = allPlans[freshData.plan || 'free'] || {};
+                const isBusinessPlan = !!planInfo.multiAccount;
+
+                if (!isBusinessPlan) {
+                    const freshProfiles = freshData.profiles || [];
+                    const pIdx = freshProfiles.findIndex((p: any) => p.id === (creds.profileId || 'default'));
+                    if (pIdx !== -1) {
+                        const profile = freshProfiles[pIdx];
+                        const locks = profile.accountLocks || {};
+                        // Seal each network that published successfully
+                        if (successNetworks.includes('facebook') && profile.facebookPageId && !locks.facebook) {
+                            locks.facebook = profile.facebookPageId;
+                        }
+                        if (successNetworks.includes('instagram') && profile.instagramAccountId && !locks.instagram) {
+                            locks.instagram = profile.instagramAccountId;
+                        }
+                        if (successNetworks.includes('tiktok') && profile.tiktokUsername && !locks.tiktok) {
+                            locks.tiktok = profile.tiktokUsername;
+                        }
+                        freshProfiles[pIdx] = { ...profile, accountLocks: locks };
+                        await userRef.update({ profiles: freshProfiles });
+                        console.log(`[Account Lock] Sealed accounts for profile ${creds.profileId} of user ${creds.uid}`);
+                    }
+                }
+            } catch (lockErr: any) {
+                console.error('[Account Lock] Failed to seal account locks:', lockErr.message);
+            }
+        }
+        // -----------------------------------------------------------------------
+
         // --- UPDATE STATUS AT END ---
         if (successNetworks.length > 0) {
             await postRef.update({

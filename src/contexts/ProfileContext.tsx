@@ -60,6 +60,12 @@ export type BusinessProfile = {
   logoUrl?: string;
   email?: string;
   phone?: string;
+  // Account lock: records which social account IDs have been used in a publish (non-business plan protection)
+  accountLocks?: {
+    facebook?: string;   // facebookPageId
+    instagram?: string;  // instagramAccountId
+    tiktok?: string;     // tiktokUsername
+  };
 };
 
 type ProfileContextType = {
