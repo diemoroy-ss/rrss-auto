@@ -888,7 +888,8 @@ export default function RrssCreatePost() {
         postType,
         carouselCount: postType === 'Carrusel' ? carouselCount : 1,
         networks,
-        mediaUrls: finalMediaUrls,
+        imageUrls: finalMediaUrls,
+        imageUrl: finalMediaUrls[0] || "",
         status: publishNow ? "publishing" : "confirmed",
         scheduledFor: scheduledDate,
         createdAt: new Date(),
@@ -1740,9 +1741,8 @@ export default function RrssCreatePost() {
                   📅 Agendar Post
                </button>
                <button 
-                  onClick={() => {
-                     setShowFinalPostModal(false);
-                     handleSubmit(undefined, true);
+                  onClick={async () => {
+                     await handleSubmit(undefined, true);
                   }}
                   disabled={loading}
                   className="flex-1 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-indigo-500/25 text-xs flex items-center justify-center gap-2"
