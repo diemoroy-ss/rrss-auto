@@ -232,11 +232,12 @@ export default function RrssCreatePost() {
   }, [templateUrlParam, hideAIParam, openEditorParam]);
 
   useEffect(() => {
-    if (selectedTemplate && selectedTemplate.url) {
+    if (selectedTemplate && selectedTemplate.url && user?.uid) {
       const findPrompt = async () => {
         try {
           const qImg = query(
             collection(db, "generated_images"), 
+            where("userId", "==", user.uid),
             where("url", "==", selectedTemplate.url), 
             limit(1)
           );
@@ -257,7 +258,7 @@ export default function RrssCreatePost() {
       };
       findPrompt();
     }
-  }, [selectedTemplate]);
+  }, [selectedTemplate, user?.uid]);
 
   useEffect(() => {
     const selectedNets = Object.entries(networks).filter(([_, val]) => val).map(([key]) => key);
