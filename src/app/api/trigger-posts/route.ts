@@ -138,8 +138,8 @@ export async function GET(req: Request) {
                 postId,
                 userId: uid,
                 profileId: profileId || 'default',
-                copy: postData.copy || postData.idea || '',
-                title: (postData.copy || postData.idea || '').slice(0, 150), // TikTok title max 150 chars
+                copy: postData.postText || postData.copy || postData.idea || '',
+                title: (postData.postText || postData.copy || postData.idea || '').slice(0, 150), // TikTok title max 150 chars
                 type: postData.type || 'Post',
                 networks: postData.networks || [],
                 imageUrl: postData.imageUrl || '',

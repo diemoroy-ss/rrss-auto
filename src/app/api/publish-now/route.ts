@@ -206,7 +206,7 @@ async function publishInBackground(postId: string, post: any, creds: {
     let errorLog = '';
     let infoLog = '';
 
-    const caption = post.copy || post.text || post.idea || '';
+    const caption = post.postText || post.copy || post.text || post.idea || '';
     const imageUrl = post.imageUrl;
 
     try {

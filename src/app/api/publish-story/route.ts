@@ -179,7 +179,7 @@ export async function POST(req: Request) {
                     createdAt: new Date(),
                     publishedAt: new Date(),
                     publishedIn: successNetworks,
-                    copy: post.copy || '',
+                    copy: post.postText || post.copy || '',
                     imageUrl: imageUrl,
                     generatedBy: post.generatedBy || 'manual',
                     isStoryShare: true,
