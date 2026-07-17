@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { adminDb } from '../../../lib/firebase-admin';
-import { decrypt } from '../../../lib/encryption';
+import { decrypt, encrypt } from '../../../lib/encryption';
 import { getQuotaUsageAdmin, getPlanLimitAdmin } from '../../../lib/quota-admin';
 
 // Helper function to fetch Meta Graph API with retry mechanism to handle transient errors
@@ -839,7 +839,6 @@ async function publishInBackground(postId: string, post: any, creds: {
                         const newAccessToken = refreshData.access_token;
                         
                         // Update in DB (fire-and-forget for speed)
-                        const { encrypt } = require('../../../../lib/encryption');
                         const encNewToken = encrypt(newAccessToken);
                         
                         const userRef = adminDb.collection('users').doc(creds.uid);
