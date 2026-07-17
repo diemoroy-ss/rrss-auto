@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { runProfessionalStrategyWorkflow } from '../../../../lib/langgraph-strategy';
+import { adminDb } from '../../../../lib/firebase-admin';
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,12 +23,45 @@ export async function POST(req: NextRequest) {
     if (platforms.length === 0) platforms.push("Instagram", "Facebook");
 
     console.log(`[STRATEGY] Starting Professional LangGraph strategy for user ${userId}`);
+
+    // Fetch user post history with metrics
+    let history = "No hay historial previo.";
+    try {
+        const postsSnap = await adminDb.collection('social_posts')
+            .where('userId', '==', userId)
+            .where('status', '==', 'published')
+            .orderBy('timestamp', 'desc')
+            .limit(15)
+            .get();
+
+        if (!postsSnap.empty) {
+            const pastPosts = postsSnap.docs.map(doc => {
+                const p = doc.data();
+                return {
+                    idea: p.idea || "",
+                    copy: p.copy || p.text || "",
+                    formato: p.type || "Desconocido",
+                    redes: p.networks ? p.networks.join(',') : "",
+                    likes: p.likes || 0,
+                    comentarios: p.comments || 0,
+                    compartidos: p.shares || 0,
+                    alcance: p.reach || 0,
+                    impresiones: p.impressions || 0,
+                    fecha: p.publishedAt ? p.publishedAt.toDate().toISOString() : "Desconocida"
+                };
+            });
+            history = JSON.stringify(pastPosts);
+        }
+    } catch (e: any) {
+        console.warn("[STRATEGY] Error fetching user history:", e.message);
+    }
     
     const result = await runProfessionalStrategyWorkflow(
         businessType || "General",
         goalName || goal,
         expectations || "",
-        platforms
+        platforms,
+        history
     );
 
     console.log("[STRATEGY] LangGraph Strategy generated successfully.");

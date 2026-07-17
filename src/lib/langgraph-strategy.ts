@@ -7,9 +7,13 @@ export const StrategyAnnotation = Annotation.Root({
   goal: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "Ventas" }),
   expectations: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "" }),
   connectedPlatforms: Annotation<string[]>({ reducer: (a, b) => b ?? a, default: () => ["Instagram", "Facebook"] }),
+  history: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "Sin historial." }),
   analysis: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "" }),
   rawStrategy: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "" }),
   strategy: Annotation<any[]>({ reducer: (a, b) => b ?? a, default: () => [] }),
+  revisionCount: Annotation<number>({ reducer: (a, b) => b ?? a, default: () => 0 }),
+  feedback: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "" }),
+  approved: Annotation<boolean>({ reducer: (a, b) => b ?? a, default: () => false }),
 });
 
 export type StrategyState = typeof StrategyAnnotation.State;
@@ -47,6 +51,11 @@ async function planningNode(state: StrategyState): Promise<Partial<StrategyState
 
 ANÁLISIS ESTRATÉGICO:
 ${state.analysis}
+
+HISTORIAL DE POSTS Y RENDIMIENTO (Analiza esto para replicar qué formatos/ideas tuvieron más likes/alcance, y descarta lo que no sirvió):
+${state.history}
+
+${state.feedback ? `\n¡ATENCIÓN! El Agente Revisor rechazó tu última estrategia por el siguiente motivo:\n"${state.feedback}"\nCORRIGE Y MEJORA ESTA VERSIÓN PARA QUE SEA APROBADA.\n` : ""}
 
 REGLAS DE NEGOCIO 2026:
 - Si la plataforma incluye 'TikTok', el formato DEBE ser 'Reel'.
@@ -108,16 +117,76 @@ DEVUELVE ÚNICAMENTE EL OBJETO JSON LIMPIO. SIN MARKDOWN.`;
   return { strategy };
 }
 
+// 4.5. Nodo 4: QA Revisor (Nuevo)
+async function evaluationNode(state: StrategyState): Promise<Partial<StrategyState>> {
+  console.log(`[LangGraph Strategy] evaluationNode - Revisión número ${state.revisionCount + 1}`);
+
+  const prompt = `Eres un Revisor de Estrategia de Contenidos QA Senior.
+Tu trabajo es revisar la estrategia de posts propuesta y verificar si cumple con las expectativas del cliente y si tiene sentido con el rendimiento histórico.
+
+EXPECTATIVAS DEL CLIENTE:
+${state.expectations || "No hay expectativas específicas. (Se espera alta calidad)."}
+
+RENDIMIENTO HISTÓRICO:
+${state.history}
+
+ESTRATEGIA PROPUESTA:
+${JSON.stringify(state.strategy, null, 2)}
+
+INSTRUCCIONES:
+1. Evalúa críticamente si la estrategia es coherente, si respeta lo que pidió el cliente, y si innova en base al historial (replicando lo que tuvo métricas altas y evitando lo que tuvo bajas).
+2. Si la estrategia es muy buena, apruébala.
+3. Si le falta precisión, no cumple la expectativa o repite mucho el historial, recházala y da retroalimentación detallada para que el Planner la mejore.
+
+DEVUELVE ÚNICAMENTE UN JSON válido con este formato:
+{
+  "approved": boolean,
+  "feedback": "razón de rechazo o de aprobación"
+}
+SIN MARKDOWN.`;
+
+  const reviewText = await generateFreeText(prompt);
+  let approved = false;
+  let feedback = "No se pudo validar la estrategia.";
+  try {
+      const clean = reviewText.replace(/```json/g, '').replace(/```/g, '').trim();
+      const obj = JSON.parse(clean);
+      approved = !!obj.approved;
+      feedback = obj.feedback || "";
+  } catch (e) {
+      console.error("[LangGraph Strategy] Error parsing review JSON:", e);
+      approved = true; // Fallback to true if AI hallucinates
+  }
+
+  return { approved, feedback, revisionCount: state.revisionCount + 1 };
+}
+
 // 5. Construcción del Grafo
 export function createStrategyWorkflow() {
   return new StateGraph(StrategyAnnotation)
     .addNode("analyze", analysisNode)
     .addNode("plan", planningNode)
     .addNode("validate", validationNode)
+    .addNode("review", evaluationNode)
     .addEdge(START, "analyze")
     .addEdge("analyze", "plan")
     .addEdge("plan", "validate")
-    .addEdge("validate", END)
+    .addEdge("validate", "review")
+    .addConditionalEdges(
+       "review",
+       (state: StrategyState) => {
+          if (state.approved || state.revisionCount >= 3) {
+             console.log(`[LangGraph Strategy] Review completado. Aprobado: ${state.approved}. Ciclo: ${state.revisionCount}`);
+             return "end";
+          }
+          console.log(`[LangGraph Strategy] Review fallido. Motivo: ${state.feedback}. Volviendo al plan...`);
+          return "loop";
+       },
+       {
+          end: END,
+          loop: "plan"
+       }
+    )
     .compile();
 }
 
@@ -128,7 +197,8 @@ export async function runProfessionalStrategyWorkflow(
     businessType: string, 
     goal: string, 
     expectations: string, 
-    connectedPlatforms: string[]
+    connectedPlatforms: string[],
+    history: string
 ) {
   const app = createStrategyWorkflow();
   const initialState = {
@@ -136,9 +206,13 @@ export async function runProfessionalStrategyWorkflow(
     goal,
     expectations,
     connectedPlatforms,
+    history,
     analysis: "",
     rawStrategy: "",
-    strategy: []
+    strategy: [],
+    revisionCount: 0,
+    feedback: "",
+    approved: false
   };
 
   try {
