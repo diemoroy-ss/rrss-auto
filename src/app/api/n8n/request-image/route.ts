@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { db } from '../../../../lib/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { getVertexModel } from "../../../../lib/vertexai";
+import { getAiGenerationUsageAdmin, getAiPlanLimitAdmin, logAiGenerationAdmin } from "../../../../lib/quota-admin";
+import { adminDb } from "../../../../lib/firebase-admin";
 
 export async function POST(req: Request) {
     try {
@@ -24,7 +26,33 @@ export async function POST(req: Request) {
         }
 
         const postData = postSnap.data();
-        const { idea, type, carouselCount } = postData;
+        const { idea, type, carouselCount, userId, profileId } = postData;
+
+        // --- AI QUOTA ENFORCEMENT ---
+        let requiredType: 'image' | 'video' = type === 'Reel' ? 'video' : 'image';
+        let requiredCount = type === 'Carrusel' ? (carouselCount || 1) : 1;
+        
+        try {
+            const userDoc = await adminDb.collection("users").doc(userId).get();
+            const userData = userDoc.data() || {};
+            const plan = userData.plan || 'free';
+            
+            const limit = await getAiPlanLimitAdmin(plan, requiredType);
+            const usage = await getAiGenerationUsageAdmin(userId, requiredType);
+            
+            if (usage + requiredCount > limit) {
+                console.warn(`[Quota] User ${userId} exceeded AI ${requiredType} limit (${usage}/${limit})`);
+                return NextResponse.json({ error: `Has superado tu límite mensual de generación de ${requiredType === 'video' ? 'videos' : 'imágenes'} IA para tu plan.` }, { status: 403 });
+            }
+            
+            // Log the generations upfront (or log them per image)
+            for (let i = 0; i < requiredCount; i++) {
+                await logAiGenerationAdmin(userId, profileId || 'default', requiredType, { postId });
+            }
+        } catch (qErr) {
+            console.error("Error checking AI quota:", qErr);
+        }
+        // -----------------------------
 
         let prompts: string[] = [idea];
 

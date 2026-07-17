@@ -14,6 +14,8 @@ type PlanConfig = {
     price: number;
     postsLimit: number;
     videosLimit: number;
+    aiImagesLimit: number;
+    aiVideosLimit: number;
     multiAccount: boolean;
     maxAccounts: number;
     isPopular: boolean;
@@ -154,6 +156,8 @@ export default function AdminPlansPage() {
                 price: 0,
                 postsLimit: 10,
                 videosLimit: 0,
+                aiImagesLimit: 10,
+                aiVideosLimit: 0,
                 multiAccount: false,
                 maxAccounts: 1,
                 isPopular: false,
@@ -349,6 +353,18 @@ export default function AdminPlansPage() {
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Videos/Mes</label>
                                         <input type="number" value={activePlan.videosLimit}
                                             onChange={(e) => handleUpdatePlanValue(selectedPlanId, 'videosLimit', parseInt(e.target.value) || 0)}
+                                            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 font-black focus:border-indigo-400 outline-none transition-all" />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Imágenes IA/Mes</label>
+                                        <input type="number" value={activePlan.aiImagesLimit || 0}
+                                            onChange={(e) => handleUpdatePlanValue(selectedPlanId, 'aiImagesLimit', parseInt(e.target.value) || 0)}
+                                            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 font-black focus:border-indigo-400 outline-none transition-all" />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Videos IA/Mes</label>
+                                        <input type="number" value={activePlan.aiVideosLimit || 0}
+                                            onChange={(e) => handleUpdatePlanValue(selectedPlanId, 'aiVideosLimit', parseInt(e.target.value) || 0)}
                                             className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 font-black focus:border-indigo-400 outline-none transition-all" />
                                     </div>
                                 </div>
