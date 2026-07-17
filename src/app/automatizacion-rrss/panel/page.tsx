@@ -1474,9 +1474,12 @@ export default function RrssDashboard() {
                 <div className="w-full flex flex-col sm:flex-row gap-4">
                   {selectedPost.status === 'published' ? (
                     <>
-                      <div className="flex-1 bg-emerald-50 border border-emerald-200 text-emerald-800 px-6 py-4 rounded-2xl md:rounded-[28px] font-bold text-xs flex items-center justify-center gap-2 shadow-sm">
-                        <span>✨</span> Publicación de Feed Lista y Activa
-                      </div>
+                      <button
+                        onClick={() => setShowFinalPostModal(true)}
+                        className="flex-1 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 px-6 py-4 rounded-2xl md:rounded-[28px] font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-colors cursor-pointer"
+                      >
+                        <span>✨</span> Publicación Lista (Click para Republicar)
+                      </button>
                       
                       {((selectedPost.publishedIn && selectedPost.publishedIn.includes('instagram')) || (!selectedPost.publishedIn && (Array.isArray(selectedPost.networks) ? selectedPost.networks : Object.entries(selectedPost.networks || {}).filter(([_, v]) => v).map(([k]) => k)).includes('instagram'))) ? (
                         <button
