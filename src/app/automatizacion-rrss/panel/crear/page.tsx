@@ -134,11 +134,12 @@ export default function RrssCreatePost() {
           if (d.exists()) {
             const data = d.data();
             const isDefault = activeProfile?.id === 'default';
-            const fbOK = !!activeProfile?.facebookToken_enc || (isDefault && !!data.facebookToken_enc);
-            const igOK = !!activeProfile?.instagramToken_enc || (isDefault && !!data.instagramToken_enc);
-            const liOK = !!activeProfile?.linkedinUserToken_enc || !!activeProfile?.linkedinToken_enc || (isDefault && (!!data.linkedinUserToken_enc || !!data.linkedinToken_enc));
-            const ttOK = !!activeProfile?.tiktokToken_enc || (isDefault && !!data.tiktokToken_enc);
-            const gbpOK = !!activeProfile?.googleBusinessToken_enc || (isDefault && !!data.googleBusinessToken_enc);
+            const isValidToken = (t: any) => !!t && t !== "null" && t !== "undefined" && t !== "";
+            const fbOK = isValidToken(activeProfile?.facebookToken_enc) || (isDefault && isValidToken(data.facebookToken_enc));
+            const igOK = isValidToken(activeProfile?.instagramToken_enc) || (isDefault && isValidToken(data.instagramToken_enc));
+            const liOK = isValidToken(activeProfile?.linkedinUserToken_enc) || isValidToken(activeProfile?.linkedinToken_enc) || (isDefault && (isValidToken(data.linkedinUserToken_enc) || isValidToken(data.linkedinToken_enc)));
+            const ttOK = isValidToken(activeProfile?.tiktokToken_enc) || (isDefault && isValidToken(data.tiktokToken_enc));
+            const gbpOK = isValidToken(activeProfile?.googleBusinessToken_enc) || (isDefault && isValidToken(data.googleBusinessToken_enc));
             
             setHasFb(fbOK);
             setHasIg(igOK);
@@ -833,7 +834,7 @@ export default function RrssCreatePost() {
     if (e) e.preventDefault();
     setError("");
 
-    const hasTextText = creationMode === 'ai' ? idea.trim().length > 0 : manualCaption.trim().length > 0;
+    const hasTextText = creationMode === 'ai' ? postText.trim().length > 0 : manualCaption.trim().length > 0;
     const isReel = postType === 'Reel';
     const hasReelVideo = isReel 
       ? (creationMode === 'ai' 
@@ -843,11 +844,23 @@ export default function RrssCreatePost() {
     const hasMedia = (creationMode === 'manual' && !!selectedTemplate) || (creationMode === 'ai' && previewSlides.length > 0 && hasReelVideo);
 
     if (!hasTextText) {
-      setError("Por favor escribe tu idea o descripción.");
+      setStatusModal({
+        isOpen: true,
+        type: "error",
+        title: "Falta contenido",
+        message: "Por favor escribe tu texto de la publicación.",
+        onConfirm: () => setStatusModal(prev => ({ ...prev, isOpen: false }))
+      });
       return;
     }
     if (!hasMedia) {
-      setError("Previsualiza tu post con IA o selecciona un archivo de la galería antes de agendar.");
+      setStatusModal({
+        isOpen: true,
+        type: "error",
+        title: "Falta multimedia",
+        message: "Previsualiza tu post con IA o selecciona un archivo de la galería antes de agendar.",
+        onConfirm: () => setStatusModal(prev => ({ ...prev, isOpen: false }))
+      });
       return;
     }
 
@@ -856,7 +869,13 @@ export default function RrssCreatePost() {
 
     // Warnings block
     if (isOverLimit) {
-      setError(`Tu publicación supera el límite de caracteres sugerido para las redes seleccionadas.`);
+      setStatusModal({
+        isOpen: true,
+        type: "error",
+        title: "Límite excedido",
+        message: `Tu publicación supera el límite de caracteres sugerido para las redes seleccionadas.`,
+        onConfirm: () => setStatusModal(prev => ({ ...prev, isOpen: false }))
+      });
       return;
     }
 
