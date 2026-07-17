@@ -1290,10 +1290,11 @@ export default function RrssDashboard() {
                     <div className="flex flex-col items-start sm:items-end gap-2">
                         <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Publicar en:</span>
                         <div className="flex flex-wrap gap-2 justify-start sm:justify-end">
-                            {['facebook', 'instagram', 'linkedin', 'tiktok'].filter(net => {
+                            {['facebook', 'instagram', 'googleBusiness', 'linkedin', 'tiktok'].filter(net => {
                                 const safeNets = Array.isArray(selectedPost.networks) ? selectedPost.networks : Object.entries(selectedPost.networks || {}).filter(([_, v]) => v).map(([k]) => k);
                                 if (net === 'linkedin') return !!activeProfile?.linkedinUserToken_enc || !!activeProfile?.linkedinToken_enc || safeNets.includes('linkedin');
                                 if (net === 'tiktok') return !!activeProfile?.tiktokToken_enc || safeNets.includes('tiktok');
+                                if (net === 'googleBusiness') return !!activeProfile?.googleBusinessToken_enc || safeNets.includes('googleBusiness');
                                 return true;
                             }).map(net => {
                                 const safeNets = Array.isArray(selectedPost.networks) ? selectedPost.networks : Object.entries(selectedPost.networks || {}).filter(([_, v]) => v).map(([k]) => k);
@@ -1308,8 +1309,10 @@ export default function RrssDashboard() {
                                             : 'bg-slate-50 border-slate-100 text-slate-400 opacity-60'
                                         }`}
                                     >
-                                        <span className={`${!isActive && 'grayscale'}`}>{net === 'facebook' ? '🔵' : net === 'instagram' ? '🟣' : net === 'linkedin' ? '💼' : '🎵'}</span>
-                                        <span className="text-[10px] font-black uppercase tracking-widest">{net}</span>
+                                        <span className={`${!isActive ? 'grayscale opacity-60' : ''} w-4 h-4 flex items-center justify-center`}>
+                                            <NetworkIcon network={net} postId={selectedPost.id} />
+                                        </span>
+                                        <span className="text-[10px] font-black uppercase tracking-widest">{net === 'googleBusiness' ? 'Google' : net}</span>
                                     </button>
                                 );
                             })}
@@ -1416,7 +1419,7 @@ export default function RrssDashboard() {
                    <div>
                      <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-3 ml-2">Copy / Pie de Foto para Redes</h3>
                      <div className="bg-indigo-50/30 p-6 rounded-[28px] border-2 border-indigo-100 text-slate-800 font-medium whitespace-pre-wrap text-[15px] leading-relaxed relative shadow-inner">
-                       {selectedPost.copy ? selectedPost.copy : <span className="text-slate-400 italic">El copy se generará automáticamente con la imagen.</span>}
+                       {selectedPost.postText || selectedPost.copy ? (selectedPost.postText || selectedPost.copy) : <span className="text-slate-400 italic">El copy se generará automáticamente con la imagen.</span>}
                      </div>
                    </div>
 
