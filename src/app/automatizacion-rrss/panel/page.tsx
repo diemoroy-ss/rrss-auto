@@ -1475,10 +1475,16 @@ export default function RrssDashboard() {
                   {selectedPost.status === 'published' ? (
                     <>
                       <button
-                        onClick={() => setShowFinalPostModal(true)}
+                        onClick={() => handlePublishNow(selectedPost.id)}
+                        disabled={publishingPostId === selectedPost.id}
                         className="flex-1 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 px-6 py-4 rounded-2xl md:rounded-[28px] font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-colors cursor-pointer"
                       >
-                        <span>✨</span> Publicación Lista (Click para Republicar)
+                        {publishingPostId === selectedPost.id ? (
+                           <div className="w-4 h-4 border-2 border-emerald-600/30 border-t-emerald-600 animate-spin rounded-full" />
+                        ) : (
+                           <span>✨</span>
+                        )}
+                        <span>{publishingPostId === selectedPost.id ? 'Republicando...' : 'Publicación Lista (Click para Republicar)'}</span>
                       </button>
                       
                       {((selectedPost.publishedIn && selectedPost.publishedIn.includes('instagram')) || (!selectedPost.publishedIn && (Array.isArray(selectedPost.networks) ? selectedPost.networks : Object.entries(selectedPost.networks || {}).filter(([_, v]) => v).map(([k]) => k)).includes('instagram'))) ? (
