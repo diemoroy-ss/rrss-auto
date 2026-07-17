@@ -887,7 +887,7 @@ export default function RrssCreatePost() {
         postText: finalCaption,
         postType,
         carouselCount: postType === 'Carrusel' ? carouselCount : 1,
-        networks,
+        networks: Object.entries(networks).filter(([_, isActive]) => isActive).map(([net]) => net),
         imageUrls: finalMediaUrls,
         imageUrl: finalMediaUrls[0] || "",
         status: publishNow ? "publishing" : "confirmed",
