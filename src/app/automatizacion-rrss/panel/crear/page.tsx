@@ -222,22 +222,24 @@ export default function RrssCreatePost() {
       };
       setSelectedTemplate(tempTmpl);
       setPreviewSlides([{ url: decodedUrl, copy: "" }]);
-      
-      // Si venimos de la biblioteca y seleccionamos "Postear" (hideAI=true pero no openEditor)
-      if (hideAIParam && !openEditorParam) {
-          // Un pequeño delay para asegurar que el estado esté listo
-          setTimeout(() => setShowFinalPostModal(true), 200);
-      }
     }
   }, [templateUrlParam, hideAIParam, openEditorParam]);
 
   useEffect(() => {
-    if (selectedTemplate && selectedTemplate.url && user?.uid) {
+    // Si venimos de la biblioteca y seleccionamos "Postear" (hideAI=true pero no openEditor)
+    if (!loadingInitial && hideAIParam && !openEditorParam && selectedTemplate) {
+      setShowFinalPostModal(true);
+    }
+  }, [loadingInitial, hideAIParam, openEditorParam, selectedTemplate]);
+
+  useEffect(() => {
+    if (selectedTemplate && selectedTemplate.url && user?.uid && activeProfile) {
       const findPrompt = async () => {
         try {
           const qImg = query(
             collection(db, "generated_images"), 
             where("userId", "==", user.uid),
+            where("profileId", "==", activeProfile.id || "default"),
             where("url", "==", selectedTemplate.url), 
             limit(1)
           );
@@ -258,7 +260,7 @@ export default function RrssCreatePost() {
       };
       findPrompt();
     }
-  }, [selectedTemplate, user?.uid]);
+  }, [selectedTemplate, user?.uid, activeProfile]);
 
   useEffect(() => {
     const selectedNets = Object.entries(networks).filter(([_, val]) => val).map(([key]) => key);
