@@ -140,6 +140,20 @@ export async function POST(req: Request) {
             } catch(e) { console.error("Error decrypting TT", e); }
         }
 
+        // Decrypt Google Business
+        const gbToken = targetProfile.googleBusinessToken_enc || userData.googleBusinessToken_enc;
+        const ivGb = targetProfile.iv_gb || userData.iv_gb;
+        const tagGb = targetProfile.tag_gb || userData.tag_gb;
+
+        if (postData.networks?.includes('googleBusiness') && gbToken) {
+            try {
+                const plainToken = decrypt(gbToken, ivGb, tagGb);
+                credentials.googleBusiness = {
+                    token: plainToken
+                };
+            } catch(e) { console.error("Error decrypting GB", e); }
+        }
+
         // Enviar a N8N
         const n8nPayload = {
             postId,
