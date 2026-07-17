@@ -38,7 +38,8 @@ export default function LoginGastronomico() {
     const userDoc = await getDoc(userDocRef);
     
     let resolvedRole = "user";
-    if (user.email === "admin@santisoft.cl" || user.email === "diemoroy@gmail.com") {
+    const adminEmails = ["admin@santisoft.cl", "diemoroy@gmail.com", "spalezcom@gmail.com"];
+    if (adminEmails.includes(user.email)) {
       resolvedRole = "admin";
     }
 
@@ -68,7 +69,7 @@ export default function LoginGastronomico() {
       }
 
       // Force admin role for this specific email if not set
-      if ((user.email === "admin@santisoft.cl" || user.email === "diemoroy@gmail.com") && resolvedRole !== "admin") {
+      if (adminEmails.includes(user.email) && resolvedRole !== "admin") {
          await updateDoc(userDocRef, { role: "admin" });
          resolvedRole = "admin";
       }
