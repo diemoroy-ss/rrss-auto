@@ -679,7 +679,10 @@ export default function MetricasDashboard() {
              </div>
 
              <div className="flex flex-col gap-4">
-                {publishedPosts.filter(p => networkFilter === 'todos' || p.networks.includes(networkFilter)).map((post, i) => {
+                {publishedPosts.filter(p => {
+                    const nets = Array.isArray(p.networks) ? p.networks : Object.entries(p.networks || {}).filter(([_, v]) => v).map(([k]) => k);
+                    return networkFilter === 'todos' || nets.includes(networkFilter);
+                }).map((post, i) => {
                     let dateObj = new Date();
                     try {
                        const possibleDate = post.scheduledFor?.toDate ? post.scheduledFor.toDate() : new Date();

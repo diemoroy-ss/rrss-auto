@@ -254,7 +254,7 @@ export default function AdminMonitoringPage() {
                                         <div className="flex flex-col items-start gap-1">
                                             <span className="font-black text-slate-700 text-xs bg-slate-100 px-2 py-0.5 rounded">{post.type}</span>
                                             <div className="flex gap-1">
-                                                {post.networks?.map(net => (
+                                                {(Array.isArray(post.networks) ? post.networks : Object.entries(post.networks || {}).filter(([_, v]) => v).map(([k]) => k)).map(net => (
                                                     <span key={net} className="text-[10px] font-bold uppercase tracking-widest text-slate-400 border border-slate-200 px-1.5 py-0.5 rounded">
                                                         {net.substring(0,2)}
                                                     </span>

@@ -1081,7 +1081,7 @@ export default function RrssDashboard() {
 
                     {/* NETWORKS */}
                     <div className="flex gap-1.5">
-                      {post.networks.map(net => (
+                      {(Array.isArray(post.networks) ? post.networks : Object.entries(post.networks || {}).filter(([_, v]) => v).map(([k]) => k)).map(net => (
                         <span key={net} title={net} className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-200">
                           <NetworkIcon network={net} postId={`${post.id}-${net}`} />
                         </span>
