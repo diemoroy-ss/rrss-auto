@@ -1125,7 +1125,13 @@ export default function RrssCreatePost() {
         {creationMode === 'manual' ? (
             selectedTemplate ? (
                 <div className="space-y-6 animate-in fade-in duration-300 w-full">
-                    {selectedTemplate.type === 'video' || selectedTemplate.url.match(/\.(mp4|mov|webm|quicktime)/i) || selectedTemplate.url.includes("video") ? (
+                    {previewLoading ? (
+                        <div className="p-8 bg-slate-50 border border-slate-200 rounded-[32px] text-center flex flex-col items-center justify-center min-h-[300px] text-indigo-750 shadow-md animate-pulse w-full">
+                           <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4 mx-auto"></div>
+                           <h4 className="font-black text-md mb-1 uppercase tracking-widest">Procesando Diseño...</h4>
+                           <p className="font-medium text-xs max-w-xs mx-auto leading-relaxed text-indigo-500">Aplicando cambios a tu imagen con IA. Esto puede tomar unos segundos.</p>
+                        </div>
+                    ) : selectedTemplate.type === 'video' || selectedTemplate.url.match(/\.(mp4|mov|webm|quicktime)/i) || selectedTemplate.url.includes("video") ? (
                         <div className="p-8 bg-slate-50 rounded-[32px] border-2 border-slate-100 animate-in zoom-in duration-500 space-y-6 shadow-xl shadow-slate-200/50 max-w-4xl mx-auto">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
@@ -1201,20 +1207,26 @@ export default function RrssCreatePost() {
                  </div>
                </div>
             ) : (
-                <div className="w-full">
-                 <CarouselWizard 
-                    slides={previewSlides}
-                    onUpdateSlide={updateSlideFinalUrl}
-                    userLogo={userLogo}
-                    userId={user?.uid}
-                    forceOpenEditor={openEditorParam}
-                 />
-                       <button type="button" onClick={() => setShowFinalPostModal(true)} disabled={loading} className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 disabled:from-slate-400 disabled:to-slate-400 text-white font-black text-[16px] py-4 rounded-[20px] transition-all shadow-xl shadow-indigo-500/30 flex items-center justify-center gap-2 hover:-translate-y-1">
-                          {loading ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : '🚀 POSTEAR'}
-                       </button>
-                    </div>
-                 )}
-               </div>
+                 <div className="w-full">
+                  <CarouselWizard 
+                     slides={previewSlides}
+                     onUpdateSlide={updateSlideFinalUrl}
+                     userLogo={userLogo}
+                     userId={user?.uid}
+                     forceOpenEditor={openEditorParam}
+                  />
+                  <div className="max-w-md mx-auto mt-6">
+                     <button 
+                       type="button" 
+                       onClick={() => setShowFinalPostModal(true)} 
+                       disabled={loading || !isReady} 
+                       title={!isReady ? "Falta agregar el copy de la publicación" : ""}
+                       className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 disabled:from-slate-300 disabled:to-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-black text-[16px] py-4 rounded-[20px] transition-all shadow-xl shadow-indigo-500/30 flex items-center justify-center gap-2 hover:-translate-y-1"
+                     >
+                        {loading ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : (!isReady ? '⚠️ POSTEAR (Falta Copy)' : '🚀 POSTEAR')}
+                     </button>
+                  </div>
+                </div>
             )
         ) : previewLoading ? (
             <div className="p-8 bg-slate-50 border border-slate-200 rounded-[32px] text-center flex flex-col items-center justify-center min-h-[300px] text-indigo-750 shadow-md animate-pulse w-full">
