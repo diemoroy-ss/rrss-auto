@@ -3,7 +3,7 @@ import { MercadoPagoConfig, PreApproval } from "mercadopago";
 
 export async function POST(req: Request) {
   try {
-    const { planId, userId, userEmail } = await req.json();
+    const { planId, userId, userEmail, isAnnual } = await req.json();
 
     if (!planId || !userId || !userEmail) {
       return NextResponse.json({ error: "Missing planId, userId or userEmail" }, { status: 400 });
@@ -38,8 +38,8 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "Plan inválido para suscripción pago" }, { status: 400 });
     }
 
-    const title = `Suscripción ${planConfig.name} - Santisoft`;
-    const price = planConfig.price;
+    const title = `Suscripción ${planConfig.name} ${isAnnual ? '(Anual)' : '(Mensual)'} - Santisoft`;
+    const price = isAnnual && planConfig.annualPrice ? planConfig.annualPrice : planConfig.price;
 
     // Configurar SDK
     const client = new MercadoPagoConfig({ accessToken, options: { timeout: 5000 } });
@@ -54,14 +54,14 @@ export async function POST(req: Request) {
     const body = {
         reason: title,
         auto_recurring: {
-            frequency: 1,
+            frequency: isAnnual ? 12 : 1,
             frequency_type: "months",
             transaction_amount: price,
             currency_id: "CLP"
         },
         payer_email: userEmail,
         back_url: `${origin}/automatizacion-rrss/panel/planes/exito`,
-        external_reference: userId, // UID para el webhook
+        external_reference: `${userId}_${isAnnual ? 'annual' : 'monthly'}`, // UID y periodo para el webhook
         status: "authorized"
     };
 

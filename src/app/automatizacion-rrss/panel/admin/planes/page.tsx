@@ -12,6 +12,7 @@ type PlanConfig = {
     name: string;
     tagline: string;
     price: number;
+    annualPrice: number;
     postsLimit: number;
     videosLimit: number;
     aiImagesLimit: number;
@@ -154,6 +155,7 @@ export default function AdminPlansPage() {
                 name: "Nuevo Plan",
                 tagline: "AL MES",
                 price: 0,
+                annualPrice: 0,
                 postsLimit: 10,
                 videosLimit: 0,
                 aiImagesLimit: 10,
@@ -321,14 +323,32 @@ export default function AdminPlansPage() {
                                     </div>
                                     <span className="text-[10px] font-black bg-white/10 px-3 py-1 rounded-full">{selectedPlanId}</span>
                                 </div>
-                                <div className="flex items-baseline gap-2">
-                                    <span className="text-slate-400 text-sm">$</span>
-                                    <input
-                                        type="number"
-                                        value={activePlan.price}
-                                        onChange={(e) => handleUpdatePlanValue(selectedPlanId, 'price', parseInt(e.target.value) || 0)}
-                                        className="bg-transparent text-3xl font-black outline-none focus:text-indigo-400 transition-all w-40"
-                                    />
+                                <div className="flex flex-col gap-4 mt-2">
+                                    <div>
+                                        <p className="text-[10px] font-black text-indigo-300 uppercase tracking-widest mb-1">Pago Mensual (Recurrente)</p>
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="text-slate-400 text-sm">$</span>
+                                            <input
+                                                type="number"
+                                                value={activePlan.price}
+                                                onChange={(e) => handleUpdatePlanValue(selectedPlanId, 'price', parseInt(e.target.value) || 0)}
+                                                className="bg-transparent text-3xl font-black outline-none focus:text-indigo-400 transition-all w-40"
+                                            />
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <p className="text-[10px] font-black text-emerald-300 uppercase tracking-widest mb-1">Pago Anual (Único)</p>
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="text-slate-400 text-sm">$</span>
+                                            <input
+                                                type="number"
+                                                value={activePlan.annualPrice || 0}
+                                                onChange={(e) => handleUpdatePlanValue(selectedPlanId, 'annualPrice', parseInt(e.target.value) || 0)}
+                                                className="bg-transparent text-2xl font-black outline-none focus:text-emerald-400 transition-all w-40 text-slate-300"
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                                 <input
                                     type="text"

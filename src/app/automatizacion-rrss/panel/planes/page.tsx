@@ -8,6 +8,7 @@ import { doc, getDoc } from "firebase/firestore";
 export default function PlanesPage() {
   const [userPlan, setUserPlan] = useState("free");
   const [planes, setPlanes] = useState<any[]>([]);
+  const [isAnnual, setIsAnnual] = useState(false);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<{type: 'success' | 'error' | 'info', text: string} | null>(null);
 
@@ -41,7 +42,9 @@ export default function PlanesPage() {
               ...plan,
               id,
               priceFormatted: plan.price.toLocaleString('es-CL'),
+              annualPriceFormatted: (plan.annualPrice || 0).toLocaleString('es-CL'),
               period: id === 'free' ? '/siempre' : '/mes',
+              periodAnnual: id === 'free' ? '/siempre' : '/año',
               button: id === 'free' ? 'Seleccionar Gratis' : (id === 'pro' ? 'Suscribirme Pro' : (id === 'elite' ? 'Ir a Elite' : 'Obtener Business')),
               accent: id === 'pro'
             };
@@ -77,7 +80,8 @@ export default function PlanesPage() {
             body: JSON.stringify({
                 planId,
                 userId: user.uid,
-                userEmail: user.email
+                userEmail: user.email,
+                isAnnual
             })
         });
 
@@ -101,9 +105,25 @@ export default function PlanesPage() {
 
   return (
     <div className="max-w-7xl mx-auto py-8">
-      <div className="text-left mb-16">
+      <div className="text-left mb-12">
         <h1 className="text-4xl md:text-5xl font-black text-slate-900 mb-6 tracking-tight leading-tight">Tu Plan de <br/><span className="text-indigo-600">Automatización.</span></h1>
-        <p className="text-slate-500 text-lg max-w-2xl font-medium">Elige el nivel de potencia que tu marca necesita. Escala en cualquier momento.</p>
+        <p className="text-slate-500 text-lg max-w-2xl font-medium mb-8">Elige el nivel de potencia que tu marca necesita. Escala en cualquier momento.</p>
+        
+        {/* Toggle Billing Period */}
+        <div className="flex items-center gap-4 bg-slate-100 p-1.5 rounded-2xl w-fit">
+            <button 
+                onClick={() => setIsAnnual(false)}
+                className={`px-6 py-2.5 rounded-xl text-sm font-black transition-all ${!isAnnual ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+                Mensual
+            </button>
+            <button 
+                onClick={() => setIsAnnual(true)}
+                className={`px-6 py-2.5 rounded-xl text-sm font-black transition-all flex items-center gap-2 ${isAnnual ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+                Anual <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-md ${isAnnual ? 'bg-indigo-500 text-white' : 'bg-indigo-100 text-indigo-600'}`}>-16%</span>
+            </button>
+        </div>
       </div>
 
       {message && (
@@ -134,8 +154,12 @@ export default function PlanesPage() {
             <div className="mb-10">
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-3">{plan.name}</h3>
               <div className="flex items-baseline gap-1">
-                <span className="text-5xl font-black text-slate-900 tracking-tighter">${plan.priceFormatted}</span>
-                <span className="text-slate-400 font-bold text-sm">{plan.period}</span>
+                <span className="text-5xl font-black text-slate-900 tracking-tighter">
+                  ${isAnnual && plan.id !== 'free' ? plan.annualPriceFormatted : plan.priceFormatted}
+                </span>
+                <span className="text-slate-400 font-bold text-sm">
+                  {isAnnual && plan.id !== 'free' ? plan.periodAnnual : plan.period}
+                </span>
               </div>
             </div>
 
