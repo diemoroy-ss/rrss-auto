@@ -1153,16 +1153,21 @@ export default function RrssCreatePost() {
                              onSave={handleSaveEditedTemplate}
                              forceOpenEditor={openEditorParam}
                              onRetouch={(inst) => handleRetouchImage(null, inst)}
+                             isRetouching={previewLoading}
                           />
                         </div>
                     )}
-                    {isReady && (
-                       <div className="max-w-md mx-auto mt-6">
-                          <button type="button" onClick={() => setShowFinalPostModal(true)} disabled={loading} className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 disabled:from-slate-400 disabled:to-slate-400 text-white font-black text-[16px] py-4 rounded-[20px] transition-all shadow-xl shadow-indigo-500/30 flex items-center justify-center gap-2 hover:-translate-y-1">
-                             {loading ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : '🚀 POSTEAR'}
-                          </button>
-                       </div>
-                    )}
+                    <div className="max-w-md mx-auto mt-6">
+                       <button 
+                         type="button" 
+                         onClick={() => setShowFinalPostModal(true)} 
+                         disabled={loading || !isReady} 
+                         title={!isReady ? "Falta agregar el copy de la publicación" : ""}
+                         className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 disabled:from-slate-300 disabled:to-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-black text-[16px] py-4 rounded-[20px] transition-all shadow-xl shadow-indigo-500/30 flex items-center justify-center gap-2 hover:-translate-y-1"
+                       >
+                          {loading ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : (!isReady ? '⚠️ POSTEAR (Falta Copy)' : '🚀 POSTEAR')}
+                       </button>
+                    </div>
                 </div>
             ) : (
                 <div className="p-8 border-4 border-dashed border-indigo-100 rounded-[32px] text-center flex flex-col items-center justify-center min-h-[300px] text-indigo-400 bg-indigo-50/20 transition-all w-full">
@@ -1204,8 +1209,6 @@ export default function RrssCreatePost() {
                     userId={user?.uid}
                     forceOpenEditor={openEditorParam}
                  />
-                 {isReady && (
-                    <div className="max-w-md mx-auto mt-6">
                        <button type="button" onClick={() => setShowFinalPostModal(true)} disabled={loading} className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 disabled:from-slate-400 disabled:to-slate-400 text-white font-black text-[16px] py-4 rounded-[20px] transition-all shadow-xl shadow-indigo-500/30 flex items-center justify-center gap-2 hover:-translate-y-1">
                           {loading ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : '🚀 POSTEAR'}
                        </button>

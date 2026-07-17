@@ -327,7 +327,7 @@ export default function BibliotecaPage() {
 
                 <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100/50">
                   <Link
-                    href={`/automatizacion-rrss/panel/crear?templateUrl=${encodeURIComponent(img.url)}`}
+                    href={`/automatizacion-rrss/panel/crear?templateUrl=${encodeURIComponent(img.url)}&hideAI=true`}
                     className="py-2 px-2 text-center rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-black text-[9px] uppercase tracking-wider transition-all"
                   >
                     🚀 Postear

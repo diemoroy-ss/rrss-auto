@@ -13,6 +13,7 @@ interface CanvasEditorProps {
   onSave: (finalUrl: string) => void;
   forceOpenEditor?: boolean;
   onRetouch?: (instruction: string) => void;
+  isRetouching?: boolean;
 }
 
 interface TextLayer {
@@ -31,7 +32,8 @@ export default function CanvasEditor({
   userId,
   onSave,
   forceOpenEditor = false,
-  onRetouch
+  onRetouch,
+  isRetouching = false
 }: CanvasEditorProps) {
   const [showEditor, setShowEditor] = useState(forceOpenEditor);
   const [activeLayerIndex, setActiveLayerIndex] = useState(0);
@@ -263,17 +265,17 @@ export default function CanvasEditor({
                  }
                }}
              />
-             <button
-               type="button"
-               disabled={!retouchInstruction.trim()}
-               onClick={() => {
-                 onRetouch(retouchInstruction.trim());
-                 setRetouchInstruction("");
-               }}
-               className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-bold px-4 rounded-xl text-[10px] uppercase tracking-wider transition-colors shrink-0"
-             >
-               Regenerar
-             </button>
+              <button
+                type="button"
+                disabled={!retouchInstruction.trim() || isRetouching}
+                onClick={() => {
+                  onRetouch(retouchInstruction.trim());
+                  setRetouchInstruction("");
+                }}
+                className="px-6 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl text-xs uppercase tracking-wider transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isRetouching ? <div className="w-3 h-3 border-2 border-slate-500 border-t-transparent rounded-full animate-spin" /> : 'Regenerar'}
+              </button>
            </div>
          </div>
        )}
