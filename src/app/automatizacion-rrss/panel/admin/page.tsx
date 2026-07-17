@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { auth } from "../../../../lib/firebase";
+import { auth, db } from "../../../../lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { onAuthStateChanged } from "firebase/auth";
@@ -22,6 +23,7 @@ type UserData = {
 export default function AdminUsersPage() {
   const router = useRouter();
   const [users, setUsers] = useState<UserData[]>([]);
+  const [availablePlans, setAvailablePlans] = useState<{id: string, name: string}[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
@@ -71,6 +73,21 @@ export default function AdminUsersPage() {
 
         const data = await res.json();
         setUsers(data.users);
+
+        // Fetch dynamic plans
+        try {
+            const plansSnap = await getDoc(doc(db, "system_config", "plans"));
+            if (plansSnap.exists()) {
+                const plansData = plansSnap.data();
+                const plansList = Object.values(plansData).map((p: any) => ({
+                    id: p.id,
+                    name: p.name
+                }));
+                setAvailablePlans(plansList);
+            }
+        } catch (planErr) {
+            console.error("Error fetching plans:", planErr);
+        }
       } catch (e: any) {
          console.error(e);
          setError(e.message || "Error al cargar la lista de usuarios.");
@@ -210,10 +227,18 @@ export default function AdminUsersPage() {
                            onChange={(e) => updateUserField(u.id, 'plan', e.target.value)}
                            className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[10px] font-black uppercase tracking-widest text-slate-700 outline-none focus:border-indigo-500 cursor-pointer shadow-sm hover:bg-slate-50 transition-colors focus:ring-2 focus:ring-indigo-500/20"
                         >
-                           <option value="free">Free</option>
-                           <option value="pro">Pro</option>
-                           <option value="elite">Elite</option>
-                           <option value="business">Business</option>
+                            {availablePlans.length > 0 ? (
+                                availablePlans.map(p => (
+                                    <option key={p.id} value={p.id}>{p.name}</option>
+                                ))
+                            ) : (
+                                <>
+                                   <option value="free">Free</option>
+                                   <option value="pro">Pro</option>
+                                   <option value="elite">Elite</option>
+                                   <option value="business">Business</option>
+                                </>
+                            )}
                         </select>
                      </td>
                      <td className="p-6">
