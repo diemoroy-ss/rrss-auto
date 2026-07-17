@@ -1291,11 +1291,13 @@ export default function RrssDashboard() {
                         <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Publicar en:</span>
                         <div className="flex flex-wrap gap-2 justify-start sm:justify-end">
                             {['facebook', 'instagram', 'linkedin', 'tiktok'].filter(net => {
-                                if (net === 'linkedin') return !!activeProfile?.linkedinUserToken_enc || !!activeProfile?.linkedinToken_enc || selectedPost.networks.includes('linkedin');
-                                if (net === 'tiktok') return !!activeProfile?.tiktokToken_enc || selectedPost.networks.includes('tiktok');
+                                const safeNets = Array.isArray(selectedPost.networks) ? selectedPost.networks : Object.entries(selectedPost.networks || {}).filter(([_, v]) => v).map(([k]) => k);
+                                if (net === 'linkedin') return !!activeProfile?.linkedinUserToken_enc || !!activeProfile?.linkedinToken_enc || safeNets.includes('linkedin');
+                                if (net === 'tiktok') return !!activeProfile?.tiktokToken_enc || safeNets.includes('tiktok');
                                 return true;
                             }).map(net => {
-                                const isActive = selectedPost.networks.includes(net);
+                                const safeNets = Array.isArray(selectedPost.networks) ? selectedPost.networks : Object.entries(selectedPost.networks || {}).filter(([_, v]) => v).map(([k]) => k);
+                                const isActive = safeNets.includes(net);
                                 return (
                                     <button 
                                         key={net} 
@@ -1473,7 +1475,7 @@ export default function RrssDashboard() {
                         <span>✨</span> Publicación de Feed Lista y Activa
                       </div>
                       
-                      {((selectedPost.publishedIn && selectedPost.publishedIn.includes('instagram')) || (!selectedPost.publishedIn && selectedPost.networks.includes('instagram'))) ? (
+                      {((selectedPost.publishedIn && selectedPost.publishedIn.includes('instagram')) || (!selectedPost.publishedIn && (Array.isArray(selectedPost.networks) ? selectedPost.networks : Object.entries(selectedPost.networks || {}).filter(([_, v]) => v).map(([k]) => k)).includes('instagram'))) ? (
                         <button
                           onClick={() => handlePublishStory(selectedPost.id)}
                           disabled={isPublishingStory}
