@@ -138,15 +138,23 @@ export async function POST(req: Request) {
 
         // Decrypt Google Business
         let plainGbToken = null;
+        let plainGbRefreshToken = null;
         if (post.networks?.includes('googleBusiness')) {
             const gbToken = targetProfile.googleBusinessToken_enc || userData.googleBusinessToken_enc;
             const ivGb = targetProfile.iv_gb || userData.iv_gb;
             const tagGb = targetProfile.tag_gb || userData.tag_gb;
+            const gbRefreshToken = targetProfile.googleBusinessRefreshToken_enc || userData.googleBusinessRefreshToken_enc;
+            const ivGbRef = targetProfile.iv_gb_refresh || userData.iv_gb_refresh;
+            const tagGbRef = targetProfile.tag_gb_refresh || userData.tag_gb_refresh;
+
             if (!gbToken) {
                 return NextResponse.json({ error: "Google Business: Cuenta no vinculada o configuración faltante." }, { status: 400 });
             }
             try {
                 plainGbToken = decrypt(gbToken, ivGb, tagGb);
+                if (gbRefreshToken && ivGbRef && tagGbRef) {
+                    plainGbRefreshToken = decrypt(gbRefreshToken, ivGbRef, tagGbRef);
+                }
             } catch (e: any) {
                 return NextResponse.json({ error: "Google Business: Error al desencriptar el token de acceso." }, { status: 500 });
             }
@@ -170,6 +178,7 @@ export async function POST(req: Request) {
             plainLiToken, authorUrn,
             plainTtToken,
             plainGbToken,
+            plainGbRefreshToken,
             uid, profileId
         }).catch(err => {
             console.error(`[CRITICAL] Background publish process failed for post ${postId}:`, err);
@@ -189,6 +198,7 @@ async function publishInBackground(postId: string, post: any, creds: {
     plainLiToken: string | null; authorUrn: string | null;
     plainTtToken: string | null;
     plainGbToken: string | null;
+    plainGbRefreshToken: string | null;
     uid: string; profileId: string | null;
 }) {
     const postRef = adminDb.collection("social_posts").doc(postId);
@@ -730,77 +740,140 @@ async function publishInBackground(postId: string, post: any, creds: {
 
         // GOOGLE BUSINESS
         if (post.networks?.includes('googleBusiness') && creds.plainGbToken) {
-            const plainToken = creds.plainGbToken;
+            let plainToken = creds.plainGbToken;
             try {
-                // 1. Get Accounts
-                const accRes = await fetch("https://mybusinessaccountmanagement.googleapis.com/v1/accounts", {
-                    headers: { 'Authorization': `Bearer ${plainToken}` }
-                });
-                const accData = await accRes.json();
-                if (accData.error) throw new Error(accData.error.message || "Failed to fetch Google Business accounts");
-                
-                const accounts = accData.accounts || [];
-                if (accounts.length === 0) throw new Error("No Google Business accounts found");
-                
-                const accountName = accounts[0].name;
-                
-                // 2. Get Locations
-                const locRes = await fetch(`https://mybusinessbusinessinformation.googleapis.com/v1/${accountName}/locations?readMask=name`, {
-                    headers: { 'Authorization': `Bearer ${plainToken}` }
-                });
-                const locData = await locRes.json();
-                if (locData.error) throw new Error(locData.error.message || "Failed to fetch Google Business locations");
-                
-                const locations = locData.locations || [];
-                if (locations.length === 0) throw new Error("No verified locations found in this account");
-                
-                const locationName = locations[0].name;
-                const parentPath = `${accountName}/${locationName}`;
+                // Function to perform the API sequence
+                const executeGooglePost = async (token: string) => {
+                    // 1. Get Accounts
+                    const accRes = await fetch("https://mybusinessaccountmanagement.googleapis.com/v1/accounts", {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const accData = await accRes.json();
+                    if (accData.error) {
+                        if (accData.error.status === 'UNAUTHENTICATED' || accData.error.code === 401) {
+                            throw new Error("UNAUTHENTICATED");
+                        }
+                        throw new Error(accData.error.message || "Failed to fetch Google Business accounts");
+                    }
+                    
+                    const accounts = accData.accounts || [];
+                    if (accounts.length === 0) throw new Error("No Google Business accounts found");
+                    
+                    const accountName = accounts[0].name;
+                    
+                    // 2. Get Locations
+                    const locRes = await fetch(`https://mybusinessbusinessinformation.googleapis.com/v1/${accountName}/locations?readMask=name`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const locData = await locRes.json();
+                    if (locData.error) throw new Error(locData.error.message || "Failed to fetch Google Business locations");
+                    
+                    const locations = locData.locations || [];
+                    if (locations.length === 0) throw new Error("No verified locations found in this account");
+                    
+                    const locationName = locations[0].name;
+                    const parentPath = `${accountName}/${locationName}`;
 
-                // 3. Post to mybusiness.googleapis.com v4
-                const postPayload: any = {
-                   languageCode: "es",
-                   summary: caption,
-                   callToAction: { actionType: "LEARN_MORE", url: "https://santisoft.cl" } // default CTA
+                    // 3. Post to mybusiness.googleapis.com v4
+                    const postPayload: any = {
+                       languageCode: "es",
+                       summary: caption,
+                       callToAction: { actionType: "LEARN_MORE", url: "https://santisoft.cl" } // default CTA
+                    };
+
+                    if (imageUrl) {
+                       postPayload.media = [
+                          {
+                             mediaFormat: "PHOTO",
+                             sourceUrl: imageUrl
+                          }
+                       ];
+                    }
+
+                    const postRes = await fetch(`https://mybusiness.googleapis.com/v4/${parentPath}/localPosts`, {
+                        method: 'POST',
+                        headers: { 
+                           'Authorization': `Bearer ${token}`,
+                           'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(postPayload)
+                    });
+                    const postData = await postRes.json();
+                    
+                    if (postData.error) throw new Error(postData.error.message || "Failed to publish on Google Business");
+
+                    return postData;
                 };
 
-                if (imageUrl) {
-                   postPayload.media = [
-                      {
-                         mediaFormat: "PHOTO",
-                         sourceUrl: imageUrl
-                      }
-                   ];
+                try {
+                    const postData = await executeGooglePost(plainToken);
+                    successNetworks.push('googleBusiness');
+                    await adminDb.collection('external_posts').doc(postData.name ? postData.name.replace(/\//g, '_') : `gb_${Date.now()}`).set({
+                       userId: creds.uid,
+                       profileId: creds.profileId || 'default',
+                       network: 'googleBusiness',
+                       caption: caption,
+                       media_type: imageUrl ? 'IMAGE' : 'TEXT',
+                       likes: 0, comments: 0, shares: 0, reach: 0, impressions: 0,
+                       created_time: new Date().toISOString(), timestamp: new Date()
+                    });
+                } catch (e: any) {
+                    if (e.message === "UNAUTHENTICATED" && creds.plainGbRefreshToken) {
+                        console.log("[Google Business] Access token expired, attempting to refresh...");
+                        // Refresh Token
+                        const tokenUrl = 'https://oauth2.googleapis.com/token';
+                        const res = await fetch(tokenUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: new URLSearchParams({
+                                client_id: process.env.GOOGLE_CLIENT_ID!,
+                                client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+                                refresh_token: creds.plainGbRefreshToken,
+                                grant_type: 'refresh_token'
+                            })
+                        });
+                        const refreshData = await res.json();
+                        if (refreshData.error) {
+                            throw new Error("El token de Google ha expirado y no se pudo renovar. Por favor reconecta Google Business en Configuración.");
+                        }
+                        const newAccessToken = refreshData.access_token;
+                        
+                        // Update in DB (fire-and-forget for speed)
+                        const { encrypt } = require('../../../../lib/encryption');
+                        const encNewToken = encrypt(newAccessToken);
+                        
+                        const userRef = adminDb.collection('users').doc(creds.uid);
+                        if (creds.profileId && creds.profileId !== 'default') {
+                            const userDoc = await userRef.get();
+                            const profiles = userDoc.data()?.profiles || [];
+                            const pIdx = profiles.findIndex((p: any) => p.id === creds.profileId);
+                            if (pIdx !== -1) {
+                                profiles[pIdx].googleBusinessToken_enc = encNewToken.encryptedData;
+                                profiles[pIdx].iv_gb = encNewToken.iv;
+                                profiles[pIdx].tag_gb = encNewToken.authTag;
+                                userRef.update({ profiles }).catch(console.error);
+                            }
+                        } else {
+                            userRef.update({
+                                googleBusinessToken_enc: encNewToken.encryptedData,
+                                iv_gb: encNewToken.iv,
+                                tag_gb: encNewToken.authTag
+                            }).catch(console.error);
+                        }
+
+                        // Retry the post
+                        const postData = await executeGooglePost(newAccessToken);
+                        successNetworks.push('googleBusiness');
+                        await adminDb.collection('external_posts').doc(postData.name ? postData.name.replace(/\//g, '_') : `gb_${Date.now()}`).set({
+                           userId: creds.uid, profileId: creds.profileId || 'default',
+                           network: 'googleBusiness', caption: caption, media_type: imageUrl ? 'IMAGE' : 'TEXT',
+                           likes: 0, comments: 0, shares: 0, reach: 0, impressions: 0,
+                           created_time: new Date().toISOString(), timestamp: new Date()
+                        });
+                    } else {
+                        throw e;
+                    }
                 }
-
-                const postRes = await fetch(`https://mybusiness.googleapis.com/v4/${parentPath}/localPosts`, {
-                    method: 'POST',
-                    headers: { 
-                       'Authorization': `Bearer ${plainToken}`,
-                       'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(postPayload)
-                });
-                const postData = await postRes.json();
-                
-                if (postData.error) throw new Error(postData.error.message || "Failed to publish on Google Business");
-
-                successNetworks.push('googleBusiness');
-                
-                await adminDb.collection('external_posts').doc(postData.name ? postData.name.replace(/\//g, '_') : `gb_${Date.now()}`).set({
-                   userId: creds.uid,
-                   profileId: creds.profileId || 'default',
-                   network: 'googleBusiness',
-                   caption: caption,
-                   media_type: imageUrl ? 'IMAGE' : 'TEXT',
-                   likes: 0,
-                   comments: 0,
-                   shares: 0,
-                   reach: 0,
-                   impressions: 0,
-                   created_time: new Date().toISOString(),
-                   timestamp: new Date()
-                });
 
             } catch (e: any) {
                 console.error("Google Business Publish Error:", e.message);
