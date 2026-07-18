@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { auth, db } from "../../../../lib/firebase";
-import { collection, getDocs, doc, getDoc, query, updateDoc, where } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc, query, updateDoc, where, deleteDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation";
 
@@ -36,6 +36,7 @@ export default function SeoAutopilotPanel() {
   const [savingConfig, setSavingConfig] = useState(false);
   const [scrapeUrl, setScrapeUrl] = useState("");
   const [scraping, setScraping] = useState(false);
+  const [scrapedUrl, setScrapedUrl] = useState("");
 
   // Integration State
   const [integrationType, setIntegrationType] = useState<'wordpress' | 'webhook'>('wordpress');
@@ -137,6 +138,7 @@ export default function SeoAutopilotPanel() {
               if (data.seoConfig.webhookPlatform) setWebhookPlatform(data.seoConfig.webhookPlatform);
               if (data.seoConfig.webhookStoreUrl) setWebhookStoreUrl(data.seoConfig.webhookStoreUrl);
               if (data.seoConfig.webhookApiKey) setWebhookApiKey(data.seoConfig.webhookApiKey);
+              if (data.seoConfig.scrapedUrl) setScrapedUrl(data.seoConfig.scrapedUrl);
           }
         }
         await fetchPosts();
@@ -156,7 +158,7 @@ export default function SeoAutopilotPanel() {
               seoConfig: { 
                   tone, audience, keywords, 
                   integrationType, wpUrl, wpUser, wpPassword, webhookUrl, webhookPlatform,
-                  webhookStoreUrl, webhookApiKey
+                  webhookStoreUrl, webhookApiKey, scrapedUrl
               }
           });
           setShowConfig(false);
@@ -188,6 +190,7 @@ export default function SeoAutopilotPanel() {
               setTone(result.data.tone || tone);
               setAudience(result.data.audience || audience);
               setKeywords(result.data.keywords || keywords);
+              setScrapedUrl(scrapeUrl);
               showToast("✨ ¡Campos rellenados con éxito!");
           }
       } catch (error: any) {
@@ -247,6 +250,18 @@ export default function SeoAutopilotPanel() {
       }
   };
 
+  const handleDeletePost = async (postId: string) => {
+      if (!confirm("¿Estás seguro de que quieres eliminar esta idea del mapa de contenidos?")) return;
+      try {
+          await deleteDoc(doc(db, "blog_posts", postId));
+          await fetchPosts();
+          showToast("🗑️ Contenido eliminado");
+      } catch (error: any) {
+          console.error("Error deleting post:", error);
+          showToast("❌ Error al eliminar");
+      }
+  };
+
   if (loading) {
      return <div className="animate-pulse space-y-4 max-w-2xl"><div className="h-10 bg-slate-200 rounded w-1/3"></div><div className="h-64 bg-slate-200 rounded"></div></div>;
   }
@@ -287,20 +302,26 @@ export default function SeoAutopilotPanel() {
                                   {scraping ? "Analizando..." : "Analizar Web"}
                               </button>
                           </div>
+                          {scrapedUrl && (
+                              <div className="mt-3 inline-flex items-center gap-2 bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1.5 rounded-lg">
+                                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                  Sitio Analizado: {scrapedUrl}
+                              </div>
+                          )}
                       </div>
                       <div className="w-full h-px bg-slate-100 my-2"></div>
                       
                       <div>
                           <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Tono de Voz</label>
-                          <textarea rows={2} value={tone} onChange={e => setTone(e.target.value)} placeholder="Ej: Profesional, cercano, divertido..." className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none" />
+                          <textarea rows={5} value={tone} onChange={e => setTone(e.target.value)} placeholder="Ej: Profesional, cercano, divertido..." className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none" />
                       </div>
                       <div>
                           <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Público Objetivo</label>
-                          <textarea rows={2} value={audience} onChange={e => setAudience(e.target.value)} placeholder="Ej: Emprendedores de 25 a 40 años" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none" />
+                          <textarea rows={5} value={audience} onChange={e => setAudience(e.target.value)} placeholder="Ej: Emprendedores de 25 a 40 años" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none" />
                       </div>
                       <div>
                           <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Palabras Clave (Opcional)</label>
-                          <textarea rows={2} value={keywords} onChange={e => setKeywords(e.target.value)} placeholder="Ej: automatización, ventas, marketing" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none" />
+                          <textarea rows={5} value={keywords} onChange={e => setKeywords(e.target.value)} placeholder="Ej: automatización, ventas, marketing" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none" />
                       </div>
                       <button onClick={handleSaveConfig} disabled={savingConfig} className="w-full mt-4 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-bold py-3 px-6 rounded-xl transition-all">
                           {savingConfig ? "Guardando..." : "Guardar Configuración"}
@@ -476,9 +497,12 @@ export default function SeoAutopilotPanel() {
                                           </span>
                                       </div>
                                   </div>
-                                  <div className="shrink-0">
+                                  <div className="shrink-0 flex gap-2">
                                       <button disabled={blogUsage >= blogLimit && blogLimit < 999999} className="w-full md:w-auto bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all">
                                           {(blogUsage >= blogLimit && blogLimit < 999999) ? "Límite Excedido 🔒" : "Empezar a Escribir →"}
+                                      </button>
+                                      <button onClick={() => handleDeletePost(item.id)} className="w-full md:w-auto bg-rose-50 hover:bg-rose-100 text-rose-500 text-xs font-bold px-4 py-2.5 rounded-xl transition-all border border-rose-200">
+                                          🗑️
                                       </button>
                                   </div>
                               </div>
