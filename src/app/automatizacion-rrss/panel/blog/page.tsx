@@ -34,6 +34,8 @@ export default function SeoAutopilotPanel() {
   const [audience, setAudience] = useState("");
   const [keywords, setKeywords] = useState("");
   const [savingConfig, setSavingConfig] = useState(false);
+  const [scrapeUrl, setScrapeUrl] = useState("");
+  const [scraping, setScraping] = useState(false);
 
   // Integration State
   const [integrationType, setIntegrationType] = useState<'wordpress' | 'webhook'>('wordpress');
@@ -162,6 +164,35 @@ export default function SeoAutopilotPanel() {
       }
   };
 
+  const handleScrapeWebsite = async () => {
+      if (!scrapeUrl) {
+          showToast("❌ Ingresa la URL de tu sitio web primero");
+          return;
+      }
+      setScraping(true);
+      try {
+          const response = await fetch('/api/ai/scrape-seo-brain', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ url: scrapeUrl })
+          });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.error);
+          
+          if (result.data) {
+              setTone(result.data.tone || tone);
+              setAudience(result.data.audience || audience);
+              setKeywords(result.data.keywords || keywords);
+              showToast("✨ ¡Campos rellenados con éxito!");
+          }
+      } catch (error: any) {
+          console.error(error);
+          showToast("❌ Error al analizar la web: " + error.message);
+      } finally {
+          setScraping(false);
+      }
+  };
+
   const handleGenerateStrategy = async () => {
       setGeneratingStrategy(true);
       try {
@@ -238,6 +269,21 @@ export default function SeoAutopilotPanel() {
                   <h3 className="text-2xl font-black text-slate-900 mb-6">Configuración del Cerebro SEO</h3>
                   
                   <div className="space-y-4">
+                      {/* Varita Magica */}
+                      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-2xl border border-indigo-100">
+                          <label className="block text-xs font-bold text-indigo-700 uppercase tracking-widest mb-2 flex items-center gap-1">
+                              🪄 Auto-Completar con IA
+                          </label>
+                          <p className="text-xs text-slate-600 mb-3 font-medium">Ingresa la URL de tu sitio web y la IA extraerá el tono y keywords ideales.</p>
+                          <div className="flex gap-2">
+                              <input type="text" value={scrapeUrl} onChange={e => setScrapeUrl(e.target.value)} placeholder="https://miempresa.com" className="flex-1 bg-white border border-indigo-200 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
+                              <button onClick={handleScrapeWebsite} disabled={scraping} className="shrink-0 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white font-bold py-2 px-4 rounded-xl transition-all shadow-md shadow-indigo-600/20 text-sm">
+                                  {scraping ? "Analizando..." : "Analizar Web"}
+                              </button>
+                          </div>
+                      </div>
+                      <div className="w-full h-px bg-slate-100 my-2"></div>
+                      
                       <div>
                           <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Tono de Voz</label>
                           <textarea rows={2} value={tone} onChange={e => setTone(e.target.value)} placeholder="Ej: Profesional, cercano, divertido..." className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none" />
