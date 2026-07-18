@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateFreeText } from "../../../../lib/gemini-free";
-import * as cheerio from 'cheerio';
 
 export async function POST(req: NextRequest) {
   try {
@@ -30,15 +29,15 @@ export async function POST(req: NextRequest) {
 
     const html = await response.text();
     
-    // Parse HTML with Cheerio
-    const $ = cheerio.load(html);
-    
-    // Remove unwanted elements
-    $('script, style, noscript, iframe, img, svg, nav, footer, header').remove();
-    
-    // Extract text and clean it
-    let rawText = $('body').text();
-    rawText = rawText.replace(/\s+/g, ' ').trim();
+    // Extract text and clean it using regex to avoid build issues with parsing libraries
+    let rawText = html
+      .replace(/<script[^>]*>([\S\s]*?)<\/script>/gmi, '') // Remove scripts
+      .replace(/<style[^>]*>([\S\s]*?)<\/style>/gmi, '') // Remove styles
+      .replace(/<noscript[^>]*>([\S\s]*?)<\/noscript>/gmi, '') // Remove noscript
+      .replace(/<!--([\S\s]*?)-->/gmi, '') // Remove comments
+      .replace(/<[^>]+>/g, ' ') // Remove HTML tags
+      .replace(/\s+/g, ' ') // Collapse whitespace
+      .trim();
 
     // Limit text to roughly 10,000 characters to avoid huge token usage
     const truncatedText = rawText.substring(0, 10000);
