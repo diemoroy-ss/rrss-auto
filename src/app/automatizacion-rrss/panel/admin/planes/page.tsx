@@ -127,7 +127,23 @@ export default function AdminPlansPage() {
     };
 
     const handleUpdatePlanValue = (planId: string, field: keyof PlanConfig, value: any) => {
-        setPlans(prev => ({ ...prev, [planId]: { ...prev[planId], [field]: value } }));
+        setPlans(prev => {
+            let updatedPlan = { ...prev[planId], [field]: value };
+            
+            if (field === 'postsLimit') {
+                const limitNum = parseInt(value as string) || 0;
+                const newText = limitNum >= 999999 ? "Posts ilimitados al mes" : `${limitNum} Posts automáticos al mes`;
+                
+                updatedPlan.features = updatedPlan.features.map(f => {
+                    if (/posts?.*mes/i.test(f)) {
+                        return newText;
+                    }
+                    return f;
+                });
+            }
+
+            return { ...prev, [planId]: updatedPlan };
+        });
     };
 
     const handleUpdateFeature = (planId: string, index: number, value: string) => {
