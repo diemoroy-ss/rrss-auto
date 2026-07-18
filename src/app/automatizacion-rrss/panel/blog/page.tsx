@@ -41,6 +41,7 @@ export default function SeoAutopilotPanel() {
   const [wpUser, setWpUser] = useState("");
   const [wpPassword, setWpPassword] = useState("");
   const [webhookUrl, setWebhookUrl] = useState("");
+  const [webhookPlatform, setWebhookPlatform] = useState("shopify");
   
   // Strategy State
   const [generatingStrategy, setGeneratingStrategy] = useState(false);
@@ -129,6 +130,7 @@ export default function SeoAutopilotPanel() {
               if (data.seoConfig.wpUser) setWpUser(data.seoConfig.wpUser);
               if (data.seoConfig.wpPassword) setWpPassword(data.seoConfig.wpPassword);
               if (data.seoConfig.webhookUrl) setWebhookUrl(data.seoConfig.webhookUrl);
+              if (data.seoConfig.webhookPlatform) setWebhookPlatform(data.seoConfig.webhookPlatform);
           }
         }
         await fetchPosts();
@@ -147,7 +149,7 @@ export default function SeoAutopilotPanel() {
           await updateDoc(doc(db, "users", user.uid), {
               seoConfig: { 
                   tone, audience, keywords, 
-                  integrationType, wpUrl, wpUser, wpPassword, webhookUrl 
+                  integrationType, wpUrl, wpUser, wpPassword, webhookUrl, webhookPlatform 
               }
           });
           setShowConfig(false);
@@ -479,7 +481,16 @@ export default function SeoAutopilotPanel() {
                               <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">URL del Webhook</label>
                               <input type="text" value={webhookUrl} onChange={e => setWebhookUrl(e.target.value)} placeholder="https://hook.make.com/..." className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
                           </div>
-                          <p className="text-xs text-slate-500 font-medium">Enviaremos un POST JSON con los campos: <code>title, htmlContent, metaDescription, keyword</code> cuando presiones Publicar.</p>
+                          <div>
+                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Plataforma de Destino</label>
+                              <select value={webhookPlatform} onChange={e => setWebhookPlatform(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+                                  <option value="shopify">Shopify</option>
+                                  <option value="wix">Wix</option>
+                                  <option value="webflow">Webflow</option>
+                                  <option value="custom">Otra (HTTP Request custom)</option>
+                              </select>
+                          </div>
+                          <p className="text-xs text-slate-500 font-medium">Enviaremos un POST JSON con los campos: <code>title, htmlContent, metaDescription, keyword, platform</code> cuando presiones Publicar.</p>
                       </div>
                   )}
 

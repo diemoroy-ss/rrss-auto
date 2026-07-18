@@ -22,7 +22,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "No hay configuración SEO guardada" }, { status: 400 });
         }
 
-        const { integrationType, wpUrl, wpUser, wpPassword, webhookUrl } = config;
+        const { integrationType, wpUrl, wpUser, wpPassword, webhookUrl, webhookPlatform } = config;
 
         if (integrationType === 'wordpress' && (!wpUrl || !wpUser || !wpPassword)) {
             return NextResponse.json({ error: "Faltan credenciales de WordPress en la configuración" }, { status: 400 });
@@ -83,7 +83,8 @@ export async function POST(req: Request) {
                 htmlContent: content,
                 metaDescription: postData.metaDescription || '',
                 targetKeyword: postData.targetKeyword || '',
-                date: new Date().toISOString()
+                date: new Date().toISOString(),
+                platform: webhookPlatform || 'custom'
             };
 
             const whRes = await fetch(webhookUrl, {
