@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { auth, db } from "../../../../lib/firebase";
-import { collection, getDocs, doc, getDoc, query, updateDoc } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc, query, updateDoc, where } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation";
 
@@ -18,12 +18,15 @@ interface BlogPost {
 
 export default function SeoAutopilotPanel() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'articulos' | 'calendario'>('articulos');
+  const [activeTab, setActiveTab] = useState<'articulos' | 'calendario' | 'integracion'>('articulos');
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState<BlogPost[]>([]);
   
   const [user, setUser] = useState<any>(null);
   const [businessType, setBusinessType] = useState("");
+  
+  const [blogLimit, setBlogLimit] = useState(0);
+  const [blogUsage, setBlogUsage] = useState(0);
 
   // Config Modal State
   const [showConfig, setShowConfig] = useState(false);
@@ -32,8 +35,16 @@ export default function SeoAutopilotPanel() {
   const [keywords, setKeywords] = useState("");
   const [savingConfig, setSavingConfig] = useState(false);
 
+  // Integration State
+  const [integrationType, setIntegrationType] = useState<'wordpress' | 'webhook'>('wordpress');
+  const [wpUrl, setWpUrl] = useState("");
+  const [wpUser, setWpUser] = useState("");
+  const [wpPassword, setWpPassword] = useState("");
+  const [webhookUrl, setWebhookUrl] = useState("");
+  
   // Strategy State
   const [generatingStrategy, setGeneratingStrategy] = useState(false);
+  const [publishingId, setPublishingId] = useState<string | null>(null);
 
   // Toast State
   const [toastMessage, setToastMessage] = useState("");
@@ -74,17 +85,50 @@ export default function SeoAutopilotPanel() {
         const d = await getDoc(doc(db, "users", u.uid));
         const data = d.data();
         if (data) {
-          const authorizedEmails = ["diemoroy@gmail.com", "spalezcom@gmail.com", "santisoftai@gmail.com"];
-          const userEmail = (u.email || "").toLowerCase();
-          if (!authorizedEmails.includes(userEmail) && !data.hasSeoAutopilot && data.role !== 'admin') {
-             router.push("/automatizacion-rrss/panel");
+          // Check Plan limits
+          let limit = 0;
+          try {
+              const plansDoc = await getDoc(doc(db, "system_config", "plans"));
+              if (plansDoc.exists()) {
+                  const plansConfig = plansDoc.data() as any;
+                  const planId = data.plan || 'free';
+                  limit = plansConfig[planId]?.seoBlogsLimit || 0;
+              }
+          } catch(e) {}
+          
+          if (limit === 0 && data.role !== 'admin') {
+             router.push("/automatizacion-rrss/panel/planes");
              return;
           }
+          setBlogLimit(limit);
+
+          // Get Usage
+          const firstDay = new Date();
+          firstDay.setDate(1);
+          firstDay.setHours(0,0,0,0);
+          try {
+             const usageSnap = await getDocs(query(collection(db, "ai_generations"), 
+                 where("userId", "==", u.uid), 
+                 where("type", "==", "blog")
+             ));
+             let used = 0;
+             usageSnap.docs.forEach(doc => {
+                 const dt = doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : new Date();
+                 if (dt >= firstDay) used++;
+             });
+             setBlogUsage(used);
+          } catch (e) {}
+
           setBusinessType(data.rubro || "");
           if (data.seoConfig) {
               setTone(data.seoConfig.tone || "Profesional y cercano");
               setAudience(data.seoConfig.audience || "");
               setKeywords(data.seoConfig.keywords || "");
+              if (data.seoConfig.integrationType) setIntegrationType(data.seoConfig.integrationType);
+              if (data.seoConfig.wpUrl) setWpUrl(data.seoConfig.wpUrl);
+              if (data.seoConfig.wpUser) setWpUser(data.seoConfig.wpUser);
+              if (data.seoConfig.wpPassword) setWpPassword(data.seoConfig.wpPassword);
+              if (data.seoConfig.webhookUrl) setWebhookUrl(data.seoConfig.webhookUrl);
           }
         }
         await fetchPosts();
@@ -101,7 +145,10 @@ export default function SeoAutopilotPanel() {
       setSavingConfig(true);
       try {
           await updateDoc(doc(db, "users", user.uid), {
-              seoConfig: { tone, audience, keywords }
+              seoConfig: { 
+                  tone, audience, keywords, 
+                  integrationType, wpUrl, wpUser, wpPassword, webhookUrl 
+              }
           });
           setShowConfig(false);
           showToast("✅ Configuración guardada correctamente");
@@ -137,6 +184,27 @@ export default function SeoAutopilotPanel() {
           showToast("❌ Error generando la estrategia: " + error.message);
       } finally {
           setGeneratingStrategy(false);
+      }
+  };
+
+  const handlePublish = async (postId: string) => {
+      setPublishingId(postId);
+      try {
+          const response = await fetch('/api/ai/seo-publish', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userId: user.uid, postId })
+          });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error);
+          
+          await fetchPosts();
+          showToast("✅ " + data.message);
+      } catch (error: any) {
+          console.error(error);
+          showToast("❌ Error: " + error.message);
+      } finally {
+          setPublishingId(null);
       }
   };
 
@@ -197,6 +265,15 @@ export default function SeoAutopilotPanel() {
           <p className="text-slate-500 mt-3 font-medium text-lg max-w-2xl">
             Gestiona los artículos generados por Inteligencia Artificial y revisa el calendario estratégico de publicaciones para posicionar en Google.
           </p>
+          <div className="mt-4 flex items-center gap-2">
+              <span className="text-xs font-black uppercase tracking-widest text-slate-400">Cuota Mensual:</span>
+              <div className="bg-white border border-slate-200 shadow-sm rounded-lg px-3 py-1 flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${blogUsage >= blogLimit && blogLimit < 999999 ? 'bg-rose-500' : 'bg-emerald-500'}`}></span>
+                  <span className="text-sm font-bold text-slate-700">
+                      {blogUsage} / {blogLimit >= 999999 ? '∞' : blogLimit} Blogs
+                  </span>
+              </div>
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <a href="/blog" target="_blank" className="bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 font-bold py-2 px-6 rounded-xl shadow-sm transition-all flex items-center gap-2 hover:shadow-md">
@@ -222,6 +299,12 @@ export default function SeoAutopilotPanel() {
         >
             📅 Calendario Estratégico
         </button>
+        <button 
+           onClick={() => setActiveTab('integracion')}
+           className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'integracion' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+        >
+            🔌 Integraciones
+        </button>
       </div>
 
       {/* Tab Content */}
@@ -246,9 +329,18 @@ export default function SeoAutopilotPanel() {
                                      <h4 className="font-bold text-slate-800 line-clamp-1">{post.title}</h4>
                                      <p className="text-xs text-slate-500 font-medium mt-1">Generado: {post.createdAt.toLocaleDateString()}</p>
                                  </div>
-                                 <button className="shrink-0 text-xs font-bold text-indigo-600 bg-indigo-100 hover:bg-indigo-200 px-3 py-1.5 rounded-lg transition-colors">
-                                     Revisar
-                                 </button>
+                                 <div className="flex items-center gap-2 shrink-0">
+                                     <button className="text-xs font-bold text-slate-600 bg-slate-200 hover:bg-slate-300 px-3 py-1.5 rounded-lg transition-colors">
+                                         Ver
+                                     </button>
+                                     <button 
+                                         onClick={() => handlePublish(post.id)}
+                                         disabled={publishingId === post.id}
+                                         className="text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
+                                     >
+                                         {publishingId === post.id ? "..." : "Publicar 🌐"}
+                                     </button>
+                                 </div>
                              </div>
                          ))}
                      </div>
@@ -292,11 +384,11 @@ export default function SeoAutopilotPanel() {
                       <p className="text-slate-500 max-w-md font-medium mb-8">
                           La Inteligencia Artificial analizará tu rubro ({businessType || 'General'}) para generar un mapa de contenidos estratégico a 30 días vista.
                       </p>
-                      <button onClick={handleGenerateStrategy} disabled={generatingStrategy} className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white font-bold py-4 px-8 rounded-2xl shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-3 hover:-translate-y-1">
+                      <button onClick={handleGenerateStrategy} disabled={generatingStrategy || (blogUsage >= blogLimit && blogLimit < 999999)} className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white font-bold py-4 px-8 rounded-2xl shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-3 hover:-translate-y-1">
                           {generatingStrategy ? (
                               <><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"/> Analizando nicho...</>
                           ) : (
-                              <>✨ Generar Estrategia SEO del Mes</>
+                              <>✨ Generar Estrategia SEO del Mes {(blogUsage >= blogLimit && blogLimit < 999999) && " (Límite Alcanzado)"}</>
                           )}
                       </button>
                   </div>
@@ -331,8 +423,8 @@ export default function SeoAutopilotPanel() {
                                       </div>
                                   </div>
                                   <div className="shrink-0">
-                                      <button className="w-full md:w-auto bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all">
-                                          Empezar a Escribir →
+                                      <button disabled={blogUsage >= blogLimit && blogLimit < 999999} className="w-full md:w-auto bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all">
+                                          {(blogUsage >= blogLimit && blogLimit < 999999) ? "Límite Excedido 🔒" : "Empezar a Escribir →"}
                                       </button>
                                   </div>
                               </div>
@@ -340,6 +432,61 @@ export default function SeoAutopilotPanel() {
                       </div>
                   </div>
               )}
+          </div>
+      )}
+
+      {activeTab === 'integracion' && (
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 md:p-10 max-w-3xl">
+              <h2 className="text-2xl font-black text-slate-900 flex items-center gap-3 mb-2">🔌 Integración de Auto-Publicación</h2>
+              <p className="text-slate-500 font-medium mb-8">Conecta tu sitio web para que Santisoft publique los artículos generados automáticamente como borradores (o directamente en vivo).</p>
+
+              <div className="space-y-6">
+                  <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Tipo de Conexión</label>
+                      <div className="flex gap-4">
+                          <button onClick={() => setIntegrationType('wordpress')} className={`flex-1 py-3 px-4 rounded-xl font-bold border-2 transition-all ${integrationType === 'wordpress' ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}>
+                              WordPress
+                          </button>
+                          <button onClick={() => setIntegrationType('webhook')} className={`flex-1 py-3 px-4 rounded-xl font-bold border-2 transition-all ${integrationType === 'webhook' ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}>
+                              Webhook (Make/Zapier)
+                          </button>
+                      </div>
+                  </div>
+
+                  {integrationType === 'wordpress' && (
+                      <div className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                          <div>
+                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">URL del Sitio Web</label>
+                              <input type="text" value={wpUrl} onChange={e => setWpUrl(e.target.value)} placeholder="https://misitio.cl" className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
+                          </div>
+                          <div className="grid md:grid-cols-2 gap-4">
+                              <div>
+                                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Usuario WP</label>
+                                  <input type="text" value={wpUser} onChange={e => setWpUser(e.target.value)} placeholder="admin" className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
+                              </div>
+                              <div>
+                                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Contraseña de Aplicación</label>
+                                  <input type="password" value={wpPassword} onChange={e => setWpPassword(e.target.value)} placeholder="**** **** **** ****" className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
+                              </div>
+                          </div>
+                          <p className="text-xs text-slate-500 font-medium">Debes generar una Contraseña de Aplicación en tu panel de WordPress (Usuarios > Perfil).</p>
+                      </div>
+                  )}
+
+                  {integrationType === 'webhook' && (
+                      <div className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                          <div>
+                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">URL del Webhook</label>
+                              <input type="text" value={webhookUrl} onChange={e => setWebhookUrl(e.target.value)} placeholder="https://hook.make.com/..." className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
+                          </div>
+                          <p className="text-xs text-slate-500 font-medium">Enviaremos un POST JSON con los campos: <code>title, htmlContent, metaDescription, keyword</code> cuando presiones Publicar.</p>
+                      </div>
+                  )}
+
+                  <button onClick={handleSaveConfig} disabled={savingConfig} className="bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-bold py-3 px-8 rounded-xl transition-all">
+                      {savingConfig ? "Guardando..." : "Guardar Integración"}
+                  </button>
+              </div>
           </div>
       )}
     </div>

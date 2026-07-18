@@ -17,6 +17,7 @@ type PlanConfig = {
     videosLimit: number;
     aiImagesLimit: number;
     aiVideosLimit: number;
+    seoBlogsLimit: number;
     multiAccount: boolean;
     maxAccounts: number;
     isPopular: boolean;
@@ -176,6 +177,7 @@ export default function AdminPlansPage() {
                 videosLimit: 0,
                 aiImagesLimit: 10,
                 aiVideosLimit: 0,
+                seoBlogsLimit: 0,
                 multiAccount: false,
                 maxAccounts: 1,
                 isPopular: false,
@@ -401,6 +403,12 @@ export default function AdminPlansPage() {
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Videos IA/Mes</label>
                                         <input type="number" value={activePlan.aiVideosLimit || 0}
                                             onChange={(e) => handleUpdatePlanValue(selectedPlanId, 'aiVideosLimit', parseInt(e.target.value) || 0)}
+                                            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 font-black focus:border-indigo-400 outline-none transition-all" />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Blogs SEO/Mes</label>
+                                        <input type="number" value={activePlan.seoBlogsLimit || 0}
+                                            onChange={(e) => handleUpdatePlanValue(selectedPlanId, 'seoBlogsLimit', parseInt(e.target.value) || 0)}
                                             className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 font-black focus:border-indigo-400 outline-none transition-all" />
                                     </div>
                                 </div>

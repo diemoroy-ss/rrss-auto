@@ -52,30 +52,30 @@ export async function getPlanLimitAdmin(plan: string): Promise<number> {
     return fallbacks[plan || 'free'] ?? 4;
 }
 
-export async function getAiPlanLimitAdmin(plan: string, type: 'image' | 'video'): Promise<number> {
+export async function getAiPlanLimitAdmin(plan: string, type: 'image' | 'video' | 'blog'): Promise<number> {
     if (!adminDb) return type === 'image' ? 5 : 0;
     try {
         const plansDoc = await adminDb.collection("system_config").doc("plans").get();
         if (plansDoc.exists) {
             const config = plansDoc.data() as any;
             const planId = plan || 'free';
-            return type === 'image' 
-                ? (config[planId]?.aiImagesLimit ?? 5)
-                : (config[planId]?.aiVideosLimit ?? 0);
+            if (type === 'image') return config[planId]?.aiImagesLimit ?? 5;
+            if (type === 'video') return config[planId]?.aiVideosLimit ?? 0;
+            if (type === 'blog') return config[planId]?.seoBlogsLimit ?? 0;
         }
     } catch (e) {
         console.error("Error fetching AI plans config in admin:", e);
     }
-    const fallbacks: Record<string, { image: number, video: number }> = {
-        free: { image: 5, video: 0 },
-        pro: { image: 30, video: 5 },
-        elite: { image: 100, video: 15 },
-        business: { image: 300, video: 50 }
+    const fallbacks: Record<string, { image: number, video: number, blog: number }> = {
+        free: { image: 5, video: 0, blog: 0 },
+        pro: { image: 30, video: 5, blog: 0 },
+        elite: { image: 100, video: 15, blog: 4 },
+        business: { image: 300, video: 50, blog: 12 }
     };
     return fallbacks[plan || 'free']?.[type] ?? (type === 'image' ? 5 : 0);
 }
 
-export async function getAiGenerationUsageAdmin(userId: string, type: 'image' | 'video'): Promise<number> {
+export async function getAiGenerationUsageAdmin(userId: string, type: 'image' | 'video' | 'blog'): Promise<number> {
     if (!adminDb) throw new Error("Firebase Admin DB not initialized");
     
     const firstDayOfMonth = new Date();
@@ -99,7 +99,7 @@ export async function getAiGenerationUsageAdmin(userId: string, type: 'image' | 
     return used;
 }
 
-export async function logAiGenerationAdmin(userId: string, profileId: string, type: 'image' | 'video', metadata: any = {}): Promise<void> {
+export async function logAiGenerationAdmin(userId: string, profileId: string, type: 'image' | 'video' | 'blog', metadata: any = {}): Promise<void> {
     if (!adminDb) return;
     try {
         await adminDb.collection("ai_generations").add({
