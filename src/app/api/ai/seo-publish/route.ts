@@ -22,14 +22,10 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "No hay configuración SEO guardada" }, { status: 400 });
         }
 
-        const { integrationType, wpUrl, wpUser, wpPassword, webhookUrl, webhookPlatform } = config;
+        const { integrationType, wpUrl, wpUser, wpPassword, webhookPlatform } = config;
 
         if (integrationType === 'wordpress' && (!wpUrl || !wpUser || !wpPassword)) {
             return NextResponse.json({ error: "Faltan credenciales de WordPress en la configuración" }, { status: 400 });
-        }
-
-        if (integrationType === 'webhook' && !webhookUrl) {
-            return NextResponse.json({ error: "Falta la URL del Webhook en la configuración" }, { status: 400 });
         }
 
         // Fetch Blog Post
@@ -76,9 +72,12 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: true, message: "Borrador enviado a WordPress con éxito" });
 
         } else if (integrationType === 'webhook') {
-            // Generic Webhook
+            // Generic Webhook Centralizado a n8n
+            const centralWebhookUrl = 'https://n8n.santisoft.cl/webhook/santisoft-seo-publish';
+            
             const payload = {
                 id: postId,
+                userId: userId, // Importante para que n8n sepa de qué cliente es
                 title: title,
                 htmlContent: content,
                 metaDescription: postData.metaDescription || '',
@@ -87,7 +86,7 @@ export async function POST(req: Request) {
                 platform: webhookPlatform || 'custom'
             };
 
-            const whRes = await fetch(webhookUrl, {
+            const whRes = await fetch(centralWebhookUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

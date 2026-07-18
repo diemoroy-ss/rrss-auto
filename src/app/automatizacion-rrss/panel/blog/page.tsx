@@ -497,7 +497,7 @@ export default function SeoAutopilotPanel() {
                               WordPress
                           </button>
                           <button onClick={() => setIntegrationType('webhook')} className={`flex-1 py-3 px-4 rounded-xl font-bold border-2 transition-all ${integrationType === 'webhook' ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}>
-                              Webhook (Make/Zapier)
+                              Webhook (Centralizado n8n)
                           </button>
                       </div>
                   </div>
@@ -524,9 +524,9 @@ export default function SeoAutopilotPanel() {
 
                   {integrationType === 'webhook' && (
                       <div className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                          <div>
-                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">URL del Webhook</label>
-                              <input type="text" value={webhookUrl} onChange={e => setWebhookUrl(e.target.value)} placeholder="https://hook.make.com/..." className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
+                          <div className="bg-indigo-100 text-indigo-800 p-4 rounded-xl text-sm font-medium mb-4">
+                              <span className="text-xl inline-block mb-1">🤖</span><br/>
+                              Este método se conectará internamente al motor n8n de Santisoft. Tú solo elige la plataforma de destino de tu cliente y nosotros enrutaremos la publicación automáticamente.
                           </div>
                           <div>
                               <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Plataforma de Destino</label>
@@ -537,7 +537,6 @@ export default function SeoAutopilotPanel() {
                                   <option value="custom">Otra (HTTP Request custom)</option>
                               </select>
                           </div>
-                          <p className="text-xs text-slate-500 font-medium">Enviaremos un POST JSON con los campos: <code>title, htmlContent, metaDescription, keyword, platform</code> cuando presiones Publicar.</p>
                       </div>
                   )}
 
