@@ -44,6 +44,8 @@ export default function SeoAutopilotPanel() {
   const [wpPassword, setWpPassword] = useState("");
   const [webhookUrl, setWebhookUrl] = useState("");
   const [webhookPlatform, setWebhookPlatform] = useState("shopify");
+  const [webhookStoreUrl, setWebhookStoreUrl] = useState("");
+  const [webhookApiKey, setWebhookApiKey] = useState("");
   
   // Strategy State
   const [generatingStrategy, setGeneratingStrategy] = useState(false);
@@ -133,6 +135,8 @@ export default function SeoAutopilotPanel() {
               if (data.seoConfig.wpPassword) setWpPassword(data.seoConfig.wpPassword);
               if (data.seoConfig.webhookUrl) setWebhookUrl(data.seoConfig.webhookUrl);
               if (data.seoConfig.webhookPlatform) setWebhookPlatform(data.seoConfig.webhookPlatform);
+              if (data.seoConfig.webhookStoreUrl) setWebhookStoreUrl(data.seoConfig.webhookStoreUrl);
+              if (data.seoConfig.webhookApiKey) setWebhookApiKey(data.seoConfig.webhookApiKey);
           }
         }
         await fetchPosts();
@@ -151,7 +155,8 @@ export default function SeoAutopilotPanel() {
           await updateDoc(doc(db, "users", user.uid), {
               seoConfig: { 
                   tone, audience, keywords, 
-                  integrationType, wpUrl, wpUser, wpPassword, webhookUrl, webhookPlatform 
+                  integrationType, wpUrl, wpUser, wpPassword, webhookUrl, webhookPlatform,
+                  webhookStoreUrl, webhookApiKey
               }
           });
           setShowConfig(false);
@@ -537,6 +542,18 @@ export default function SeoAutopilotPanel() {
                                   <option value="custom">Otra (HTTP Request custom)</option>
                               </select>
                           </div>
+                          {(webhookPlatform === 'shopify' || webhookPlatform === 'wix' || webhookPlatform === 'webflow') && (
+                              <div className="grid md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-200">
+                                  <div>
+                                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">URL de la Tienda</label>
+                                      <input type="text" value={webhookStoreUrl} onChange={e => setWebhookStoreUrl(e.target.value)} placeholder={`Ej: mittienda.${webhookPlatform}.com`} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
+                                  </div>
+                                  <div>
+                                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Token de Acceso / API Key</label>
+                                      <input type="password" value={webhookApiKey} onChange={e => setWebhookApiKey(e.target.value)} placeholder="**** **** ****" className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
+                                  </div>
+                              </div>
+                          )}
                       </div>
                   )}
 
