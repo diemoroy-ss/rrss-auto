@@ -204,7 +204,8 @@ export default function SeoAutopilotPanel() {
                   businessType,
                   tone,
                   audience,
-                  keywords
+                  keywords,
+                  limit: blogLimit
               })
           });
           const data = await response.json();

@@ -4,7 +4,7 @@ import { adminDb } from '../../../../lib/firebase-admin';
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId, businessType, tone, audience, keywords } = await req.json();
+    const { userId, businessType, tone, audience, keywords, limit } = await req.json();
 
     if (!userId) {
       return NextResponse.json({ error: "User ID is required" }, { status: 400 });
@@ -13,8 +13,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Firebase Admin is not configured" }, { status: 500 });
     }
 
+    const requestedCount = limit >= 999999 ? 12 : Math.min(Math.max(limit || 4, 1), 12);
+
     const systemInstruction = `Eres un Experto SEO y Estratega de Contenidos. 
-Tu tarea es generar un Clúster Temático mensual (estrategia de contenidos para un blog) de exactamente 4 artículos altamente optimizados para SEO en Google.
+Tu tarea es generar un Clúster Temático mensual (estrategia de contenidos para un blog) de exactamente ${requestedCount} artículos altamente optimizados para SEO en Google.
 Considera el tono de voz, el público objetivo y las palabras clave si se proporcionan.
 Debes devolver tu respuesta EXCLUSIVAMENTE en formato JSON, sin texto adicional ni formateo markdown fuera del JSON válido.
 El formato del JSON debe ser estrictamente un arreglo de objetos:
@@ -32,7 +34,7 @@ Tono de voz: ${tone || "Profesional y cercano"}
 Público Objetivo: ${audience || "Público general"}
 Palabras clave semilla: ${keywords || "Ninguna específica"}
 
-Genera el arreglo JSON de 4 artículos.`;
+Genera el arreglo JSON de ${requestedCount} artículos.`;
     
     console.log(`[SEO-AUTOPILOT] Generating strategy for: ${businessType || "General"}`);
     
