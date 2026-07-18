@@ -1,13 +1,34 @@
 "use client";
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { auth } from '../lib/firebase';
+import { auth, db } from '../lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import DotCanvas from '../components/DotCanvas';
 import WebChatWidget from '../components/WebChatWidget';
 import WhatsAppButton from '../components/WhatsAppButton';
 import PromoModal from '../components/PromoModal';
 import PageTracker from '../components/PageTracker';
+
+type PlanConfig = {
+    id: string;
+    name: string;
+    tagline: string;
+    price: number;
+    annualPrice: number;
+    postsLimit: number;
+    videosLimit: number;
+    aiImagesLimit: number;
+    aiVideosLimit: number;
+    seoBlogsLimit: number;
+    multiAccount: boolean;
+    maxAccounts: number;
+    isPopular: boolean;
+    ctaText: string;
+    features: string[];
+};
+
+const PLAN_ORDER = ["free", "pro", "elite", "business"];
 
 export default function Home() {
   const [user, setUser] = useState<any>(null);
@@ -17,6 +38,26 @@ export default function Home() {
   const [demoOutput, setDemoOutput] = useState("");
   const [showDemoOutput, setShowDemoOutput] = useState(false);
   const [demoButtonText, setDemoButtonText] = useState("→ Generar post con IA");
+
+  const [plans, setPlans] = useState<Record<string, PlanConfig>>({});
+  const [loadingPlans, setLoadingPlans] = useState(true);
+  const [billingCycle, setBillingCycle] = useState<'mensual' | 'anual'>('mensual');
+
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const snap = await getDoc(doc(db, "system_config", "plans"));
+        if (snap.exists()) {
+          setPlans(snap.data() as Record<string, PlanConfig>);
+        }
+      } catch (error) {
+        console.error("Error fetching plans:", error);
+      } finally {
+        setLoadingPlans(false);
+      }
+    };
+    fetchPlans();
+  }, []);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
@@ -106,12 +147,12 @@ export default function Home() {
       {/* 3. Hero & DemoCard */}
       <section id="hero">
         <div>
-          <div className="hero-eyebrow">Automatización RRSS · Meta · LinkedIn · TikTok</div>
+          <div className="hero-eyebrow">Redes Sociales · Blogs · Posicionamiento SEO & GEO</div>
           <h1>
-            Tus Redes Sociales<br />en <em>Piloto<br />Automático.</em>
+            Tu Presencia Digital<br />en <em>Piloto<br />Automático.</em>
           </h1>
           <p className="hero-body">
-            Conectamos IA con tus cuentas de Meta para que generes, agendes y publiques contenido sin mover un dedo.
+            Conectamos IA con tus redes y tu sitio web para generar, optimizar y publicar contenido SEO sin mover un dedo. Listo para la era de la IA.
           </p>
           <div className="hero-acts">
             <a href="#planes" className="btn-solid">Explorar Planes</a>
@@ -161,21 +202,21 @@ export default function Home() {
       <div className="ticker-wrap" aria-hidden="true">
         <div className="ticker-track" id="ticker">
           <span>Automatización</span><span className="accent">·</span>
+          <span>Posicionamiento SEO</span><span className="accent">·</span>
+          <span>Optimización GEO</span><span className="accent">·</span>
           <span>Meta API</span><span className="accent">·</span>
-          <span>TikTok</span><span className="accent">·</span>
-          <span>LinkedIn</span><span className="accent">·</span>
-          <span>24 / 7</span><span className="accent">·</span>
+          <span>Blogs</span><span className="accent">·</span>
           <span>IA Generativa</span><span className="accent">·</span>
           <span>Sin código</span><span className="accent">·</span>
-          <span>Copy perfecto</span><span className="accent">·</span>
+          <span>Piloto Automático</span><span className="accent">·</span>
           <span>Automatización</span><span className="accent">·</span>
+          <span>Posicionamiento SEO</span><span className="accent">·</span>
+          <span>Optimización GEO</span><span className="accent">·</span>
           <span>Meta API</span><span className="accent">·</span>
-          <span>TikTok</span><span className="accent">·</span>
-          <span>LinkedIn</span><span className="accent">·</span>
-          <span>24 / 7</span><span className="accent">·</span>
+          <span>Blogs</span><span className="accent">·</span>
           <span>IA Generativa</span><span className="accent">·</span>
           <span>Sin código</span><span className="accent">·</span>
-          <span>Copy perfecto</span><span className="accent">·</span>
+          <span>Piloto Automático</span><span className="accent">·</span>
         </div>
       </div>
 
@@ -183,24 +224,24 @@ export default function Home() {
       <section id="como">
         <div className="wrap">
           <div className="sec-head reveal">
-            <span className="sec-idx">01 — Cómo funciona</span>
-            <h2>Un flujo <em>invisible,</em><br />24/7.</h2>
+            <span className="sec-idx">01 — Ecosistema Integral</span>
+            <h2>Un flujo <em>invisible,</em><br />para Redes y SEO.</h2>
           </div>
           <div className="steps">
             <div className="step reveal">
               <span className="step-n">01</span>
-              <h3>Generación con IA</h3>
-              <p>Solo dinos tu idea y nuestra IA redactará el copy perfecto, optimizado para engagement en cada plataforma.</p>
+              <h3>Generación con IA (RRSS & Blog)</h3>
+              <p>Solo dinos tu idea. Nuestra IA redacta el copy perfecto para tus redes sociales o un artículo SEO completo para tu blog.</p>
             </div>
             <div className="step reveal" style={{ transitionDelay: '0.1s' }}>
               <span className="step-n">02</span>
-              <h3>Agendamiento Inteligente</h3>
-              <p>Elige el día y la hora. Guardamos tu post de forma segura y lo preparamos para publicación exacta.</p>
+              <h3>Calendario Estratégico</h3>
+              <p>Visualiza y organiza todo tu contenido. Automatiza la publicación de todo un mes en cuestión de minutos.</p>
             </div>
             <div className="step reveal" style={{ transitionDelay: '0.2s' }}>
               <span className="step-n">03</span>
-              <h3>Publicación Automática</h3>
-              <p>Nuestra IA se conecta a Meta, TikTok y LinkedIn API y publica por ti de forma completamente automática.</p>
+              <h3>Publicación Automática 360°</h3>
+              <p>Nos conectamos a Meta, TikTok, LinkedIn y también a tu CMS (WordPress, Shopify, Webflow) para publicar por ti 24/7.</p>
             </div>
           </div>
         </div>
@@ -247,44 +288,40 @@ export default function Home() {
             <h2>Escoge tu nivel<br />de <em>automatización.</em></h2>
           </div>
           <span className="pnote">PRECIOS EN PESOS CHILENOS (CLP) — IVA INCLUIDO</span>
+          <div className="flex justify-center mt-6 mb-10">
+            <div className="bg-slate-100 p-1.5 rounded-full inline-flex">
+                <button onClick={() => setBillingCycle('mensual')} className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${billingCycle === 'mensual' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}>Mensual</button>
+                <button onClick={() => setBillingCycle('anual')} className={`px-6 py-2 rounded-full text-sm font-bold transition-all flex items-center gap-2 ${billingCycle === 'anual' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}>
+                    Anual <span className="bg-emerald-100 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-widest">-10%</span>
+                </button>
+            </div>
+          </div>
           <div className="pgrid reveal">
-            <div className="plan">
-              <h3>Gratis</h3>
-              <span className="plan-price">$0</span>
-              <span className="plan-period">SIEMPRE</span>
-              <ul>
-                <li>4 Posts automáticos/mes</li>
-                <li>Publicación directa</li>
-                <li>Marca de agua Santisoft</li>
-                <li>Soporte comunitario</li>
-              </ul>
-              <Link href="/login" className="plan-cta">Comenzar Gratis</Link>
-            </div>
-            <div className="plan feat">
-              <span className="plan-badge">MÁS POPULAR</span>
-              <h3>Pro</h3>
-              <span className="plan-price">$19.990</span>
-              <span className="plan-period">AL MES</span>
-              <ul>
-                <li>20 Posts automáticos/mes</li>
-                <li>Publicación directa</li>
-                <li>Sin marca de agua</li>
-                <li>Soporte WhatsApp</li>
-              </ul>
-              <Link href="/login" className="plan-cta">Empezar Pro</Link>
-            </div>
-            <div className="plan">
-              <h3>Elite</h3>
-              <span className="plan-price">$49.990</span>
-              <span className="plan-period">AL MES</span>
-              <ul>
-                <li>60 Posts automáticos/mes</li>
-                <li>Vista previa y edición</li>
-                <li>Sin marca de agua</li>
-                <li>Soporte 24/7</li>
-              </ul>
-              <Link href="/login" className="plan-cta">Contactar Ventas</Link>
-            </div>
+            {loadingPlans ? (
+                <div className="col-span-full flex justify-center py-12 w-full"><div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto"></div></div>
+            ) : (
+                PLAN_ORDER.map(id => {
+                    const plan = plans[id];
+                    if (!plan) return null;
+                    
+                    const priceToShow = billingCycle === 'anual'
+                        ? (plan.annualPrice > 0 ? plan.annualPrice : (plan.price === 0 ? 0 : Math.round((plan.price * 12) * 0.90)))
+                        : plan.price;
+
+                    return (
+                        <div key={id} className={`plan ${plan.isPopular ? 'feat' : ''}`}>
+                          {plan.isPopular && <span className="plan-badge">MÁS POPULAR</span>}
+                          <h3>{plan.name}</h3>
+                          <span className="plan-price">${priceToShow === 0 ? '0' : priceToShow.toLocaleString('es-CL')}</span>
+                          <span className="plan-period">{billingCycle === 'anual' ? (plan.price === 0 ? 'SIEMPRE' : 'AL AÑO') : (plan.price === 0 ? 'SIEMPRE' : 'AL MES')}</span>
+                          <ul>
+                            {plan.features.map((f, i) => <li key={i}>{f}</li>)}
+                          </ul>
+                          <Link href="/login" className="plan-cta">{plan.ctaText}</Link>
+                        </div>
+                    );
+                })
+            )}
           </div>
         </div>
       </section>
