@@ -3,22 +3,33 @@ import { getFreeModel } from "../../../lib/gemini-free";
 
 export async function POST(req: NextRequest) {
   try {
-    const { rubro, promo } = await req.json();
+    const { rubro, promo, demoType = 'rrss' } = await req.json();
     if (!rubro || !promo) {
       return NextResponse.json({ error: "Faltan parámetros rubro o promo" }, { status: 400 });
     }
 
-    const systemInstruction = `Eres un experto copywriter de marketing digital para redes sociales en negocios latinoamericanos.
+    let systemInstruction = "";
+    let prompt = "";
+
+    if (demoType === 'blog') {
+        systemInstruction = `Eres un experto SEO y copywriter. 
+Crea un esquema corto y atractivo (outline) para un artículo de Blog SEO. 
+Debe tener un título H1 persuasivo, y 3 subtítulos H2 sobre el tema. 
+Mantén la extensión total por debajo de 150 palabras. Formatea en texto plano o Markdown básico.
+Responde únicamente con el esquema. NO incluyas introducciones innecesarias.`;
+        prompt = `Crea un esquema de artículo SEO para un negocio de: ${rubro}.\nEl tema central a posicionar es: ${promo}.`;
+    } else {
+        systemInstruction = `Eres un experto copywriter de marketing digital para redes sociales en negocios latinoamericanos.
 Crea posts de alta calidad en español con emojis apropiados, copy sumamente persuasivo y exactamente 5 hashtags estratégicos.
 Mantén la extensión total por debajo de 200 palabras.
 Responde únicamente con el post resultante. NO incluyas introducciones, títulos, explicaciones ni etiquetas markdown de código.`;
+        prompt = `Crea un post promocional para Instagram/Facebook para un negocio de: ${rubro}.\nEl tema o promoción a destacar es: ${promo}.`;
+    }
 
-    console.log(`[generate-post] Generando post para Rubro: ${rubro}, Promo: ${promo}`);
+    console.log(`[generate-post] Generando ${demoType} para Rubro: ${rubro}, Promo: ${promo}`);
     
     const model = getFreeModel(undefined, systemInstruction);
-    const result = await model.generateContent(
-      `Crea un post promocional para Instagram/Facebook para un negocio de: ${rubro}.\nEl tema o promoción a destacar es: ${promo}.`
-    );
+    const result = await model.generateContent(prompt);
     
     const response = result.response;
     const text = response.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
