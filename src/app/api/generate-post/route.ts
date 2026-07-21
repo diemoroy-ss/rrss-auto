@@ -3,7 +3,7 @@ import { getFreeModel } from "../../../lib/gemini-free";
 
 export async function POST(req: NextRequest) {
   try {
-    const { rubro, promo, demoType = 'rrss' } = await req.json();
+    const { rubro, promo, demoType = 'rrss', nombre, email } = await req.json();
     if (!rubro || !promo) {
       return NextResponse.json({ error: "Faltan parámetros rubro o promo" }, { status: 400 });
     }
@@ -36,6 +36,32 @@ Responde únicamente con el post resultante. NO incluyas introducciones, título
 
     if (!text) {
       throw new Error("No se pudo obtener una respuesta válida del modelo de IA.");
+    }
+
+    // Enviar webhook de lead/demo a n8n de manera asíncrona para que le llegue el correo electrónico
+    if (email) {
+      const webhookUrl = process.env.NODE_ENV === 'production' 
+        ? 'https://n8n.santisoft.cl/webhook/demo-ia'
+        : 'https://n8n.santisoft.cl/webhook-test/demo-ia';
+
+      console.log(`[generate-post] Enviando webhook de lead a n8n: ${webhookUrl} para ${email}`);
+      
+      fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre: nombre || "Lead Anónimo",
+          email: email,
+          rubro: rubro,
+          promo: promo,
+          demoType: demoType,
+          generatedText: text,
+          isLead: true,
+          date: new Date().toISOString()
+        })
+      }).catch(err => {
+        console.error("[generate-post n8n webhook error]:", err);
+      });
     }
 
     return NextResponse.json({ text });

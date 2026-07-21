@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Fraunces, DM_Mono, Plus_Jakarta_Sans } from 'next/font/google'
+import { Fraunces, DM_Mono, Plus_Jakarta_Sans, Work_Sans, Space_Mono } from 'next/font/google'
 import './globals.css'
 
 const fraunces = Fraunces({
@@ -22,6 +22,18 @@ const plusJakartaSans = Plus_Jakarta_Sans({
   weight: ['300', '400', '500'],
 })
 
+const workSans = Work_Sans({
+  subsets: ['latin'],
+  variable: '--font-work-sans',
+  weight: ['400', '500', '600', '700'],
+})
+
+const spaceMono = Space_Mono({
+  subsets: ['latin'],
+  variable: '--font-space-mono',
+  weight: ['400', '700'],
+})
+
 export const metadata: Metadata = {
   title: 'Santisoft AI',
   description: 'Panel de control de redes sociales',
@@ -39,7 +51,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="es" className={`${fraunces.variable} ${dmMono.variable} ${plusJakartaSans.variable}`}>
+    <html lang="es" className={`${fraunces.variable} ${dmMono.variable} ${plusJakartaSans.variable} ${workSans.variable} ${spaceMono.variable}`}>
       <body>{children}</body>
     </html>
   )

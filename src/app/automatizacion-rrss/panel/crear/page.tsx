@@ -1748,26 +1748,77 @@ export default function RrssCreatePost() {
             </div>
 
             {/* Footer Buttons */}
-            <div className="p-6 bg-white border-t border-slate-100 flex gap-3">
-               <button 
-                  onClick={() => {
-                     setShowFinalPostModal(false);
-                     setShowScheduler(true);
-                     window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-4 rounded-2xl transition-all text-xs flex items-center justify-center gap-2"
-               >
-                  📅 Agendar Post
-               </button>
-               <button 
-                  onClick={async () => {
-                     await handleSubmit(undefined, true);
-                  }}
-                  disabled={loading}
-                  className="flex-1 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-indigo-500/25 text-xs flex items-center justify-center gap-2"
-               >
-                  {loading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : '⚡ Publicar Ahora'}
-               </button>
+            <div className="p-6 bg-white border-t border-slate-100 flex flex-col gap-3">
+               {showScheduler ? (
+                 <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <div className="flex gap-4 mb-4">
+                       <div className="flex-1">
+                          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Día de Publicación</label>
+                          <input 
+                             type="date" 
+                             value={date} 
+                             onChange={e => setDate(e.target.value)}
+                             min={new Date().toISOString().split('T')[0]}
+                             className="w-full bg-slate-50 border border-slate-200 px-3 py-2.5 rounded-xl outline-none text-xs font-bold text-slate-700 focus:border-indigo-400"
+                          />
+                       </div>
+                       <div className="flex-1">
+                          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Hora Exacta</label>
+                          <input 
+                             type="time" 
+                             value={time} 
+                             onChange={e => setTime(e.target.value)}
+                             className="w-full bg-slate-50 border border-slate-200 px-3 py-2.5 rounded-xl outline-none text-xs font-bold text-slate-700 focus:border-indigo-400"
+                          />
+                       </div>
+                    </div>
+                    <div className="flex gap-3">
+                       <button 
+                          onClick={() => setShowScheduler(false)}
+                          className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-3 rounded-xl transition-all text-xs"
+                       >
+                          Volver
+                       </button>
+                       <button 
+                          onClick={async () => {
+                             if (!date || !time) {
+                                setStatusModal({
+                                   isOpen: true,
+                                   type: "error",
+                                   title: "Datos Incompletos",
+                                   message: "Debes seleccionar una fecha y hora para programar el post.",
+                                   onConfirm: () => setStatusModal(prev => ({ ...prev, isOpen: false }))
+                                });
+                                return;
+                             }
+                             await handleSubmit(undefined, false); // publishNow = false
+                          }}
+                          disabled={loading}
+                          className="flex-[2] bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-black py-3 rounded-xl transition-all shadow-lg shadow-indigo-500/25 text-xs flex items-center justify-center gap-2"
+                       >
+                          {loading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : '✅ Confirmar Agendamiento'}
+                       </button>
+                    </div>
+                 </div>
+               ) : (
+                 <div className="flex gap-3">
+                    <button 
+                       onClick={() => setShowScheduler(true)}
+                       className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-4 rounded-2xl transition-all text-xs flex items-center justify-center gap-2"
+                    >
+                       📅 Agendar Post
+                    </button>
+                    <button 
+                       onClick={async () => {
+                          await handleSubmit(undefined, true);
+                       }}
+                       disabled={loading}
+                       className="flex-1 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-indigo-500/25 text-xs flex items-center justify-center gap-2"
+                    >
+                       {loading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : '⚡ Publicar Ahora'}
+                    </button>
+                 </div>
+               )}
             </div>
 
           </div>

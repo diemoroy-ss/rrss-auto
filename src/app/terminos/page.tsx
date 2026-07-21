@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from 'next/link';
+import DotCanvas from '../../components/DotCanvas';
 
 export const metadata: Metadata = {
   title: "Santisoft AI | Términos de Servicio",
-  description: "Términos de servicio y condiciones de uso de Santisoft AI.",
+  description: "Términos de servicio y condiciones legales de uso de la plataforma Santisoft AI.",
   icons: {
     icon: [{ url: "/favicon.png", type: "image/png" }],
     apple: "/favicon.png",
@@ -13,85 +14,119 @@ export const metadata: Metadata = {
 
 export default function Terminos() {
   return (
-    <div className="min-h-screen bg-slate-50 py-20 px-6">
-      <div className="max-w-3xl mx-auto bg-white p-10 md:p-16 rounded-[40px] shadow-xl shadow-slate-200/50 border border-slate-100">
-        
-        <Link href="/" className="inline-flex items-center gap-2 text-indigo-600 font-bold mb-10 hover:gap-3 transition-all">
-           ← Volver al Inicio
-        </Link>
+    <div className="landing-page-root relative overflow-x-hidden min-h-screen pb-20">
+      <DotCanvas />
+      
+      {/* 1. PromoBanner */}
+      <div className="promo">
+        <span className="on-air"></span>
+        CONDICIONES GENERALES · CONTRATACIÓN Y USO DE LA PLATAFORMA
+      </div>
 
-        {/* App icon + App name header — required by TikTok reviewer */}
-        <div className="flex items-center gap-4 mb-8">
-          <Image
-            src="/favicon.png"
-            alt="Santisoft AI logo"
-            width={56}
-            height={56}
-            className="rounded-2xl shadow-md shadow-indigo-100"
-            priority
-          />
-          <span className="text-2xl font-black text-slate-900">
-            Santisoft <span className="text-indigo-600">AI</span>
-          </span>
-        </div>
-
-        <h1 className="font-display text-4xl md:text-5xl font-bold text-slate-900 mb-8">
-          Santisoft AI <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Términos de Servicio</span>
-        </h1>
-        
-        <div className="prose prose-slate max-w-none text-slate-600 space-y-6 font-medium leading-relaxed">
-          <p className="text-lg text-slate-500 italic">Última actualización: Mayo 2026</p>
-
-          <section>
-            <h2 className="text-xl font-bold text-slate-900 mb-4">1. Aceptación de los Términos</h2>
-            <p>
-              Al utilizar los servicios de <strong>Santisoft AI</strong> (en adelante, 'la Aplicación'), operada por Santisoft, usted acepta que la aplicación gestione sus permisos de redes sociales y cumpla con estos términos y condiciones. Santisoft AI proporciona herramientas de automatización para redes sociales basadas en Inteligencia Artificial y conexiones oficiales utilizando las APIs de Meta (Facebook e Instagram), TikTok Content Posting API y LinkedIn API para publicar contenido en su nombre bajo su explícito consentimiento.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-bold text-slate-900 mb-4">2. Uso del Servicio y Publicaciones</h2>
-            <p>
-              El usuario es el único responsable del contenido generado, configurado y publicado a través de nuestra plataforma en sus respectivas cuentas de redes sociales. Santisoft no se hace responsable por el uso inapropiado del servicio que contravenga las políticas de comunidad o pautas de integración de Meta, TikTok o LinkedIn, ni por las leyes locales vigentes.
-            </p>
-            <p className="mt-4">
-              <strong>Publicidad (Meta Ads):</strong> Al utilizar nuestro Creador de Campañas, usted autoriza a Santisoft a enviar la configuración de presupuestos y creativos a la API de Meta. <strong>Usted (el usuario y titular de la cuenta en Meta) es el único responsable de los cargos financieros, facturación y resultados de dichas campañas.</strong> Santisoft no se responsabiliza por cargos accidentales, sobregastos generados dentro de Facebook, rechazo de anuncios o bloqueos de cuentas publicitarias derivadas del uso de nuestra integración.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-bold text-slate-900 mb-4">3. Suscripciones y Pagos</h2>
-            <p>
-              Santisoft ofrece un plan gratuito limitado y planes premium (Pro y Elite) con cargos mensuales. Las suscripciones pueden cancelarse en cualquier momento desde su panel de control. Los cargos realizados no son reembolsables, a menos que el servicio haya presentado fallas técnicas demostrables e irreparables. 
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-bold text-slate-900 mb-4">4. Disponibilidad y Garantía</h2>
-            <p>
-              Nos esforzamos por mantener el servicio operativo el 99% del tiempo; sin embargo, Santisoft depende de servicios de terceros (Google Cloud, Meta API, Google Gemini). No garantizamos que el servicio sea ininterrumpido en caso de mantenimientos técnicos o fallas en dichas plataformas externas.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-bold text-slate-900 mb-4">5. Propiedad Intelectual</h2>
-            <p>
-              El usuario mantiene los derechos de autor sobre las ideas y contenidos base que proporciona. Santisoft mantiene los derechos sobre el software, algoritmos y interfaces que componen el servicio.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-bold text-slate-900 mb-4">6. Privacidad y Uso de Datos</h2>
-            <p>
-              Valoramos su privacidad. Santisoft AI recopila únicamente los datos necesarios para el funcionamiento del servicio, tales como tokens de acceso cifrados, nombres de usuario de perfiles conectados y métricas de rendimiento. Sus credenciales nunca se almacenan en texto plano. Los datos de rendimiento se utilizan exclusivamente para generar los reportes analíticos solicitados por usted. No compartimos, vendemos ni distribuimos su información a terceros para fines publicitarios externos. Usted puede solicitar la eliminación definitiva de sus datos y la desconexión de sus cuentas en cualquier momento desde la configuración de la aplicación.
-            </p>
-          </section>
-
-          <div className="pt-10 border-t border-slate-100 mt-10">
-            <p className="text-sm">Si tiene preguntas sobre nuestros términos, contáctenos en <span className="text-indigo-600 font-bold">legal@santisoft.com</span></p>
+      {/* 2. Nav */}
+      <nav>
+        <div className="wrap">
+          <Link href="/" className="logo">
+            <img src="/favicon.png" alt="Logo" style={{ width: '22px', height: '22px', objectFit: 'contain', borderRadius: '6px' }} />
+            SANTISOFT AI
+          </Link>
+          <div className="nav-links">
+            <Link href="/" className="btn btn-ghost btn-sm">← Volver al Inicio</Link>
           </div>
         </div>
-      </div>
+      </nav>
+
+      {/* 3. Main Content Section */}
+      <section style={{ borderTop: 'none', paddingTop: '60px' }}>
+        <div className="wrap">
+          <div className="section-head" style={{ maxWidth: '800px', marginBottom: '40px' }}>
+            <span className="eyebrow">Marco Regulatorio</span>
+            <h2>Términos de <em>Servicio.</em></h2>
+            <p className="sub" style={{ margin: '12px 0 0 0' }}>
+              Al registrarte y utilizar las herramientas de automatización de Santisoft AI, aceptas regirte por el siguiente conjunto de condiciones de servicio, responsabilidades y cargos financieros.
+            </p>
+          </div>
+
+          <div className="panel" style={{ padding: '40px 30px', background: 'var(--panel)', border: '1px solid var(--line-strong)', borderRadius: '16px' }}>
+            <div className="fmono" style={{ fontSize: '12px', color: 'var(--ink-faint)', marginBottom: '30px', display: 'flex', gap: '15px' }}>
+              <span>ÚLTIMA ACTUALIZACIÓN: JULIO 2026</span>
+              <span>VERSIÓN: 2.0 (ACTUALIZADO)</span>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '35px' }}>
+              
+              <section style={{ borderTop: '1px solid var(--line)', paddingTop: '20px' }}>
+                <h3 style={{ fontSize: '20px', fontFamily: 'var(--disp)', marginBottom: '12px', fontWeight: 600 }}>
+                  1. Aceptación de los Términos
+                </h3>
+                <p style={{ fontSize: '15px', color: 'var(--ink-dim)', lineHeight: '1.6' }}>
+                  Al crear una cuenta en <strong>Santisoft AI</strong> (la Aplicación), autorizas la gestión y publicación automática en tus redes sociales conectadas (Meta, TikTok y LinkedIn) y blogs oficiales. Las publicaciones se ejecutan bajo tu explícito control, y el servicio proporciona la infraestructura técnica de automatización conectando las APIs oficiales de cada plataforma.
+                </p>
+              </section>
+
+              <section style={{ borderTop: '1px solid var(--line)', paddingTop: '20px' }}>
+                <h3 style={{ fontSize: '20px', fontFamily: 'var(--disp)', marginBottom: '12px', fontWeight: 600 }}>
+                  2. Responsabilidad de Contenidos y Publicidad
+                </h3>
+                <p style={{ fontSize: '15px', color: 'var(--ink-dim)', lineHeight: '1.6', marginBottom: '10px' }}>
+                  • <strong>Publicaciones Orgánicas:</strong> El cliente es el único creador y responsable del material (imágenes, textos, ideas) generado e instruido a publicar en sus perfiles. Santisoft AI no supervisa la veracidad, derechos de autor o legalidad del contenido publicado.
+                </p>
+                <p style={{ fontSize: '15px', color: 'var(--ink-dim)', lineHeight: '1.6' }}>
+                  • <strong>Publicidad de Pago (Meta Ads):</strong> Al utilizar el creador de campañas en Meta Ads integrado, autorizas el consumo de tu presupuesto directamente desde tu cuenta publicitaria de Meta. <strong>El usuario asume el 100% de la responsabilidad financiera y de facturación</strong>. Santisoft AI no procesa cobros de publicidad ni se responsabiliza por el rendimiento, rechazos de anuncios o bloqueos derivados de las políticas de publicidad de Meta.
+                </p>
+              </section>
+
+              <section style={{ borderTop: '1px solid var(--line)', paddingTop: '20px' }}>
+                <h3 style={{ fontSize: '20px', fontFamily: 'var(--disp)', marginBottom: '12px', fontWeight: 600 }}>
+                  3. Planes de Suscripción y Reembolsos
+                </h3>
+                <p style={{ fontSize: '15px', color: 'var(--ink-dim)', lineHeight: '1.6' }}>
+                  Ofrecemos planes mensuales y anuales facturados por adelantado de forma automática a tu tarjeta de crédito o método de pago autorizado. Puedes cancelar tu suscripción en cualquier momento desde el panel de control. Al cancelar, mantendrás acceso hasta el final de tu ciclo de facturación en curso. Los montos ya cobrados no son reembolsables salvo en casos de fallos técnicos prolongados e irreparables imputables directamente a nuestra plataforma.
+                </p>
+              </section>
+
+              <section style={{ borderTop: '1px solid var(--line)', paddingTop: '20px' }}>
+                <h3 style={{ fontSize: '20px', fontFamily: 'var(--disp)', marginBottom: '12px', fontWeight: 600 }}>
+                  4. Uso Exclusivo y Límites de la IA
+                </h3>
+                <p style={{ fontSize: '15px', color: 'var(--ink-dim)', lineHeight: '1.6' }}>
+                  El servicio de Inteligencia Artificial que potencia Santisoft AI genera sugerencias basadas en modelos de lenguaje avanzados. Aunque optimizamos las respuestas para maximizar conversiones y SEO, el cliente debe validar que el contenido cumple con la normativa de su negocio antes de publicarlo en piloto automático. No garantizamos resultados específicos de tráfico, clics o ventas comerciales derivadas directa o indirectamente del contenido generado.
+                </p>
+              </section>
+
+              <section style={{ borderTop: '1px solid var(--line)', paddingTop: '20px' }}>
+                <h3 style={{ fontSize: '20px', fontFamily: 'var(--disp)', marginBottom: '12px', fontWeight: 600 }}>
+                  5. Disponibilidad y Suspensiones de Servicio
+                </h3>
+                <p style={{ fontSize: '15px', color: 'var(--ink-dim)', lineHeight: '1.6' }}>
+                  Santisoft AI se apoya en proveedores externos (como Google Cloud, APIs de Meta, TikTok, LinkedIn y Google Gemini). No nos responsabilizamos por interrupciones ocasionadas por caídas globales de estas APIs o mantenimientos imprevistos. Nos reservamos el derecho de suspender de forma inmediata cuentas de usuarios que utilicen nuestra plataforma para spam masivo, contenido de odio, o actividades ilegales que violen las políticas de comunidad de las redes sociales.
+                </p>
+              </section>
+
+            </div>
+
+            <footer style={{ marginTop: '40px', paddingTop: '30px', borderTop: '1px solid var(--line)', textAlign: 'center' }}>
+              <p style={{ fontSize: '13.5px', color: 'var(--ink-dim)' }}>
+                ¿Tienes dudas o necesitas asistencia sobre los contratos? Escríbenos directamente a <strong style={{ color: 'var(--signal)' }}>legal@santisoft.cl</strong>
+              </p>
+            </footer>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer style={{ marginTop: '60px' }}>
+        <div className="wrap">
+          <div className="fmono">
+            <span className="on-air"></span>
+            © 2026 SANTISOFT AI · TÉRMINOS LEGALES DE OPERACIÓN
+          </div>
+          <div className="flinks">
+            <Link href="/terminos">Términos de Servicio</Link>
+            <Link href="/privacidad">Política de Privacidad</Link>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

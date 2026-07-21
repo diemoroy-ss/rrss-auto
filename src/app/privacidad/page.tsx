@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from 'next/link';
+import DotCanvas from '../../components/DotCanvas';
 
 export const metadata: Metadata = {
   title: "Santisoft AI | Política de Privacidad",
-  description: "Política de privacidad y uso de datos de Santisoft AI. Conoce cómo recopilamos, usamos y protegemos tus datos.",
+  description: "Política de privacidad y cumplimiento regulatorio de datos de Santisoft AI. Conforme a la Ley N° 21.719 (modernización de la Ley N° 19.628 en Chile).",
   icons: {
     icon: [{ url: "/favicon.png", type: "image/png" }],
     apple: "/favicon.png",
@@ -13,150 +14,153 @@ export const metadata: Metadata = {
 
 export default function Privacidad() {
   return (
-    <div className="min-h-screen bg-[#f8fafc] py-20 px-6 font-sans">
-      {/* Background Decor */}
-      <div className="fixed top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 z-50" />
+    <div className="landing-page-root relative overflow-x-hidden min-h-screen pb-20">
+      <DotCanvas />
       
-      <div className="max-w-4xl mx-auto">
-        <Link 
-          href="/" 
-          className="inline-flex items-center gap-2 text-indigo-600 font-semibold mb-12 hover:translate-x-[-4px] transition-all duration-300 group"
-        >
-          <span className="bg-indigo-50 p-2 rounded-full group-hover:bg-indigo-100 transition-colors">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-          </span>
-          Volver al Inicio
-        </Link>
+      {/* 1. PromoBanner */}
+      <div className="promo">
+        <span className="on-air"></span>
+        CUMPLIMIENTO NORMATIVO · LEY DE PROTECCIÓN DE DATOS PERSONALES CHILE (LEY N° 21.719)
+      </div>
 
-        <main className="bg-white p-8 md:p-20 rounded-[48px] shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-slate-100 relative overflow-hidden">
-          {/* Subtle Glow */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full blur-3xl opacity-50 -mr-32 -mt-32" />
-          
-          {/* App icon + App name header — required by TikTok reviewer */}
-          <div className="flex items-center gap-4 mb-8 relative z-10">
-            <Image
-              src="/favicon.png"
-              alt="Santisoft AI logo"
-              width={56}
-              height={56}
-              className="rounded-2xl shadow-md shadow-indigo-100"
-              priority
-            />
-            <span className="text-2xl font-black text-slate-900">
-              Santisoft <span className="text-indigo-600">AI</span>
-            </span>
+      {/* 2. Nav */}
+      <nav>
+        <div className="wrap">
+          <Link href="/" className="logo">
+            <img src="/favicon.png" alt="Logo" style={{ width: '22px', height: '22px', objectFit: 'contain', borderRadius: '6px' }} />
+            SANTISOFT AI
+          </Link>
+          <div className="nav-links">
+            <Link href="/" className="btn btn-ghost btn-sm">← Volver al Inicio</Link>
+          </div>
+        </div>
+      </nav>
+
+      {/* 3. Main Content Section */}
+      <section style={{ borderTop: 'none', paddingTop: '60px' }}>
+        <div className="wrap">
+          <div className="section-head" style={{ maxWidth: '800px', marginBottom: '40px' }}>
+            <span className="eyebrow">Transparencia y Seguridad</span>
+            <h2>Política de <em>Privacidad.</em></h2>
+            <p className="sub" style={{ margin: '12px 0 0 0' }}>
+              En Santisoft AI nos tomamos muy en serio tu privacidad. Esta política detalla el tratamiento de tus datos bajo los nuevos estándares de la <strong>Ley N° 21.719</strong> (que moderniza la Ley N° 19.628 de Chile), aplicable a partir de diciembre de este año.
+            </p>
           </div>
 
-          <header className="relative z-10 mb-16">
-            <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight mb-6">
-              Santisoft AI <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Política de Privacidad</span>
-            </h1>
-            <div className="flex items-center gap-3 text-slate-400 font-medium">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              Última actualización: 22 de Mayo, 2026
+          <div className="panel" style={{ padding: '40px 30px', background: 'var(--panel)', border: '1px solid var(--line-strong)', borderRadius: '16px' }}>
+            <div className="fmono" style={{ fontSize: '12px', color: 'var(--ink-faint)', marginBottom: '30px', display: 'flex', gap: '15px' }}>
+              <span>ÚLTIMA ACTUALIZACIÓN: JULIO 2026</span>
+              <span>VERSIÓN: 2.1 (CONFORME LEY N° 21.719)</span>
             </div>
-          </header>
-          
-          <div className="prose prose-slate max-w-none relative z-10">
-            <div className="space-y-12 text-slate-600 text-lg leading-relaxed font-medium">
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '35px' }}>
               
-              <section>
-                <h2 className="text-2xl font-bold text-slate-900 mb-4 flex items-center gap-3">
-                  <span className="w-8 h-8 bg-indigo-600 text-white rounded-lg flex items-center justify-center text-sm">01</span>
-                  Introducción
-                </h2>
-                <p>
-                  Esta Política de Privacidad describe cómo <strong>Santisoft AI</strong> (en adelante, 'la Aplicación'), operada por Santisoft, recopila, utiliza y protege su información cuando utiliza nuestra plataforma de automatización de redes sociales y nuestras integraciones oficiales con Meta API (Facebook e Instagram), TikTok Content Posting API y LinkedIn API.
+              <section style={{ borderTop: '1px solid var(--line)', paddingTop: '20px' }}>
+                <h3 style={{ fontSize: '20px', fontFamily: 'var(--disp)', marginBottom: '12px', fontWeight: 600 }}>
+                  1. El Rol de Santisoft: Responsable y Encargado
+                </h3>
+                <p style={{ fontSize: '15px', color: 'var(--ink-dim)', lineHeight: '1.6' }}>
+                  De acuerdo con la nueva normativa de protección de datos en Chile:
+                  <br />
+                  • <strong>Responsable del Tratamiento:</strong> Santisoft AI actúa como Responsable respecto a los datos personales que recopilamos directamente de ti para crear tu cuenta de cliente, gestionar cobros y configurar tus preferencias.
+                  <br />
+                  • <strong>Encargado del Tratamiento:</strong> Actuamos como Encargados respecto a la información y bases de datos que tú conectas o el contenido de tu audiencia que fluye a través de nuestras integraciones de redes sociales, blogs o WhatsApp. Tú sigues siendo el Responsable y dueño exclusivo de esos datos.
                 </p>
               </section>
 
-              <section>
-                <h2 className="text-2xl font-bold text-slate-900 mb-4 flex items-center gap-3">
-                  <span className="w-8 h-8 bg-indigo-600 text-white rounded-lg flex items-center justify-center text-sm">02</span>
-                  Datos que Recopilamos
-                </h2>
-                <p>
-                  Para proporcionar nuestros servicios de automatización, recopilamos:
+              <section style={{ borderTop: '1px solid var(--line)', paddingTop: '20px' }}>
+                <h3 style={{ fontSize: '20px', fontFamily: 'var(--disp)', marginBottom: '12px', fontWeight: 600 }}>
+                  2. Base Legal del Tratamiento
+                </h3>
+                <p style={{ fontSize: '15px', color: 'var(--ink-dim)', lineHeight: '1.6' }}>
+                  Procesamos tus datos basados únicamente en las siguientes condiciones de licitud establecidas por la ley:
+                  <br />
+                  • <strong>Tu consentimiento explícito</strong> al conectar tus cuentas oficiales.
+                  <br />
+                  • <strong>Ejecución del contrato:</strong> Necesitamos procesar la información de tus redes sociales oficiales para programar, redactar mediante IA y ejecutar las publicaciones en piloto automático que has contratado.
                 </p>
-                <ul className="list-disc pl-6 space-y-2 mt-4 text-slate-500">
-                  <li>Información de perfil y tokens de acceso autorizados para publicar en Facebook, Instagram, TikTok y LinkedIn.</li>
-                  <li>Información recopilada a través de nuestros servicios de automatización de WhatsApp, incluyendo números de teléfono y el contenido de los mensajes interactuados.</li>
-                  <li>Métricas de rendimiento de anuncios (impresiones, clics, gasto) para mostrar en su panel de control.</li>
-                  <li>Contenido multimedia y textos que usted decida programar o publicar en sus perfiles autorizados.</li>
+              </section>
+
+              <section style={{ borderTop: '1px solid var(--line)', paddingTop: '20px' }}>
+                <h3 style={{ fontSize: '20px', fontFamily: 'var(--disp)', marginBottom: '12px', fontWeight: 600 }}>
+                  3. Datos Recopilados y Uso de APIs
+                </h3>
+                <p style={{ fontSize: '15px', color: 'var(--ink-dim)', lineHeight: '1.6', marginBottom: '12px' }}>
+                  Recopilamos únicamente la información mínima y necesaria para el funcionamiento de nuestras herramientas:
+                </p>
+                <ul style={{ listStyleType: 'circle', paddingLeft: '20px', fontSize: '14.5px', color: 'var(--ink-dim)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <li><strong>Tokens de Acceso Cifrados:</strong> Credenciales temporales para publicar en Meta (Facebook/Instagram), TikTok y LinkedIn. Nunca almacenamos tus contraseñas en texto plano.</li>
+                  <li><strong>Métricas de Rendimiento:</strong> Datos estadísticos sobre tus posts y campañas de Meta Ads para graficar tus reportes.</li>
+                  <li><strong>Mensajes y Automatización de Chats:</strong> Números de teléfono y texto de las interacciones en tu canal de WhatsApp automatizado.</li>
+                  <li><strong>Datos de Inteligencia Artificial (IA):</strong> El procesamiento de textos e ideas se realiza mediante la API segura de Google Gemini. Tus datos NO se utilizan para entrenar modelos públicos externos.</li>
                 </ul>
               </section>
 
-              <section className="bg-slate-50 p-8 rounded-3xl border border-slate-100">
-                <h2 className="text-2xl font-bold text-slate-900 mb-4 flex items-center gap-3">
-                  <span className="w-8 h-8 bg-indigo-600 text-white rounded-lg flex items-center justify-center text-sm">03</span>
-                  Uso de los Datos y APIs Externas
-                </h2>
-                <p>
-                  Santisoft utiliza las APIs oficiales de Meta, TikTok y LinkedIn para permitirle gestionar su presencia digital. Los datos se utilizan exclusivamente para:
+              <section style={{ borderTop: '1px solid var(--line)', paddingTop: '20px' }}>
+                <h3 style={{ fontSize: '20px', fontFamily: 'var(--disp)', marginBottom: '12px', fontWeight: 600 }}>
+                  4. Transferencia Internacional y Seguridad
+                </h3>
+                <p style={{ fontSize: '15px', color: 'var(--ink-dim)', lineHeight: '1.6' }}>
+                  Nuestras bases de datos residen en servidores seguros de Google Cloud en Estados Unidos y Europa. Implementamos cifrado SSL/TLS de grado bancario para todas las comunicaciones y bases de datos. Conforme a la modernización de la Ley N° 19.628, los proveedores contratados cumplen con estándares internacionales de seguridad equivalentes a las exigencias de la Unión Europea (GDPR).
                 </p>
-                <ul className="list-disc pl-6 space-y-2 mt-4 text-slate-500 mb-6">
-                  <li>Publicar y programar contenido en sus cuentas autorizadas según su explícito consentimiento.</li>
-                  <li>Analizar el rendimiento de sus campañas publicitarias y perfiles.</li>
-                  <li>Personalizar sugerencias de contenido mediante Inteligencia Artificial.</li>
+              </section>
+
+              <section style={{ borderTop: '1px solid var(--line)', paddingTop: '20px' }}>
+                <h3 style={{ fontSize: '20px', fontFamily: 'var(--disp)', marginBottom: '12px', fontWeight: 600 }}>
+                  5. Derechos de los Titulares (ARCO-P)
+                </h3>
+                <p style={{ fontSize: '15px', color: 'var(--ink-dim)', lineHeight: '1.6', marginBottom: '12px' }}>
+                  La Ley N° 21.719 te garantiza el pleno ejercicio de tus derechos fundamentales de protección de datos:
+                </p>
+                <ul style={{ listStyleType: 'square', paddingLeft: '20px', fontSize: '14.5px', color: 'var(--ink-dim)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <li><strong>Acceso:</strong> Saber qué datos tuyos tenemos almacenados.</li>
+                  <li><strong>Rectificación:</strong> Corregir información inexacta o desactualizada.</li>
+                  <li><strong>Cancelación (Eliminación):</strong> Solicitar el borrado definitivo de tus datos de nuestros sistemas.</li>
+                  <li><strong>Oposición:</strong> Negarte al tratamiento de tus datos para ciertos fines específicos.</li>
+                  <li><strong>Portabilidad:</strong> Solicitar una copia de tus datos estructurados para transferirlos a otra entidad.</li>
                 </ul>
-
-                <h3 className="text-xl font-bold text-slate-950 mb-2">Uso de Inteligencia Artificial (IA)</h3>
-                <p className="mb-6">
-                  Nuestro sistema utiliza la API de Google Gemini para procesar mensajes y generar respuestas automáticas. Los datos enviados a la IA se utilizan exclusivamente para generar respuestas inmediatas a sus consultas y no son utilizados para el entrenamiento público de modelos de lenguaje externos.
-                </p>
-
-                <h3 className="text-xl font-bold text-slate-950 mb-2">Gestión de Anuncios (Meta Ads)</h3>
-                <p className="mb-4">
-                  Al utilizar la función de Creador de Campañas, solicitamos permisos avanzados de gestión (`ads_management` y `ads_read`). Con su autorización, Santisoft lee su ID de cuenta publicitaria y métricas básicas (gasto, impresiones, clics) para mostrarlas en su panel, y utiliza el token para automatizar la creación de campañas publicitarias en su nombre.
-                </p>
-                <p className="font-semibold text-indigo-600">
-                  Importante: Santisoft NUNCA almacena, procesa, ni tiene acceso a su información de tarjetas de crédito o métodos de pago, la cual reside exclusivamente en los servidores de Meta. No vendemos sus datos a terceros, ni transferimos información de tokens a entidades no autorizadas.
+                <p style={{ fontSize: '14.5px', color: 'var(--ink-dim)', marginTop: '12px' }}>
+                  Puedes ejercer cualquiera de estos derechos directamente en tu configuración de perfil o enviando una solicitud formal a <strong style={{ color: 'var(--signal)' }}>legal@santisoft.cl</strong>. Responderemos a tu solicitud en el plazo legal establecido.
                 </p>
               </section>
 
-              <section>
-                <h2 className="text-2xl font-bold text-slate-900 mb-4 flex items-center gap-3">
-                  <span className="w-8 h-8 bg-indigo-600 text-white rounded-lg flex items-center justify-center text-sm">04</span>
-                  Seguridad y Almacenamiento
-                </h2>
-                <p>
-                  Toda la información personal, tokens cifrados e historial de chats se almacena de forma segura en bases de datos de Google Cloud (Firestore). Implementamos protocolos de cifrado SSL y medidas de seguridad técnicas para proteger sus datos contra acceso no autorizado, pérdida o alteración.
-                </p>
-              </section>
-
-              <section>
-                <h2 className="text-2xl font-bold text-slate-900 mb-4 flex items-center gap-3">
-                  <span className="w-8 h-8 bg-indigo-600 text-white rounded-lg flex items-center justify-center text-sm">05</span>
-                  Tus Derechos y Eliminación de Datos
-                </h2>
-                <p>
-                  Conforme a la normativa vigente, usted tiene derecho a acceder, rectificar y eliminar sus datos personales. Puede revocar el acceso de Santisoft en cualquier momento desde la configuración de su cuenta de Facebook o solicitando la eliminación total de sus datos en nuestra página de <Link href="/eliminaciondatos" className="text-indigo-600 hover:underline">Eliminación de Datos</Link>.
+              <section style={{ borderTop: '1px solid var(--line)', paddingTop: '20px' }}>
+                <h3 style={{ fontSize: '20px', fontFamily: 'var(--disp)', marginBottom: '12px', fontWeight: 600 }}>
+                  6. Notificación de Brechas de Seguridad
+                </h3>
+                <p style={{ fontSize: '15px', color: 'var(--ink-dim)', lineHeight: '1.6' }}>
+                  En caso de cualquier incidente o brecha de seguridad que afecte la confidencialidad de tus datos, Santisoft AI notificará de inmediato a los usuarios afectados y a la **Agencia de Protección de Datos Personales** de Chile en un plazo no mayor a 72 horas desde que se detecte el suceso, detallando las medidas de mitigación adoptadas.
                 </p>
               </section>
 
             </div>
 
-            <footer className="mt-20 pt-10 border-t border-slate-100">
-              <div className="bg-indigo-600 p-8 rounded-[32px] text-white flex flex-col md:flex-row justify-between items-center gap-6">
+            <footer style={{ marginTop: '40px', paddingTop: '30px', borderTop: '1px solid var(--line)' }}>
+              <div style={{ background: 'var(--panel-2)', padding: '24px', borderRadius: '12px', border: '1px dashed var(--line-strong)', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
                 <div>
-                  <p className="font-bold text-xl mb-1">¿Tiene dudas legales?</p>
-                  <p className="opacity-80">Nuestro equipo está listo para ayudarle.</p>
+                  <p style={{ fontWeight: 700, fontSize: '16px', color: 'var(--ink)' }}>¿Deseas revocar tus consentimientos de inmediato?</p>
+                  <p style={{ fontSize: '13px', color: 'var(--ink-dim)', marginTop: '4px' }}>Puedes solicitar la desconexión total y eliminación permanente de tu cuenta.</p>
                 </div>
-                <a 
-                  href="mailto:legal@santisoft.com" 
-                  className="bg-white text-indigo-600 px-8 py-4 rounded-2xl font-bold hover:shadow-lg transition-all"
-                >
-                  Contactar Soporte
-                </a>
+                <Link href="/eliminaciondatos" className="btn btn-primary btn-sm">Eliminar Datos</Link>
               </div>
             </footer>
           </div>
-        </main>
-        
-        <p className="text-center text-slate-400 mt-12 text-sm font-medium">
-          © 2026 Santisoft Automatización. Todos los derechos reservados.
-        </p>
-      </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer style={{ marginTop: '60px' }}>
+        <div className="wrap">
+          <div className="fmono">
+            <span className="on-air"></span>
+            © 2026 SANTISOFT AI · CUMPLIENDO LEY DE DATOS N° 21.719
+          </div>
+          <div className="flinks">
+            <Link href="/terminos">Términos de Servicio</Link>
+            <Link href="/privacidad">Política de Privacidad</Link>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

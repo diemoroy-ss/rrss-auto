@@ -34,6 +34,8 @@ export default function Home() {
   const [user, setUser] = useState<any>(null);
   const [rubro, setRubro] = useState("");
   const [promo, setPromo] = useState("");
+  const [nombre, setNombre] = useState("");
+  const [email, setEmail] = useState("");
   const [loadingDemo, setLoadingDemo] = useState(false);
   const [demoOutput, setDemoOutput] = useState("");
   const [showDemoOutput, setShowDemoOutput] = useState(false);
@@ -73,52 +75,51 @@ export default function Home() {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            entry.target.classList.add('on');
+            entry.target.classList.add('in');
             observer.unobserve(entry.target);
           }
         });
       },
-      { threshold: 0.06, rootMargin: '0px 0px -30px 0px' }
+      { threshold: 0.12 }
     );
 
-    const elements = document.querySelectorAll('.reveal');
+    const elements = document.querySelectorAll('[data-reveal]');
     elements.forEach((el) => observer.observe(el));
 
     return () => {
       observer.disconnect();
     };
-  }, []);
+  }, [loadingPlans]); // Re-observe when plans load since new DOM elements are added
 
   const handleDemoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!rubro.trim() || !promo.trim()) {
-      alert("Por favor completa los dos campos.");
+    if (!rubro.trim() || !promo.trim() || !nombre.trim() || !email.trim()) {
+      alert("Por favor completa todos los campos obligatorios.");
       return;
     }
     setLoadingDemo(true);
-    setDemoButtonText("⏳ Generando...");
+    setDemoButtonText("Generando...");
     setShowDemoOutput(false);
+    setDemoOutput("Escribiendo con IA...");
     try {
       const res = await fetch("/api/generate-post", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rubro, promo, demoType })
+        body: JSON.stringify({ rubro, promo, demoType, nombre, email })
       });
       const data = await res.json();
       if (data.error) {
-        setDemoOutput("Error al conectar con la IA. Intenta nuevamente.");
+        setDemoOutput("Ocurrió un error generando el contenido. Intenta nuevamente.");
       } else {
         setDemoOutput(data.text || "");
+        setShowDemoOutput(true);
       }
-      setShowDemoOutput(true);
-      setDemoButtonText("→ Generar de nuevo");
     } catch (err) {
       console.error(err);
-      setDemoOutput("Error al conectar con la IA. Intenta nuevamente.");
-      setShowDemoOutput(true);
-      setDemoButtonText("→ Generar de nuevo");
+      setDemoOutput("Ocurrió un error generando el contenido. Intenta nuevamente.");
     } finally {
       setLoadingDemo(false);
+      setDemoButtonText("→ Generar con IA");
     }
   };
 
@@ -128,208 +129,224 @@ export default function Home() {
       <DotCanvas />
 
       {/* 1. PromoBanner */}
-      <div className="promo-bar">
-        OFERTA — <strong style={{ color: 'var(--accent)' }}>4 IMÁGENES Y POSTEOS GRATIS</strong> CADA MES · SIN TARJETA DE CRÉDITO
+      <div className="promo">
+        <span className="on-air"></span>
+        OFERTA — <strong>4 IMÁGENES Y POSTEOS GRATIS</strong> CADA MES · SIN TARJETA DE CRÉDITO
       </div>
 
       {/* 2. Nav */}
       <nav>
-        <div className="nav-in">
+        <div className="wrap">
           <Link href="/" className="logo">
             <img src="/favicon.png" alt="Logo" style={{ width: '22px', height: '22px', objectFit: 'contain', borderRadius: '6px' }} />
             SANTISOFT AI
           </Link>
-          <Link href="/login" className="nav-btn">
-            Empezar Gratis
-          </Link>
+          <div className="nav-links">
+            <a href="#planes" className="ghost">Planes</a>
+            <Link href="/login" className="ghost">Acceso Cliente</Link>
+            <Link href="/login" className="btn btn-primary btn-sm">Empezar Gratis</Link>
+          </div>
         </div>
       </nav>
 
-      {/* 3. Hero & DemoCard */}
-      <section id="hero">
-        <div>
-          <div className="hero-eyebrow">Redes Sociales 360° · Blog Automático · SEO & GEO</div>
-          <h1>
-            Publica solo.<br />Posiciónate <em>solo.</em>
-          </h1>
-          <p className="hero-body">
-            Automatizamos tus redes sociales y tu blog con IA: publicamos en Facebook, Instagram y TikTok, y generamos contenido que te posiciona en Google y en las respuestas de ChatGPT, Perplexity y otros motores de IA. Todo en piloto automático.
-          </p>
-          <div className="hero-acts">
-            <a href="#planes" className="btn-solid">Explorar Planes</a>
-            <Link href="/login" className="btn-link">Acceso Cliente</Link>
-          </div>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-2 text-xs font-bold text-slate-500">
-             <span className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg shadow-sm text-slate-700">Meta (FB/IG)</span>
-             <span className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg shadow-sm text-slate-700">TikTok</span>
-             <span className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg shadow-sm text-slate-700">WordPress / Shopify / Webflow</span>
-             <span className="px-3 py-1.5 bg-slate-100/50 border border-slate-200 border-dashed rounded-lg text-slate-400">Google Business (Soon)</span>
-             <span className="px-3 py-1.5 bg-slate-100/50 border border-slate-200 border-dashed rounded-lg text-slate-400">LinkedIn (Soon)</span>
-          </div>
-        </div>
-
-        <div className="demo-card reveal">
-          <div className="flex bg-slate-100 p-1 rounded-xl mb-4 text-xs font-bold w-max mx-auto">
-             <button type="button" onClick={() => setDemoType('rrss')} className={`px-4 py-1.5 rounded-lg transition-all ${demoType === 'rrss' ? 'bg-white shadow text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}>Genera un post</button>
-             <button type="button" onClick={() => setDemoType('blog')} className={`px-4 py-1.5 rounded-lg transition-all ${demoType === 'blog' ? 'bg-white shadow text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}>Genera una idea de blog SEO</button>
-          </div>
-          <span className="demo-lbl">Ve la magia en acción — sin registro previo</span>
-          <form onSubmit={handleDemoSubmit}>
-            <div className="demo-row">
-              <label className="demo-flbl" htmlFor="d-rubro">Tu rubro o tipo de negocio</label>
-              <input
-                className="demo-inp"
-                id="d-rubro"
-                type="text"
-                placeholder="Ej: café especialidad, veterinaria..."
-                value={rubro}
-                onChange={e => setRubro(e.target.value)}
-                required
-              />
-            </div>
-            <div className="demo-row">
-              <label className="demo-flbl" htmlFor="d-promo">¿Qué quieres promocionar?</label>
-              <input
-                className="demo-inp"
-                id="d-promo"
-                type="text"
-                placeholder="Ej: lanzamiento de nuevo menú..."
-                value={promo}
-                onChange={e => setPromo(e.target.value)}
-                required
-              />
-            </div>
-            <button className="demo-btn" id="demo-btn" type="submit" disabled={loadingDemo}>
-              {demoButtonText}
-            </button>
-          </form>
-          <div className={`demo-out ${showDemoOutput ? 'on' : ''}`} id="demo-out">
-            {demoOutput}
-          </div>
-          <span className="demo-note">Sin tarjeta de crédito · Completamente gratis</span>
-        </div>
-      </section>
-
-      {/* 4. Ticker */}
-      <div className="ticker-wrap" aria-hidden="true">
-        <div className="ticker-track" id="ticker">
-          <span>Automatización</span><span className="accent">·</span>
-          <span>Posicionamiento SEO</span><span className="accent">·</span>
-          <span>Optimización GEO</span><span className="accent">·</span>
-          <span>Meta API</span><span className="accent">·</span>
-          <span>Blogs</span><span className="accent">·</span>
-          <span>IA Generativa</span><span className="accent">·</span>
-          <span>Sin código</span><span className="accent">·</span>
-          <span>Piloto Automático</span><span className="accent">·</span>
-          <span>Automatización</span><span className="accent">·</span>
-          <span>Posicionamiento SEO</span><span className="accent">·</span>
-          <span>Optimización GEO</span><span className="accent">·</span>
-          <span>Meta API</span><span className="accent">·</span>
-          <span>Blogs</span><span className="accent">·</span>
-          <span>IA Generativa</span><span className="accent">·</span>
-          <span>Sin código</span><span className="accent">·</span>
-          <span>Piloto Automático</span><span className="accent">·</span>
-        </div>
-      </div>
-
-      {/* 5. ComoFunciona */}
-      <section id="como">
+      {/* 3. Hero & Consola Interactiva */}
+      <section className="hero" style={{ borderTop: 'none', paddingTop: '80px' }}>
+        <div className="radar"></div>
         <div className="wrap">
-          <div className="sec-head reveal">
-            <span className="sec-idx">01 — Ecosistema Integral</span>
-            <h2>Un flujo <em>invisible,</em><br />para Redes y SEO.</h2>
+          <div className="hero-head">
+            <span className="eyebrow">Redes 360° <span className="freq">·</span> Blog Automático <span className="freq">·</span> SEO &amp; GEO</span>
+            <h1>Que te <em>vean.</em><br />Que te <span className="em-p">citen.</span></h1>
+            <p className="sub">Tu marca, al aire 24/7: automatizamos tus redes y tu blog con IA, publicamos en Facebook, Instagram y TikTok, y creamos el contenido que te posiciona en Google y en las respuestas de ChatGPT, Perplexity y otros motores de IA — mientras tú trabajas en tu negocio.</p>
+            <div className="hero-ctas">
+              <a href="#planes" className="btn btn-primary">Explorar Planes</a>
+              <Link href="/login" className="btn btn-ghost">Acceso Cliente</Link>
+            </div>
+            <div className="badges">
+              <span className="badge on"><span className="dot"></span>Meta (FB / IG)</span>
+              <span className="badge on"><span class="dot"></span>TikTok</span>
+              <span className="badge on"><span class="dot"></span>WordPress / Shopify / Webflow</span>
+              <span className="badge"><span class="dot"></span>Google Business — Soon</span>
+              <span className="badge"><span class="dot"></span>LinkedIn — Soon</span>
+            </div>
           </div>
-          <div className="grid md:grid-cols-2 gap-8 mt-12">
-            <div className="bg-white border-2 border-slate-200 rounded-3xl p-8 reveal">
-              <h3 className="text-2xl font-black text-slate-900 mb-6">Pilar A — Redes Sociales 360°</h3>
-              <ul className="space-y-4 text-slate-600">
-                 <li className="flex gap-3"><span className="text-indigo-600 font-bold">✓</span> <p>Generación de contenido persuasivo con IA para redes.</p></li>
-                 <li className="flex gap-3"><span className="text-indigo-600 font-bold">✓</span> <p>Calendario estratégico para automatizar todo un mes en minutos.</p></li>
-                 <li className="flex gap-3"><span className="text-indigo-600 font-bold">✓</span> <p>Publicación automática directa en Meta (Facebook, Instagram) y TikTok.</p></li>
-              </ul>
-              <div className="mt-8 flex items-center gap-2 flex-wrap">
-                 <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">Próximamente: Google Business & LinkedIn</span>
+
+          <div className="panel dark-screen" data-reveal>
+            <div className="panel-topbar">
+              <span>CONSOLA DE TRANSMISIÓN — SANTISOFT AI</span>
+              <div className="freqs"><span>98.6 FM</span><span>404 TERM</span></div>
+            </div>
+            <div className="gauges">
+              <div className="gauge a">
+                <div className="gauge-head">
+                  <span className="gauge-name">SEÑAL A — REDES</span>
+                  <span className="gauge-status">AL AIRE</span>
+                </div>
+                <div className="ring-row">
+                  <div className="eq-visual"><span></span><span></span><span></span><span></span><span></span></div>
+                  <p className="gauge-desc"><b>Meta + TikTok</b>, siempre al aire, con el calendario armado para todo el mes.</p>
+                </div>
+              </div>
+              <div className="gauge b">
+                <div className="gauge-head">
+                  <span className="gauge-name">SEÑAL B — SEO &amp; GEO</span>
+                  <span className="gauge-status">INDEXANDO</span>
+                </div>
+                <div className="ring-row">
+                  <div className="term-visual">&gt; crawling...<br />&gt; cite: true<br />&gt; rank: up<span className="cursor"></span></div>
+                  <p className="gauge-desc"><b>Blog en tu CMS</b> optimizado para Google y para que la IA te cite.</p>
+                </div>
               </div>
             </div>
-            
-            <div className="bg-slate-900 border-2 border-indigo-500 rounded-3xl p-8 reveal shadow-2xl shadow-indigo-500/20" style={{ transitionDelay: '0.1s' }}>
-              <h3 className="text-2xl font-black text-white mb-6">Pilar B — SEO & GEO con Blog</h3>
-              <ul className="space-y-4 text-slate-300">
-                 <li className="flex gap-3"><span className="text-indigo-400 font-bold">✓</span> <div><p className="font-bold text-white mb-1">Generative Engine Optimization (GEO)</p><p className="text-sm">Optimiza tu negocio para aparecer citado en respuestas de IA (ChatGPT, Perplexity), no solo en Google.</p></div></li>
-                 <li className="flex gap-3"><span className="text-indigo-400 font-bold">✓</span> <p>Generación de artículos completos y estructurados con IA experta.</p></li>
-                 <li className="flex gap-3"><span className="text-indigo-400 font-bold">✓</span> <p>Publicación automática sin código en tu CMS (WordPress, Shopify, Webflow).</p></li>
-              </ul>
-              <div className="mt-8">
-                 <span className="text-[10px] font-black uppercase tracking-widest text-indigo-200 bg-indigo-900/50 px-3 py-1 rounded-full border border-indigo-500/50">Promesa: Tráfico orgánico + Visibilidad en Motores IA</span>
+
+            <div className="console">
+              <div className="tabs">
+                <button
+                  className={`tab ${demoType === 'rrss' ? 'active' : ''}`}
+                  onClick={() => setDemoType('rrss')}
+                  type="button"
+                >
+                  Genera un post
+                </button>
+                <button
+                  className={`tab ${demoType === 'blog' ? 'active' : ''}`}
+                  onClick={() => setDemoType('blog')}
+                  type="button"
+                >
+                  Genera una idea de blog SEO
+                </button>
               </div>
+              <form onSubmit={handleDemoSubmit} className="console-form">
+                <input
+                  id="rubro"
+                  type="text"
+                  placeholder="Rubro del negocio (ej: cafetería, clínica dental)"
+                  value={rubro}
+                  onChange={(e) => setRubro(e.target.value)}
+                  required
+                />
+                <input
+                  id="promo"
+                  type="text"
+                  placeholder={demoType === 'rrss' ? "¿Qué quieres promocionar?" : "¿Sobre qué tema quieres posicionarte?"}
+                  value={promo}
+                  onChange={(e) => setPromo(e.target.value)}
+                  required
+                />
+                <input
+                  id="nombre"
+                  type="text"
+                  placeholder="Tu Nombre"
+                  value={nombre}
+                  onChange={(e) => setNombre(e.target.value)}
+                  required
+                />
+                <input
+                  id="email"
+                  type="email"
+                  placeholder="Tu Correo Electrónico"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+                <button className="gen-btn" id="genBtn" type="submit" disabled={loadingDemo}>
+                  <span>{demoButtonText}</span>
+                </button>
+              </form>
+              <div className={`console-out ${showDemoOutput || demoOutput ? 'filled' : ''}`} id="consoleOut">
+                {demoOutput || 'Ve la magia en acción — sin registro previo. Completa los campos y presiona "Generar con IA".'}
+              </div>
+              <div className="console-foot">SIN TARJETA DE CRÉDITO · COMPLETAMENTE GRATIS</div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 5.5 Que es GEO */}
-      <section id="geo-explainer" className="bg-slate-50 py-20 border-y border-slate-200">
+      {/* 4. Sección Ecosistema */}
+      <section id="ecosistema">
         <div className="wrap">
-          <div className="sec-head reveal text-center mx-auto mb-12">
-            <span className="sec-idx justify-center">02 — El Futuro del Posicionamiento</span>
+          <div className="section-head" data-reveal>
+            <span className="eyebrow">Ecosistema integral</span>
+            <h2>Un flujo invisible, para <em>Redes</em> y <span className="em-p">SEO.</span></h2>
+          </div>
+          <div className="pillars" data-reveal>
+            <div className="pillar a">
+              <span className="pillar-tag">SEÑAL A · 98.6 FM</span>
+              <h3>Redes Sociales 360°</h3>
+              <ul className="pillar-list">
+                <li><span className="mark">›</span><span>Generación de <strong>contenido persuasivo</strong> con IA, adaptado a tu marca.</span></li>
+                <li><span className="mark">›</span><span><strong>Calendario estratégico</strong> que automatiza todo un mes en minutos.</span></li>
+                <li><span className="mark">›</span><span>Publicación automática directa en <strong>Meta (Facebook, Instagram)</strong> y <strong>TikTok</strong>.</span></li>
+              </ul>
+              <span className="pillar-note">Próximamente: Google Business &amp; LinkedIn</span>
+            </div>
+            <div className="pillar b">
+              <span className="pillar-tag">SEÑAL B · 404 TERM</span>
+              <h3>SEO &amp; GEO con Blog</h3>
+              <ul className="pillar-list">
+                <li><span className="mark">›</span><span><strong>Generative Engine Optimization (GEO):</strong> apareces citado en respuestas de ChatGPT y Perplexity, no solo en Google.</span></li>
+                <li><span className="mark">›</span><span>Generación de <strong>artículos completos</strong> y estructurados con IA experta.</span></li>
+                <li><span className="mark">›</span><span>Publicación automática y sin código en tu <strong>CMS</strong> (WordPress, Shopify, Webflow).</span></li>
+              </ul>
+              <span className="pillar-note">Promesa: tráfico orgánico + visibilidad en motores IA</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 5. Sección ¿Qué es GEO? */}
+      <section id="geo">
+        <div className="wrap">
+          <div className="section-head center" data-reveal>
+            <span className="eyebrow">El futuro del posicionamiento</span>
             <h2>No basta con salir en Google.<br />Hay que salir en la <em>IA.</em></h2>
-            <p className="text-slate-600 max-w-2xl mx-auto mt-4">
-              Cada vez más personas buscan recomendaciones directamente en ChatGPT, Perplexity o el nuevo Google AI Overviews, en vez de hacer una búsqueda tradicional. Si tu negocio no está optimizado para esos motores, simplemente no existe para esa búsqueda.
-            </p>
           </div>
-          
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-12">
-            <div className="bg-white border-2 border-slate-200 rounded-3xl p-8 reveal">
-              <h3 className="text-2xl font-black text-slate-900 mb-4">SEO Tradicional</h3>
-              <p className="text-slate-600 text-sm leading-relaxed">
-                Optimizamos tu blog para que aparezcas en los resultados de búsqueda de Google, con keywords, estructura y contenido de calidad.
-              </p>
+          <p style={{ maxWidth: '620px', margin: '-28px auto 40px', textAlign: 'center', color: 'var(--ink-dim)', fontSize: '15px', lineHeight: '1.65' }} data-reveal>
+            Cada vez más personas piden recomendaciones directo a ChatGPT, Perplexity o Google AI Overviews, en vez de hacer una búsqueda tradicional. Si tu negocio no está optimizado para esos motores, simplemente no existe para esa búsqueda.
+          </p>
+          <div className="geo-compare" data-reveal>
+            <div className="geo-card old">
+              <span className="k">CANAL ANÁLOGO</span>
+              <h4>SEO Tradicional</h4>
+              <p>Optimizamos tu blog para que aparezcas en los resultados de búsqueda de Google, con keywords, estructura y contenido de calidad.</p>
             </div>
-            
-            <div className="bg-slate-900 border-2 border-indigo-500 rounded-3xl p-8 reveal shadow-2xl shadow-indigo-500/20" style={{ transitionDelay: '0.1s' }}>
-              <h3 className="text-2xl font-black text-white mb-4">GEO — Generative Engine Optimization</h3>
-              <p className="text-indigo-200 text-sm leading-relaxed">
-                Estructuramos y publicamos tu contenido para que los motores de IA generativa te citen y recomienden como fuente confiable en sus respuestas.
-              </p>
+            <div className="geo-card new dark-screen">
+              <span className="k">CANAL DIGITAL</span>
+              <h4>GEO — Generative Engine Optimization</h4>
+              <p>Estructuramos y publicamos tu contenido para que los motores de IA generativa te citen y recomienden como fuente confiable en sus respuestas.</p>
             </div>
           </div>
-          
-          <div className="text-center mt-12 reveal">
-            <p className="text-lg font-bold text-indigo-600">
-              Tu blog, escrito y publicado por IA, trabajando para que la IA te encuentre a ti.
-            </p>
-          </div>
+          <p className="geo-closing" data-reveal>"Tu blog, escrito y publicado por IA, trabajando para que la IA te encuentre a ti."</p>
         </div>
       </section>
 
       {/* 6. Testimonios */}
-      <section id="testimonios">
+      <section id="clientes">
         <div className="wrap">
-          <div className="sec-head reveal">
-            <span className="sec-idx">03 — Clientes</span>
-            <h2>Resultados <em>reales,</em><br />negocios reales.</h2>
+          <div className="section-head center" data-reveal>
+            <span className="eyebrow">Clientes</span>
+            <h2>Resultados <em>reales,</em> negocios reales.</h2>
           </div>
-          <div className="tgrid">
-            <div className="tcard reveal">
-              <div className="tquote">"</div>
-              <p className="ttext">Antes perdía 3 horas a la semana armando posts. Ahora Santisoft lo hace solo y mis publicaciones quedaron mucho más profesionales.</p>
-              <span className="tname">VALENTINA R.</span>
-              <span className="trole">Café & Pastelería</span>
-              <span className="tstars">★★★★★</span>
+          <div className="t-grid" data-reveal>
+            <div className="t-card">
+              <p className="t-quote">"Antes perdía 3 horas a la semana armando posts. Ahora Santisoft lo hace solo y mis publicaciones quedaron mucho más profesionales."</p>
+              <div className="t-who">
+                <div className="t-avatar">VR</div>
+                <div><div className="t-name">Valentina R.</div><div className="t-biz">CAFÉ &amp; PASTELERÍA</div></div>
+              </div>
             </div>
-            <div className="tcard reveal" style={{ transitionDelay: '0.1s' }}>
-              <div className="tquote">"</div>
-              <p className="ttext">El módulo de Blog Automático es una locura. En dos meses mi página empezó a recibir tráfico orgánico y a aparecer en búsquedas sin pagar anuncios.</p>
-              <span className="tname">MARCELO T.</span>
-              <span className="trole">Consultora de Marketing</span>
-              <span className="tstars">★★★★★</span>
+            <div className="t-card">
+              <p className="t-quote">"El módulo de Blog Automático es una locura. En dos meses mi página empezó a recibir tráfico orgánico y a aparecer en búsquedas sin pagar anuncios."</p>
+              <div className="t-who">
+                <div className="t-avatar">MT</div>
+                <div><div className="t-name">Marcelo T.</div><div className="t-biz">CONSULTORA DE MARKETING</div></div>
+              </div>
             </div>
-            <div className="tcard reveal" style={{ transitionDelay: '0.2s' }}>
-              <div className="tquote">"</div>
-              <p className="ttext">No soy técnica para nada y lo configuré sola en menos de 20 minutos. Ahora publico todos los días sin pensar en ello.</p>
-              <span className="tname">ANDREA P.</span>
-              <span className="trole">Clínica Veterinaria</span>
-              <span className="tstars">★★★★★</span>
+            <div className="t-card">
+              <p className="t-quote">"No soy técnica para nada y lo configuré sola en menos de 20 minutos. Ahora publico todos los días sin pensar en ello."</p>
+              <div className="t-who">
+                <div className="t-avatar">AP</div>
+                <div><div className="t-name">Andrea P.</div><div className="t-biz">CLÍNICA VETERINARIA</div></div>
+              </div>
             </div>
           </div>
         </div>
@@ -338,64 +355,75 @@ export default function Home() {
       {/* 7. Planes */}
       <section id="planes">
         <div className="wrap">
-          <div className="sec-head reveal">
-            <span className="sec-idx">03 — Planes</span>
-            <h2>Escoge tu nivel<br />de <em>automatización.</em></h2>
+          <div className="section-head center" data-reveal>
+            <span className="eyebrow">Planes</span>
+            <h2>Escoge tu nivel de <em>automatización.</em></h2>
           </div>
-          <span className="pnote">PRECIOS EN PESOS CHILENOS (CLP) — IVA INCLUIDO</span>
-          <div className="flex justify-center mt-6 mb-10">
-            <div className="bg-slate-100 p-1.5 rounded-full inline-flex">
-                <button onClick={() => setBillingCycle('mensual')} className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${billingCycle === 'mensual' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}>Mensual</button>
-                <button onClick={() => setBillingCycle('anual')} className={`px-6 py-2 rounded-full text-sm font-bold transition-all flex items-center gap-2 ${billingCycle === 'anual' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}>
-                    Anual <span className="bg-emerald-100 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-widest">-10%</span>
-                </button>
-            </div>
+          <div className="toggle-row" data-reveal>
+            <span className={`toggle-label ${billingCycle === 'mensual' ? 'active' : ''}`} id="labelM">Mensual</span>
+            <div
+              className={`toggle-sw ${billingCycle === 'anual' ? 'on' : ''}`}
+              id="cycleToggle"
+              onClick={() => setBillingCycle(prev => prev === 'mensual' ? 'anual' : 'mensual')}
+            ></div>
+            <span className={`toggle-label ${billingCycle === 'anual' ? 'active' : ''}`} id="labelA">
+              Anual <span className="save-badge">-10%</span>
+            </span>
           </div>
-          <div className="pgrid reveal">
+          <div className="plans" data-reveal>
             {loadingPlans ? (
-                <div className="col-span-full flex justify-center py-12 w-full"><div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto"></div></div>
+              <div className="col-span-full flex justify-center py-12 w-full">
+                <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto"></div>
+              </div>
             ) : (
-                PLAN_ORDER.map(id => {
-                    const plan = plans[id];
-                    if (!plan) return null;
-                    
-                    const priceToShow = billingCycle === 'anual'
-                        ? (plan.annualPrice > 0 ? plan.annualPrice : (plan.price === 0 ? 0 : Math.round((plan.price * 12) * 0.90)))
-                        : plan.price;
+              PLAN_ORDER.map(id => {
+                const plan = plans[id];
+                if (!plan) return null;
 
-                    return (
-                        <div key={id} className={`plan ${plan.isPopular ? 'feat' : ''}`}>
-                          {plan.isPopular && <span className="plan-badge">MÁS POPULAR</span>}
-                          <h3>{plan.name}</h3>
-                          <span className="plan-price">${priceToShow === 0 ? '0' : priceToShow.toLocaleString('es-CL')}</span>
-                          <span className="plan-period">{billingCycle === 'anual' ? (plan.price === 0 ? 'SIEMPRE' : 'AL AÑO') : (plan.price === 0 ? 'SIEMPRE' : 'AL MES')}</span>
-                          <ul>
-                            {plan.features.map((f, i) => <li key={i}>{f}</li>)}
-                          </ul>
-                          <Link href="/login" className="plan-cta">{plan.ctaText}</Link>
-                        </div>
-                    );
-                })
+                const priceToShow = billingCycle === 'anual'
+                  ? (plan.annualPrice > 0 ? plan.annualPrice : (plan.price === 0 ? 0 : Math.round((plan.price * 12) * 0.90)))
+                  : plan.price;
+
+                const priceLabel = priceToShow === 0 ? "$0" : `$${priceToShow.toLocaleString('es-CL')}`;
+
+                return (
+                  <div key={id} className={`plan ${plan.isPopular ? 'feat' : ''}`}>
+                    <span className="plan-name">{plan.name}</span>
+                    <div className="plan-price">
+                      {priceLabel}
+                      {plan.price > 0 && <span>/mes</span>}
+                    </div>
+                    <div className="plan-cycle">
+                      {plan.price === 0 ? "PARA SIEMPRE" : (billingCycle === 'anual' ? "FACTURADO AL AÑO" : "CLP · IVA INCLUIDO")}
+                    </div>
+                    <ul className="plan-list">
+                      {plan.features.map((f, i) => <li key={i}>{f}</li>)}
+                    </ul>
+                    <Link href="/login" className={`btn ${plan.isPopular ? 'btn-primary' : 'btn-ghost'}`}>
+                      {plan.ctaText}
+                    </Link>
+                  </div>
+                );
+              })
             )}
           </div>
         </div>
       </section>
 
-      {/* 8. CtaFinal */}
-      <section id="cta-final">
+      {/* 8. CTA Final */}
+      <div className="final-cta">
+        <div className="radar"></div>
         <div className="wrap">
-          <div className="cta-in reveal">
-            <h2 className="cta-hl">¿Listo para<br />recuperar <em>tu tiempo?</em></h2>
-            <Link href="/login" className="btn-white">Empezar Ahora Gratis</Link>
-          </div>
+          <h2>¿Listo para recuperar <em>tu tiempo?</em></h2>
+          <Link href="/login" className="btn btn-primary">Empezar Ahora Gratis</Link>
         </div>
-      </section>
+      </div>
 
       {/* 9. Footer */}
       <footer>
-        <div className="foot-in">
-          <span className="foot-copy">© 2026 SANTISOFT. TODOS LOS DERECHOS RESERVADOS.</span>
-          <div className="foot-links">
+        <div className="wrap">
+          <span className="fmono"><span className="on-air"></span>© 2026 SANTISOFT. TODOS LOS DERECHOS RESERVADOS.</span>
+          <div className="flinks">
             <Link href="/privacidad">Privacidad</Link>
             <Link href="/terminos">Términos</Link>
           </div>
