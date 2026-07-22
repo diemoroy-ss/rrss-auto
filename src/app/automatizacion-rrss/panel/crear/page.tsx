@@ -953,7 +953,7 @@ export default function RrssCreatePost() {
           // Solo agendar (Cloud Tasks)
           try {
               const idToken = await auth.currentUser?.getIdToken();
-              await fetch('/api/tasks/schedule', {
+              const scheduleRes = await fetch('/api/tasks/schedule', {
                   method: 'POST',
                   headers: {
                       'Content-Type': 'application/json',
@@ -964,10 +964,24 @@ export default function RrssCreatePost() {
                       scheduledFor: scheduledDate.toISOString()
                   })
               });
-          } catch (scheduleErr) {
-              console.error("Warning: Could not schedule GCP task", scheduleErr);
+              
+              if (!scheduleRes.ok) {
+                  const errData = await scheduleRes.json();
+                  throw new Error(errData.error || "No se pudo agendar la tarea.");
+              }
+              
+              router.push("/automatizacion-rrss/panel");
+          } catch (scheduleErr: any) {
+              console.error("Error scheduling GCP task", scheduleErr);
+              setStatusModal({
+                isOpen: true,
+                type: "error",
+                title: "Error al Agendar",
+                message: scheduleErr.message || "Ocurrió un error configurando la tarea en Google Cloud.",
+                onConfirm: () => setStatusModal(prev => ({ ...prev, isOpen: false }))
+              });
+              setLoading(false);
           }
-          router.push("/automatizacion-rrss/panel");
       }
 
     } catch (err) {
