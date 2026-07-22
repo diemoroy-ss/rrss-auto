@@ -5,6 +5,19 @@ let client: CloudTasksClient | null = null;
 
 function formatPrivateKey(key: string | undefined): string | undefined {
     if (!key) return undefined;
+    
+    // Support base64 encoded keys to bypass environment variable formatting issues
+    if (!key.includes('-----BEGIN PRIVATE KEY-----')) {
+        try {
+            const decoded = Buffer.from(key, 'base64').toString('utf-8');
+            if (decoded.includes('-----BEGIN PRIVATE KEY-----')) {
+                return decoded;
+            }
+        } catch (e) {
+            // ignore
+        }
+    }
+    
     let cleanKey = key.replace(/^["']|["']$/g, '').replace(/\\n/g, '\n');
     if (cleanKey.includes('\n') && cleanKey.split('\n').length > 3) return cleanKey;
     
