@@ -1,6 +1,6 @@
 "use client";
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { auth, db } from '../lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -45,6 +45,15 @@ export default function Home() {
   const [plans, setPlans] = useState<Record<string, PlanConfig>>({});
   const [loadingPlans, setLoadingPlans] = useState(true);
   const [billingCycle, setBillingCycle] = useState<'mensual' | 'anual'>('mensual');
+
+  const plansContainerRef = useRef<HTMLDivElement>(null);
+
+  const scrollPlans = (dir: 'left' | 'right') => {
+    if (plansContainerRef.current) {
+      const scrollAmount = 360;
+      plansContainerRef.current.scrollBy({ left: dir === 'left' ? -scrollAmount : scrollAmount, behavior: 'smooth' });
+    }
+  };
 
   useEffect(() => {
     const fetchPlans = async () => {
@@ -370,7 +379,21 @@ export default function Home() {
               Anual <span className="save-badge">-10%</span>
             </span>
           </div>
-          <div className="plans" data-reveal>
+          <div className="plans-wrapper group" data-reveal>
+            {/* Arrows for Desktop */}
+            <button 
+              className="absolute left-0 top-1/2 -translate-y-1/2 -ml-5 w-10 h-10 bg-white border border-slate-200 rounded-full shadow-lg z-10 hidden md:flex items-center justify-center text-slate-500 hover:text-indigo-600 hover:scale-105 transition-all opacity-0 group-hover:opacity-100" 
+              onClick={() => scrollPlans('left')}
+            >
+              ❮
+            </button>
+            <button 
+              className="absolute right-0 top-1/2 -translate-y-1/2 -mr-5 w-10 h-10 bg-white border border-slate-200 rounded-full shadow-lg z-10 hidden md:flex items-center justify-center text-slate-500 hover:text-indigo-600 hover:scale-105 transition-all opacity-0 group-hover:opacity-100" 
+              onClick={() => scrollPlans('right')}
+            >
+              ❯
+            </button>
+            <div className="plans" ref={plansContainerRef}>
             {loadingPlans ? (
               <div className="col-span-full flex justify-center py-12 w-full">
                 <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto"></div>
@@ -406,6 +429,7 @@ export default function Home() {
                 );
               })
             )}
+            </div>
           </div>
         </div>
       </section>
