@@ -51,22 +51,22 @@ export function buildPosterPromptSuffix(config: PosterConfig): string {
     parts.push('Incluir logo del negocio en el diseño.');
   }
   if (config.includePrice && config.priceText) {
-    parts.push(`Mostrar precio/promoción: "${config.priceText}".`);
+    parts.push(`Include the exact text "${config.priceText}" prominently. Do not hallucinate extra words.`);
   }
   if (config.includeContact && config.contactValue) {
     const label =
       config.contactType === 'whatsapp' ? 'WhatsApp' :
       config.contactType === 'email' ? 'Email' : 'Teléfono';
-    parts.push(`Incluir dato de contacto (${label}): ${config.contactValue}.`);
+    parts.push(`Include the exact text "${label}: ${config.contactValue}".`);
   }
   if (config.includeSlogan && config.sloganText) {
-    parts.push(`Slogan/frase gancho: "${config.sloganText}".`);
+    parts.push(`Include the exact phrase "${config.sloganText}".`);
   }
   if (config.primaryColor) {
     parts.push(`Color principal del diseño: ${config.primaryColor}.`);
   }
   if (config.ctaText) {
-    parts.push(`Llamado a la acción (CTA): "${config.ctaText}".`);
+    parts.push(`Include the exact Call-to-Action text: "${config.ctaText}".`);
   }
   if (config.additionalNotes) {
     parts.push(`Notas adicionales: ${config.additionalNotes}.`);
