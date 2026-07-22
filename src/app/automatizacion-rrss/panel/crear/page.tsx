@@ -1758,7 +1758,7 @@ export default function RrssCreatePost() {
                              type="date" 
                              value={date} 
                              onChange={e => setDate(e.target.value)}
-                             min={new Date().toISOString().split('T')[0]}
+                             min={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]}
                              className="w-full bg-slate-50 border border-slate-200 px-3 py-2.5 rounded-xl outline-none text-xs font-bold text-slate-700 focus:border-indigo-400"
                           />
                        </div>
