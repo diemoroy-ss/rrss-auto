@@ -19,6 +19,7 @@ async function getClient(): Promise<CloudTasksClient | null> {
                     private_key: privateKey,
                 },
                 projectId: projectId,
+                fallback: true,
             });
             return client;
         } catch (e) {

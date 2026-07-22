@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { adminDb } from '../../../lib/firebase-admin';
 import { decrypt, encrypt } from '../../../lib/encryption';
 import { getQuotaUsageAdmin, getPlanLimitAdmin } from '../../../lib/quota-admin';
+import nodemailer from 'nodemailer';
 
 // Helper function to fetch Meta Graph API with retry mechanism to handle transient errors
 async function fetchWithRetry(url: string, options: any, retries = 3, delay = 2000): Promise<any> {
@@ -928,6 +929,42 @@ async function publishInBackground(postId: string, post: any, creds: {
                 publishedIn: successNetworks
             });
             console.log(`[Background Publish] Post ${postId} finished successfully. Published in: ${successNetworks.join(', ')}`);
+
+            // --- SEND EMAIL NOTIFICATION ---
+            try {
+                const userDoc = await adminDb.collection('users').doc(creds.uid).get();
+                const userData = userDoc.data();
+                if (userData?.email && process.env.SMTP_EMAIL && process.env.SMTP_PASSWORD) {
+                    const transporter = nodemailer.createTransport({
+                        service: 'gmail',
+                        auth: { user: process.env.SMTP_EMAIL, pass: process.env.SMTP_PASSWORD }
+                    });
+                    
+                    const networkNames = successNetworks.join(', ');
+                    const imageHtml = imageUrl ? `<div style="text-align: center; margin: 20px 0;"><img src="${imageUrl}" alt="Post Image" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" /></div>` : '';
+                    
+                    await transporter.sendMail({
+                        from: `"Santisoft Automatización" <${process.env.SMTP_EMAIL}>`,
+                        to: userData.email,
+                        subject: `¡Tu post ha sido publicado con éxito! 🎉`,
+                        html: `
+                            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+                                <h2 style="color: #4F46E5;">¡Publicación Exitosa!</h2>
+                                <p>Hola ${userData.name || 'usuario'},</p>
+                                <p>Te informamos que tu publicación ha sido enviada exitosamente a las siguientes redes: <strong>${networkNames}</strong>.</p>
+                                ${imageHtml}
+                                <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; border-left: 4px solid #4F46E5; margin-top: 20px;">
+                                    <p style="margin: 0; white-space: pre-wrap;"><em>"${caption}"</em></p>
+                                </div>
+                                <p style="margin-top: 30px; font-size: 12px; color: #999;">Este es un mensaje automático de Santisoft.</p>
+                            </div>
+                        `
+                    });
+                    console.log(`[Background Publish] Email sent to ${userData.email}`);
+                }
+            } catch (emailErr: any) {
+                console.error("[Background Publish] Error sending email notification:", emailErr.message);
+            }
         } else {
             await postRef.update({
                 status: 'error',
