@@ -8,7 +8,10 @@ async function getClient(): Promise<CloudTasksClient | null> {
     
     const projectId = process.env.GCP_PROJECT_ID;
     const clientEmail = process.env.GCP_CLIENT_EMAIL;
-    const privateKey = process.env.GCP_PRIVATE_KEY?.replace(/\\n/g, '\n');
+    let privateKey = process.env.GCP_PRIVATE_KEY;
+    if (privateKey) {
+        privateKey = privateKey.replace(/^["']|["']$/g, '').replace(/\\n/g, '\n');
+    }
 
     if (projectId && clientEmail && privateKey) {
         try {
