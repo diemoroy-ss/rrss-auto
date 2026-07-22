@@ -25,6 +25,8 @@ export default function BibliotecaPage() {
   const [filterType, setFilterType] = useState<"all" | "Post" | "Historia" | "Carrusel" | "Reel">("all");
   const [error, setError] = useState("");
   const { activeProfile } = useProfile();
+  
+  const [selectedImage, setSelectedImage] = useState<GeneratedImage | null>(null);
 
   // Límites según el plan
   const planLimits: Record<string, number> = {
@@ -267,7 +269,10 @@ export default function BibliotecaPage() {
               className="bg-white rounded-[24px] border border-slate-100 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 group flex flex-col justify-between"
             >
               {/* Contenedor imagen */}
-              <div className="aspect-square w-full relative bg-slate-100 overflow-hidden">
+              <div 
+                className="aspect-square w-full relative bg-slate-100 overflow-hidden cursor-pointer"
+                onClick={() => setSelectedImage(img)}
+              >
                 <img 
                   src={img.url} 
                   alt={img.prompt || "Diseño generado"} 
@@ -342,6 +347,59 @@ export default function BibliotecaPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Modal para visualizar imagen y prompt */}
+      {selectedImage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setSelectedImage(null)}>
+          <div className="bg-white rounded-[24px] overflow-hidden shadow-2xl max-w-4xl w-full flex flex-col md:flex-row max-h-[90vh]" onClick={e => e.stopPropagation()}>
+            <div className="w-full md:w-3/5 bg-slate-100 flex items-center justify-center relative">
+              <img src={selectedImage.url} alt={selectedImage.prompt || "Diseño"} className="w-full h-auto object-contain max-h-[90vh]" />
+            </div>
+            <div className="w-full md:w-2/5 p-6 flex flex-col max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-start mb-6">
+                <span className={`text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg border shadow-sm ${
+                  selectedImage.source === "ia" ? "bg-indigo-50 border-indigo-200 text-indigo-700" : selectedImage.source === "upload" ? "bg-amber-50 border-amber-200 text-amber-700" : "bg-emerald-50 border-emerald-200 text-emerald-700"
+                }`}>
+                  {selectedImage.source === "ia" ? "🤖 IA" : selectedImage.source === "upload" ? "📥 Subido" : "🎨 Editado"}
+                </span>
+                <button onClick={() => setSelectedImage(null)} className="p-2 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-500 transition-colors w-8 h-8 flex items-center justify-center font-bold">
+                  ✕
+                </button>
+              </div>
+              
+              <h4 className="font-bold text-slate-800 text-lg mb-4 flex items-center gap-2">
+                {selectedImage.type === 'Post' ? '📱' : selectedImage.type === 'Historia' ? '🤳' : '🎬'} Formato: {selectedImage.type}
+              </h4>
+              
+              {selectedImage.prompt && (
+                <div className="flex-1 bg-slate-50 rounded-xl border border-slate-200 p-5 mb-6">
+                  <p className="font-bold text-[10px] uppercase tracking-widest text-indigo-500 mb-3 flex items-center gap-2">
+                    <span>✨</span> Concepto / Prompt Original:
+                  </p>
+                  <p className="text-sm font-medium italic text-slate-600 leading-relaxed">
+                    "{selectedImage.prompt}"
+                  </p>
+                </div>
+              )}
+              
+              <div className="flex flex-col gap-3 mt-auto">
+                <Link
+                  href={`/automatizacion-rrss/panel/crear?templateUrl=${encodeURIComponent(selectedImage.url)}&hideAI=true`}
+                  className="py-3.5 px-4 text-center rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[11px] uppercase tracking-wider transition-all shadow-md shadow-indigo-600/20"
+                >
+                  🚀 Postear Imagen
+                </Link>
+                <Link
+                  href={`/automatizacion-rrss/panel/crear?templateUrl=${encodeURIComponent(selectedImage.url)}&openEditor=true`}
+                  className="py-3.5 px-4 text-center rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-[11px] uppercase tracking-wider transition-all"
+                >
+                  ✏️ Editar Diseño
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
