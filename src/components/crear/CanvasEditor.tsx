@@ -23,6 +23,16 @@ interface TextLayer {
   size: string;
   x: number;
   y: number;
+  textAlign?: 'left' | 'center' | 'right';
+  isBold?: boolean;
+  isItalic?: boolean;
+  shadowLevel?: 'none' | 'soft' | 'strong';
+  backgroundColor?: string;
+  isPill?: boolean;
+  textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+  letterSpacing?: 'normal' | 'wide' | 'widest';
+  textStroke?: boolean;
+  opacity?: number;
 }
 
 export default function CanvasEditor({
@@ -37,11 +47,55 @@ export default function CanvasEditor({
 }: CanvasEditorProps) {
   const [showEditor, setShowEditor] = useState(forceOpenEditor);
   const [activeLayerIndex, setActiveLayerIndex] = useState(0);
-  const [textLayers, setTextLayers] = useState<TextLayer[]>([
-    { text: "", color: "#ffffff", font: "Montserrat", size: "40", x: 50, y: 40 },
-    { text: "", color: "#ffffff", font: "Montserrat", size: "30", x: 50, y: 50 },
-    { text: "", color: "#ffffff", font: "Montserrat", size: "20", x: 50, y: 60 },
-  ]);
+  
+  const defaultTextLayers: TextLayer[] = [
+    { text: "", color: "#ffffff", font: "Montserrat", size: "40", x: 50, y: 40, textAlign: 'center', isBold: true, isItalic: false, shadowLevel: 'strong', backgroundColor: 'transparent', isPill: false, textTransform: 'none', letterSpacing: 'normal', textStroke: false, opacity: 1 },
+    { text: "", color: "#ffffff", font: "Montserrat", size: "30", x: 50, y: 50, textAlign: 'center', isBold: true, isItalic: false, shadowLevel: 'strong', backgroundColor: 'transparent', isPill: false, textTransform: 'none', letterSpacing: 'normal', textStroke: false, opacity: 1 },
+    { text: "", color: "#ffffff", font: "Montserrat", size: "20", x: 50, y: 60, textAlign: 'center', isBold: true, isItalic: false, shadowLevel: 'strong', backgroundColor: 'transparent', isPill: false, textTransform: 'none', letterSpacing: 'normal', textStroke: false, opacity: 1 },
+  ];
+  
+  const [textLayers, setTextLayers] = useState<TextLayer[]>(defaultTextLayers);
+  const [imagePalette, setImagePalette] = useState<string[]>(['#ffffff', '#000000', '#f43f5e', '#3b82f6', '#10b981', '#facc15']);
+
+  // Extraer paleta de colores de la imagen
+  useEffect(() => {
+    if (baseImageUrl) {
+        const img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return;
+          canvas.width = img.width;
+          canvas.height = img.height;
+          ctx.drawImage(img, 0, 0);
+          try {
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+            const colorCounts: Record<string, number> = {};
+            const step = 4 * 400; // Sample for performance
+            for (let i = 0; i < imageData.length; i += step) {
+              const r = Math.round(imageData[i] / 20) * 20;
+              const g = Math.round(imageData[i+1] / 20) * 20;
+              const b = Math.round(imageData[i+2] / 20) * 20;
+              if ((r<30 && g<30 && b<30) || (r>230 && g>230 && b>230)) continue;
+              const rgb = `${r},${g},${b}`;
+              colorCounts[rgb] = (colorCounts[rgb] || 0) + 1;
+            }
+            const sorted = Object.entries(colorCounts).sort((a,b) => b[1] - a[1]);
+            const topColors = sorted.slice(0, 5).map(([rgb]) => {
+              const [r, g, b] = rgb.split(',').map(Number);
+              return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).padStart(6, '0')}`;
+            });
+            if (topColors.length > 0) {
+              setImagePalette(['#ffffff', '#000000', ...topColors]);
+            }
+          } catch (e) {
+            console.warn("CORS issue extracting colors", e);
+          }
+        };
+        img.src = baseImageUrl;
+    }
+  }, [baseImageUrl]);
 
   const [useLogo, setUseLogo] = useState(false);
   const [finalImageUrl, setFinalImageUrl] = useState("");
@@ -204,11 +258,7 @@ export default function CanvasEditor({
                     // Limpiar y resetear el editor completo
                     setFinalImageUrl("");
                     setShowEditor(false);
-                    setTextLayers([
-                      { text: "", color: "#ffffff", font: "Montserrat", size: "40", x: 50, y: 40 },
-                      { text: "", color: "#ffffff", font: "Montserrat", size: "30", x: 50, y: 50 },
-                      { text: "", color: "#ffffff", font: "Montserrat", size: "20", x: 50, y: 60 },
-                    ]);
+                    setTextLayers(defaultTextLayers);
                     setUseLogo(false);
                   }} 
                   className="text-[10px] font-black uppercase bg-rose-100 text-rose-700 px-3 py-1.5 rounded-lg hover:bg-rose-200 transition-colors"
@@ -301,8 +351,17 @@ export default function CanvasEditor({
                    color: layer.color, 
                    fontFamily: layer.font, 
                    fontSize: `${layer.size}px`, 
-                   fontWeight: 'bold', 
-                   textShadow: '2px 2px 8px rgba(0,0,0,0.8)',
+                   fontWeight: layer.isBold ? 'bold' : 'normal', 
+                   fontStyle: layer.isItalic ? 'italic' : 'normal',
+                   textShadow: layer.shadowLevel === 'strong' ? '2px 2px 8px rgba(0,0,0,0.8)' : layer.shadowLevel === 'soft' ? '1px 1px 3px rgba(0,0,0,0.5)' : 'none',
+                   backgroundColor: layer.backgroundColor && layer.backgroundColor !== 'transparent' ? layer.backgroundColor : 'transparent',
+                   borderRadius: layer.isPill ? '9999px' : '4px',
+                   padding: layer.backgroundColor && layer.backgroundColor !== 'transparent' ? '4px 12px' : '0',
+                   textTransform: layer.textTransform || 'none',
+                   letterSpacing: layer.letterSpacing === 'widest' ? '0.1em' : layer.letterSpacing === 'wide' ? '0.05em' : 'normal',
+                   WebkitTextStroke: layer.textStroke ? `1px ${layer.color === '#ffffff' ? '#000000' : '#ffffff'}` : 'none',
+                   opacity: layer.opacity ?? 1,
+                   textAlign: layer.textAlign || 'center',
                    left: `${layer.x}%`,
                    top: `${layer.y}%`,
                    transform: `translate(-50%, -50%) ${isDragging && draggingLayerIndex === idx ? 'scale(1.1)' : ''}`,
@@ -403,32 +462,124 @@ export default function CanvasEditor({
                 />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-                <div>
-                    <label className="block text-[10px] font-bold text-slate-400 mb-1">Color</label>
-                    <div className="flex gap-2">
-                        {['#ffffff', '#000000', '#f43f5e', '#3b82f6', '#10b981', '#facc15'].map(color => (
+            <div className="grid grid-cols-1 gap-4 mt-4 mb-4">
+                <div className="flex gap-4 items-start">
+                    <div className="flex-1">
+                        <label className="block text-[10px] font-bold text-slate-400 mb-1">Color de Letra</label>
+                        <div className="flex flex-wrap gap-2 items-center">
+                            {imagePalette.map(color => (
+                                <button 
+                                    key={`txt-${color}`} 
+                                    type="button" 
+                                    disabled={isOverlaying} 
+                                    onClick={() => updateActiveLayer({ color })} 
+                                    className={`w-6 h-6 rounded-full border-2 disabled:opacity-50 ${textLayers[activeLayerIndex].color === color ? 'border-indigo-500 scale-110' : 'border-slate-200'}`} 
+                                    style={{ backgroundColor: color }} 
+                                />
+                            ))}
+                            <input 
+                              type="color" 
+                              value={textLayers[activeLayerIndex].color}
+                              onChange={e => updateActiveLayer({ color: e.target.value })}
+                              className="w-6 h-6 p-0 border-0 rounded-full cursor-pointer overflow-hidden disabled:opacity-50"
+                              title="Elige color libre"
+                            />
+                        </div>
+                    </div>
+                    <div className="flex-1">
+                        <label className="block text-[10px] font-bold text-slate-400 mb-1">Color de Fondo</label>
+                        <div className="flex flex-wrap gap-2 items-center">
                             <button 
-                                key={color} 
                                 type="button" 
                                 disabled={isOverlaying} 
-                                onClick={() => updateActiveLayer({ color })} 
-                                className={`w-6 h-6 rounded-full border-2 disabled:opacity-50 ${textLayers[activeLayerIndex].color === color ? 'border-indigo-500 scale-110' : 'border-transparent'}`} 
-                                style={{ backgroundColor: color }} 
+                                onClick={() => updateActiveLayer({ backgroundColor: 'transparent' })} 
+                                className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-[10px] disabled:opacity-50 ${!textLayers[activeLayerIndex].backgroundColor || textLayers[activeLayerIndex].backgroundColor === 'transparent' ? 'border-indigo-500 bg-white' : 'border-slate-200 bg-white'}`}
+                                title="Transparente (Sin fondo)"
+                            >🚫</button>
+                            {imagePalette.map(color => (
+                                <button 
+                                    key={`bg-${color}`} 
+                                    type="button" 
+                                    disabled={isOverlaying} 
+                                    onClick={() => updateActiveLayer({ backgroundColor: color })} 
+                                    className={`w-6 h-6 rounded-full border-2 disabled:opacity-50 ${textLayers[activeLayerIndex].backgroundColor === color ? 'border-indigo-500 scale-110' : 'border-slate-200'}`} 
+                                    style={{ backgroundColor: color }} 
+                                />
+                            ))}
+                            <input 
+                              type="color" 
+                              value={textLayers[activeLayerIndex].backgroundColor === 'transparent' ? '#ffffff' : (textLayers[activeLayerIndex].backgroundColor || '#ffffff')}
+                              onChange={e => updateActiveLayer({ backgroundColor: e.target.value })}
+                              className="w-6 h-6 p-0 border-0 rounded-full cursor-pointer overflow-hidden disabled:opacity-50"
+                              title="Elige fondo libre"
                             />
-                        ))}
+                        </div>
                     </div>
                 </div>
-                <div>
-                    <label className="block text-[10px] font-bold text-slate-400 mb-1">Tamaño: {textLayers[activeLayerIndex].size}px</label>
-                    <input 
-                        type="range" 
-                        min="15" max="120" 
-                        value={textLayers[activeLayerIndex].size} 
-                        onChange={e => updateActiveLayer({ size: e.target.value })} 
-                        disabled={isOverlaying} 
-                        className="w-full disabled:opacity-50" 
-                    />
+                
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-[10px] font-bold text-slate-400 mb-1">Tamaño: {textLayers[activeLayerIndex].size}px</label>
+                        <input 
+                            type="range" 
+                            min="15" max="120" 
+                            value={textLayers[activeLayerIndex].size} 
+                            onChange={e => updateActiveLayer({ size: e.target.value })} 
+                            disabled={isOverlaying} 
+                            className="w-full disabled:opacity-50" 
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-[10px] font-bold text-slate-400 mb-1">Opacidad: {Math.round((textLayers[activeLayerIndex].opacity ?? 1)*100)}%</label>
+                        <input 
+                            type="range" 
+                            min="0.1" max="1" step="0.1"
+                            value={textLayers[activeLayerIndex].opacity ?? 1} 
+                            onChange={e => updateActiveLayer({ opacity: parseFloat(e.target.value) })} 
+                            disabled={isOverlaying} 
+                            className="w-full disabled:opacity-50" 
+                        />
+                    </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                    <button type="button" onClick={() => updateActiveLayer({ isBold: !textLayers[activeLayerIndex].isBold })} className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${textLayers[activeLayerIndex].isBold ? 'bg-indigo-100 border-indigo-300 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'}`}>B</button>
+                    <button type="button" onClick={() => updateActiveLayer({ isItalic: !textLayers[activeLayerIndex].isItalic })} className={`px-3 py-1.5 rounded-lg text-xs italic font-serif border transition-colors ${textLayers[activeLayerIndex].isItalic ? 'bg-indigo-100 border-indigo-300 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'}`}>I</button>
+                    
+                    <select 
+                      value={textLayers[activeLayerIndex].shadowLevel || 'strong'} 
+                      onChange={e => updateActiveLayer({ shadowLevel: e.target.value as any })}
+                      className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 text-slate-600 focus:outline-none focus:border-indigo-400 cursor-pointer"
+                    >
+                        <option value="none">Sin Sombra</option>
+                        <option value="soft">Sombra Suave</option>
+                        <option value="strong">Sombra Fuerte</option>
+                    </select>
+                    
+                    <select 
+                      value={textLayers[activeLayerIndex].textTransform || 'none'} 
+                      onChange={e => updateActiveLayer({ textTransform: e.target.value as any })}
+                      className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 text-slate-600 focus:outline-none focus:border-indigo-400 cursor-pointer"
+                    >
+                        <option value="none">Aa (Original)</option>
+                        <option value="uppercase">AA (Mayúsculas)</option>
+                        <option value="lowercase">aa (Minúsculas)</option>
+                        <option value="capitalize">Aa Bb (Títulos)</option>
+                    </select>
+
+                    <select 
+                      value={textLayers[activeLayerIndex].letterSpacing || 'normal'} 
+                      onChange={e => updateActiveLayer({ letterSpacing: e.target.value as any })}
+                      className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 text-slate-600 focus:outline-none focus:border-indigo-400 cursor-pointer"
+                    >
+                        <option value="normal">↔ Espaciado Normal</option>
+                        <option value="wide">↔ Ancho</option>
+                        <option value="widest">↔ Extra Ancho</option>
+                    </select>
+
+                    <button type="button" onClick={() => updateActiveLayer({ textStroke: !textLayers[activeLayerIndex].textStroke })} className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${textLayers[activeLayerIndex].textStroke ? 'bg-indigo-100 border-indigo-300 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'}`} title="Borde exterior sólido">Contorno</button>
+                    
+                    <button type="button" onClick={() => updateActiveLayer({ isPill: !textLayers[activeLayerIndex].isPill })} disabled={!textLayers[activeLayerIndex].backgroundColor || textLayers[activeLayerIndex].backgroundColor === 'transparent'} className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${textLayers[activeLayerIndex].isPill ? 'bg-indigo-100 border-indigo-300 text-indigo-700' : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'} disabled:opacity-50`} title="Fondo redondeado">Fondo Ovalado</button>
                 </div>
             </div>
 

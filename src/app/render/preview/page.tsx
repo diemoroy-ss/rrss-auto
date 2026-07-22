@@ -84,10 +84,18 @@ export default async function RenderPreviewPage(props: {
               color: layer.color,
               fontFamily: layer.font,
               fontSize: `${layer.size}px`,
-              fontWeight: "bold",
-              textShadow: "2px 2px 8px rgba(0,0,0,0.8)",
+              fontWeight: layer.isBold === false ? "normal" : "bold",
+              fontStyle: layer.isItalic ? "italic" : "normal",
+              textShadow: layer.shadowLevel === "none" ? "none" : layer.shadowLevel === "soft" ? "1px 1px 3px rgba(0,0,0,0.5)" : "2px 2px 8px rgba(0,0,0,0.8)",
+              backgroundColor: layer.backgroundColor && layer.backgroundColor !== "transparent" ? layer.backgroundColor : "transparent",
+              borderRadius: layer.isPill ? "9999px" : "4px",
+              padding: layer.backgroundColor && layer.backgroundColor !== "transparent" ? "4px 12px" : "0",
+              textTransform: layer.textTransform || "none",
+              letterSpacing: layer.letterSpacing === "widest" ? "0.1em" : layer.letterSpacing === "wide" ? "0.05em" : "normal",
+              WebkitTextStroke: layer.textStroke ? `1px ${layer.color === "#ffffff" ? "#000000" : "#ffffff"}` : "none",
+              opacity: layer.opacity ?? 1,
               whiteSpace: "nowrap",
-              textAlign: "center"
+              textAlign: layer.textAlign || "center"
             }}
           >
             {layer.text}
