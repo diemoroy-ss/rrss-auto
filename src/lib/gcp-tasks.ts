@@ -3,15 +3,26 @@ import type { CloudTasksClient } from '@google-cloud/tasks';
 // Initialize the client lazily to avoid build-time issues with Next.js bundling.
 let client: CloudTasksClient | null = null;
 
+function formatPrivateKey(key: string | undefined): string | undefined {
+    if (!key) return undefined;
+    let cleanKey = key.replace(/^["']|["']$/g, '').replace(/\\n/g, '\n');
+    if (cleanKey.includes('\n') && cleanKey.split('\n').length > 3) return cleanKey;
+    
+    const match = cleanKey.match(/-----BEGIN PRIVATE KEY-----(.*?)-----END PRIVATE KEY-----/s);
+    if (match) {
+        const base64Part = match[1].replace(/\s+/g, '');
+        const chunks = base64Part.match(/.{1,64}/g) || [];
+        return `-----BEGIN PRIVATE KEY-----\n${chunks.join('\n')}\n-----END PRIVATE KEY-----\n`;
+    }
+    return cleanKey;
+}
+
 async function getClient(): Promise<CloudTasksClient | null> {
     if (client) return client;
     
     const projectId = process.env.GCP_PROJECT_ID;
     const clientEmail = process.env.GCP_CLIENT_EMAIL;
-    let privateKey = process.env.GCP_PRIVATE_KEY;
-    if (privateKey) {
-        privateKey = privateKey.replace(/^["']|["']$/g, '').replace(/\\n/g, '\n');
-    }
+    const privateKey = formatPrivateKey(process.env.GCP_PRIVATE_KEY);
 
     if (projectId && clientEmail && privateKey) {
         try {
