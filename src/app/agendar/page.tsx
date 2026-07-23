@@ -5,7 +5,6 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect } from "react";
 
 function AgendarContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
 
   
