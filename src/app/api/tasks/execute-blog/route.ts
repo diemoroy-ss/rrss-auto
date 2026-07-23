@@ -7,9 +7,9 @@ export async function POST(req: NextRequest) {
     try {
         // Verify authorization
         const authHeader = req.headers.get('Authorization');
-        const expectedSecret = process.env.CRON_SECRET || 'santisoft-n8n-cron-key-123';
+        const expectedSecret = process.env.CRON_SECRET || '';
         
-        if (!authHeader || authHeader !== `Bearer ${expectedSecret}`) {
+        if (expectedSecret && (!authHeader || authHeader !== `Bearer ${expectedSecret}`)) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 

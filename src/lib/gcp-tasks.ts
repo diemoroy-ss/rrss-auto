@@ -175,7 +175,7 @@ export async function enqueueBlogTask(postId: string, scheduledFor: Date): Promi
             url: url,
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.CRON_SECRET || 'santisoft-n8n-cron-key-123'}`
+                'Authorization': `Bearer ${process.env.CRON_SECRET || ''}`
             },
             body: Buffer.from(payload).toString('base64'),
         },
