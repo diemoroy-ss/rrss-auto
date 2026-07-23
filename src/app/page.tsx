@@ -658,7 +658,7 @@ export default function Home() {
                   {!isTyping && (
                     <div className="flex flex-col sm:flex-row gap-4 mt-4 pt-6 border-t border-slate-100 justify-center">
                       <Link href="#planes" onClick={() => setShowAdvancedModal(false)} className="btn btn-ghost flex-1 justify-center border border-slate-200">Ver planes</Link>
-                      <Link href="https://calendly.com/santisoft" target="_blank" onClick={() => setShowAdvancedModal(false)} className="btn btn-primary flex-1 justify-center">Agendar demostración</Link>
+                      <Link href="/agendar" onClick={() => setShowAdvancedModal(false)} className="btn btn-primary flex-1 justify-center">Agendar demostración</Link>
                     </div>
                   )}
                 </div>
