@@ -148,7 +148,7 @@ function RegistroContent() {
           </h1>
           <p className="text-slate-500 text-sm mt-2">
             {isPaidPlan 
-              ? \`Estás a un paso de activar tu plan \${plan.toUpperCase()}.\` 
+              ? `Estás a un paso de activar tu plan ${plan.toUpperCase()}.` 
               : "Comienza a automatizar tus redes sociales en minutos."}
           </p>
         </div>
