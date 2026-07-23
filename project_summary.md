@@ -45,9 +45,11 @@ El código está organizado modularmente bajo `src/`:
 ```
 src/
 ├── app/                  # Rutas de Next.js App Router (Páginas y Endpoints de API)
-│   ├── api/              # 23 Endpoints del Backend (Auth, IA, Pagos, Webhooks, etc.)
+│   ├── api/              # Endpoints del Backend (Auth, IA, Pagos, Webhooks, Demo, etc.)
 │   ├── automatizacion-rrss/ # Vistas de la aplicación de automatización
 │   │   └── panel/        # Dashboard principal del cliente (Creación, Estrategias, Métricas)
+│   ├── login/            # Autenticación y enrutamiento (valida completitud de datos)
+│   ├── registro/         # Pantalla de Onboarding y Checkout para usuarios nuevos o planes de pago
 │   └── globals.css       # Estilos globales y variables CSS del sistema
 ├── components/           # Componentes UI reutilizables
 │   ├── ads/              # Formularios y asistentes de anuncios publicitarios (AdsWizard)
@@ -112,3 +114,13 @@ La plataforma interactúa a través de controladores en `src/app/api/`:
   * Los procesos automáticos de publicación y llamadas de cron exigen validación de cabecera Bearer contra `CRON_SECRET`.
 * **Sanitización de Prompts**: Todos los textos de usuario se sanitizan mediante `sanitizeInput` para anular ataques de Prompt Injection.
 * **Lazy Loading**: Recursos pesados del servidor (ej: `firebase-admin`, `@google-cloud/tasks`) se cargan dinámicamente mediante `await import(...)` para evitar inicializaciones masivas en el arranque.
+
+---
+
+## 🎯 8. Flujo de Adquisición y Demostración (Landing Page)
+La plataforma cuenta con un robusto sistema de captación y onboarding en la aplicación pública:
+* **Demo Avanzada Interactiva**: A través del endpoint `/api/generate-demo-advanced/route.ts`, los visitantes pueden probar la generación de IA sin registrarse. El sistema genera un prompt con directivas de marca, obtiene la imagen generada, y ejecuta un **ciclo de validación interno (Critique Loop)** para garantizar que el texto resultante no supere 300 caracteres y sea directo. El resultado se muestra en un modal interactivo (con marca de agua vía CSS) y se envía al usuario vía email (Nodemailer).
+* **Onboarding y Checkout Unificado**: La entrada de todos los usuarios se centraliza en `/registro/page.tsx`.
+  * Planes de Pago: Recolecta datos, crea el usuario y lo envía silenciosamente a la pasarela de MercadoPago.
+  * Plan Gratuito: Crea el usuario y lo redirige a la app.
+* **Smart Login**: Si un cliente se loguea vía Google Auth sin haber completado los datos mínimos de su perfil (Teléfono, Empresa), el sistema bloquea su entrada al panel y lo fuerza a pasar por el formulario de `/registro` para garantizar la integridad de la base de datos de usuarios.
