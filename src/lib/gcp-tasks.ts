@@ -148,3 +148,50 @@ export async function deletePostTask(taskName: string): Promise<boolean> {
     }
 }
 
+/**
+ * Encola un post de BLOG para ser ejecutado en el tiempo exacto.
+ * Llama al webhook ejecutor de blog.
+ */
+export async function enqueueBlogTask(postId: string, scheduledFor: Date): Promise<string | null> {
+    const clientInstance = await getClient();
+    if (!clientInstance) {
+        console.warn("[GCP TASKS] Cloud Tasks client is not initialized. Skipping queue.");
+        return null;
+    }
+
+    const projectId = process.env.GCP_PROJECT_ID;
+    const location = process.env.GCP_TASKS_LOCATION || 'us-central1';
+    const queue = process.env.GCP_TASKS_QUEUE || 'social-posts-queue';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://rrss.santisoft.cl';
+
+    const parent = clientInstance.queuePath(projectId!, location, queue);
+    const url = `${appUrl}/api/tasks/execute-blog`;
+    
+    const payload = JSON.stringify({ postId });
+
+    const task: TaskPayload = {
+        httpRequest: {
+            httpMethod: 'POST',
+            url: url,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${process.env.CRON_SECRET || 'santisoft-n8n-cron-key-123'}`
+            },
+            body: Buffer.from(payload).toString('base64'),
+        },
+    };
+
+    const seconds = Math.floor(scheduledFor.getTime() / 1000);
+    task.scheduleTime = { seconds: seconds };
+
+    try {
+        console.log(`[GCP TASKS] Sending BLOG task for post ${postId} scheduled at ${scheduledFor.toISOString()}`);
+        const request = { parent: parent, task: task };
+        const [response] = await clientInstance.createTask(request);
+        console.log(`[GCP TASKS] Created BLOG task ${response.name}`);
+        return response.name || null;
+    } catch (error) {
+        console.error(`[GCP TASKS] Error creating BLOG task for post ${postId}:`, error);
+        throw error;
+    }
+}
