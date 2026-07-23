@@ -140,8 +140,22 @@ function RegistroContent() {
   const isPaidPlan = plan !== "free";
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4 font-sans">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
+    <div className="landing-page-root relative overflow-x-hidden min-h-screen flex flex-col">
+      <nav>
+        <div className="wrap">
+          <Link href="/" className="logo">
+            <img src="/favicon.png" alt="Logo" style={{ width: '22px', height: '22px', objectFit: 'contain', borderRadius: '6px' }} />
+            SANTISOFT AI
+          </Link>
+          <div className="nav-links">
+            <Link href="/#planes" className="ghost">Planes</Link>
+            <Link href="/login" className="ghost">Acceso Cliente</Link>
+          </div>
+        </div>
+      </nav>
+
+      <div className="flex-1 flex items-center justify-center p-4 font-sans mt-20 mb-20">
+        <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 relative z-10">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-slate-800 font-serif">
             {isPaidPlan ? "Completa tu registro para continuar" : "Crea tu cuenta gratis"}
@@ -186,7 +200,12 @@ function RegistroContent() {
             <input required type="text" value={name} onChange={e => setName(e.target.value)} disabled={loading} className="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#DD4B19] outline-none" />
           </div>
 
-          {!currentUser && (
+          {currentUser ? (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-semibold text-slate-700">Correo electrónico</label>
+              <input required type="email" value={email} disabled className="px-4 py-3 bg-slate-100 border border-slate-200 text-slate-500 rounded-xl outline-none cursor-not-allowed" />
+            </div>
+          ) : (
             <>
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-semibold text-slate-700">Correo electrónico</label>
@@ -222,6 +241,17 @@ function RegistroContent() {
           Al registrarte aceptas nuestros Términos de Servicio y Política de Privacidad.
         </p>
       </div>
+      </div>
+
+      <footer>
+        <div className="wrap">
+          <span className="fmono"><span className="on-air"></span>© 2026 SANTISOFT. TODOS LOS DERECHOS RESERVADOS.</span>
+          <div className="flinks">
+            <Link href="/privacidad">Privacidad</Link>
+            <Link href="/terminos">Términos</Link>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
