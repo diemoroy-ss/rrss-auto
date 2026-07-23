@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
       });
 
       // Correo para el Administrador
-      const adminEmails = ["admin@santisoft.cl", "diemoroy@gmail.com"];
+      const adminEmails = ["admin@santisoft.cl", "diemoroy@gmail.com", "santisoftai@gmail.com"];
       await transporter.sendMail({
         from: `"Sistema de Reservas" <${process.env.SMTP_EMAIL}>`,
         to: adminEmails.join(', '),

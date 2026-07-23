@@ -32,6 +32,24 @@ function AgendarContent() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
 
+  const [occupiedSlots, setOccupiedSlots] = useState<string[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+
+  useEffect(() => {
+    if (!date) return;
+    setLoadingSlots(true);
+    setTime("");
+    fetch(`/api/agendar/blocked-slots?date=${date}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.occupiedSlots) {
+          setOccupiedSlots(data.occupiedSlots);
+        }
+      })
+      .catch(err => console.error(err))
+      .finally(() => setLoadingSlots(false));
+  }, [date]);
+
   const timeSlots = [
     "10:00", "11:00", "12:00", "13:00", 
     "15:00", "16:00", "17:00", "18:00"
@@ -143,23 +161,34 @@ function AgendarContent() {
                   </div>
                   
                   <div className="flex flex-col gap-2">
-                    <label className="text-sm font-semibold text-slate-700">Hora</label>
+                    <label className="text-sm font-semibold text-slate-700 flex items-center justify-between">
+                      <span>Hora</span>
+                      {loadingSlots && <span className="text-xs text-[#DD4B19] animate-pulse">Comprobando disponibilidad...</span>}
+                    </label>
                     <div className="grid grid-cols-3 gap-2">
-                      {timeSlots.map(slot => (
-                        <button
-                          key={slot}
-                          type="button"
-                          onClick={() => setTime(slot)}
-                          disabled={!date || loading}
-                          className={`py-2 px-1 text-sm font-medium rounded-lg border transition-all ${
-                            time === slot 
-                              ? 'bg-[#DD4B19] text-white border-[#DD4B19]' 
-                              : 'bg-white text-slate-600 border-slate-200 hover:border-[#DD4B19] disabled:opacity-50 disabled:cursor-not-allowed'
-                          }`}
-                        >
-                          {slot}
-                        </button>
-                      ))}
+                      {timeSlots.map(slot => {
+                        const isOccupied = occupiedSlots.includes(slot);
+                        const isSelected = time === slot;
+
+                        return (
+                          <button
+                            key={slot}
+                            type="button"
+                            onClick={() => setTime(slot)}
+                            disabled={!date || loading || isOccupied || loadingSlots}
+                            title={isOccupied ? "Horario reservado o bloqueado" : ""}
+                            className={`py-2 px-1 text-sm font-medium rounded-lg border transition-all ${
+                              isOccupied
+                                ? 'bg-slate-100 text-slate-300 border-slate-200 cursor-not-allowed line-through'
+                                : isSelected 
+                                  ? 'bg-[#DD4B19] text-white border-[#DD4B19]' 
+                                  : 'bg-white text-slate-600 border-slate-200 hover:border-[#DD4B19] disabled:opacity-50 disabled:cursor-not-allowed'
+                            }`}
+                          >
+                            {slot} {isOccupied && "🔒"}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
