@@ -69,7 +69,7 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
   const isAdminUser = ["diemoroy@gmail.com", "spalezcom@gmail.com", "santisoftai@gmail.com"].includes(userEmail) || userDoc?.role === "admin";
   
   if (isAdminUser || userDoc?.hasSeoAutopilot) {
-    links.splice(5, 0, { href: "/automatizacion-rrss/panel/blog", label: "Blog IA", icon: "📝", exact: false });
+    links.splice(5, 0, { href: "/automatizacion-rrss/panel/blog", label: "Seo / Geo", icon: "🌐", exact: false });
   }
 
   const isAdminRoute = pathname.includes("/automatizacion-rrss/panel/admin");
