@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '../../../../../lib/firebase-admin';
-import { generateFreeText } from "../../../../../lib/gemini-free";
+import { adminDb } from '../../../../lib/firebase-admin';
+import { generateFreeText } from "../../../../lib/gemini-free";
 import { marked } from 'marked';
 
 export async function POST(req: NextRequest) {
