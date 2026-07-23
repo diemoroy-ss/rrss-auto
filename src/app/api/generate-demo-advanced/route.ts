@@ -158,7 +158,7 @@ Responde únicamente con un JSON válido con dos campos:
                   </div>
                   <div style="margin-top: 30px; text-align: center;">
                     <a href="https://rrss.santisoft.cl/#planes" style="background-color: #DD4B19; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Ver Planes</a>
-                    <a href={`https://rrss.santisoft.cl/agendar?n=${encodeURIComponent(nombre || "")}&e=${encodeURIComponent(email || "")}`} style="background-color: transparent; color: #333; border: 1px solid #ccc; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; margin-left: 10px;">Agendar Demostración</a>
+                    <a href="https://rrss.santisoft.cl/agendar?n=${encodeURIComponent(nombre || "")}&e=${encodeURIComponent(email || "")}" style="background-color: transparent; color: #333; border: 1px solid #ccc; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; margin-left: 10px;">Agendar Demostración</a>
                   </div>
                   <p style="margin-top: 30px; font-size: 12px; color: #999;">Este es un mensaje automático de Santisoft.</p>
               </div>
