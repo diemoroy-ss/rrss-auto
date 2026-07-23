@@ -70,7 +70,10 @@ Entrega el artículo directamente en formato Markdown, sin texto introductorio n
                 let isPushed = false;
                 let pushError = null;
 
-                if (integrationType === 'wordpress') {
+                if (integrationType === 'api_feed') {
+                    isPushed = true;
+                    // Para API Feed, el auto-publish lo deja directamente publicado y disponible
+                } else if (integrationType === 'wordpress') {
                     if (wpUrl && wpUser && wpPassword) {
                         const baseUrl = wpUrl.replace(/\/$/, '');
                         const endpoint = `${baseUrl}/wp-json/wp/v2/posts`;
@@ -82,7 +85,7 @@ Entrega el artículo directamente en formato Markdown, sin texto introductorio n
                             body: JSON.stringify({
                                 title: post.title,
                                 content: htmlContent,
-                                status: 'draft', // Lo dejamos como borrador para que lo revisen, o 'publish' para full autopilot
+                                status: 'draft', // Lo dejamos como borrador en WP
                             })
                         });
                         if (wpRes.ok) isPushed = true;
@@ -109,11 +112,16 @@ Entrega el artículo directamente en formato Markdown, sin texto introductorio n
                     else pushError = await whRes.text();
                 }
 
+                // Determinar el nuevo estado
+                // Si es api_feed, queda 'published' para que salga directo en la web.
+                // Si son otros métodos, queda 'draft' localmente porque se mandó como borrador a WP/Shopify.
+                const newStatus = (integrationType === 'api_feed' && isPushed) ? 'published' : 'draft';
+
                 // 4. Actualizar estado en Firestore
                 await doc.ref.update({
                     content: markdownContent,
                     htmlContent: htmlContent,
-                    status: 'draft', // Cambia de strategy a draft
+                    status: newStatus,
                     isPushedToSite: isPushed,
                     pushedAt: isPushed ? new Date() : null,
                     updatedAt: new Date(),
