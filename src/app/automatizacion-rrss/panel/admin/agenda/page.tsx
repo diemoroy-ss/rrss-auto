@@ -20,6 +20,8 @@ export default function AdminAgendaPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "pending" | "confirmed" | "blocked" | "cancelled">("all");
   const [search, setSearch] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   // Modal states
   const [confirmModalBooking, setConfirmModalBooking] = useState<Booking | null>(null);
@@ -176,7 +178,9 @@ export default function AdminAgendaPage() {
     const matchesSearch = b.name.toLowerCase().includes(search.toLowerCase()) || 
                           b.email.toLowerCase().includes(search.toLowerCase()) ||
                           b.date.includes(search);
-    return matchesFilter && matchesSearch;
+    const matchesStartDate = !startDate || b.date >= startDate;
+    const matchesEndDate = !endDate || b.date <= endDate;
+    return matchesFilter && matchesSearch && matchesStartDate && matchesEndDate;
   });
 
   const counts = {
@@ -257,16 +261,49 @@ export default function AdminAgendaPage() {
           ))}
         </div>
 
-        {/* Search */}
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Buscar por nombre, email o fecha..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full sm:w-64 pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500"
-          />
-          <span className="absolute left-3 top-2 text-slate-400 text-xs">🔍</span>
+        {/* Date Range & Search */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 text-xs">
+            <span className="text-slate-400 font-medium">Desde:</span>
+            <input
+              type="date"
+              value={startDate}
+              onChange={e => setStartDate(e.target.value)}
+              className="bg-transparent border-none outline-none text-slate-700 text-xs font-medium cursor-pointer"
+            />
+          </div>
+
+          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 text-xs">
+            <span className="text-slate-400 font-medium">Hasta:</span>
+            <input
+              type="date"
+              value={endDate}
+              onChange={e => setEndDate(e.target.value)}
+              className="bg-transparent border-none outline-none text-slate-700 text-xs font-medium cursor-pointer"
+            />
+          </div>
+
+          {(startDate || endDate) && (
+            <button
+              onClick={() => { setStartDate(""); setEndDate(""); }}
+              className="text-xs font-bold text-red-500 hover:text-red-700 px-2 py-1 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+              title="Limpiar fechas"
+            >
+              ✕ Limpiar
+            </button>
+          )}
+
+          {/* Search */}
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Buscar cliente, email..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-full sm:w-48 pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500"
+            />
+            <span className="absolute left-2.5 top-2 text-slate-400 text-xs">🔍</span>
+          </div>
         </div>
       </div>
 
