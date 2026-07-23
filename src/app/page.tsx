@@ -41,6 +41,11 @@ export default function Home() {
   const [showDemoOutput, setShowDemoOutput] = useState(false);
   const [demoType, setDemoType] = useState<'rrss' | 'blog'>('rrss');
   const [demoButtonText, setDemoButtonText] = useState("→ Generar con IA");
+  const [typedOutput, setTypedOutput] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const [showAdvancedModal, setShowAdvancedModal] = useState(false);
+  const [advancedStep, setAdvancedStep] = useState(0); 
+  const [advancedImgUrl, setAdvancedImgUrl] = useState("");
 
   const [plans, setPlans] = useState<Record<string, PlanConfig>>({});
   const [loadingPlans, setLoadingPlans] = useState(true);
@@ -111,24 +116,53 @@ export default function Home() {
     }
     setLoadingDemo(true);
     setDemoButtonText("Generando...");
-    setShowDemoOutput(false);
-    setDemoOutput("Escribiendo con IA...");
+    setShowAdvancedModal(true);
+    setAdvancedStep(1); // Analizando solicitud
+    
+    // Simular pasos mientras se espera para mejor UX
+    const stepTimer1 = setTimeout(() => setAdvancedStep(2), 2000); // Paso 2
+    const stepTimer2 = setTimeout(() => setAdvancedStep(3), 12000); // Paso 3 (esperar imagen toma tiempo)
+
     try {
-      const res = await fetch("/api/generate-post", {
+      const res = await fetch("/api/generate-demo-advanced", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ rubro, promo, demoType, nombre, email })
       });
+      clearTimeout(stepTimer1);
+      clearTimeout(stepTimer2);
+      
       const data = await res.json();
       if (data.error) {
-        setDemoOutput("Ocurrió un error generando el contenido. Intenta nuevamente.");
+        alert("Ocurrió un error generando el contenido. Intenta nuevamente.");
+        setShowAdvancedModal(false);
       } else {
         setDemoOutput(data.text || "");
-        setShowDemoOutput(true);
+        setAdvancedImgUrl(data.imgUrl || "");
+        setAdvancedStep(4); // Finalizado
+        
+        // Typewriter en el modal
+        setIsTyping(true);
+        setTypedOutput("");
+        const textToType = data.text || "";
+        let i = 0;
+        const typeChar = () => {
+          if (i < textToType.length) {
+            setTypedOutput(textToType.substring(0, i + 1));
+            i++;
+            setTimeout(typeChar, 15);
+          } else {
+            setIsTyping(false);
+          }
+        };
+        typeChar();
       }
     } catch (err) {
       console.error(err);
-      setDemoOutput("Ocurrió un error generando el contenido. Intenta nuevamente.");
+      clearTimeout(stepTimer1);
+      clearTimeout(stepTimer2);
+      alert("Ocurrió un error generando el contenido. Intenta nuevamente.");
+      setShowAdvancedModal(false);
     } finally {
       setLoadingDemo(false);
       setDemoButtonText("→ Generar con IA");
@@ -282,8 +316,17 @@ export default function Home() {
                   <span>{demoButtonText}</span>
                 </button>
               </form>
-              <div className={`console-out ${showDemoOutput || demoOutput ? 'filled' : ''}`} id="consoleOut">
-                {demoOutput || 'Ve la magia en acción — sin registro previo. Completa los campos y presiona "Generar con IA".'}
+              <div className={`console-out ${showDemoOutput || demoOutput ? 'filled' : ''}`} id="consoleOut" style={{ whiteSpace: 'pre-wrap' }}>
+                {typedOutput || (!demoOutput ? 'Ve la magia en acción — sin registro previo. Completa los campos y presiona "Generar con IA".' : '')}
+                {isTyping && <span className="animate-pulse inline-block ml-1">▋</span>}
+                
+                {showDemoOutput && !isTyping && demoOutput && (
+                  <div className="mt-8 flex justify-center animate-fade-in">
+                    <Link href="#planes" className="btn btn-primary" style={{ padding: '0.75rem 1.5rem', fontSize: '1.1rem' }}>
+                      🚀 Automatizar mis redes ahora
+                    </Link>
+                  </div>
+                )}
               </div>
               <div className="console-foot">SIN TARJETA DE CRÉDITO · COMPLETAMENTE GRATIS</div>
             </div>
@@ -531,6 +574,99 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {showAdvancedModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto flex flex-col shadow-2xl relative">
+            <button onClick={() => setShowAdvancedModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 font-bold text-2xl leading-none">&times;</button>
+            <div className="p-8">
+              {advancedStep < 4 ? (
+                <div className="flex flex-col items-center justify-center py-8 gap-8 w-full max-w-sm mx-auto">
+                  <div className="text-center">
+                    <h3 className="text-2xl font-bold mb-2 font-serif text-slate-800">Generando la magia...</h3>
+                    <p className="text-slate-500 text-sm">Esto tomará unos 20-30 segundos.</p>
+                  </div>
+                  
+                  <div className="flex flex-col gap-4 w-full text-left">
+                    {/* Paso 1 */}
+                    <div className="flex items-center gap-3">
+                      <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${advancedStep > 1 ? 'bg-green-500 text-white' : (advancedStep === 1 ? 'border-2 border-[#DD4B19] text-[#DD4B19]' : 'border-2 border-slate-200')}`}>
+                        {advancedStep > 1 ? '✓' : (advancedStep === 1 ? <span className="w-2 h-2 bg-[#DD4B19] rounded-full animate-pulse"></span> : '')}
+                      </div>
+                      <span className={`text-sm ${advancedStep >= 1 ? 'text-slate-800 font-semibold' : 'text-slate-400'}`}>Analizando solicitud e industria</span>
+                    </div>
+
+                    {/* Paso 2 */}
+                    <div className="flex items-center gap-3">
+                      <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${advancedStep > 2 ? 'bg-green-500 text-white' : (advancedStep === 2 ? 'border-2 border-[#DD4B19] text-[#DD4B19]' : 'border-2 border-slate-200')}`}>
+                        {advancedStep > 2 ? '✓' : (advancedStep === 2 ? <span className="w-2 h-2 bg-[#DD4B19] rounded-full animate-pulse"></span> : '')}
+                      </div>
+                      <span className={`text-sm ${advancedStep >= 2 ? 'text-slate-800 font-semibold' : 'text-slate-400'}`}>Creando recursos gráficos con IA</span>
+                    </div>
+
+                    {/* Paso 3 */}
+                    <div className="flex items-center gap-3">
+                      <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${advancedStep > 3 ? 'bg-green-500 text-white' : (advancedStep === 3 ? 'border-2 border-[#DD4B19] text-[#DD4B19]' : 'border-2 border-slate-200')}`}>
+                        {advancedStep > 3 ? '✓' : (advancedStep === 3 ? <span className="w-2 h-2 bg-[#DD4B19] rounded-full animate-pulse"></span> : '')}
+                      </div>
+                      <span className={`text-sm ${advancedStep >= 3 ? 'text-slate-800 font-semibold' : 'text-slate-400'}`}>Escribiendo texto y validando calidad</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-6 animate-fade-in">
+                  <div className="text-center border-b border-slate-100 pb-4">
+                    <h3 className="text-2xl font-bold text-slate-800 font-serif">¡Tu contenido está listo!</h3>
+                    <p className="text-sm text-slate-500 mt-1">También hemos enviado una copia a tu correo electrónico.</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="flex flex-col gap-3">
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Imagen Generada</span>
+                      <div className="relative rounded-xl overflow-hidden bg-slate-100 aspect-square flex items-center justify-center">
+                        {advancedImgUrl ? (
+                          <>
+                            <img src={advancedImgUrl} alt="Generado por IA" className="w-full h-full object-cover" />
+                            {/* Watermark Overlay CSS */}
+                            <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center opacity-30 select-none overflow-hidden mix-blend-overlay">
+                              <div className="transform -rotate-45 text-white font-black text-4xl tracking-widest drop-shadow-lg" style={{ textShadow: '2px 2px 8px rgba(0,0,0,0.8)' }}>
+                                SANTISOFT.CL
+                              </div>
+                              <div className="transform -rotate-45 text-white font-black text-4xl tracking-widest drop-shadow-lg mt-12" style={{ textShadow: '2px 2px 8px rgba(0,0,0,0.8)' }}>
+                                SANTISOFT.CL
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-slate-400 text-sm flex flex-col items-center gap-2">
+                            <span className="text-2xl">🖼️</span>
+                            <span>Sin imagen generada</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-col gap-3">
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Texto ({demoType === 'blog' ? 'Blog SEO' : 'Redes Sociales'})</span>
+                      <div className="bg-slate-50 border border-slate-100 rounded-xl p-5 text-[15px] leading-relaxed text-slate-700 whitespace-pre-wrap h-full max-h-[400px] overflow-y-auto">
+                        {typedOutput}
+                        {isTyping && <span className="animate-pulse inline-block ml-1">▋</span>}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {!isTyping && (
+                    <div className="flex flex-col sm:flex-row gap-4 mt-4 pt-6 border-t border-slate-100 justify-center">
+                      <Link href="#planes" onClick={() => setShowAdvancedModal(false)} className="btn btn-ghost flex-1 justify-center border border-slate-200">Ver planes</Link>
+                      <Link href="https://calendly.com/santisoft" target="_blank" onClick={() => setShowAdvancedModal(false)} className="btn btn-primary flex-1 justify-center">Agendar demostración</Link>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <PromoModal />
       <WhatsAppButton />

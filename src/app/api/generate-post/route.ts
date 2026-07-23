@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getFreeModel } from "../../../lib/gemini-free";
+import { adminDb } from "../../../lib/firebase-admin";
 
 export async function POST(req: NextRequest) {
   try {
@@ -38,8 +39,25 @@ Responde únicamente con el post resultante. NO incluyas introducciones, título
       throw new Error("No se pudo obtener una respuesta válida del modelo de IA.");
     }
 
-    // Enviar webhook de lead/demo a n8n de manera asíncrona para que le llegue el correo electrónico
+    // Guardar lead en Firestore y enviar webhook a n8n
     if (email) {
+      if (adminDb) {
+        try {
+          await adminDb.collection('leads_demo').add({
+            nombre: nombre || "Lead Anónimo",
+            email: email,
+            rubro: rubro,
+            promo: promo,
+            demoType: demoType,
+            generatedText: text,
+            createdAt: new Date().toISOString()
+          });
+          console.log(`[generate-post] Lead guardado en Firestore: ${email}`);
+        } catch (dbErr) {
+          console.error("[generate-post] Error guardando en Firestore:", dbErr);
+        }
+      }
+
       const webhookUrl = process.env.NODE_ENV === 'production' 
         ? 'https://n8n.santisoft.cl/webhook/demo-ia'
         : 'https://n8n.santisoft.cl/webhook-test/demo-ia';
