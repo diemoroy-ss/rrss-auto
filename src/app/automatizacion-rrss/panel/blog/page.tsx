@@ -592,52 +592,101 @@ export default function SeoAutopilotPanel() {
               <p className="text-slate-500 font-medium">Conecta tu sitio web para que Santisoft publique los artículos automáticamente. Elige el método según tu tecnología.</p>
             </div>
 
-            {/* Method selector cards */}
-            <div className="grid md:grid-cols-3 gap-4">
+            {/* Method selector cards — stacked full-width for readability */}
+            <div className="space-y-4">
+
+              {/* CARD 1 — API Feed */}
               <button
-                onClick={() => { setIntegrationType('api_feed'); handleSaveConfig(); }}
-                className={`relative p-5 rounded-2xl border-2 text-left transition-all ${integrationType === 'api_feed' ? 'border-indigo-600 bg-indigo-50 shadow-lg shadow-indigo-100' : 'border-slate-200 hover:border-slate-300 bg-white'}`}
+                onClick={() => { setIntegrationType('api_feed'); }}
+                className={`w-full relative p-7 rounded-2xl border-2 text-left transition-all group ${integrationType === 'api_feed' ? 'border-indigo-600 bg-indigo-50 shadow-lg shadow-indigo-100' : 'border-slate-200 hover:border-indigo-300 hover:shadow-md bg-white'}`}
               >
-                {integrationType === 'api_feed' && <span className="absolute top-3 right-3 text-[10px] font-black bg-indigo-600 text-white px-2 py-0.5 rounded-full">ACTIVO</span>}
-                <div className="text-2xl mb-3">🌐</div>
-                <h3 className="font-black text-slate-900 text-sm mb-1">API Feed / SDK</h3>
-                <p className="text-xs text-slate-500 font-medium leading-relaxed">Para React, Next.js, Vue, Astro, PHP, Laravel — cualquier framework. Jala los artículos directamente.</p>
-                <div className="mt-3 flex flex-wrap gap-1">
-                  {['Next.js', 'React', 'Vue', 'Astro', 'PHP'].map(t => (
-                    <span key={t} className="text-[9px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{t}</span>
-                  ))}
+                {integrationType === 'api_feed' && <span className="absolute top-5 right-5 text-xs font-black bg-indigo-600 text-white px-3 py-1 rounded-full tracking-widest uppercase">Activo</span>}
+                <div className="flex items-start gap-5">
+                  <div className={`w-14 h-14 shrink-0 rounded-2xl flex items-center justify-center text-3xl ${integrationType === 'api_feed' ? 'bg-indigo-100' : 'bg-slate-100'}`}>🌐</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="font-black text-slate-900 text-xl">API Feed / SDK</h3>
+                      <span className="text-xs font-black bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full">Recomendado</span>
+                    </div>
+                    <p className="text-sm text-slate-600 font-medium leading-relaxed mb-4">
+                      Ideal si tu sitio web está hecho con <strong>Next.js, React, Vue, Astro, PHP o cualquier framework</strong> sin un CMS tradicional.
+                      En lugar de "empujar" el artículo a tu sitio, tu sitio <strong>lo jala desde nuestra API</strong> cuando lo necesita.
+                      Esto significa que nunca pierdes un artículo por un error de conexión, y Google lo indexa correctamente porque el contenido se carga en el servidor (SSR/SSG).
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { label: 'Next.js', color: 'bg-slate-900 text-white' },
+                        { label: 'React', color: 'bg-sky-100 text-sky-700' },
+                        { label: 'Vue', color: 'bg-green-100 text-green-700' },
+                        { label: 'Astro', color: 'bg-purple-100 text-purple-700' },
+                        { label: 'PHP / Laravel', color: 'bg-indigo-100 text-indigo-700' },
+                        { label: 'Cualquier framework', color: 'bg-slate-100 text-slate-600' },
+                      ].map(t => (
+                        <span key={t.label} className={`text-xs font-bold px-3 py-1 rounded-full ${t.color}`}>{t.label}</span>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </button>
 
+              {/* CARD 2 — WordPress */}
               <button
                 onClick={() => setIntegrationType('wordpress')}
-                className={`relative p-5 rounded-2xl border-2 text-left transition-all ${integrationType === 'wordpress' ? 'border-indigo-600 bg-indigo-50 shadow-lg shadow-indigo-100' : 'border-slate-200 hover:border-slate-300 bg-white'}`}
+                className={`w-full relative p-7 rounded-2xl border-2 text-left transition-all group ${integrationType === 'wordpress' ? 'border-indigo-600 bg-indigo-50 shadow-lg shadow-indigo-100' : 'border-slate-200 hover:border-indigo-300 hover:shadow-md bg-white'}`}
               >
-                {integrationType === 'wordpress' && <span className="absolute top-3 right-3 text-[10px] font-black bg-indigo-600 text-white px-2 py-0.5 rounded-full">ACTIVO</span>}
-                <div className="text-2xl mb-3">🔵</div>
-                <h3 className="font-black text-slate-900 text-sm mb-1">WordPress</h3>
-                <p className="text-xs text-slate-500 font-medium leading-relaxed">Santisoft empuja el artículo como borrador en tu WP vía REST API con tu contraseña de aplicación.</p>
-                <div className="mt-3 flex flex-wrap gap-1">
-                  {['WordPress.com', 'WP Self-hosted'].map(t => (
-                    <span key={t} className="text-[9px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{t}</span>
-                  ))}
+                {integrationType === 'wordpress' && <span className="absolute top-5 right-5 text-xs font-black bg-indigo-600 text-white px-3 py-1 rounded-full tracking-widest uppercase">Activo</span>}
+                <div className="flex items-start gap-5">
+                  <div className={`w-14 h-14 shrink-0 rounded-2xl flex items-center justify-center text-3xl ${integrationType === 'wordpress' ? 'bg-indigo-100' : 'bg-slate-100'}`}>🔵</div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-black text-slate-900 text-xl mb-2">WordPress</h3>
+                    <p className="text-sm text-slate-600 font-medium leading-relaxed mb-4">
+                      Santisoft <strong>empuja el artículo directamente a tu WordPress</strong> como borrador cada vez que lo publicas desde el panel.
+                      Necesitas generar una <strong>Contraseña de Aplicación</strong> en tu perfil de WordPress (es diferente a tu contraseña normal).
+                      Compatible con WordPress.com y WordPress self-hosted. Funciona con Yoast SEO, Rank Math y similares.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { label: 'WordPress.com', color: 'bg-blue-100 text-blue-700' },
+                        { label: 'WP Self-hosted', color: 'bg-blue-100 text-blue-700' },
+                        { label: 'Yoast SEO ✓', color: 'bg-slate-100 text-slate-600' },
+                        { label: 'Rank Math ✓', color: 'bg-slate-100 text-slate-600' },
+                      ].map(t => (
+                        <span key={t.label} className={`text-xs font-bold px-3 py-1 rounded-full ${t.color}`}>{t.label}</span>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </button>
 
+              {/* CARD 3 — Webhook/CMS */}
               <button
                 onClick={() => setIntegrationType('webhook')}
-                className={`relative p-5 rounded-2xl border-2 text-left transition-all ${integrationType === 'webhook' ? 'border-indigo-600 bg-indigo-50 shadow-lg shadow-indigo-100' : 'border-slate-200 hover:border-slate-300 bg-white'}`}
+                className={`w-full relative p-7 rounded-2xl border-2 text-left transition-all group ${integrationType === 'webhook' ? 'border-indigo-600 bg-indigo-50 shadow-lg shadow-indigo-100' : 'border-slate-200 hover:border-indigo-300 hover:shadow-md bg-white'}`}
               >
-                {integrationType === 'webhook' && <span className="absolute top-3 right-3 text-[10px] font-black bg-indigo-600 text-white px-2 py-0.5 rounded-full">ACTIVO</span>}
-                <div className="text-2xl mb-3">⚡</div>
-                <h3 className="font-black text-slate-900 text-sm mb-1">Webhook / CMS</h3>
-                <p className="text-xs text-slate-500 font-medium leading-relaxed">Motor n8n centralizado de Santisoft. Enruta automáticamente a tu plataforma CMS de destino.</p>
-                <div className="mt-3 flex flex-wrap gap-1">
-                  {['Shopify', 'Wix', 'Webflow', 'Custom'].map(t => (
-                    <span key={t} className="text-[9px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{t}</span>
-                  ))}
+                {integrationType === 'webhook' && <span className="absolute top-5 right-5 text-xs font-black bg-indigo-600 text-white px-3 py-1 rounded-full tracking-widest uppercase">Activo</span>}
+                <div className="flex items-start gap-5">
+                  <div className={`w-14 h-14 shrink-0 rounded-2xl flex items-center justify-center text-3xl ${integrationType === 'webhook' ? 'bg-indigo-100' : 'bg-slate-100'}`}>⚡</div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-black text-slate-900 text-xl mb-2">Webhook / CMS (Shopify, Wix, Webflow)</h3>
+                    <p className="text-sm text-slate-600 font-medium leading-relaxed mb-4">
+                      Para plataformas CMS que <strong>no son WordPress</strong>. Nuestro motor n8n centralizado recibe el artículo y lo <strong>enruta automáticamente</strong> a tu plataforma.
+                      Solo necesitas pegar la URL de tu tienda o sitio y el token de acceso que te da la plataforma.
+                      También disponible como HTTP Request personalizado para integraciones a medida.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { label: 'Shopify', color: 'bg-green-100 text-green-700' },
+                        { label: 'Wix', color: 'bg-blue-100 text-blue-700' },
+                        { label: 'Webflow', color: 'bg-purple-100 text-purple-700' },
+                        { label: 'HTTP Custom', color: 'bg-slate-100 text-slate-600' },
+                      ].map(t => (
+                        <span key={t.label} className={`text-xs font-bold px-3 py-1 rounded-full ${t.color}`}>{t.label}</span>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </button>
+
             </div>
 
             {/* ─── API FEED CONFIG ─── */}
