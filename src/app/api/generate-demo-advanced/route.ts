@@ -131,7 +131,16 @@ Responde únicamente con un JSON válido con dos campos:
             auth: { user: process.env.SMTP_EMAIL, pass: process.env.SMTP_PASSWORD }
           });
           
-          const imageHtml = imgUrl ? `<div style="text-align: center; margin: 20px 0;"><img src="${imgUrl}" alt="Contenido Generado" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" /></div>` : '';
+          const imageHtml = imgUrl ? `
+            <div style="text-align: center; margin: 20px auto; position: relative; max-width: 500px;">
+              <div style="position: relative; display: inline-block; width: 100%;">
+                <img src="${imgUrl}" alt="Contenido Generado" style="width: 100%; height: auto; border-radius: 8px; display: block; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" />
+                <div style="position: absolute; top: 50%; left: 50%; width: 100%; transform: translate(-50%, -50%) rotate(-30deg); text-align: center; pointer-events: none;">
+                  <span style="color: rgba(255,255,255,0.8); font-size: 38px; font-weight: 900; letter-spacing: 4px; text-shadow: 2px 2px 10px rgba(0,0,0,0.9), -1px -1px 4px rgba(0,0,0,0.5); font-family: Arial, sans-serif;">SANTISOFT.CL</span>
+                </div>
+              </div>
+            </div>
+          ` : '';
           const titleText = demoType === 'blog' ? 'Artículo de Blog' : 'Post de Redes Sociales';
           
           const info = await transporter.sendMail({
