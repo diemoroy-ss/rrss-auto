@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateFreeText } from "../../../lib/gemini-free";
 import { adminDb } from "../../../lib/firebase-admin";
+import nodemailer from "nodemailer";
 
 export async function POST(req: NextRequest) {
   try {
@@ -120,29 +121,42 @@ Responde únicamente con un JSON válido con dos campos:
       }
     }
 
-    // 5. ENVIAR CORREO (Webhook n8n demo-ia)
-    if (email) {
-      const webhookDemoUrl = process.env.NODE_ENV === 'production' 
-        ? 'https://n8n.santisoft.cl/webhook/demo-ia'
-        : 'https://n8n.santisoft.cl/webhook-test/demo-ia';
-
-      fetch(webhookDemoUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          nombre: nombre || "Lead Anónimo",
-          email: email,
-          rubro: rubro,
-          promo: promo,
-          demoType: demoType,
-          generatedText: finalContent,
-          img_url: imgUrl,
-          isLead: true,
-          date: new Date().toISOString()
-        })
-      }).catch(err => {
-        console.error("[demo-advanced n8n webhook error]:", err);
-      });
+    // 5. ENVIAR CORREO (Nodemailer en lugar de n8n)
+    if (email && process.env.SMTP_EMAIL && process.env.SMTP_PASSWORD) {
+      try {
+        const transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: { user: process.env.SMTP_EMAIL, pass: process.env.SMTP_PASSWORD }
+        });
+        
+        const imageHtml = imgUrl ? `<div style="text-align: center; margin: 20px 0;"><img src="${imgUrl}" alt="Contenido Generado" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" /></div>` : '';
+        const titleText = demoType === 'blog' ? 'Artículo de Blog' : 'Post de Redes Sociales';
+        
+        await transporter.sendMail({
+          from: `"Santisoft Automatización" <${process.env.SMTP_EMAIL}>`,
+          to: email,
+          subject: `¡Aquí está tu demostración de ${titleText}! 🚀`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+                <h2 style="color: #DD4B19;">¡Tu contenido está listo!</h2>
+                <p>Hola ${nombre || 'amigo(a)'},</p>
+                <p>Aquí tienes el resultado de tu prueba para el rubro de <strong>${rubro}</strong> promocionando <strong>${promo}</strong>.</p>
+                ${imageHtml}
+                <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; border-left: 4px solid #DD4B19; margin-top: 20px;">
+                    <p style="margin: 0; white-space: pre-wrap;"><em>"${finalContent}"</em></p>
+                </div>
+                <div style="margin-top: 30px; text-align: center;">
+                  <a href="https://rrss.santisoft.cl/#planes" style="background-color: #DD4B19; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Ver Planes</a>
+                  <a href="https://calendly.com/santisoft" style="background-color: transparent; color: #333; border: 1px solid #ccc; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; margin-left: 10px;">Agendar Demostración</a>
+                </div>
+                <p style="margin-top: 30px; font-size: 12px; color: #999;">Este es un mensaje automático de Santisoft.</p>
+            </div>
+          `
+        });
+        console.log(`[demo-advanced] Correo enviado exitosamente a ${email}`);
+      } catch (err) {
+        console.error("[demo-advanced nodemailer error]:", err);
+      }
     }
 
     return NextResponse.json({ 

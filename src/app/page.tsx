@@ -486,8 +486,8 @@ export default function Home() {
                     <ul className="plan-list">
                       {plan.features.map((f, i) => <li key={i}>{f}</li>)}
                     </ul>
-                    <Link href="/login" className={`btn ${plan.isPopular ? 'btn-primary' : 'btn-ghost'}`}>
-                      {plan.ctaText}
+                    <Link href={`/registro?plan=${id}&billing=${billingCycle}`} className={`btn ${plan.isPopular ? 'btn-primary' : 'btn-ghost'}`}>
+                      ¡Lo quiero 🚀!
                     </Link>
                   </div>
                 );

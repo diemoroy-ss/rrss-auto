@@ -19,13 +19,28 @@ export default function LoginGastronomico() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // Redirect users who are already logged in
+  // Redirect users who are already logged in but check if they need onboarding
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => {
-      // Si el usuario ya está autenticado, redirigirlo a su panel
+    const unsub = onAuthStateChanged(auth, async (u) => {
+      // Si el usuario ya está autenticado
       if (u) {
         if (typeof window !== "undefined" && !window.location.href.includes("tempAdminBypass")) {
-           router.replace("/automatizacion-rrss/panel");
+           try {
+             const userDocRef = doc(db, "users", u.uid);
+             const userDoc = await getDoc(userDocRef);
+             if (userDoc.exists()) {
+               const data = userDoc.data();
+               if (data.phone && data.company) {
+                 router.replace("/automatizacion-rrss/panel");
+               } else {
+                 router.replace("/registro");
+               }
+             } else {
+               router.replace("/registro");
+             }
+           } catch (e) {
+             console.error("Error comprobando usuario:", e);
+           }
         }
       }
     });
