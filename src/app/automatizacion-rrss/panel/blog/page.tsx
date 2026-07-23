@@ -39,7 +39,7 @@ export default function SeoAutopilotPanel() {
   const [scrapedUrl, setScrapedUrl] = useState("");
 
   // Integration State
-  const [integrationType, setIntegrationType] = useState<'wordpress' | 'webhook'>('wordpress');
+  const [integrationType, setIntegrationType] = useState<'wordpress' | 'webhook' | 'api_feed'>('api_feed');
   const [wpUrl, setWpUrl] = useState("");
   const [wpUser, setWpUser] = useState("");
   const [wpPassword, setWpPassword] = useState("");
@@ -47,6 +47,14 @@ export default function SeoAutopilotPanel() {
   const [webhookPlatform, setWebhookPlatform] = useState("shopify");
   const [webhookStoreUrl, setWebhookStoreUrl] = useState("");
   const [webhookApiKey, setWebhookApiKey] = useState("");
+
+  // API Feed / SDK Key Management
+  const [apiKeys, setApiKeys] = useState<{keyPreview: string; keyFull: string}[]>([]);
+  const [generatingKey, setGeneratingKey] = useState(false);
+  const [newlyGeneratedKey, setNewlyGeneratedKey] = useState<string | null>(null);
+  const [copiedKey, setCopiedKey] = useState(false);
+  const [activeSnippet, setActiveSnippet] = useState<'nextjs' | 'rest' | 'php'>('nextjs');
+
   
   // Strategy State
   const [generatingStrategy, setGeneratingStrategy] = useState(false);
@@ -78,6 +86,68 @@ export default function SeoAutopilotPanel() {
       
       fetchedPosts.sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime());
       setPosts(fetchedPosts);
+  };
+
+  const fetchApiKeys = async (currentUser: any) => {
+    try {
+      const token = await currentUser.getIdToken();
+      const res = await fetch('/api/blog-feed/keys', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setApiKeys(data.keys || []);
+      }
+    } catch (e) {
+      console.error('Error fetching API keys:', e);
+    }
+  };
+
+  const handleGenerateKey = async () => {
+    if (!user) return;
+    setGeneratingKey(true);
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch('/api/blog-feed/keys', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setNewlyGeneratedKey(data.key);
+      await fetchApiKeys(user);
+      showToast('✅ API Key generada. ¡Cópiala ahora!');
+    } catch (e: any) {
+      showToast('❌ ' + e.message);
+    } finally {
+      setGeneratingKey(false);
+    }
+  };
+
+  const handleRevokeKey = async (key: string) => {
+    if (!user || !confirm('¿Revocar esta API Key? Los sitios que la usen dejarán de funcionar.')) return;
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch('/api/blog-feed/keys', {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      await fetchApiKeys(user);
+      if (newlyGeneratedKey === key) setNewlyGeneratedKey(null);
+      showToast('🗑️ API Key revocada');
+    } catch (e: any) {
+      showToast('❌ ' + e.message);
+    }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedKey(true);
+      setTimeout(() => setCopiedKey(false), 2000);
+    });
   };
 
   useEffect(() => {
@@ -142,6 +212,7 @@ export default function SeoAutopilotPanel() {
           }
         }
         await fetchPosts();
+        await fetchApiKeys(u);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -514,79 +585,311 @@ export default function SeoAutopilotPanel() {
       )}
 
       {activeTab === 'integracion' && (
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 md:p-10 max-w-3xl">
-              <h2 className="text-2xl font-black text-slate-900 flex items-center gap-3 mb-2">🔌 Integración de Auto-Publicación</h2>
-              <p className="text-slate-500 font-medium mb-8">Conecta tu sitio web para que Santisoft publique los artículos generados automáticamente como borradores (o directamente en vivo).</p>
+          <div className="space-y-8 max-w-4xl">
+            {/* Header */}
+            <div>
+              <h2 className="text-2xl font-black text-slate-900 flex items-center gap-3 mb-2">🔌 Integraciones de Publicación</h2>
+              <p className="text-slate-500 font-medium">Conecta tu sitio web para que Santisoft publique los artículos automáticamente. Elige el método según tu tecnología.</p>
+            </div>
 
+            {/* Method selector cards */}
+            <div className="grid md:grid-cols-3 gap-4">
+              <button
+                onClick={() => { setIntegrationType('api_feed'); handleSaveConfig(); }}
+                className={`relative p-5 rounded-2xl border-2 text-left transition-all ${integrationType === 'api_feed' ? 'border-indigo-600 bg-indigo-50 shadow-lg shadow-indigo-100' : 'border-slate-200 hover:border-slate-300 bg-white'}`}
+              >
+                {integrationType === 'api_feed' && <span className="absolute top-3 right-3 text-[10px] font-black bg-indigo-600 text-white px-2 py-0.5 rounded-full">ACTIVO</span>}
+                <div className="text-2xl mb-3">🌐</div>
+                <h3 className="font-black text-slate-900 text-sm mb-1">API Feed / SDK</h3>
+                <p className="text-xs text-slate-500 font-medium leading-relaxed">Para React, Next.js, Vue, Astro, PHP, Laravel — cualquier framework. Jala los artículos directamente.</p>
+                <div className="mt-3 flex flex-wrap gap-1">
+                  {['Next.js', 'React', 'Vue', 'Astro', 'PHP'].map(t => (
+                    <span key={t} className="text-[9px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{t}</span>
+                  ))}
+                </div>
+              </button>
+
+              <button
+                onClick={() => setIntegrationType('wordpress')}
+                className={`relative p-5 rounded-2xl border-2 text-left transition-all ${integrationType === 'wordpress' ? 'border-indigo-600 bg-indigo-50 shadow-lg shadow-indigo-100' : 'border-slate-200 hover:border-slate-300 bg-white'}`}
+              >
+                {integrationType === 'wordpress' && <span className="absolute top-3 right-3 text-[10px] font-black bg-indigo-600 text-white px-2 py-0.5 rounded-full">ACTIVO</span>}
+                <div className="text-2xl mb-3">🔵</div>
+                <h3 className="font-black text-slate-900 text-sm mb-1">WordPress</h3>
+                <p className="text-xs text-slate-500 font-medium leading-relaxed">Santisoft empuja el artículo como borrador en tu WP vía REST API con tu contraseña de aplicación.</p>
+                <div className="mt-3 flex flex-wrap gap-1">
+                  {['WordPress.com', 'WP Self-hosted'].map(t => (
+                    <span key={t} className="text-[9px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{t}</span>
+                  ))}
+                </div>
+              </button>
+
+              <button
+                onClick={() => setIntegrationType('webhook')}
+                className={`relative p-5 rounded-2xl border-2 text-left transition-all ${integrationType === 'webhook' ? 'border-indigo-600 bg-indigo-50 shadow-lg shadow-indigo-100' : 'border-slate-200 hover:border-slate-300 bg-white'}`}
+              >
+                {integrationType === 'webhook' && <span className="absolute top-3 right-3 text-[10px] font-black bg-indigo-600 text-white px-2 py-0.5 rounded-full">ACTIVO</span>}
+                <div className="text-2xl mb-3">⚡</div>
+                <h3 className="font-black text-slate-900 text-sm mb-1">Webhook / CMS</h3>
+                <p className="text-xs text-slate-500 font-medium leading-relaxed">Motor n8n centralizado de Santisoft. Enruta automáticamente a tu plataforma CMS de destino.</p>
+                <div className="mt-3 flex flex-wrap gap-1">
+                  {['Shopify', 'Wix', 'Webflow', 'Custom'].map(t => (
+                    <span key={t} className="text-[9px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{t}</span>
+                  ))}
+                </div>
+              </button>
+            </div>
+
+            {/* ─── API FEED CONFIG ─── */}
+            {integrationType === 'api_feed' && (
               <div className="space-y-6">
-                  <div>
-                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Tipo de Conexión</label>
-                      <div className="flex gap-4">
-                          <button onClick={() => setIntegrationType('wordpress')} className={`flex-1 py-3 px-4 rounded-xl font-bold border-2 transition-all ${integrationType === 'wordpress' ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}>
-                              WordPress
-                          </button>
-                          <button onClick={() => setIntegrationType('webhook')} className={`flex-1 py-3 px-4 rounded-xl font-bold border-2 transition-all ${integrationType === 'webhook' ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}>
-                              Webhook (Centralizado n8n)
-                          </button>
-                      </div>
+                {/* API Keys section */}
+                <div className="bg-slate-900 rounded-2xl p-6 text-white">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="font-black text-base flex items-center gap-2">🔑 Tus API Keys</h3>
+                      <p className="text-slate-400 text-xs font-medium mt-0.5">Úsalas en el header <code className="bg-white/10 px-1.5 py-0.5 rounded text-indigo-300">x-api-key</code> de tu sitio web.</p>
+                    </div>
+                    <button
+                      onClick={handleGenerateKey}
+                      disabled={generatingKey || apiKeys.length >= 5}
+                      className="shrink-0 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-bold py-2 px-4 rounded-xl text-xs transition-all"
+                    >
+                      {generatingKey ? 'Generando...' : '+ Nueva Key'}
+                    </button>
                   </div>
 
-                  {integrationType === 'wordpress' && (
-                      <div className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                          <div>
-                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">URL del Sitio Web</label>
-                              <input type="text" value={wpUrl} onChange={e => setWpUrl(e.target.value)} placeholder="https://misitio.cl" className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
-                          </div>
-                          <div className="grid md:grid-cols-2 gap-4">
-                              <div>
-                                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Usuario WP</label>
-                                  <input type="text" value={wpUser} onChange={e => setWpUser(e.target.value)} placeholder="admin" className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
-                              </div>
-                              <div>
-                                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Contraseña de Aplicación</label>
-                                  <input type="password" value={wpPassword} onChange={e => setWpPassword(e.target.value)} placeholder="**** **** **** ****" className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
-                              </div>
-                          </div>
-                          <p className="text-xs text-slate-500 font-medium">Debes generar una Contraseña de Aplicación en tu panel de WordPress (Usuarios > Perfil).</p>
+                  {newlyGeneratedKey && (
+                    <div className="mb-4 bg-amber-500/20 border border-amber-400/30 rounded-xl p-4">
+                      <p className="text-amber-300 text-xs font-bold uppercase tracking-widest mb-2">⚠️ Cópiala ahora — no volverá a mostrarse completa</p>
+                      <div className="flex items-center gap-3 bg-black/30 rounded-lg px-4 py-3">
+                        <code className="flex-1 text-emerald-400 text-xs font-mono break-all">{newlyGeneratedKey}</code>
+                        <button
+                          onClick={() => copyToClipboard(newlyGeneratedKey)}
+                          className="shrink-0 bg-white/10 hover:bg-white/20 text-white font-bold py-1.5 px-3 rounded-lg text-xs transition-all"
+                        >
+                          {copiedKey ? '✅ Copiada' : '📋 Copiar'}
+                        </button>
                       </div>
+                    </div>
                   )}
 
-                  {integrationType === 'webhook' && (
-                      <div className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                          <div className="bg-indigo-100 text-indigo-800 p-4 rounded-xl text-sm font-medium mb-4">
-                              <span className="text-xl inline-block mb-1">🤖</span><br/>
-                              Este método se conectará internamente al motor n8n de Santisoft. Tú solo elige la plataforma de destino de tu cliente y nosotros enrutaremos la publicación automáticamente.
-                          </div>
-                          <div>
-                              <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Plataforma de Destino</label>
-                              <select value={webhookPlatform} onChange={e => setWebhookPlatform(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
-                                  <option value="shopify">Shopify</option>
-                                  <option value="wix">Wix</option>
-                                  <option value="webflow">Webflow</option>
-                                  <option value="custom">Otra (HTTP Request custom)</option>
-                              </select>
-                          </div>
-                          {(webhookPlatform === 'shopify' || webhookPlatform === 'wix' || webhookPlatform === 'webflow') && (
-                              <div className="grid md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-200">
-                                  <div>
-                                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">URL de la Tienda</label>
-                                      <input type="text" value={webhookStoreUrl} onChange={e => setWebhookStoreUrl(e.target.value)} placeholder={`Ej: mittienda.${webhookPlatform}.com`} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
-                                  </div>
-                                  <div>
-                                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Token de Acceso / API Key</label>
-                                      <input type="password" value={webhookApiKey} onChange={e => setWebhookApiKey(e.target.value)} placeholder="**** **** ****" className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
-                                  </div>
-                              </div>
-                          )}
-                      </div>
-                  )}
+                  <div className="space-y-2">
+                    {apiKeys.length === 0 ? (
+                      <p className="text-slate-500 text-xs font-medium text-center py-4">No tienes API Keys generadas. Crea tu primera key.</p>
+                    ) : (
+                      apiKeys.map((k, i) => (
+                        <div key={i} className="flex items-center justify-between bg-white/5 rounded-xl px-4 py-3">
+                          <code className="text-slate-300 text-xs font-mono">{k.keyPreview}</code>
+                          <button
+                            onClick={() => handleRevokeKey(k.keyFull)}
+                            className="text-rose-400 hover:text-rose-300 text-xs font-bold px-3 py-1 rounded-lg hover:bg-rose-400/10 transition-all"
+                          >
+                            Revocar
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
 
-                  <button onClick={handleSaveConfig} disabled={savingConfig} className="bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-bold py-3 px-8 rounded-xl transition-all">
-                      {savingConfig ? "Guardando..." : "Guardar Integración"}
-                  </button>
+                {/* Code snippets */}
+                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                  <div className="flex border-b border-slate-200">
+                    {[
+                      { id: 'nextjs', label: '⚛️ Next.js / React' },
+                      { id: 'rest', label: '🌐 REST / curl' },
+                      { id: 'php', label: '🐘 PHP / Laravel' },
+                    ].map(tab => (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveSnippet(tab.id as any)}
+                        className={`flex-1 py-3 text-xs font-bold transition-all ${activeSnippet === tab.id ? 'bg-slate-900 text-white' : 'text-slate-500 hover:bg-slate-50'}`}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="bg-slate-950 p-6 overflow-x-auto">
+                    {activeSnippet === 'nextjs' && (
+                      <pre className="text-xs font-mono text-slate-300 whitespace-pre leading-6">{`// app/blog/page.tsx  (Next.js App Router — SSR/ISR)
+// Instala: npm install   (no se requiere librería adicional)
+
+export default async function BlogPage() {
+  const res = await fetch('https://rrss.santisoft.cl/api/blog-feed', {
+    headers: { 'x-api-key': process.env.SANTISOFT_API_KEY! },
+    next: { revalidate: 3600 } // Revalida cada hora automáticamente
+  });
+  const { posts } = await res.json();
+
+  return (
+    <div>
+      {posts.map(post => (
+        <article key={post.id}>
+          <h2>{post.title}</h2>
+          <img src={post.imageUrl} alt={post.title} />
+          <p>{post.excerpt}</p>
+          <a href={\`/blog/\${post.slug}\`}>Leer →</a>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+// app/blog/[slug]/page.tsx  (artículo individual)
+export default async function PostPage({ params }) {
+  const res = await fetch(
+    \`https://rrss.santisoft.cl/api/blog-feed?slug=\${params.slug}\`,
+    { headers: { 'x-api-key': process.env.SANTISOFT_API_KEY! } }
+  );
+  const { post } = await res.json();
+  return <div dangerouslySetInnerHTML={{ __html: post.htmlContent }} />;
+}
+
+// .env.local
+SANTISOFT_API_KEY=sk_live_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX`}
+                      </pre>
+                    )}
+
+                    {activeSnippet === 'rest' && (
+                      <pre className="text-xs font-mono text-slate-300 whitespace-pre leading-6">{`# GET lista de artículos
+curl https://rrss.santisoft.cl/api/blog-feed \\
+  -H "x-api-key: sk_live_XXXXXXXXXX"
+
+# GET artículo por slug
+curl "https://rrss.santisoft.cl/api/blog-feed?slug=mi-articulo" \\
+  -H "x-api-key: sk_live_XXXXXXXXXX"
+
+# GET con límite y query param (alternativa al header)
+curl "https://rrss.santisoft.cl/api/blog-feed?apiKey=sk_live_XXXXXXXXXX&limit=5"
+
+# Respuesta
+{
+  "posts": [
+    {
+      "id": "abc123",
+      "title": "Título del artículo",
+      "slug": "titulo-del-articulo",
+      "excerpt": "Descripción corta...",
+      "htmlContent": "<article>...</article>",
+      "imageUrl": "https://...",
+      "seoTitle": "Título SEO optimizado",
+      "metaDescription": "Meta descripción...",
+      "keywords": ["seo", "marketing"],
+      "schema": { "@context": "https://schema.org", ... },
+      "publishedAt": "2026-07-23T20:00:00Z"
+    }
+  ],
+  "total": 1
+}`}
+                      </pre>
+                    )}
+
+                    {activeSnippet === 'php' && (
+                      <pre className="text-xs font-mono text-slate-300 whitespace-pre leading-6">{`<?php
+// PHP nativo
+$apiKey = $_ENV['SANTISOFT_API_KEY'];
+$ch = curl_init('https://rrss.santisoft.cl/api/blog-feed');
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, ["x-api-key: $apiKey"]);
+$response = curl_exec($ch);
+$data = json_decode($response, true);
+$posts = $data['posts'];
+
+foreach ($posts as $post) {
+    echo "<h2>{$post['title']}</h2>";
+    echo "<p>{$post['excerpt']}</p>";
+}
+
+// Laravel / Guzzle
+use Illuminate\\Support\\Facades\\Http;
+
+$response = Http::withHeaders([
+    'x-api-key' => config('services.santisoft.api_key'),
+])->get('https://rrss.santisoft.cl/api/blog-feed');
+
+$posts = $response->json('posts');`}
+                      </pre>
+                    )}
+                  </div>
+                </div>
+
+                <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-5 flex gap-4">
+                  <span className="text-2xl">💡</span>
+                  <div>
+                    <p className="font-bold text-indigo-900 text-sm">¿Qué ocurre cuando publicas un artículo?</p>
+                    <p className="text-indigo-700 text-xs font-medium mt-1 leading-relaxed">Al pulsar "Publicar" en la pestaña Artículos, el contenido queda disponible inmediatamente en <code className="bg-indigo-100 px-1 rounded">/api/blog-feed</code>. Tu sitio web lo mostrará en el próximo ciclo de revalidación (normalmente 1 hora).</p>
+                  </div>
+                </div>
+
+                <button onClick={handleSaveConfig} disabled={savingConfig} className="bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-bold py-3 px-8 rounded-xl transition-all">
+                  {savingConfig ? "Guardando..." : "Guardar como método activo"}
+                </button>
               </div>
+            )}
+
+            {/* ─── WORDPRESS CONFIG ─── */}
+            {integrationType === 'wordpress' && (
+              <div className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl text-sm font-medium text-blue-800 flex gap-3">
+                  <span className="text-xl">📋</span>
+                  <span>Ve a WordPress → Usuarios → Tu perfil → desplázate hasta <strong>Contraseñas de Aplicación</strong>, crea una nueva y pégala aquí.</span>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">URL del Sitio WordPress</label>
+                  <input type="text" value={wpUrl} onChange={e => setWpUrl(e.target.value)} placeholder="https://misitio.cl" className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
+                </div>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Usuario WP</label>
+                    <input type="text" value={wpUser} onChange={e => setWpUser(e.target.value)} placeholder="admin" className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Contraseña de Aplicación</label>
+                    <input type="password" value={wpPassword} onChange={e => setWpPassword(e.target.value)} placeholder="xxxx xxxx xxxx xxxx" className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
+                  </div>
+                </div>
+                <button onClick={handleSaveConfig} disabled={savingConfig} className="bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-bold py-3 px-8 rounded-xl transition-all">
+                  {savingConfig ? "Guardando..." : "Guardar Integración WordPress"}
+                </button>
+              </div>
+            )}
+
+            {/* ─── WEBHOOK CONFIG ─── */}
+            {integrationType === 'webhook' && (
+              <div className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                <div className="bg-indigo-100 text-indigo-800 p-4 rounded-xl text-sm font-medium flex gap-3">
+                  <span className="text-xl">🤖</span>
+                  <span>Nuestro motor n8n centralizado recibe el artículo y lo envía a tu plataforma. Solo elige el destino y pega tus credenciales.</span>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Plataforma de Destino</label>
+                  <select value={webhookPlatform} onChange={e => setWebhookPlatform(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+                    <option value="shopify">Shopify</option>
+                    <option value="wix">Wix</option>
+                    <option value="webflow">Webflow</option>
+                    <option value="custom">Otra / HTTP Custom</option>
+                  </select>
+                </div>
+                <div className="grid md:grid-cols-2 gap-4 pt-4 border-t border-slate-200">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">URL de la Tienda / Sitio</label>
+                    <input type="text" value={webhookStoreUrl} onChange={e => setWebhookStoreUrl(e.target.value)} placeholder={`Ej: mitienda.${webhookPlatform}.com`} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Token de Acceso / API Key</label>
+                    <input type="password" value={webhookApiKey} onChange={e => setWebhookApiKey(e.target.value)} placeholder="Token de la plataforma" className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
+                  </div>
+                </div>
+                <button onClick={handleSaveConfig} disabled={savingConfig} className="bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-bold py-3 px-8 rounded-xl transition-all">
+                  {savingConfig ? "Guardando..." : "Guardar Integración Webhook"}
+                </button>
+              </div>
+            )}
           </div>
       )}
     </div>
   );
 }
+

@@ -36,15 +36,26 @@ export async function POST(req: Request) {
 
         const postData = postDoc.data()!;
         const title = postData.title || 'Sin Título';
-        const content = postData.content || postData.htmlContent || ''; // Ensure there is content
-        const status = 'draft'; // Always push as draft for safety initially
+        const content = postData.htmlContent || postData.content || '';
 
-        // Publish based on integration
+        // ─── API FEED: publish directly in Firestore ───
+        // Article becomes instantly available via GET /api/blog-feed
+        if (integrationType === 'api_feed') {
+            await postDoc.ref.update({
+                status: 'published',
+                publishedAt: new Date().toISOString(),
+                userId: userId,
+            });
+            return NextResponse.json({
+                success: true,
+                message: "✅ Artículo publicado. Disponible en tu API Feed.",
+            });
+        }
+
+        // ─── WORDPRESS REST API ───
         if (integrationType === 'wordpress') {
-            // WordPress REST API
-            const baseUrl = wpUrl.replace(/\/$/, ''); // Remove trailing slash
+            const baseUrl = wpUrl.replace(/\/$/, '');
             const endpoint = `${baseUrl}/wp-json/wp/v2/posts`;
-            
             const authHeader = 'Basic ' + Buffer.from(`${wpUser}:${wpPassword}`).toString('base64');
             
             const wpRes = await fetch(endpoint, {
@@ -54,9 +65,13 @@ export async function POST(req: Request) {
                     'Authorization': authHeader
                 },
                 body: JSON.stringify({
-                    title: title,
-                    content: content,
-                    status: status,
+                    title,
+                    content,
+                    status: 'draft',
+                    meta: {
+                        _yoast_wpseo_metadesc: postData.metaDescription || '',
+                        _yoast_wpseo_title: postData.seoTitle || title,
+                    }
                 })
             });
 
@@ -66,19 +81,18 @@ export async function POST(req: Request) {
                 return NextResponse.json({ error: `Error de WordPress: ${wpRes.statusText}` }, { status: wpRes.status });
             }
             
-            // Mark as published internally?
-            await postDoc.ref.update({ isPushedToSite: true, pushedAt: new Date() });
-
+            await postDoc.ref.update({ isPushedToSite: true, pushedAt: new Date().toISOString() });
             return NextResponse.json({ success: true, message: "Borrador enviado a WordPress con éxito" });
+        }
 
-        } else if (integrationType === 'webhook') {
-            // Generic Webhook Centralizado a n8n
+        // ─── WEBHOOK (n8n centralizado → Shopify, Wix, Webflow, custom) ───
+        if (integrationType === 'webhook') {
             const centralWebhookUrl = 'https://n8n.santisoft.cl/webhook/santisoft-seo-publish';
             
             const payload = {
                 id: postId,
-                userId: userId, // Importante para que n8n sepa de qué cliente es
-                title: title,
+                userId,
+                title,
                 htmlContent: content,
                 metaDescription: postData.metaDescription || '',
                 targetKeyword: postData.targetKeyword || '',
@@ -92,9 +106,7 @@ export async function POST(req: Request) {
 
             const whRes = await fetch(centralWebhookUrl, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
 
@@ -102,8 +114,7 @@ export async function POST(req: Request) {
                 return NextResponse.json({ error: `Error del Webhook: ${whRes.statusText}` }, { status: whRes.status });
             }
             
-            await postDoc.ref.update({ isPushedToSite: true, pushedAt: new Date() });
-
+            await postDoc.ref.update({ isPushedToSite: true, pushedAt: new Date().toISOString() });
             return NextResponse.json({ success: true, message: "Enviado al Webhook con éxito" });
         }
 
