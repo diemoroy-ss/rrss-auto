@@ -49,7 +49,7 @@ export async function generateElevenLabsAudio(text: string, userId: string): Pro
     }
 
     // Guardar el audio en la carpeta de subidas de redes sociales del usuario
-    const filename = `social_media_uploads/${userId}/voiceovers/voiceover_${Date.now()}.mp3`;
+    const filename = `user_assets/${userId}/voiceovers/voiceover_${Date.now()}.mp3`;
     const file = bucket.file(filename);
 
     await file.save(buffer, {

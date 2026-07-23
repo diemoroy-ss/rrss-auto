@@ -1480,7 +1480,7 @@ export default function RrssCreatePost() {
                                 try {
                                   const ext = f.name.split('.').pop();
                                   const filename = `manual_post_${Date.now()}.${ext}`;
-                                  const storageRef = ref(storage, `social_media_uploads/${user?.uid}/${filename}`);
+                                  const storageRef = ref(storage, `user_assets/${user?.uid}/${filename}`);
                                   await uploadBytes(storageRef, f);
                                   const downloadUrl = await getDownloadURL(storageRef);
                                   
