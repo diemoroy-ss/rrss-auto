@@ -1,10 +1,13 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect } from "react";
 
-export default function AgendarPage() {
+function AgendarContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
   
   // Limitar fechas a días hábiles a partir de mañana
   const tomorrow = new Date();
@@ -15,6 +18,14 @@ export default function AgendarPage() {
   const [time, setTime] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  
+  useEffect(() => {
+    const queryName = searchParams.get("n");
+    const queryEmail = searchParams.get("e");
+    if (queryName) setName(queryName);
+    if (queryEmail) setEmail(queryEmail);
+  }, [searchParams]);
+
   const [phone, setPhone] = useState("");
   const [notes, setNotes] = useState("");
   
@@ -201,5 +212,13 @@ export default function AgendarPage() {
         </div>
       </footer>
     </div>
+  );
+}
+
+export default function AgendarPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-slate-50">Cargando...</div>}>
+      <AgendarContent />
+    </Suspense>
   );
 }
