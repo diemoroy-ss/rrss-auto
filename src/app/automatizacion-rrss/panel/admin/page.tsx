@@ -160,7 +160,7 @@ export default function AdminUsersPage() {
   if (loading) return <div className="text-center font-bold text-slate-400 mt-20">Cargando Panel de Control...</div>;
 
   return (
-    <div className="max-w-7xl mx-auto lg:mx-0">
+    <div className="w-full">
       <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
            <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-tight">Admin <span className="text-indigo-600">Usuarios.</span></h1>

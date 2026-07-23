@@ -13,7 +13,9 @@ export async function POST(req: Request) {
         // Check role in Firestore
         const userDoc = await adminDb.collection('users').doc(decodedToken.uid).get();
         const userData = userDoc.data();
-        const isSuperAdmin = decodedToken.email === 'diemoroy@gmail.com' || decodedToken.email === 'admin@santisoft.cl';
+        const userEmail = (decodedToken.email || '').toLowerCase();
+        const adminEmails = ['diemoroy@gmail.com', 'spalezcom@gmail.com', 'santisoftai@gmail.com', 'admin@santisoft.cl'];
+        const isSuperAdmin = adminEmails.includes(userEmail);
         const isAdmin = userData?.role === 'admin';
 
         if (!isSuperAdmin && !isAdmin) {

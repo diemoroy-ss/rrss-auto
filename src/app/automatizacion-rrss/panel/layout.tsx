@@ -282,7 +282,7 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
             </div>
           )}
 
-          <div className="p-4 sm:p-6 md:p-12 pt-6 md:pt-24 max-w-[1400px] mx-auto print:p-0 print:m-0 print:max-w-none">
+          <div className={`p-4 sm:p-6 md:p-12 pt-6 md:pt-24 mx-auto print:p-0 print:m-0 print:max-w-none ${isAdminRoute ? 'w-full max-w-none' : 'max-w-[1400px]'}`}>
             {children}
           </div>
         </main>
