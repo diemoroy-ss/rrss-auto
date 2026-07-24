@@ -16,6 +16,7 @@ interface BlogPost {
   targetKeyword?: string;
   content?: string;
   htmlContent?: string;
+  imageUrl?: string;
 }
 
 export default function SeoAutopilotPanel() {
@@ -64,6 +65,7 @@ export default function SeoAutopilotPanel() {
   // Strategy State
   const [generatingStrategy, setGeneratingStrategy] = useState(false);
   const [publishingId, setPublishingId] = useState<string | null>(null);
+  const [generatingImageId, setGeneratingImageId] = useState<string | null>(null);
   const [writingModalPost, setWritingModalPost] = useState<{ postId: string; title: string } | null>(null);
   const [shareModalPost, setShareModalPost] = useState<{ title: string; slug: string } | null>(null);
   const [previewModalPost, setPreviewModalPost] = useState<BlogPost | null>(null);
@@ -75,27 +77,69 @@ export default function SeoAutopilotPanel() {
       setTimeout(() => setToastMessage(""), 3500);
   };
 
+  const parseDateField = (val: any): Date | undefined => {
+      if (!val) return undefined;
+      if (typeof val.toDate === 'function') return val.toDate();
+      if (val.seconds) return new Date(val.seconds * 1000);
+      if (val instanceof Date) return isNaN(val.getTime()) ? undefined : val;
+      const d = new Date(val);
+      return isNaN(d.getTime()) ? undefined : d;
+  };
+
   const fetchPosts = async () => {
       const q = query(collection(db, "blog_posts")); 
       const snap = await getDocs(q);
       const fetchedPosts: BlogPost[] = [];
       snap.forEach(docSnap => {
           const pd = docSnap.data();
+          const scheduledFor = parseDateField(pd.scheduledFor);
+          const createdAt = parseDateField(pd.createdAt) || new Date();
           fetchedPosts.push({
               id: docSnap.id,
               title: pd.title || "Sin título",
               status: pd.status || "draft",
-              scheduledFor: pd.scheduledFor?.toDate(),
-              createdAt: pd.createdAt ? new Date(pd.createdAt) : new Date(),
+              scheduledFor,
+              createdAt,
               metaDescription: pd.metaDescription || "",
               targetKeyword: pd.targetKeyword || "",
               content: pd.content || "",
-              htmlContent: pd.htmlContent || ""
+              htmlContent: pd.htmlContent || "",
+              imageUrl: pd.imageUrl || ""
           });
       });
       
       fetchedPosts.sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime());
       setPosts(fetchedPosts);
+  };
+
+  const handleGeneratePostImage = async (postId: string) => {
+      setGeneratingImageId(postId);
+      try {
+          const res = await fetch('/api/ai/seo-generate-image', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ postId })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error);
+
+          await fetchPosts();
+          if (previewModalPost && previewModalPost.id === postId) {
+              setPreviewModalPost(prev => prev ? { 
+                  ...prev, 
+                  imageUrl: data.imageUrl, 
+                  htmlContent: data.imageUrl 
+                    ? `<div class="my-6"><img src="${data.imageUrl}" alt="${prev.title}" class="w-full rounded-2xl shadow-lg object-cover max-h-[480px]" /></div>\n` + (prev.htmlContent || prev.content || '') 
+                    : prev.htmlContent 
+              } : null);
+          }
+          showToast("🎨 " + data.message);
+      } catch (err: any) {
+          console.error("Error generating image:", err);
+          showToast("❌ Error al generar imagen: " + err.message);
+      } finally {
+          setGeneratingImageId(null);
+      }
   };
 
   const fetchApiKeys = async (currentUser: any) => {
@@ -636,29 +680,35 @@ export default function SeoAutopilotPanel() {
                      </div>
                  ) : (
                      <div className="space-y-4">
-                         {draftPosts.map(post => (
-                             <div key={post.id} className="p-4 rounded-2xl border border-slate-100 bg-slate-50 hover:border-indigo-200 hover:bg-indigo-50/30 transition-colors flex items-center justify-between gap-4">
-                                 <div>
-                                     <h4 className="font-bold text-slate-800 line-clamp-1">{post.title}</h4>
-                                     <p className="text-xs text-slate-500 font-medium mt-1">Generado: {post.createdAt.toLocaleDateString()}</p>
-                                 </div>
-                                 <div className="flex items-center gap-2 shrink-0">
-                                      <button 
-                                          onClick={() => setPreviewModalPost(post)}
-                                          className="text-xs font-bold text-slate-700 bg-slate-200 hover:bg-slate-300 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
-                                      >
-                                          👁️ Ver
-                                      </button>
-                                      <button 
-                                          onClick={() => handlePublish(post.id)}
-                                          disabled={publishingId === post.id}
-                                          className="text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
-                                      >
-                                          {publishingId === post.id ? "..." : "Publicar 🌐"}
-                                      </button>
+                         {draftPosts.map(post => {
+                              const displayDateStr = post.scheduledFor 
+                                ? `📅 Agendado: ${post.scheduledFor.toLocaleDateString()} a las ${String(post.scheduledFor.getHours()).padStart(2, '0')}:${String(post.scheduledFor.getMinutes()).padStart(2, '0')} hrs` 
+                                : `Generado: ${post.createdAt ? post.createdAt.toLocaleDateString() : 'Recientemente'}`;
+
+                              return (
+                                  <div key={post.id} className="p-4 rounded-2xl border border-slate-100 bg-slate-50 hover:border-indigo-200 hover:bg-indigo-50/30 transition-colors flex items-center justify-between gap-4">
+                                      <div>
+                                          <h4 className="font-bold text-slate-800 line-clamp-1">{post.title}</h4>
+                                          <p className="text-xs text-slate-500 font-medium mt-1">{displayDateStr}</p>
+                                      </div>
+                                      <div className="flex items-center gap-2 shrink-0">
+                                          <button 
+                                              onClick={() => setPreviewModalPost(post)}
+                                              className="text-xs font-bold text-slate-700 bg-slate-200 hover:bg-slate-300 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
+                                          >
+                                              👁️ Ver
+                                          </button>
+                                          <button 
+                                              onClick={() => handlePublish(post.id)}
+                                              disabled={publishingId === post.id}
+                                              className="text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
+                                          >
+                                              {publishingId === post.id ? "..." : "Publicar 🌐"}
+                                          </button>
+                                      </div>
                                   </div>
-                             </div>
-                         ))}
+                              );
+                          })}
                      </div>
                  )}
              </div>
@@ -1364,26 +1414,43 @@ $posts = $response->json('posts');`}
               )}
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-2">
-              {previewModalPost.status !== 'published' && (
-                <button
-                  onClick={() => {
-                    const pId = previewModalPost.id;
-                    setPreviewModalPost(null);
-                    handlePublish(pId);
-                  }}
-                  disabled={publishingId === previewModalPost.id}
-                  className="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold py-2.5 px-6 rounded-xl text-xs transition-all shadow-md flex items-center gap-2"
-                >
-                  🚀 Publicar Ahora Mismo
-                </button>
-              )}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
               <button
-                onClick={() => setPreviewModalPost(null)}
-                className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 px-5 rounded-xl text-xs transition-all"
+                onClick={() => handleGeneratePostImage(previewModalPost.id)}
+                disabled={generatingImageId === previewModalPost.id}
+                className="bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 font-bold py-2.5 px-4 rounded-xl text-xs transition-all flex items-center gap-2 active:scale-95 disabled:bg-slate-100"
               >
-                Cerrar
+                {generatingImageId === previewModalPost.id ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-purple-700 border-t-transparent rounded-full animate-spin" />
+                    Generando Imagen con IA...
+                  </>
+                ) : (
+                  <>🎨 Generar Imagen Destacada</>
+                )}
               </button>
+
+              <div className="flex items-center gap-3">
+                {previewModalPost.status !== 'published' && (
+                  <button
+                    onClick={() => {
+                      const pId = previewModalPost.id;
+                      setPreviewModalPost(null);
+                      handlePublish(pId);
+                    }}
+                    disabled={publishingId === previewModalPost.id}
+                    className="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold py-2.5 px-6 rounded-xl text-xs transition-all shadow-md flex items-center gap-2"
+                  >
+                    🚀 Publicar Ahora Mismo
+                  </button>
+                )}
+                <button
+                  onClick={() => setPreviewModalPost(null)}
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 px-5 rounded-xl text-xs transition-all"
+                >
+                  Cerrar
+                </button>
+              </div>
             </div>
           </div>
         </div>
