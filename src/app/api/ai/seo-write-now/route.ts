@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '../../../../lib/firebase-admin';
 import { generateFreeText } from "../../../../lib/gemini-free";
 import { marked } from 'marked';
+import { sendPublishedBlogEmail } from '../../../../lib/email-blog';
 
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { userId, postId } = body;
+        const { userId, postId, action = 'publish_now' } = body; // action: 'publish_now' | 'keep_schedule'
 
         if (!userId || !postId) {
             return NextResponse.json({ error: "Faltan parámetros requeridos (userId, postId)" }, { status: 400 });
@@ -35,9 +36,9 @@ export async function POST(req: NextRequest) {
 
         const post = docSnap.data()!;
 
-        console.log(`[SEO-WRITE-NOW] Writing article for: ${post.title}`);
+        console.log(`[SEO-WRITE-NOW] Pass 1 - Writing draft for: ${post.title}`);
 
-        // Generate content with Gemini
+        // Pass 1: Initial Draft with Gemini
         const systemInstruction = `Eres un Redactor Experto en SEO, Marketing de Contenidos y Copywriting.
 Tu tarea es escribir un artículo de blog completo, altamente optimizado para SEO, en formato Markdown.
 Debe tener una introducción persuasiva, desarrollo profundo con subtítulos (H2, H3), viñetas, y una conclusión con llamado a la acción.
@@ -52,16 +53,50 @@ Descripción requerida: ${post.metaDescription || ''}
 
 Entrega el artículo directamente en formato Markdown, sin texto introductorio ni conclusiones fuera del artículo.`;
 
-        const markdownContent = await generateFreeText(prompt, systemInstruction, false);
+        const draftMarkdown = await generateFreeText(prompt, systemInstruction, false);
 
-        if (!markdownContent) {
+        if (!draftMarkdown) {
             return NextResponse.json({ error: "Gemini no generó respuesta." }, { status: 500 });
         }
+
+        // Pass 2: Review Loop (Editor Chief Critique & Refinement)
+        console.log(`[SEO-WRITE-NOW] Pass 2 - Editor Review Loop for: ${post.title}`);
+        const reviewInstruction = `Eres un Editor Jefe SEO y Corrector de Estilo. Tu tarea es pulir y perfeccionar el artículo borrador.`;
+        const reviewPrompt = `Revisa y perfecciona el siguiente borrador de artículo de blog:
+
+Título: ${post.title}
+Borrador inicial:
+${draftMarkdown}
+
+Puntos clave a revisar:
+1. Elimina muletillas y mejora la fluidez de la lectura.
+2. Formatear impecablemente los subtítulos (H2, H3) y listas.
+3. Garantiza que la extensión sea sólida (+800 palabras).
+
+Entrega únicamente la versión final perfeccionada en Markdown.`;
+
+        const markdownContent = (await generateFreeText(reviewPrompt, reviewInstruction, false)) || draftMarkdown;
 
         // Convert Markdown to HTML
         const htmlContent = marked(markdownContent);
 
-        // Publish based on integration config
+        // If user selected "keep_schedule": save content and mark as strategy_draft, keeping scheduled date & time
+        if (action === 'keep_schedule') {
+            await docRef.update({
+                content: markdownContent,
+                htmlContent,
+                status: 'strategy_draft',
+                updatedAt: new Date().toISOString(),
+            });
+
+            return NextResponse.json({
+                success: true,
+                message: `¡Artículo "${post.title}" redactado y guardado! Permanecerá agendado para su publicación automática en la fecha/hora indicada.`,
+                status: 'strategy_draft'
+            });
+        }
+
+        // Action === 'publish_now': Publish based on integration config
         const { integrationType, wpUrl, wpUser, wpPassword, webhookPlatform, webhookStoreUrl, webhookApiKey } = config;
         let isPushed = false;
         let pushError = null;
@@ -127,9 +162,18 @@ Entrega el artículo directamente en formato Markdown, sin texto introductorio n
             lastError: pushError || null,
         });
 
+        // Send email notification to user
+        if (userData.email && newStatus === 'published') {
+            sendPublishedBlogEmail({
+                toEmail: userData.email,
+                postTitle: post.title,
+                publishedAt: new Date().toLocaleDateString('es-CL'),
+            }).catch(err => console.error("[SEO-WRITE-NOW] Email notification error:", err));
+        }
+
         return NextResponse.json({
             success: true,
-            message: `¡Artículo "${post.title}" redactado y ${newStatus === 'published' ? 'publicado' : 'guardado como borrador'} exitosamente!`,
+            message: `¡Artículo "${post.title}" redactado (2 revisiones) y ${newStatus === 'published' ? 'publicado' : 'guardado como borrador'} exitosamente!`,
             status: newStatus
         });
 

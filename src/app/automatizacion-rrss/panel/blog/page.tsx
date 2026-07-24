@@ -62,6 +62,8 @@ export default function SeoAutopilotPanel() {
   // Strategy State
   const [generatingStrategy, setGeneratingStrategy] = useState(false);
   const [publishingId, setPublishingId] = useState<string | null>(null);
+  const [writingModalPost, setWritingModalPost] = useState<{ postId: string; title: string } | null>(null);
+  const [shareModalPost, setShareModalPost] = useState<{ title: string; slug: string } | null>(null);
 
   // Toast State
   const [toastMessage, setToastMessage] = useState("");
@@ -377,14 +379,15 @@ export default function SeoAutopilotPanel() {
       }
   };
 
-  const handleStartWriting = async (postId: string) => {
+  const handleStartWriting = async (postId: string, action: 'publish_now' | 'keep_schedule' = 'publish_now') => {
       if (!user) return;
       setPublishingId(postId);
+      setWritingModalPost(null);
       try {
           const response = await fetch('/api/ai/seo-write-now', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ userId: user.uid, postId })
+              body: JSON.stringify({ userId: user.uid, postId, action })
           });
           const data = await response.json();
           if (!response.ok) throw new Error(data.error);
@@ -399,21 +402,22 @@ export default function SeoAutopilotPanel() {
       }
   };
 
-  const handleUpdatePostDate = async (postId: string, newDateString: string) => {
+  const handleUpdatePostDateTime = async (postId: string, newDateString: string, newTimeString: string = '09:00') => {
       if (!newDateString) return;
       try {
           const [year, month, day] = newDateString.split('-').map(Number);
-          const updatedDate = new Date(year, month - 1, day, 12, 0, 0);
+          const [hours, minutes] = (newTimeString || '09:00').split(':').map(Number);
+          const updatedDate = new Date(year, month - 1, day, hours || 9, minutes || 0, 0);
           
           await updateDoc(doc(db, "blog_posts", postId), {
               scheduledFor: updatedDate
           });
 
           await fetchPosts();
-          showToast("📅 Fecha de agendamiento actualizada");
+          showToast("📅 Fecha y hora de agendamiento actualizadas");
       } catch (error: any) {
           console.error("Error updating date:", error);
-          showToast("❌ Error al actualizar fecha");
+          showToast("❌ Error al actualizar fecha y hora");
       }
   };
 
@@ -665,14 +669,22 @@ export default function SeoAutopilotPanel() {
                  ) : (
                      <div className="space-y-4">
                          {publishedPosts.map(post => (
-                             <div key={post.id} className="p-4 rounded-2xl border border-slate-100 bg-white shadow-sm flex flex-col gap-2">
-                                 <h4 className="font-bold text-slate-800 line-clamp-2">{post.title}</h4>
-                                 <div className="flex items-center gap-3 mt-1">
-                                    <span className="text-[10px] uppercase tracking-widest font-black text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded">En línea</span>
-                                    <span className="text-xs text-slate-500 font-medium">{post.createdAt.toLocaleDateString()}</span>
-                                 </div>
-                             </div>
-                         ))}
+                              <div key={post.id} className="p-4 rounded-2xl border border-slate-100 bg-white shadow-sm flex flex-col gap-2">
+                                  <h4 className="font-bold text-slate-800 line-clamp-2">{post.title}</h4>
+                                  <div className="flex flex-wrap items-center justify-between gap-2 mt-1">
+                                     <div className="flex items-center gap-2">
+                                         <span className="text-[10px] uppercase tracking-widest font-black text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded">En línea</span>
+                                         <span className="text-xs text-slate-500 font-medium">{post.createdAt.toLocaleDateString()}</span>
+                                     </div>
+                                     <button
+                                         onClick={() => setShareModalPost({ title: post.title, slug: (post as any).slug || post.id })}
+                                         className="text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
+                                     >
+                                         📢 Difundir en Redes
+                                     </button>
+                                  </div>
+                              </div>
+                          ))}
                      </div>
                  )}
              </div>
@@ -710,9 +722,12 @@ export default function SeoAutopilotPanel() {
                       
                       <div className="grid gap-4">
                           {strategyPosts.map((item, index) => {
-                              const dateString = item.scheduledFor 
-                                ? new Date(item.scheduledFor).toISOString().split('T')[0] 
-                                : '';
+                              const dObj = item.scheduledFor ? new Date(item.scheduledFor) : new Date();
+                              const dateStr = dObj.toISOString().split('T')[0];
+                              const hoursStr = String(dObj.getHours()).padStart(2, '0');
+                              const minsStr = String(dObj.getMinutes()).padStart(2, '0');
+                              const timeStr = `${hoursStr}:${minsStr}`;
+
                               return (
                                   <div key={item.id} className="p-5 rounded-2xl border border-slate-100 bg-slate-50 flex flex-col md:flex-row md:items-center gap-4 hover:border-indigo-200 hover:shadow-md transition-all">
                                       <div className="w-16 h-16 shrink-0 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center font-black text-2xl">
@@ -726,21 +741,29 @@ export default function SeoAutopilotPanel() {
                                                   🔍 {item.targetKeyword || "Keywords"}
                                               </span>
                                               
-                                              {/* Editable Date Selector */}
-                                              <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold px-2.5 py-1 rounded-xl">
+                                              {/* Editable Date & Time Selector */}
+                                              <div className="flex flex-wrap items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-950 text-[11px] font-bold px-3 py-1 rounded-xl shadow-sm">
                                                   <span>📅 Agendado:</span>
                                                   <input
                                                       type="date"
-                                                      value={dateString}
-                                                      onChange={(e) => handleUpdatePostDate(item.id, e.target.value)}
+                                                      value={dateStr}
+                                                      onChange={(e) => handleUpdatePostDateTime(item.id, e.target.value, timeStr)}
                                                       className="bg-white border border-emerald-300 text-emerald-950 font-bold px-2 py-0.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer shadow-sm"
                                                   />
+                                                  <span>a las</span>
+                                                  <input
+                                                      type="time"
+                                                      value={timeStr}
+                                                      onChange={(e) => handleUpdatePostDateTime(item.id, dateStr, e.target.value)}
+                                                      className="bg-white border border-emerald-300 text-emerald-950 font-bold px-2 py-0.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer shadow-sm"
+                                                  />
+                                                  <span>hrs</span>
                                               </div>
                                           </div>
                                       </div>
                                       <div className="shrink-0 flex gap-2">
                                           <button 
-                                              onClick={() => handleStartWriting(item.id)}
+                                              onClick={() => setWritingModalPost({ postId: item.id, title: item.title })}
                                               disabled={publishingId === item.id || (blogUsage >= blogLimit && blogLimit < 999999)} 
                                               className="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-bold px-5 py-2.5 rounded-xl transition-all shadow-md shadow-indigo-600/20 disabled:bg-slate-300 flex items-center justify-center gap-2 shrink-0"
                                           >
@@ -1167,6 +1190,93 @@ $posts = $response->json('posts');`}
               </div>
             )}
           </div>
+      )}
+
+      {/* ─── MODAL 1: OPCIONES DE REDACCIÓN (PUBLICAR vs MANTENER AGENDA) ─── */}
+      {writingModalPost && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-[32px] shadow-2xl p-8 max-w-md w-full relative space-y-6">
+            <button onClick={() => setWritingModalPost(null)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 font-bold">
+              ✕
+            </button>
+            
+            <div className="text-center space-y-2">
+              <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center text-3xl mx-auto font-black">
+                ✍️
+              </div>
+              <h3 className="text-xl font-black text-slate-900">Redactar con Inteligencia Artificial</h3>
+              <p className="text-xs text-slate-500 font-medium line-clamp-2 px-2">
+                "{writingModalPost.title}"
+              </p>
+            </div>
+
+            <div className="bg-indigo-50/60 border border-indigo-100 rounded-2xl p-4 text-xs text-slate-600 font-medium space-y-1.5">
+              <p className="font-bold text-indigo-900 flex items-center gap-1.5">
+                <span>🧠 Proceso de Calidad en 2 Pasos (Doble Revisión):</span>
+              </p>
+              <p>1. 📝 Generación del borrador (+800 palabras).</p>
+              <p>2. 🔍 Revisión y pulido por Editor Jefe SEO.</p>
+            </div>
+
+            <div className="space-y-3 pt-2">
+              <button
+                onClick={() => handleStartWriting(writingModalPost.postId, 'publish_now')}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold py-3.5 px-5 rounded-2xl text-xs transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2"
+              >
+                🚀 Redactar y Publicar Ahora Mismo
+              </button>
+              <button
+                onClick={() => handleStartWriting(writingModalPost.postId, 'keep_schedule')}
+                className="w-full bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 font-bold py-3.5 px-5 rounded-2xl text-xs transition-all flex items-center justify-center gap-2"
+              >
+                📅 Redactar y Mantener Agendado
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── MODAL 2: DIFUNDIR EN REDES SOCIALES Y LINKEDIN ─── */}
+      {shareModalPost && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-[32px] shadow-2xl p-8 max-w-md w-full relative space-y-6">
+            <button onClick={() => setShareModalPost(null)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 font-bold">
+              ✕
+            </button>
+            
+            <div className="text-center space-y-2">
+              <div className="w-14 h-14 bg-sky-50 text-sky-600 rounded-2xl flex items-center justify-center text-3xl mx-auto font-black">
+                📢
+              </div>
+              <h3 className="text-xl font-black text-slate-900">Difundir Artículo en Redes</h3>
+              <p className="text-xs text-slate-500 font-medium line-clamp-2 px-2">
+                "{shareModalPost.title}"
+              </p>
+            </div>
+
+            <div className="space-y-3 pt-2">
+              {/* Share to LinkedIn */}
+              <a
+                href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`https://santisoft.cl/blog/${shareModalPost.slug}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setShareModalPost(null)}
+                className="w-full bg-[#0A66C2] hover:bg-[#004182] active:scale-95 text-white font-bold py-3.5 px-5 rounded-2xl text-xs transition-all shadow-md flex items-center justify-center gap-2"
+              >
+                💼 Compartir Directamente en LinkedIn
+              </a>
+
+              {/* Post on Connected User Social Networks */}
+              <a
+                href={`/automatizacion-rrss/panel/crear?title=${encodeURIComponent(shareModalPost.title)}&url=${encodeURIComponent(`https://santisoft.cl/blog/${shareModalPost.slug}`)}`}
+                onClick={() => setShareModalPost(null)}
+                className="w-full bg-slate-900 hover:bg-slate-800 active:scale-95 text-white font-bold py-3.5 px-5 rounded-2xl text-xs transition-all flex items-center justify-center gap-2"
+              >
+                📱 Publicar en Mis Redes Configuradas (Meta / Instagram / Facebook)
+              </a>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

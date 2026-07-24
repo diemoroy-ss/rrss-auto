@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '../../../../lib/firebase-admin';
 import { generateFreeText } from "../../../../lib/gemini-free";
 import { marked } from 'marked';
+import { sendPublishedBlogEmail } from '../../../../lib/email-blog';
 
 export async function POST(req: NextRequest) {
     try {
@@ -49,7 +50,7 @@ export async function POST(req: NextRequest) {
 
         console.log(`[EXECUTE-BLOG] Generating article for Post: ${post.title}`);
 
-        // Generate content with Gemini
+        // Generate content with Gemini (Pass 1: Draft)
         const systemInstruction = `Eres un Redactor Experto en SEO, Marketing de Contenidos y Copywriting.
 Tu tarea es escribir un artículo de blog completo, altamente optimizado para SEO, en formato Markdown.
 Debe tener una introducción persuasiva, desarrollo profundo con subtítulos (H2, H3), viñetas, y una conclusión con llamado a la acción.
@@ -64,8 +65,26 @@ Descripción requerida: ${post.metaDescription}
 
 Entrega el artículo directamente en formato Markdown, sin texto introductorio ni conclusiones fuera del artículo.`;
 
-        const markdownContent = await generateFreeText(prompt, systemInstruction, false);
-        if (!markdownContent) throw new Error("Gemini no retornó contenido");
+        const draftMarkdown = await generateFreeText(prompt, systemInstruction, false);
+        if (!draftMarkdown) throw new Error("Gemini no retornó contenido");
+
+        // Pass 2: Review & Refinamiento (Editor Jefe SEO)
+        console.log(`[EXECUTE-BLOG] Running Pass 2 Review Loop for: ${post.title}`);
+        const reviewInstruction = `Eres un Editor Jefe SEO. Tu tarea es perfeccionar el borrador de un artículo de blog para maximizar su legibilidad, corregir cualquier detalle gramatical y potenciar las palabras clave.`;
+        const reviewPrompt = `Revisa y perfecciona el siguiente artículo de blog:
+
+Título: ${post.title}
+Borrador inicial:
+${draftMarkdown}
+
+Asegúrate de:
+1. Eliminar muletillas y pulir la redacción.
+2. Formatear impecablemente con subtítulos (H2, H3) y listas.
+3. Mantener una extensión sólida de al menos 800 palabras.
+
+Entrega la versión final perfeccionada en Markdown puro.`;
+
+        const markdownContent = (await generateFreeText(reviewPrompt, reviewInstruction, false)) || draftMarkdown;
 
         // Convert Markdown to HTML
         const htmlContent = marked(markdownContent);
@@ -129,6 +148,15 @@ Entrega el artículo directamente en formato Markdown, sin texto introductorio n
             lastError: pushError || null,
             gcpTaskName: null // clear the task name since it's executed
         });
+
+        // Send email notification to user
+        if (userData.email) {
+            sendPublishedBlogEmail({
+                toEmail: userData.email,
+                postTitle: post.title,
+                publishedAt: new Date().toLocaleDateString('es-CL'),
+            }).catch(err => console.error("[EXECUTE-BLOG] Email notification error:", err));
+        }
 
         console.log(`[EXECUTE-BLOG] Successfully processed post ${postId}`);
         return NextResponse.json({ success: true, isPushed, status: newStatus });
