@@ -449,23 +449,91 @@ export default function SeoAutopilotPanel() {
           <p className="text-slate-500 mt-3 font-medium text-lg max-w-2xl">
             Gestiona los artículos generados por Inteligencia Artificial y revisa el calendario estratégico de publicaciones para posicionar en Google.
           </p>
-          <div className="mt-4 flex items-center gap-2">
-              <span className="text-xs font-black uppercase tracking-widest text-slate-400">Cuota Mensual:</span>
-              <div className="bg-white border border-slate-200 shadow-sm rounded-lg px-3 py-1 flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${blogUsage >= blogLimit && blogLimit < 999999 ? 'bg-rose-500' : 'bg-emerald-500'}`}></span>
-                  <span className="text-sm font-bold text-slate-700">
-                      {blogUsage} / {blogLimit >= 999999 ? '∞' : blogLimit} Blogs
-                  </span>
-              </div>
-          </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <a href="/blog" target="_blank" className="bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 font-bold py-2 px-6 rounded-xl shadow-sm transition-all flex items-center gap-2 hover:shadow-md">
+          <a href="/blog" target="_blank" className="bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 font-bold py-2.5 px-6 rounded-xl shadow-sm transition-all flex items-center gap-2 hover:shadow-md text-sm">
               🌐 Ver Blog Público
           </a>
-          <button onClick={() => setShowConfig(true)} className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold py-2 px-6 rounded-xl shadow-sm transition-all flex items-center gap-2 hover:shadow-md">
+          <button onClick={() => setShowConfig(true)} className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold py-2.5 px-6 rounded-xl shadow-sm transition-all flex items-center gap-2 hover:shadow-md text-sm">
               ⚙️ Configurar Sitio Web
           </button>
+        </div>
+      </div>
+
+      {/* ─── RESUMEN DE ESTADO DE LA APLICACIÓN Y SITIO CONFIGURADO ─── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {/* 1. Cuota Mensual */}
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-2xl shrink-0 font-bold">
+            📊
+          </div>
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Cuota Mensual</p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className={`w-2.5 h-2.5 rounded-full ${blogUsage >= blogLimit && blogLimit < 999999 ? 'bg-rose-500' : 'bg-emerald-500 animate-pulse'}`} />
+              <p className="text-lg font-black text-slate-900">
+                {blogUsage} / {blogLimit >= 999999 ? '∞' : blogLimit} <span className="text-xs font-semibold text-slate-400">Blogs</span>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* 2. Calendarizado */}
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex items-center gap-4">
+          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0 ${strategyPosts.length > 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-400'}`}>
+            📅
+          </div>
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Calendarizado</p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className={`text-xs font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full ${strategyPosts.length > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                {strategyPosts.length > 0 ? 'OK' : 'No'}
+              </span>
+              <span className="text-xs text-slate-500 font-medium">
+                {strategyPosts.length > 0 ? `${strategyPosts.length} post(s)` : 'Sin calendarizar'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* 3. Integración */}
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex items-center gap-4">
+          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0 ${(Boolean(apiKeyLastUsedAt) || apiKeys.length > 0 || Boolean(connectionTestResult?.success) || Boolean(wpUrl && wpUser) || Boolean(webhookStoreUrl)) ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+            🔌
+          </div>
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Integrado</p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className={`text-xs font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full ${(Boolean(apiKeyLastUsedAt) || apiKeys.length > 0 || Boolean(connectionTestResult?.success) || Boolean(wpUrl && wpUser) || Boolean(webhookStoreUrl)) ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                {(Boolean(apiKeyLastUsedAt) || apiKeys.length > 0 || Boolean(connectionTestResult?.success) || Boolean(wpUrl && wpUser) || Boolean(webhookStoreUrl)) ? 'OK' : 'Pendiente'}
+              </span>
+              <span className="text-xs text-slate-500 font-bold capitalize">
+                {integrationType === 'api_feed' ? 'API Feed' : integrationType === 'wordpress' ? 'WordPress' : 'Webhook'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* 4. Sitio Web Configurado */}
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex items-center gap-4 min-w-0">
+          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0 ${(scrapedUrl || wpUrl || webhookStoreUrl || businessType) ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-100 text-slate-400'}`}>
+            🌐
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Sitio Web Configurado</p>
+            <div className="flex items-center gap-2 mt-1">
+              {(scrapedUrl || wpUrl || webhookStoreUrl || businessType) ? (
+                <>
+                  <span className="text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 shrink-0">OK</span>
+                  <span className="text-xs font-bold text-slate-800 truncate" title={scrapedUrl || wpUrl || webhookStoreUrl || businessType}>
+                    {(scrapedUrl || wpUrl || webhookStoreUrl || businessType).replace(/^https?:\/\//, '').replace(/\/$/, '')}
+                  </span>
+                </>
+              ) : (
+                <span className="text-xs text-slate-400 font-medium italic">Sin configurar</span>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
