@@ -9,11 +9,13 @@ import { useRouter } from "next/navigation";
 interface BlogPost {
   id: string;
   title: string;
-  status: string; // 'published' | 'draft' | 'pending' | 'strategy'
+  status: string; // 'published' | 'draft' | 'pending' | 'strategy' | 'strategy_draft'
   scheduledFor?: Date;
   createdAt: Date;
   metaDescription?: string;
   targetKeyword?: string;
+  content?: string;
+  htmlContent?: string;
 }
 
 export default function SeoAutopilotPanel() {
@@ -64,6 +66,7 @@ export default function SeoAutopilotPanel() {
   const [publishingId, setPublishingId] = useState<string | null>(null);
   const [writingModalPost, setWritingModalPost] = useState<{ postId: string; title: string } | null>(null);
   const [shareModalPost, setShareModalPost] = useState<{ title: string; slug: string } | null>(null);
+  const [previewModalPost, setPreviewModalPost] = useState<BlogPost | null>(null);
 
   // Toast State
   const [toastMessage, setToastMessage] = useState("");
@@ -85,7 +88,9 @@ export default function SeoAutopilotPanel() {
               scheduledFor: pd.scheduledFor?.toDate(),
               createdAt: pd.createdAt ? new Date(pd.createdAt) : new Date(),
               metaDescription: pd.metaDescription || "",
-              targetKeyword: pd.targetKeyword || ""
+              targetKeyword: pd.targetKeyword || "",
+              content: pd.content || "",
+              htmlContent: pd.htmlContent || ""
           });
       });
       
@@ -426,9 +431,9 @@ export default function SeoAutopilotPanel() {
   }
 
   const publishedPosts = posts.filter(p => p.status === 'published');
-  const draftPosts = posts.filter(p => p.status === 'draft');
+  const draftPosts = posts.filter(p => p.status === 'draft' || p.status === 'strategy_draft');
   const strategyPosts = posts
-    .filter(p => p.status === 'strategy')
+    .filter(p => p.status === 'strategy' || p.status === 'strategy_draft')
     .sort((a, b) => {
       const timeA = a.scheduledFor ? new Date(a.scheduledFor).getTime() : 0;
       const timeB = b.scheduledFor ? new Date(b.scheduledFor).getTime() : 0;
@@ -638,17 +643,20 @@ export default function SeoAutopilotPanel() {
                                      <p className="text-xs text-slate-500 font-medium mt-1">Generado: {post.createdAt.toLocaleDateString()}</p>
                                  </div>
                                  <div className="flex items-center gap-2 shrink-0">
-                                     <button className="text-xs font-bold text-slate-600 bg-slate-200 hover:bg-slate-300 px-3 py-1.5 rounded-lg transition-colors">
-                                         Ver
-                                     </button>
-                                     <button 
-                                         onClick={() => handlePublish(post.id)}
-                                         disabled={publishingId === post.id}
-                                         className="text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
-                                     >
-                                         {publishingId === post.id ? "..." : "Publicar 🌐"}
-                                     </button>
-                                 </div>
+                                      <button 
+                                          onClick={() => setPreviewModalPost(post)}
+                                          className="text-xs font-bold text-slate-700 bg-slate-200 hover:bg-slate-300 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
+                                      >
+                                          👁️ Ver
+                                      </button>
+                                      <button 
+                                          onClick={() => handlePublish(post.id)}
+                                          disabled={publishingId === post.id}
+                                          className="text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
+                                      >
+                                          {publishingId === post.id ? "..." : "Publicar 🌐"}
+                                      </button>
+                                  </div>
                              </div>
                          ))}
                      </div>
@@ -693,6 +701,33 @@ export default function SeoAutopilotPanel() {
 
       {activeTab === 'calendario' && (
           <div className="space-y-6">
+              {/* ─── BANNER INFORMATIVO: FUNCIONAMIENTO AUTOMÁTICO vs ANTICIPADO ─── */}
+              <div className="bg-gradient-to-r from-indigo-900 via-slate-900 to-indigo-950 text-white rounded-3xl p-6 shadow-xl border border-indigo-700/40 animate-in fade-in">
+                  <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                          <span className="bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full">
+                              🤖 Modo de Funcionamiento Autopilot
+                          </span>
+                      </div>
+                      <h3 className="text-xl font-black text-white">¿Cómo se redactan y publican tus artículos?</h3>
+                      <div className="grid sm:grid-cols-2 gap-4 pt-1 text-xs text-indigo-100/90 font-medium">
+                          <div className="flex items-start gap-3 bg-white/5 p-3.5 rounded-2xl border border-white/10">
+                              <span className="text-2xl shrink-0">⏰</span>
+                              <div>
+                                  <strong className="text-white block font-bold text-sm mb-0.5">1. Publicación 100% Automática</strong>
+                                  Si no haces nada, al llegar la fecha y hora agendada la IA escribirá (con doble revisión) y publicará tu artículo automáticamente en tu sitio web.
+                              </div>
+                          </div>
+                          <div className="flex items-start gap-3 bg-white/5 p-3.5 rounded-2xl border border-white/10">
+                              <span className="text-2xl shrink-0">✍️</span>
+                              <div>
+                                  <strong className="text-white block font-bold text-sm mb-0.5">2. Redactar con Anticipación</strong>
+                                  Usa <i>"Empezar a Escribir"</i> en cualquier momento. Podrás revisar el borrador creado y elegir si **Publicar de Inmediato** o **Mantener Agendado**.
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
               {strategyPosts.length === 0 ? (
                   <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 md:p-10 min-h-[500px] flex flex-col items-center justify-center text-center">
                       <div className="text-6xl mb-6 opacity-80">🗺️</div>
@@ -740,6 +775,12 @@ export default function SeoAutopilotPanel() {
                                               <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-slate-600">
                                                   🔍 {item.targetKeyword || "Keywords"}
                                               </span>
+
+                                              {(item.status === 'strategy_draft' || item.content || item.htmlContent) && (
+                                                  <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 bg-indigo-100 text-indigo-800 rounded-lg border border-indigo-200">
+                                                      ✍️ Redactado (Listo)
+                                                  </span>
+                                              )}
                                               
                                               {/* Editable Date & Time Selector */}
                                               <div className="flex flex-wrap items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-950 text-[11px] font-bold px-3 py-1 rounded-xl shadow-sm">
@@ -761,7 +802,15 @@ export default function SeoAutopilotPanel() {
                                               </div>
                                           </div>
                                       </div>
-                                      <div className="shrink-0 flex gap-2">
+                                      <div className="shrink-0 flex flex-wrap md:flex-nowrap gap-2">
+                                          {(item.status === 'strategy_draft' || item.content || item.htmlContent) && (
+                                              <button
+                                                  onClick={() => setPreviewModalPost(item)}
+                                                  className="w-full md:w-auto bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs px-4 py-2.5 rounded-xl border border-indigo-200 transition-all flex items-center justify-center gap-1.5 shrink-0 active:scale-95 shadow-sm"
+                                              >
+                                                  👁️ Ver Borrador
+                                              </button>
+                                          )}
                                           <button 
                                               onClick={() => setWritingModalPost({ postId: item.id, title: item.title })}
                                               disabled={publishingId === item.id || (blogUsage >= blogLimit && blogLimit < 999999)} 
@@ -1274,6 +1323,67 @@ $posts = $response->json('posts');`}
               >
                 📱 Publicar en Mis Redes Configuradas (Meta / Instagram / Facebook)
               </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── MODAL 3: PREVISUALIZACIÓN DE ARTÍCULO REDACTADO ─── */}
+      {previewModalPost && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md animate-in fade-in">
+          <div className="bg-white rounded-[32px] shadow-2xl p-6 md:p-8 max-w-3xl w-full max-h-[85vh] flex flex-col relative">
+            <button onClick={() => setPreviewModalPost(null)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 font-bold text-lg">
+              ✕
+            </button>
+            
+            <div className="mb-4 pr-8">
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full ${previewModalPost.status === 'published' ? 'bg-emerald-100 text-emerald-700' : previewModalPost.status === 'strategy_draft' ? 'bg-indigo-100 text-indigo-700' : 'bg-amber-100 text-amber-700'}`}>
+                  {previewModalPost.status === 'published' ? '✅ Publicado' : previewModalPost.status === 'strategy_draft' ? '✍️ Redactado (Listo)' : '📝 Borrador'}
+                </span>
+                {previewModalPost.scheduledFor && (
+                  <span className="text-xs text-slate-500 font-semibold">
+                    📅 Agendado: {previewModalPost.scheduledFor.toLocaleDateString()} a las {String(previewModalPost.scheduledFor.getHours()).padStart(2, '0')}:{String(previewModalPost.scheduledFor.getMinutes()).padStart(2, '0')} hrs
+                  </span>
+                )}
+              </div>
+              <h2 className="text-2xl font-black text-slate-900">{previewModalPost.title}</h2>
+              {previewModalPost.metaDescription && (
+                <p className="text-sm text-slate-500 font-medium mt-1">{previewModalPost.metaDescription}</p>
+              )}
+            </div>
+
+            {/* Rendered HTML / Markdown Content */}
+            <div className="flex-1 overflow-y-auto border-t border-b border-slate-100 my-3 py-4 text-slate-800 text-sm font-normal prose prose-indigo max-w-none">
+              {previewModalPost.htmlContent || previewModalPost.content ? (
+                <div dangerouslySetInnerHTML={{ __html: previewModalPost.htmlContent || previewModalPost.content || '' }} />
+              ) : (
+                <div className="p-8 text-center text-slate-400 font-medium">
+                  No hay contenido redactado aún para este artículo.
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              {previewModalPost.status !== 'published' && (
+                <button
+                  onClick={() => {
+                    const pId = previewModalPost.id;
+                    setPreviewModalPost(null);
+                    handlePublish(pId);
+                  }}
+                  disabled={publishingId === previewModalPost.id}
+                  className="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold py-2.5 px-6 rounded-xl text-xs transition-all shadow-md flex items-center gap-2"
+                >
+                  🚀 Publicar Ahora Mismo
+                </button>
+              )}
+              <button
+                onClick={() => setPreviewModalPost(null)}
+                className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 px-5 rounded-xl text-xs transition-all"
+              >
+                Cerrar
+              </button>
             </div>
           </div>
         </div>
