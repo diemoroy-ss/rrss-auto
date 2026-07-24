@@ -19,12 +19,17 @@ export async function GET(req: Request) {
     const decoded = await adminAuth.verifyIdToken(idToken);
 
     const userSnap = await adminDb.collection('users').doc(decoded.uid).get();
-    const existingKeys: string[] = userSnap.data()?.seoApiKeys || [];
+    const userData = userSnap.data() || {};
+    const existingKeys: string[] = userData.seoApiKeys || [];
+    const lastUsedAt: string | null = userData.seoApiKeyLastUsed || null;
 
-    return NextResponse.json({ keys: existingKeys.map((k) => ({
-      keyPreview: k.substring(0, 14) + '••••••••••••••••',
-      keyFull: k,
-    })) });
+    return NextResponse.json({
+      lastUsedAt,
+      keys: existingKeys.map((k) => ({
+        keyPreview: k.substring(0, 14) + '••••••••••••••••',
+        keyFull: k,
+      }))
+    });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

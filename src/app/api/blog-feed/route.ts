@@ -84,6 +84,11 @@ export async function GET(req: Request) {
       );
     }
 
+    // Actualizar última fecha de uso para mostrar estado OK en la UI
+    adminDb.collection('users').doc(userId).update({
+      seoApiKeyLastUsed: new Date().toISOString()
+    }).catch(() => {});
+
     const slug = url.searchParams.get('slug');
     const limitParam = parseInt(url.searchParams.get('limit') || '20', 10);
 
