@@ -121,11 +121,12 @@ export async function GET(req: Request) {
       .collection('blog_posts')
       .where('userId', '==', userId)
       .where('status', '==', 'published')
-      .orderBy('publishedAt', 'desc')
       .limit(Math.min(limitParam, 100))
       .get();
 
-    const posts = snap.docs.map((d) => mapPost(d.id, d.data()));
+    const posts = snap.docs
+      .map((d) => mapPost(d.id, d.data()))
+      .sort((a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
 
     return NextResponse.json(
       {
@@ -143,7 +144,7 @@ export async function GET(req: Request) {
   } catch (error: any) {
     console.error('[blog-feed] Error:', error);
     return NextResponse.json(
-      { error: 'Error interno del servidor', detail: error.message },
+      { error: error?.message || 'Error interno del servidor', detail: error.message },
       { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } }
     );
   }

@@ -630,6 +630,51 @@ export default function SeoAutopilotPanel() {
               <p className="text-slate-500 font-medium">Conecta tu sitio web para que Santisoft publique los artículos automáticamente. Elige el método según tu tecnología.</p>
             </div>
 
+            {/* Status Indicator Banner — PRECEDES METHOD CARDS */}
+            {integrationType === 'api_feed' && (
+              <div className="space-y-4">
+                <div className={`p-5 rounded-2xl border-2 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all ${apiKeyLastUsedAt || connectionTestResult?.success ? 'bg-emerald-50 border-emerald-300 text-emerald-950 shadow-sm' : 'bg-amber-50 border-amber-300 text-amber-950'}`}>
+                  <div className="flex items-start gap-3.5">
+                    <div className={`w-3.5 h-3.5 rounded-full mt-1 shrink-0 ${apiKeyLastUsedAt || connectionTestResult?.success ? 'bg-emerald-500 animate-pulse shadow-sm shadow-emerald-500' : 'bg-amber-500 animate-pulse'}`} />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-black text-base">
+                          {apiKeyLastUsedAt || connectionTestResult?.success ? 'Conexión Activa (OK)' : 'Esperando primera sincronización'}
+                        </h4>
+                        <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${apiKeyLastUsedAt || connectionTestResult?.success ? 'bg-emerald-200 text-emerald-800' : 'bg-amber-200 text-amber-800'}`}>
+                          {apiKeyLastUsedAt || connectionTestResult?.success ? 'CONECTADO' : 'PENDIENTE'}
+                        </span>
+                      </div>
+                      <p className="text-xs font-medium opacity-80 mt-1 leading-relaxed">
+                        {apiKeyLastUsedAt 
+                          ? `Última sincronización recibida desde tu web: ${new Date(apiKeyLastUsedAt).toLocaleString('es-CL')}`
+                          : 'Genera tu API Key en la sección inferior y pégala en tu sitio web. Tan pronto como tu sitio consulte el feed, la conexión se marcará como OK automáticamente.'}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleTestConnection}
+                    disabled={testingConnection || apiKeys.length === 0}
+                    className="shrink-0 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition-all flex items-center justify-center gap-2 shadow-md active:scale-95"
+                  >
+                    {testingConnection ? 'Probando...' : '🧪 Probar Conexión'}
+                  </button>
+                </div>
+
+                {connectionTestResult && (
+                  <div className={`p-4 rounded-xl text-xs font-bold flex items-center gap-3 animate-in fade-in duration-300 ${connectionTestResult.success ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' : 'bg-rose-100 text-rose-900 border border-rose-300'}`}>
+                    <span className="text-base">{connectionTestResult.success ? '🎉' : '❌'}</span>
+                    <div>
+                      <p>{connectionTestResult.message}</p>
+                      {connectionTestResult.count !== undefined && (
+                        <p className="text-[11px] font-normal opacity-80 mt-0.5">Se encontraron {connectionTestResult.count} artículo(s) publicados disponibles para tu sitio web.</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Method selector cards — stacked full-width for readability */}
             <div className="space-y-4">
 
@@ -730,48 +775,6 @@ export default function SeoAutopilotPanel() {
             {/* ─── API FEED CONFIG ─── */}
             {integrationType === 'api_feed' && (
               <div className="space-y-6">
-
-                {/* Status Indicator Banner */}
-                <div className={`p-5 rounded-2xl border-2 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all ${apiKeyLastUsedAt || connectionTestResult?.success ? 'bg-emerald-50 border-emerald-300 text-emerald-950 shadow-sm' : 'bg-amber-50 border-amber-300 text-amber-950'}`}>
-                  <div className="flex items-start gap-3.5">
-                    <div className={`w-3.5 h-3.5 rounded-full mt-1 shrink-0 ${apiKeyLastUsedAt || connectionTestResult?.success ? 'bg-emerald-500 animate-pulse shadow-sm shadow-emerald-500' : 'bg-amber-500 animate-pulse'}`} />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-black text-base">
-                          {apiKeyLastUsedAt || connectionTestResult?.success ? 'Conexión Activa (OK)' : 'Esperando primera sincronización'}
-                        </h4>
-                        <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${apiKeyLastUsedAt || connectionTestResult?.success ? 'bg-emerald-200 text-emerald-800' : 'bg-amber-200 text-amber-800'}`}>
-                          {apiKeyLastUsedAt || connectionTestResult?.success ? 'CONECTADO' : 'PENDIENTE'}
-                        </span>
-                      </div>
-                      <p className="text-xs font-medium opacity-80 mt-1 leading-relaxed">
-                        {apiKeyLastUsedAt 
-                          ? `Última sincronización recibida desde tu web: ${new Date(apiKeyLastUsedAt).toLocaleString('es-CL')}`
-                          : 'Genera tu API Key abajo y pégala en tu sitio web. Tan pronto como tu sitio consulte el feed, la conexión se marcará como OK automáticamente.'}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={handleTestConnection}
-                    disabled={testingConnection || apiKeys.length === 0}
-                    className="shrink-0 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition-all flex items-center justify-center gap-2 shadow-md active:scale-95"
-                  >
-                    {testingConnection ? 'Probando...' : '🧪 Probar Conexión'}
-                  </button>
-                </div>
-
-                {/* Connection test message feedback */}
-                {connectionTestResult && (
-                  <div className={`p-4 rounded-xl text-xs font-bold flex items-center gap-3 animate-in fade-in duration-300 ${connectionTestResult.success ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' : 'bg-rose-100 text-rose-900 border border-rose-300'}`}>
-                    <span className="text-base">{connectionTestResult.success ? '🎉' : '❌'}</span>
-                    <div>
-                      <p>{connectionTestResult.message}</p>
-                      {connectionTestResult.count !== undefined && (
-                        <p className="text-[11px] font-normal opacity-80 mt-0.5">Se encontraron {connectionTestResult.count} artículo(s) publicados disponibles para tu sitio web.</p>
-                      )}
-                    </div>
-                  </div>
-                )}
 
                 {/* API Keys section */}
                 <div className="bg-slate-900 rounded-2xl p-6 text-white">
