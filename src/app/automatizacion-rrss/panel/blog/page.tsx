@@ -377,13 +377,59 @@ export default function SeoAutopilotPanel() {
       }
   };
 
+  const handleStartWriting = async (postId: string) => {
+      if (!user) return;
+      setPublishingId(postId);
+      try {
+          const response = await fetch('/api/ai/seo-write-now', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userId: user.uid, postId })
+          });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error);
+
+          await fetchPosts();
+          showToast("✨ " + data.message);
+      } catch (error: any) {
+          console.error("Error writing post:", error);
+          showToast("❌ Error: " + error.message);
+      } finally {
+          setPublishingId(null);
+      }
+  };
+
+  const handleUpdatePostDate = async (postId: string, newDateString: string) => {
+      if (!newDateString) return;
+      try {
+          const [year, month, day] = newDateString.split('-').map(Number);
+          const updatedDate = new Date(year, month - 1, day, 12, 0, 0);
+          
+          await updateDoc(doc(db, "blog_posts", postId), {
+              scheduledFor: updatedDate
+          });
+
+          await fetchPosts();
+          showToast("📅 Fecha de agendamiento actualizada");
+      } catch (error: any) {
+          console.error("Error updating date:", error);
+          showToast("❌ Error al actualizar fecha");
+      }
+  };
+
   if (loading) {
      return <div className="animate-pulse space-y-4 max-w-2xl"><div className="h-10 bg-slate-200 rounded w-1/3"></div><div className="h-64 bg-slate-200 rounded"></div></div>;
   }
 
   const publishedPosts = posts.filter(p => p.status === 'published');
   const draftPosts = posts.filter(p => p.status === 'draft');
-  const strategyPosts = posts.filter(p => p.status === 'strategy');
+  const strategyPosts = posts
+    .filter(p => p.status === 'strategy')
+    .sort((a, b) => {
+      const timeA = a.scheduledFor ? new Date(a.scheduledFor).getTime() : 0;
+      const timeB = b.scheduledFor ? new Date(b.scheduledFor).getTime() : 0;
+      return timeA - timeB;
+    });
 
   return (
     <div className="max-w-[1400px] mx-auto lg:mx-0 animate-in fade-in duration-500 pb-20 relative">
@@ -663,33 +709,59 @@ export default function SeoAutopilotPanel() {
                       </div>
                       
                       <div className="grid gap-4">
-                          {strategyPosts.map((item, index) => (
-                              <div key={item.id} className="p-5 rounded-2xl border border-slate-100 bg-slate-50 flex flex-col md:flex-row md:items-center gap-4 hover:border-indigo-200 hover:shadow-md transition-all">
-                                  <div className="w-16 h-16 shrink-0 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center font-black text-2xl">
-                                      {index + 1}
-                                  </div>
-                                  <div className="flex-1">
-                                      <h3 className="text-lg font-bold text-slate-900 mb-1">{item.title}</h3>
-                                      <p className="text-sm text-slate-500 mb-3">{item.metaDescription}</p>
-                                      <div className="flex flex-wrap gap-2">
-                                          <span className="text-[10px] font-black uppercase tracking-widest px-2 py-1 bg-white border border-slate-200 rounded-md text-slate-600">
-                                              🔍 {item.targetKeyword || "Keywords"}
-                                          </span>
-                                          <span className="text-[10px] font-black uppercase tracking-widest px-2 py-1 bg-emerald-100 text-emerald-700 rounded-md">
-                                              📅 Para {item.scheduledFor?.toLocaleDateString()}
-                                          </span>
+                          {strategyPosts.map((item, index) => {
+                              const dateString = item.scheduledFor 
+                                ? new Date(item.scheduledFor).toISOString().split('T')[0] 
+                                : '';
+                              return (
+                                  <div key={item.id} className="p-5 rounded-2xl border border-slate-100 bg-slate-50 flex flex-col md:flex-row md:items-center gap-4 hover:border-indigo-200 hover:shadow-md transition-all">
+                                      <div className="w-16 h-16 shrink-0 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center font-black text-2xl">
+                                          {index + 1}
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                          <h3 className="text-lg font-bold text-slate-900 mb-1">{item.title}</h3>
+                                          <p className="text-sm text-slate-500 mb-3">{item.metaDescription}</p>
+                                          <div className="flex flex-wrap items-center gap-2">
+                                              <span className="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-slate-600">
+                                                  🔍 {item.targetKeyword || "Keywords"}
+                                              </span>
+                                              
+                                              {/* Editable Date Selector */}
+                                              <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold px-2.5 py-1 rounded-xl">
+                                                  <span>📅 Agendado:</span>
+                                                  <input
+                                                      type="date"
+                                                      value={dateString}
+                                                      onChange={(e) => handleUpdatePostDate(item.id, e.target.value)}
+                                                      className="bg-white border border-emerald-300 text-emerald-950 font-bold px-2 py-0.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer shadow-sm"
+                                                  />
+                                              </div>
+                                          </div>
+                                      </div>
+                                      <div className="shrink-0 flex gap-2">
+                                          <button 
+                                              onClick={() => handleStartWriting(item.id)}
+                                              disabled={publishingId === item.id || (blogUsage >= blogLimit && blogLimit < 999999)} 
+                                              className="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-bold px-5 py-2.5 rounded-xl transition-all shadow-md shadow-indigo-600/20 disabled:bg-slate-300 flex items-center justify-center gap-2 shrink-0"
+                                          >
+                                              {publishingId === item.id ? (
+                                                  <>
+                                                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                      Redactando...
+                                                  </>
+                                              ) : (blogUsage >= blogLimit && blogLimit < 999999) ? (
+                                                  "Límite Excedido 🔒"
+                                              ) : (
+                                                  "✨ Empezar a Escribir →"
+                                              )}
+                                          </button>
+                                          <button onClick={() => handleDeletePost(item.id)} className="w-full md:w-auto bg-rose-50 hover:bg-rose-100 text-rose-500 text-xs font-bold px-4 py-2.5 rounded-xl transition-all border border-rose-200">
+                                              🗑️
+                                          </button>
                                       </div>
                                   </div>
-                                  <div className="shrink-0 flex gap-2">
-                                      <button disabled={blogUsage >= blogLimit && blogLimit < 999999} className="w-full md:w-auto bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all">
-                                          {(blogUsage >= blogLimit && blogLimit < 999999) ? "Límite Excedido 🔒" : "Empezar a Escribir →"}
-                                      </button>
-                                      <button onClick={() => handleDeletePost(item.id)} className="w-full md:w-auto bg-rose-50 hover:bg-rose-100 text-rose-500 text-xs font-bold px-4 py-2.5 rounded-xl transition-all border border-rose-200">
-                                          🗑️
-                                      </button>
-                                  </div>
-                              </div>
-                          ))}
+                              );
+                          })}
                       </div>
                   </div>
               )}
