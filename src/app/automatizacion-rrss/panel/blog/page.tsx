@@ -73,6 +73,7 @@ export default function SeoAutopilotPanel() {
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date | null>(null);
   const [socialPosts, setSocialPosts] = useState<any[]>([]);
+  const [showStrategyList, setShowStrategyList] = useState(false);
   const [shareModalPost, setShareModalPost] = useState<{ title: string; slug: string } | null>(null);
   const [previewModalPost, setPreviewModalPost] = useState<BlogPost | null>(null);
 
@@ -904,7 +905,14 @@ export default function SeoAutopilotPanel() {
                                   return (
                                       <div
                                           key={day.toISOString()}
-                                          onClick={() => setSelectedCalendarDate(isSelected ? null : day)}
+                                          onClick={() => {
+                                              if (isSelected) {
+                                                  setSelectedCalendarDate(null);
+                                              } else {
+                                                  setSelectedCalendarDate(day);
+                                                  setShowStrategyList(true);
+                                              }
+                                          }}
                                           className={`h-20 sm:h-24 p-1.5 rounded-2xl border transition-all cursor-pointer relative flex flex-col justify-between overflow-hidden ${
                                               isSelected 
                                                 ? 'bg-indigo-50/90 border-indigo-500 shadow-md ring-2 ring-indigo-500/40' 
@@ -965,6 +973,33 @@ export default function SeoAutopilotPanel() {
                           </div>
                       );
                   })()}
+
+                  {/* Botón Desplegable para Mostrar/Ocultar el Mapa de Contenidos */}
+                  {strategyPosts.length > 0 && (
+                      <div className="mt-6 pt-6 border-t border-slate-100">
+                          <button
+                              onClick={() => setShowStrategyList(prev => !prev)}
+                              className="w-full bg-slate-50 hover:bg-indigo-50/50 border border-slate-200 hover:border-indigo-200 text-slate-800 font-bold py-3.5 px-6 rounded-2xl transition-all flex items-center justify-between text-sm group shadow-sm active:scale-98"
+                          >
+                              <div className="flex items-center gap-3">
+                                  <span className="text-xl">🗺️</span>
+                                  <div className="text-left">
+                                      <span className="block font-black text-slate-900">
+                                          {selectedCalendarDate 
+                                              ? `Detalle de Ideas para el ${format(selectedCalendarDate, "d 'de' MMMM", { locale: es })} (${filteredStrategyPosts.length})` 
+                                              : `Detalle del Mapa de Contenidos (${strategyPosts.length} ideas programadas)`}
+                                      </span>
+                                      <span className="text-xs text-slate-500 font-medium">
+                                          {showStrategyList ? "Haz clic para contraer y ocultar la lista" : "Haz clic para desplegar y editar las tarjetas de contenido"}
+                                      </span>
+                                  </div>
+                              </div>
+                              <span className="text-xs font-black bg-white group-hover:bg-indigo-600 group-hover:text-white text-indigo-600 px-4 py-2 rounded-xl border border-slate-200 group-hover:border-indigo-600 transition-all shrink-0 shadow-sm">
+                                  {showStrategyList ? "🔼 Ocultar Lista" : "📋 Desplegar Lista ▾"}
+                              </span>
+                          </button>
+                      </div>
+                  )}
               </div>
 
               {strategyPosts.length === 0 ? (
@@ -982,8 +1017,8 @@ export default function SeoAutopilotPanel() {
                           )}
                       </button>
                   </div>
-              ) : (
-                  <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 md:p-8">
+              ) : showStrategyList ? (
+                  <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 md:p-8 animate-in fade-in">
                       <div className="flex items-center justify-between mb-8">
                           <div>
                               <h2 className="text-2xl font-black text-slate-900 flex items-center gap-3">
@@ -1086,7 +1121,7 @@ export default function SeoAutopilotPanel() {
                           })}
                       </div>
                   </div>
-              )}
+              ) : null}
           </div>
       )}
 
