@@ -54,6 +54,9 @@ export default function SeoAutopilotPanel() {
   const [newlyGeneratedKey, setNewlyGeneratedKey] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState(false);
   const [activeSnippet, setActiveSnippet] = useState<'nextjs' | 'rest' | 'php'>('nextjs');
+  const [apiKeyLastUsedAt, setApiKeyLastUsedAt] = useState<string | null>(null);
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [connectionTestResult, setConnectionTestResult] = useState<{ success: boolean; message: string; count?: number } | null>(null);
 
   
   // Strategy State
