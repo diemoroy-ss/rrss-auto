@@ -5,6 +5,8 @@ import { auth, db } from "../../../../lib/firebase";
 import { collection, getDocs, doc, getDoc, query, updateDoc, where, deleteDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, getDay, addMonths, subMonths } from "date-fns";
+import { es } from "date-fns/locale";
 
 interface BlogPost {
   id: string;
@@ -67,6 +69,10 @@ export default function SeoAutopilotPanel() {
   const [publishingId, setPublishingId] = useState<string | null>(null);
   const [generatingImageId, setGeneratingImageId] = useState<string | null>(null);
   const [writingModalPost, setWritingModalPost] = useState<{ postId: string; title: string } | null>(null);
+  // Visual Calendar State (Unified Blog + Social)
+  const [calendarMonth, setCalendarMonth] = useState(new Date());
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date | null>(null);
+  const [socialPosts, setSocialPosts] = useState<any[]>([]);
   const [shareModalPost, setShareModalPost] = useState<{ title: string; slug: string } | null>(null);
   const [previewModalPost, setPreviewModalPost] = useState<BlogPost | null>(null);
 
@@ -84,6 +90,27 @@ export default function SeoAutopilotPanel() {
       if (val instanceof Date) return isNaN(val.getTime()) ? undefined : val;
       const d = new Date(val);
       return isNaN(d.getTime()) ? undefined : d;
+  };
+
+  const fetchSocialPosts = async (uid: string) => {
+      try {
+          const q = query(collection(db, "social_posts"), where("userId", "==", uid));
+          const snap = await getDocs(q);
+          const fetched: any[] = [];
+          snap.forEach(docSnap => {
+              const d = docSnap.data();
+              fetched.push({
+                  id: docSnap.id,
+                  title: d.idea || d.copy || "Post de Redes",
+                  type: d.type || "Post",
+                  scheduledFor: parseDateField(d.scheduledFor),
+                  status: d.status
+              });
+          });
+          setSocialPosts(fetched);
+      } catch (e) {
+          console.error("Error fetching social posts for unified calendar:", e);
+      }
   };
 
   const fetchPosts = async () => {
@@ -307,6 +334,7 @@ export default function SeoAutopilotPanel() {
           }
         }
         await fetchPosts();
+        await fetchSocialPosts(u.uid);
         await fetchApiKeys(u);
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -483,6 +511,11 @@ export default function SeoAutopilotPanel() {
       const timeB = b.scheduledFor ? new Date(b.scheduledFor).getTime() : 0;
       return timeA - timeB;
     });
+
+  const filteredStrategyPosts = strategyPosts.filter(p => {
+    if (!selectedCalendarDate) return true;
+    return p.scheduledFor && isSameDay(p.scheduledFor, selectedCalendarDate);
+  });
 
   return (
     <div className="max-w-[1400px] mx-auto lg:mx-0 animate-in fade-in duration-500 pb-20 relative">
@@ -778,8 +811,164 @@ export default function SeoAutopilotPanel() {
                       </div>
                   </div>
               </div>
+
+              {/* ─── CALENDARIO VISUAL DE PUBLICACIONES (UNIFICADO BLOG + REDES) ─── */}
+              <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 md:p-8 animate-in fade-in">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                      <div>
+                          <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
+                              <span>📅</span> Calendario Visual de Publicaciones (Blog & Redes)
+                          </h3>
+                          <p className="text-xs text-slate-500 font-medium mt-0.5">
+                              Haz clic en cualquier día para filtrar las ideas programadas. Los artículos de blog destacan en <strong className="text-emerald-600 font-bold">verde</strong>.
+                          </p>
+                      </div>
+                      
+                      <div className="flex flex-wrap items-center gap-2">
+                          <button
+                              onClick={() => setCalendarMonth(prev => subMonths(prev, 1))}
+                              className="w-9 h-9 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold flex items-center justify-center transition-all shadow-sm active:scale-95"
+                          >
+                              ←
+                          </button>
+                          <span className="text-sm font-black text-slate-800 min-w-[130px] text-center capitalize">
+                              {format(calendarMonth, "MMMM yyyy", { locale: es })}
+                          </span>
+                          <button
+                              onClick={() => setCalendarMonth(prev => addMonths(prev, 1))}
+                              className="w-9 h-9 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold flex items-center justify-center transition-all shadow-sm active:scale-95"
+                          >
+                              →
+                          </button>
+                          
+                          {selectedCalendarDate && (
+                              <button
+                                  onClick={() => setSelectedCalendarDate(null)}
+                                  className="text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-2 rounded-xl transition-all border border-indigo-200 shrink-0 shadow-sm"
+                              >
+                                  Ver Todos los Días
+                              </button>
+                          )}
+                      </div>
+                  </div>
+
+                  {/* Leyenda de colores */}
+                  <div className="flex flex-wrap items-center gap-4 mb-6 text-xs font-bold text-slate-600 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                      <div className="flex items-center gap-1.5">
+                          <span className="w-3 h-3 rounded-full bg-emerald-500 shadow-sm" />
+                          <span>🟢 Artículos de Blog</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                          <span className="w-3 h-3 rounded-full bg-indigo-500 shadow-sm" />
+                          <span>🔵 Post Redes</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                          <span className="w-3 h-3 rounded-full bg-purple-500 shadow-sm" />
+                          <span>🟣 Carrusel Redes</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                          <span className="w-3 h-3 rounded-full bg-amber-500 shadow-sm" />
+                          <span>🟡 Story / Reel Redes</span>
+                      </div>
+                  </div>
+
+                  {/* Grid Header Días de la Semana */}
+                  <div className="grid grid-cols-7 gap-1 text-center font-black text-slate-400 text-[11px] uppercase tracking-wider mb-2">
+                      <span>Dom</span><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span>
+                  </div>
+
+                  {/* Grid de Días del Mes */}
+                  {(() => {
+                      const monthStart = startOfMonth(calendarMonth);
+                      const monthEnd = endOfMonth(monthStart);
+                      const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+                      const startDayIndex = getDay(monthStart);
+
+                      return (
+                          <div className="grid grid-cols-7 gap-1.5">
+                              {/* Blank leading days */}
+                              {Array.from({ length: startDayIndex }).map((_, i) => (
+                                  <div key={`blank-${i}`} className="h-20 sm:h-24 bg-slate-50/40 rounded-2xl border border-slate-100/50" />
+                              ))}
+
+                              {/* Days of month */}
+                              {daysInMonth.map(day => {
+                                  const isToday = isSameDay(day, new Date());
+                                  const isSelected = selectedCalendarDate && isSameDay(day, selectedCalendarDate);
+
+                                  const blogPostsOnDay = posts.filter(p => p.scheduledFor && isSameDay(p.scheduledFor, day));
+                                  const socialPostsOnDay = socialPosts.filter(sp => sp.scheduledFor && isSameDay(sp.scheduledFor, day));
+
+                                  const hasItems = blogPostsOnDay.length > 0 || socialPostsOnDay.length > 0;
+
+                                  return (
+                                      <div
+                                          key={day.toISOString()}
+                                          onClick={() => setSelectedCalendarDate(isSelected ? null : day)}
+                                          className={`h-20 sm:h-24 p-1.5 rounded-2xl border transition-all cursor-pointer relative flex flex-col justify-between overflow-hidden ${
+                                              isSelected 
+                                                ? 'bg-indigo-50/90 border-indigo-500 shadow-md ring-2 ring-indigo-500/40' 
+                                                : isToday 
+                                                  ? 'bg-emerald-50/40 border-emerald-300 shadow-sm' 
+                                                  : hasItems 
+                                                    ? 'bg-white border-slate-200 hover:border-indigo-300 hover:shadow-md'
+                                                    : 'bg-white border-slate-100 hover:bg-slate-50'
+                                          }`}
+                                      >
+                                          <div className="flex items-center justify-between shrink-0 mb-1">
+                                              <span className={`text-xs font-black px-1.5 py-0.5 rounded-md ${isToday ? 'bg-emerald-500 text-white' : 'text-slate-700'}`}>
+                                                  {format(day, 'd')}
+                                              </span>
+                                          </div>
+
+                                          <div className="space-y-1 overflow-y-auto max-h-[50px] scrollbar-none">
+                                              {/* Blog Post Badges (VERDE DESTACADO) */}
+                                              {blogPostsOnDay.map(bp => (
+                                                  <div
+                                                      key={bp.id}
+                                                      title={`📝 Blog: ${bp.title}`}
+                                                      className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-md truncate flex items-center gap-1 shadow-sm transition-colors"
+                                                  >
+                                                      <span className="shrink-0">📝</span>
+                                                      <span className="truncate">{bp.title}</span>
+                                                  </div>
+                                              ))}
+
+                                              {/* Social Post Badges */}
+                                              {socialPostsOnDay.map(sp => {
+                                                  const t = (sp.type || '').toLowerCase();
+                                                  let badgeBg = 'bg-indigo-500 text-white';
+                                                  let icon = '📱';
+                                                  if (t.includes('carrusel') || t.includes('carousel')) {
+                                                      badgeBg = 'bg-purple-500 text-white';
+                                                      icon = '🖼️';
+                                                  } else if (t.includes('reel') || t.includes('video') || t.includes('stor') || t.includes('historia')) {
+                                                      badgeBg = 'bg-amber-500 text-white';
+                                                      icon = '🎬';
+                                                  }
+
+                                                  return (
+                                                      <div
+                                                          key={sp.id}
+                                                          title={`📱 Redes (${sp.type}): ${sp.title}`}
+                                                          className={`${badgeBg} font-bold text-[9px] px-1.5 py-0.5 rounded-md truncate flex items-center gap-1 shadow-sm`}
+                                                      >
+                                                          <span className="shrink-0">{icon}</span>
+                                                          <span className="truncate">{sp.title}</span>
+                                                      </div>
+                                                  );
+                                              })}
+                                          </div>
+                                      </div>
+                                  );
+                              })}
+                          </div>
+                      );
+                  })()}
+              </div>
+
               {strategyPosts.length === 0 ? (
-                  <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 md:p-10 min-h-[500px] flex flex-col items-center justify-center text-center">
+                  <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 md:p-10 min-h-[400px] flex flex-col items-center justify-center text-center">
                       <div className="text-6xl mb-6 opacity-80">🗺️</div>
                       <h2 className="text-2xl font-black text-slate-900 mb-3">Calendario de Clúster Temático</h2>
                       <p className="text-slate-500 max-w-md font-medium mb-8">
@@ -797,16 +986,27 @@ export default function SeoAutopilotPanel() {
                   <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 md:p-8">
                       <div className="flex items-center justify-between mb-8">
                           <div>
-                              <h2 className="text-2xl font-black text-slate-900 flex items-center gap-3">🗺️ Tu Mapa de Contenidos</h2>
-                              <p className="text-slate-500 font-medium mt-1">Estas son las ideas propuestas para posicionar tu sitio en Google.</p>
+                              <h2 className="text-2xl font-black text-slate-900 flex items-center gap-3">
+                                🗺️ {selectedCalendarDate ? `Ideas Agendadas para ${format(selectedCalendarDate, "d 'de' MMMM", { locale: es })}` : 'Tu Mapa de Contenidos'}
+                              </h2>
+                              <p className="text-slate-500 font-medium mt-1">
+                                {selectedCalendarDate ? `Mostrando ${filteredStrategyPosts.length} contenido(s) agendado(s) para este día.` : 'Estas son las ideas propuestas para posicionar tu sitio en Google.'}
+                              </p>
                           </div>
-                          <button onClick={handleGenerateStrategy} disabled={generatingStrategy} className="text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 px-4 rounded-lg transition-colors">
-                              {generatingStrategy ? "Regenerando..." : "Regenerar Mapa"}
-                          </button>
+                          <div className="flex items-center gap-2">
+                              {selectedCalendarDate && (
+                                <button onClick={() => setSelectedCalendarDate(null)} className="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold py-2 px-4 rounded-lg transition-colors border border-indigo-200">
+                                    Ver Todas
+                                </button>
+                              )}
+                              <button onClick={handleGenerateStrategy} disabled={generatingStrategy} className="text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 px-4 rounded-lg transition-colors">
+                                  {generatingStrategy ? "Regenerando..." : "Regenerar Mapa"}
+                              </button>
+                          </div>
                       </div>
                       
                       <div className="grid gap-4">
-                          {strategyPosts.map((item, index) => {
+                          {filteredStrategyPosts.map((item, index) => {
                               const dObj = item.scheduledFor ? new Date(item.scheduledFor) : new Date();
                               const dateStr = dObj.toISOString().split('T')[0];
                               const hoursStr = String(dObj.getHours()).padStart(2, '0');
