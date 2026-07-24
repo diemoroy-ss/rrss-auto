@@ -114,6 +114,41 @@ export default function SeoAutopilotPanel() {
       }
   };
 
+  const checkAndAutoPublishPending = async () => {
+    try {
+      const res = await fetch('/api/cron/auto-publish', { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.processedCount && data.processedCount > 0) {
+          const q = query(collection(db, "blog_posts")); 
+          const snap = await getDocs(q);
+          const fetchedPosts: BlogPost[] = [];
+          snap.forEach(docSnap => {
+              const pd = docSnap.data();
+              const scheduledFor = parseDateField(pd.scheduledFor);
+              const createdAt = parseDateField(pd.createdAt) || new Date();
+              fetchedPosts.push({
+                  id: docSnap.id,
+                  title: pd.title || "Sin título",
+                  status: pd.status || "draft",
+                  scheduledFor,
+                  createdAt,
+                  metaDescription: pd.metaDescription || "",
+                  targetKeyword: pd.targetKeyword || "",
+                  content: pd.content || "",
+                  htmlContent: pd.htmlContent || "",
+                  imageUrl: pd.imageUrl || ""
+              });
+          });
+          fetchedPosts.sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime());
+          setPosts(fetchedPosts);
+        }
+      }
+    } catch (e) {
+      console.error("Auto-publish trigger error:", e);
+    }
+  };
+
   const fetchPosts = async () => {
       const q = query(collection(db, "blog_posts")); 
       const snap = await getDocs(q);
@@ -138,6 +173,7 @@ export default function SeoAutopilotPanel() {
       
       fetchedPosts.sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime());
       setPosts(fetchedPosts);
+      checkAndAutoPublishPending();
   };
 
   const handleGeneratePostImage = async (postId: string) => {
@@ -492,6 +528,7 @@ export default function SeoAutopilotPanel() {
           });
 
           await fetchPosts();
+          await checkAndAutoPublishPending();
           showToast("📅 Fecha y hora de agendamiento actualizadas");
       } catch (error: any) {
           console.error("Error updating date:", error);

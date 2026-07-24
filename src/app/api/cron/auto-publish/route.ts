@@ -2,82 +2,135 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '../../../../lib/firebase-admin';
 import { generateFreeText } from "../../../../lib/gemini-free";
 import { marked } from 'marked';
+import { sendPublishedBlogEmail } from '../../../../lib/email-blog';
 
-// Este endpoint es llamado por Vercel Cron o Google Cloud Scheduler
-// URL: /api/cron/auto-publish
-// Idealmente deberías configurar un secreto (ej: ?key=tu_secreto) en tu cron service
 export async function GET(req: NextRequest) {
-    try {
-        console.log("[CRON] Iniciando proceso de Auto-Publicación SEO...");
-        
-        // 1. Buscar todos los posts programados para hoy (o antes) que aún estén en estado 'strategy'
-        const today = new Date();
-        const postsRef = adminDb.collection('blog_posts');
-        const querySnapshot = await postsRef
-            .where('status', '==', 'strategy')
-            .where('scheduledFor', '<=', today)
-            .get();
+    return handleAutoPublish(req);
+}
 
-        if (querySnapshot.empty) {
-            console.log("[CRON] No hay artículos programados para publicar hoy.");
-            return NextResponse.json({ success: true, message: "No pending posts" });
+export async function POST(req: NextRequest) {
+    return handleAutoPublish(req);
+}
+
+async function handleAutoPublish(req: NextRequest) {
+    try {
+        console.log("[CRON-AUTO-PUBLISH] Checking pending scheduled blog posts...");
+
+        if (!adminDb) {
+            return NextResponse.json({ error: "Database not initialized" }, { status: 500 });
         }
 
-        console.log(`[CRON] Encontrados ${querySnapshot.size} artículos pendientes.`);
+        const now = new Date();
+        const postsRef = adminDb.collection('blog_posts');
+        
+        // Fetch all candidates (strategy, strategy_draft, draft)
+        const snap = await postsRef.get();
+
+        const pendingDocs: any[] = [];
+
+        snap.forEach(docSnap => {
+            const data = docSnap.data();
+            const status = data.status || '';
+
+            // Only process posts that are pending publication
+            if (['strategy', 'strategy_draft', 'draft'].includes(status)) {
+                let scheduledDate: Date | null = null;
+                const sf = data.scheduledFor;
+
+                if (sf) {
+                    if (typeof sf.toDate === 'function') scheduledDate = sf.toDate();
+                    else if (sf.seconds) scheduledDate = new Date(sf.seconds * 1000);
+                    else scheduledDate = new Date(sf);
+                }
+
+                // If scheduledFor is past or equal to now, or if missing for strategy_draft, mark for publishing
+                if (scheduledDate && scheduledDate <= now) {
+                    pendingDocs.push({ id: docSnap.id, ref: docSnap.ref, data, scheduledDate });
+                }
+            }
+        });
+
+        if (pendingDocs.length === 0) {
+            console.log("[CRON-AUTO-PUBLISH] No pending scheduled posts to publish right now.");
+            return NextResponse.json({ success: true, message: "No pending scheduled posts for current time", processedCount: 0 });
+        }
+
+        console.log(`[CRON-AUTO-PUBLISH] Found ${pendingDocs.length} pending posts scheduled on or before ${now.toISOString()}`);
 
         const results = [];
 
-        // 2. Procesar cada post
-        for (const doc of querySnapshot.docs) {
-            const post = doc.data();
-            const postId = doc.id;
+        for (const item of pendingDocs) {
+            const { id: postId, ref: docRef, data: post } = item;
             const userId = post.userId;
 
             try {
-                // Obtener config del usuario
-                const userDoc = await adminDb.collection('users').doc(userId).get();
-                if (!userDoc.exists) throw new Error("Usuario no encontrado");
-                
-                const userData = userDoc.data()!;
-                const config = userData.seoConfig;
-                if (!config) throw new Error("Sin configuración SEO");
+                console.log(`[CRON-AUTO-PUBLISH] Processing post: "${post.title}" (${postId})`);
 
-                console.log(`[CRON] Generando artículo para Post: ${post.title}`);
+                // 1. Get user config
+                let config: any = {};
+                let userEmail = '';
 
-                // Generar el contenido con Gemini
-                const systemInstruction = `Eres un Redactor Experto en SEO, Marketing de Contenidos y Copywriting.
-Tu tarea es escribir un artículo de blog completo, altamente optimizado para SEO, en formato Markdown.
-Debe tener una introducción persuasiva, desarrollo profundo con subtítulos (H2, H3), viñetas, y una conclusión con llamado a la acción.
-Longitud: Al menos 800 palabras.
-Tono de voz: ${config.tone || 'Profesional'}
-Público objetivo: ${config.audience || 'General'}`;
+                if (userId) {
+                    const userDoc = await adminDb.collection('users').doc(userId).get();
+                    if (userDoc.exists) {
+                        const userData = userDoc.data()!;
+                        config = userData.seoConfig || {};
+                        userEmail = userData.email || '';
+                    }
+                }
 
-                const prompt = `Escribe un artículo completo sobre el siguiente tema:
-Título (H1): ${post.title}
-Palabra Clave Principal: ${post.targetKeyword}
-Descripción requerida: ${post.metaDescription}
+                let markdownContent = post.content || '';
+                let htmlContent = post.htmlContent || '';
 
-Entrega el artículo directamente en formato Markdown, sin texto introductorio ni conclusiones fuera del artículo.`;
+                // 2. If content is missing, generate using Pass 1 + Pass 2 review
+                if (!htmlContent) {
+                    console.log(`[CRON-AUTO-PUBLISH] Content missing for "${post.title}". Generating with Gemini...`);
 
-                const markdownContent = await generateFreeText(prompt, systemInstruction, false);
-                if (!markdownContent) throw new Error("Gemini no retornó contenido");
+                    const tone = config.tone || 'Profesional y cercano';
+                    const audience = config.audience || 'General';
 
-                // Convertir Markdown a HTML
-                const htmlContent = marked(markdownContent);
+                    // Pass 1: Initial Draft
+                    const systemPromptPass1 = `Eres un Redactor SEO Senior y Copywriter Experto.
+Escribe un artículo de blog extenso y altamente optimizado en formato Markdown.
+Requisitos:
+- Título principal claro H1.
+- Introducción atrapante.
+- Mínimo 3 secciones H2 con subtítulos H3 estructurados.
+- Listas con viñetas o numéricas para facilitar la lectura.
+- Conclusión con llamada a la acción clara.
+- Tono: ${tone}
+- Audiencia: ${audience}
+- Extensión: al menos 800 palabras.`;
 
-                // 3. Publicar según la configuración del usuario
-                const { integrationType, wpUrl, wpUser, wpPassword, webhookPlatform, webhookStoreUrl, webhookApiKey } = config;
+                    const userPromptPass1 = `Tema: ${post.title}
+Palabra Clave: ${post.targetKeyword || ''}
+Descripción: ${post.metaDescription || ''}`;
+
+                    const rawDraft = await generateFreeText(userPromptPass1, systemPromptPass1, false);
+
+                    // Pass 2: SEO Chief Editor Review
+                    const systemPromptPass2 = `Eres el Editor General SEO de una agencia digital de elite.
+Revisa y perfecciona el siguiente borrador de artículo de blog para garantizar la máxima calidad técnica, coherencia gramatical y fluidez SEO.
+Asegúrate de que los encabezados H2 y H3 estén bien diferenciados, elimina redundancias y entrega SOLO el texto final en formato Markdown refinado.`;
+
+                    const finalMarkdown = await generateFreeText(`Borrador a revisar:\n\n${rawDraft}`, systemPromptPass2, false) || rawDraft;
+
+                    markdownContent = finalMarkdown || '';
+                    htmlContent = await marked(finalMarkdown || '');
+                }
+
+                // 3. Publish to target integration
+                const integrationType = config.integrationType || 'api_feed';
                 let isPushed = false;
                 let pushError = null;
 
                 if (integrationType === 'api_feed') {
                     isPushed = true;
-                    // Para API Feed, el auto-publish lo deja directamente publicado y disponible
-                } else if (integrationType === 'wordpress') {
-                    if (wpUrl && wpUser && wpPassword) {
-                        const baseUrl = wpUrl.replace(/\/$/, '');
+                } else if (integrationType === 'wordpress' && config.wpUrl && config.wpUser && config.wpPassword) {
+                    try {
+                        const baseUrl = config.wpUrl.replace(/\/$/, '');
                         const endpoint = `${baseUrl}/wp-json/wp/v2/posts`;
-                        const authHeader = 'Basic ' + Buffer.from(`${wpUser}:${wpPassword}`).toString('base64');
+                        const authHeader = 'Basic ' + Buffer.from(`${config.wpUser}:${config.wpPassword}`).toString('base64');
                         
                         const wpRes = await fetch(endpoint, {
                             method: 'POST',
@@ -85,59 +138,74 @@ Entrega el artículo directamente en formato Markdown, sin texto introductorio n
                             body: JSON.stringify({
                                 title: post.title,
                                 content: htmlContent,
-                                status: 'draft', // Lo dejamos como borrador en WP
+                                status: 'publish'
                             })
                         });
                         if (wpRes.ok) isPushed = true;
                         else pushError = await wpRes.text();
+                    } catch (wpErr: any) {
+                        pushError = wpErr.message;
                     }
                 } else if (integrationType === 'webhook') {
-                    const centralWebhookUrl = 'https://n8n.santisoft.cl/webhook/santisoft-seo-publish';
-                    const whRes = await fetch(centralWebhookUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            id: postId,
-                            userId: userId,
-                            title: post.title,
-                            htmlContent: htmlContent,
-                            metaDescription: post.metaDescription || '',
-                            targetKeyword: post.targetKeyword || '',
-                            date: new Date().toISOString(),
-                            platform: webhookPlatform || 'custom',
-                            credentials: { storeUrl: webhookStoreUrl || '', apiKey: webhookApiKey || '' }
-                        })
-                    });
-                    if (whRes.ok) isPushed = true;
-                    else pushError = await whRes.text();
+                    try {
+                        const centralWebhookUrl = 'https://n8n.santisoft.cl/webhook/santisoft-seo-publish';
+                        const whRes = await fetch(centralWebhookUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                id: postId,
+                                userId: userId,
+                                title: post.title,
+                                htmlContent: htmlContent,
+                                metaDescription: post.metaDescription || '',
+                                targetKeyword: post.targetKeyword || '',
+                                date: new Date().toISOString(),
+                                platform: config.webhookPlatform || 'custom',
+                                credentials: { storeUrl: config.webhookStoreUrl || '', apiKey: config.webhookApiKey || '' }
+                            })
+                        });
+                        if (whRes.ok) isPushed = true;
+                        else pushError = await whRes.text();
+                    } catch (whErr: any) {
+                        pushError = whErr.message;
+                    }
                 }
 
-                // Determinar el nuevo estado
-                // Si es api_feed, queda 'published' para que salga directo en la web.
-                // Si son otros métodos, queda 'draft' localmente porque se mandó como borrador a WP/Shopify.
-                const newStatus = (integrationType === 'api_feed' && isPushed) ? 'published' : 'draft';
+                const publishedDateISO = new Date().toISOString();
 
-                // 4. Actualizar estado en Firestore
-                await doc.ref.update({
+                // 4. Update Firestore doc status to published
+                await docRef.update({
                     content: markdownContent,
                     htmlContent: htmlContent,
-                    status: newStatus,
+                    status: 'published',
                     isPushedToSite: isPushed,
-                    pushedAt: isPushed ? new Date() : null,
-                    updatedAt: new Date(),
+                    publishedAt: publishedDateISO,
+                    updatedAt: publishedDateISO,
                     lastError: pushError || null
                 });
 
-                results.push({ postId, success: true, isPushed });
+                // 5. Send Publication Email Notification
+                if (userEmail) {
+                    sendPublishedBlogEmail({
+                        toEmail: userEmail,
+                        postTitle: post.title,
+                        postUrl: `https://santisoft.cl/blog/${post.slug || ''}`,
+                        publishedAt: new Date().toLocaleDateString('es-CL')
+                    }).catch(err => console.error("[CRON-AUTO-PUBLISH] Email notification error:", err));
+                }
+
+                results.push({ postId, title: post.title, success: true, isPushed });
+
             } catch (err: any) {
-                console.error(`[CRON] Error procesando post ${postId}:`, err);
-                results.push({ postId, success: false, error: err.message });
+                console.error(`[CRON-AUTO-PUBLISH] Error executing post ${postId}:`, err);
+                results.push({ postId, title: post.title, success: false, error: err.message });
             }
         }
 
-        return NextResponse.json({ success: true, results });
+        return NextResponse.json({ success: true, processedCount: results.length, results });
+
     } catch (error: any) {
-        console.error("[CRON] Error fatal:", error);
+        console.error("[CRON-AUTO-PUBLISH] Fatal Error:", error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
