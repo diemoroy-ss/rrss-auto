@@ -199,20 +199,26 @@ export default function SeoAutopilotPanel() {
         const d = await getDoc(doc(db, "users", u.uid));
         const data = d.data();
         if (data) {
-          // Check Plan limits
+          // Check Plan limits (Admin users & spalezcom@gmail.com have unlimited)
+          const isAdminUser = data.role === 'admin' || u.email === 'spalezcom@gmail.com' || u.email === 'diemoroy@gmail.com' || u.email === 'santisoftai@gmail.com';
           let limit = 0;
-          try {
-              const plansDoc = await getDoc(doc(db, "system_config", "plans"));
-              if (plansDoc.exists()) {
-                  const plansConfig = plansDoc.data() as any;
-                  const planId = data.plan || 'free';
-                  limit = plansConfig[planId]?.seoBlogsLimit || 0;
-              }
-          } catch(e) {}
-          
-          if (limit === 0 && data.role !== 'admin') {
-             router.push("/automatizacion-rrss/panel/planes");
-             return;
+
+          if (isAdminUser) {
+            limit = 999999;
+          } else {
+            try {
+                const plansDoc = await getDoc(doc(db, "system_config", "plans"));
+                if (plansDoc.exists()) {
+                    const plansConfig = plansDoc.data() as any;
+                    const planId = data.plan || 'free';
+                    limit = plansConfig[planId]?.seoBlogsLimit || 0;
+                }
+            } catch(e) {}
+            
+            if (limit === 0) {
+               router.push("/automatizacion-rrss/panel/planes");
+               return;
+            }
           }
           setBlogLimit(limit);
 
