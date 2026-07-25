@@ -1626,9 +1626,22 @@ $posts = $response->json('posts');`}
             </div>
 
             <div className="space-y-3 pt-2">
+              {/* Copy Direct URL */}
+              <button
+                onClick={() => {
+                  const url = `https://santisoft.cl/es/blog/${shareModalPost.slug}`;
+                  navigator.clipboard.writeText(url);
+                  showToast("📋 ¡Enlace copiado al portapapeles!");
+                  setShareModalPost(null);
+                }}
+                className="w-full bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 font-bold py-3.5 px-5 rounded-2xl text-xs transition-all flex items-center justify-center gap-2 border border-slate-200"
+              >
+                📋 Copiar Enlace del Artículo
+              </button>
+
               {/* Share to LinkedIn */}
               <a
-                href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`https://santisoft.cl/blog/${shareModalPost.slug}`)}`}
+                href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`https://santisoft.cl/es/blog/${shareModalPost.slug}`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setShareModalPost(null)}
@@ -1639,7 +1652,7 @@ $posts = $response->json('posts');`}
 
               {/* Post on Connected User Social Networks */}
               <a
-                href={`/automatizacion-rrss/panel/crear?title=${encodeURIComponent(shareModalPost.title)}&url=${encodeURIComponent(`https://santisoft.cl/blog/${shareModalPost.slug}`)}`}
+                href={`/automatizacion-rrss/panel/crear?title=${encodeURIComponent(shareModalPost.title)}&url=${encodeURIComponent(`https://santisoft.cl/es/blog/${shareModalPost.slug}`)}`}
                 onClick={() => setShareModalPost(null)}
                 className="w-full bg-slate-900 hover:bg-slate-800 active:scale-95 text-white font-bold py-3.5 px-5 rounded-2xl text-xs transition-all flex items-center justify-center gap-2"
               >
