@@ -49,18 +49,17 @@ function buildSchema(data: FirebaseFirestore.DocumentData) {
   };
 }
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'x-api-key, Authorization, Content-Type, Cache-Control',
+};
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: corsHeaders });
+}
+
 export async function GET(req: Request) {
-  // CORS headers — allow any origin (public read-only API)
-  const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'x-api-key, Authorization, Content-Type',
-  };
-
-  if (req.method === 'OPTIONS') {
-    return new NextResponse(null, { status: 204, headers: corsHeaders });
-  }
-
   try {
     // --- Auth: resolve API Key from header or query param ---
     const url = new URL(req.url);
