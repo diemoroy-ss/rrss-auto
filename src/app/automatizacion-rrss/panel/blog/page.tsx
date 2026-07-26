@@ -759,7 +759,7 @@ export default function SeoAutopilotPanel() {
                  ) : (
                      <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
                          {draftPosts.map(post => {
-                              const dateStr = post.scheduledFor ? post.scheduledFor.toISOString().split('T')[0] : '';
+                              const dateStr = post.scheduledFor ? format(post.scheduledFor, 'yyyy-MM-dd') : '';
                               const timeStr = post.scheduledFor 
                                 ? `${String(post.scheduledFor.getHours()).padStart(2, '0')}:${String(post.scheduledFor.getMinutes()).padStart(2, '0')}` 
                                 : '09:00';
@@ -1123,7 +1123,7 @@ export default function SeoAutopilotPanel() {
                       <div className="grid gap-4">
                           {filteredStrategyPosts.map((item, index) => {
                               const dObj = item.scheduledFor ? new Date(item.scheduledFor) : new Date();
-                              const dateStr = dObj.toISOString().split('T')[0];
+                              const dateStr = format(dObj, 'yyyy-MM-dd');
                               const hoursStr = String(dObj.getHours()).padStart(2, '0');
                               const minsStr = String(dObj.getMinutes()).padStart(2, '0');
                               const timeStr = `${hoursStr}:${minsStr}`;
