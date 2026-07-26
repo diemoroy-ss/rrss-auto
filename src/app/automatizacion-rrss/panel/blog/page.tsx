@@ -19,6 +19,7 @@ interface BlogPost {
   content?: string;
   htmlContent?: string;
   imageUrl?: string;
+  slug?: string;
 }
 
 export default function SeoAutopilotPanel() {
@@ -137,7 +138,8 @@ export default function SeoAutopilotPanel() {
                   targetKeyword: pd.targetKeyword || "",
                   content: pd.content || "",
                   htmlContent: pd.htmlContent || "",
-                  imageUrl: pd.imageUrl || ""
+                  imageUrl: pd.imageUrl || "",
+                  slug: pd.slug || ""
               });
           });
           fetchedPosts.sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime());
@@ -167,7 +169,8 @@ export default function SeoAutopilotPanel() {
               targetKeyword: pd.targetKeyword || "",
               content: pd.content || "",
               htmlContent: pd.htmlContent || "",
-              imageUrl: pd.imageUrl || ""
+              imageUrl: pd.imageUrl || "",
+              slug: pd.slug || ""
           });
       });
       
@@ -528,7 +531,6 @@ export default function SeoAutopilotPanel() {
           });
 
           await fetchPosts();
-          await checkAndAutoPublishPending();
           showToast("📅 Fecha y hora de agendamiento actualizadas");
       } catch (error: any) {
           console.error("Error updating date:", error);
