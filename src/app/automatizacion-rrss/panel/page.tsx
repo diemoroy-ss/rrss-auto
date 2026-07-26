@@ -157,6 +157,7 @@ export default function RrssDashboard() {
   const [selectedPostIds, setSelectedPostIds] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'upcoming' | 'published'>('upcoming');
   const [networkFilter, setNetworkFilter] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
   const [rescheduleData, setRescheduleData] = useState<{ id: string, date: string } | null>(null);
   const [isPublishingStory, setIsPublishingStory] = useState(false);
   const { activeProfile } = useProfile();
@@ -186,6 +187,10 @@ export default function RrssDashboard() {
       return () => clearTimeout(timer);
     }
   }, [message]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, selectedDateFilter, networkFilter]);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async u => {
@@ -908,6 +913,10 @@ export default function RrssDashboard() {
     });
   }, [combinedPosts, activeTab, selectedDateFilter, networkFilter]);
 
+  const POSTS_PER_PAGE = 10;
+  const totalPages = Math.max(1, Math.ceil(filteredPosts.length / POSTS_PER_PAGE));
+  const paginatedPosts = filteredPosts.slice((currentPage - 1) * POSTS_PER_PAGE, currentPage * POSTS_PER_PAGE);
+
   const videosUsed = useMemo(() => {
     return posts.filter(p => {
       const t = p.type?.toLowerCase() || '';
@@ -926,7 +935,8 @@ export default function RrssDashboard() {
 
   return (
     <div className="w-full max-w-7xl mx-auto">
-      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mb-4">
+      {/* 1. Reestructuración de la Cabecera */}
+      <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6 mb-8">
         <div>
           <h1 id="tour-dashboard-title" className="text-3xl font-black text-slate-900 tracking-tight">
              {activeTab === 'upcoming' ? 'Próximas Publicaciones' : 'Posts Publicados'}
@@ -936,26 +946,34 @@ export default function RrssDashboard() {
                ? 'Monitorea los posts que el bot publicará en piloto automático.' 
                : 'Historial de publicaciones locales enviadas exitosamente a tus redes sociales.'}
           </p>
-          
-          <div className="flex flex-col sm:flex-row gap-4 mt-6 items-start sm:items-center">
-            <div className="flex bg-slate-100 p-1.5 rounded-2xl w-fit shadow-inner border border-slate-200">
-               <button 
-                 onClick={() => setActiveTab('upcoming')} 
-                 className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'upcoming' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-               >
-                 <span>⏳</span> Próximos
-               </button>
-               <button 
-                 onClick={() => setActiveTab('published')} 
-                 className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'published' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-               >
-                 <span>✅</span> Publicados
-               </button>
+        </div>
+        
+        <div className="flex flex-col items-start lg:items-end gap-3">
+          <div className="text-sm font-bold text-slate-500 uppercase tracking-widest">
+            Cuenta Activa: <span className="text-slate-900">{user?.displayName || 'Usuario'}</span>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            <div className="bg-white border border-slate-200 rounded-xl px-4 py-2.5 flex items-center justify-between gap-4 shadow-sm">
+               <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Cuota Imágenes</span>
+               <span className={`font-black text-sm ${quotaUsed >= planLimit ? 'text-rose-600' : 'text-indigo-600'}`}>{quotaUsed} / {planLimit}</span>
             </div>
+            <div className="bg-white border border-slate-200 rounded-xl px-4 py-2.5 flex items-center justify-between gap-4 shadow-sm">
+               <span className="text-[10px] font-black uppercase tracking-widest text-pink-400">Cuotas Reel</span>
+               <span className={`font-black text-sm ${videosUsed >= videoLimit ? 'text-rose-600' : 'text-pink-600'}`}>{videosUsed} / {videoLimit}</span>
+            </div>
+            <Link id="tour-btn-new-post" href="/automatizacion-rrss/panel/crear" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-6 rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2">
+              <span>✍️</span> Agendar Nuevo
+            </Link>
+          </div>
+        </div>
+      </div>
 
-            <div className="hidden sm:block w-px h-8 bg-slate-200"></div>
-
-            <div className="flex flex-wrap items-center gap-1.5">
+      {/* 2. Filtros y Calendario */}
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-8 bg-white p-5 rounded-[24px] border border-slate-200 shadow-sm">
+        <div className="flex flex-col gap-4">
+          <div>
+            <div className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Seleccionar RRSS filtro</div>
+            <div className="flex flex-wrap items-center gap-2">
                {['all', 'instagram', 'facebook', 'linkedin', 'tiktok', 'googleBusiness', 'blog'].map(net => (
                   <button
                      key={net}
@@ -967,15 +985,88 @@ export default function RrssDashboard() {
                ))}
             </div>
           </div>
-
-          {/* Botón de Calendario Mobile */}
-          <button 
-            onClick={() => setIsCalendarOpen(true)}
-            className="lg:hidden flex items-center gap-2 mt-4 bg-white border border-slate-200 px-5 py-2.5 rounded-xl font-bold text-sm text-slate-700 shadow-sm hover:bg-slate-50 transition-all w-full sm:w-auto"
-          >
-            <span>📅</span> {selectedDateFilter ? format(selectedDateFilter, "d 'de' MMMM", { locale: es }) : 'Filtrar por Fecha'}
-          </button>
+          
+          <div className="flex bg-slate-100 p-1 rounded-xl w-fit border border-slate-200">
+             <button 
+               onClick={() => setActiveTab('upcoming')} 
+               className={`flex items-center gap-2 px-5 py-2 rounded-lg font-bold text-sm transition-all ${activeTab === 'upcoming' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+             >
+               Próximos
+             </button>
+             <button 
+               onClick={() => setActiveTab('published')} 
+               className={`flex items-center gap-2 px-5 py-2 rounded-lg font-bold text-sm transition-all ${activeTab === 'published' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+             >
+               Publicados
+             </button>
+          </div>
         </div>
+
+        <div className="relative w-full lg:w-auto">
+          <button 
+            onClick={() => setIsCalendarOpen(!isCalendarOpen)}
+            className="flex items-center justify-between gap-3 bg-white border border-slate-200 px-5 py-3 rounded-xl font-bold text-sm text-slate-700 shadow-sm hover:bg-slate-50 transition-all w-full lg:w-48"
+          >
+            <span>{selectedDateFilter ? format(selectedDateFilter, "d 'de' MMMM", { locale: es }) : 'CALENDARIO'}</span>
+            <span className="text-slate-400">📅</span>
+          </button>
+          
+          {/* Dropdown del Calendario */}
+          {isCalendarOpen && (
+            <div className="absolute right-0 top-full mt-2 w-full lg:w-[320px] bg-white rounded-[24px] p-5 shadow-2xl border border-slate-100 z-50 animate-in fade-in zoom-in-95 duration-200">
+              <div className="flex justify-between items-center mb-4 px-1">
+                <h3 className="text-sm font-black text-slate-900 capitalize tracking-tight flex items-center gap-2">
+                   <span className="w-6 h-6 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center text-[10px] shadow-sm">🗓️</span>
+                   {format(currentMonth, "MMM yyyy", { locale: es })}
+                </h3>
+                <div className="flex gap-1">
+                  <button onClick={prevMonth} className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 font-bold transition-all text-sm">&lt;</button>
+                  <button onClick={nextMonth} className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 font-bold transition-all text-sm">&gt;</button>
+                </div>
+              </div>
+              <div className="grid grid-cols-7 gap-1">
+                {['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'].map(d => (
+                  <div key={d} className="text-center text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">{d}</div>
+                ))}
+                {Array.from({ length: startDayIndex }).map((_, i) => (
+                  <div key={`empty-${i}`} aria-hidden="true" className="h-8"></div>
+                ))}
+                {daysInMonth.map((day, i) => {
+                   const dots = getDotsForDate(day);
+                   const isToday = isSameDay(day, new Date());
+                   const hasPosts = dots.length > 0;
+                   const isSelected = selectedDateFilter && isSameDay(day, selectedDateFilter);
+                   
+                   return (
+                     <div 
+                       key={i} 
+                       onClick={() => {
+                         setSelectedDateFilter(isSelected ? null : day);
+                         setIsCalendarOpen(false);
+                       }}
+                       className={`h-9 rounded-lg border flex flex-col items-center justify-center p-0.5 transition-all cursor-pointer ${isSelected ? 'bg-indigo-600 border-indigo-600 shadow-md transform scale-105' : isToday ? 'bg-indigo-50 border-indigo-200 shadow-inner hover:bg-indigo-100 text-indigo-600' : hasPosts ? 'bg-white border-slate-200 hover:border-indigo-300 hover:shadow-sm' : 'bg-slate-50/50 border-transparent hover:bg-slate-100'}`}
+                     >
+                       <span className={`text-[11px] font-bold ${isSelected ? 'text-white' : isToday ? 'text-indigo-600' : hasPosts ? 'text-slate-900' : 'text-slate-400'}`}>{format(day, 'd')}</span>
+                       <div className="flex flex-wrap justify-center gap-[2px] mt-0.5 w-full">
+                          {dots.slice(0, 3).map((dot, idx) => (
+                            <div key={idx} aria-hidden="true" className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white' : dot.color} shadow-sm`} title={dot.title}></div>
+                          ))}
+                          {dots.length > 3 && <span aria-hidden="true" className={`text-[6px] font-black leading-none ${isSelected ? 'text-indigo-200' : 'text-slate-400'}`}>+</span>}
+                       </div>
+                     </div>
+                   )
+                })}
+              </div>
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-3 border-t border-slate-100 pt-3">
+                 <div className="flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest text-slate-500"><div aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-pink-500"></div> Reel</div>
+                 <div className="flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest text-slate-500"><div aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-purple-500"></div> Carrusel</div>
+                 <div className="flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest text-slate-500"><div aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-blue-500"></div> Post</div>
+                 <div className="flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest text-slate-500"><div aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-amber-500"></div> Story</div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Floating Modern Toast */}
       {message && (
@@ -999,103 +1090,15 @@ export default function RrssDashboard() {
         </div>
       )}
 
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="bg-white border-2 border-slate-100 rounded-xl px-4 py-3 flex items-center justify-between gap-4 shadow-sm w-full sm:w-auto">
-             <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Cuota Mensual</span>
-             <span className={`font-black text-sm ${quotaUsed >= planLimit ? 'text-rose-600' : 'text-indigo-600'}`}>{quotaUsed} / {planLimit}</span>
-          </div>
-          
-          <div className="bg-white border-2 border-slate-100 rounded-xl px-4 py-3 flex items-center justify-between gap-4 shadow-sm w-full sm:w-auto">
-             <span className="text-[10px] font-black uppercase tracking-widest text-pink-400">Reels IA</span>
-             <span className={`font-black text-sm ${videosUsed >= videoLimit ? 'text-rose-600' : 'text-pink-600'}`}>{videosUsed} / {videoLimit}</span>
-          </div>
-          
-          <Link id="tour-btn-new-post" href="/automatizacion-rrss/panel/crear" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl transition-colors shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2 w-full sm:w-auto">
-            <span>✍️</span> Agendar Nuevo
-          </Link>
-        </div>
-      </div>
-
-      <div className="flex flex-col lg:flex-row items-start gap-8 w-full">
-        {/* Sidebar Right: Calendar Filter (lg:order-2) */}
-        <div className={`w-full lg:w-[280px] xl:w-[300px] shrink-0 flex flex-col gap-6 lg:sticky lg:top-24 lg:order-2 mx-auto lg:mx-0 ${isCalendarOpen ? 'fixed inset-0 z-[110] p-6 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center' : 'hidden lg:flex'}`}>
-          
-          {/* Contenedor del Calendario (Modal en mobile, Sidebar en desktop) */}
-          <div className={`${isCalendarOpen ? 'bg-white rounded-[32px] p-6 w-full max-w-sm animate-in zoom-in duration-200 shadow-2xl relative' : ''}`}>
-            
-            {/* Close button mobile */}
-            {isCalendarOpen && (
-              <button 
-                onClick={() => setIsCalendarOpen(false)}
-                className="absolute top-4 right-4 w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 font-black lg:hidden"
-              >
-                &times;
-              </button>
-            )}
-
-            {/* Mini Calendar Filter */}
-            <div id="tour-calendar-widget" className={`${isCalendarOpen ? '' : 'bg-white rounded-[24px] p-5 shadow-xl shadow-slate-200/50 border border-slate-100 w-full'}`}>
-            <div className="flex justify-between items-center mb-4 px-1">
-              <h3 className="text-sm font-black text-slate-900 capitalize tracking-tight flex items-center gap-2">
-                 <span className="w-6 h-6 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center text-[10px] shadow-sm">🗓️</span>
-                 {format(currentMonth, "MMM yyyy", { locale: es })}
-              </h3>
-              <div className="flex gap-1">
-                <button onClick={prevMonth} className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 font-bold transition-all text-sm">&lt;</button>
-                <button onClick={nextMonth} className="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 font-bold transition-all text-sm">&gt;</button>
-              </div>
-            </div>
-            <div className="grid grid-cols-7 gap-1">
-              {['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'].map(d => (
-                <div key={d} className="text-center text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">{d}</div>
-              ))}
-              {Array.from({ length: startDayIndex }).map((_, i) => (
-                <div key={`empty-${i}`} aria-hidden="true" className="h-8"></div>
-              ))}
-              {daysInMonth.map((day, i) => {
-                 const dots = getDotsForDate(day);
-                 const isToday = isSameDay(day, new Date());
-                 const hasPosts = dots.length > 0;
-                 const isSelected = selectedDateFilter && isSameDay(day, selectedDateFilter);
-                 
-                 return (
-                   <div 
-                     key={i} 
-                     onClick={() => {
-                       setSelectedDateFilter(isSelected ? null : day);
-                       if (isCalendarOpen) setIsCalendarOpen(false);
-                     }}
-                     className={`h-9 rounded-lg border flex flex-col items-center justify-center p-0.5 transition-all cursor-pointer ${isSelected ? 'bg-indigo-600 border-indigo-600 shadow-md transform scale-105' : isToday ? 'bg-indigo-50 border-indigo-200 shadow-inner hover:bg-indigo-100 text-indigo-600' : hasPosts ? 'bg-white border-slate-200 hover:border-indigo-300 hover:shadow-sm' : 'bg-slate-50/50 border-transparent hover:bg-slate-100'}`}
-                   >
-                     <span className={`text-[11px] font-bold ${isSelected ? 'text-white' : isToday ? 'text-indigo-600' : hasPosts ? 'text-slate-900' : 'text-slate-400'}`}>{format(day, 'd')}</span>
-                     <div className="flex flex-wrap justify-center gap-[2px] mt-0.5 w-full">
-                        {dots.slice(0, 3).map((dot, idx) => (
-                          <div key={idx} aria-hidden="true" className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white' : dot.color} shadow-sm`} title={dot.title}></div>
-                        ))}
-                        {dots.length > 3 && <span aria-hidden="true" className={`text-[6px] font-black leading-none ${isSelected ? 'text-indigo-200' : 'text-slate-400'}`}>+</span>}
-                     </div>
-                   </div>
-                 )
-              })}
-            </div>
-            <div className="mt-4 flex flex-wrap items-center justify-center gap-3 border-t border-slate-100 pt-3">
-               <div className="flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest text-slate-500"><div aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-pink-500"></div> Reel</div>
-               <div className="flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest text-slate-500"><div aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-purple-500"></div> Carrusel</div>
-               <div className="flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest text-slate-500"><div aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-blue-500"></div> Post</div>
-               <div className="flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest text-slate-500"><div aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-amber-500"></div> Story</div>
-            </div>
-          </div>
-        </div>
-
+      <div className="flex flex-col items-start gap-8 w-full">
         {/* Selected Date Summary */}
-        {selectedDateFilter && (
-          <div className="w-full sm:max-w-sm mx-auto lg:mx-0 bg-indigo-50/50 rounded-[24px] p-6 border border-indigo-100 flex flex-col justify-center items-center text-center animate-in fade-in zoom-in duration-300">
-             <div className="text-4xl mb-3">🎯</div>
-             <h3 className="text-lg font-black tracking-tight text-slate-900">Viendo {format(selectedDateFilter, "d 'de' MMMM", { locale: es })}</h3>
-             <button onClick={() => setSelectedDateFilter(null)} className="mt-4 bg-white text-indigo-600 border border-indigo-200 hover:bg-indigo-50 font-bold px-4 py-2 rounded-xl text-xs uppercase tracking-widest shadow-sm transition-all w-full">Quitar Filtro</button>
-          </div>
-        )}
-      </div>
+      {selectedDateFilter && (
+        <div className="w-full sm:max-w-sm mx-auto lg:mx-0 bg-indigo-50/50 rounded-[24px] p-6 border border-indigo-100 flex flex-col justify-center items-center text-center animate-in fade-in zoom-in duration-300">
+           <div className="text-4xl mb-3">🎯</div>
+           <h3 className="text-lg font-black tracking-tight text-slate-900">Viendo {format(selectedDateFilter, "d 'de' MMMM", { locale: es })}</h3>
+           <button onClick={() => setSelectedDateFilter(null)} className="mt-4 bg-white text-indigo-600 border border-indigo-200 hover:bg-indigo-50 font-bold px-4 py-2 rounded-xl text-xs uppercase tracking-widest shadow-sm transition-all w-full">Quitar Filtro</button>
+        </div>
+      )}
 
       {/* Main Content Area */}
       <div className="flex-1 w-full min-w-0 lg:order-1">
@@ -1139,181 +1142,208 @@ export default function RrssDashboard() {
            )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredPosts.map(post => {
-            const dateObj = post.scheduledFor?.toDate ? post.scheduledFor.toDate() : new Date();
-            const formattedDate = format(dateObj, "d 'de' MMMM, yyyy", { locale: es });
-            const formattedTime = format(dateObj, "HH:mm");
-            
-            const isSelected = selectedPostIds.includes(post.id);
-            const isBlog = Array.isArray(post.networks) && post.networks.includes('blog');
+        <div className="flex flex-col gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {paginatedPosts.map(post => {
+              const dateObj = post.scheduledFor?.toDate ? post.scheduledFor.toDate() : new Date();
+              const formattedDate = format(dateObj, "d 'de' MMMM, yyyy", { locale: es });
+              const formattedTime = format(dateObj, "HH:mm");
+              
+              const isSelected = selectedPostIds.includes(post.id);
+              const isBlog = Array.isArray(post.networks) && post.networks.includes('blog');
 
-            const isPending = post.status === 'pending' || post.status === 'draft' || post.status === 'strategy_draft';
-            const isError = post.status === 'error';
+              const isPending = post.status === 'pending' || post.status === 'draft' || post.status === 'strategy_draft';
+              const isError = post.status === 'error';
 
-            const effectiveStatus = (isBlog && post.status !== 'published') ? 'confirmed' : post.status;
-            const statusConfig = {
-              pending: { color: 'text-amber-600 bg-amber-50 border-amber-200', text: '⏸️ Pausado / Borrador' },
-              confirmed: { color: 'text-indigo-600 bg-indigo-50 border-indigo-200', text: '⏳ Agendado por Santisoft' },
-              publishing: { color: 'text-blue-600 bg-blue-50 border-blue-200 shadow-sm animate-pulse', text: '⚡ Publicando...' },
-              published: { color: 'text-emerald-600 bg-emerald-50 border-emerald-200', text: '✅ Publicado' },
-              error: { color: 'text-rose-600 bg-rose-50 border-rose-200', text: '❌ Error' }
-            }[effectiveStatus] || { color: 'text-slate-600 bg-slate-50 border-slate-200', text: effectiveStatus };
-            
-            return (
-              <div key={post.id} onClick={() => isBlog ? (window.location.href = '/automatizacion-rrss/panel/blog') : setSelectedPost(post)} className={`premium-card !p-0 overflow-hidden flex flex-col group hover:-translate-y-1 transition-all cursor-pointer shadow-sm hover:shadow-xl hover:shadow-indigo-500/10 relative ${isSelected ? 'ring-2 ring-indigo-500 ring-offset-4' : ''}`}>
-                {/* Checkbox Overlay */}
-                {!isBlog && (
-                    <div 
-                      onClick={(e) => toggleSelectPost(post.id, e)}
-                      className={`absolute top-4 left-4 z-20 w-9 h-9 rounded-xl border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-indigo-600 border-indigo-600 text-white scale-110 shadow-lg' : 'bg-white/80 backdrop-blur-sm border-slate-200 opacity-0 group-hover:opacity-100 shadow-sm'}`}
-                    >
-                      {isSelected && <span className="text-sm font-black">✓</span>}
-                    </div>
-                )}
-
-                <div className={`px-5 py-4 border-b flex flex-col gap-3 ${statusConfig.color.split(' ').find(c => c.startsWith('bg-'))} ${statusConfig.color.split(' ').find(c => c.startsWith('border-'))}`}>
-                  <div className="flex items-center gap-2 pl-8">
-                    <span className={`w-2 h-2 rounded-full animate-pulse ${statusConfig.color.split(' ')[0].replace('text-', 'bg-')}`}></span>
-                    <span className={`text-[10px] uppercase tracking-[0.2em] font-black ${statusConfig.color.split(' ')[0]}`}>
-                      {statusConfig.text}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between w-full">
-                    {/* FORMAT BADGE */}
-                    <div className="flex items-center gap-1 bg-white/60 px-2.5 py-1 rounded-md border border-slate-200/50 shadow-sm">
-                      <span className="text-[9px] font-black tracking-widest uppercase text-slate-500">
-                        {post.type === 'Reel' ? '🎬 Reel' : post.type === 'Carrusel' ? '📑 Carrusel' : post.type === 'Historia' ? '📱 Historia' : post.type === 'Blog' ? '📝 Blog' : '🖼️ Post'}
-                      </span>
-                    </div>
-
-                    {/* NETWORKS */}
-                    <div className="flex gap-1.5">
-                      {(Array.isArray(post.networks) ? post.networks : Object.entries(post.networks || {}).filter(([_, v]) => v).map(([k]) => k)).map(net => (
-                        <span key={net} title={net} className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-200">
-                          <NetworkIcon network={net} postId={`${post.id}-${net}`} />
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-8 flex-1 flex flex-col">
-                  <div className="flex items-start gap-5 mb-6">
-                    <div className="bg-slate-50 p-4 rounded-[24px] text-center min-w-[80px] border border-slate-200/50 shadow-inner group-hover:bg-indigo-50 transition-colors">
-                      <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{format(dateObj, "MMM", { locale: es })}</div>
-                      <div className="text-3xl font-black text-slate-900 leading-none mb-1">{format(dateObj, "dd")}</div>
-                      <div className="text-[11px] font-black text-indigo-600">{formattedTime}</div>
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-slate-500 text-sm leading-relaxed font-medium line-clamp-4 italic group-hover:text-slate-800 transition-colors">
-                        "{post.postText || post.text || post.copy || post.idea || 'Sin texto descriptivo'}"
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {post.isGeneratingImage ? (
-                    <div 
-                      onClick={(e) => handleResetGeneratingState(post.id, e)}
-                      className="mt-2 mb-6 rounded-2xl overflow-hidden border border-slate-200/50 aspect-video bg-indigo-50 flex flex-col items-center justify-center shadow-inner relative animate-pulse cursor-pointer group/stuck"
-                    >
-                      <div className="w-8 h-8 rounded-full border-4 border-indigo-200 border-t-indigo-500 animate-spin mb-3 shadow-md"></div>
-                      <p className="text-[10px] font-black text-indigo-500 tracking-widest uppercase bg-white/60 px-3 py-1 rounded-full shadow-sm group-hover/stuck:hidden">Generando ia...</p>
-                      <p className="text-[10px] font-black text-rose-500 tracking-widest uppercase bg-white/80 px-3 py-1 rounded-full shadow-sm hidden group-hover/stuck:block">¿Trabado? Click para Reset</p>
-                    </div>
-                  ) : post.imageUrl ? (
-                    <div className="mt-2 mb-6 rounded-2xl overflow-hidden border border-slate-200/50 aspect-video bg-slate-50 flex items-center justify-center shadow-inner relative group-hover:border-indigo-200 transition-all">
-                      {post.type === 'Reel' || 
-                       post.imageUrl?.toLowerCase().includes('.mp4') || 
-                       post.imageUrl?.toLowerCase().includes('.mov') || 
-                       post.imageUrl?.toLowerCase().includes('.webm') || 
-                       post.imageUrl?.toLowerCase().includes('video') || 
-                       post.imageUrl?.toLowerCase().includes('quicktime') ? (
-                        <>
-                          <div className="absolute inset-0 bg-gradient-to-br from-rose-900 to-slate-900 flex flex-col items-center justify-center gap-3">
-                            <div className="w-14 h-14 rounded-full bg-white/15 border-2 border-white/30 flex items-center justify-center backdrop-blur-sm shadow-xl">
-                              <span className="text-white text-2xl pl-1">▶</span>
-                            </div>
-                            <span className="text-white/70 text-[10px] font-black uppercase tracking-widest">Reel Generado</span>
-                          </div>
-                          {post.imageUrls && post.imageUrls.length > 1 && (
-                            <div className="absolute top-3 right-3 bg-slate-900/80 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-widest px-2.5 py-1.5 rounded-lg shadow-sm border border-white/10 flex items-center gap-1.5">
-                               <span>🎬</span> {post.imageUrls.length}
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        <>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={post.imageUrl} alt="Ref" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                          {post.imageUrls && post.imageUrls.length > 1 && (
-                            <div className="absolute top-3 right-3 bg-slate-900/80 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-widest px-2.5 py-1.5 rounded-lg shadow-sm border border-white/10 flex items-center gap-1.5">
-                               <span>📑</span> 1/{post.imageUrls.length}
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </div>
-
-                  ) : ['elite', 'business'].includes(userPlan) ? (
-                    <div 
-                      className="mt-2 mb-6 rounded-2xl overflow-hidden border-2 border-dashed border-slate-200 aspect-video bg-slate-50/50 flex items-center justify-center shadow-inner hover:bg-indigo-50 hover:border-indigo-300 transition-all cursor-pointer group/media" 
-                      onClick={(e) => handleGenerateMedia(post.id, e)}
-                    >
-                      <div className="text-center p-4">
-                        <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-lg shadow-sm text-indigo-500 mx-auto mb-3 group-hover/media:scale-110 group-hover/media:bg-indigo-500 group-hover/media:text-white transition-all">✨</div>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover/media:text-indigo-600 transition-colors">Generar Multimedia</p>
+              const effectiveStatus = (isBlog && post.status !== 'published') ? 'confirmed' : post.status;
+              const statusConfig = {
+                pending: { color: 'text-amber-600 bg-amber-50 border-amber-200', text: '⏸️ Pausado / Borrador' },
+                confirmed: { color: 'text-indigo-600 bg-indigo-50 border-indigo-200', text: '⏳ Agendado por Santisoft' },
+                publishing: { color: 'text-blue-600 bg-blue-50 border-blue-200 shadow-sm animate-pulse', text: '⚡ Publicando...' },
+                published: { color: 'text-emerald-600 bg-emerald-50 border-emerald-200', text: '✅ Publicado' },
+                error: { color: 'text-rose-600 bg-rose-50 border-rose-200', text: '❌ Error' }
+              }[effectiveStatus] || { color: 'text-slate-600 bg-slate-50 border-slate-200', text: effectiveStatus };
+              
+              return (
+                <div key={post.id} onClick={() => isBlog ? (window.location.href = '/automatizacion-rrss/panel/blog') : setSelectedPost(post)} className={`premium-card !p-0 overflow-hidden flex flex-col group hover:-translate-y-1 transition-all cursor-pointer shadow-sm hover:shadow-xl hover:shadow-indigo-500/10 relative ${isSelected ? 'ring-2 ring-indigo-500 ring-offset-4' : ''}`}>
+                  {/* Checkbox Overlay */}
+                  {!isBlog && (
+                      <div 
+                        onClick={(e) => toggleSelectPost(post.id, e)}
+                        className={`absolute top-4 left-4 z-20 w-9 h-9 rounded-xl border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-indigo-600 border-indigo-600 text-white scale-110 shadow-lg' : 'bg-white/80 backdrop-blur-sm border-slate-200 opacity-0 group-hover:opacity-100 shadow-sm'}`}
+                      >
+                        {isSelected && <span className="text-sm font-black">✓</span>}
                       </div>
-                    </div>
-                  ) : (
-                    <div className="mt-2 mb-6 rounded-2xl overflow-hidden border border-slate-200/50 aspect-video bg-slate-50 flex items-center justify-center relative shadow-inner">
-                        <div className="text-center p-4">
-                            <div className="w-10 h-10 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-500 text-lg mx-auto mb-2 opacity-80 shadow-inner border border-emerald-100/50">🤖</div>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Post en Piloto Automático</p>
-                            <Link href="/automatizacion-rrss/panel/planes" className="text-[10px] font-black text-indigo-500 hover:text-indigo-600 mt-2 hover:underline uppercase block">Mejorar a Elite para Vista Previa</Link>
-                        </div>
-                    </div>
                   )}
 
-                  <div className="mt-auto pt-6 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex items-center gap-1">
-                        {post.status === 'confirmed' ? (
-                        <button 
-                            onClick={(e) => handleUnconfirm(post, e)} 
-                            className="text-[10px] font-black uppercase tracking-widest text-amber-500 hover:text-amber-600 px-3 py-2 hover:bg-amber-50 rounded-xl transition-all"
-                        >
-                            Pasar a Borrador
-                        </button>
-                        ) : null}
+                  <div className={`px-5 py-4 border-b flex flex-col gap-3 ${statusConfig.color.split(' ').find(c => c.startsWith('bg-'))} ${statusConfig.color.split(' ').find(c => c.startsWith('border-'))}`}>
+                    <div className="flex items-center gap-2 pl-8">
+                      <span className={`w-2 h-2 rounded-full animate-pulse ${statusConfig.color.split(' ')[0].replace('text-', 'bg-')}`}></span>
+                      <span className={`text-[10px] uppercase tracking-[0.2em] font-black ${statusConfig.color.split(' ')[0]}`}>
+                        {statusConfig.text}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between w-full">
+                      {/* FORMAT BADGE */}
+                      <div className="flex items-center gap-1 bg-white/60 px-2.5 py-1 rounded-md border border-slate-200/50 shadow-sm">
+                        <span className="text-[9px] font-black tracking-widest uppercase text-slate-500">
+                          {post.type === 'Reel' ? '🎬 Reel' : post.type === 'Carrusel' ? '📑 Carrusel' : post.type === 'Historia' ? '📱 Historia' : post.type === 'Blog' ? '📝 Blog' : '🖼️ Post'}
+                        </span>
+                      </div>
 
-                        {activeTab === 'upcoming' && (
-                        <button 
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setRescheduleData({
-                                    id: post.id,
-                                    date: format(dateObj, "yyyy-MM-dd'T'HH:mm")
-                                });
-                            }} 
-                            className="text-[10px] font-black uppercase tracking-widest text-indigo-500 hover:text-indigo-600 px-3 py-2 hover:bg-indigo-50 rounded-xl transition-all"
-                        >
-                            Reagendar
-                        </button>
-                        )}
+                      {/* NETWORKS */}
+                      <div className="flex gap-1.5">
+                        {(Array.isArray(post.networks) ? post.networks : Object.entries(post.networks || {}).filter(([_, v]) => v).map(([k]) => k)).map(net => (
+                          <span key={net} title={net} className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-200">
+                            <NetworkIcon network={net} postId={`${post.id}-${net}`} />
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-8 flex-1 flex flex-col">
+                    <div className="flex items-start gap-5 mb-6">
+                      <div className="bg-slate-50 p-4 rounded-[24px] text-center min-w-[80px] border border-slate-200/50 shadow-inner group-hover:bg-indigo-50 transition-colors">
+                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{format(dateObj, "MMM", { locale: es })}</div>
+                        <div className="text-3xl font-black text-slate-900 leading-none mb-1">{format(dateObj, "dd")}</div>
+                        <div className="text-[11px] font-black text-indigo-600">{formattedTime}</div>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-slate-500 text-sm leading-relaxed font-medium line-clamp-4 italic group-hover:text-slate-800 transition-colors">
+                          "{post.postText || post.text || post.copy || post.idea || 'Sin texto descriptivo'}"
+                        </p>
+                      </div>
                     </div>
                     
-                    <button 
-                      onClick={(e) => handleDelete(post.id, e)} 
-                      className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-rose-600 px-3 py-2 hover:bg-rose-50 rounded-xl transition-all shrink-0"
-                    >
-                      {post.status === 'published' ? 'Ocultar' : isPending ? 'Borrar permanentemente' : 'Borrar'}
-                    </button>
+                    {post.isGeneratingImage ? (
+                      <div 
+                        onClick={(e) => handleResetGeneratingState(post.id, e)}
+                        className="mt-2 mb-6 rounded-2xl overflow-hidden border border-slate-200/50 aspect-video bg-indigo-50 flex flex-col items-center justify-center shadow-inner relative animate-pulse cursor-pointer group/stuck"
+                      >
+                        <div className="w-8 h-8 rounded-full border-4 border-indigo-200 border-t-indigo-500 animate-spin mb-3 shadow-md"></div>
+                        <p className="text-[10px] font-black text-indigo-500 tracking-widest uppercase bg-white/60 px-3 py-1 rounded-full shadow-sm group-hover/stuck:hidden">Generando ia...</p>
+                        <p className="text-[10px] font-black text-rose-500 tracking-widest uppercase bg-white/80 px-3 py-1 rounded-full shadow-sm hidden group-hover/stuck:block">¿Trabado? Click para Reset</p>
+                      </div>
+                    ) : post.imageUrl ? (
+                      <div className="mt-2 mb-6 rounded-2xl overflow-hidden border border-slate-200/50 aspect-video bg-slate-50 flex items-center justify-center shadow-inner relative group-hover:border-indigo-200 transition-all">
+                        {post.type === 'Reel' || 
+                         post.imageUrl?.toLowerCase().includes('.mp4') || 
+                         post.imageUrl?.toLowerCase().includes('.mov') || 
+                         post.imageUrl?.toLowerCase().includes('.webm') || 
+                         post.imageUrl?.toLowerCase().includes('video') || 
+                         post.imageUrl?.toLowerCase().includes('quicktime') ? (
+                          <>
+                            <div className="absolute inset-0 bg-gradient-to-br from-rose-900 to-slate-900 flex flex-col items-center justify-center gap-3">
+                              <div className="w-14 h-14 rounded-full bg-white/15 border-2 border-white/30 flex items-center justify-center backdrop-blur-sm shadow-xl">
+                                <span className="text-white text-2xl pl-1">▶</span>
+                              </div>
+                              <span className="text-white/70 text-[10px] font-black uppercase tracking-widest">Reel Generado</span>
+                            </div>
+                            {post.imageUrls && post.imageUrls.length > 1 && (
+                              <div className="absolute top-3 right-3 bg-slate-900/80 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-widest px-2.5 py-1.5 rounded-lg shadow-sm border border-white/10 flex items-center gap-1.5">
+                                 <span>🎬</span> {post.imageUrls.length}
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={post.imageUrl} alt="Ref" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                            {post.imageUrls && post.imageUrls.length > 1 && (
+                              <div className="absolute top-3 right-3 bg-slate-900/80 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-widest px-2.5 py-1.5 rounded-lg shadow-sm border border-white/10 flex items-center gap-1.5">
+                                 <span>📑</span> 1/{post.imageUrls.length}
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+
+                    ) : ['elite', 'business'].includes(userPlan) ? (
+                      <div 
+                        className="mt-2 mb-6 rounded-2xl overflow-hidden border-2 border-dashed border-slate-200 aspect-video bg-slate-50/50 flex items-center justify-center shadow-inner hover:bg-indigo-50 hover:border-indigo-300 transition-all cursor-pointer group/media" 
+                        onClick={(e) => handleGenerateMedia(post.id, e)}
+                      >
+                        <div className="text-center p-4">
+                          <div className="text-center p-4">
+                            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-lg shadow-sm text-indigo-500 mx-auto mb-3 group-hover/media:scale-110 group-hover/media:bg-indigo-500 group-hover/media:text-white transition-all">✨</div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover/media:text-indigo-600 transition-colors">Generar Multimedia</p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mt-2 mb-6 rounded-2xl overflow-hidden border border-slate-200/50 aspect-video bg-slate-50 flex items-center justify-center relative shadow-inner">
+                          <div className="text-center p-4">
+                              <div className="w-10 h-10 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-500 text-lg mx-auto mb-2 opacity-80 shadow-inner border border-emerald-100/50">🤖</div>
+                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Post en Piloto Automático</p>
+                              <Link href="/automatizacion-rrss/panel/planes" className="text-[10px] font-black text-indigo-500 hover:text-indigo-600 mt-2 hover:underline uppercase block">Mejorar a Elite para Vista Previa</Link>
+                          </div>
+                      </div>
+                    )}
+
+                    <div className="mt-auto pt-6 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-1">
+                          {post.status === 'confirmed' ? (
+                          <button 
+                              onClick={(e) => handleUnconfirm(post, e)} 
+                              className="text-[10px] font-black uppercase tracking-widest text-amber-500 hover:text-amber-600 px-3 py-2 hover:bg-amber-50 rounded-xl transition-all"
+                          >
+                              Pasar a Borrador
+                          </button>
+                          ) : null}
+
+                          {activeTab === 'upcoming' && (
+                          <button 
+                              onClick={(e) => {
+                                  e.stopPropagation();
+                                  setRescheduleData({
+                                      id: post.id,
+                                      date: format(dateObj, "yyyy-MM-dd'T'HH:mm")
+                                  });
+                              }} 
+                              className="text-[10px] font-black uppercase tracking-widest text-indigo-500 hover:text-indigo-600 px-3 py-2 hover:bg-indigo-50 rounded-xl transition-all"
+                          >
+                              Reagendar
+                          </button>
+                          )}
+                      </div>
+                      
+                      <button 
+                        onClick={(e) => handleDelete(post.id, e)} 
+                        className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-rose-600 px-3 py-2 hover:bg-rose-50 rounded-xl transition-all shrink-0"
+                      >
+                        {post.status === 'published' ? 'Ocultar' : isPending ? 'Borrar permanentemente' : 'Borrar'}
+                      </button>
+                    </div>
                   </div>
                 </div>
+              )
+            })}
+          </div>
+          
+          {/* Paginación */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-4 mt-8 pt-6 border-t border-slate-200">
+              <button 
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
+                disabled={currentPage === 1}
+                className="w-10 h-10 rounded-xl bg-white border border-slate-200 text-slate-500 flex items-center justify-center font-black hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all"
+              >
+                &lt;&lt;
+              </button>
+              <div className="text-xs font-black uppercase tracking-widest text-slate-500">
+                Página <span className="text-slate-900">{currentPage}</span> de <span className="text-slate-900">{totalPages}</span>
               </div>
-            )
-          })}
+              <button 
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
+                disabled={currentPage === totalPages}
+                className="w-10 h-10 rounded-xl bg-white border border-slate-200 text-slate-500 flex items-center justify-center font-black hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all"
+              >
+                &gt;&gt;
+              </button>
+            </div>
+          )}
         </div>
       )}
       </div>
