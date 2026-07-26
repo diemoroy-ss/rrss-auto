@@ -156,6 +156,7 @@ export default function RrssDashboard() {
   const [publishResult, setPublishResult] = useState<{ isOpen: boolean; success: boolean; published: string[]; errors: string | null } | null>(null);
   const [selectedPostIds, setSelectedPostIds] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'upcoming' | 'published'>('upcoming');
+  const [networkFilter, setNetworkFilter] = useState<string>('all');
   const [rescheduleData, setRescheduleData] = useState<{ id: string, date: string } | null>(null);
   const [isPublishingStory, setIsPublishingStory] = useState(false);
   const { activeProfile } = useProfile();
@@ -874,9 +875,13 @@ export default function RrssDashboard() {
         if (!postDate) return false;
         return isSameDay(postDate, selectedDateFilter);
       }
+      if (networkFilter !== 'all') {
+         const nets = Array.isArray(p.networks) ? p.networks : Object.entries(p.networks || {}).filter(([_, v]) => v).map(([k]) => k);
+         if (!nets.includes(networkFilter)) return false;
+      }
       return true;
     });
-  }, [combinedPosts, activeTab, selectedDateFilter]);
+  }, [combinedPosts, activeTab, selectedDateFilter, networkFilter]);
 
   const videosUsed = useMemo(() => {
     return posts.filter(p => {
@@ -907,19 +912,35 @@ export default function RrssDashboard() {
                : 'Historial de publicaciones locales enviadas exitosamente a tus redes sociales.'}
           </p>
           
-          <div className="flex bg-slate-100 p-1.5 rounded-2xl w-fit mt-6 shadow-inner border border-slate-200">
-             <button 
-               onClick={() => setActiveTab('upcoming')} 
-               className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'upcoming' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-             >
-               <span>⏳</span> Próximos
-             </button>
-             <button 
-               onClick={() => setActiveTab('published')} 
-               className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'published' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-             >
-               <span>✅</span> Publicados
-             </button>
+          <div className="flex flex-col sm:flex-row gap-4 mt-6 items-start sm:items-center">
+            <div className="flex bg-slate-100 p-1.5 rounded-2xl w-fit shadow-inner border border-slate-200">
+               <button 
+                 onClick={() => setActiveTab('upcoming')} 
+                 className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'upcoming' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+               >
+                 <span>⏳</span> Próximos
+               </button>
+               <button 
+                 onClick={() => setActiveTab('published')} 
+                 className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'published' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+               >
+                 <span>✅</span> Publicados
+               </button>
+            </div>
+
+            <div className="hidden sm:block w-px h-8 bg-slate-200"></div>
+
+            <div className="flex flex-wrap items-center gap-1.5">
+               {['all', 'instagram', 'facebook', 'linkedin', 'tiktok', 'googleBusiness', 'blog'].map(net => (
+                  <button
+                     key={net}
+                     onClick={() => setNetworkFilter(net)}
+                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 border shadow-sm ${networkFilter === net ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300'}`}
+                  >
+                     {net === 'all' ? <span>🌐 Todos</span> : <NetworkIcon network={net} postId={`filter-${net}`} />}
+                  </button>
+               ))}
+            </div>
           </div>
 
           {/* Botón de Calendario Mobile */}
