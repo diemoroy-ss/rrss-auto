@@ -753,11 +753,19 @@ export default function RrssDashboard() {
   };
 
   const handleDeletePost = async (postId: string) => {
+    const postToDelete = [...posts, ...blogPosts].find(p => p.id === postId);
+    const isBlog = postToDelete?.networks?.includes('blog');
+    const collectionName = isBlog ? "blog_posts" : "social_posts";
+
     requestConfirmation("¿Eliminar Publicación?", "¿Estás seguro de que deseas eliminar permanentemente esta publicación programada?", async () => {
       setConfirmModalState(null);
       try {
-        await deleteDoc(doc(db, "social_posts", postId));
-        setPosts(prev => prev.filter(p => p.id !== postId));
+        await deleteDoc(doc(db, collectionName, postId));
+        if (isBlog) {
+          setBlogPosts(prev => prev.filter(p => p.id !== postId));
+        } else {
+          setPosts(prev => prev.filter(p => p.id !== postId));
+        }
         setSelectedPost(null); 
         setMessage({ type: 'success', text: "Publicación eliminada correctamente." });
       } catch (e) {
@@ -769,16 +777,23 @@ export default function RrssDashboard() {
   const handleUpdateStatus = async (postId: string, newStatus: 'pending' | 'confirmed') => {
     setIsUpdatingStatus(true);
     try {
-      await updateDoc(doc(db, "social_posts", postId), { status: newStatus });
-      setPosts(prev => prev.map(p => p.id === postId ? { ...p, status: newStatus } : p));
+      const postToUpdate = [...posts, ...blogPosts].find(p => p.id === postId);
+      const isBlog = postToUpdate?.networks?.includes('blog');
+      const collectionName = isBlog ? "blog_posts" : "social_posts";
+
+      await updateDoc(doc(db, collectionName, postId), { status: newStatus });
+      if (isBlog) {
+        setBlogPosts(prev => prev.map(p => p.id === postId ? { ...p, status: newStatus } : p));
+      } else {
+        setPosts(prev => prev.map(p => p.id === postId ? { ...p, status: newStatus } : p));
+      }
       
-      // Update quota
-      const post = posts.find(p => p.id === postId);
-      if (post) {
-        const networksCount = post.networks?.length || 1;
-        if (newStatus === 'confirmed' && post.status === 'pending') {
+      // Update quota only for social posts
+      if (!isBlog && postToUpdate) {
+        const networksCount = postToUpdate.networks?.length || 1;
+        if (newStatus === 'confirmed' && postToUpdate.status === 'pending') {
           setQuotaUsed(prev => prev + networksCount);
-        } else if (newStatus === 'pending' && post.status === 'confirmed') {
+        } else if (newStatus === 'pending' && postToUpdate.status === 'confirmed') {
           setQuotaUsed(prev => Math.max(0, prev - networksCount));
         }
       }
@@ -797,27 +812,33 @@ export default function RrssDashboard() {
     try {
         const newDate = new Date(rescheduleData.date);
         setIsUpdatingStatus(true);
-        // Rescheduling inherently clears errors and puts it back to pending if they want to edit.
-        // Actually, let's preserve the status if it's confirmed, but usually they want to review it. Let's force pending.
-        const postToUpdate = posts.find(p => p.id === rescheduleData.id);
+        
+        const postToUpdate = [...posts, ...blogPosts].find(p => p.id === rescheduleData.id);
+        const isBlog = postToUpdate?.networks?.includes('blog');
+        const collectionName = isBlog ? "blog_posts" : "social_posts";
         const originalStatus = postToUpdate?.status || 'pending';
         const newStatus = originalStatus === 'error' ? 'pending' : originalStatus; 
 
-        await updateDoc(doc(db, "social_posts", rescheduleData.id), { 
+        await updateDoc(doc(db, collectionName, rescheduleData.id), { 
             scheduledFor: newDate,
             status: newStatus
         });
         
-        // Push local arrays
-        setPosts(prev => prev.map(p => p.id === rescheduleData.id ? { ...p, scheduledFor: { toDate: () => newDate, toMillis: () => newDate.getTime() } as any, status: newStatus } : p));
+        if (isBlog) {
+            setBlogPosts(prev => prev.map(p => p.id === rescheduleData.id ? { ...p, scheduledFor: { toDate: () => newDate, toMillis: () => newDate.getTime() } as any, status: newStatus } : p));
+        } else {
+            setPosts(prev => prev.map(p => p.id === rescheduleData.id ? { ...p, scheduledFor: { toDate: () => newDate, toMillis: () => newDate.getTime() } as any, status: newStatus } : p));
+        }
 
-        // Push the new time to GCP tasks
-        const idToken = await auth.currentUser?.getIdToken();
-        await fetch('/api/tasks/schedule', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
-            body: JSON.stringify({ postId: rescheduleData.id, scheduledFor: newDate.toISOString() })
-        });
+        if (!isBlog) {
+            // Push the new time to GCP tasks for social posts
+            const idToken = await auth.currentUser?.getIdToken();
+            await fetch('/api/tasks/schedule', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+                body: JSON.stringify({ postId: rescheduleData.id, scheduledFor: newDate.toISOString() })
+            });
+        }
         
         setMessage({ type: 'success', text: "Post reagendado exitosamente." });
         setRescheduleData(null);
