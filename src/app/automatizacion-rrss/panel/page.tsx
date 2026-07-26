@@ -271,7 +271,7 @@ export default function RrssDashboard() {
                 type: 'Blog',
                 scheduledFor: data.scheduledFor || data.createdAt,
                 networks: ['blog'],
-                status: data.status === 'published' ? 'published' : 'pending',
+                status: data.status === 'published' ? 'published' : 'confirmed',
                 imageUrl: data.imageUrl || null
             } as SocialPost;
         });
