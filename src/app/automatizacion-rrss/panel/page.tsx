@@ -271,7 +271,7 @@ export default function RrssDashboard() {
                 type: 'Blog',
                 scheduledFor: data.scheduledFor || data.createdAt,
                 networks: ['blog'],
-                status: data.status === 'published' ? 'published' : 'confirmed',
+                status: data.status,
                 imageUrl: data.imageUrl || null
             } as SocialPost;
         });
@@ -817,7 +817,11 @@ export default function RrssDashboard() {
         const isBlog = postToUpdate?.networks?.includes('blog');
         const collectionName = isBlog ? "blog_posts" : "social_posts";
         const originalStatus = postToUpdate?.status || 'pending';
-        const newStatus = originalStatus === 'error' ? 'pending' : originalStatus; 
+        let newStatus = originalStatus === 'error' ? 'pending' : originalStatus; 
+        
+        if (isBlog && (newStatus === 'confirmed' || newStatus === 'pending')) {
+            newStatus = 'strategy_draft';
+        }
 
         await updateDoc(doc(db, collectionName, rescheduleData.id), { 
             scheduledFor: newDate,
@@ -1141,18 +1145,20 @@ export default function RrssDashboard() {
             const formattedDate = format(dateObj, "d 'de' MMMM, yyyy", { locale: es });
             const formattedTime = format(dateObj, "HH:mm");
             
-            const isPending = post.status === 'pending';
+            const isSelected = selectedPostIds.includes(post.id);
+            const isBlog = Array.isArray(post.networks) && post.networks.includes('blog');
+
+            const isPending = post.status === 'pending' || post.status === 'draft' || post.status === 'strategy_draft';
             const isError = post.status === 'error';
+
+            const effectiveStatus = (isBlog && post.status !== 'published') ? 'confirmed' : post.status;
             const statusConfig = {
               pending: { color: 'text-amber-600 bg-amber-50 border-amber-200', text: '⏸️ Pausado / Borrador' },
               confirmed: { color: 'text-indigo-600 bg-indigo-50 border-indigo-200', text: '⏳ Agendado por Santisoft' },
               publishing: { color: 'text-blue-600 bg-blue-50 border-blue-200 shadow-sm animate-pulse', text: '⚡ Publicando...' },
               published: { color: 'text-emerald-600 bg-emerald-50 border-emerald-200', text: '✅ Publicado' },
               error: { color: 'text-rose-600 bg-rose-50 border-rose-200', text: '❌ Error' }
-            }[post.status] || { color: 'text-slate-600 bg-slate-50 border-slate-200', text: post.status };
-
-            const isSelected = selectedPostIds.includes(post.id);
-            const isBlog = Array.isArray(post.networks) && post.networks.includes('blog');
+            }[effectiveStatus] || { color: 'text-slate-600 bg-slate-50 border-slate-200', text: effectiveStatus };
             
             return (
               <div key={post.id} onClick={() => isBlog ? (window.location.href = '/automatizacion-rrss/panel/blog') : setSelectedPost(post)} className={`premium-card !p-0 overflow-hidden flex flex-col group hover:-translate-y-1 transition-all cursor-pointer shadow-sm hover:shadow-xl hover:shadow-indigo-500/10 relative ${isSelected ? 'ring-2 ring-indigo-500 ring-offset-4' : ''}`}>
