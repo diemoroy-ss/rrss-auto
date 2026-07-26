@@ -139,6 +139,11 @@ export default function PosterSection({
                 🏢 Negocio: <strong className="text-slate-800">{config.businessName}</strong>
               </span>
             )}
+            {config.includeMainText && config.mainText && (
+              <span className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl flex items-center gap-1 shadow-sm">
+                📝 Texto Principal: <strong className="text-slate-800">{config.mainText}</strong>
+              </span>
+            )}
             {config.includePrice && config.priceText && (
               <span className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl flex items-center gap-1 shadow-sm">
                 💲 Promoción: <strong className="text-slate-800">{config.priceText}</strong>
@@ -218,6 +223,30 @@ export default function PosterSection({
                         type="text"
                         value={config.businessName || profileName || ""}
                         onChange={(e) => update("businessName", e.target.value)}
+                        className="ml-auto w-36 bg-white border border-slate-200 px-2 py-1 rounded-lg text-xs font-bold text-slate-700 outline-none"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    )}
+                  </label>
+
+                  <label className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 bg-slate-50 cursor-pointer transition-all hover:bg-slate-100/50">
+                    <input
+                      type="checkbox"
+                      checked={config.includeMainText}
+                      onChange={(e) => update("includeMainText", e.target.checked)}
+                      className="w-4 h-4 accent-amber-500 rounded"
+                    />
+                    <span className="text-sm">📝</span>
+                    <div className="flex flex-col">
+                      <span className="text-xs font-bold text-slate-700">Texto Principal del Cartel</span>
+                      <span className="text-[9px] text-slate-400 font-medium leading-tight max-w-[180px]">Este texto será impreso en el diseño. La IA no inventará frases.</span>
+                    </div>
+                    {config.includeMainText && (
+                      <input
+                        type="text"
+                        value={config.mainText || ""}
+                        onChange={(e) => update("mainText", e.target.value)}
+                        placeholder='Ej: "Gran Apertura"'
                         className="ml-auto w-36 bg-white border border-slate-200 px-2 py-1 rounded-lg text-xs font-bold text-slate-700 outline-none"
                         onClick={(e) => e.stopPropagation()}
                       />

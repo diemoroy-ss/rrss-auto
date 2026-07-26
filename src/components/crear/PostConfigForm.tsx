@@ -319,6 +319,11 @@ export default function PostConfigForm({
                 placeholder="Describe el estilo y elementos de la imagen que necesitas..."
                 className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl outline-none text-xs font-semibold text-slate-700 resize-none min-h-[90px] focus:border-indigo-400"
               />
+              {posterConfig?.enabled && (
+                <p className="mt-2 text-[10px] font-semibold text-amber-600 bg-amber-50 p-2.5 rounded-lg border border-amber-200">
+                  ⚠️ <b>Nota:</b> Como activaste el modo Cartel Publicitario, usa este campo solo para describir la <b>escena o el fondo de la imagen</b> (colores, objetos, estilo). El texto exacto que llevará la imagen lo defines en la configuración del cartel (arriba).
+                </p>
+              )}
             </div>
 
             {/* CAMPO 2: TEXTO DE LA PUBLICACIÓN (BOTÓN MEJORAR CON IA AL LADO DEL TEXTO) */}

@@ -19,6 +19,8 @@ export interface PosterConfig {
   logoUrl?: string;           // Auto-filled desde activeProfile.logoUrl
   includeBusinessName: boolean;
   businessName?: string;      // Auto-filled desde activeProfile.name
+  includeMainText: boolean;
+  mainText?: string;          // Ej: "Gran Apertura", "Oferta de Locura"
   includePrice: boolean;
   priceText?: string;         // Ej: "50% OFF · Desde $9.990"
   includeContact: boolean;
@@ -49,6 +51,9 @@ export function buildPosterPromptSuffix(config: PosterConfig): string {
   }
   if (config.includeLogo && config.logoUrl) {
     parts.push('Incluir logo del negocio en el diseño.');
+  }
+  if (config.includeMainText && config.mainText) {
+    parts.push(`Include the exact text "${config.mainText}" prominently as the main heading or message. Do not hallucinate extra words.`);
   }
   if (config.includePrice && config.priceText) {
     parts.push(`Include the exact text "${config.priceText}" prominently. Do not hallucinate extra words.`);
@@ -82,6 +87,7 @@ export const DEFAULT_POSTER_CONFIG: PosterConfig = {
   enabled: false,
   includeLogo: false,
   includeBusinessName: true,
+  includeMainText: false,
   includePrice: false,
   includeContact: false,
   contactType: 'whatsapp',
