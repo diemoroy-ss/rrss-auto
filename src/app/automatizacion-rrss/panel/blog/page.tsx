@@ -526,12 +526,11 @@ export default function SeoAutopilotPanel() {
           const [hours, minutes] = (newTimeString || '09:00').split(':').map(Number);
           const updatedDate = new Date(year, month - 1, day, hours || 9, minutes || 0, 0);
           
+          setPosts(prev => prev.map(p => p.id === postId ? { ...p, scheduledFor: updatedDate } : p));
+
           await updateDoc(doc(db, "blog_posts", postId), {
               scheduledFor: updatedDate
           });
-
-          await fetchPosts();
-          showToast("📅 Fecha y hora de agendamiento actualizadas");
       } catch (error: any) {
           console.error("Error updating date:", error);
           showToast("❌ Error al actualizar fecha y hora");
