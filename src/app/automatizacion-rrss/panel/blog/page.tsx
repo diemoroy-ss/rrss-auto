@@ -759,15 +759,32 @@ export default function SeoAutopilotPanel() {
                  ) : (
                      <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
                          {draftPosts.map(post => {
-                              const displayDateStr = post.scheduledFor 
-                                ? `📅 Agendado: ${post.scheduledFor.toLocaleDateString()} a las ${String(post.scheduledFor.getHours()).padStart(2, '0')}:${String(post.scheduledFor.getMinutes()).padStart(2, '0')} hrs` 
-                                : `Generado: ${post.createdAt ? post.createdAt.toLocaleDateString() : 'Recientemente'}`;
+                              const dateStr = post.scheduledFor ? post.scheduledFor.toISOString().split('T')[0] : '';
+                              const timeStr = post.scheduledFor 
+                                ? `${String(post.scheduledFor.getHours()).padStart(2, '0')}:${String(post.scheduledFor.getMinutes()).padStart(2, '0')}` 
+                                : '09:00';
 
                               return (
-                                  <div key={post.id} className="p-4 rounded-2xl border border-slate-100 bg-slate-50 hover:border-indigo-200 hover:bg-indigo-50/30 transition-colors flex items-center justify-between gap-4">
-                                      <div>
-                                          <h4 className="font-bold text-slate-800 line-clamp-1">{post.title}</h4>
-                                          <p className="text-xs text-slate-500 font-medium mt-1">{displayDateStr}</p>
+                                  <div key={post.id} className="p-4 rounded-2xl border border-slate-100 bg-slate-50 hover:border-indigo-200 hover:bg-indigo-50/30 transition-colors flex items-start sm:items-center justify-between gap-4 flex-col sm:flex-row">
+                                      <div className="flex-1 min-w-0">
+                                          <h4 className="font-bold text-slate-800 line-clamp-1 mb-2">{post.title}</h4>
+                                          <div className="flex flex-wrap items-center gap-1.5 bg-slate-200/60 text-slate-700 text-[11px] font-bold px-2 py-1 rounded-xl w-fit">
+                                              <span>📅 Agendado:</span>
+                                              <input
+                                                  type="date"
+                                                  value={dateStr}
+                                                  onChange={(e) => handleUpdatePostDateTime(post.id, e.target.value, timeStr)}
+                                                  className="bg-white border border-slate-300 text-slate-800 font-bold px-2 py-0.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                                              />
+                                              <span>a las</span>
+                                              <input
+                                                  type="time"
+                                                  value={timeStr}
+                                                  onChange={(e) => handleUpdatePostDateTime(post.id, dateStr, e.target.value)}
+                                                  className="bg-white border border-slate-300 text-slate-800 font-bold px-2 py-0.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                                              />
+                                              <span>hrs</span>
+                                          </div>
                                       </div>
                                       <div className="flex items-center gap-2 shrink-0">
                                           {post.status === 'strategy' ? (
