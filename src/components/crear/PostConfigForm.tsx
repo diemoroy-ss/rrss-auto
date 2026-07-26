@@ -104,6 +104,7 @@ export default function PostConfigForm({
   time, setTime,
   networks, setNetworks,
   hasFb, hasIg, hasLi, hasTt, hasGbp,
+  posterConfig,
   needsConnection,
   handleImproveWithAI,
   handleGeneratePreview,
