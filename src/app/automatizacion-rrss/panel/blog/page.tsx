@@ -542,7 +542,13 @@ export default function SeoAutopilotPanel() {
   }
 
   const publishedPosts = posts.filter(p => p.status === 'published');
-  const draftPosts = posts.filter(p => p.status === 'draft' || p.status === 'strategy_draft');
+  const draftPosts = posts
+    .filter(p => p.status === 'draft' || p.status === 'strategy_draft' || (p.status === 'strategy' && p.scheduledFor))
+    .sort((a, b) => {
+      const timeA = a.scheduledFor ? new Date(a.scheduledFor).getTime() : 0;
+      const timeB = b.scheduledFor ? new Date(b.scheduledFor).getTime() : 0;
+      return timeA - timeB;
+    });
   const strategyPosts = posts
     .filter(p => p.status === 'strategy' || p.status === 'strategy_draft')
     .sort((a, b) => {
@@ -743,15 +749,15 @@ export default function SeoAutopilotPanel() {
              <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 md:p-8">
                  <h2 className="text-xl font-black text-slate-900 flex items-center gap-2 mb-6">
                      <span className="w-3 h-3 rounded-full bg-amber-400"></span>
-                     Por Publicar (Borradores)
+                     Agendados (Ideas y Borradores)
                  </h2>
                  
                  {draftPosts.length === 0 ? (
                      <div className="text-center p-8 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400">
-                         No hay borradores pendientes de revisión.
+                         No hay artículos agendados ni borradores pendientes.
                      </div>
                  ) : (
-                     <div className="space-y-4">
+                     <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
                          {draftPosts.map(post => {
                               const displayDateStr = post.scheduledFor 
                                 ? `📅 Agendado: ${post.scheduledFor.toLocaleDateString()} a las ${String(post.scheduledFor.getHours()).padStart(2, '0')}:${String(post.scheduledFor.getMinutes()).padStart(2, '0')} hrs` 
@@ -764,15 +770,24 @@ export default function SeoAutopilotPanel() {
                                           <p className="text-xs text-slate-500 font-medium mt-1">{displayDateStr}</p>
                                       </div>
                                       <div className="flex items-center gap-2 shrink-0">
-                                          <button 
-                                              onClick={() => setPreviewModalPost(post)}
-                                              className="text-xs font-bold text-slate-700 bg-slate-200 hover:bg-slate-300 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
-                                          >
-                                              👁️ Ver
-                                          </button>
+                                          {post.status === 'strategy' ? (
+                                              <button 
+                                                  onClick={() => setWritingModalPost({ postId: post.id, title: post.title })}
+                                                  className="text-xs font-bold text-slate-700 bg-slate-200 hover:bg-slate-300 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
+                                              >
+                                                  ✍️ Escribir
+                                              </button>
+                                          ) : (
+                                              <button 
+                                                  onClick={() => setPreviewModalPost(post)}
+                                                  className="text-xs font-bold text-slate-700 bg-slate-200 hover:bg-slate-300 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
+                                              >
+                                                  👁️ Ver
+                                              </button>
+                                          )}
                                           <button 
                                               onClick={() => handlePublish(post.id)}
-                                              disabled={publishingId === post.id}
+                                              disabled={publishingId === post.id || post.status === 'strategy'}
                                               className="text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
                                           >
                                               {publishingId === post.id ? "..." : "Publicar 🌐"}
@@ -797,7 +812,7 @@ export default function SeoAutopilotPanel() {
                          No hay artículos publicados aún.
                      </div>
                  ) : (
-                     <div className="space-y-4">
+                     <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
                          {publishedPosts.map(post => (
                               <div key={post.id} className="p-4 rounded-2xl border border-slate-100 bg-white shadow-sm flex flex-col gap-2">
                                   <h4 className="font-bold text-slate-800 line-clamp-2">{post.title}</h4>
@@ -806,12 +821,22 @@ export default function SeoAutopilotPanel() {
                                          <span className="text-[10px] uppercase tracking-widest font-black text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded">En línea</span>
                                          <span className="text-xs text-slate-500 font-medium">{post.createdAt.toLocaleDateString()}</span>
                                      </div>
-                                     <button
-                                         onClick={() => setShareModalPost({ title: post.title, slug: (post as any).slug || post.id })}
-                                         className="text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
-                                     >
-                                         📢 Difundir en Redes
-                                     </button>
+                                     <div className="flex items-center gap-2">
+                                         <a
+                                             href={`https://santisoft.cl/es/blog/${(post as any).slug || post.id}`}
+                                             target="_blank"
+                                             rel="noopener noreferrer"
+                                             className="text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
+                                         >
+                                             👁️ Ver Artículo
+                                         </a>
+                                         <button
+                                             onClick={() => setShareModalPost({ title: post.title, slug: (post as any).slug || post.id })}
+                                             className="text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
+                                         >
+                                             📢 Difundir en Redes
+                                         </button>
+                                     </div>
                                   </div>
                               </div>
                           ))}
