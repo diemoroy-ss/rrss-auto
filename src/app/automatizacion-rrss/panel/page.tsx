@@ -197,8 +197,8 @@ export default function RrssDashboard() {
           
           const [used, pLimit, vLimit] = await Promise.all([
              getQuotaUsage(u.uid, activeProfile?.id || 'default'),
-             getPlanLimit(plan),
-             getVideoPlanLimit(plan)
+             getPlanLimit(plan, u.email),
+             getVideoPlanLimit(plan, u.email)
           ]);
 
           setQuotaUsed(used);

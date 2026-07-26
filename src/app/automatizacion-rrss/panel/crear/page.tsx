@@ -157,13 +157,13 @@ export default function RrssCreatePost() {
             const used = await getQuotaUsage(u.uid, activeProfile?.id || 'default');
             setPostsThisMonth(used);
             
-            const planLimit = await getPlanLimit(plan);
+            const planLimit = await getPlanLimit(plan, u.email);
             setPostLimit(planLimit);
             if (used >= planLimit) {
                 setQuotaExceeded(true);
             }
 
-            const vLimit = await getVideoPlanLimit(plan);
+            const vLimit = await getVideoPlanLimit(plan, u.email);
             setVideoLimit(vLimit);
 
             const isAdminRole = data.role === 'admin' || u.email === 'diemoroy@gmail.com' || u.email === 'spalezcom@gmail.com' || u.email === 'santisoftai@gmail.com';

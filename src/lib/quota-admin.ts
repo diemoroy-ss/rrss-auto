@@ -27,7 +27,8 @@ export async function getQuotaUsageAdmin(userId: string, profileId: string = 'de
     return used;
 }
 
-export async function getPlanLimitAdmin(plan: string): Promise<number> {
+export async function getPlanLimitAdmin(plan: string, email?: string): Promise<number> {
+    if (email === 'spalezcom@gmail.com') return 999999;
     if (!adminDb) {
         return 4; // fallback
     }
@@ -52,7 +53,8 @@ export async function getPlanLimitAdmin(plan: string): Promise<number> {
     return fallbacks[plan || 'free'] ?? 4;
 }
 
-export async function getAiPlanLimitAdmin(plan: string, type: 'image' | 'video' | 'blog'): Promise<number> {
+export async function getAiPlanLimitAdmin(plan: string, type: 'image' | 'video' | 'blog', email?: string): Promise<number> {
+    if (email === 'spalezcom@gmail.com') return 999999;
     if (!adminDb) return type === 'image' ? 5 : 0;
     try {
         const plansDoc = await adminDb.collection("system_config").doc("plans").get();

@@ -66,13 +66,15 @@ export async function getQuotaUsage(userId: string, profileId: string = 'default
     return used;
 }
 
-export async function getPlanLimit(plan: string): Promise<number> {
+export async function getPlanLimit(plan: string, email?: string): Promise<number> {
+    if (email === 'spalezcom@gmail.com') return 999999;
     const config = await getPlansConfig();
     const planId = plan || 'free';
     return config[planId]?.postsLimit ?? (config['free']?.postsLimit || 4);
 }
 
-export async function getVideoPlanLimit(plan: string): Promise<number> {
+export async function getVideoPlanLimit(plan: string, email?: string): Promise<number> {
+    if (email === 'spalezcom@gmail.com') return 999999;
     const config = await getPlansConfig();
     const planId = plan || 'free';
     return config[planId]?.videosLimit ?? (config['free']?.videosLimit || 0);
