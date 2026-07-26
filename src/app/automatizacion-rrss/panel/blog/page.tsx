@@ -75,7 +75,7 @@ export default function SeoAutopilotPanel() {
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date | null>(null);
   const [socialPosts, setSocialPosts] = useState<any[]>([]);
   const [showStrategyList, setShowStrategyList] = useState(false);
-  const [shareModalPost, setShareModalPost] = useState<{ title: string; slug: string } | null>(null);
+  const [shareModalPost, setShareModalPost] = useState<{ title: string; slug: string; metaDescription: string } | null>(null);
   const [previewModalPost, setPreviewModalPost] = useState<BlogPost | null>(null);
 
   // Toast State
@@ -831,7 +831,7 @@ export default function SeoAutopilotPanel() {
                                              👁️ Ver Artículo
                                          </a>
                                          <button
-                                             onClick={() => setShareModalPost({ title: post.title, slug: (post as any).slug || post.id })}
+                                             onClick={() => setShareModalPost({ title: post.title, slug: (post as any).slug || post.id, metaDescription: post.metaDescription || '' })}
                                              className="text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
                                          >
                                              📢 Difundir en Redes
@@ -1649,6 +1649,27 @@ $posts = $response->json('posts');`}
               <p className="text-xs text-slate-500 font-medium line-clamp-2 px-2">
                 "{shareModalPost.title}"
               </p>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+              <label className="block text-xs font-bold text-slate-600 uppercase tracking-widest mb-2 flex items-center gap-1">
+                ✨ Texto Sugerido para RRSS
+              </label>
+              <textarea
+                readOnly
+                value={`¡Nuevo artículo en nuestro blog! 🚀\n\n${shareModalPost.title}\n\n${shareModalPost.metaDescription ? shareModalPost.metaDescription + '\n\n' : ''}👉 Léelo completo aquí:\nhttps://santisoft.cl/es/blog/${shareModalPost.slug}`}
+                className="w-full h-32 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none custom-scrollbar"
+              />
+              <button
+                onClick={() => {
+                  const text = `¡Nuevo artículo en nuestro blog! 🚀\n\n${shareModalPost.title}\n\n${shareModalPost.metaDescription ? shareModalPost.metaDescription + '\n\n' : ''}👉 Léelo completo aquí:\nhttps://santisoft.cl/es/blog/${shareModalPost.slug}`;
+                  navigator.clipboard.writeText(text);
+                  showToast("📋 ¡Texto completo copiado al portapapeles!");
+                }}
+                className="w-full mt-3 bg-indigo-50 hover:bg-indigo-100 active:scale-95 text-indigo-700 font-bold py-2.5 px-5 rounded-xl text-xs transition-all flex items-center justify-center gap-2 border border-indigo-200"
+              >
+                📋 Copiar Texto + Enlace
+              </button>
             </div>
 
             <div className="space-y-3 pt-2">
