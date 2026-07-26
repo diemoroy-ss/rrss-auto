@@ -60,6 +60,9 @@ function NetworkIcon({ network, postId }: { network: string; postId: string }) {
       </svg>
     );
   }
+  if (network === 'blog') {
+    return <span className="text-[14px]">📝</span>;
+  }
   
   return <span className="text-[10px]">🌐</span>;
 }
@@ -135,6 +138,7 @@ function DashboardCarouselViewer({ urls }: { urls: string[] }) {
 export default function RrssDashboard() {
   const [user, setUser] = useState<any>(null);
   const [posts, setPosts] = useState<SocialPost[]>([]);
+  const [blogPosts, setBlogPosts] = useState<SocialPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPost, setSelectedPost] = useState<SocialPost | null>(null);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
@@ -251,7 +255,34 @@ export default function RrssDashboard() {
         setLoading(false);
     });
 
-    return () => unsubscribe();
+    const qBlog = query(
+        collection(db, "blog_posts"), 
+        where("userId", "==", user.uid)
+    );
+    
+    const unsubscribeBlog = onSnapshot(qBlog, (snapshot) => {
+        const newData = snapshot.docs.map(d => {
+            const data = d.data();
+            return {
+                id: d.id,
+                idea: data.title || 'Artículo de Blog',
+                text: data.metaDescription || 'Visita nuestro blog para leer más.',
+                type: 'Blog',
+                scheduledFor: data.scheduledFor || data.createdAt,
+                networks: ['blog'],
+                status: data.status === 'published' ? 'published' : 'pending',
+                imageUrl: data.imageUrl || null
+            } as SocialPost;
+        });
+        setBlogPosts(newData);
+    }, (error: any) => {
+        console.error("Error listening to blog posts:", error);
+    });
+
+    return () => {
+        unsubscribe();
+        unsubscribeBlog();
+    };
   }, [user, activeProfile?.id]);
 
   const handleResetGeneratingState = async (postId: string, e?: React.MouseEvent) => {
@@ -821,18 +852,31 @@ export default function RrssDashboard() {
     };
   }, [posts]);
 
-  const filteredPosts = useMemo(() => {
-    return posts.filter(p => {
-        // 1. Date filter
-        if (selectedDateFilter && !isSameDay(p.scheduledFor?.toDate ? p.scheduledFor.toDate() : new Date(), selectedDateFilter)) return false;
-        // 2. Tab filter
-        if (activeTab === 'upcoming') {
-            return p.status !== 'published';
-        } else {
-            return p.status === 'published';
-        }
+  const combinedPosts = useMemo(() => {
+    const all = [...posts, ...blogPosts];
+    all.sort((a, b) => {
+      const timeA = a.scheduledFor?.toMillis ? a.scheduledFor.toMillis() : 0;
+      const timeB = b.scheduledFor?.toMillis ? b.scheduledFor.toMillis() : 0;
+      return timeA - timeB;
     });
-  }, [posts, selectedDateFilter, activeTab]);
+    return all;
+  }, [posts, blogPosts]);
+
+  const filteredPosts = useMemo(() => {
+    return combinedPosts.filter(p => {
+      if (activeTab === 'upcoming') {
+        if (p.status === 'published') return false;
+      } else {
+        if (p.status !== 'published') return false;
+      }
+      if (selectedDateFilter) {
+        const postDate = p.scheduledFor?.toDate ? p.scheduledFor.toDate() : null;
+        if (!postDate) return false;
+        return isSameDay(postDate, selectedDateFilter);
+      }
+      return true;
+    });
+  }, [combinedPosts, activeTab, selectedDateFilter]);
 
   const videosUsed = useMemo(() => {
     return posts.filter(p => {
@@ -1066,16 +1110,19 @@ export default function RrssDashboard() {
             }[post.status] || { color: 'text-slate-600 bg-slate-50 border-slate-200', text: post.status };
 
             const isSelected = selectedPostIds.includes(post.id);
+            const isBlog = Array.isArray(post.networks) && post.networks.includes('blog');
             
             return (
-              <div key={post.id} onClick={() => setSelectedPost(post)} className={`premium-card !p-0 overflow-hidden flex flex-col group hover:-translate-y-1 transition-all cursor-pointer shadow-sm hover:shadow-xl hover:shadow-indigo-500/10 relative ${isSelected ? 'ring-2 ring-indigo-500 ring-offset-4' : ''}`}>
+              <div key={post.id} onClick={() => isBlog ? (window.location.href = '/automatizacion-rrss/panel/blog') : setSelectedPost(post)} className={`premium-card !p-0 overflow-hidden flex flex-col group hover:-translate-y-1 transition-all cursor-pointer shadow-sm hover:shadow-xl hover:shadow-indigo-500/10 relative ${isSelected ? 'ring-2 ring-indigo-500 ring-offset-4' : ''}`}>
                 {/* Checkbox Overlay */}
-                <div 
-                  onClick={(e) => toggleSelectPost(post.id, e)}
-                  className={`absolute top-4 left-4 z-20 w-9 h-9 rounded-xl border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-indigo-600 border-indigo-600 text-white scale-110 shadow-lg' : 'bg-white/80 backdrop-blur-sm border-slate-200 opacity-0 group-hover:opacity-100 shadow-sm'}`}
-                >
-                  {isSelected && <span className="text-sm font-black">✓</span>}
-                </div>
+                {!isBlog && (
+                    <div 
+                      onClick={(e) => toggleSelectPost(post.id, e)}
+                      className={`absolute top-4 left-4 z-20 w-9 h-9 rounded-xl border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-indigo-600 border-indigo-600 text-white scale-110 shadow-lg' : 'bg-white/80 backdrop-blur-sm border-slate-200 opacity-0 group-hover:opacity-100 shadow-sm'}`}
+                    >
+                      {isSelected && <span className="text-sm font-black">✓</span>}
+                    </div>
+                )}
 
                 <div className={`px-5 py-4 border-b flex flex-col gap-3 ${statusConfig.color.split(' ').find(c => c.startsWith('bg-'))} ${statusConfig.color.split(' ').find(c => c.startsWith('border-'))}`}>
                   <div className="flex items-center gap-2 pl-8">
@@ -1088,7 +1135,7 @@ export default function RrssDashboard() {
                     {/* FORMAT BADGE */}
                     <div className="flex items-center gap-1 bg-white/60 px-2.5 py-1 rounded-md border border-slate-200/50 shadow-sm">
                       <span className="text-[9px] font-black tracking-widest uppercase text-slate-500">
-                        {post.type === 'Reel' ? '🎬 Reel' : post.type === 'Carrusel' ? '📑 Carrusel' : post.type === 'Historia' ? '📱 Historia' : '🖼️ Post'}
+                        {post.type === 'Reel' ? '🎬 Reel' : post.type === 'Carrusel' ? '📑 Carrusel' : post.type === 'Historia' ? '📱 Historia' : post.type === 'Blog' ? '📝 Blog' : '🖼️ Post'}
                       </span>
                     </div>
 
