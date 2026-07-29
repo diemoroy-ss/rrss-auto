@@ -3,11 +3,31 @@
 import { useState, useEffect, useRef } from "react";
 import { auth, storage, db } from "../../../../lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, getDocs, addDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { promptTemplates, promptCategories, PromptTemplate } from "../../../../data/promptLibrary";
 import { useProfile } from "../../../../contexts/ProfileContext";
 import { useRouter } from "next/navigation";
+
+export type ImageRequirement = 'none' | 'optional' | 'required';
+
+export interface PromptTemplate {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  prompt: string;
+  previewUrl: string;
+  imageRequirement: ImageRequirement;
+}
+
+export const promptCategories = [
+  "Fotorealismo",
+  "Ilustración 3D",
+  "Minimalista",
+  "Arte Conceptual",
+  "Cyberpunk",
+  "Producto (E-commerce)"
+];
 
 export default function PromptsLibraryPage() {
   const router = useRouter();
@@ -16,19 +36,34 @@ export default function PromptsLibraryPage() {
   const { activeProfile } = useProfile();
   
   const [activeCategory, setActiveCategory] = useState<string>("all");
+  const [promptTemplates, setPromptTemplates] = useState<PromptTemplate[]>([]);
+  const [loadingPrompts, setLoadingPrompts] = useState(true);
+
+  // Client Modal
   const [selectedPrompt, setSelectedPrompt] = useState<PromptTemplate | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
-  // Form states
-  const [variableValues, setVariableValues] = useState<Record<string, string>>({});
+  const [editedPromptText, setEditedPromptText] = useState("");
   const [baseImageFile, setBaseImageFile] = useState<File | null>(null);
   const [baseImagePreview, setBaseImagePreview] = useState<string | null>(null);
-  
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [error, setError] = useState("");
-
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Admin Modal
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+  const [adminForm, setAdminForm] = useState({
+    title: "",
+    description: "",
+    category: promptCategories[0],
+    prompt: "",
+    imageRequirement: "optional" as ImageRequirement,
+  });
+  const [isAdminGenerating, setIsAdminGenerating] = useState(false);
+  const [adminError, setAdminError] = useState("");
+
+  const userEmail = (user?.email || "").toLowerCase();
+  const isAdminUser = ["diemoroy@gmail.com", "spalezcom@gmail.com", "santisoftai@gmail.com"].includes(userEmail) || userDoc?.role === "admin";
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
@@ -42,16 +77,36 @@ export default function PromptsLibraryPage() {
         }
       }
     });
+    fetchPrompts();
     return () => unsub();
   }, []);
+
+  const fetchPrompts = async () => {
+    setLoadingPrompts(true);
+    try {
+      const snapshot = await getDocs(collection(db, "prompt_library"));
+      const loaded: PromptTemplate[] = [];
+      snapshot.forEach(doc => {
+        loaded.push({ id: doc.id, ...doc.data() } as PromptTemplate);
+      });
+      setPromptTemplates(loaded);
+    } catch (e) {
+      console.error("Error loading prompts", e);
+    } finally {
+      setLoadingPrompts(false);
+    }
+  };
 
   const filteredPrompts = activeCategory === "all" 
     ? promptTemplates 
     : promptTemplates.filter(p => p.category === activeCategory);
 
+  // ════════════════════════════════════════════════════════
+  // CLIENT FLOW
+  // ════════════════════════════════════════════════════════
   const openPromptModal = (prompt: PromptTemplate) => {
     setSelectedPrompt(prompt);
-    setVariableValues({});
+    setEditedPromptText(prompt.prompt);
     setBaseImageFile(null);
     setBaseImagePreview(null);
     setGeneratedImage(null);
@@ -78,19 +133,15 @@ export default function PromptsLibraryPage() {
     reader.readAsDataURL(file);
   };
 
-  const handleGenerate = async () => {
+  const handleClientGenerate = async () => {
     if (!selectedPrompt) return;
     
-    // Check required variables
-    for (const variable of selectedPrompt.variables) {
-      if (!variableValues[variable] || variableValues[variable].trim() === "") {
-        setError(`Por favor completa el campo: ${variable}`);
-        return;
-      }
-    }
-
     if (selectedPrompt.imageRequirement === 'required' && !baseImageFile) {
       setError("Este prompt requiere obligatoriamente que subas una imagen base.");
+      return;
+    }
+    if (!editedPromptText.trim()) {
+      setError("El texto del prompt no puede estar vacío.");
       return;
     }
 
@@ -98,14 +149,6 @@ export default function PromptsLibraryPage() {
     setIsGenerating(true);
 
     try {
-      // 1. Reemplazar variables en el prompt
-      let finalPromptText = selectedPrompt.prompt;
-      for (const variable of selectedPrompt.variables) {
-        const regex = new RegExp(`\\[${variable}\\]`, 'g');
-        finalPromptText = finalPromptText.replace(regex, variableValues[variable]);
-      }
-
-      // 2. Subir imagen base si existe
       let baseImageUrl = "";
       if (baseImageFile && user) {
         const storageRef = ref(storage, `users/${user.uid}/base_images/${Date.now()}_${baseImageFile.name}`);
@@ -113,9 +156,8 @@ export default function PromptsLibraryPage() {
         baseImageUrl = await getDownloadURL(storageRef);
       }
 
-      // 3. Enviar al endpoint proxy
       const payload = {
-        promptText: finalPromptText,
+        promptText: editedPromptText,
         baseImageUrl,
         templateId: selectedPrompt.id,
         email: user?.email,
@@ -132,17 +174,13 @@ export default function PromptsLibraryPage() {
       if (!res.ok) throw new Error("Error en la respuesta del servidor al generar la imagen.");
       
       const data = await res.json();
-      
-      // Asumimos que n8n retorna la URL de la imagen en data.imageUrl o data.url (ajustar según webhook real)
       const returnedImageUrl = data.imageUrl || data.url || data[0]?.imageUrl || data[0]?.url;
       
       if (returnedImageUrl) {
         setGeneratedImage(returnedImageUrl);
       } else {
-        // Fallback or show success message if webhook operates async without returning image URL
         setError("El prompt ha sido enviado exitosamente al webhook, pero no se retornó una imagen inmediata. Revisa tu biblioteca.");
       }
-
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Ocurrió un error inesperado al generar la imagen.");
@@ -156,15 +194,91 @@ export default function PromptsLibraryPage() {
     router.push(`/automatizacion-rrss/panel/crear?templateUrl=${encodeURIComponent(generatedImage)}`);
   };
 
+  // ════════════════════════════════════════════════════════
+  // ADMIN FLOW
+  // ════════════════════════════════════════════════════════
+  const handleAdminSubmit = async () => {
+    if (!adminForm.title || !adminForm.prompt) {
+      setAdminError("Título y Prompt son obligatorios.");
+      return;
+    }
+
+    setAdminError("");
+    setIsAdminGenerating(true);
+
+    try {
+      // 1. Generar la imagen de Preview usando el webhook actual de generacion
+      const payload = {
+        promptText: adminForm.prompt,
+        email: user?.email,
+        profileId: "admin_seed",
+        businessType: "Generación de Plantillas"
+      };
+
+      const res = await fetch("/api/ai/generate-from-prompt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) throw new Error("Fallo al generar imagen de preview en n8n.");
+      
+      const data = await res.json();
+      const returnedImageUrl = data.imageUrl || data.url || data[0]?.imageUrl || data[0]?.url;
+      
+      if (!returnedImageUrl) {
+        throw new Error("n8n no retornó una URL de imagen válida para el preview.");
+      }
+
+      // 2. Guardar en Firestore
+      await addDoc(collection(db, "prompt_library"), {
+        title: adminForm.title,
+        description: adminForm.description,
+        category: adminForm.category,
+        prompt: adminForm.prompt,
+        imageRequirement: adminForm.imageRequirement,
+        previewUrl: returnedImageUrl,
+        createdAt: new Date()
+      });
+
+      // 3. Refrescar e ir atras
+      await fetchPrompts();
+      setIsAdminModalOpen(false);
+      setAdminForm({
+        title: "",
+        description: "",
+        category: promptCategories[0],
+        prompt: "",
+        imageRequirement: "optional"
+      });
+
+    } catch (err: any) {
+      console.error(err);
+      setAdminError(err.message || "Error al crear la plantilla.");
+    } finally {
+      setIsAdminGenerating(false);
+    }
+  };
+
   return (
     <div className="p-6 md:p-10 max-w-7xl mx-auto animate-in fade-in">
-      <div className="mb-10">
-        <h1 className="text-3xl font-black text-slate-900 mb-3 flex items-center gap-3">
-          <span className="text-4xl">✨</span> Biblioteca de Prompts IA
-        </h1>
-        <p className="text-slate-600 font-medium max-w-2xl">
-          Explora nuestra colección de instrucciones predefinidas optimizadas para IA. Rellena los espacios en blanco, opcionalmente usa una de tus fotos como base (Image-to-Image) y genera imágenes de altísima calidad en segundos.
-        </p>
+      <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-black text-slate-900 mb-3 flex items-center gap-3">
+            <span className="text-4xl">✨</span> Biblioteca de Prompts IA
+          </h1>
+          <p className="text-slate-600 font-medium max-w-2xl">
+            Explora nuestra colección de instrucciones predefinidas optimizadas para IA. Selecciona una, edítala libremente y genera imágenes de altísima calidad en segundos.
+          </p>
+        </div>
+        {isAdminUser && (
+          <button 
+            onClick={() => setIsAdminModalOpen(true)}
+            className="shrink-0 bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-slate-900/20 transition-all flex items-center gap-2"
+          >
+            + Añadir Nuevo Prompt
+          </button>
+        )}
       </div>
 
       {/* Categories */}
@@ -187,52 +301,59 @@ export default function PromptsLibraryPage() {
       </div>
 
       {/* Prompts Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredPrompts.map(prompt => (
-          <div key={prompt.id} className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-lg transition-all hover:border-indigo-200 flex flex-col group">
-            <div className="relative h-48 w-full overflow-hidden bg-slate-100">
-              <img src={prompt.previewUrl} alt={prompt.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-              <div className="absolute top-3 left-3 flex gap-2">
-                <span className="bg-white/90 backdrop-blur text-indigo-800 text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg shadow-sm">
-                  {prompt.category}
-                </span>
-              </div>
-              <div className="absolute top-3 right-3 flex gap-2">
-                {prompt.imageRequirement === 'required' && (
-                  <span className="bg-amber-100/90 backdrop-blur text-amber-800 text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg shadow-sm border border-amber-200" title="Requiere subir imagen base">
-                    📷 Requiere Base
+      {loadingPrompts ? (
+        <div className="text-center py-20 text-slate-400 font-bold">Cargando biblioteca...</div>
+      ) : filteredPrompts.length === 0 ? (
+        <div className="text-center py-20 bg-slate-50 rounded-3xl border border-dashed border-slate-200">
+          <span className="text-4xl mb-4 block">👻</span>
+          <h3 className="text-lg font-bold text-slate-700">No hay prompts en esta categoría</h3>
+          <p className="text-slate-500 text-sm mt-2">Pronto añadiremos más estilos.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredPrompts.map(prompt => (
+            <div key={prompt.id} className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-lg transition-all hover:border-indigo-200 flex flex-col group">
+              <div className="relative h-48 w-full overflow-hidden bg-slate-100">
+                <img src={prompt.previewUrl} alt={prompt.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                <div className="absolute top-3 left-3 flex gap-2">
+                  <span className="bg-white/90 backdrop-blur text-indigo-800 text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg shadow-sm">
+                    {prompt.category}
                   </span>
-                )}
-                {prompt.imageRequirement === 'optional' && (
-                  <span className="bg-blue-100/90 backdrop-blur text-blue-800 text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg shadow-sm border border-blue-200" title="Permite subir imagen base opcional">
-                    🖼️ Soporta Img2Img
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="p-5 flex-1 flex flex-col">
-              <h3 className="text-lg font-black text-slate-900 mb-2">{prompt.title}</h3>
-              <p className="text-xs text-slate-500 mb-4 line-clamp-2 font-medium">{prompt.description}</p>
-              
-              <div className="mt-auto">
-                <div className="text-[10px] font-bold text-slate-400 mb-3 flex flex-wrap gap-1">
-                  Variables: {prompt.variables.map(v => (
-                    <span key={v} className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">[{v}]</span>
-                  ))}
                 </div>
-                <button 
-                  onClick={() => openPromptModal(prompt)}
-                  className="w-full bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 font-bold py-2.5 rounded-xl transition-colors"
-                >
-                  Usar Plantilla
-                </button>
+                <div className="absolute top-3 right-3 flex gap-2">
+                  {prompt.imageRequirement === 'required' && (
+                    <span className="bg-amber-100/90 backdrop-blur text-amber-800 text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg shadow-sm border border-amber-200" title="Requiere subir imagen base">
+                      📷 Requiere Base
+                    </span>
+                  )}
+                  {prompt.imageRequirement === 'optional' && (
+                    <span className="bg-blue-100/90 backdrop-blur text-blue-800 text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg shadow-sm border border-blue-200" title="Permite subir imagen base opcional">
+                      🖼️ Soporta Img2Img
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="p-5 flex-1 flex flex-col">
+                <h3 className="text-lg font-black text-slate-900 mb-2">{prompt.title}</h3>
+                <p className="text-xs text-slate-500 mb-4 line-clamp-2 font-medium">{prompt.description}</p>
+                
+                <div className="mt-auto">
+                  <button 
+                    onClick={() => openPromptModal(prompt)}
+                    className="w-full bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 font-bold py-2.5 rounded-xl transition-colors"
+                  >
+                    Usar Plantilla
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
-      {/* Generation Modal */}
+      {/* =========================================================
+          CLIENT GENERATION MODAL
+          ========================================================= */}
       {isModalOpen && selectedPrompt && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={closeModal}></div>
@@ -247,26 +368,17 @@ export default function PromptsLibraryPage() {
             <div className="p-6 md:p-8 space-y-6">
               {!generatedImage ? (
                 <>
-                  {/* Variables Form */}
                   <div>
-                    <h3 className="text-sm font-black uppercase tracking-wider text-slate-500 mb-4">1. Completa las Variables</h3>
-                    <div className="space-y-4">
-                      {selectedPrompt.variables.map(variable => (
-                        <div key={variable}>
-                          <label className="block text-xs font-bold text-slate-700 mb-1.5">{variable.replace(/_/g, ' ')}</label>
-                          <input 
-                            type="text" 
-                            placeholder={`Ej: ${variable === 'PRODUCTO' ? 'Zapatillas deportivas' : 'Ciudad futurista'}`}
-                            value={variableValues[variable] || ""}
-                            onChange={(e) => setVariableValues(prev => ({ ...prev, [variable]: e.target.value }))}
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors"
-                          />
-                        </div>
-                      ))}
-                    </div>
+                    <h3 className="text-sm font-black uppercase tracking-wider text-slate-500 mb-2">1. Edita tu Prompt Libremente</h3>
+                    <p className="text-xs text-slate-400 mb-4 font-medium">Puedes reemplazar los corchetes o reescribir todo lo que necesites. Este texto solo se usará para tu generación y no afectará la plantilla base.</p>
+                    <textarea 
+                      rows={6}
+                      value={editedPromptText}
+                      onChange={(e) => setEditedPromptText(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors custom-scrollbar resize-none"
+                    />
                   </div>
 
-                  {/* Base Image Upload (If required or optional) */}
                   {selectedPrompt.imageRequirement !== 'none' && (
                     <div className="pt-4 border-t border-slate-100">
                       <h3 className="text-sm font-black uppercase tracking-wider text-slate-500 mb-1 flex items-center gap-2">
@@ -277,7 +389,7 @@ export default function PromptsLibraryPage() {
                           <span className="text-[10px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full">Opcional</span>
                         )}
                       </h3>
-                      <p className="text-xs text-slate-500 mb-4">Sube un boceto, un render preliminar o una foto para que la IA la tome como guía y respete su estructura.</p>
+                      <p className="text-xs text-slate-500 mb-4">Sube un boceto o foto base para guiar a la IA.</p>
                       
                       <div 
                         onClick={() => fileInputRef.current?.click()}
@@ -292,7 +404,6 @@ export default function PromptsLibraryPage() {
                           <div className="flex flex-col items-center text-slate-400">
                             <span className="text-3xl mb-2">📸</span>
                             <span className="text-sm font-bold text-slate-600">Haz clic para subir tu imagen base</span>
-                            <span className="text-xs mt-1">PNG, JPG hasta 5MB</span>
                           </div>
                         )}
                         <input type="file" ref={fileInputRef} onChange={handleImageUpload} accept="image/*" className="hidden" />
@@ -308,7 +419,7 @@ export default function PromptsLibraryPage() {
 
                   <div className="pt-6">
                     <button 
-                      onClick={handleGenerate}
+                      onClick={handleClientGenerate}
                       disabled={isGenerating}
                       className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-black py-4 rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 text-lg active:scale-98"
                     >
@@ -321,22 +432,15 @@ export default function PromptsLibraryPage() {
                         <>🪄 Generar Imagen con IA</>
                       )}
                     </button>
-                    <p className="text-center text-[10px] text-slate-400 mt-3 font-medium">Esta acción enviará la petición al webhook de IA y consumirá créditos.</p>
                   </div>
                 </>
               ) : (
-                /* Success View */
                 <div className="text-center animate-in zoom-in duration-300">
-                  <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-2xl mx-auto mb-4">
-                    ✓
-                  </div>
+                  <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-2xl mx-auto mb-4">✓</div>
                   <h3 className="text-2xl font-black text-slate-900 mb-2">¡Imagen Generada!</h3>
-                  <p className="text-slate-500 text-sm mb-6">Tu nueva imagen está lista para brillar en tus redes sociales.</p>
-                  
                   <div className="rounded-2xl overflow-hidden shadow-xl mb-8 bg-slate-100 inline-block border border-slate-200">
                     <img src={generatedImage} alt="Generada" className="max-h-80 w-auto object-contain" />
                   </div>
-
                   <div className="flex flex-col sm:flex-row gap-3 justify-center">
                     <button 
                       onClick={useImageInPost}
@@ -344,14 +448,6 @@ export default function PromptsLibraryPage() {
                     >
                       ✍️ Usar en Nuevo Post
                     </button>
-                    <a 
-                      href={generatedImage}
-                      download="generada_ia.jpg"
-                      target="_blank"
-                      className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold py-3 px-6 rounded-xl shadow-sm transition-all active:scale-95 text-center"
-                    >
-                      ⬇️ Descargar Imagen
-                    </a>
                   </div>
                 </div>
               )}
@@ -359,6 +455,119 @@ export default function PromptsLibraryPage() {
           </div>
         </div>
       )}
+
+      {/* =========================================================
+          ADMIN CREATION MODAL
+          ========================================================= */}
+      {isAdminModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" onClick={() => !isAdminGenerating && setIsAdminModalOpen(false)}></div>
+          <div className="relative bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar animate-in zoom-in-95 duration-200">
+            <div className="sticky top-0 bg-slate-950 px-6 py-4 flex items-center justify-between z-10">
+              <h2 className="text-xl font-black text-white flex items-center gap-2">
+                👑 Añadir Nuevo Prompt
+              </h2>
+              <button disabled={isAdminGenerating} onClick={() => setIsAdminModalOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white transition-colors">✕</button>
+            </div>
+
+            <div className="p-6 md:p-8 space-y-5">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2 sm:col-span-1">
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Título del Prompt</label>
+                  <input 
+                    type="text" 
+                    value={adminForm.title}
+                    onChange={(e) => setAdminForm({...adminForm, title: e.target.value})}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-indigo-500"
+                    placeholder="Ej. Fotorealismo Producto"
+                  />
+                </div>
+                <div className="col-span-2 sm:col-span-1">
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Categoría</label>
+                  <select 
+                    value={adminForm.category}
+                    onChange={(e) => setAdminForm({...adminForm, category: e.target.value})}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-indigo-500"
+                  >
+                    {promptCategories.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Descripción Corta</label>
+                <input 
+                  type="text" 
+                  value={adminForm.description}
+                  onChange={(e) => setAdminForm({...adminForm, description: e.target.value})}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-indigo-500"
+                  placeholder="Ej. Ideal para destacar productos de e-commerce..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Requisito de Imagen Base</label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer text-sm">
+                    <input type="radio" checked={adminForm.imageRequirement === 'none'} onChange={() => setAdminForm({...adminForm, imageRequirement: 'none'})} /> Ninguno
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer text-sm">
+                    <input type="radio" checked={adminForm.imageRequirement === 'optional'} onChange={() => setAdminForm({...adminForm, imageRequirement: 'optional'})} /> Opcional
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer text-sm">
+                    <input type="radio" checked={adminForm.imageRequirement === 'required'} onChange={() => setAdminForm({...adminForm, imageRequirement: 'required'})} /> Requerido
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
+                  Texto del Prompt
+                  <span className="text-[10px] text-slate-400 font-normal">Usa [CORCHETES] para variables</span>
+                </label>
+                <textarea 
+                  rows={4}
+                  value={adminForm.prompt}
+                  onChange={(e) => setAdminForm({...adminForm, prompt: e.target.value})}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 focus:outline-none focus:border-indigo-500 custom-scrollbar resize-none"
+                  placeholder="Commercial photography of a [PRODUCTO]..."
+                />
+              </div>
+
+              {adminError && (
+                <div className="bg-red-50 text-red-700 p-3 rounded-lg text-xs font-bold border border-red-200">
+                  {adminError}
+                </div>
+              )}
+
+              <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
+                <button 
+                  onClick={() => setIsAdminModalOpen(false)}
+                  disabled={isAdminGenerating}
+                  className="px-5 py-3 text-slate-500 font-bold hover:bg-slate-100 rounded-xl"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={handleAdminSubmit}
+                  disabled={isAdminGenerating}
+                  className="bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2"
+                >
+                  {isAdminGenerating ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Generando y Guardando...
+                    </>
+                  ) : (
+                    <>Generar Preview y Guardar</>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
