@@ -50,6 +50,7 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
     { href: "/automatizacion-rrss/panel/metricas", label: "Estadísticas", icon: "📊", exact: false },
     { href: "/automatizacion-rrss/panel/crear", label: "Nuevo Post", icon: "✍️", exact: false },
     { href: "/automatizacion-rrss/panel/biblioteca", label: "Biblioteca", icon: "🖼️", exact: false },
+    { href: "/automatizacion-rrss/panel/prompts", label: "Prompts IA", icon: "✨", exact: false },
     { href: "/automatizacion-rrss/panel/estrategia", label: "Estrategia", icon: "🚀", exact: false },
     { href: "/automatizacion-rrss/panel/ads", label: "Meta Ads", icon: "🎯", exact: true },
     { href: "/automatizacion-rrss/panel/configuracion", label: "Configuración de Marca", icon: "🏪", exact: false },
