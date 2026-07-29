@@ -721,22 +721,22 @@ export default function SeoAutopilotPanel() {
       </div>
 
       {/* Tabs */}
-      <div className="flex space-x-2 mb-8 bg-slate-200/50 p-1.5 rounded-2xl w-max">
+      <div className="flex overflow-x-auto hide-scrollbar space-x-2 mb-8 bg-slate-200/50 p-1.5 rounded-2xl max-w-full">
         <button 
            onClick={() => setActiveTab('articulos')}
-           className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'articulos' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+           className={`shrink-0 px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'articulos' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
         >
             📚 Artículos Generados
         </button>
         <button 
            onClick={() => setActiveTab('calendario')}
-           className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'calendario' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+           className={`shrink-0 px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'calendario' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
         >
             📅 Calendario Estratégico
         </button>
         <button 
            onClick={() => setActiveTab('integracion')}
-           className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'integracion' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+           className={`shrink-0 px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'integracion' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
         >
             🔌 Integraciones
         </button>
@@ -766,27 +766,27 @@ export default function SeoAutopilotPanel() {
 
                               return (
                                   <div key={post.id} className="p-4 rounded-2xl border border-slate-100 bg-slate-50 hover:border-indigo-200 hover:bg-indigo-50/30 transition-colors flex items-start sm:items-center justify-between gap-4 flex-col sm:flex-row">
-                                      <div className="flex-1 min-w-0">
+                                      <div className="flex-1 min-w-0 w-full">
                                           <h4 className="font-bold text-slate-800 line-clamp-1 mb-2">{post.title}</h4>
-                                          <div className="flex flex-wrap items-center gap-1.5 bg-slate-200/60 text-slate-700 text-[11px] font-bold px-2 py-1 rounded-xl w-fit">
+                                          <div className="inline-flex flex-wrap items-center gap-1.5 bg-slate-200/60 text-slate-700 text-[11px] font-bold px-2 py-1 rounded-xl max-w-full">
                                               <span>📅 Agendado:</span>
                                               <input
                                                   type="date"
                                                   value={dateStr}
                                                   onChange={(e) => handleUpdatePostDateTime(post.id, e.target.value, timeStr)}
-                                                  className="bg-white border border-slate-300 text-slate-800 font-bold px-2 py-0.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                                                  className="bg-white border border-slate-300 text-slate-800 font-bold px-2 py-0.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer min-w-0"
                                               />
                                               <span>a las</span>
                                               <input
                                                   type="time"
                                                   value={timeStr}
                                                   onChange={(e) => handleUpdatePostDateTime(post.id, dateStr, e.target.value)}
-                                                  className="bg-white border border-slate-300 text-slate-800 font-bold px-2 py-0.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                                                  className="bg-white border border-slate-300 text-slate-800 font-bold px-2 py-0.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer min-w-0"
                                               />
                                               <span>hrs</span>
                                           </div>
                                       </div>
-                                      <div className="flex items-center gap-2 shrink-0">
+                                      <div className="flex flex-wrap items-center gap-2 shrink-0 w-full sm:w-auto mt-2 sm:mt-0">
                                           {post.status === 'strategy' ? (
                                               <button 
                                                   onClick={() => setWritingModalPost({ postId: post.id, title: post.title })}
@@ -1148,20 +1148,20 @@ export default function SeoAutopilotPanel() {
                                               )}
                                               
                                               {/* Editable Date & Time Selector */}
-                                              <div className="flex flex-wrap items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-950 text-[11px] font-bold px-3 py-1 rounded-xl shadow-sm">
+                                              <div className="inline-flex flex-wrap items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-950 text-[11px] font-bold px-3 py-1 rounded-xl shadow-sm max-w-full">
                                                   <span>📅 Agendado:</span>
                                                   <input
                                                       type="date"
                                                       value={dateStr}
                                                       onChange={(e) => handleUpdatePostDateTime(item.id, e.target.value, timeStr)}
-                                                      className="bg-white border border-emerald-300 text-emerald-950 font-bold px-2 py-0.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer shadow-sm"
+                                                      className="bg-white border border-emerald-300 text-emerald-950 font-bold px-2 py-0.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer shadow-sm min-w-0"
                                                   />
                                                   <span>a las</span>
                                                   <input
                                                       type="time"
                                                       value={timeStr}
                                                       onChange={(e) => handleUpdatePostDateTime(item.id, dateStr, e.target.value)}
-                                                      className="bg-white border border-emerald-300 text-emerald-950 font-bold px-2 py-0.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer shadow-sm"
+                                                      className="bg-white border border-emerald-300 text-emerald-950 font-bold px-2 py-0.5 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer shadow-sm min-w-0"
                                                   />
                                                   <span>hrs</span>
                                               </div>

@@ -30,6 +30,15 @@ type PlanConfig = {
 
 const PLAN_ORDER = ["free", "pro", "elite", "business"];
 
+const HERO_VIDEOS = [
+  { src: '/rrss1.mp4', label: 'Intro · Santisoft AI' },
+  { src: '/rrss2.mp4', label: 'Generación de Contenido' },
+  { src: '/rrss3.mp4', label: 'Estrategia de 14 días' },
+  { src: '/rrss4.mp4', label: 'Publicación Automática' },
+  { src: '/rrss5.mp4', label: 'Métricas y Reportes' },
+  { src: '/rrss6.mp4', label: 'Empieza Gratis Hoy' },
+];
+
 export default function Home() {
   const [user, setUser] = useState<any>(null);
   const [rubro, setRubro] = useState("");
@@ -53,6 +62,10 @@ export default function Home() {
 
   const [contactForm, setContactForm] = useState({ nombre: '', email: '', telefono: '', rubro: '', mensaje: '' });
   const [contactStatus, setContactStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  
+  const [activeHeroVideo, setActiveHeroVideo] = useState(0);
+  const [modalVideoIndex, setModalVideoIndex] = useState<number | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const plansContainerRef = useRef<HTMLDivElement>(null);
 
@@ -85,6 +98,30 @@ export default function Home() {
     });
     return () => unsub();
   }, []);
+
+  // Auto-rotate hero videos every 4.5 seconds
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveHeroVideo((prev) => (prev + 1) % HERO_VIDEOS.length);
+    }, 4500);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Keyboard navigation for video modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (modalVideoIndex === null) return;
+      if (e.key === 'ArrowLeft') {
+        setModalVideoIndex((prev) => (prev === null ? 0 : (prev === 0 ? HERO_VIDEOS.length - 1 : prev - 1)));
+      } else if (e.key === 'ArrowRight') {
+        setModalVideoIndex((prev) => (prev === null ? 0 : (prev === HERO_VIDEOS.length - 1 ? 0 : prev + 1)));
+      } else if (e.key === 'Escape') {
+        setModalVideoIndex(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [modalVideoIndex]);
 
   // IntersectionObserver for Scroll Reveal
   useEffect(() => {
@@ -205,35 +242,133 @@ export default function Home() {
             <img src="/favicon.png" alt="Logo" style={{ width: '22px', height: '22px', objectFit: 'contain', borderRadius: '6px' }} />
             SANTISOFT AI
           </Link>
+
+          {/* Desktop links — hidden on mobile via CSS */}
           <div className="nav-links">
             <a href="#planes" className="ghost">Planes</a>
             <Link href="/login" className="ghost">Acceso Cliente</Link>
             <Link href="/login" className="btn btn-primary btn-sm">Empezar Gratis</Link>
           </div>
+
+          {/* Mobile controls — hidden on desktop via CSS */}
+          <div className="nav-mobile-controls">
+            <Link href="/login" className="btn btn-primary btn-sm nav-mobile-cta">Empezar</Link>
+            <button
+              onClick={() => setMobileMenuOpen(o => !o)}
+              className="nav-hamburger"
+              aria-label="Abrir menú"
+              aria-expanded={mobileMenuOpen}
+            >
+              <span className={`nav-bar ${mobileMenuOpen ? 'bar-open-1' : ''}`} />
+              <span className={`nav-bar ${mobileMenuOpen ? 'bar-open-2' : ''}`} />
+              <span className={`nav-bar ${mobileMenuOpen ? 'bar-open-3' : ''}`} />
+            </button>
+          </div>
         </div>
+
+        {/* Mobile dropdown */}
+        {mobileMenuOpen && (
+          <div className="nav-mobile-menu">
+            <a
+              href="#planes"
+              onClick={() => setMobileMenuOpen(false)}
+              className="nav-mobile-item"
+            >
+              Planes <span>↓</span>
+            </a>
+            <Link
+              href="/login"
+              onClick={() => setMobileMenuOpen(false)}
+              className="nav-mobile-item"
+            >
+              Acceso Cliente <span>→</span>
+            </Link>
+            <Link
+              href="/login"
+              onClick={() => setMobileMenuOpen(false)}
+              className="btn btn-primary nav-mobile-cta-full"
+            >
+              Empezar Gratis 🚀
+            </Link>
+          </div>
+        )}
       </nav>
 
       {/* 3. Hero & Consola Interactiva */}
-      <section className="hero" style={{ borderTop: 'none', paddingTop: '80px' }}>
+      <section className="hero" style={{ borderTop: 'none', paddingTop: '80px', paddingBottom: '80px' }}>
         <div className="radar"></div>
-        <div className="wrap">
-          <div className="hero-head">
+        <div className="wrap flex flex-col lg:flex-row items-center gap-12 lg:gap-8">
+          <div className="hero-head lg:w-1/2 lg:text-left text-center m-0 max-w-none flex flex-col items-center lg:items-start z-10 relative">
             <span className="eyebrow">Redes 360° <span className="freq">·</span> Blog Automático <span className="freq">·</span> SEO &amp; GEO</span>
-            <h1>Que te <em>vean.</em><br />Que te <span className="em-p">citen.</span></h1>
-            <p className="sub">Tu marca, al aire 24/7: automatizamos tus redes y tu blog con IA, publicamos en Facebook, Instagram y TikTok, y creamos el contenido que te posiciona en Google y en las respuestas de ChatGPT, Perplexity y otros motores de IA — mientras tú trabajas en tu negocio.</p>
-            <div className="hero-ctas">
+            <h1 className="lg:text-left text-center leading-tight mt-5">Que te <em>vean.</em><br />Que te <span className="em-p">citen.</span></h1>
+            <p className="sub lg:text-left text-center lg:mx-0 mx-auto mt-6">Tu marca, al aire 24/7: automatizamos tus redes y tu blog con IA, publicamos en Facebook, Instagram y TikTok, y creamos el contenido que te posiciona en Google y en las respuestas de ChatGPT, Perplexity y otros motores de IA — mientras tú trabajas en tu negocio.</p>
+            <div className="hero-ctas justify-center lg:justify-start mt-8 w-full">
               <a href="#planes" className="btn btn-primary">Explorar Planes</a>
               <Link href="/login" className="btn btn-ghost">Acceso Cliente</Link>
             </div>
-            <div className="badges">
+            <div className="badges justify-center lg:justify-start w-full mt-10">
               <span className="badge on"><span className="dot"></span>Meta (FB / IG)</span>
-              <span className="badge on"><span class="dot"></span>TikTok</span>
-              <span className="badge on"><span class="dot"></span>WordPress / Shopify / Webflow</span>
-              <span className="badge"><span class="dot"></span>Google Business — Soon</span>
-              <span className="badge"><span class="dot"></span>LinkedIn — Soon</span>
+              <span className="badge on"><span className="dot"></span>TikTok</span>
+              <span className="badge on"><span className="dot"></span>CMS/Blog</span>
+              <span className="badge"><span className="dot"></span>Google Biz — Soon</span>
+              <span className="badge"><span className="dot"></span>LinkedIn — Soon</span>
             </div>
           </div>
 
+          <div className="hero-carousel-col lg:w-1/2 w-full flex justify-center lg:justify-end z-10 relative">
+            <div 
+              onClick={() => setModalVideoIndex(activeHeroVideo)}
+              className="hero-carousel-wrap relative aspect-[9/16] rounded-3xl overflow-hidden shadow-2xl bg-black border border-white/10 group cursor-pointer w-[160px] sm:w-[220px] md:w-[280px] lg:w-full lg:max-w-[360px]"
+            >
+              {HERO_VIDEOS.map((v, i) => (
+                <div key={i} className={`absolute inset-0 w-full h-full transition-opacity duration-700 ease-in-out ${i === activeHeroVideo ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}>
+                  {/* Using object-cover for video to fill 9:16 aspect ratio properly */}
+                  <video src={v.src} autoPlay muted loop playsInline className="w-full h-full object-cover" />
+                  <div className="absolute top-6 left-0 right-0 flex justify-center px-4">
+                     <span className="bg-black/60 backdrop-blur-md text-white/90 px-4 py-1.5 rounded-full text-[10px] font-mono tracking-widest border border-white/10 uppercase shadow-lg text-center leading-tight">
+                       {v.label}
+                     </span>
+                  </div>
+                </div>
+              ))}
+
+              {/* Hover overlay hint */}
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-3 z-20 pointer-events-none p-4 text-center">
+                <div className="w-14 h-14 rounded-full bg-indigo-600/90 text-white flex items-center justify-center shadow-xl scale-95 group-hover:scale-100 transition-transform">
+                  <svg className="w-7 h-7 fill-current ml-0.5" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z"/>
+                  </svg>
+                </div>
+                <span className="bg-black/80 backdrop-blur-md text-white text-xs font-medium px-4 py-2 rounded-full border border-white/20 shadow-lg">
+                  🔊 Clic para agrandar y escuchar audio
+                </span>
+              </div>
+
+              {/* Speaker badge trigger */}
+              <div className="absolute top-6 right-4 z-30">
+                <span className="bg-black/70 backdrop-blur-md text-white/90 p-2 rounded-full border border-white/20 shadow-md flex items-center justify-center text-xs">
+                  🔊
+                </span>
+              </div>
+              
+              <div className="absolute bottom-6 left-0 right-0 z-30 flex justify-center gap-2">
+                {[0, 1, 2, 3, 4, 5].map((idx) => (
+                  <button 
+                    key={idx} 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveHeroVideo(idx);
+                    }} 
+                    className={`h-2 rounded-full transition-all duration-300 ${idx === activeHeroVideo ? 'w-6 bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]' : 'w-2 bg-white/40 hover:bg-white/60'}`}
+                    aria-label={`Go to slide ${idx + 1}`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="wrap mt-20 z-10 relative">
           <div className="panel dark-screen" data-reveal>
             <div className="panel-topbar">
               <span>CONSOLA DE TRANSMISIÓN — SANTISOFT AI</span>
@@ -425,7 +560,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 7. Planes */}
+      {/* 8. Planes */}
       <section id="planes">
         <div className="wrap">
           <div className="section-head center" data-reveal>
@@ -664,6 +799,85 @@ export default function Home() {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Video Fullscreen Carousel */}
+      {modalVideoIndex !== null && (
+        <div 
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-xl p-3 sm:p-6 animate-fade-in"
+          onClick={() => setModalVideoIndex(null)}
+        >
+          {/* Main Modal Container */}
+          <div 
+            className="relative max-w-sm sm:max-w-md w-full flex flex-col items-center justify-center bg-slate-900/95 rounded-3xl p-3 sm:p-5 border border-white/20 shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="w-full flex items-center justify-between px-2 pb-3 mb-2 border-b border-white/10">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono uppercase tracking-widest text-white/90 bg-indigo-600/60 px-3 py-1 rounded-full border border-indigo-400/30">
+                  {HERO_VIDEOS[modalVideoIndex].label}
+                </span>
+                <span className="text-[11px] font-mono text-slate-400">
+                  {modalVideoIndex + 1}/{HERO_VIDEOS.length}
+                </span>
+              </div>
+              <button 
+                onClick={() => setModalVideoIndex(null)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-sm font-bold transition-colors"
+                aria-label="Cerrar video"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Video Container with Side Navigation Arrows */}
+            <div className="relative w-full aspect-[9/16] max-h-[55vh] sm:max-h-[70vh] rounded-2xl overflow-hidden bg-black flex items-center justify-center border border-white/10 shadow-inner group">
+              <video 
+                key={modalVideoIndex}
+                src={HERO_VIDEOS[modalVideoIndex].src} 
+                controls 
+                autoPlay 
+                playsInline 
+                className="w-full h-full object-cover"
+              />
+
+              {/* Prev Button */}
+              <button 
+                onClick={() => setModalVideoIndex((prev) => (prev === null ? 0 : (prev === 0 ? HERO_VIDEOS.length - 1 : prev - 1)))}
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 hover:bg-black/90 text-white border border-white/20 flex items-center justify-center text-lg shadow-xl transition-transform hover:scale-110 active:scale-95 z-30"
+                title="Video anterior"
+              >
+                ❮
+              </button>
+
+              {/* Next Button */}
+              <button 
+                onClick={() => setModalVideoIndex((prev) => (prev === null ? 0 : (prev === HERO_VIDEOS.length - 1 ? 0 : prev + 1)))}
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 hover:bg-black/90 text-white border border-white/20 flex items-center justify-center text-lg shadow-xl transition-transform hover:scale-110 active:scale-95 z-30"
+                title="Siguiente video"
+              >
+                ❯
+              </button>
+            </div>
+            
+            {/* Modal Bottom Dots Navigation */}
+            <div className="flex items-center justify-center gap-2 mt-4">
+              {HERO_VIDEOS.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setModalVideoIndex(idx)}
+                  className={`h-2 rounded-full transition-all duration-300 ${idx === modalVideoIndex ? 'w-6 bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)]' : 'w-2 bg-white/30 hover:bg-white/60'}`}
+                  aria-label={`Ver video ${idx + 1}`}
+                />
+              ))}
+            </div>
+
+            <p className="text-[10px] text-slate-400 font-mono mt-2 text-center">
+              💡 Usa las flechas ❮ ❯ o el teclado (← →) para cambiar de video
+            </p>
           </div>
         </div>
       )}
