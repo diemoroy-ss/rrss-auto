@@ -43,6 +43,12 @@ export default function PromptsLibraryPage() {
   const [selectedPrompt, setSelectedPrompt] = useState<PromptTemplate | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editedPromptText, setEditedPromptText] = useState("");
+  
+  // Guided Mode State
+  const [isFreeEditMode, setIsFreeEditMode] = useState(false);
+  const [parsedVariables, setParsedVariables] = useState<string[]>([]);
+  const [variableValues, setVariableValues] = useState<Record<string, string>>({});
+
   const [baseImageFile, setBaseImageFile] = useState<File | null>(null);
   const [baseImagePreview, setBaseImagePreview] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -107,6 +113,17 @@ export default function PromptsLibraryPage() {
   const openPromptModal = (prompt: PromptTemplate) => {
     setSelectedPrompt(prompt);
     setEditedPromptText(prompt.prompt);
+    
+    // Parse variables (anything inside [BRACKETS])
+    const matches = Array.from(prompt.prompt.matchAll(/\[([^\]]+)\]/g));
+    const vars = Array.from(new Set(matches.map(m => m[1])));
+    setParsedVariables(vars);
+    
+    const initialValues: Record<string, string> = {};
+    vars.forEach(v => initialValues[v] = "");
+    setVariableValues(initialValues);
+    setIsFreeEditMode(vars.length === 0); // Default to free mode if no vars
+
     setBaseImageFile(null);
     setBaseImagePreview(null);
     setGeneratedImage(null);
@@ -118,6 +135,8 @@ export default function PromptsLibraryPage() {
     setIsModalOpen(false);
     setTimeout(() => {
       setSelectedPrompt(null);
+      setParsedVariables([]);
+      setVariableValues({});
     }, 300);
   };
 
@@ -368,16 +387,81 @@ export default function PromptsLibraryPage() {
             <div className="p-6 md:p-8 space-y-6">
               {!generatedImage ? (
                 <>
-                  <div>
-                    <h3 className="text-sm font-black uppercase tracking-wider text-slate-500 mb-2">1. Edita tu Prompt Libremente</h3>
-                    <p className="text-xs text-slate-400 mb-4 font-medium">Puedes reemplazar los corchetes o reescribir todo lo que necesites. Este texto solo se usará para tu generación y no afectará la plantilla base.</p>
-                    <textarea 
-                      rows={6}
-                      value={editedPromptText}
-                      onChange={(e) => setEditedPromptText(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors custom-scrollbar resize-none"
-                    />
-                  </div>
+                  {parsedVariables.length > 0 && !isFreeEditMode ? (
+                    <div className="space-y-4 mb-6 bg-slate-50 border border-slate-200 rounded-2xl p-5">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-sm font-black uppercase tracking-wider text-indigo-700">1. Completa los Datos</h3>
+                        <button 
+                          onClick={() => setIsFreeEditMode(true)}
+                          className="text-xs font-bold text-slate-500 hover:text-indigo-600 underline"
+                        >
+                          Cambiar a Edición Libre
+                        </button>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {parsedVariables.map(v => (
+                          <div key={v}>
+                            <label className="block text-xs font-bold text-slate-700 mb-1.5">{v}</label>
+                            <input 
+                              type="text"
+                              value={variableValues[v] || ""}
+                              onChange={(e) => {
+                                const newVals = { ...variableValues, [v]: e.target.value };
+                                setVariableValues(newVals);
+                                
+                                // Recompute the prompt
+                                let newText = selectedPrompt!.prompt;
+                                parsedVariables.forEach(pv => {
+                                  if (newVals[pv]) {
+                                    newText = newText.replaceAll(`[${pv}]`, newVals[pv]);
+                                  }
+                                });
+                                setEditedPromptText(newText);
+                              }}
+                              className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-indigo-500 shadow-sm"
+                              placeholder={`Ej. Valor para ${v}`}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                      
+                      <div className="mt-4 pt-4 border-t border-slate-200">
+                        <label className="block text-xs font-bold text-slate-500 mb-1.5">Vista Previa del Prompt:</label>
+                        <div className="text-xs text-slate-600 bg-slate-100 p-3 rounded-lg border border-slate-200 font-mono whitespace-pre-wrap">
+                          {editedPromptText}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mb-6">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-sm font-black uppercase tracking-wider text-slate-500">1. Edita tu Prompt Libremente</h3>
+                        {parsedVariables.length > 0 && (
+                          <button 
+                            onClick={() => {
+                              // Reset back to guided
+                              setEditedPromptText(selectedPrompt!.prompt);
+                              const initialValues: Record<string, string> = {};
+                              parsedVariables.forEach(v => initialValues[v] = "");
+                              setVariableValues(initialValues);
+                              setIsFreeEditMode(false);
+                            }}
+                            className="text-xs font-bold text-slate-500 hover:text-indigo-600 underline"
+                          >
+                            Volver a Modo Guiado
+                          </button>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-400 mb-4 font-medium">Puedes reescribir todo lo que necesites. Este texto solo se usará para tu generación y no afectará la plantilla base.</p>
+                      <textarea 
+                        rows={6}
+                        value={editedPromptText}
+                        onChange={(e) => setEditedPromptText(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-colors custom-scrollbar resize-none"
+                      />
+                    </div>
+                  )}
 
                   {selectedPrompt.imageRequirement !== 'none' && (
                     <div className="pt-4 border-t border-slate-100">
