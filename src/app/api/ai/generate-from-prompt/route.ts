@@ -13,8 +13,8 @@ export async function POST(req: NextRequest) {
             isCommercialPoster
         } = body;
         
-        // Define the webhook URL explicitly requested for this feature (Test mode)
-        const n8nUrl = 'https://n8n.santisoft.cl/webhook-test/img-prompts';
+        // Define the webhook URL explicitly requested for this feature (Production mode)
+        const n8nUrl = 'https://n8n.santisoft.cl/webhook/img-prompts';
 
         const n8nPayload = {
             promptText: promptText || "",
