@@ -18,6 +18,7 @@ export interface PromptTemplate {
   prompt: string;
   previewUrl: string;
   imageRequirement: ImageRequirement;
+  isCommercialPoster?: boolean;
 }
 
 export const promptCategories = [
@@ -64,6 +65,7 @@ export default function PromptsLibraryPage() {
     category: promptCategories[0],
     prompt: "",
     imageRequirement: "optional" as ImageRequirement,
+    isCommercialPoster: false,
   });
   const [isAdminGenerating, setIsAdminGenerating] = useState(false);
   const [adminError, setAdminError] = useState("");
@@ -186,7 +188,8 @@ export default function PromptsLibraryPage() {
         templateId: selectedPrompt.id,
         email: user?.email,
         profileId: activeProfile?.id || "default",
-        businessType: userDoc?.rubro || ""
+        businessType: userDoc?.rubro || "",
+        isCommercialPoster: selectedPrompt.isCommercialPoster || false
       };
 
       const res = await fetch("/api/ai/generate-from-prompt", {
@@ -215,7 +218,11 @@ export default function PromptsLibraryPage() {
 
   const useImageInPost = () => {
     if (!generatedImage) return;
-    router.push(`/automatizacion-rrss/panel/crear?templateUrl=${encodeURIComponent(generatedImage)}`);
+    let url = `/automatizacion-rrss/panel/crear?templateUrl=${encodeURIComponent(generatedImage)}`;
+    if (selectedPrompt?.isCommercialPoster) {
+      url += "&isCommercial=true";
+    }
+    router.push(url);
   };
 
   // ════════════════════════════════════════════════════════
@@ -236,7 +243,8 @@ export default function PromptsLibraryPage() {
         promptText: adminForm.prompt,
         email: user?.email,
         profileId: "admin_seed",
-        businessType: "Generación de Plantillas"
+        businessType: "Generación de Plantillas",
+        isCommercialPoster: adminForm.isCommercialPoster
       };
 
       const res = await fetch("/api/ai/generate-from-prompt", {
@@ -261,6 +269,7 @@ export default function PromptsLibraryPage() {
         category: adminForm.category,
         prompt: adminForm.prompt,
         imageRequirement: adminForm.imageRequirement,
+        isCommercialPoster: adminForm.isCommercialPoster,
         previewUrl: returnedImageUrl,
         createdAt: new Date()
       });
@@ -273,7 +282,8 @@ export default function PromptsLibraryPage() {
         description: "",
         category: promptCategories[0],
         prompt: "",
-        imageRequirement: "optional"
+        imageRequirement: "optional",
+        isCommercialPoster: false
       });
 
     } catch (err: any) {
@@ -607,6 +617,19 @@ export default function PromptsLibraryPage() {
                     <input type="radio" checked={adminForm.imageRequirement === 'required'} onChange={() => setAdminForm({...adminForm, imageRequirement: 'required'})} /> Requerido
                   </label>
                 </div>
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 cursor-pointer text-sm font-bold text-slate-700">
+                  <input 
+                    type="checkbox" 
+                    checked={adminForm.isCommercialPoster} 
+                    onChange={(e) => setAdminForm({...adminForm, isCommercialPoster: e.target.checked})} 
+                    className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+                  /> 
+                  ¿Es un Cartel Comercial?
+                </label>
+                <p className="text-[10px] text-slate-400 mt-1 pl-6">Si se marca, la imagen generada le indicará al creador de posts que está haciendo un cartel comercial.</p>
               </div>
 
               <div>

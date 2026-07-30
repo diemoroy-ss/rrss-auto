@@ -9,7 +9,8 @@ export async function POST(req: NextRequest) {
             templateId,
             email, 
             profileId,
-            businessType
+            businessType,
+            isCommercialPoster
         } = body;
         
         // Define the webhook URL explicitly requested for this feature (Test mode)
@@ -21,7 +22,8 @@ export async function POST(req: NextRequest) {
             templateId: templateId || "",
             email,
             profileId,
-            businessType
+            businessType,
+            isCommercialPoster: isCommercialPoster || false
         };
 
         console.log(`[GENERATE-FROM-PROMPT] Sending to n8n:`, n8nPayload);
