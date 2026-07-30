@@ -204,7 +204,7 @@ export default function PromptsLibraryPage() {
       if (!res.ok) throw new Error("Error en la respuesta del servidor al generar la imagen.");
       
       const data = await res.json();
-      const returnedImageUrl = data.imageUrl || data.url || data[0]?.imageUrl || data[0]?.url;
+      const returnedImageUrl = data.imageUrl || data.url || data.imgUrl || data[0]?.imageUrl || data[0]?.url || data[0]?.imgUrl;
       
       if (returnedImageUrl) {
         setGeneratedImage(returnedImageUrl);
@@ -266,7 +266,7 @@ export default function PromptsLibraryPage() {
       if (!res.ok) throw new Error("Fallo al generar imagen de preview en n8n.");
       
       const data = await res.json();
-      const returnedImageUrl = data.imageUrl || data.url || data[0]?.imageUrl || data[0]?.url;
+      const returnedImageUrl = data.imageUrl || data.url || data.imgUrl || data[0]?.imageUrl || data[0]?.url || data[0]?.imgUrl;
       
       if (!returnedImageUrl) {
         throw new Error("n8n no retornó una URL de imagen válida para el preview.");
