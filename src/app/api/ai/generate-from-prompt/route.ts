@@ -12,8 +12,8 @@ export async function POST(req: NextRequest) {
             businessType
         } = body;
         
-        // Define the webhook URL explicitly requested for this feature
-        const n8nUrl = 'https://n8n.santisoft.cl/webhook/img-prompts';
+        // Define the webhook URL explicitly requested for this feature (Test mode)
+        const n8nUrl = 'https://n8n.santisoft.cl/webhook-test/img-prompts';
 
         const n8nPayload = {
             promptText: promptText || "",
