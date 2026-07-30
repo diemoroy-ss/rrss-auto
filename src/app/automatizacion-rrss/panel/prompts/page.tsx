@@ -67,8 +67,11 @@ export default function PromptsLibraryPage() {
     imageRequirement: "optional" as ImageRequirement,
     isCommercialPoster: false,
   });
+  const [adminVariableValues, setAdminVariableValues] = useState<Record<string, string>>({});
   const [isAdminGenerating, setIsAdminGenerating] = useState(false);
   const [adminError, setAdminError] = useState("");
+
+  const adminParsedVariables = Array.from(new Set(Array.from(adminForm.prompt.matchAll(/\[([^\]]+)\]/g)).map(m => m[1])));
 
   const userEmail = (user?.email || "").toLowerCase();
   const isAdminUser = ["diemoroy@gmail.com", "spalezcom@gmail.com", "santisoftai@gmail.com"].includes(userEmail) || userDoc?.role === "admin";
@@ -238,9 +241,16 @@ export default function PromptsLibraryPage() {
     setIsAdminGenerating(true);
 
     try {
+      // Reemplazar las variables con los valores de prueba antes de mandar a generar la imagen
+      let previewPromptText = adminForm.prompt;
+      adminParsedVariables.forEach(v => {
+        const testValue = adminVariableValues[v] || v;
+        previewPromptText = previewPromptText.replaceAll(`[${v}]`, testValue);
+      });
+
       // 1. Generar la imagen de Preview usando el webhook actual de generacion
       const payload = {
-        promptText: adminForm.prompt,
+        promptText: previewPromptText,
         email: user?.email,
         profileId: "admin_seed",
         businessType: "Generación de Plantillas",
@@ -645,6 +655,29 @@ export default function PromptsLibraryPage() {
                   placeholder="Commercial photography of a [PRODUCTO]..."
                 />
               </div>
+
+              {adminParsedVariables.length > 0 && (
+                <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4">
+                  <h4 className="text-xs font-bold text-indigo-700 mb-3">
+                    Valores de Prueba (Para generar el Preview)
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {adminParsedVariables.map(v => (
+                      <div key={v}>
+                        <label className="block text-[10px] font-bold text-indigo-600 mb-1">{v}</label>
+                        <input 
+                          type="text"
+                          value={adminVariableValues[v] || ""}
+                          onChange={(e) => setAdminVariableValues({...adminVariableValues, [v]: e.target.value})}
+                          className="w-full bg-white border border-indigo-100 rounded-lg px-3 py-2 text-xs font-medium focus:outline-none focus:border-indigo-400 shadow-sm"
+                          placeholder={`Ej. Goku`}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-indigo-500 mt-3 font-medium">Estos valores solo se usarán una vez para crear la imagen de ejemplo de la tarjeta. No se guardarán en la plantilla.</p>
+                </div>
+              )}
 
               {adminError && (
                 <div className="bg-red-50 text-red-700 p-3 rounded-lg text-xs font-bold border border-red-200">
