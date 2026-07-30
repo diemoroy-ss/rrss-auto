@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { auth, storage, db } from "../../../../lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc, collection, getDocs, addDoc } from "firebase/firestore";
+import { doc, getDoc, collection, getDocs, addDoc, deleteDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useProfile } from "../../../../contexts/ProfileContext";
 import { useRouter } from "next/navigation";
@@ -423,6 +423,15 @@ export default function PromptsLibraryPage() {
                     <span className="bg-blue-100/90 backdrop-blur text-blue-800 text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg shadow-sm border border-blue-200" title="Permite subir imagen base opcional">
                       🖼️ Soporta Img2Img
                     </span>
+                  )}
+                  {isAdminUser && (
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); handleDeletePrompt(prompt.id); }}
+                      className="bg-red-500/90 hover:bg-red-600 text-white backdrop-blur p-1.5 rounded-lg shadow-sm transition-colors text-xs flex items-center justify-center"
+                      title="Eliminar Plantilla"
+                    >
+                      🗑️
+                    </button>
                   )}
                 </div>
               </div>
