@@ -73,6 +73,40 @@ export default function PromptsLibraryPage() {
 
   const adminParsedVariables = Array.from(new Set(Array.from(adminForm.prompt.matchAll(/\[([^\]]+)\]/g)).map(m => m[1])));
 
+  const [isFormattingPrompt, setIsFormattingPrompt] = useState(false);
+
+  const handleAutoFormatPrompt = async () => {
+    if (!adminForm.prompt.trim()) {
+      setAdminError("Ingresa un prompt base primero para optimizarlo.");
+      return;
+    }
+    
+    setIsFormattingPrompt(true);
+    setAdminError("");
+
+    try {
+      const res = await fetch("/api/ai/format-prompt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rawPrompt: adminForm.prompt })
+      });
+
+      if (!res.ok) throw new Error("Error al comunicarse con la IA");
+      
+      const data = await res.json();
+      if (data.formattedPrompt) {
+        setAdminForm(prev => ({ ...prev, prompt: data.formattedPrompt }));
+      } else {
+        throw new Error(data.error || "No se pudo formatear el prompt");
+      }
+    } catch (err: any) {
+      console.error(err);
+      setAdminError(err.message || "Ocurrió un error al formatear el prompt.");
+    } finally {
+      setIsFormattingPrompt(false);
+    }
+  };
+
   const userEmail = (user?.email || "").toLowerCase();
   const isAdminUser = ["diemoroy@gmail.com", "spalezcom@gmail.com", "santisoftai@gmail.com"].includes(userEmail) || userDoc?.role === "admin";
 
@@ -643,10 +677,27 @@ export default function PromptsLibraryPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
-                  Texto del Prompt
-                  <span className="text-[10px] text-slate-400 font-normal">Usa [CORCHETES] para variables</span>
-                </label>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-1.5 gap-2">
+                  <label className="block text-xs font-bold text-slate-700">
+                    Texto del Prompt
+                    <span className="text-[10px] text-slate-400 font-normal ml-2">Usa [CORCHETES] para variables</span>
+                  </label>
+                  <button 
+                    onClick={handleAutoFormatPrompt}
+                    disabled={isFormattingPrompt || !adminForm.prompt.trim()}
+                    className="text-[10px] font-bold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 disabled:opacity-50 px-3 py-1.5 rounded-lg border border-indigo-200 transition-colors flex items-center justify-center gap-1 w-full sm:w-auto"
+                    title="Pega el prompt en inglés y deja que la IA detecte las variables y traduzca textos al español"
+                  >
+                    {isFormattingPrompt ? (
+                      <>
+                        <div className="w-3 h-3 border-2 border-indigo-700 border-t-transparent rounded-full animate-spin" />
+                        Analizando...
+                      </>
+                    ) : (
+                      <>✨ Optimizar con IA</>
+                    )}
+                  </button>
+                </div>
                 <textarea 
                   rows={4}
                   value={adminForm.prompt}
