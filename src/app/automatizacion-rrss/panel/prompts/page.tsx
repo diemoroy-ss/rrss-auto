@@ -91,7 +91,10 @@ export default function PromptsLibraryPage() {
       const res = await fetch("/api/ai/format-prompt", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rawPrompt: adminForm.prompt })
+        body: JSON.stringify({ 
+          rawPrompt: adminForm.prompt,
+          isCommercialPoster: adminForm.isCommercialPoster 
+        })
       });
 
       if (!res.ok) throw new Error("Error al comunicarse con la IA");
