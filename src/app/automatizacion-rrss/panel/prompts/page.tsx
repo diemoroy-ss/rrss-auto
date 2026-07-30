@@ -175,9 +175,14 @@ export default function PromptsLibraryPage() {
         baseImageUrl = await getDownloadURL(storageRef);
       }
 
+      // Midjourney/IA tools often expect the image URL directly inside the prompt text.
+      const finalPromptText = baseImageUrl 
+        ? `${baseImageUrl} ${editedPromptText}` 
+        : editedPromptText;
+
       const payload = {
-        promptText: editedPromptText,
-        baseImageUrl,
+        promptText: finalPromptText,
+        baseImageUrl, // still sending it just in case n8n needs to save it in DB
         templateId: selectedPrompt.id,
         email: user?.email,
         profileId: activeProfile?.id || "default",
