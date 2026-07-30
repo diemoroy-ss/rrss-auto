@@ -47,7 +47,7 @@ export default function PromptsLibraryPage() {
   
   // Guided Mode State
   const [isFreeEditMode, setIsFreeEditMode] = useState(false);
-  const [parsedVariables, setParsedVariables] = useState<string[]>([]);
+  const [parsedVariables, setParsedVariables] = useState<{raw: string, name: string, example: string}[]>([]);
   const [variableValues, setVariableValues] = useState<Record<string, string>>({});
 
   const [baseImageFile, setBaseImageFile] = useState<File | null>(null);
@@ -71,7 +71,10 @@ export default function PromptsLibraryPage() {
   const [isAdminGenerating, setIsAdminGenerating] = useState(false);
   const [adminError, setAdminError] = useState("");
 
-  const adminParsedVariables = Array.from(new Set(Array.from(adminForm.prompt.matchAll(/\[([^\]]+)\]/g)).map(m => m[1])));
+  const adminParsedVariables = Array.from(new Set(Array.from(adminForm.prompt.matchAll(/\[([^\]]+)\]/g)).map(m => m[1]))).map(raw => {
+    const parts = raw.split(':');
+    return { raw, name: parts[0], example: parts[1] || `Valor para ${parts[0]}` };
+  });
 
   const [isFormattingPrompt, setIsFormattingPrompt] = useState(false);
 
@@ -155,13 +158,22 @@ export default function PromptsLibraryPage() {
     
     // Parse variables (anything inside [BRACKETS])
     const matches = Array.from(prompt.prompt.matchAll(/\[([^\]]+)\]/g));
-    const vars = Array.from(new Set(matches.map(m => m[1])));
-    setParsedVariables(vars);
+    const varsRaw = Array.from(new Set(matches.map(m => m[1])));
+    
+    const parsed = varsRaw.map(raw => {
+      const parts = raw.split(':');
+      return { raw, name: parts[0], example: parts[1] || `Valor para ${parts[0]}` };
+    });
+    setParsedVariables(parsed);
     
     const initialValues: Record<string, string> = {};
-    vars.forEach(v => initialValues[v] = "");
+    parsed.forEach(v => {
+      // Si tiene ejemplo, lo podemos dejar en blanco y que el placeholder haga el trabajo, o pre-llenarlo.
+      // Mejor lo dejamos en blanco para que el usuario deba rellenarlo.
+      initialValues[v.raw] = "";
+    });
     setVariableValues(initialValues);
-    setIsFreeEditMode(vars.length === 0); // Default to free mode if no vars
+    setIsFreeEditMode(parsed.length === 0); // Default to free mode if no vars
 
     setBaseImageFile(null);
     setBaseImagePreview(null);
@@ -278,8 +290,8 @@ export default function PromptsLibraryPage() {
       // Reemplazar las variables con los valores de prueba antes de mandar a generar la imagen
       let previewPromptText = adminForm.prompt;
       adminParsedVariables.forEach(v => {
-        const testValue = adminVariableValues[v] || v;
-        previewPromptText = previewPromptText.replaceAll(`[${v}]`, testValue);
+        const testValue = adminVariableValues[v.raw] || v.example; // Fallback to the example if empty
+        previewPromptText = previewPromptText.replaceAll(`[${v.raw}]`, testValue);
       });
 
       // 1. Generar la imagen de Preview usando el webhook actual de generacion
@@ -460,26 +472,28 @@ export default function PromptsLibraryPage() {
                       
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {parsedVariables.map(v => (
-                          <div key={v}>
-                            <label className="block text-xs font-bold text-slate-700 mb-1.5">{v}</label>
+                          <div key={v.raw}>
+                            <label className="block text-xs font-bold text-slate-700 mb-1.5">{v.name}</label>
                             <input 
                               type="text"
-                              value={variableValues[v] || ""}
+                              value={variableValues[v.raw] || ""}
                               onChange={(e) => {
-                                const newVals = { ...variableValues, [v]: e.target.value };
+                                const newVals = { ...variableValues, [v.raw]: e.target.value };
                                 setVariableValues(newVals);
                                 
                                 // Recompute the prompt
                                 let newText = selectedPrompt!.prompt;
                                 parsedVariables.forEach(pv => {
-                                  if (newVals[pv]) {
-                                    newText = newText.replaceAll(`[${pv}]`, newVals[pv]);
+                                  // Si el usuario no ingresa valor, intentamos usar el ejemplo o lo dejamos intacto
+                                  const valToUse = newVals[pv.raw] || pv.example;
+                                  if (valToUse) {
+                                    newText = newText.replaceAll(`[${pv.raw}]`, valToUse);
                                   }
                                 });
                                 setEditedPromptText(newText);
                               }}
                               className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-indigo-500 shadow-sm"
-                              placeholder={`Ej. Valor para ${v}`}
+                              placeholder={`Ej. ${v.example}`}
                             />
                           </div>
                         ))}
@@ -502,7 +516,7 @@ export default function PromptsLibraryPage() {
                               // Reset back to guided
                               setEditedPromptText(selectedPrompt!.prompt);
                               const initialValues: Record<string, string> = {};
-                              parsedVariables.forEach(v => initialValues[v] = "");
+                              parsedVariables.forEach(v => initialValues[v.raw] = "");
                               setVariableValues(initialValues);
                               setIsFreeEditMode(false);
                             }}
@@ -714,14 +728,14 @@ export default function PromptsLibraryPage() {
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {adminParsedVariables.map(v => (
-                      <div key={v}>
-                        <label className="block text-[10px] font-bold text-indigo-600 mb-1">{v}</label>
+                      <div key={v.raw}>
+                        <label className="block text-[10px] font-bold text-indigo-600 mb-1">{v.name}</label>
                         <input 
                           type="text"
-                          value={adminVariableValues[v] || ""}
-                          onChange={(e) => setAdminVariableValues({...adminVariableValues, [v]: e.target.value})}
+                          value={adminVariableValues[v.raw] || ""}
+                          onChange={(e) => setAdminVariableValues({...adminVariableValues, [v.raw]: e.target.value})}
                           className="w-full bg-white border border-indigo-100 rounded-lg px-3 py-2 text-xs font-medium focus:outline-none focus:border-indigo-400 shadow-sm"
-                          placeholder={`Ej. Goku`}
+                          placeholder={`Ej. ${v.example}`}
                         />
                       </div>
                     ))}
