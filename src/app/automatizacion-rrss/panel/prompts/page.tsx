@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { auth, storage, db } from "../../../../lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc, collection, getDocs, addDoc, deleteDoc } from "firebase/firestore";
+import { doc, getDoc, collection, getDocs, addDoc, deleteDoc, updateDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useProfile } from "../../../../contexts/ProfileContext";
 import { useRouter } from "next/navigation";
@@ -59,6 +59,8 @@ export default function PromptsLibraryPage() {
 
   // Admin Modal
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+  const [editingPromptId, setEditingPromptId] = useState<string | null>(null);
+  const [existingPreviewUrl, setExistingPreviewUrl] = useState<string | null>(null);
   const [adminForm, setAdminForm] = useState({
     title: "",
     description: "",
@@ -206,6 +208,35 @@ export default function PromptsLibraryPage() {
     reader.readAsDataURL(file);
   };
 
+  const handleDeletePrompt = async (id: string) => {
+    if (!confirm("¿Seguro que quieres eliminar esta plantilla?")) return;
+    try {
+      await deleteDoc(doc(db, "prompt_library", id));
+      setPromptTemplates(prev => prev.filter(p => p.id !== id));
+    } catch (e) {
+      console.error("Error deleting", e);
+    }
+  };
+
+  const handleEditPrompt = (prompt: PromptTemplate) => {
+    setEditingPromptId(prompt.id);
+    setExistingPreviewUrl(prompt.previewUrl);
+    setAdminForm({
+      title: prompt.title,
+      description: prompt.description,
+      category: prompt.category,
+      prompt: prompt.prompt,
+      imageRequirement: prompt.imageRequirement || "none",
+      isCommercialPoster: prompt.isCommercialPoster || false
+    });
+    const matches = Array.from(prompt.prompt.matchAll(/\[([^\]]+)\]/g));
+    const varsRaw = Array.from(new Set(matches.map(m => m[1])));
+    const initialVals: Record<string, string> = {};
+    varsRaw.forEach(v => initialVals[v] = "");
+    setAdminVariableValues(initialVals);
+    setIsAdminModalOpen(true);
+  };
+
   const handleClientGenerate = async () => {
     if (!selectedPrompt) return;
     
@@ -280,7 +311,7 @@ export default function PromptsLibraryPage() {
   // ════════════════════════════════════════════════════════
   // ADMIN FLOW
   // ════════════════════════════════════════════════════════
-  const handleAdminSubmit = async () => {
+  const handleAdminSubmit = async (generateNewImage: boolean = true) => {
     if (!adminForm.title || !adminForm.prompt) {
       setAdminError("Título y Prompt son obligatorios.");
       return;
@@ -290,55 +321,64 @@ export default function PromptsLibraryPage() {
     setIsAdminGenerating(true);
 
     try {
-      // Reemplazar las variables con los valores de prueba antes de mandar a generar la imagen
-      let previewPromptText = adminForm.prompt;
-      adminParsedVariables.forEach(v => {
-        const testValue = adminVariableValues[v.raw] || v.example; // Fallback to the example if empty
-        previewPromptText = previewPromptText.replaceAll(`[${v.raw}]`, testValue);
-      });
+      let finalImageUrl = existingPreviewUrl;
 
-      // 1. Generar la imagen de Preview usando el webhook actual de generacion
-      const payload = {
-        promptText: previewPromptText,
-        email: user?.email,
-        profileId: "admin_seed",
-        businessType: "Generación de Plantillas",
-        isCommercialPoster: adminForm.isCommercialPoster
-      };
+      if (generateNewImage || !finalImageUrl) {
+        // Reemplazar las variables con los valores de prueba antes de mandar a generar la imagen
+        let previewPromptText = adminForm.prompt;
+        adminParsedVariables.forEach(v => {
+          const testValue = adminVariableValues[v.raw] || v.example; // Fallback to the example if empty
+          previewPromptText = previewPromptText.replaceAll(`[${v.raw}]`, testValue);
+        });
 
-      const res = await fetch("/api/ai/generate-from-prompt", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
+        // 1. Generar la imagen de Preview usando el webhook actual de generacion
+        const payload = {
+          promptText: previewPromptText,
+          email: user?.email,
+          profileId: "admin_seed",
+          businessType: "Generación de Plantillas",
+          isCommercialPoster: adminForm.isCommercialPoster
+        };
 
-      if (!res.ok) throw new Error("Fallo al generar imagen de preview en n8n.");
-      
-      const data = await res.json();
-      const returnedImageUrl = data.imageUrl || data.url || data.imgUrl || data[0]?.imageUrl || data[0]?.url || data[0]?.imgUrl;
-      
-      if (!returnedImageUrl) {
-        throw new Error("n8n no retornó una URL de imagen válida para el preview.");
+        const res = await fetch("/api/ai/generate-from-prompt", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) throw new Error("Fallo al generar imagen de preview en n8n.");
+        
+        const data = await res.json();
+        const returnedImageUrl = data.imageUrl || data.url || data.imgUrl || data[0]?.imageUrl || data[0]?.url || data[0]?.imgUrl;
+        
+        if (!returnedImageUrl) {
+          throw new Error("n8n no retornó una URL de imagen válida para el preview.");
+        }
+        finalImageUrl = returnedImageUrl;
       }
 
       // 2. Guardar en Firestore
-      await addDoc(collection(db, "prompt_library"), {
+      const promptData = {
         title: adminForm.title,
         description: adminForm.description,
         category: adminForm.category,
         prompt: adminForm.prompt,
         imageRequirement: adminForm.imageRequirement,
         isCommercialPoster: adminForm.isCommercialPoster,
-        previewUrl: returnedImageUrl,
-        createdAt: new Date()
-      });
+        previewUrl: finalImageUrl
+      };
 
-      // 3. Refrescar e ir atras
-      await fetchPrompts();
+      if (editingPromptId) {
+        await updateDoc(doc(db, "prompt_library", editingPromptId), promptData);
+        setPromptTemplates(prev => prev.map(p => p.id === editingPromptId ? { id: editingPromptId, ...promptData } : p));
+        alert("¡Plantilla actualizada con éxito!");
+      } else {
+        const docRef = await addDoc(collection(db, "prompt_library"), promptData);
+        setPromptTemplates([{ id: docRef.id, ...promptData }, ...promptTemplates]);
+        alert("¡Plantilla guardada con éxito!");
+      }
+      
       setIsAdminModalOpen(false);
-      setAdminForm({
-        title: "",
-        description: "",
         category: promptCategories[0],
         prompt: "",
         imageRequirement: "optional",
@@ -425,13 +465,22 @@ export default function PromptsLibraryPage() {
                     </span>
                   )}
                   {isAdminUser && (
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); handleDeletePrompt(prompt.id); }}
-                      className="bg-red-500/90 hover:bg-red-600 text-white backdrop-blur p-1.5 rounded-lg shadow-sm transition-colors text-xs flex items-center justify-center"
-                      title="Eliminar Plantilla"
-                    >
-                      🗑️
-                    </button>
+                    <>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleEditPrompt(prompt); }}
+                        className="bg-indigo-500/90 hover:bg-indigo-600 text-white backdrop-blur p-1.5 rounded-lg shadow-sm transition-colors text-xs flex items-center justify-center"
+                        title="Editar Plantilla"
+                      >
+                        ✏️
+                      </button>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleDeletePrompt(prompt.id); }}
+                        className="bg-red-500/90 hover:bg-red-600 text-white backdrop-blur p-1.5 rounded-lg shadow-sm transition-colors text-xs flex items-center justify-center"
+                        title="Eliminar Plantilla"
+                      >
+                        🗑️
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
@@ -634,9 +683,9 @@ export default function PromptsLibraryPage() {
           <div className="relative bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar animate-in zoom-in-95 duration-200">
             <div className="sticky top-0 bg-slate-950 px-6 py-4 flex items-center justify-between z-10">
               <h2 className="text-xl font-black text-white flex items-center gap-2">
-                👑 Añadir Nuevo Prompt
+                {editingPromptId ? "✏️ Editar Prompt" : "👑 Añadir Nuevo Prompt"}
               </h2>
-              <button disabled={isAdminGenerating} onClick={() => setIsAdminModalOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white transition-colors">✕</button>
+              <button disabled={isAdminGenerating} onClick={() => { setIsAdminModalOpen(false); setEditingPromptId(null); setExistingPreviewUrl(null); }} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white transition-colors">✕</button>
             </div>
 
             <div className="p-6 md:p-8 space-y-5">
@@ -762,28 +811,58 @@ export default function PromptsLibraryPage() {
                 </div>
               )}
 
-              <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
+              <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row justify-end gap-3">
                 <button 
-                  onClick={() => setIsAdminModalOpen(false)}
+                  onClick={() => {
+                    setIsAdminModalOpen(false);
+                    setEditingPromptId(null);
+                    setExistingPreviewUrl(null);
+                  }}
                   disabled={isAdminGenerating}
-                  className="px-5 py-3 text-slate-500 font-bold hover:bg-slate-100 rounded-xl"
+                  className="px-5 py-3 text-slate-500 font-bold hover:bg-slate-100 rounded-xl order-last sm:order-first"
                 >
                   Cancelar
                 </button>
-                <button 
-                  onClick={handleAdminSubmit}
-                  disabled={isAdminGenerating}
-                  className="bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2"
-                >
-                  {isAdminGenerating ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Generando y Guardando...
-                    </>
-                  ) : (
-                    <>Generar Preview y Guardar</>
-                  )}
-                </button>
+                {editingPromptId ? (
+                  <>
+                    <button 
+                      onClick={() => handleAdminSubmit(false)}
+                      disabled={isAdminGenerating}
+                      className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2"
+                    >
+                      {isAdminGenerating ? "Guardando..." : "💾 Guardar (Conservar Imagen)"}
+                    </button>
+                    <button 
+                      onClick={() => handleAdminSubmit(true)}
+                      disabled={isAdminGenerating}
+                      className="bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2"
+                    >
+                      {isAdminGenerating ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          Generando...
+                        </>
+                      ) : (
+                        <>🪄 Regenerar Imagen y Guardar</>
+                      )}
+                    </button>
+                  </>
+                ) : (
+                  <button 
+                    onClick={() => handleAdminSubmit(true)}
+                    disabled={isAdminGenerating}
+                    className="bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2 justify-center"
+                  >
+                    {isAdminGenerating ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Generando y Guardando...
+                      </>
+                    ) : (
+                      <>Generar Preview y Guardar</>
+                    )}
+                  </button>
+                )}
               </div>
             </div>
           </div>
