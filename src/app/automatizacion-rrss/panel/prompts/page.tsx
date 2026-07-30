@@ -357,8 +357,8 @@ export default function PromptsLibraryPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredPrompts.map(prompt => (
             <div key={prompt.id} className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-lg transition-all hover:border-indigo-200 flex flex-col group">
-              <div className="relative h-48 w-full overflow-hidden bg-slate-100">
-                <img src={prompt.previewUrl} alt={prompt.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+              <div className="relative h-64 w-full overflow-hidden bg-slate-900 flex items-center justify-center">
+                <img src={prompt.previewUrl} alt={prompt.title} className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-500" />
                 <div className="absolute top-3 left-3 flex gap-2">
                   <span className="bg-white/90 backdrop-blur text-indigo-800 text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg shadow-sm">
                     {prompt.category}
