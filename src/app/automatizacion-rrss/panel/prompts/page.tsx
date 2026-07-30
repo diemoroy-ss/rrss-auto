@@ -379,12 +379,16 @@ export default function PromptsLibraryPage() {
       }
       
       setIsAdminModalOpen(false);
+      setEditingPromptId(null);
+      setExistingPreviewUrl(null);
+      setAdminForm({
+        title: "",
+        description: "",
         category: promptCategories[0],
         prompt: "",
         imageRequirement: "optional",
         isCommercialPoster: false
       });
-
     } catch (err: any) {
       console.error(err);
       setAdminError(err.message || "Error al crear la plantilla.");
