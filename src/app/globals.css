@@ -215,25 +215,25 @@ body:not(:has(.landing-page-root)) .eyebrow {
 
 /* Redesign Scoped Landing Page Styles */
 .landing-page-root {
-  --bg: #F0F1E7;
-  --bg-soft: #E7E9DA;
-  --panel: #FBFAF4;
-  --panel-2: #F2F3E7;
-  --line: rgba(27,27,20,0.11);
-  --line-strong: rgba(27,27,20,0.20);
-  --ink: #1C1B12;
-  --ink-dim: #57584A;
-  --ink-faint: #8D8E79;
+  --bg: #EEF0E5;
+  --bg-soft: #E2E5D4;
+  --panel: #FFFFFF;
+  --panel-2: #F5F6EC;
+  --line: rgba(27,27,20,0.18);
+  --line-strong: rgba(27,27,20,0.34);
+  --ink: #14130D;
+  --ink-dim: #3B3C30;
+  --ink-faint: #5C5E4B;
 
-  --signal: #DD4B19;         /* broadcast orange — human channel (Redes) */
-  --signal-soft: rgba(221,75,25,0.10);
-  --signal-line: rgba(221,75,25,0.38);
+  --signal: #E5300A;         /* broadcast orange — human channel (Redes) */
+  --signal-soft: rgba(229,48,10,0.12);
+  --signal-line: rgba(229,48,10,0.45);
 
-  --phosphor: #2C8A4E;       /* terminal green — machine channel (SEO/GEO) */
-  --phosphor-soft: rgba(44,138,78,0.11);
-  --phosphor-line: rgba(44,138,78,0.35);
+  --phosphor: #1C7A3E;       /* terminal green — machine channel (SEO/GEO) */
+  --phosphor-soft: rgba(28,122,62,0.13);
+  --phosphor-line: rgba(28,122,62,0.40);
 
-  --gold: #B07A17;
+  --gold: #A06D0B;
 
   --radius: 14px;
   --radius-sm: 9px;
@@ -245,10 +245,10 @@ body:not(:has(.landing-page-root)) .eyebrow {
   margin: 0;
   padding: 0;
   background-image:
-    linear-gradient(rgba(27,27,20,0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(27,27,20,0.045) 1px, transparent 1px),
-    radial-gradient(ellipse 55% 28% at 18% 0%, rgba(221,75,25,0.06), transparent 62%),
-    radial-gradient(ellipse 55% 28% at 88% 6%, rgba(44,138,78,0.05), transparent 62%);
+    linear-gradient(rgba(27,27,20,0.065) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(27,27,20,0.065) 1px, transparent 1px),
+    radial-gradient(ellipse 55% 28% at 18% 0%, rgba(229,48,10,0.08), transparent 62%),
+    radial-gradient(ellipse 55% 28% at 88% 6%, rgba(28,122,62,0.07), transparent 62%);
   background-size: 28px 28px, 28px 28px, auto, auto;
   background-color: var(--bg);
   background-repeat: repeat, repeat, no-repeat, no-repeat;
@@ -256,6 +256,11 @@ body:not(:has(.landing-page-root)) .eyebrow {
   font-family: var(--body);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+
+  /* Logo Image Styles */
+  & .brand-logo-img, & .footer-logo-img {
+    width: 24px; height: 24px; object-fit: contain; border-radius: 6px; flex-shrink: 0;
+  }
 
   /* Scoped resets and elements */
   & *, & *::before, & *::after { box-sizing: border-box; }
@@ -269,7 +274,8 @@ body:not(:has(.landing-page-root)) .eyebrow {
     font-size: 11.5px;
     letter-spacing: 0.13em;
     text-transform: uppercase;
-    color: var(--ink-faint);
+    color: var(--ink-dim);
+    font-weight: 700;
     display: inline-flex;
     align-items: center;
     gap: 9px;
@@ -277,36 +283,38 @@ body:not(:has(.landing-page-root)) .eyebrow {
   & .eyebrow .freq { color: var(--signal); font-weight: 700; }
   & .eyebrow::before {
     content: "";
-    width: 14px; height: 1px;
+    width: 14px; height: 2px;
     background: var(--signal);
     flex-shrink: 0;
   }
   & .wrap { max-width: 1180px; margin: 0 auto; padding: 0 28px; }
-  & #dot-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; opacity: 0.5; }
+  & #dot-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; opacity: 0.65; }
 
   & [data-reveal] { opacity: 0; transform: translateY(22px); transition: opacity .7s cubic-bezier(.16,1,.3,1), transform .7s cubic-bezier(.16,1,.3,1); }
   & [data-reveal].in { opacity: 1; transform: translateY(0); }
 
   /* dark "screen" island */
   & .dark-screen {
-    --bg: #15110D;
-    --bg-soft: #1A1510;
-    --panel: #1F1811;
-    --panel-2: #251D15;
-    --line: rgba(245,239,230,0.09);
-    --line-strong: rgba(245,239,230,0.18);
-    --ink: #F5EFE6;
-    --ink-dim: #B4A897;
-    --ink-faint: #7C6F5D;
+    --bg: #120E0A;
+    --bg-soft: #18130E;
+    --panel: #1E1712;
+    --panel-2: #261D16;
+    --line: rgba(245,239,230,0.16);
+    --line-strong: rgba(245,239,230,0.32);
+    --ink: #F9F5EE;
+    --ink-dim: #D4C7B5;
+    --ink-faint: #9E8F7C;
     --signal: #FF5E2E;
-    --signal-soft: rgba(255,94,46,0.13);
-    --signal-line: rgba(255,94,46,0.4);
-    --phosphor: #9FE870;
-    --phosphor-soft: rgba(159,232,112,0.13);
-    --phosphor-line: rgba(159,232,112,0.4);
-    --gold: #F2B84B;
+    --signal-soft: rgba(255,94,46,0.16);
+    --signal-line: rgba(255,94,46,0.48);
+    --phosphor: #A3EE74;
+    --phosphor-soft: rgba(163,238,116,0.16);
+    --phosphor-line: rgba(163,238,116,0.48);
+    --gold: #F5BE52;
     background: var(--bg);
     color: var(--ink);
+    border: 1px solid var(--line-strong);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.35);
   }
 
   /* promo banner */
@@ -720,16 +728,21 @@ body:not(:has(.landing-page-root)) .eyebrow {
   & .t-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
   @media (max-width: 860px) { & .t-grid { grid-template-columns: 1fr; } }
   & .t-card {
-    background: var(--panel); border: 1px solid var(--line); border-top: 2px solid var(--signal); border-radius: var(--radius);
-    padding: 26px; display: flex; flex-direction: column; gap: 16px; transition: transform .25s, border-color .25s;
+    background: #FFFFFF; border: 1px solid var(--line-strong); border-top: 3px solid var(--signal); border-radius: var(--radius);
+    padding: 26px; display: flex; flex-direction: column; gap: 16px; transition: transform .25s, border-color .25s, box-shadow .25s;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.05);
   }
   & .t-card:nth-child(2) { border-top-color: var(--phosphor); }
   & .t-card:nth-child(3) { border-top-color: var(--gold); }
-  & .t-card:hover { transform: translateY(-4px); }
-  & .t-quote { font-size: 14.5px; color: var(--ink); line-height: 1.65; font-style: italic; font-family: var(--disp); font-weight: 500; }
-  & .t-who { display: flex; align-items: center; gap: 12px; padding-top: 14px; border-top: 1px solid var(--line); }
+  & .t-card:hover { transform: translateY(-4px); box-shadow: 0 16px 36px rgba(0,0,0,0.09); }
+  & .t-quote { font-size: 15px; color: var(--ink); line-height: 1.65; font-style: italic; font-family: var(--disp); font-weight: 500; }
+  & .t-who { display: flex; align-items: center; gap: 12px; padding-top: 14px; border-top: 1px solid var(--line-strong); }
   & .t-avatar {
-    width: 34px; height: 34px; border-radius: 50%;
+    width: 36px; height: 36px; border-radius: 50%; background: var(--bg-soft); border: 1px solid var(--line-strong);
+    display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--ink);
+  }
+  & .t-name { font-size: 13.5px; font-weight: 700; color: var(--ink); }
+  & .t-biz { font-size: 10.5px; font-weight: 600; color: var(--ink-dim); font-family: var(--mono); letter-spacing: 0.04em; }
     background: var(--panel-2); border: 1px solid var(--line-strong);
     display: flex; align-items: center; justify-content: center;
     font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--ink-dim);
@@ -764,22 +777,23 @@ body:not(:has(.landing-page-root)) .eyebrow {
   
   & .plan {
     flex: 0 0 340px; scroll-snap-align: center; max-width: 90vw;
-    background: var(--panel); border: 1px solid var(--line-strong); border-radius: var(--radius);
-    padding: 30px 26px; display: flex; flex-direction: column; transition: transform .25s;
+    background: #FFFFFF; border: 1px solid var(--line-strong); border-radius: var(--radius);
+    padding: 32px 28px; display: flex; flex-direction: column; transition: transform .25s, box-shadow .25s;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.06);
   }
-  & .plan:hover { transform: translateY(-3px); }
-  & .plan.feat { border-color: var(--signal-line); background-color: var(--panel); background-image: linear-gradient(180deg, rgba(221,75,25,0.06), transparent 45%); position: relative; }
+  & .plan:hover { transform: translateY(-4px); box-shadow: 0 20px 45px rgba(0,0,0,0.11); }
+  & .plan.feat { border-color: var(--signal); border-width: 2px; background-color: #FFFFFF; background-image: linear-gradient(180deg, rgba(229,48,10,0.05), transparent 45%); position: relative; }
   & .plan.feat::before {
-    content: "MÁS ELEGIDO"; position: absolute; top: -11px; left: 50%; transform: translateX(-50%);
+    content: "MÁS ELEGIDO"; position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
     font-family: var(--mono); font-size: 9.5px; letter-spacing: .08em; font-weight: 700;
-    background: var(--signal); color: #FBFAF4; padding: 4px 12px; border-radius: 99px;
+    background: var(--signal); color: #FFFFFF; padding: 4px 14px; border-radius: 99px; box-shadow: 0 4px 12px rgba(229,48,10,0.3);
   }
-  & .plan-name { font-family: var(--disp); font-size: 20px; font-weight: 600; }
-  & .plan-price { font-family: var(--disp); font-size: 36px; margin: 14px 0 2px; font-weight: 600; }
-  & .plan-price span { font-size: 14px; color: var(--ink-faint); font-family: var(--body); font-weight: 400; }
-  & .plan-cycle { font-family: var(--mono); font-size: 10.5px; color: var(--ink-faint); margin-bottom: 22px; }
-  & .plan-list { list-style: none; display: flex; flex-direction: column; gap: 11px; margin-bottom: 26px; flex: 1; }
-  & .plan-list li { font-size: 13.5px; color: var(--ink-dim); display: flex; gap: 9px; }
+  & .plan-name { font-family: var(--disp); font-size: 22px; font-weight: 700; color: var(--ink); }
+  & .plan-price { font-family: var(--disp); font-size: 38px; margin: 14px 0 2px; font-weight: 700; color: var(--ink); }
+  & .plan-price span { font-size: 14px; color: var(--ink-dim); font-family: var(--body); font-weight: 500; }
+  & .plan-cycle { font-family: var(--mono); font-size: 11px; color: var(--ink-dim); font-weight: 600; margin-bottom: 22px; }
+  & .plan-list { list-style: none; display: flex; flex-direction: column; gap: 12px; margin-bottom: 28px; flex: 1; }
+  & .plan-list li { font-size: 14px; color: var(--ink); font-weight: 500; display: flex; gap: 10px; line-height: 1.5; }
   & .plan-list li::before { content: "›"; color: var(--signal); flex-shrink: 0; font-weight: 700; font-family: var(--mono); }
   & .plan .btn { width: 100%; justify-content: center; }
 

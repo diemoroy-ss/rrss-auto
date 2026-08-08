@@ -35,13 +35,24 @@ const spaceMono = Space_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Santisoft AI',
-  description: 'Panel de control de redes sociales',
+  title: 'Santisoft | Redes & Contenido - Automatización Inteligente',
+  description: 'Automatización y generación estratégica de contenido para redes sociales (Meta, TikTok) y posicionamiento en motores de IA (GEO/SEO) por Santisoft.',
+  metadataBase: new URL('https://rrss.santisoft.cl'),
   icons: {
     icon: [
-      { url: "/favicon.png", type: "image/png" },
+      { url: '/favicon.png?v=2', type: 'image/png' },
     ],
-    apple: "/favicon.png",
+    shortcut: '/favicon.png?v=2',
+    apple: '/favicon.png?v=2',
+  },
+  openGraph: {
+    title: 'Santisoft | Redes & Contenido - Automatización Inteligente',
+    description: 'Generación automática de contenido persuasivo, calendarios estratégicos y posicionamiento GEO en IA.',
+    url: 'https://rrss.santisoft.cl',
+    siteName: 'Santisoft Redes & Contenido',
+    images: [{ url: '/logo.png' }],
+    locale: 'es_CL',
+    type: 'website',
   },
 }
 

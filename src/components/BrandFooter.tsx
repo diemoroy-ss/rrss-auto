@@ -15,7 +15,12 @@ export default function BrandFooter() {
               rel="noopener noreferrer"
               className="footer-parent-logo"
             >
-              SANTISOFT
+              <img
+                src="/favicon.png"
+                alt="SANTISOFT Logo"
+                className="footer-logo-img"
+              />
+              <span>SANTISOFT</span>
             </a>
             <span className="footer-slash">/</span>
             <span className="footer-vertical-name rrss-text">REDES &amp; CONTENIDO</span>

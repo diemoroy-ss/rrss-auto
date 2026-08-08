@@ -42,6 +42,11 @@ export default function BrandHeader() {
               className="brand-parent-link"
               title="Ir a Santisoft.cl"
             >
+              <img
+                src="/favicon.png"
+                alt="SANTISOFT Logo"
+                className="brand-logo-img"
+              />
               <span className="brand-parent-name">SANTISOFT</span>
             </a>
 
