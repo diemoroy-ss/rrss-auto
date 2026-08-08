@@ -179,10 +179,10 @@ export default function EstrategiaPage() {
                  userId: user?.uid,
                  profileId: activeProfile?.id || 'default',
                   connectedPlatforms: {
-                      facebook: !!activeProfile?.facebookToken_enc || (activeProfile?.id === 'default' && !!(data.facebookToken_enc)),
-                      instagram: !!activeProfile?.instagramToken_enc || (activeProfile?.id === 'default' && !!(data.instagramToken_enc)),
-                      tiktok: !!activeProfile?.tiktokToken_enc || (activeProfile?.id === 'default' && !!(data.tiktokToken_enc)),
-                      linkedin: !!activeProfile?.linkedinUserToken_enc || !!activeProfile?.linkedinToken_enc || (activeProfile?.id === 'default' && !!(data.linkedinToken_enc))
+                      facebook: !!activeProfile?.facebookToken_enc,
+                      instagram: !!activeProfile?.instagramToken_enc,
+                      tiktok: !!activeProfile?.tiktokToken_enc,
+                      linkedin: !!activeProfile?.linkedinUserToken_enc || !!activeProfile?.linkedinToken_enc
                   }
              })
          });
