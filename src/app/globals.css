@@ -3,6 +3,7 @@
 @plugin "@tailwindcss/typography";
 
 :root {
+  --rrss-orange:          #E5300A;
   --color-bg:             #f1f5f9; /* Slate 100 - Neutral/Cold */
   --color-surface:        #ffffff;
   --color-border:         #e2e8f0; /* Slate 200 */
@@ -18,7 +19,7 @@
   /* Redesign Tokens */
   --black:   #0C0C0A;
   --white:   #FFFFFF;
-  --accent:  #E5300A;
+  --accent:  var(--rrss-orange);
   --accent-pale: #FFF1EE;
   --g50:  #F8F8F5;
   --g100: #EFEFEA;

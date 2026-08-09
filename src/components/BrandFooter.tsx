@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import LogoMark from "./LogoMark";
 
 export default function BrandFooter() {
   return (
@@ -15,11 +16,7 @@ export default function BrandFooter() {
               rel="noopener noreferrer"
               className="footer-parent-logo"
             >
-              <img
-                src="/favicon.png"
-                alt="SANTISOFT Logo"
-                className="footer-logo-img"
-              />
+              <LogoMark size={22} />
               <span>SANTISOFT</span>
             </a>
             <span className="footer-slash">/</span>

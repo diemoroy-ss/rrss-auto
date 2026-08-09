@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 
+import LogoMark from "./LogoMark";
+
 export default function BrandHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [switcherOpen, setSwitcherOpen] = useState(false);
@@ -42,11 +44,7 @@ export default function BrandHeader() {
               className="brand-parent-link"
               title="Ir a Santisoft.cl"
             >
-              <img
-                src="/favicon.png"
-                alt="SANTISOFT Logo"
-                className="brand-logo-img"
-              />
+              <LogoMark size={22} />
               <span className="brand-parent-name">SANTISOFT</span>
             </a>
 
