@@ -12,11 +12,12 @@ export interface SantisoftLogoProps {
   className?: string;
   target?: string;
   rel?: string;
+  animated?: boolean;
 }
 
 export default function SantisoftLogo({
-  markSize = 24,
-  markColor = "#E5300A",
+  markSize = 28,
+  markColor = "#FF6B00",
   textColor,
   showSubText = false,
   subText = "REDES & CONTENIDO",
@@ -24,17 +25,18 @@ export default function SantisoftLogo({
   className = "",
   target,
   rel,
+  animated = false,
 }: SantisoftLogoProps) {
   const content = (
-    <div className={`inline-flex items-center gap-2 font-bold ${className}`.trim()}>
-      <LogoMark size={markSize} color={markColor} />
+    <div className={`inline-flex items-center gap-2.5 font-bold ${className}`.trim()}>
+      <LogoMark size={markSize} color={markColor} animated={animated} />
       <span className="font-extrabold tracking-tight" style={{ color: textColor }}>
         SANTISOFT
       </span>
       {showSubText && subText && (
         <>
           <span className="text-slate-400 opacity-60 font-light mx-1">/</span>
-          <span className="text-xs uppercase tracking-wider font-semibold text-orange-500">
+          <span className="text-xs uppercase tracking-wider font-semibold text-[#FF6B00]">
             {subText}
           </span>
         </>

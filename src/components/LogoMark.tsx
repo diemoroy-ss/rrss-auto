@@ -6,34 +6,42 @@ export interface LogoMarkProps extends React.SVGAttributes<SVGSVGElement> {
   width?: number | string;
   height?: number | string;
   className?: string;
+  strokeWidth?: number | string;
+  animated?: boolean;
 }
 
 export default function LogoMark({
   size,
   width = size || 32,
   height = size || 32,
-  color = "#E5300A",
+  color = "#FF6B00",
   fill,
+  strokeWidth = 16,
   className = "",
+  animated = false,
   ...props
 }: LogoMarkProps) {
-  const fillColor = fill || color;
+  const strokeColor = fill || color;
 
   return (
     <svg
       width={width}
       height={height}
-      viewBox="0 0 32 32"
+      viewBox="0 0 64 64"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className={`santisoft-isotype-svg ${className}`.trim()}
+      className={`santisoft-isotype-svg ${animated ? "flow-logo-anim" : ""} ${className}`.trim()}
       aria-hidden="true"
       {...props}
     >
-      <rect x="2.5" y="14" width="4.5" height="14" rx="2.25" fill={fillColor} />
-      <rect x="9.5" y="4" width="4.5" height="24" rx="2.25" fill={fillColor} />
-      <rect x="16.5" y="10" width="4.5" height="18" rx="2.25" fill={fillColor} />
-      <rect x="23.5" y="6" width="4.5" height="22" rx="2.25" fill={fillColor} />
+      <path
+        d="M 64 8 L 32 8 L 8 32 L 56 32 L 32 56 L 0 56"
+        stroke={strokeColor}
+        strokeWidth={strokeWidth}
+        fill="none"
+        strokeLinecap="butt"
+        strokeLinejoin="bevel"
+      />
     </svg>
   );
 }
