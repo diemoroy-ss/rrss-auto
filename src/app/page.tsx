@@ -64,6 +64,7 @@ export default function Home() {
               <h3>Redes Sociales 360°</h3>
               <ul className="pillar-list">
                 <li><span className="mark">›</span><span>Generación de <strong>contenido persuasivo</strong> con IA, adaptado a tu marca.</span></li>
+                <li><span className="mark">›</span><span><strong>Radar de Nicho 📡:</strong> Inteligencia de mercado para descubrir tendencias, dudas y temas virales en tu industria.</span></li>
                 <li><span className="mark">›</span><span><strong>Calendario estratégico</strong> que automatiza todo un mes en minutos.</span></li>
                 <li><span className="mark">›</span><span>Publicación automática directa en <strong>Meta (Facebook, Instagram)</strong>, <strong>TikTok</strong>, <strong>YouTube Shorts</strong> y <strong>X (Twitter)</strong>.</span></li>
               </ul>
