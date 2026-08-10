@@ -10,6 +10,7 @@ import { doc, getDoc } from "firebase/firestore";
 import ProfileMenu from "../../../components/gastronomico/ProfileMenu";
 import NetworkSwitcher from "../../../components/NetworkSwitcher";
 import { ProfileProvider } from "../../../contexts/ProfileContext";
+import LogoMark from "../../../components/LogoMark";
 
 export default function RrssPanelLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -49,8 +50,10 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
     { href: "/automatizacion-rrss/panel", label: "Próximos Posts", icon: "📅", exact: true },
     { href: "/automatizacion-rrss/panel/metricas", label: "Estadísticas", icon: "📊", exact: false },
     { href: "/automatizacion-rrss/panel/crear", label: "Nuevo Post", icon: "✍️", exact: false },
+    { href: "/automatizacion-rrss/panel/poc-video", label: "PoC Video Reel", icon: "🎬", exact: false },
     { href: "/automatizacion-rrss/panel/biblioteca", label: "Biblioteca", icon: "🖼️", exact: false },
     { href: "/automatizacion-rrss/panel/prompts", label: "Prompts IA", icon: "✨", exact: false },
+    { href: "/automatizacion-rrss/panel/radar", label: "Radar de Nicho", icon: "📡", exact: false },
     { href: "/automatizacion-rrss/panel/estrategia", label: "Estrategia", icon: "🚀", exact: false },
     { href: "/automatizacion-rrss/panel/ads", label: "Meta Ads", icon: "🎯", exact: true },
     { href: "/automatizacion-rrss/panel/configuracion", label: "Configuración de Marca", icon: "🏪", exact: false },
@@ -107,7 +110,7 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
             <div className="px-5 py-5 border-b border-indigo-900/40 bg-indigo-950/40">
               <Link href="/automatizacion-rrss/panel/admin">
                 <h2 className="text-base font-black tracking-tight text-white flex items-center gap-2.5">
-                  <img src="/favicon.png" alt="Logo" className="w-8 h-8 rounded-lg object-contain shadow-md shadow-indigo-500/20" />
+                  <LogoMark size={32} />
                   <div className="flex flex-col">
                     <span className="text-indigo-300 font-extrabold text-sm leading-none">Santisoft AI</span>
                     <span className="text-[10px] font-black uppercase text-amber-400 tracking-wider mt-1 flex items-center gap-1">
@@ -142,7 +145,7 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
             <div className="px-5 py-5 border-b border-slate-800 bg-slate-950/30">
               <Link href="/automatizacion-rrss/panel">
                 <h2 className="text-base font-black tracking-tight text-white flex items-center gap-2.5 hover:text-indigo-400 transition-all">
-                  <img src="/favicon.png" alt="Logo" className="w-8 h-8 rounded-lg object-contain shadow-md shadow-indigo-600/10" />
+                  <LogoMark size={32} />
                   <span>Santisoft AI</span>
                 </h2>
               </Link>
@@ -209,7 +212,7 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
                 href={isAdminRoute ? "/automatizacion-rrss/panel/admin" : "/automatizacion-rrss/panel"}
                 className="flex items-center gap-2 flex-1 min-w-0 overflow-hidden mr-2"
               >
-                <img src="/favicon.png" alt="Logo" className="w-7 h-7 rounded-md object-contain flex-shrink-0" />
+                <LogoMark size={28} />
                 <div className="flex flex-col leading-none overflow-hidden">
                   <span className={`text-xs font-black ${isAdminRoute ? 'text-indigo-300' : 'text-indigo-400'}`}>Santisoft</span>
                   {currentLink && (

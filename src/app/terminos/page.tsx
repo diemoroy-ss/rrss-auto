@@ -2,13 +2,14 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from 'next/link';
 import DotCanvas from '../../components/DotCanvas';
+import LogoMark from '../../components/LogoMark';
 
 export const metadata: Metadata = {
   title: "Santisoft AI | Términos de Servicio",
   description: "Términos de servicio y condiciones legales de uso de la plataforma Santisoft AI.",
   icons: {
-    icon: [{ url: "/favicon.png", type: "image/png" }],
-    apple: "/favicon.png",
+    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
+    apple: "/favicon.svg",
   },
 };
 
@@ -27,7 +28,7 @@ export default function Terminos() {
       <nav>
         <div className="wrap">
           <Link href="/" className="logo">
-            <img src="/favicon.png" alt="Logo" style={{ width: '22px', height: '22px', objectFit: 'contain', borderRadius: '6px' }} />
+            <LogoMark size={24} />
             SANTISOFT AI
           </Link>
           <div className="nav-links">
@@ -57,19 +58,33 @@ export default function Terminos() {
               
               <section style={{ borderTop: '1px solid var(--line)', paddingTop: '20px' }}>
                 <h3 style={{ fontSize: '20px', fontFamily: 'var(--disp)', marginBottom: '12px', fontWeight: 600 }}>
-                  1. Aceptación de los Términos
+                  1. Aceptación de los Términos e Integración de Redes Sociales
                 </h3>
+                <p style={{ fontSize: '15px', color: 'var(--ink-dim)', lineHeight: '1.6', marginBottom: '10px' }}>
+                  Al crear una cuenta en <strong>Santisoft AI</strong> (la Aplicación), autorizas la gestión y publicación automática en tus redes sociales conectadas (Meta Facebook/Instagram, TikTok, Google Business Profile, YouTube Shorts y X/Twitter) y blogs oficiales. Las publicaciones se ejecutan bajo tu explícito control mediante la infraestructura técnica de automatización que conecta las APIs oficiales de cada plataforma.
+                </p>
                 <p style={{ fontSize: '15px', color: 'var(--ink-dim)', lineHeight: '1.6' }}>
-                  Al crear una cuenta en <strong>Santisoft AI</strong> (la Aplicación), autorizas la gestión y publicación automática en tus redes sociales conectadas (Meta, TikTok y LinkedIn) y blogs oficiales. Las publicaciones se ejecutan bajo tu explícito control, y el servicio proporciona la infraestructura técnica de automatización conectando las APIs oficiales de cada plataforma.
+                  • <strong>Términos de YouTube:</strong> Al utilizar las funciones de publicación en YouTube Shorts, el usuario acepta de manera expresa estar vinculado a los <a href="https://www.youtube.com/t/terms" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--signal)', textDecoration: 'underline' }}>Términos de Servicio de YouTube</a> y a las normativas comunitarias de Google.
+                  <br />
+                  • <strong>Términos de X (Twitter):</strong> Las publicaciones en X se rigen bajo los Acuerdos y Políticas para Desarrolladores de X. El usuario se compromete a no utilizar la plataforma para la emisión de spam o contenido automatizado engañoso.
                 </p>
               </section>
 
               <section style={{ borderTop: '1px solid var(--line)', paddingTop: '20px' }}>
                 <h3 style={{ fontSize: '20px', fontFamily: 'var(--disp)', marginBottom: '12px', fontWeight: 600 }}>
-                  2. Responsabilidad de Contenidos y Publicidad
+                  2. Protección de Datos y Ley N° 21.719 de Chile
+                </h3>
+                <p style={{ fontSize: '15px', color: 'var(--ink-dim)', lineHeight: '1.6' }}>
+                  El tratamiento de datos personales en Santisoft AI se rige estrictamente por los principios de licitud, proporcionalidad, finalidad y seguridad establecidos en la <strong>Ley N° 21.719 de Chile</strong>. Los usuarios conservan el control absoluto sobre sus datos y pueden solicitar el acceso, rectificación, supresión o portabilidad de su información en cualquier momento.
+                </p>
+              </section>
+
+              <section style={{ borderTop: '1px solid var(--line)', paddingTop: '20px' }}>
+                <h3 style={{ fontSize: '20px', fontFamily: 'var(--disp)', marginBottom: '12px', fontWeight: 600 }}>
+                  3. Responsabilidad de Contenidos y Publicidad
                 </h3>
                 <p style={{ fontSize: '15px', color: 'var(--ink-dim)', lineHeight: '1.6', marginBottom: '10px' }}>
-                  • <strong>Publicaciones Orgánicas:</strong> El cliente es el único creador y responsable del material (imágenes, textos, ideas) generado e instruido a publicar en sus perfiles. Santisoft AI no supervisa la veracidad, derechos de autor o legalidad del contenido publicado.
+                  • <strong>Publicaciones Orgánicas:</strong> El cliente es el único creador y responsable del material (imágenes, textos, guiones, videos) generado e instruido a publicar en sus perfiles. Santisoft AI no supervisa la veracidad, derechos de autor o legalidad del contenido publicado.
                 </p>
                 <p style={{ fontSize: '15px', color: 'var(--ink-dim)', lineHeight: '1.6' }}>
                   • <strong>Publicidad de Pago (Meta Ads):</strong> Al utilizar el creador de campañas en Meta Ads integrado, autorizas el consumo de tu presupuesto directamente desde tu cuenta publicitaria de Meta. <strong>El usuario asume el 100% de la responsabilidad financiera y de facturación</strong>. Santisoft AI no procesa cobros de publicidad ni se responsabiliza por el rendimiento, rechazos de anuncios o bloqueos derivados de las políticas de publicidad de Meta.

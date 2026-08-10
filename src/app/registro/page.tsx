@@ -5,6 +5,7 @@ import { auth, db, googleProvider } from "../../lib/firebase";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import LogoMark from "../../components/LogoMark";
 
 function RegistroContent() {
   const router = useRouter();
@@ -31,14 +32,11 @@ function RegistroContent() {
         setEmail(u.email || "");
         setName(u.displayName || "");
         
-        // Verificar si ya tiene todos los datos en DB
+        // Verificar si ya tiene datos en DB
         const userDoc = await getDoc(doc(db, "users", u.uid));
         if (userDoc.exists()) {
-          const data = userDoc.data();
-          if (data.phone && data.company) {
-            // Ya está registrado completamente, redirigir directo a MP o App
-            await handlePostRegistration(u.uid, u.email || "", plan, billing === "anual");
-          }
+          // Ya está registrado en la BD, redirigir directo a MP o App
+          await handlePostRegistration(u.uid, u.email || "", plan, billing === "anual");
         }
       }
       setAuthChecked(true);
@@ -144,7 +142,7 @@ function RegistroContent() {
       <nav>
         <div className="wrap">
           <Link href="/" className="logo">
-            <img src="/favicon.png" alt="Logo" style={{ width: '22px', height: '22px', objectFit: 'contain', borderRadius: '6px' }} />
+            <LogoMark size={24} />
             SANTISOFT AI
           </Link>
           <div className="nav-links">

@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 
 // The key should be exactly 32 bytes (256 bits) for AES-256
 // In a real environment, this must come from an environment variable:

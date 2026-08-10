@@ -46,6 +46,18 @@ export type BusinessProfile = {
   tag_tt?: string;
   tiktokUsername?: string;
   
+  googleBusinessName?: string;
+  googleBusinessToken_enc?: string;
+  googleBusinessConnected?: boolean;
+
+  youtubeConnected?: boolean;
+  youtubeChannelName?: string;
+  
+  xConnected?: boolean;
+  xUsername?: string;
+
+  accounts?: Record<string, any>;
+  
   metaTokenExpiresAt?: number;
   linkedinTokenExpiresAt?: number;
   tiktokTokenExpiresAt?: number;

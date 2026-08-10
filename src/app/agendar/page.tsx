@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import LogoMark from "../../components/LogoMark";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect } from "react";
 
@@ -96,7 +97,7 @@ function AgendarContent() {
       <nav>
         <div className="wrap">
           <Link href="/" className="logo">
-            <img src="/favicon.png" alt="Logo" style={{ width: '22px', height: '22px', objectFit: 'contain', borderRadius: '6px' }} />
+            <LogoMark size={24} />
             SANTISOFT AI
           </Link>
           <div className="nav-links">

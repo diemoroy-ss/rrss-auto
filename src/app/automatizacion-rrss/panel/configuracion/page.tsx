@@ -499,6 +499,68 @@ function ConfigContent() {
     }
   };
 
+  const handleConnectYouTube = () => {
+    if (!user || !activeProfile) return;
+    const redirectUrl = `/api/social-auth/youtube/redirect?profileId=${activeProfile.id}&userId=${user.uid}`;
+    window.location.href = redirectUrl;
+  };
+
+  const handleDisconnectYouTube = async () => {
+    showModal("confirm", "Desconectar YouTube", "¿Seguro que quieres desconectar YouTube Shorts?", async () => {
+      setModal(prev => ({ ...prev, isOpen: false }));
+      setSaving(true);
+      try {
+        const idToken = await user.getIdToken();
+        await fetch("/api/social-auth", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            idToken,
+            uid: user.uid,
+            profileId: activeProfile.id,
+            setAccounts: { youtube: { connected: false, disconnect: true } }
+          })
+        });
+        await loadProfiles();
+        showModal("success", "Desconectado", "Canal de YouTube desconectado exitosamente.");
+      } catch (e) {
+        showModal("error", "Error", "No se pudo desconectar YouTube.");
+      }
+      setSaving(false);
+    });
+  };
+
+  const handleConnectX = () => {
+    if (!user || !activeProfile) return;
+    const redirectUrl = `/api/social-auth/x/redirect?profileId=${activeProfile.id}&userId=${user.uid}`;
+    window.location.href = redirectUrl;
+  };
+
+  const handleDisconnectX = async () => {
+    showModal("confirm", "Desconectar X", "¿Seguro que quieres desconectar X (Twitter)?", async () => {
+      setModal(prev => ({ ...prev, isOpen: false }));
+      setSaving(true);
+      try {
+        const idToken = await user.getIdToken();
+        await fetch("/api/social-auth", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            idToken,
+            uid: user.uid,
+            profileId: activeProfile.id,
+            setAccounts: { x: { connected: false, disconnect: true } }
+          })
+        });
+        await loadProfiles();
+        showModal("success", "Desconectado", "Cuenta de X desconectada exitosamente.");
+      } catch (e) {
+        showModal("error", "Error", "No se pudo desconectar X.");
+      }
+      setSaving(false);
+    });
+  };
+
   const saveMetaSelection = async (page: any) => {
     if (!user || !activeProfile) return;
     setShowMetaModal(false);
@@ -743,13 +805,13 @@ function ConfigContent() {
           <div className="pt-6 border-t border-slate-100">
              <h4 className="text-sm font-black text-slate-900 mb-4 uppercase tracking-widest">Conexiones a Redes Sociales</h4>
              
-             <div className="grid md:grid-cols-3 gap-4">
-                {/* Meta (FB/IG) */}
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                {/* 1. Meta (FB & IG) */}
                 <div className="p-5 border-2 border-slate-100 rounded-2xl bg-slate-50 flex flex-col justify-between">
                    <div>
                        <div className="flex items-center gap-3 mb-2">
-                           <span className="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center">
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                           <span className="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center font-bold">
+                              f
                            </span>
                            <h5 className="font-black text-slate-900">Meta (FB & IG)</h5>
                        </div>
@@ -806,92 +868,7 @@ function ConfigContent() {
                    )}
                 </div>
 
-                {/* LinkedIn - Comentado temporalmente por verificación legal */}
-                {/* 
-                <div className="p-5 border-2 border-slate-100 rounded-2xl bg-slate-50 flex flex-col justify-between">
-                   <div>
-                       <div className="flex items-center gap-3 mb-2">
-                           <span className="w-8 h-8 bg-sky-100 text-sky-600 rounded-lg flex items-center justify-center">
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
-                           </span>
-                           <h5 className="font-black text-slate-900">LinkedIn</h5>
-                       </div>
-                       <p className="text-xs text-slate-500 font-medium mb-4">Publica en tu perfil personal o en una página de empresa administrada.</p>
-                   </div>
-                   
-                   {liStatus ? (
-                       <div className="flex flex-col h-full justify-end">
-                           <div className="flex items-center justify-between mb-3">
-                               <div className="flex items-center gap-2">
-                                   <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                                   <span className="text-[10px] sm:text-xs font-bold text-emerald-600 truncate">Conectado {activeProfile?.linkedinCompanyUrn ? '(Empresa)' : '(Personal)'}</span>
-                               </div>
-                               {(() => {
-                                   const expInfo = getExpirationText(activeProfile?.linkedinTokenExpiresAt);
-                                   if (!expInfo) return null;
-                                   return (
-                                       <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${expInfo.bg} ${expInfo.color} whitespace-nowrap ml-2`}>
-                                           {expInfo.text}
-                                       </span>
-                                   );
-                               })()}
-                           </div>
-                           <div className="flex gap-2">
-                               <button type="button" onClick={() => setShowLinkedInModal(true)} className="flex-1 bg-white border-2 border-slate-200 hover:border-sky-500 text-slate-700 text-[10px] sm:text-xs font-bold py-2 rounded-xl transition-colors truncate">Configurar</button>
-                               <button type="button" onClick={handleConnectLinkedIn} className="flex-1 bg-sky-50 border-2 border-sky-100 hover:border-sky-300 text-sky-600 text-[10px] sm:text-xs font-bold py-2 rounded-xl transition-colors truncate">Actualizar</button>
-                               <button type="button" onClick={handleDisconnectLi} className="px-3 bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold rounded-xl text-xs transition-colors" title="Desconectar">X</button>
-                           </div>
-                       </div>
-                   ) : (
-                       <button type="button" onClick={handleConnectLinkedIn} className="w-full bg-[#0077b5] hover:bg-[#005582] text-white font-bold py-2.5 rounded-xl shadow-md text-sm transition-colors mt-auto">
-                           Conectar con LinkedIn
-                       </button>
-                   )}
-                </div>
-                */}
-
-                {/* Google Business Profile */}
-                <div className="p-5 border-2 border-slate-100 rounded-2xl bg-slate-50 flex flex-col justify-between">
-                   <div>
-                       <div className="flex items-center gap-3 mb-2">
-                           <span className="w-8 h-8 bg-amber-100 text-amber-600 rounded-lg flex items-center justify-center font-bold">
-                              G
-                           </span>
-                           <h5 className="font-black text-slate-900 font-sans">Google Business Profile</h5>
-                       </div>
-                       <p className="text-xs text-slate-500 font-medium mb-4">Publica actualizaciones y fotos directamente en tu ficha de Google Maps.</p>
-                   </div>
-                   
-                   {gbpStatus ? (
-                       <div className="flex flex-col h-full justify-end">
-                           <div className="flex items-center justify-between mb-3">
-                               <div className="flex items-center gap-2">
-                                   <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                                   <span className="text-xs font-bold text-emerald-600">Conectado</span>
-                               </div>
-                           </div>
-                           {activeProfile?.googleBusinessName && (
-                               <div className="mb-3 p-3 bg-white border border-slate-100 rounded-xl space-y-1.5 shadow-sm text-left">
-                                   <div className="text-[11px] font-bold text-slate-700 flex items-center gap-2">
-                                       <span className="text-amber-500 shrink-0">📍</span>
-                                       <span className="text-slate-400 font-medium tracking-wide">Local:</span>
-                                       <span className="text-slate-700 font-bold truncate">{activeProfile.googleBusinessName}</span>
-                                   </div>
-                                </div>
-                           )}
-                           <div className="flex gap-2">
-                               <button type="button" onClick={handleConnectGBP} className="flex-1 bg-white border-2 border-slate-200 hover:border-amber-500 text-slate-700 text-[10px] sm:text-xs font-bold py-2 rounded-xl transition-colors truncate">Actualizar</button>
-                               <button type="button" onClick={handleDisconnectGBP} className="px-3 bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold rounded-xl text-xs transition-colors" title="Desconectar">X</button>
-                           </div>
-                       </div>
-                   ) : (
-                       <button type="button" onClick={handleConnectGBP} className="w-full bg-[#EA4335] hover:bg-[#d63022] text-white font-bold py-2.5 rounded-xl shadow-md text-sm transition-colors mt-auto">
-                           Conectar con Google
-                       </button>
-                   )}
-                </div>
-
-                {/* TikTok */}
+                {/* 2. TikTok */}
                 <div className="p-5 border-2 border-slate-100 rounded-2xl bg-slate-50 flex flex-col justify-between">
                    <div>
                        <div className="flex items-center gap-3 mb-2">
@@ -944,17 +921,134 @@ function ConfigContent() {
                        </button>
                    )}
                 </div>
-             </div>
 
-             <div className="grid md:grid-cols-2 gap-4 mt-6">
-                <div>
-                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">🎵 TikTok URL</label>
-                   <input type="text" value={tiktokUrl} onChange={e => setTiktokUrl(e.target.value)} placeholder="@minegocio o enlace" className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700" />
+                {/* 3. YouTube Shorts */}
+                <div className="p-5 border-2 border-slate-100 rounded-2xl bg-slate-50 flex flex-col justify-between">
+                   <div>
+                       <div className="flex items-center gap-3 mb-2">
+                           <span className="w-8 h-8 bg-rose-600 text-white rounded-lg flex items-center justify-center font-bold text-xs">
+                              ▶
+                           </span>
+                           <h5 className="font-black text-slate-900">YouTube Shorts</h5>
+                       </div>
+                       <p className="text-xs text-slate-500 font-medium mb-4">Publica tus Shorts y Reels de video directamente en tu canal de YouTube.</p>
+                   </div>
+                   
+                   {Boolean(activeProfile?.accounts?.youtube?.connected || activeProfile?.youtubeConnected) ? (
+                       <div className="flex flex-col h-full justify-end">
+                           <div className="flex items-center justify-between mb-3">
+                               <div className="flex items-center gap-2">
+                                   <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                                   <span className="text-xs font-bold text-emerald-600">Conectado</span>
+                               </div>
+                           </div>
+                           
+                           {(activeProfile?.accounts?.youtube?.channelName || activeProfile?.youtubeChannelName) && (
+                               <div className="mb-3 p-3 bg-white border border-slate-100 rounded-xl space-y-1.5 shadow-sm text-left">
+                                   <div className="text-[11px] font-bold text-slate-700 flex items-center gap-2">
+                                       <span className="text-rose-600 shrink-0">📺</span>
+                                       <span className="text-slate-400 font-medium tracking-wide">Canal:</span>
+                                       <span className="text-slate-700 font-bold truncate">{activeProfile?.accounts?.youtube?.channelName || activeProfile?.youtubeChannelName}</span>
+                                   </div>
+                               </div>
+                           )}
+
+                           <div className="flex gap-2">
+                               <button type="button" onClick={handleConnectYouTube} className="flex-1 bg-white border-2 border-slate-200 hover:border-rose-500 text-slate-700 text-[10px] sm:text-xs font-bold py-2 rounded-xl transition-colors truncate">Actualizar</button>
+                               <button type="button" onClick={handleDisconnectYouTube} className="px-3 bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold rounded-xl text-xs transition-colors" title="Desconectar">X</button>
+                           </div>
+                       </div>
+                   ) : (
+                       <button type="button" onClick={handleConnectYouTube} className="w-full bg-[#FF0000] hover:bg-[#cc0000] text-white font-bold py-2.5 rounded-xl shadow-md text-sm transition-colors mt-auto">
+                           Conectar con YouTube
+                       </button>
+                   )}
                 </div>
-                <div>
-                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">💼 LinkedIn URL</label>
-                   <input type="text" value={linkedinUrl} onChange={e => setLinkedinUrl(e.target.value)} placeholder="https://linkedin.com/in/minegocio o enlace" className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700" />
+
+                {/* 4. X (Twitter) */}
+                <div className="p-5 border-2 border-slate-100 rounded-2xl bg-slate-50 flex flex-col justify-between">
+                   <div>
+                       <div className="flex items-center gap-3 mb-2">
+                           <span className="w-8 h-8 bg-black text-white rounded-lg flex items-center justify-center font-bold text-xs">
+                              𝕏
+                           </span>
+                           <h5 className="font-black text-slate-900">X (Twitter)</h5>
+                       </div>
+                       <p className="text-xs text-slate-500 font-medium mb-4">Publica hilos, tweets y videos automáticamente en tu perfil de X.</p>
+                   </div>
+                   
+                   {Boolean(activeProfile?.accounts?.x?.connected || activeProfile?.xConnected) ? (
+                       <div className="flex flex-col h-full justify-end">
+                           <div className="flex items-center justify-between mb-3">
+                               <div className="flex items-center gap-2">
+                                   <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                                   <span className="text-xs font-bold text-emerald-600">Conectado</span>
+                               </div>
+                           </div>
+                           
+                           {(activeProfile?.accounts?.x?.username || activeProfile?.xUsername) && (
+                               <div className="mb-3 p-3 bg-white border border-slate-100 rounded-xl space-y-1.5 shadow-sm text-left">
+                                   <div className="text-[11px] font-bold text-slate-700 flex items-center gap-2">
+                                       <span className="text-black shrink-0">𝕏</span>
+                                       <span className="text-slate-400 font-medium tracking-wide">Usuario:</span>
+                                       <span className="text-slate-700 font-bold truncate">{activeProfile?.accounts?.x?.username || activeProfile?.xUsername}</span>
+                                   </div>
+                               </div>
+                           )}
+
+                           <div className="flex gap-2">
+                               <button type="button" onClick={handleConnectX} className="flex-1 bg-white border-2 border-slate-200 hover:border-black text-slate-700 text-[10px] sm:text-xs font-bold py-2 rounded-xl transition-colors truncate">Actualizar</button>
+                               <button type="button" onClick={handleDisconnectX} className="px-3 bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold rounded-xl text-xs transition-colors" title="Desconectar">X</button>
+                           </div>
+                       </div>
+                   ) : (
+                       <button type="button" onClick={handleConnectX} className="w-full bg-black hover:bg-slate-900 text-white font-bold py-2.5 rounded-xl shadow-md text-sm transition-colors mt-auto">
+                           Conectar con X (Twitter)
+                       </button>
+                   )}
                 </div>
+
+                {/* 5. Google Business Profile */}
+                <div className="p-5 border-2 border-slate-100 rounded-2xl bg-slate-50 flex flex-col justify-between">
+                   <div>
+                       <div className="flex items-center gap-3 mb-2">
+                           <span className="w-8 h-8 bg-amber-100 text-amber-600 rounded-lg flex items-center justify-center font-bold">
+                              G
+                           </span>
+                           <h5 className="font-black text-slate-900 font-sans">Google Business Profile</h5>
+                       </div>
+                       <p className="text-xs text-slate-500 font-medium mb-4">Publica actualizaciones y fotos directamente en tu ficha de Google Maps.</p>
+                   </div>
+                   
+                   {gbpStatus ? (
+                       <div className="flex flex-col h-full justify-end">
+                           <div className="flex items-center justify-between mb-3">
+                               <div className="flex items-center gap-2">
+                                   <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                                   <span className="text-xs font-bold text-emerald-600">Conectado</span>
+                               </div>
+                           </div>
+                           {activeProfile?.googleBusinessName && (
+                               <div className="mb-3 p-3 bg-white border border-slate-100 rounded-xl space-y-1.5 shadow-sm text-left">
+                                   <div className="text-[11px] font-bold text-slate-700 flex items-center gap-2">
+                                       <span className="text-amber-500 shrink-0">📍</span>
+                                       <span className="text-slate-400 font-medium tracking-wide">Local:</span>
+                                       <span className="text-slate-700 font-bold truncate">{activeProfile.googleBusinessName}</span>
+                                   </div>
+                                </div>
+                           )}
+                           <div className="flex gap-2">
+                               <button type="button" onClick={handleConnectGBP} className="flex-1 bg-white border-2 border-slate-200 hover:border-amber-500 text-slate-700 text-[10px] sm:text-xs font-bold py-2 rounded-xl transition-colors truncate">Actualizar</button>
+                               <button type="button" onClick={handleDisconnectGBP} className="px-3 bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold rounded-xl text-xs transition-colors" title="Desconectar">X</button>
+                           </div>
+                       </div>
+                   ) : (
+                       <button type="button" onClick={handleConnectGBP} className="w-full bg-[#EA4335] hover:bg-[#d63022] text-white font-bold py-2.5 rounded-xl shadow-md text-sm transition-colors mt-auto">
+                           Conectar con Google
+                       </button>
+                   )}
+                </div>
+
              </div>
           </div>
         </div>

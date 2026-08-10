@@ -5,6 +5,7 @@ import { auth, db, googleProvider } from "../../lib/firebase";
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import LogoMark from "../../components/LogoMark";
 
 export default function LoginGastronomico() {
   const [isRegister, setIsRegister] = useState(false);
@@ -19,7 +20,7 @@ export default function LoginGastronomico() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // Redirect users who are already logged in but check if they need onboarding
+  // Redirect users who are already logged in
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
       // Si el usuario ya está autenticado
@@ -29,17 +30,13 @@ export default function LoginGastronomico() {
              const userDocRef = doc(db, "users", u.uid);
              const userDoc = await getDoc(userDocRef);
              if (userDoc.exists()) {
-               const data = userDoc.data();
-               if (data.phone && data.company) {
-                 router.replace("/automatizacion-rrss/panel");
-               } else {
-                 router.replace("/registro");
-               }
+               router.replace("/automatizacion-rrss/panel");
              } else {
                router.replace("/registro");
              }
            } catch (e) {
              console.error("Error comprobando usuario:", e);
+             router.replace("/automatizacion-rrss/panel");
            }
         }
       }
@@ -172,11 +169,7 @@ export default function LoginGastronomico() {
       <div className="max-w-md w-full">
         
         <div className="text-center mb-8">
-           <img 
-             src="/favicon.png" 
-             alt="Logo" 
-             className="w-16 h-16 mx-auto mb-4 shadow-xl shadow-slate-900/10 object-contain rounded-[20px]" 
-           />
+           <LogoMark size={48} className="mx-auto mb-4" />
            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Santisoft AI</h1>
 
            <p className="text-slate-500 mt-2 text-sm">{isRegister ? "Crea una cuenta para empezar" : "Inicia sesión para gestionar tus redes sociales."}</p>

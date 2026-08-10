@@ -7,6 +7,7 @@ export interface LogoMarkProps extends React.SVGAttributes<SVGSVGElement> {
   height?: number | string;
   className?: string;
   strokeWidth?: number | string;
+  fill?: string;
   animated?: boolean;
 }
 

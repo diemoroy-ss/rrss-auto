@@ -2,13 +2,14 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from 'next/link';
 import DotCanvas from '../../components/DotCanvas';
+import LogoMark from '../../components/LogoMark';
 
 export const metadata: Metadata = {
   title: "Santisoft AI | Política de Privacidad",
   description: "Política de privacidad y cumplimiento regulatorio de datos de Santisoft AI. Conforme a la Ley N° 21.719 (modernización de la Ley N° 19.628 en Chile).",
   icons: {
-    icon: [{ url: "/favicon.png", type: "image/png" }],
-    apple: "/favicon.png",
+    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
+    apple: "/favicon.svg",
   },
 };
 
@@ -27,7 +28,7 @@ export default function Privacidad() {
       <nav>
         <div className="wrap">
           <Link href="/" className="logo">
-            <img src="/favicon.png" alt="Logo" style={{ width: '22px', height: '22px', objectFit: 'contain', borderRadius: '6px' }} />
+            <LogoMark size={24} />
             SANTISOFT AI
           </Link>
           <div className="nav-links">
@@ -83,16 +84,21 @@ export default function Privacidad() {
 
               <section style={{ borderTop: '1px solid var(--line)', paddingTop: '20px' }}>
                 <h3 style={{ fontSize: '20px', fontFamily: 'var(--disp)', marginBottom: '12px', fontWeight: 600 }}>
-                  3. Datos Recopilados y Uso de APIs
+                  3. Datos Recopilados y Uso de APIs de Terceros
                 </h3>
                 <p style={{ fontSize: '15px', color: 'var(--ink-dim)', lineHeight: '1.6', marginBottom: '12px' }}>
-                  Recopilamos únicamente la información mínima y necesaria para el funcionamiento de nuestras herramientas:
+                  Recopilamos únicamente la información mínima y necesaria para el funcionamiento de nuestras herramientas de automatización:
                 </p>
-                <ul style={{ listStyleType: 'circle', paddingLeft: '20px', fontSize: '14.5px', color: 'var(--ink-dim)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <li><strong>Tokens de Acceso Cifrados:</strong> Credenciales temporales para publicar en Meta (Facebook/Instagram), TikTok y LinkedIn. Nunca almacenamos tus contraseñas en texto plano.</li>
-                  <li><strong>Métricas de Rendimiento:</strong> Datos estadísticos sobre tus posts y campañas de Meta Ads para graficar tus reportes.</li>
-                  <li><strong>Mensajes y Automatización de Chats:</strong> Números de teléfono y texto de las interacciones en tu canal de WhatsApp automatizado.</li>
-                  <li><strong>Datos de Inteligencia Artificial (IA):</strong> El procesamiento de textos e ideas se realiza mediante la API segura de Google Gemini. Tus datos NO se utilizan para entrenar modelos públicos externos.</li>
+                <ul style={{ listStyleType: 'circle', paddingLeft: '20px', fontSize: '14.5px', color: 'var(--ink-dim)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <li><strong>Tokens de Acceso Cifrados:</strong> Credenciales temporales encriptadas (AES-256) para publicar en Meta (Facebook/Instagram), TikTok, Google Business Profile, YouTube Shorts y X (Twitter). Nunca almacenamos tus contraseñas en texto plano.</li>
+                  <li>
+                    <strong>Uso de YouTube API Services:</strong> Nuestra aplicación utiliza los servicios oficiales de la API de YouTube. Al conectar tu canal de YouTube en Santisoft, aceptas estar sujeto a los <a href="https://www.youtube.com/t/terms" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--signal)', textDecoration: 'underline' }}>Términos de Servicio de YouTube</a> y a la <a href="http://www.google.com/policies/privacy" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--signal)', textDecoration: 'underline' }}>Política de Privacidad de Google</a>. Puedes revocar el acceso de Santisoft en cualquier momento desde la <a href="https://security.google.com/settings/security/permissions" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--signal)', textDecoration: 'underline' }}>Página de Configuración de Seguridad de Google</a>.
+                  </li>
+                  <li>
+                    <strong>Uso de Servicios de API de X (Twitter):</strong> Santisoft interactúa con la API v2 de X mediante OAuth 2.0 PKCE para programar y publicar tweets, hilos y contenido audiovisual en tu cuenta autorizada. No recopilamos datos personales de terceros ni mensajes privados de X.
+                  </li>
+                  <li><strong>Métricas de Rendimiento:</strong> Datos estadísticos sobre tus publicaciones y campañas de Meta Ads para graficar tus reportes en el panel.</li>
+                  <li><strong>Datos de Inteligencia Artificial (IA):</strong> El procesamiento de guiones, copies e imágenes se realiza mediante la API privada de Google Gemini. Tus datos NO se utilizan para entrenar modelos públicos externos.</li>
                 </ul>
               </section>
 
