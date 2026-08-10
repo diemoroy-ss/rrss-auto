@@ -60,6 +60,20 @@ function NetworkIcon({ network, postId }: { network: string; postId: string }) {
       </svg>
     );
   }
+  if (network === 'youtube') {
+    return (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="#FF0000" aria-label="YouTube">
+        <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+      </svg>
+    );
+  }
+  if (network === 'x' || network === 'twitter') {
+    return (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="#000000" aria-label="X (Twitter)">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 24.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+      </svg>
+    );
+  }
   if (network === 'blog') {
     return <span className="text-[14px]">📝</span>;
   }
@@ -384,7 +398,7 @@ export default function RrssDashboard() {
     }
   };
 
-  const toggleNetwork = async (post: SocialPost, network: 'facebook' | 'instagram' | 'linkedin' | 'tiktok', e: React.MouseEvent) => {
+  const toggleNetwork = async (post: SocialPost, network: 'facebook' | 'instagram' | 'linkedin' | 'tiktok' | 'googleBusiness' | 'youtube' | 'x' | string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
       let newNetworks = [...post.networks];
@@ -974,7 +988,7 @@ export default function RrssDashboard() {
           <div>
             <div className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Seleccionar RRSS filtro</div>
             <div className="flex flex-wrap items-center gap-2">
-               {['all', 'instagram', 'facebook', 'linkedin', 'tiktok', 'googleBusiness', 'blog'].map(net => (
+               {['all', 'instagram', 'facebook', 'linkedin', 'tiktok', 'youtube', 'x', 'googleBusiness', 'blog'].map(net => (
                   <button
                      key={net}
                      onClick={() => setNetworkFilter(net)}
@@ -1415,11 +1429,13 @@ export default function RrssDashboard() {
                     <div className="flex flex-col items-start sm:items-end gap-2">
                         <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Publicar en:</span>
                         <div className="flex flex-wrap gap-2 justify-start sm:justify-end">
-                            {['facebook', 'instagram', 'googleBusiness', 'linkedin', 'tiktok'].filter(net => {
+                            {['facebook', 'instagram', 'googleBusiness', 'linkedin', 'tiktok', 'youtube', 'x'].filter(net => {
                                 const safeNets = Array.isArray(selectedPost.networks) ? selectedPost.networks : Object.entries(selectedPost.networks || {}).filter(([_, v]) => v).map(([k]) => k);
                                 if (net === 'linkedin') return !!activeProfile?.linkedinUserToken_enc || !!activeProfile?.linkedinToken_enc || safeNets.includes('linkedin');
                                 if (net === 'tiktok') return !!activeProfile?.tiktokToken_enc || safeNets.includes('tiktok');
                                 if (net === 'googleBusiness') return !!activeProfile?.googleBusinessToken_enc || safeNets.includes('googleBusiness');
+                                if (net === 'youtube') return !!activeProfile?.youtubeConnected || !!activeProfile?.accounts?.youtube?.connected || safeNets.includes('youtube');
+                                if (net === 'x') return !!activeProfile?.xConnected || !!activeProfile?.accounts?.x?.connected || safeNets.includes('x');
                                 return true;
                             }).map(net => {
                                 const safeNets = Array.isArray(selectedPost.networks) ? selectedPost.networks : Object.entries(selectedPost.networks || {}).filter(([_, v]) => v).map(([k]) => k);
@@ -1437,7 +1453,7 @@ export default function RrssDashboard() {
                                         <span className={`${!isActive ? 'grayscale opacity-60' : ''} w-4 h-4 flex items-center justify-center`}>
                                             <NetworkIcon network={net} postId={selectedPost.id} />
                                         </span>
-                                        <span className="text-[10px] font-black uppercase tracking-widest">{net === 'googleBusiness' ? 'Google' : net}</span>
+                                        <span className="text-[10px] font-black uppercase tracking-widest">{net === 'googleBusiness' ? 'Google' : net === 'youtube' ? 'YouTube' : net === 'x' ? 'X' : net}</span>
                                     </button>
                                 );
                             })}
