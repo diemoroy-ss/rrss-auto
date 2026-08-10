@@ -1,4 +1,4 @@
-﻿export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '../../../../lib/firebase-admin';
@@ -26,8 +26,7 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: "Meta App no configurada en el servidor" }, { status: 500 });
         }
 
-        const redirectUri = `${origin}/api/auth/meta/callback`;
-        const scopes = 'public_profile,email,pages_show_list,pages_read_engagement,pages_manage_posts,instagram_basic,instagram_content_publish,business_management';
+        const scopes = 'public_profile,email,pages_show_list,pages_read_engagement,pages_manage_posts,instagram_basic,instagram_content_publish';
         
         // Pass UID, profileId, and origin in state
         const state = encodeURIComponent(`${decodedToken.uid}|${profileId}|${origin}`);
