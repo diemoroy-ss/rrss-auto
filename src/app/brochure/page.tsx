@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import LogoMark from "../../components/LogoMark";
 
 export default function BrochurePage() {
+  const [businessExpanded, setBusinessExpanded] = useState(false);
   const handlePrint = () => {
     window.print();
   };
@@ -763,7 +765,7 @@ export default function BrochurePage() {
               <tr>
                 <td><strong>Costo mensual</strong></td>
                 <td className="bad">$400.000 – $1.000.000 CLP</td>
-                <td>Desde $19.990 CLP</td>
+                <td>Desde $34.990 CLP</td>
               </tr>
               <tr>
                 <td><strong>Disponibilidad</strong></td>
@@ -833,30 +835,31 @@ export default function BrochurePage() {
         </div>
 
         {/* PLANES */}
-        <div className="section">
+        <div className="section" id="planes">
           <div className="section-label">Precios</div>
           <div className="section-title">Planes para <em>cada etapa</em><br />de tu negocio.</div>
           <div className="network-badge-all">
             ✓ Todos los planes incluyen conexión a las 6 redes sociales disponibles
           </div>
           <div className="plans">
-            {/* FREE */}
+
+            {/* FREE — Prueba Gratuita */}
             <div className="plan">
               <div className="plan-header">
-                <div className="plan-badge">GRATIS</div>
+                <div className="plan-badge">PRUEBA GRATUITA</div>
                 <div className="plan-name">Free</div>
                 <div className="plan-price">
                   <span className="plan-price-amount">$0</span>
                 </div>
-                <div className="plan-price-period">para siempre</div>
+                <div className="plan-price-period">por 10 días</div>
               </div>
               <div className="plan-body">
                 <div className="plan-key-stat">
                   <strong>3 posts</strong>
-                  <span>período de prueba</span>
+                  <span>válidos por 10 días desde el registro</span>
                 </div>
                 <ul className="plan-features">
-                  <li>Conecta todas las redes</li>
+                  <li>Conecta todas las redes sociales</li>
                   <li>Video básico (imágenes IA)</li>
                   <li>Generación de textos IA</li>
                   <li>1 perfil de marca</li>
@@ -864,8 +867,12 @@ export default function BrochurePage() {
                   <li className="no">Blog SEO/GEO</li>
                   <li className="no">Radar de Nicho</li>
                 </ul>
+                <p style={{fontSize:'11px',color:'var(--ink-faint)',marginTop:'12px',lineHeight:'1.5',borderTop:'1px solid var(--border)',paddingTop:'10px'}}>
+                  Al vencer el período de prueba, pasa a un plan pago para continuar publicando.
+                </p>
               </div>
             </div>
+
             {/* STARTER */}
             <div className="plan">
               <div className="plan-header">
@@ -873,10 +880,10 @@ export default function BrochurePage() {
                 <div className="plan-name">Starter</div>
                 <div className="plan-price">
                   <span className="plan-price-currency">$</span>
-                  <span className="plan-price-amount">19.990</span>
+                  <span className="plan-price-amount">34.990</span>
                 </div>
                 <div className="plan-price-period">CLP / mes</div>
-                <div className="plan-annual">Anual: $199.900 · Ahorras $40.000</div>
+                <div className="plan-annual">Anual: $349.900 · Ahorras ~$70.000</div>
               </div>
               <div className="plan-body">
                 <div className="plan-key-stat">
@@ -884,7 +891,7 @@ export default function BrochurePage() {
                   <span>~12 posts al mes</span>
                 </div>
                 <ul className="plan-features">
-                  <li>Conecta todas las redes</li>
+                  <li>Conecta todas las redes sociales</li>
                   <li>Video básico (imágenes IA)</li>
                   <li>Calendario de programación</li>
                   <li>Radar de Nicho</li>
@@ -895,17 +902,18 @@ export default function BrochurePage() {
                 </ul>
               </div>
             </div>
-            {/* PRO */}
+
+            {/* PRO — RECOMENDADO */}
             <div className="plan plan-featured">
               <div className="plan-header">
-                <div className="plan-badge">MÁS POPULAR</div>
+                <div className="plan-badge">⭐ MÁS ELEGIDO</div>
                 <div className="plan-name">Pro</div>
                 <div className="plan-price">
                   <span className="plan-price-currency" style={{color:'rgba(255,255,255,0.7)'}}>$</span>
-                  <span className="plan-price-amount">39.990</span>
+                  <span className="plan-price-amount">69.990</span>
                 </div>
                 <div className="plan-price-period">CLP / mes</div>
-                <div className="plan-annual">Anual: $399.900 · Ahorras $80.000</div>
+                <div className="plan-annual">Anual: $699.900 · Ahorras ~$140.000</div>
               </div>
               <div className="plan-body">
                 <div className="plan-key-stat">
@@ -913,9 +921,9 @@ export default function BrochurePage() {
                   <span>~20 posts al mes</span>
                 </div>
                 <ul className="plan-features">
-                  <li>Conecta todas las redes</li>
-                  <li><strong>🎬 Video Premium</strong> (8/mes)</li>
-                  <li>Blog SEO/GEO automático</li>
+                  <li>Conecta todas las redes sociales</li>
+                  <li><strong>🎬 Video Premium</strong> · guión IA + voz en off</li>
+                  <li>Blog SEO/GEO (Google + ChatGPT)</li>
                   <li>Meta Ads integrado</li>
                   <li>Radar de Nicho</li>
                   <li>Estrategia IA mensual</li>
@@ -923,34 +931,64 @@ export default function BrochurePage() {
                 </ul>
               </div>
             </div>
+
             {/* BUSINESS */}
             <div className="plan">
               <div className="plan-header">
-                <div className="plan-badge">AGENCIAS</div>
+                <div className="plan-badge">AGENCIAS &amp; EMPRESAS</div>
                 <div className="plan-name">Business</div>
                 <div className="plan-price">
+                  <span style={{fontSize:'12px',fontWeight:700,color:'var(--ink-faint)'}}>desde&nbsp;</span>
                   <span className="plan-price-currency">$</span>
-                  <span className="plan-price-amount">79.990</span>
+                  <span className="plan-price-amount">129.990</span>
                 </div>
-                <div className="plan-price-period">CLP / mes</div>
-                <div className="plan-annual">Anual: $799.900 · Ahorras $160.000</div>
+                <div className="plan-price-period">CLP / mes · 2 cuentas</div>
+                <div className="plan-annual" style={{color:'var(--brand)',fontSize:'10.5px'}}>El precio baja mientras más cuentas agregues.</div>
               </div>
               <div className="plan-body">
                 <div className="plan-key-stat">
-                  <strong>1 post/día</strong>
-                  <span>~30 posts al mes</span>
+                  <strong>Todo lo de Pro</strong>
+                  <span>en múltiples perfiles independientes</span>
                 </div>
                 <ul className="plan-features">
-                  <li>Conecta todas las redes</li>
-                  <li><strong>🎬 Video Premium</strong> (20/mes)</li>
-                  <li>Blog SEO/GEO automático</li>
-                  <li>Meta Ads integrado</li>
+                  <li>Conecta todas las redes por cuenta</li>
+                  <li><strong>🎬 Video Premium</strong> por cuenta</li>
+                  <li>Blog SEO/GEO por cuenta</li>
+                  <li>Meta Ads por cuenta</li>
                   <li>Radar de Nicho</li>
-                  <li><strong>⭐ 3 perfiles independientes</strong></li>
-                  <li>Soporte dedicado</li>
+                  <li><strong>⭐ Multi-cuenta independiente</strong></li>
+                  <li>Soporte dedicado prioritario</li>
                 </ul>
+
+                {/* Tabla de precios expandible */}
+                <button
+                  onClick={() => setBusinessExpanded((v: boolean) => !v)}
+                  style={{width:'100%',marginTop:'14px',background:'var(--surface-2)',border:'1px solid var(--border)',borderRadius:'8px',padding:'8px 12px',fontSize:'11.5px',fontWeight:700,color:'var(--ink-faint)',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'space-between',fontFamily:'inherit'}}
+                >
+                  <span>Ver precios por cantidad de cuentas</span>
+                  <span>{businessExpanded ? '▲' : '▼'}</span>
+                </button>
+
+                {businessExpanded && (
+                  <table style={{width:'100%',borderCollapse:'collapse',marginTop:'10px',fontSize:'11.5px'}}>
+                    <thead>
+                      <tr style={{background:'var(--surface-3)'}}>
+                        <th style={{padding:'7px 10px',textAlign:'left',fontWeight:700,color:'var(--ink-dim)',borderBottom:'1px solid var(--border)'}}>Cuentas</th>
+                        <th style={{padding:'7px 10px',textAlign:'right',fontWeight:700,color:'var(--ink-dim)',borderBottom:'1px solid var(--border)'}}>Total/mes</th>
+                        <th style={{padding:'7px 10px',textAlign:'right',fontWeight:700,color:'var(--ink-dim)',borderBottom:'1px solid var(--border)'}}>Por cuenta</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr><td style={{padding:'6px 10px',borderBottom:'1px solid var(--border)',color:'var(--ink-dim)'}}>2 cuentas</td><td style={{padding:'6px 10px',borderBottom:'1px solid var(--border)',textAlign:'right',fontWeight:700}}>$129.990</td><td style={{padding:'6px 10px',borderBottom:'1px solid var(--border)',textAlign:'right',color:'var(--green)',fontWeight:700}}>~$64.995</td></tr>
+                      <tr><td style={{padding:'6px 10px',borderBottom:'1px solid var(--border)',color:'var(--ink-dim)'}}>3 cuentas</td><td style={{padding:'6px 10px',borderBottom:'1px solid var(--border)',textAlign:'right',fontWeight:700}}>$179.990</td><td style={{padding:'6px 10px',borderBottom:'1px solid var(--border)',textAlign:'right',color:'var(--green)',fontWeight:700}}>~$59.997</td></tr>
+                      <tr><td style={{padding:'6px 10px',borderBottom:'1px solid var(--border)',color:'var(--ink-dim)'}}>4 cuentas</td><td style={{padding:'6px 10px',borderBottom:'1px solid var(--border)',textAlign:'right',fontWeight:700}}>$219.990</td><td style={{padding:'6px 10px',borderBottom:'1px solid var(--border)',textAlign:'right',color:'var(--green)',fontWeight:700}}>~$54.998</td></tr>
+                      <tr><td style={{padding:'6px 10px',color:'var(--ink-dim)'}}>5+ cuentas</td><td style={{padding:'6px 10px',textAlign:'right',fontWeight:700,color:'var(--brand)'}}>Cotización</td><td style={{padding:'6px 10px',textAlign:'right',fontWeight:700,color:'var(--brand)'}}>Hablemos</td></tr>
+                    </tbody>
+                  </table>
+                )}
               </div>
             </div>
+
           </div>
         </div>
 
