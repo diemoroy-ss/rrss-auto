@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from 'next/server';
 import { adminDb } from '../../../../../lib/firebase-admin';
 import { encrypt } from '../../../../../lib/encryption';
@@ -106,6 +108,7 @@ export async function GET(req: Request) {
     return NextResponse.redirect(`${configPageUrl}?youtube=success`);
   } catch (error: any) {
     console.error('Error inesperado en callback de YouTube:', error);
-    return NextResponse.redirect('/automatizacion-rrss/panel/configuracion?youtube_error=server_error');
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://rrss.santisoft.cl';
+    return NextResponse.redirect(`${appUrl}/automatizacion-rrss/panel/configuracion?youtube_error=server_error`);
   }
 }
