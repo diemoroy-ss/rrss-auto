@@ -5,7 +5,7 @@ import VoiceMic from "../VoiceMic";
 import Link from "next/link";
 import { type PosterConfig } from "../../types/poster";
 import { UserTemplate } from "../../app/automatizacion-rrss/panel/crear/page";
-import { FaFacebookF, FaInstagram, FaLinkedinIn, FaTiktok, FaGoogle } from "react-icons/fa";
+import { FaFacebookF, FaInstagram, FaLinkedinIn, FaTiktok, FaGoogle, FaYoutube, FaTwitter } from "react-icons/fa";
 
 interface PostConfigFormProps {
   // AI states
@@ -41,8 +41,8 @@ interface PostConfigFormProps {
   setDate: (val: string) => void;
   time: string;
   setTime: (val: string) => void;
-  networks: { facebook: boolean; instagram: boolean; linkedin?: boolean; tiktok: boolean; googleBusiness: boolean };
-  setNetworks: React.Dispatch<React.SetStateAction<{ facebook: boolean; instagram: boolean; linkedin?: boolean; tiktok: boolean; googleBusiness: boolean }>>;
+  networks: { facebook: boolean; instagram: boolean; linkedin?: boolean; tiktok: boolean; googleBusiness: boolean; youtube?: boolean; x?: boolean };
+  setNetworks: React.Dispatch<React.SetStateAction<{ facebook: boolean; instagram: boolean; linkedin?: boolean; tiktok: boolean; googleBusiness: boolean; youtube?: boolean; x?: boolean }>>;
 
   // Poster configuration (For references/logo defaults)
   posterConfig?: PosterConfig;
@@ -58,6 +58,8 @@ interface PostConfigFormProps {
   hasLi: boolean;
   hasTt: boolean;
   hasGbp?: boolean;
+  hasYt?: boolean;
+  hasX?: boolean;
   needsConnection: boolean;
   handleImproveWithAI: () => void;
   handleGeneratePreview: () => void;
@@ -103,7 +105,7 @@ export default function PostConfigForm({
   date, setDate,
   time, setTime,
   networks, setNetworks,
-  hasFb, hasIg, hasLi, hasTt, hasGbp,
+  hasFb, hasIg, hasLi, hasTt, hasGbp, hasYt, hasX,
   posterConfig,
   needsConnection,
   handleImproveWithAI,
@@ -224,6 +226,30 @@ export default function PostConfigForm({
                   title="Google Business Profile"
                 >
                   <FaGoogle />
+                </button>
+              )}
+              {hasYt && (
+                <button
+                  type="button"
+                  onClick={() => setNetworks({ ...networks, youtube: !networks.youtube })}
+                  className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all ${
+                    networks.youtube ? 'bg-[#FF0000] text-white scale-105 shadow-md shadow-red-500/20' : 'bg-slate-200 text-slate-400 opacity-60 hover:opacity-100 hover:text-slate-650'
+                  }`}
+                  title="YouTube Shorts"
+                >
+                  <FaYoutube />
+                </button>
+              )}
+              {hasX && (
+                <button
+                  type="button"
+                  onClick={() => setNetworks({ ...networks, x: !networks.x })}
+                  className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all ${
+                    networks.x ? 'bg-black text-white scale-105 shadow-md shadow-black/20' : 'bg-slate-200 text-slate-400 opacity-60 hover:opacity-100 hover:text-slate-650'
+                  }`}
+                  title="X (Twitter)"
+                >
+                  <FaTwitter />
                 </button>
               )}
             </div>

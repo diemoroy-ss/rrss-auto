@@ -77,32 +77,41 @@ export async function GET(req: Request) {
       console.warn('No se pudo consultar el nombre del canal de YouTube:', chErr);
     }
 
-    // 3. Guardar encriptado en Firestore
+    // 3. Guardar encriptado en Firestore dentro del perfil del usuario
     if (adminDb && stateObj.userId && stateObj.profileId) {
-      const businessRef = adminDb
-        .collection('users')
-        .doc(stateObj.userId)
-        .collection('businesses')
-        .doc(stateObj.profileId);
+      const userRef = adminDb.collection('users').doc(stateObj.userId);
+      const userDoc = await userRef.get();
 
-      const encAccessToken = encrypt(accessToken);
-      const encRefreshToken = refreshToken ? encrypt(refreshToken) : '';
+      if (userDoc.exists) {
+        const userData = userDoc.data() || {};
+        let profiles = userData.profiles || [];
 
-      await businessRef.set(
-        {
-          accounts: {
-            youtube: {
-              connected: true,
-              channelName,
-              channelId,
-              token: encAccessToken,
-              refreshToken: encRefreshToken,
-              updatedAt: new Date().toISOString(),
+        const targetIdx = profiles.findIndex((p: any) => p.id === stateObj.profileId);
+        if (targetIdx !== -1) {
+          const encAccessToken = encrypt(accessToken);
+          const encRefreshToken = refreshToken ? encrypt(refreshToken) : '';
+
+          profiles[targetIdx] = {
+            ...profiles[targetIdx],
+            youtubeConnected: true,
+            youtubeChannelName: channelName,
+            youtubeChannelId: channelId,
+            accounts: {
+              ...(profiles[targetIdx].accounts || {}),
+              youtube: {
+                connected: true,
+                channelName,
+                channelId,
+                token: encAccessToken,
+                refreshToken: encRefreshToken,
+                updatedAt: new Date().toISOString(),
+              },
             },
-          },
-        },
-        { merge: true }
-      );
+          };
+
+          await userRef.update({ profiles });
+        }
+      }
     }
 
     return NextResponse.redirect(`${configPageUrl}?youtube=success`);

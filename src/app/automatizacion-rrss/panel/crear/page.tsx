@@ -19,7 +19,7 @@ import StatusModal from "../../../../components/StatusModal";
 import AIOptionsModal from "../../../../components/crear/AIOptionsModal";
 import PosterSection from "../../../../components/crear/PosterSection";
 import GeneratingModal, { type GeneratingStep } from "../../../../components/crear/GeneratingModal";
-import { FaFacebookF, FaInstagram, FaLinkedinIn, FaTiktok, FaGoogle } from "react-icons/fa";
+import { FaFacebookF, FaInstagram, FaLinkedinIn, FaTiktok, FaGoogle, FaYoutube, FaTwitter } from "react-icons/fa";
 
 export interface UserTemplate { id: string; url: string; type?: 'image' | 'video'; createdAt: Date; }
 
@@ -34,6 +34,8 @@ export default function RrssCreatePost() {
   const [hasLi, setHasLi] = useState(false);
   const [hasTt, setHasTt] = useState(false);
   const [hasGbp, setHasGbp] = useState(false);
+  const [hasYt, setHasYt] = useState(false);
+  const [hasX, setHasX] = useState(false);
   const [loadingInitial, setLoadingInitial] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -57,7 +59,7 @@ export default function RrssCreatePost() {
   const [businessType, setBusinessType] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
-  const [networks, setNetworks] = useState({ facebook: true, instagram: true, linkedin: false, tiktok: true, googleBusiness: true });
+  const [networks, setNetworks] = useState({ facebook: true, instagram: true, linkedin: false, tiktok: true, googleBusiness: true, youtube: true, x: true });
 
   // Wizard state
   const [previewSlides, setPreviewSlides] = useState<CarouselSlide[]>([]);
@@ -141,15 +143,20 @@ export default function RrssCreatePost() {
             const ttOK = isValidToken(activeProfile?.tiktokToken_enc) || (isDefault && isValidToken(data.tiktokToken_enc));
             const gbpOK = isValidToken(activeProfile?.googleBusinessToken_enc) || (isDefault && isValidToken(data.googleBusinessToken_enc));
             
+            const ytOK = isValidToken(activeProfile?.youtubeToken_enc || activeProfile?.accounts?.youtube?.token) || (isDefault && isValidToken(data.youtubeToken_enc));
+            const xOK = isValidToken(activeProfile?.xToken_enc || activeProfile?.accounts?.x?.token) || (isDefault && isValidToken(data.xToken_enc));
+            
             setHasFb(fbOK);
             setHasIg(igOK);
             setHasLi(liOK);
             setHasTt(ttOK);
             setHasGbp(gbpOK);
+            setHasYt(ytOK);
+            setHasX(xOK);
             setBusinessType(activeProfile?.rubro || (isDefault ? data.rubro : "") || "");
             setUserLogo(activeProfile?.logoUrl || (isDefault ? data.logoUrl : "") || "");
             
-            setNetworks({ facebook: fbOK, instagram: igOK, linkedin: false, tiktok: ttOK, googleBusiness: gbpOK });
+            setNetworks({ facebook: fbOK, instagram: igOK, linkedin: false, tiktok: ttOK, googleBusiness: gbpOK, youtube: ytOK, x: xOK });
             
             const plan = data.plan || "free";
             setUserPlan(plan);
@@ -1072,7 +1079,7 @@ export default function RrssCreatePost() {
               date={date} setDate={setDate}
               time={time} setTime={setTime}
               networks={networks} setNetworks={setNetworks}
-              hasFb={hasFb} hasIg={hasIg} hasLi={hasLi} hasTt={hasTt} hasGbp={hasGbp}
+              hasFb={hasFb} hasIg={hasIg} hasLi={hasLi} hasTt={hasTt} hasGbp={hasGbp} hasYt={hasYt} hasX={hasX}
               needsConnection={needsConnection}
               handleImproveWithAI={handleImproveWithAI}
               handleGeneratePreview={handleGeneratePreview}
@@ -1117,7 +1124,7 @@ export default function RrssCreatePost() {
             date={date} setDate={setDate}
             time={time} setTime={setTime}
             networks={networks} setNetworks={setNetworks}
-            hasFb={hasFb} hasIg={hasIg} hasLi={hasLi} hasTt={hasTt} hasGbp={hasGbp}
+            hasFb={hasFb} hasIg={hasIg} hasLi={hasLi} hasTt={hasTt} hasGbp={hasGbp} hasYt={hasYt} hasX={hasX}
             needsConnection={needsConnection}
             handleImproveWithAI={handleImproveWithAI}
             handleGeneratePreview={handleGeneratePreview}
@@ -1728,6 +1735,30 @@ export default function RrssCreatePost() {
                             title="Google Business Profile"
                             >
                             <FaGoogle />
+                            </button>
+                        )}
+                        {hasYt && (
+                            <button
+                            type="button"
+                            onClick={() => setNetworks({ ...networks, youtube: !networks.youtube })}
+                            className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-all ${
+                                networks.youtube ? 'bg-[#FF0000] text-white scale-105 shadow-md shadow-red-500/20' : 'bg-slate-200 text-slate-400 opacity-60 hover:opacity-100 hover:text-slate-600'
+                            }`}
+                            title="YouTube Shorts"
+                            >
+                            <FaYoutube />
+                            </button>
+                        )}
+                        {hasX && (
+                            <button
+                            type="button"
+                            onClick={() => setNetworks({ ...networks, x: !networks.x })}
+                            className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-all ${
+                                networks.x ? 'bg-black text-white scale-105 shadow-md shadow-black/20' : 'bg-slate-200 text-slate-400 opacity-60 hover:opacity-100 hover:text-slate-600'
+                            }`}
+                            title="X (Twitter)"
+                            >
+                            <FaTwitter />
                             </button>
                         )}
                         </div>

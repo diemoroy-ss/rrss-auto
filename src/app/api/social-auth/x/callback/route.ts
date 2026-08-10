@@ -87,33 +87,41 @@ export async function GET(req: Request) {
       console.warn('No se pudo consultar el usuario de X:', uErr);
     }
 
-    // 3. Guardar credenciales encriptadas en Firestore
+    // 3. Guardar credenciales encriptadas en Firestore dentro del perfil del usuario
     if (adminDb && stateObj.userId && stateObj.profileId) {
-      const businessRef = adminDb
-        .collection('users')
-        .doc(stateObj.userId)
-        .collection('businesses')
-        .doc(stateObj.profileId);
+      const userRef = adminDb.collection('users').doc(stateObj.userId);
+      const userDoc = await userRef.get();
 
-      const encAccessToken = encrypt(accessToken);
-      const encRefreshToken = refreshToken ? encrypt(refreshToken) : '';
+      if (userDoc.exists) {
+        const userData = userDoc.data() || {};
+        let profiles = userData.profiles || [];
 
-      await businessRef.set(
-        {
-          accounts: {
-            x: {
-              connected: true,
-              username,
-              name,
-              xUserId,
-              token: encAccessToken,
-              refreshToken: encRefreshToken,
-              updatedAt: new Date().toISOString(),
+        const targetIdx = profiles.findIndex((p: any) => p.id === stateObj.profileId);
+        if (targetIdx !== -1) {
+          const encAccessToken = encrypt(accessToken);
+          const encRefreshToken = refreshToken ? encrypt(refreshToken) : '';
+
+          profiles[targetIdx] = {
+            ...profiles[targetIdx],
+            xConnected: true,
+            xUsername: username,
+            accounts: {
+              ...(profiles[targetIdx].accounts || {}),
+              x: {
+                connected: true,
+                username,
+                name,
+                xUserId,
+                token: encAccessToken,
+                refreshToken: encRefreshToken,
+                updatedAt: new Date().toISOString(),
+              },
             },
-          },
-        },
-        { merge: true }
-      );
+          };
+
+          await userRef.update({ profiles });
+        }
+      }
     }
 
     return NextResponse.redirect(`${configPageUrl}?x=success`);
