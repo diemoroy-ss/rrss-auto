@@ -1,11 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import LogoMark from "../../components/LogoMark";
 
 export default function BrochurePage() {
-  const [businessExpanded, setBusinessExpanded] = useState(false);
   const handlePrint = () => {
     window.print();
   };
@@ -179,6 +177,28 @@ export default function BrochurePage() {
           border-radius: 100px;
         }
         .network-pill span { font-size: 15px; }
+
+        .hero-stats {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 40px;
+          margin-top: 48px;
+          padding-top: 32px;
+          border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .hero-stat strong {
+          display: block;
+          font-size: 36px;
+          font-weight: 900;
+          color: var(--brand);
+          line-height: 1;
+          margin-bottom: 6px;
+        }
+        .hero-stat span {
+          display: block;
+          font-size: 13px;
+          color: rgba(255,255,255,0.6);
+        }
 
         /* ── SECTION ── */
         .section {
@@ -614,7 +634,7 @@ export default function BrochurePage() {
         /* ── PRINT STYLES ── */
         @media print {
           .print-bar { display: none !important; }
-          body { background: white; }
+          body { background: white; zoom: 0.95; } /* Slight scale down to fit more per page */
           .brochure {
             margin: 0;
             border: none;
@@ -622,13 +642,40 @@ export default function BrochurePage() {
             box-shadow: none;
             max-width: 100%;
           }
-          .hero { padding: 48px 48px 40px; }
-          .section { padding: 36px 48px; }
-          .cta-section { padding: 40px 48px; }
-          .brochure-footer { padding: 16px 48px; }
-          .plans { grid-template-columns: repeat(4, 1fr); }
-          .modules { grid-template-columns: repeat(3, 1fr); }
-          .pains { grid-template-columns: repeat(3, 1fr); }
+          /* Reduce paddings to save vertical space */
+          .hero { padding: 32px 40px 24px; }
+          .hero h1 { font-size: 42px; margin-bottom: 16px; }
+          .hero-stats { margin-top: 28px; padding-top: 24px; }
+          .section { padding: 24px 40px; }
+          .section-title { font-size: 32px; margin-bottom: 8px; }
+          .cta-section { padding: 32px 40px; margin: 24px 40px; }
+          .brochure-footer { padding: 16px 40px; }
+          
+          /* Tighter grids */
+          .plans { grid-template-columns: repeat(4, 1fr); gap: 12px; }
+          .plan-body { padding: 12px; }
+          .plan-key-stat { margin-bottom: 10px; padding: 8px; }
+          .modules { grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 20px; }
+          .module { padding: 16px; }
+          .pains { grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 20px; }
+          .pain { padding: 16px; }
+          .solutions { gap: 12px; margin-top: 20px; }
+          .video-compare { gap: 12px; }
+          .video-box-body { padding: 16px; }
+          .testimonials { gap: 12px; margin-top: 20px; }
+          .testimonial { padding: 20px; }
+          
+          /* Prevent awkward cuts across pages */
+          .plan, .module, .pain, .solution, .video-box, .testimonial, .compare-table { 
+            page-break-inside: avoid;
+            break-inside: avoid; 
+          }
+          /* Keep headings with their content */
+          h2, h3, h4, .section-label, .section-title, .section-desc {
+            page-break-after: avoid;
+            break-after: avoid;
+          }
+
           @page {
             size: A4;
             margin: 0;
@@ -677,6 +724,11 @@ export default function BrochurePage() {
             <div className="network-pill"><span>𝕏</span> X (Twitter)</div>
             <div className="network-pill"><span>📍</span> Google Business</div>
           </div>
+          <div className="hero-stats">
+            <div className="hero-stat"><strong>6</strong><span>redes conectadas</span></div>
+            <div className="hero-stat"><strong>24/7</strong><span>operación continua</span></div>
+            <div className="hero-stat"><strong>10 días</strong><span>prueba gratis</span></div>
+          </div>
         </div>
 
         {/* PAIN POINTS */}
@@ -691,6 +743,24 @@ export default function BrochurePage() {
             <div className="pain">Tus fotos no se ven profesionales</div>
             <div className="pain">No mides si tus posts están funcionando</div>
             <div className="pain">Tu competencia aparece primero en Google y en ChatGPT</div>
+          </div>
+        </div>
+
+        {/* LA SOLUCIÓN */}
+        <div className="section">
+          <div className="section-label">La solución</div>
+          <div className="section-title">Una consola. <em>Señal continua.</em></div>
+          <div className="solutions" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginTop: '30px' }}>
+            <div className="solution" style={{ border: '1.5px solid var(--border)', borderRadius: '14px', padding: '24px', background: 'var(--surface)' }}>
+              <div style={{ fontSize: '10px', fontWeight: 800, color: 'var(--brand)', letterSpacing: '0.1em', marginBottom: '8px' }}>SEÑAL A</div>
+              <h4 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '8px' }}>Redes Sociales 360°</h4>
+              <p style={{ fontSize: '14px', color: 'var(--ink-dim)', lineHeight: 1.5 }}>Textos, imágenes y video por IA en 6 redes, con Radar de Nicho y métricas en vivo.</p>
+            </div>
+            <div className="solution" style={{ border: '1.5px solid var(--border)', borderRadius: '14px', padding: '24px', background: 'var(--surface)' }}>
+              <div style={{ fontSize: '10px', fontWeight: 800, color: 'var(--brand)', letterSpacing: '0.1em', marginBottom: '8px' }}>SEÑAL B</div>
+              <h4 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '8px' }}>SEO & GEO</h4>
+              <p style={{ fontSize: '14px', color: 'var(--ink-dim)', lineHeight: 1.5 }}>Blog automático para Google y motores de IA (ChatGPT, Perplexity), más Meta Ads.</p>
+            </div>
           </div>
         </div>
 
@@ -810,24 +880,24 @@ export default function BrochurePage() {
             <div className="video-box">
               <div className="video-box-header">🎬 Video Básico — Free & Starter</div>
               <div className="video-box-body">
-                <div className="video-feature"><span className="vf-check">✓</span> Imágenes IA animadas (Pollinations)</div>
+                <div className="video-feature"><span className="vf-check">✓</span> Imágenes animadas generadas con IA</div>
                 <div className="video-feature"><span className="vf-check">✓</span> Efecto cinemático Ken Burns</div>
                 <div className="video-feature"><span className="vf-check">✓</span> Subtítulos animados</div>
-                <div className="video-feature"><span className="vf-check">✓</span> Logo/Watermark corporativo</div>
-                <div className="video-feature"><span className="vf-no">—</span> Guión inteligente con IA</div>
-                <div className="video-feature"><span className="vf-no">—</span> Voz en off automática</div>
+                <div className="video-feature"><span className="vf-check">✓</span> Logo / watermark corporativo</div>
+                <div className="video-feature"><span className="vf-no">—</span> Guión generado automáticamente con IA</div>
+                <div className="video-feature"><span className="vf-no">—</span> Voz en off generada con IA</div>
                 <div className="video-feature"><span className="vf-no">—</span> Publicación programada automática</div>
               </div>
             </div>
             <div className="video-box">
               <div className="video-box-header premium">🎬 Video Premium — Pro & Business</div>
               <div className="video-box-body">
-                <div className="video-feature"><span className="vf-check">✓</span> Imágenes IA animadas (Pollinations + Vertex AI)</div>
+                <div className="video-feature"><span className="vf-check">✓</span> Imágenes generadas con IA avanzada</div>
                 <div className="video-feature"><span className="vf-check">✓</span> Efecto cinemático Ken Burns</div>
-                <div className="video-feature"><span className="vf-check">✓</span> Subtítulos animados estilo Hormozi</div>
-                <div className="video-feature"><span className="vf-check">✓</span> Logo/Watermark corporativo</div>
-                <div className="video-feature"><span className="vf-check">✓</span> Guión inteligente con LangGraph IA</div>
-                <div className="video-feature"><span className="vf-check">✓</span> Voz en off automática (ElevenLabs)</div>
+                <div className="video-feature"><span className="vf-check">✓</span> Subtítulos animados de alto impacto</div>
+                <div className="video-feature"><span className="vf-check">✓</span> Logo / watermark corporativo</div>
+                <div className="video-feature"><span className="vf-check">✓</span> Guión generado automáticamente con IA</div>
+                <div className="video-feature"><span className="vf-check">✓</span> Voz en off generada con IA de alta calidad</div>
                 <div className="video-feature"><span className="vf-check">✓</span> Publicación programada automática</div>
               </div>
             </div>
@@ -888,17 +958,13 @@ export default function BrochurePage() {
               <div className="plan-body">
                 <div className="plan-key-stat">
                   <strong>3 posts/semana</strong>
-                  <span>~12 posts al mes</span>
+                  <span>~12 al mes</span>
                 </div>
                 <ul className="plan-features">
-                  <li>Conecta todas las redes sociales</li>
+                  <li>Todas las redes sociales</li>
                   <li>Video básico (imágenes IA)</li>
                   <li>Calendario de programación</li>
-                  <li>Radar de Nicho</li>
-                  <li>Estrategia IA mensual</li>
-                  <li>1 perfil de marca</li>
-                  <li className="no">Video Premium</li>
-                  <li className="no">Blog SEO/GEO</li>
+                  <li>Anual $349.900 · ahorras ~$70.000</li>
                 </ul>
               </div>
             </div>
@@ -918,16 +984,13 @@ export default function BrochurePage() {
               <div className="plan-body">
                 <div className="plan-key-stat">
                   <strong>5 posts/semana</strong>
-                  <span>~20 posts al mes</span>
+                  <span>~20 al mes</span>
                 </div>
                 <ul className="plan-features">
-                  <li>Conecta todas las redes sociales</li>
-                  <li><strong>🎬 Video Premium</strong> · guión IA + voz en off</li>
+                  <li>Video Premium: guión IA + voz</li>
                   <li>Blog SEO/GEO (Google + ChatGPT)</li>
-                  <li>Meta Ads integrado</li>
-                  <li>Radar de Nicho</li>
-                  <li>Estrategia IA mensual</li>
-                  <li>1 perfil de marca</li>
+                  <li>Meta Ads integrado · Radar de Nicho</li>
+                  <li>Anual $699.900 · ahorras ~$140.000</li>
                 </ul>
               </div>
             </div>
@@ -947,48 +1010,45 @@ export default function BrochurePage() {
               </div>
               <div className="plan-body">
                 <div className="plan-key-stat">
-                  <strong>Todo lo de Pro</strong>
-                  <span>en múltiples perfiles independientes</span>
+                  <strong>Todo lo de Pro, multi-perfil</strong>
+                  <span style={{display:'none'}}></span>
                 </div>
                 <ul className="plan-features">
-                  <li>Conecta todas las redes por cuenta</li>
-                  <li><strong>🎬 Video Premium</strong> por cuenta</li>
-                  <li>Blog SEO/GEO por cuenta</li>
-                  <li>Meta Ads por cuenta</li>
-                  <li>Radar de Nicho</li>
-                  <li><strong>⭐ Multi-cuenta independiente</strong></li>
+                  <li>Video Premium por cuenta</li>
+                  <li>Blog SEO/GEO y Meta Ads por cuenta</li>
+                  <li>Multi-cuenta independiente</li>
                   <li>Soporte dedicado prioritario</li>
                 </ul>
-
-                {/* Tabla de precios expandible */}
-                <button
-                  onClick={() => setBusinessExpanded((v: boolean) => !v)}
-                  style={{width:'100%',marginTop:'14px',background:'var(--surface-2)',border:'1px solid var(--border)',borderRadius:'8px',padding:'8px 12px',fontSize:'11.5px',fontWeight:700,color:'var(--ink-faint)',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'space-between',fontFamily:'inherit'}}
-                >
-                  <span>Ver precios por cantidad de cuentas</span>
-                  <span>{businessExpanded ? '▲' : '▼'}</span>
-                </button>
-
-                {businessExpanded && (
-                  <table style={{width:'100%',borderCollapse:'collapse',marginTop:'10px',fontSize:'11.5px'}}>
-                    <thead>
-                      <tr style={{background:'var(--surface-3)'}}>
-                        <th style={{padding:'7px 10px',textAlign:'left',fontWeight:700,color:'var(--ink-dim)',borderBottom:'1px solid var(--border)'}}>Cuentas</th>
-                        <th style={{padding:'7px 10px',textAlign:'right',fontWeight:700,color:'var(--ink-dim)',borderBottom:'1px solid var(--border)'}}>Total/mes</th>
-                        <th style={{padding:'7px 10px',textAlign:'right',fontWeight:700,color:'var(--ink-dim)',borderBottom:'1px solid var(--border)'}}>Por cuenta</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr><td style={{padding:'6px 10px',borderBottom:'1px solid var(--border)',color:'var(--ink-dim)'}}>2 cuentas</td><td style={{padding:'6px 10px',borderBottom:'1px solid var(--border)',textAlign:'right',fontWeight:700}}>$129.990</td><td style={{padding:'6px 10px',borderBottom:'1px solid var(--border)',textAlign:'right',color:'var(--green)',fontWeight:700}}>~$64.995</td></tr>
-                      <tr><td style={{padding:'6px 10px',borderBottom:'1px solid var(--border)',color:'var(--ink-dim)'}}>3 cuentas</td><td style={{padding:'6px 10px',borderBottom:'1px solid var(--border)',textAlign:'right',fontWeight:700}}>$179.990</td><td style={{padding:'6px 10px',borderBottom:'1px solid var(--border)',textAlign:'right',color:'var(--green)',fontWeight:700}}>~$59.997</td></tr>
-                      <tr><td style={{padding:'6px 10px',borderBottom:'1px solid var(--border)',color:'var(--ink-dim)'}}>4 cuentas</td><td style={{padding:'6px 10px',borderBottom:'1px solid var(--border)',textAlign:'right',fontWeight:700}}>$219.990</td><td style={{padding:'6px 10px',borderBottom:'1px solid var(--border)',textAlign:'right',color:'var(--green)',fontWeight:700}}>~$54.998</td></tr>
-                      <tr><td style={{padding:'6px 10px',color:'var(--ink-dim)'}}>5+ cuentas</td><td style={{padding:'6px 10px',textAlign:'right',fontWeight:700,color:'var(--brand)'}}>Cotización</td><td style={{padding:'6px 10px',textAlign:'right',fontWeight:700,color:'var(--brand)'}}>Hablemos</td></tr>
-                    </tbody>
-                  </table>
-                )}
               </div>
             </div>
 
+            <div style={{ marginTop: '20px', fontSize: '10px', fontWeight: 800, color: 'var(--ink-faint)', letterSpacing: '0.08em', textTransform: 'uppercase', textAlign: 'center', gridColumn: '1 / -1' }}>
+              BUSINESS: FACTURACIÓN MENSUAL POR FLEXIBILIDAD DE CUENTAS · CONSULTA POR PLANES ANUALES A MEDIDA
+            </div>
+          </div>
+        </div>
+
+        {/* SIN CONTRATOS */}
+        <div className="section" style={{ paddingBottom: '20px' }}>
+          <div className="section-label">INCLUIDO EN TODOS LOS PLANES</div>
+          <div className="section-title">Sin contratos. <em>Cancela cuando quieras.</em></div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginTop: '30px' }}>
+            <div style={{ padding: '24px', background: 'var(--surface-2)', borderRadius: '12px', border: '1px solid var(--border)' }}>
+              <h4 style={{ fontSize: '15px', fontWeight: 800, marginBottom: '8px' }}>6 redes</h4>
+              <p style={{ fontSize: '13.5px', color: 'var(--ink-dim)', lineHeight: 1.5 }}>Facebook, Instagram, TikTok, YouTube Shorts, X y Google Business.</p>
+            </div>
+            <div style={{ padding: '24px', background: 'var(--surface-2)', borderRadius: '12px', border: '1px solid var(--border)' }}>
+              <h4 style={{ fontSize: '15px', fontWeight: 800, marginBottom: '8px' }}>Publicación auto</h4>
+              <p style={{ fontSize: '13.5px', color: 'var(--ink-dim)', lineHeight: 1.5 }}>Calendario y programación automática 24/7.</p>
+            </div>
+            <div style={{ padding: '24px', background: 'var(--surface-2)', borderRadius: '12px', border: '1px solid var(--border)' }}>
+              <h4 style={{ fontSize: '15px', fontWeight: 800, marginBottom: '8px' }}>Estadísticas</h4>
+              <p style={{ fontSize: '13.5px', color: 'var(--ink-dim)', lineHeight: 1.5 }}>Alcance e interacción consolidados por red.</p>
+            </div>
+            <div style={{ padding: '24px', background: 'var(--surface-2)', borderRadius: '12px', border: '1px solid var(--border)' }}>
+              <h4 style={{ fontSize: '15px', fontWeight: 800, marginBottom: '8px' }}>Soporte en español</h4>
+              <p style={{ fontSize: '13.5px', color: 'var(--ink-dim)', lineHeight: 1.5 }}>Por WhatsApp y email desde el día uno.</p>
+            </div>
           </div>
         </div>
 
