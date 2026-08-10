@@ -220,6 +220,40 @@ export async function POST(req: Request) {
                         newP.googleBusinessRefreshToken_enc = "";
                         newP.iv_gb_refresh = "";
                         newP.tag_gb_refresh = "";
+                        newP.googleBusinessConnected = false;
+                    }
+                }
+
+                if (setAccounts.youtube) {
+                    const { disconnect, connected } = setAccounts.youtube;
+                    if (disconnect === true || connected === false) {
+                        newP.youtubeConnected = false;
+                        newP.youtubeChannelName = "";
+                        newP.youtubeChannelId = "";
+                        newP.youtubeToken_enc = "";
+                        newP.youtubeRefreshToken_enc = "";
+                        newP.iv_yt = "";
+                        newP.tag_yt = "";
+                        newP.iv_yt_refresh = "";
+                        newP.tag_yt_refresh = "";
+                        if (newP.accounts?.youtube) {
+                            newP.accounts.youtube = { connected: false };
+                        }
+                    }
+                }
+
+                if (setAccounts.x) {
+                    const { disconnect, connected } = setAccounts.x;
+                    if (disconnect === true || connected === false) {
+                        newP.xConnected = false;
+                        newP.xUsername = "";
+                        newP.xToken_enc = "";
+                        newP.xRefreshToken_enc = "";
+                        newP.iv_x = "";
+                        newP.tag_x = "";
+                        if (newP.accounts?.x) {
+                            newP.accounts.x = { connected: false };
+                        }
                     }
                 }
                 
