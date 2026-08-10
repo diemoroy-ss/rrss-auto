@@ -161,6 +161,54 @@ export async function POST(req: Request) {
             }
         }
 
+        // Decrypt YouTube
+        let plainYtToken = null;
+        let plainYtRefreshToken = null;
+        if (post.networks?.includes('youtube')) {
+            const ytToken = targetProfile.youtubeToken_enc || targetProfile.accounts?.youtube?.token || userData.youtubeToken_enc;
+            const ivYt = targetProfile.iv_yt || targetProfile.accounts?.youtube?.iv || userData.iv_yt;
+            const tagYt = targetProfile.tag_yt || targetProfile.accounts?.youtube?.authTag || userData.tag_yt;
+            const ytRefreshToken = targetProfile.youtubeRefreshToken_enc || targetProfile.accounts?.youtube?.refreshToken || userData.youtubeRefreshToken_enc;
+            const ivYtRef = targetProfile.iv_yt_refresh || targetProfile.accounts?.youtube?.iv_refresh || userData.iv_yt_refresh;
+            const tagYtRef = targetProfile.tag_yt_refresh || targetProfile.accounts?.youtube?.tag_refresh || userData.tag_yt_refresh;
+
+            if (!ytToken) {
+                return NextResponse.json({ error: "YouTube: Cuenta no vinculada. Por favor conecta tu canal en Configuración." }, { status: 400 });
+            }
+            try {
+                plainYtToken = decrypt(ytToken, ivYt, tagYt);
+                if (ytRefreshToken && ivYtRef && tagYtRef) {
+                    plainYtRefreshToken = decrypt(ytRefreshToken, ivYtRef, tagYtRef);
+                }
+            } catch (e: any) {
+                return NextResponse.json({ error: "YouTube: Error al desencriptar el token de acceso." }, { status: 500 });
+            }
+        }
+
+        // Decrypt X (Twitter)
+        let plainXToken = null;
+        let plainXRefreshToken = null;
+        if (post.networks?.includes('x')) {
+            const xToken = targetProfile.xToken_enc || targetProfile.accounts?.x?.token || userData.xToken_enc;
+            const ivX = targetProfile.iv_x || targetProfile.accounts?.x?.iv || userData.iv_x;
+            const tagX = targetProfile.tag_x || targetProfile.accounts?.x?.authTag || userData.tag_x;
+            const xRefreshToken = targetProfile.xRefreshToken_enc || targetProfile.accounts?.x?.refreshToken || userData.xRefreshToken_enc;
+            const ivXRef = targetProfile.iv_x_refresh || targetProfile.accounts?.x?.iv_refresh || userData.iv_x_refresh;
+            const tagXRef = targetProfile.tag_x_refresh || targetProfile.accounts?.x?.tag_refresh || userData.tag_x_refresh;
+
+            if (!xToken) {
+                return NextResponse.json({ error: "X (Twitter): Cuenta no vinculada. Por favor conecta tu cuenta de X en Configuración." }, { status: 400 });
+            }
+            try {
+                plainXToken = decrypt(xToken, ivX, tagX);
+                if (xRefreshToken && ivXRef && tagXRef) {
+                    plainXRefreshToken = decrypt(xRefreshToken, ivXRef, tagXRef);
+                }
+            } catch (e: any) {
+                return NextResponse.json({ error: "X (Twitter): Error al desencriptar el token de acceso." }, { status: 500 });
+            }
+        }
+
         if (!post.networks || post.networks.length === 0) {
             return NextResponse.json({ error: "No se seleccionó ninguna red social para publicar." }, { status: 400 });
         }
@@ -180,6 +228,10 @@ export async function POST(req: Request) {
             plainTtToken,
             plainGbToken,
             plainGbRefreshToken,
+            plainYtToken,
+            plainYtRefreshToken,
+            plainXToken,
+            plainXRefreshToken,
             uid, profileId
         }).catch(err => {
             console.error(`[CRITICAL] Background publish process failed for post ${postId}:`, err);
@@ -200,6 +252,10 @@ async function publishInBackground(postId: string, post: any, creds: {
     plainTtToken: string | null;
     plainGbToken: string | null;
     plainGbRefreshToken: string | null;
+    plainYtToken: string | null;
+    plainYtRefreshToken: string | null;
+    plainXToken: string | null;
+    plainXRefreshToken: string | null;
     uid: string; profileId: string | null;
 }) {
     const postRef = adminDb.collection("social_posts").doc(postId);
@@ -878,6 +934,192 @@ async function publishInBackground(postId: string, post: any, creds: {
             } catch (e: any) {
                 console.error("Google Business Publish Error:", e.message);
                 errorLog += `GoogleBusiness: ${e.message}. `;
+            }
+        }
+
+        // YOUTUBE SHORTS
+        if (post.networks?.includes('youtube') && creds.plainYtToken) {
+            let plainToken = creds.plainYtToken;
+            const videoUrl = post.videoUrl || post.mediaUrl || post.imageUrl;
+
+            if (!videoUrl) {
+                errorLog += `YouTube: Se requiere un archivo de video para publicar en YouTube Shorts. `;
+            } else {
+                const executeYouTubePost = async (token: string) => {
+                    const videoStreamRes = await fetch(videoUrl);
+                    if (!videoStreamRes.ok) {
+                        throw new Error(`No se pudo descargar el video para YouTube (${videoStreamRes.status})`);
+                    }
+                    const videoBuffer = Buffer.from(await videoStreamRes.arrayBuffer());
+
+                    const titleText = (caption || 'Video de Santisoft AI').slice(0, 95);
+                    const descText = `${caption}\n\n#Shorts #SantisoftAI`;
+
+                    const metadata = {
+                        snippet: {
+                            title: titleText,
+                            description: descText,
+                            tags: ['Shorts', 'SantisoftAI'],
+                            categoryId: '22',
+                        },
+                        status: {
+                            privacyStatus: 'public',
+                            selfDeclaredMadeForKids: false,
+                        },
+                    };
+
+                    const initRes = await fetch('https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json; charset=UTF-8',
+                            'X-Upload-Content-Length': videoBuffer.length.toString(),
+                            'X-Upload-Content-Type': 'video/mp4',
+                        },
+                        body: JSON.stringify(metadata),
+                    });
+
+                    if (!initRes.ok) {
+                        if (initRes.status === 401) {
+                            throw new Error('UNAUTHENTICATED');
+                        }
+                        const errBody = await initRes.text();
+                        throw new Error(`YouTube Init Error: ${errBody}`);
+                    }
+
+                    const uploadUrl = initRes.headers.get('location');
+                    if (!uploadUrl) {
+                        throw new Error('No se recibió la URL de subida de YouTube.');
+                    }
+
+                    const uploadRes = await fetch(uploadUrl, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'video/mp4',
+                            'Content-Length': videoBuffer.length.toString(),
+                        },
+                        body: videoBuffer,
+                    });
+
+                    const uploadData = await uploadRes.json();
+                    if (uploadData.error) {
+                        throw new Error(uploadData.error.message || 'Error al subir video a YouTube');
+                    }
+
+                    return uploadData;
+                };
+
+                try {
+                    const ytData = await executeYouTubePost(plainToken);
+                    successNetworks.push('youtube');
+                    const videoId = ytData.id || `yt_${Date.now()}`;
+                    await adminDb.collection('external_posts').doc(videoId).set({
+                        userId: creds.uid,
+                        profileId: creds.profileId || 'default',
+                        network: 'youtube',
+                        caption: caption,
+                        media_type: 'VIDEO',
+                        likes: 0, comments: 0, shares: 0, reach: 0, impressions: 0,
+                        created_time: new Date().toISOString(),
+                        timestamp: new Date(),
+                        permalink: `https://youtube.com/shorts/${videoId}`
+                    });
+                } catch (ytErr: any) {
+                    if (ytErr.message === 'UNAUTHENTICATED' && creds.plainYtRefreshToken) {
+                        console.log('[YouTube] Access token expired, attempting to refresh...');
+                        try {
+                            const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                                body: new URLSearchParams({
+                                    client_id: process.env.GOOGLE_CLIENT_ID!,
+                                    client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+                                    refresh_token: creds.plainYtRefreshToken,
+                                    grant_type: 'refresh_token',
+                                }),
+                            });
+                            const refreshData = await tokenRes.json();
+                            if (refreshData.access_token) {
+                                const newAccessToken = refreshData.access_token;
+                                const encNewToken = encrypt(newAccessToken);
+
+                                const userRef = adminDb.collection('users').doc(creds.uid);
+                                const userDoc = await userRef.get();
+                                const profiles = userDoc.data()?.profiles || [];
+                                const pIdx = profiles.findIndex((p: any) => p.id === (creds.profileId || 'default'));
+                                if (pIdx !== -1) {
+                                    profiles[pIdx].youtubeToken_enc = encNewToken.encryptedData;
+                                    profiles[pIdx].iv_yt = encNewToken.iv;
+                                    profiles[pIdx].tag_yt = encNewToken.authTag;
+                                    userRef.update({ profiles }).catch(console.error);
+                                }
+
+                                const ytData = await executeYouTubePost(newAccessToken);
+                                successNetworks.push('youtube');
+                                const videoId = ytData.id || `yt_${Date.now()}`;
+                                await adminDb.collection('external_posts').doc(videoId).set({
+                                    userId: creds.uid,
+                                    profileId: creds.profileId || 'default',
+                                    network: 'youtube',
+                                    caption: caption,
+                                    media_type: 'VIDEO',
+                                    likes: 0, comments: 0, shares: 0, reach: 0, impressions: 0,
+                                    created_time: new Date().toISOString(),
+                                    timestamp: new Date(),
+                                    permalink: `https://youtube.com/shorts/${videoId}`
+                                });
+                            } else {
+                                throw new Error('No se pudo renovar el token de YouTube.');
+                            }
+                        } catch (refreshErr: any) {
+                            errorLog += `YouTube: ${refreshErr.message}. `;
+                        }
+                    } else {
+                        console.error('YouTube Publish Error:', ytErr.message);
+                        errorLog += `YouTube: ${ytErr.message}. `;
+                    }
+                }
+            }
+        }
+
+        // X (TWITTER)
+        if (post.networks?.includes('x') && creds.plainXToken) {
+            let plainToken = creds.plainXToken;
+            try {
+                const tweetPayload: { text: string } = {
+                    text: (caption || '').slice(0, 280),
+                };
+
+                const tweetRes = await fetch('https://api.twitter.com/2/tweets', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${plainToken}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(tweetPayload),
+                });
+
+                const tweetData = await tweetRes.json();
+                if (tweetData.data?.id) {
+                    successNetworks.push('x');
+                    await adminDb.collection('external_posts').doc(tweetData.data.id).set({
+                        userId: creds.uid,
+                        profileId: creds.profileId || 'default',
+                        network: 'x',
+                        caption: caption,
+                        media_type: 'TEXT',
+                        likes: 0, comments: 0, shares: 0, reach: 0, impressions: 0,
+                        created_time: new Date().toISOString(),
+                        timestamp: new Date(),
+                        permalink: `https://x.com/i/status/${tweetData.data.id}`
+                    });
+                } else {
+                    const errMsg = tweetData.detail || tweetData.title || JSON.stringify(tweetData.errors || tweetData);
+                    throw new Error(errMsg);
+                }
+            } catch (xErr: any) {
+                console.error('X Publish Error:', xErr.message);
+                errorLog += `X (Twitter): ${xErr.message}. `;
             }
         }
 
