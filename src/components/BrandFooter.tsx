@@ -94,12 +94,12 @@ export default function BrandFooter() {
             <h4 className="footer-col-title">LEGALES</h4>
             <ul className="footer-link-list">
               <li>
-                <Link href="/privacidad" className="footer-link">
+                <Link href="/es/privacidad" className="footer-link">
                   Privacidad
                 </Link>
               </li>
               <li>
-                <Link href="/terminos" className="footer-link">
+                <Link href="/es/terminos" className="footer-link">
                   Términos
                 </Link>
               </li>
