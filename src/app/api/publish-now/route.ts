@@ -55,6 +55,24 @@ export async function POST(req: Request) {
         }
         if (!targetProfile) targetProfile = userData;
 
+        // Fallback: check businesses subcollection if targetProfile doesn't have youtube/x tokens
+        if ((post.networks?.includes('youtube') || post.networks?.includes('x')) && !targetProfile.youtubeToken_enc && !targetProfile.xToken_enc && !targetProfile.accounts?.youtube && !targetProfile.accounts?.x) {
+            try {
+                const bSnap = await adminDb.collection('users').doc(uid).collection('businesses').doc(targetProfileId).get();
+                if (bSnap.exists) {
+                    const bData = bSnap.data();
+                    if (bData?.accounts?.youtube) {
+                        targetProfile.accounts = { ...(targetProfile.accounts || {}), youtube: bData.accounts.youtube };
+                    }
+                    if (bData?.accounts?.x) {
+                        targetProfile.accounts = { ...(targetProfile.accounts || {}), x: bData.accounts.x };
+                    }
+                }
+            } catch (e) {
+                console.warn("Fallback business doc lookup failed:", e);
+            }
+        }
+
         // --- QUOTA CHECK ---
         const usedQuota = await getQuotaUsageAdmin(uid, profileId || 'default');
         const limit = await getPlanLimitAdmin(userData.plan || 'free', userData.email);
@@ -165,12 +183,13 @@ export async function POST(req: Request) {
         let plainYtToken = null;
         let plainYtRefreshToken = null;
         if (post.networks?.includes('youtube')) {
-            const ytToken = targetProfile.youtubeToken_enc || targetProfile.accounts?.youtube?.token || userData.youtubeToken_enc;
-            const ivYt = targetProfile.iv_yt || targetProfile.accounts?.youtube?.iv || userData.iv_yt;
-            const tagYt = targetProfile.tag_yt || targetProfile.accounts?.youtube?.authTag || userData.tag_yt;
-            const ytRefreshToken = targetProfile.youtubeRefreshToken_enc || targetProfile.accounts?.youtube?.refreshToken || userData.youtubeRefreshToken_enc;
-            const ivYtRef = targetProfile.iv_yt_refresh || targetProfile.accounts?.youtube?.iv_refresh || userData.iv_yt_refresh;
-            const tagYtRef = targetProfile.tag_yt_refresh || targetProfile.accounts?.youtube?.tag_refresh || userData.tag_yt_refresh;
+            const ytAccount = targetProfile.accounts?.youtube || {};
+            const ytToken = targetProfile.youtubeToken_enc || (typeof ytAccount.token === 'string' ? ytAccount.token : ytAccount.token?.encryptedData) || userData.youtubeToken_enc;
+            const ivYt = targetProfile.iv_yt || ytAccount.iv || ytAccount.token?.iv || userData.iv_yt;
+            const tagYt = targetProfile.tag_yt || ytAccount.authTag || ytAccount.tag || ytAccount.token?.authTag || userData.tag_yt;
+            const ytRefreshToken = targetProfile.youtubeRefreshToken_enc || (typeof ytAccount.refreshToken === 'string' ? ytAccount.refreshToken : ytAccount.refreshToken?.encryptedData) || userData.youtubeRefreshToken_enc;
+            const ivYtRef = targetProfile.iv_yt_refresh || ytAccount.iv_refresh || ytAccount.refreshToken?.iv || userData.iv_yt_refresh;
+            const tagYtRef = targetProfile.tag_yt_refresh || ytAccount.tag_refresh || ytAccount.refreshToken?.authTag || userData.tag_yt_refresh;
 
             if (!ytToken) {
                 return NextResponse.json({ error: "YouTube: Cuenta no vinculada. Por favor conecta tu canal en Configuración." }, { status: 400 });
@@ -189,12 +208,13 @@ export async function POST(req: Request) {
         let plainXToken = null;
         let plainXRefreshToken = null;
         if (post.networks?.includes('x')) {
-            const xToken = targetProfile.xToken_enc || targetProfile.accounts?.x?.token || userData.xToken_enc;
-            const ivX = targetProfile.iv_x || targetProfile.accounts?.x?.iv || userData.iv_x;
-            const tagX = targetProfile.tag_x || targetProfile.accounts?.x?.authTag || userData.tag_x;
-            const xRefreshToken = targetProfile.xRefreshToken_enc || targetProfile.accounts?.x?.refreshToken || userData.xRefreshToken_enc;
-            const ivXRef = targetProfile.iv_x_refresh || targetProfile.accounts?.x?.iv_refresh || userData.iv_x_refresh;
-            const tagXRef = targetProfile.tag_x_refresh || targetProfile.accounts?.x?.tag_refresh || userData.tag_x_refresh;
+            const xAccount = targetProfile.accounts?.x || {};
+            const xToken = targetProfile.xToken_enc || (typeof xAccount.token === 'string' ? xAccount.token : xAccount.token?.encryptedData) || userData.xToken_enc;
+            const ivX = targetProfile.iv_x || xAccount.iv || xAccount.token?.iv || userData.iv_x;
+            const tagX = targetProfile.tag_x || xAccount.authTag || xAccount.tag || xAccount.token?.authTag || userData.tag_x;
+            const xRefreshToken = targetProfile.xRefreshToken_enc || (typeof xAccount.refreshToken === 'string' ? xAccount.refreshToken : xAccount.refreshToken?.encryptedData) || userData.xRefreshToken_enc;
+            const ivXRef = targetProfile.iv_x_refresh || xAccount.iv_refresh || xAccount.refreshToken?.iv || userData.iv_x_refresh;
+            const tagXRef = targetProfile.tag_x_refresh || xAccount.tag_refresh || xAccount.refreshToken?.authTag || userData.tag_x_refresh;
 
             if (!xToken) {
                 return NextResponse.json({ error: "X (Twitter): Cuenta no vinculada. Por favor conecta tu cuenta de X en Configuración." }, { status: 400 });
