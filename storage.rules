@@ -2,8 +2,12 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     
-    // Reglas para la carpeta de subidas de redes sociales del usuario
+    // Reglas para la carpeta de subidas de redes sociales y plantillas del usuario
     match /social_media_uploads/{userId}/{allPaths=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    match /social_media_templates/{userId}/{allPaths=**} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
     

@@ -741,7 +741,7 @@ export default function RrssCreatePost() {
      try {
          const ext = file.name.split('.').pop();
          const filename = `template_${Date.now()}.${ext}`;
-         const storageRef = ref(storage, `social_media_templates/${user?.uid}/${filename}`);
+         const storageRef = ref(storage, `social_media_uploads/${user?.uid}/${filename}`);
          await uploadBytes(storageRef, file);
          const downloadUrl = await getDownloadURL(storageRef);
 
@@ -778,7 +778,7 @@ export default function RrssCreatePost() {
       try {
           const blob = await (await fetch(editedDataUrl)).blob();
           const filename = `edited_canvas_${Date.now()}.png`;
-          const storageRef = ref(storage, `social_media_templates/${user?.uid}/${filename}`);
+          const storageRef = ref(storage, `social_media_uploads/${user?.uid}/${filename}`);
           await uploadBytes(storageRef, blob);
           const downloadUrl = await getDownloadURL(storageRef);
 
