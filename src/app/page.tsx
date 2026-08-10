@@ -65,9 +65,9 @@ export default function Home() {
               <ul className="pillar-list">
                 <li><span className="mark">›</span><span>Generación de <strong>contenido persuasivo</strong> con IA, adaptado a tu marca.</span></li>
                 <li><span className="mark">›</span><span><strong>Calendario estratégico</strong> que automatiza todo un mes en minutos.</span></li>
-                <li><span className="mark">›</span><span>Publicación automática directa en <strong>Meta (Facebook, Instagram)</strong> y <strong>TikTok</strong>.</span></li>
+                <li><span className="mark">›</span><span>Publicación automática directa en <strong>Meta (Facebook, Instagram)</strong>, <strong>TikTok</strong>, <strong>YouTube Shorts</strong> y <strong>X (Twitter)</strong>.</span></li>
               </ul>
-              <span className="pillar-note">Próximamente: Google Business &amp; LinkedIn</span>
+              <span className="pillar-note">Integrado con Google Business &amp; LinkedIn</span>
             </div>
             <div className="pillar b">
               <span className="pillar-tag">SEÑAL B · 404 TERM</span>
