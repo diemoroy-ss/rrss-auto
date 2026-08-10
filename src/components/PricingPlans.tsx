@@ -22,7 +22,7 @@ type PlanConfig = {
   features: string[];
 };
 
-const PLAN_ORDER = ["free", "pro", "elite", "business"];
+const PLAN_ORDER = ["free", "starter", "pro", "business"];
 
 export default function PricingPlans() {
   const [plans, setPlans] = useState<Record<string, PlanConfig>>({});
@@ -103,7 +103,7 @@ export default function PricingPlans() {
                   {plan.price > 0 && <span>/mes</span>}
                 </div>
                 <div className="plan-cycle">
-                  {plan.price === 0 ? "PARA SIEMPRE" : (billingCycle === 'anual' ? "FACTURADO AL AÑO" : "CLP · IVA INCLUIDO")}
+                  {plan.price === 0 ? "10 días de prueba" : (billingCycle === 'anual' ? "FACTURADO AL AÑO" : "CLP · IVA INCLUIDO")}
                 </div>
                 <ul className="plan-list">
                   {plan.features.map((f, i) => <li key={i}>{f}</li>)}
