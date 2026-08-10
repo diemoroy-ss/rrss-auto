@@ -33,11 +33,18 @@ async function getPlansConfig(): Promise<SystemPlansConfig> {
     }
     
     // Fallback to hardcoded values if Firestore fails
+    // Posts: límite mensual equivalente al ritmo semanal
+    // Free: 3 posts totales (período de prueba, no mensual)
+    // Starter: 3 posts/semana = ~12/mes
+    // Pro: 5 posts/semana = ~20/mes
+    // Business: 1 post/día = ~30/mes
+    // Video Premium (con voz+guión): Free/Starter no tienen; Pro=8/mes; Business=20/mes
     return {
-        free: { postsLimit: 4, videosLimit: 0 },
-        pro: { postsLimit: 20, videosLimit: 5 },
-        elite: { postsLimit: 60, videosLimit: 15 },
-        business: { postsLimit: 999999, videosLimit: 999999 }
+        free:     { postsLimit: 3,  videosLimit: 0  },
+        starter:  { postsLimit: 12, videosLimit: 0  },
+        pro:      { postsLimit: 20, videosLimit: 8  },
+        elite:    { postsLimit: 20, videosLimit: 8  }, // alias legacy → pro
+        business: { postsLimit: 30, videosLimit: 20 },
     };
 }
 

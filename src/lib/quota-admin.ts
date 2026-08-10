@@ -45,12 +45,13 @@ export async function getPlanLimitAdmin(plan: string, email?: string): Promise<n
     
     // Fallback to hardcoded values if Firestore fails
     const fallbacks: Record<string, number> = {
-        free: 4,
-        pro: 20,
-        elite: 60,
-        business: 999999
+        free:     3,   // 3 posts totales (prueba)
+        starter:  12,  // 3 posts/semana
+        pro:      20,  // 5 posts/semana
+        elite:    20,  // alias legacy → pro
+        business: 30,  // 1 post/día
     };
-    return fallbacks[plan || 'free'] ?? 4;
+    return fallbacks[plan || 'free'] ?? 3;
 }
 
 export async function getAiPlanLimitAdmin(plan: string, type: 'image' | 'video' | 'blog', email?: string): Promise<number> {
@@ -68,11 +69,15 @@ export async function getAiPlanLimitAdmin(plan: string, type: 'image' | 'video' 
     } catch (e) {
         console.error("Error fetching AI plans config in admin:", e);
     }
+    // image: imágenes IA generadas con posts
+    // video: videos PREMIUM (con voz+guión LangGraph) — Free/Starter = 0
+    // blog: artículos SEO/GEO — solo Pro y Business
     const fallbacks: Record<string, { image: number, video: number, blog: number }> = {
-        free: { image: 5, video: 0, blog: 0 },
-        pro: { image: 30, video: 5, blog: 0 },
-        elite: { image: 100, video: 15, blog: 4 },
-        business: { image: 300, video: 50, blog: 12 }
+        free:     { image: 5,   video: 0,  blog: 0  },
+        starter:  { image: 20,  video: 0,  blog: 0  },
+        pro:      { image: 50,  video: 8,  blog: 4  },
+        elite:    { image: 50,  video: 8,  blog: 4  }, // alias legacy → pro
+        business: { image: 120, video: 20, blog: 12 },
     };
     return fallbacks[plan || 'free']?.[type] ?? (type === 'image' ? 5 : 0);
 }
