@@ -1009,7 +1009,7 @@ export default function RrssCreatePost() {
   const isReady = hasText && hasMedia;
 
   if (loadingInitial) return <div className="animate-pulse space-y-4 max-w-2xl"><div className="h-10 bg-slate-200 rounded w-1/3"></div><div className="h-64 bg-slate-200 rounded"></div></div>;
-  const needsConnection = !hasFb && !hasIg && !hasLi && !hasTt;
+  const needsConnection = !hasFb && !hasIg && !hasLi && !hasTt && !hasGbp && !hasYt && !hasX;
 
   return (
     <div className="max-w-[1400px] mx-auto lg:mx-0">
