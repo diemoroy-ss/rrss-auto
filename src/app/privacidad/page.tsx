@@ -167,6 +167,8 @@ export default function Privacidad() {
           <div className="flinks">
             <Link href="/terminos">Términos de Servicio</Link>
             <Link href="/privacidad">Política de Privacidad</Link>
+            <span style={{ margin: '0 8px', color: 'var(--line-strong)' }}>|</span>
+            <Link href="/en/privacy">🇬🇧 English</Link>
           </div>
         </div>
       </footer>
