@@ -12,11 +12,16 @@ export async function POST(req: Request) {
         const decodedToken = await adminAuth.verifyIdToken(idToken);
         const uid = decodedToken.uid;
 
-        // Check Admin
-        const userDoc = await adminDb.collection('users').doc(uid).get();
-        const userData = userDoc.data();
-        if (userData?.role !== 'admin' && decodedToken.email !== 'diemoroy@gmail.com') {
-            return NextResponse.json({ error: 'Permisos insuficientes' }, { status: 403 });
+        const email = (decodedToken.email || '').toLowerCase();
+        const adminEmails = ['diemoroy@gmail.com', 'spalezcom@gmail.com', 'santisoftai@gmail.com', 'admin@santisoft.cl'];
+        const isSuperAdmin = adminEmails.includes(email);
+
+        if (!isSuperAdmin) {
+            const userDoc = await adminDb.collection('users').doc(uid).get();
+            const userData = userDoc.data();
+            if (userData?.role !== 'admin') {
+                return NextResponse.json({ error: 'Permisos insuficientes' }, { status: 403 });
+            }
         }
 
         const { plans } = await req.json();

@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 
 import LogoMark from "./LogoMark";
+import ThemeToggle from "./ThemeToggle";
 
 export default function BrandHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -171,6 +172,8 @@ export default function BrandHeader() {
             Acceso Cliente
           </Link>
 
+          <ThemeToggle />
+
           <Link href="/login" className="btn btn-primary btn-sm">
             Empezar Gratis
           </Link>
@@ -178,6 +181,8 @@ export default function BrandHeader() {
 
         {/* Mobile controls */}
         <div className="nav-mobile-controls">
+          <ThemeToggle />
+
           <Link href="/login" className="btn btn-primary btn-sm nav-mobile-cta">
             Empezar
           </Link>

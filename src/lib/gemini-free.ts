@@ -1,107 +1,117 @@
 import { GoogleGenerativeAI, GenerativeModel } from "@google/generative-ai";
+import { getTaskModel } from "./ai-model-config";
 
-const FREE_MODEL_NAME = "gemini-3.1-flash-lite";
+const DEFAULT_PRIMARY_MODEL = "gemini-2.5-flash";
 
-const FALLBACK_MODELS = [
-    "gemini-3.1-flash-lite",
-    "gemini-3.5-flash",
-    "gemini-3.0-flash-lite",
-    "gemini-2.5-flash-lite",
-    "gemini-2.0-flash-lite",
-    "gemini-2.5-flash",
-    "gemini-2.0-flash",
-    "gemini-1.5-flash"
+const DEFAULT_FALLBACK_MODELS = [
+  "gemini-2.5-flash",
+  "gemini-3.1-flash-lite",
+  "gemini-2.5-flash-lite",
+  "gemini-3.5-flash",
+  "gemini-2.0-flash",
+  "gemini-1.5-flash"
 ];
-
 
 let genAIInstance: GoogleGenerativeAI | null = null;
 
 function getGenAI(): GoogleGenerativeAI {
-    if (genAIInstance) return genAIInstance;
+  if (genAIInstance) return genAIInstance;
 
-    const apiKey = process.env.GOOGLE_GENAI_API_KEY;
-    if (!apiKey) {
-        throw new Error("GOOGLE_GENAI_API_KEY is not configured. Set it in .env.local.");
-    }
+  const apiKey = process.env.GOOGLE_GENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error("GOOGLE_GENAI_API_KEY is not configured. Set it in .env.local.");
+  }
 
-    genAIInstance = new GoogleGenerativeAI(apiKey);
-    return genAIInstance;
+  genAIInstance = new GoogleGenerativeAI(apiKey);
+  return genAIInstance;
 }
 
 /**
- * Returns a configured generative model from the free Gemini API tier.
- * Now uses gemini-3-flash by default for stability.
+ * Returns a configured generative model from the Gemini API.
  */
 export function getFreeModel(
-    modelName: string = FREE_MODEL_NAME,
-    systemInstruction?: string
+  modelName: string = DEFAULT_PRIMARY_MODEL,
+  systemInstruction?: string
 ): GenerativeModel {
-    const genAI = getGenAI();
+  const genAI = getGenAI();
 
-    return genAI.getGenerativeModel({
-        model: modelName,
-        ...(systemInstruction && {
-            systemInstruction: { role: "system", parts: [{ text: systemInstruction }] }
-        }),
-    });
+  return genAI.getGenerativeModel({
+    model: modelName,
+    ...(systemInstruction && {
+      systemInstruction: { role: "system", parts: [{ text: systemInstruction }] },
+    }),
+  });
 }
 
 /**
  * Convenience wrapper: generates text with a single prompt.
- * Includes automatic fallback logic for 503 (Overloaded) and 429 (Quota) errors.
- * Now supports an optional imageUrl for multimodal context.
+ * Resolves the active model from Firestore for the given task, and includes automatic fallback.
  */
 export async function generateFreeText(
-    prompt: string,
-    systemInstruction?: string,
-    jsonMode = false,
-    imageUrl?: string
+  prompt: string,
+  systemInstruction?: string,
+  jsonMode = false,
+  imageUrl?: string,
+  taskKey?: string
 ): Promise<string> {
-    let lastError: any = null;
+  let lastError: any = null;
 
-    // Pre-process image if provided
-    let imagePart: any = null;
-    if (imageUrl) {
-        try {
-            const response = await fetch(imageUrl);
-            const buffer = await response.arrayBuffer();
-            const base64 = Buffer.from(buffer).toString("base64");
-            const mimeType = response.headers.get("content-type") || "image/jpeg";
-            imagePart = {
-                inlineData: {
-                    data: base64,
-                    mimeType
-                }
-            };
-        } catch (e) {
-            console.error("[GEMINI-FREE] Failed to fetch image context:", e);
-        }
+  // Resolve assigned model from dynamic config if taskKey is provided
+  let configuredModel: string | null = null;
+  try {
+    configuredModel = await getTaskModel(taskKey);
+  } catch {
+    configuredModel = DEFAULT_PRIMARY_MODEL;
+  }
+
+  // Pre-process image if provided
+  let imagePart: any = null;
+  if (imageUrl) {
+    try {
+      const response = await fetch(imageUrl);
+      const buffer = await response.arrayBuffer();
+      const base64 = Buffer.from(buffer).toString("base64");
+      const mimeType = response.headers.get("content-type") || "image/jpeg";
+      imagePart = {
+        inlineData: {
+          data: base64,
+          mimeType,
+        },
+      };
+    } catch (e) {
+      console.error("[GEMINI-FREE] Failed to fetch image context:", e);
     }
+  }
 
-    for (const modelName of FALLBACK_MODELS) {
-        try {
-            console.log(`[GEMINI-FREE] Attempting generation with ${modelName}...`);
-            const model = getFreeModel(modelName, systemInstruction);
+  // Build model execution queue: configuredModel first, then unique fallbacks
+  const modelQueue = Array.from(
+    new Set([configuredModel, ...DEFAULT_FALLBACK_MODELS].filter(Boolean))
+  ) as string[];
 
-            const parts: any[] = [{ text: prompt }];
-            if (imagePart) parts.push(imagePart);
+  for (const modelName of modelQueue) {
+    try {
+      console.log(`[GEMINI-EXEC] Task [${taskKey || "general"}] generating with [${modelName}]...`);
+      const model = getFreeModel(modelName, systemInstruction);
 
-            const result = await model.generateContent({
-                contents: [{ role: "user", parts }],
-                generationConfig: jsonMode ? { responseMimeType: "application/json" } : undefined,
-            });
+      const parts: any[] = [{ text: prompt }];
+      if (imagePart) parts.push(imagePart);
 
-            const text = result.response.text();
-            if (text) return text.trim();
+      const result = await model.generateContent({
+        contents: [{ role: "user", parts }],
+        generationConfig: jsonMode ? { responseMimeType: "application/json" } : undefined,
+      });
 
-        } catch (error: any) {
-            lastError = error;
-            const status = error.status || (error.message?.match(/\[(\d+)\]/)?.[1]);
-            
-            console.warn(`[GEMINI-FREE] Model ${modelName} failed (Status: ${status}). Detail: ${error.message}`);
-            continue;
-        }
+      const text = result.response.text();
+      if (text) return text.trim();
+    } catch (error: any) {
+      lastError = error;
+      const status = error.status || error.message?.match(/\[(\d+)\]/)?.[1];
+      console.warn(
+        `[GEMINI-EXEC] Model ${modelName} failed (Status: ${status}). Detail: ${error.message}`
+      );
+      continue;
     }
+  }
 
-    throw lastError || new Error("All Gemini models failed to respond.");
+  throw lastError || new Error("All Gemini models failed to respond.");
 }

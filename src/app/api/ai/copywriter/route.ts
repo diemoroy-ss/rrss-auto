@@ -45,11 +45,20 @@ Retorna siempre la respuesta en formato JSON estructurado con el siguiente forma
     "Opción de copy 2 con emojis y hashtags pertinentes",
     "Opción de copy 3 con emojis y hashtags pertinentes"
   ]
-}`;
+}
+
+REGLAS DE HUMANIZER (CRÍTICAS):
+- PROHIBIDO usar palabras cliché de IA como: "Adéntrate", "Descubre", "Desata", "En resumen", "En conclusión", "Eleva tu", "Revoluciona", "El maravilloso mundo de".
+- Escribe con un tono 100% conversacional, humano y auténtico, como si le hablaras a un cliente cara a cara.
+- Usa oraciones variadas (algunas cortas, otras un poco más largas), ritmo dinámico y saltos de línea estratégicos.`;
 
     const userPrompt = `
-Genera 3 opciones profesionales de copy para una publicación en redes sociales.
-Ajusta el tono al rubro y objetivo comercial indicado.
+Genera 3 opciones profesionales de copy para una publicación en redes sociales, aplicando distintos frameworks de copywriting en cada una.
+
+[Estrategia de Opciones]
+- Opción 1: Usa el framework PAS (Problema, Agitación, Solución).
+- Opción 2: Usa el framework AIDA (Atención, Interés, Deseo, Acción).
+- Opción 3: Usa el framework HSO (Gancho, Historia/Contexto rápido, Oferta/Llamado a la acción).
 
 [Información del Post]
 - Rubro/Negocio: ${businessType || "General"}
@@ -59,11 +68,11 @@ Ajusta el tono al rubro y objetivo comercial indicado.
 ${posterContext ? `\n[Detalles a integrar sobre el Cartel Publicitario]:\n${posterContext}` : ""}
 
 [Restricciones]
-- Tono: Profesional, persuasivo, adaptado a la audiencia de Latinoamérica.
+- Tono: Profesional, empático, natural, adaptado a la audiencia de Latinoamérica.
 - Longitud máxima de palabras por opción: ${maxWords} palabras.
-- Debe incluir emojis pertinentes de forma natural.
-- Debe incluir hashtags relevantes al final.
-- Retorna ÚNICAMENTE el JSON estructurado solicitado. No agregues introducciones ni explicaciones fuera del JSON.
+- Debe incluir emojis pertinentes de forma natural (sin exagerar).
+- Debe incluir de 3 a 5 hashtags relevantes al final de cada opción.
+- Retorna ÚNICAMENTE el JSON estructurado solicitado. No agregues introducciones ni explicaciones.
     `.trim();
 
     console.log("[COPYWRITER] Generando sugerencias de copy...");

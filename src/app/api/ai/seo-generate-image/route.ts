@@ -30,10 +30,28 @@ export async function POST(req: NextRequest) {
         // 1. Generate optimized image prompt with Gemini
         let imagePrompt = customPrompt;
         if (!imagePrompt) {
-            const promptInstruction = `Eres un Director de Arte Experto. Tu tarea es escribir un prompt corto en INGLÉS para un generador de imágenes de IA (DALL-E / Midjourney).
-Debe ser una fotografía hiperrealista o ilustración 3D moderna adecuada para la portada de un blog sobre: "${title}".
-No agregues texto explicativo, solo entrega el prompt en inglés.`;
-            imagePrompt = (await generateFreeText(`Prompt de portada para: ${title}`, promptInstruction, false)) || `${title}, professional photography, 8k, modern corporate blog header`;
+            const bananaRules = `
+LA REGLA DE LOS 7 COMPONENTES (OBLIGATORIA PARA PROMPTS EN INGLÉS):
+Todo prompt para generador de imágenes DEBE construirse como prosa narrativa fluida integrando estos 7 elementos:
+1. Subject: Quién o qué es.
+2. Style: Tipo de imagen.
+3. Environment: Dónde sucede, clima.
+4. Lighting: Tipo de luz, dirección, color.
+5. Action: Qué está pasando (verbos en tiempo presente).
+6. Camera: Ángulo, tipo de lente.
+7. Texture: Detalles táctiles.
+
+PROHIBICIONES ESTRICTAS:
+- NO uses listas separadas por comas. Usa narrativa lineal.
+- NO uses palabras baneadas: "4K", "8K", "masterpiece", "highly detailed". Descríbelo con palabras reales.
+- NO incluyas textos literales en el prompt de la imagen (la IA de imagen no escribe bien).`;
+
+            const promptInstruction = `Eres un Director de Arte Experto. Tu tarea es escribir un prompt narrativo en INGLÉS para la imagen de portada de un blog sobre: "${title}".
+Usa estrictamente la REGLA DE LOS 7 COMPONENTES (Subject, Style, Environment, Lighting, Action, Camera, Texture).
+No agregues texto explicativo, notas ni markdown, SOLO entrega el prompt en inglés puro en formato de prosa.
+
+${bananaRules}`;
+            imagePrompt = (await generateFreeText(`Prompt de portada para: ${title}`, promptInstruction, false)) || `${title}, professional photography, modern corporate blog header`;
         }
 
         // Clean up prompt

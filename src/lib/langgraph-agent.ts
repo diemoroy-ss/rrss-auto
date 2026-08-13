@@ -62,15 +62,17 @@ async function generateDraftNode(state: WorkflowState): Promise<Partial<Workflow
   console.log(`[LangGraph Node] generateDraftNode - Iniciando para: ${state.topic}`);
   const rules = getRules(state.platform);
 
-  const prompt = `Eres un redactor experto de contenidos para redes sociales.
+  const prompt = `Eres un redactor experto de contenidos para redes sociales y especialista en Marketing.
 Escribe un borrador atractivo sobre el siguiente tema: "${state.topic}".
+
+Aplica un framework de marketing como PAS (Problema, Agitación, Solución) o AIDA (Atención, Interés, Deseo, Acción) para estructurar el mensaje persuasivamente.
 
 === REGLAS DE LA PLATAFORMA (${state.platform}) ===
 - Límite Máximo de Caracteres: ${rules.maxLength}
 - Tono: ${rules.tone}
 - Directrices especiales: ${rules.guidelines}
 
-¡IMPORTANTE! Cumple estrictamente con el límite de ${rules.maxLength} caracteres. Sé directo y preciso.`;
+¡IMPORTANTE! Cumple estrictamente con el límite de ${rules.maxLength} caracteres. Sé directo y persuasivo.`;
 
   const text = await generateFreeText(prompt);
   console.log(`[LangGraph Node] generateDraftNode - Completado. Longitud: ${text.length}`);
@@ -95,7 +97,8 @@ ${state.draft}
 
 Verifica:
 1. Si el borrador supera los ${rules.maxLength} caracteres, exige explícitamente y con firmeza que se recorte.
-2. Evalúa la concisión, impacto del gancho inicial y llamados a la acción (CTA).
+2. REGLA DE HUMANIZER: Detecta si el texto suena robótico o usa frases cliché de IA como "Adéntrate", "Descubre el maravilloso mundo de", "Desata", "Revoluciona". Si las usa, exige que se reescriba con un tono 100% conversacional, natural y humano.
+3. Evalúa la concisión, impacto del gancho inicial y llamados a la acción (CTA).
 Sé directo y constructivo.`;
 
   const text = await generateFreeText(prompt);
@@ -126,6 +129,7 @@ ${state.critique}
 === REGLAS ESTRICTAS (${state.platform}) ===
 - Límite Máximo: ${rules.maxLength} caracteres por cada opción.
 - Tono: ${rules.tone}
+- REGLA DE HUMANIZER: Prohibido usar palabras cliché de IA. El texto debe sonar 100% humano, orgánico y conversacional.
 
 ¡OBLIGATORIO! Cada versión final bajo NINGUNA CIRCUNSTANCIA debe superar los ${rules.maxLength} caracteres.
 Produce únicamente las 3 opciones con el siguiente formato exacto:

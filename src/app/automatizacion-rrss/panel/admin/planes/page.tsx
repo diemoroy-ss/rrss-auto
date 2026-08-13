@@ -103,9 +103,11 @@ export default function AdminPlansPage() {
     useEffect(() => {
         const unsub = onAuthStateChanged(auth, async (u) => {
             if (!u) { router.push("/automatizacion-rrss/panel"); return; }
+            const adminEmails = ['diemoroy@gmail.com', 'spalezcom@gmail.com', 'santisoftai@gmail.com', 'admin@santisoft.cl'];
+            const email = (u.email || '').toLowerCase();
             const userSnap = await getDoc(doc(db, "users", u.uid));
-            const adminEmails = ['diemoroy@gmail.com', 'spalezcom@gmail.com', 'admin@santisoft.cl'];
-            if (userSnap.exists() && userSnap.data().role !== 'admin' && !adminEmails.includes(u.email || '')) {
+            const isAdmin = adminEmails.includes(email) || (userSnap.exists() && userSnap.data().role === 'admin');
+            if (!isAdmin) {
                 router.push("/automatizacion-rrss/panel"); return;
             }
             loadPlans();
@@ -268,15 +270,13 @@ export default function AdminPlansPage() {
                     <p className="text-slate-500 mt-2 text-base font-medium">Controla precios, límites y textos en tiempo real.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    {Object.keys(plans).length === 0 && (
-                        <button
-                            onClick={seedPlans}
-                            disabled={seeding}
-                            className="bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-black py-3 px-6 rounded-2xl shadow-lg shadow-amber-500/20 transition-all hover:-translate-y-0.5 text-sm flex items-center gap-2"
-                        >
-                            {seeding ? '⏳ Inicializando...' : '🌱 Inicializar Planes'}
-                        </button>
-                    )}
+                    <button
+                        onClick={seedPlans}
+                        disabled={seeding}
+                        className="bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-black py-3 px-6 rounded-2xl shadow-lg shadow-amber-500/20 transition-all hover:-translate-y-0.5 text-sm flex items-center gap-2"
+                    >
+                        {seeding ? '⏳ Inicializando...' : '🌱 Inicializar Planes'}
+                    </button>
                     <button
                         onClick={handleAddPlan}
                         className="bg-slate-900 hover:bg-slate-800 text-white font-black py-3 px-6 rounded-2xl transition-all hover:-translate-y-0.5 text-sm flex items-center gap-2"
@@ -384,32 +384,32 @@ export default function AdminPlansPage() {
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Posts/Mes</label>
                                         <input type="number" value={activePlan.postsLimit}
                                             onChange={(e) => handleUpdatePlanValue(selectedPlanId, 'postsLimit', parseInt(e.target.value) || 0)}
-                                            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 font-black focus:border-indigo-400 outline-none transition-all" />
+                                            className="w-full bg-slate-50 text-slate-900 border-2 border-slate-100 rounded-xl p-3 font-black focus:border-indigo-400 outline-none transition-all" />
                                         <p className="text-[9px] text-slate-400 mt-1 font-bold">999999 = ilimitado</p>
                                     </div>
                                     <div>
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Videos/Mes</label>
                                         <input type="number" value={activePlan.videosLimit}
                                             onChange={(e) => handleUpdatePlanValue(selectedPlanId, 'videosLimit', parseInt(e.target.value) || 0)}
-                                            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 font-black focus:border-indigo-400 outline-none transition-all" />
+                                            className="w-full bg-slate-50 text-slate-900 border-2 border-slate-100 rounded-xl p-3 font-black focus:border-indigo-400 outline-none transition-all" />
                                     </div>
                                     <div>
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Imágenes IA/Mes</label>
                                         <input type="number" value={activePlan.aiImagesLimit || 0}
                                             onChange={(e) => handleUpdatePlanValue(selectedPlanId, 'aiImagesLimit', parseInt(e.target.value) || 0)}
-                                            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 font-black focus:border-indigo-400 outline-none transition-all" />
+                                            className="w-full bg-slate-50 text-slate-900 border-2 border-slate-100 rounded-xl p-3 font-black focus:border-indigo-400 outline-none transition-all" />
                                     </div>
                                     <div>
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Videos IA/Mes</label>
                                         <input type="number" value={activePlan.aiVideosLimit || 0}
                                             onChange={(e) => handleUpdatePlanValue(selectedPlanId, 'aiVideosLimit', parseInt(e.target.value) || 0)}
-                                            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 font-black focus:border-indigo-400 outline-none transition-all" />
+                                            className="w-full bg-slate-50 text-slate-900 border-2 border-slate-100 rounded-xl p-3 font-black focus:border-indigo-400 outline-none transition-all" />
                                     </div>
                                     <div>
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Blogs SEO/Mes</label>
                                         <input type="number" value={activePlan.seoBlogsLimit || 0}
                                             onChange={(e) => handleUpdatePlanValue(selectedPlanId, 'seoBlogsLimit', parseInt(e.target.value) || 0)}
-                                            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 font-black focus:border-indigo-400 outline-none transition-all" />
+                                            className="w-full bg-slate-50 text-slate-900 border-2 border-slate-100 rounded-xl p-3 font-black focus:border-indigo-400 outline-none transition-all" />
                                     </div>
                                 </div>
 
@@ -418,7 +418,7 @@ export default function AdminPlansPage() {
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Texto Botón CTA</label>
                                     <input type="text" value={activePlan.ctaText}
                                         onChange={(e) => handleUpdatePlanValue(selectedPlanId, 'ctaText', e.target.value)}
-                                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 font-bold text-sm focus:border-indigo-400 outline-none transition-all" />
+                                        className="w-full bg-slate-50 text-slate-900 border-2 border-slate-100 rounded-xl p-3 font-bold text-sm focus:border-indigo-400 outline-none transition-all" />
                                 </div>
 
                                 {/* Toggles */}
@@ -449,7 +449,7 @@ export default function AdminPlansPage() {
                                                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Máx. Cuentas</label>
                                                 <input type="number" value={activePlan.maxAccounts}
                                                     onChange={(e) => handleUpdatePlanValue(selectedPlanId, 'maxAccounts', parseInt(e.target.value) || 1)}
-                                                    className="w-full bg-white border border-indigo-100 rounded-xl p-2 font-black text-sm focus:border-indigo-400 outline-none" />
+                                                    className="w-full bg-white text-slate-900 border border-indigo-100 rounded-xl p-2 font-black text-sm focus:border-indigo-400 outline-none" />
                                             </div>
                                         )}
                                     </div>
@@ -469,7 +469,7 @@ export default function AdminPlansPage() {
                                             <div key={idx} className="flex gap-2 items-center">
                                                 <input type="text" value={feature}
                                                     onChange={(e) => handleUpdateFeature(selectedPlanId, idx, e.target.value)}
-                                                    className="flex-1 bg-white border-2 border-slate-100 rounded-xl p-2.5 text-sm font-medium focus:border-indigo-400 outline-none transition-all" />
+                                                    className="flex-1 bg-white text-slate-900 border-2 border-slate-100 rounded-xl p-2.5 text-sm font-medium focus:border-indigo-400 outline-none transition-all" />
                                                 <button onClick={() => handleRemoveFeature(selectedPlanId, idx)}
                                                     className="text-rose-400 hover:text-rose-600 transition-colors px-2 text-lg">✕</button>
                                             </div>

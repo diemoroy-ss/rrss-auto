@@ -42,7 +42,7 @@ export default function Home() {
       {/* 1. PromoBanner */}
       <div className="promo">
         <span className="on-air"></span>
-        OFERTA — <strong>4 IMÁGENES Y POSTEOS GRATIS</strong> CADA MES · SIN TARJETA DE CRÉDITO
+        PRUEBA GRATIS — <strong>10 DÍAS Y 3 POSTEOS GRATIS</strong> · SIN TARJETA DE CRÉDITO
       </div>
 
       {/* 2. Brand Nav */}

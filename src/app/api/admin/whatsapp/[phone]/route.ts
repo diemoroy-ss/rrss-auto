@@ -11,7 +11,9 @@ export async function GET(req: Request, { params }: { params: { phone: string } 
         const token = authHeader.split("Bearer ")[1];
         const decodedToken = await adminAuth.verifyIdToken(token);
         
-        if (decodedToken.email !== "diemoroy@gmail.com") {
+        const adminEmails = ["diemoroy@gmail.com", "spalezcom@gmail.com", "santisoftai@gmail.com", "admin@santisoft.cl"];
+        const email = (decodedToken.email || "").toLowerCase();
+        if (!adminEmails.includes(email)) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
         }
 

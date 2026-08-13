@@ -1,4 +1,4 @@
-﻿export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic';
 
 import { NextResponse } from "next/server";
 import { adminDb, adminAuth } from "../../../../lib/firebase-admin";
@@ -19,20 +19,22 @@ export async function GET(req: Request) {
 
     const decodedToken = await adminAuth.verifyIdToken(idToken);
     
-    // Check role in Firestore
-    const userDoc = await adminDb.collection("users").doc(decodedToken.uid).get();
-    const userData = userDoc.data();
     const userEmail = (decodedToken.email || "").toLowerCase();
     const adminEmails = ["diemoroy@gmail.com", "spalezcom@gmail.com", "santisoftai@gmail.com", "admin@santisoft.cl"];
     const isSuperAdmin = adminEmails.includes(userEmail);
-    const isAdmin = userData?.role === "admin";
 
-    if (!isSuperAdmin && !isAdmin) {
-      return NextResponse.json({ 
-        error: "Forbidden",
-        debugEmail: userEmail,
-        debugRole: userData?.role || "none"
-      }, { status: 403 });
+    if (!isSuperAdmin) {
+      const userDoc = await adminDb.collection("users").doc(decodedToken.uid).get();
+      const userData = userDoc.data();
+      const isAdmin = userData?.role === "admin";
+
+      if (!isAdmin) {
+        return NextResponse.json({ 
+          error: "Forbidden",
+          debugEmail: userEmail,
+          debugRole: userData?.role || "none"
+        }, { status: 403 });
+      }
     }
 
 

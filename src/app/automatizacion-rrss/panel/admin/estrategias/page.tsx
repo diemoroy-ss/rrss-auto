@@ -59,9 +59,11 @@ export default function AdminEstrategiasPage() {
 
         try {
             // Check role in Firestore
+            const adminEmails = ['diemoroy@gmail.com', 'spalezcom@gmail.com', 'santisoftai@gmail.com', 'admin@santisoft.cl'];
+            const email = (user.email || '').toLowerCase();
             const uDoc = await getDoc(doc(db, "users", user.uid));
             const userData = uDoc.data();
-            const isAdmin = user.email === "diemoroy@gmail.com" || userData?.role === "admin";
+            const isAdmin = adminEmails.includes(email) || userData?.role === "admin";
 
             if (!isAdmin) {
                 router.replace("/automatizacion-rrss/panel");

@@ -40,11 +40,15 @@ export async function POST(req: NextRequest) {
 
         // Pass 1: Initial Draft with Gemini
         const systemInstruction = `Eres un Redactor Experto en SEO, Marketing de Contenidos y Copywriting.
-Tu tarea es escribir un artículo de blog completo, altamente optimizado para SEO, en formato Markdown.
-Debe tener una introducción persuasiva, desarrollo profundo con subtítulos (H2, H3), viñetas, y una conclusión con llamado a la acción.
-Longitud: Al menos 800 palabras.
-Tono de voz: ${config.tone || 'Profesional'}
-Público objetivo: ${config.audience || 'General'}`;
+Tu tarea es escribir un artículo de blog completo, altamente optimizado para SEO y GEO (Generative Engine Optimization), en formato Markdown.
+
+REGLAS SEO/GEO (CRÍTICAS):
+1. Aplica E-E-A-T (Experiencia, Conocimiento, Autoridad, Confianza). Usa un tono de experto que domina el tema.
+2. Estructura GEO: El primer párrafo debe responder directamente a la intención de búsqueda (para que ChatGPT/Perplexity lo cite de inmediato).
+3. Usa abundante formato semántico: listas (bullet points), subtítulos (H2, H3), negritas para conceptos clave.
+4. Longitud: Al menos 800 palabras.
+5. Tono de voz: ${config.tone || 'Profesional'}
+6. Público objetivo: ${config.audience || 'General'}`;
 
         const prompt = `Escribe un artículo completo sobre el siguiente tema:
 Título (H1): ${post.title}
@@ -61,7 +65,13 @@ Entrega el artículo directamente en formato Markdown, sin texto introductorio n
 
         // Pass 2: Review Loop (Editor Chief Critique & Refinement)
         console.log(`[SEO-WRITE-NOW] Pass 2 - Editor Review Loop for: ${post.title}`);
-        const reviewInstruction = `Eres un Editor Jefe SEO y Corrector de Estilo. Tu tarea es pulir y perfeccionar el artículo borrador.`;
+        const reviewInstruction = `Eres un Editor Jefe SEO y Corrector de Estilo. Tu tarea es pulir y perfeccionar el artículo borrador.
+        
+REGLAS DE HUMANIZER (CRÍTICAS):
+- ELIMINA CUALQUIER PALABRA CLICHÉ DE IA: "Adéntrate", "Descubre", "Desata", "En resumen", "En conclusión", "Eleva tu", "Revoluciona", "El maravilloso mundo de".
+- Transforma el texto para que fluya de manera 100% humana, natural y orgánica.
+- Asegura que los párrafos no sean bloques pesados de texto. Usa oraciones directas.`;
+
         const reviewPrompt = `Revisa y perfecciona el siguiente borrador de artículo de blog:
 
 Título: ${post.title}
@@ -69,8 +79,8 @@ Borrador inicial:
 ${draftMarkdown}
 
 Puntos clave a revisar:
-1. Elimina muletillas y mejora la fluidez de la lectura.
-2. Formatear impecablemente los subtítulos (H2, H3) y listas.
+1. Aplica las REGLAS DE HUMANIZER estrictamente. Elimina muletillas de robot.
+2. Formatea impecablemente los subtítulos (H2, H3) y listas.
 3. Garantiza que la extensión sea sólida (+800 palabras).
 
 Entrega únicamente la versión final perfeccionada en Markdown.`;

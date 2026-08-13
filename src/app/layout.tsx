@@ -57,6 +57,8 @@ export const metadata: Metadata = {
   },
 }
 
+import { ThemeProvider } from '../contexts/ThemeContext'
+
 export default function RootLayout({
   children,
 }: {
@@ -64,7 +66,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" className={`${fraunces.variable} ${dmMono.variable} ${plusJakartaSans.variable} ${workSans.variable} ${spaceMono.variable}`}>
-      <body>{children}</body>
+      <body>
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
+      </body>
     </html>
   )
 }

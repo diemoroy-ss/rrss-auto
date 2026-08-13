@@ -1,4 +1,4 @@
-﻿export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '../../../../lib/firebase-admin';
@@ -25,7 +25,9 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
         }
 
-        const isAdmin = userSnap.data()?.role === 'admin' || decodedToken.email === 'diemoroy@gmail.com';
+        const userEmail = (decodedToken.email || '').toLowerCase();
+        const adminEmails = ['diemoroy@gmail.com', 'spalezcom@gmail.com', 'santisoftai@gmail.com', 'admin@santisoft.cl'];
+        const isAdmin = adminEmails.includes(userEmail) || userSnap.data()?.role === 'admin';
         if (!isAdmin) {
             return NextResponse.json({ error: 'No tienes permisos de Administrador' }, { status: 403 });
         }

@@ -1,4 +1,4 @@
-﻿export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic';
 
 import { NextResponse } from "next/server";
 import { adminAuth, adminDb } from "../../../../lib/firebase-admin";
@@ -23,21 +23,23 @@ export async function GET(req: Request) {
 
     const decodedToken = await adminAuth.verifyIdToken(idToken);
     
-    // Check role in Firestore
-    const userDoc = await adminDb.collection("users").doc(decodedToken.uid).get();
-    const userData = userDoc.data();
     const userEmail = (decodedToken.email || "").toLowerCase();
     const adminEmails = ["diemoroy@gmail.com", "spalezcom@gmail.com", "santisoftai@gmail.com", "admin@santisoft.cl"];
     const isSuperAdmin = adminEmails.includes(userEmail);
-    const isAdmin = userData?.role === "admin";
 
-    if (!isSuperAdmin && !isAdmin) {
-      console.warn(`[ADMIN API] Unauthorized access denied for ${userEmail}`);
-      return NextResponse.json({ 
-        error: "Acceso Prohibido: No eres administrador",
-        debugEmail: userEmail,
-        debugRole: userData?.role || "none"
-      }, { status: 403 });
+    if (!isSuperAdmin) {
+      const userDoc = await adminDb.collection("users").doc(decodedToken.uid).get();
+      const userData = userDoc.data();
+      const isAdmin = userData?.role === "admin";
+
+      if (!isAdmin) {
+        console.warn(`[ADMIN API] Unauthorized access denied for ${userEmail}`);
+        return NextResponse.json({ 
+          error: "Acceso Prohibido: No eres administrador",
+          debugEmail: userEmail,
+          debugRole: userData?.role || "none"
+        }, { status: 403 });
+      }
     }
 
     // List users from Firestore (not just Auth, because we want their plans)

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { auth } from "../../lib/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
+import ThemeToggle from "../ThemeToggle";
 
 interface ProfileMenuProps {
   user: any;
@@ -78,6 +79,10 @@ export default function ProfileMenu({ user, userDoc }: ProfileMenuProps) {
             >
               <span>💳</span> Mi Plan actual
             </Link>
+            <div className="px-3 py-2 flex items-center justify-between text-sm font-bold text-slate-700">
+              <span className="flex items-center gap-2"><span>🌓</span> Tema</span>
+              <ThemeToggle />
+            </div>
           </div>
           <div className="p-2 border-t border-slate-100">
             <button onClick={handleLogout} className="w-full flex items-center gap-2 px-3 py-2 text-sm font-bold text-red-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors">
