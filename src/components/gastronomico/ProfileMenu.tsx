@@ -45,7 +45,7 @@ export default function ProfileMenu({ user, userDoc }: ProfileMenuProps) {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 bg-white/80 backdrop-blur-md pl-3 pr-1.5 py-1.5 rounded-full border border-slate-200 shadow-sm hover:shadow-md transition-all group"
       >
-        <div className="flex flex-col text-right">
+        <div className="hidden sm:flex flex-col text-right">
           <span className="text-[11px] font-bold text-slate-800 leading-tight">Hola, {userDoc?.name || user?.email?.split('@')[0]}</span>
           <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{isAdmin ? "Administrador" : "Usuario Pro"}</span>
         </div>

@@ -49,9 +49,9 @@ export default function BrandHeader() {
               <span className="brand-parent-name">SANTISOFT</span>
             </a>
 
-            <span className="brand-slash">/</span>
+            <span className="brand-slash hidden sm:inline">/</span>
 
-            <div className="brand-vertical-badge rrss-badge">
+            <div className="brand-vertical-badge rrss-badge hidden sm:flex">
               <span className="rrss-dot"></span>
               <span className="vertical-name">REDES &amp; CONTENIDO</span>
             </div>

@@ -721,7 +721,7 @@ export default function SeoAutopilotPanel() {
       </div>
 
       {/* Tabs */}
-      <div className="flex overflow-x-auto hide-scrollbar space-x-2 mb-8 bg-slate-200/50 p-1.5 rounded-2xl max-w-full">
+      <div className="flex overflow-x-auto space-x-2 mb-8 bg-slate-200/50 p-1.5 rounded-2xl w-full">
         <button 
            onClick={() => setActiveTab('articulos')}
            className={`shrink-0 px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'articulos' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}

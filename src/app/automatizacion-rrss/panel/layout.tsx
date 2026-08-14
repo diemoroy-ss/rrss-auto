@@ -48,9 +48,10 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
 
   const baseLinks = [
     { href: "/automatizacion-rrss/panel", label: "Próximos Posts", icon: "📅", exact: true },
+    { href: "/automatizacion-rrss/panel/publicados", label: "Posts Publicados", icon: "✅", exact: true },
     { href: "/automatizacion-rrss/panel/metricas", label: "Estadísticas", icon: "📊", exact: false },
     { href: "/automatizacion-rrss/panel/crear", label: "Nuevo Post", icon: "✍️", exact: false },
-    { href: "/automatizacion-rrss/panel/poc-video", label: "PoC Video Reel", icon: "🎬", exact: false },
+    { href: "/automatizacion-rrss/panel/poc-video", label: "Video", icon: "🎬", exact: false },
     { href: "/automatizacion-rrss/panel/biblioteca", label: "Biblioteca", icon: "🖼️", exact: false },
     { href: "/automatizacion-rrss/panel/prompts", label: "Prompts IA", icon: "✨", exact: false },
     { href: "/automatizacion-rrss/panel/radar", label: "Radar de Nicho", icon: "📡", exact: false },
@@ -156,7 +157,7 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
               {links.map(link => {
                 const isActive = link.exact ? pathname === link.href : pathname.startsWith(link.href);
                 return (
-                  <Link key={link.href} href={link.href}
+                  <Link key={link.href} href={link.href} prefetch={false}
                     className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all font-bold text-xs ${isActive ? 'active-nav-item' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
                   >
                     <span className={`text-base transition-transform ${isActive ? 'scale-110' : 'opacity-60'}`}>{link.icon}</span>

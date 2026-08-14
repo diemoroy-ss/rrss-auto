@@ -125,11 +125,11 @@ export default function HeroSection() {
             <span className="eyebrow">Redes 360° <span className="freq">·</span> Blog Automático <span className="freq">·</span> SEO &amp; GEO</span>
             <h1 className="lg:text-left text-center leading-tight mt-5">Que te <em>vean.</em><br />Que te <span className="em-p">citen.</span></h1>
             <p className="sub lg:text-left text-center lg:mx-0 mx-auto mt-6">Tu marca, al aire 24/7: automatizamos tus redes y tu blog con IA, publicamos en Facebook, Instagram y TikTok, y creamos el contenido que te posiciona en Google y en las respuestas de ChatGPT, Perplexity y otros motores de IA — mientras tú trabajas en tu negocio.</p>
-            <div className="hero-ctas justify-center lg:justify-start mt-8 w-full">
-              <a href="#planes" className="btn btn-primary">Explorar Planes</a>
-              <Link href="/login" className="btn btn-ghost">Acceso Cliente</Link>
+            <div className="hero-ctas flex flex-col sm:flex-row justify-center lg:justify-start gap-4 mt-8 w-full">
+              <a href="#planes" className="btn btn-primary w-full sm:w-auto justify-center text-center">Explorar Planes</a>
+              <Link href="/login" className="btn btn-ghost w-full sm:w-auto justify-center text-center">Acceso Cliente</Link>
             </div>
-            <div className="badges justify-center lg:justify-start w-full mt-10">
+            <div className="badges flex flex-wrap justify-center lg:justify-start gap-2 w-full mt-10">
               <span className="badge on"><span className="dot"></span>Meta (FB / IG)</span>
               <span className="badge on"><span className="dot"></span>TikTok</span>
               <span className="badge on"><span className="dot"></span>CMS/Blog</span>

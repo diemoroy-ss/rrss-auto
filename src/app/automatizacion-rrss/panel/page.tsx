@@ -9,6 +9,7 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths,
 import { es } from "date-fns/locale";
 import { useProfile } from "../../../contexts/ProfileContext";
 import { getQuotaUsage, getPlanLimit, getVideoPlanLimit } from "../../../lib/quota";
+import RemotionReelPlayer from "../../../components/video/RemotionReelPlayer";
 
 // Unique-ID SVG icons to avoid duplicate gradient IDs across multiple rendered cards
 function NetworkIcon({ network, postId }: { network: string; postId: string }) {
@@ -952,7 +953,7 @@ export default function RrssDashboard() {
       {/* 1. Reestructuración de la Cabecera */}
       <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6 mb-8">
         <div>
-          <h1 id="tour-dashboard-title" className="text-3xl font-black text-slate-900 tracking-tight">
+          <h1 id="tour-dashboard-title" className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
              {activeTab === 'upcoming' ? 'Próximas Publicaciones' : 'Posts Publicados'}
           </h1>
           <p className="text-slate-500 mt-2 text-sm md:text-base">
@@ -1000,19 +1001,8 @@ export default function RrssDashboard() {
             </div>
           </div>
           
-          <div className="flex bg-slate-100 p-1 rounded-xl w-fit border border-slate-200">
-             <button 
-               onClick={() => setActiveTab('upcoming')} 
-               className={`flex items-center gap-2 px-5 py-2 rounded-lg font-bold text-sm transition-all ${activeTab === 'upcoming' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-             >
-               Próximos
-             </button>
-             <button 
-               onClick={() => setActiveTab('published')} 
-               className={`flex items-center gap-2 px-5 py-2 rounded-lg font-bold text-sm transition-all ${activeTab === 'published' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-             >
-               Publicados
-             </button>
+          <div className="hidden">
+             {/* Pestañas removidas para la vista dividida */}
           </div>
         </div>
 
@@ -1198,10 +1188,17 @@ export default function RrssDashboard() {
                       </span>
                     </div>
                     <div className="flex items-center justify-between w-full">
-                      {/* FORMAT BADGE */}
                       <div className="flex items-center gap-1 bg-white/60 px-2.5 py-1 rounded-md border border-slate-200/50 shadow-sm">
                         <span className="text-[9px] font-black tracking-widest uppercase text-slate-500">
-                          {post.type === 'Reel' ? '🎬 Reel' : post.type === 'Carrusel' ? '📑 Carrusel' : post.type === 'Historia' ? '📱 Historia' : post.type === 'Blog' ? '📝 Blog' : '🖼️ Post'}
+                          {post.type === 'video_reel' || post.type === 'reel' || post.type === 'Reel' || (post.format && (post.format.toLowerCase().includes('reel') || post.format.toLowerCase().includes('short')))
+                            ? '🎬 Reel / Short'
+                            : post.type === 'Carrusel'
+                            ? '📑 Carrusel'
+                            : post.type === 'Historia'
+                            ? '📱 Historia'
+                            : post.type === 'Blog'
+                            ? '📝 Blog'
+                            : '🖼️ Post'}
                         </span>
                       </div>
 
@@ -1239,26 +1236,30 @@ export default function RrssDashboard() {
                         <p className="text-[10px] font-black text-indigo-500 tracking-widest uppercase bg-white/60 px-3 py-1 rounded-full shadow-sm group-hover/stuck:hidden">Generando ia...</p>
                         <p className="text-[10px] font-black text-rose-500 tracking-widest uppercase bg-white/80 px-3 py-1 rounded-full shadow-sm hidden group-hover/stuck:block">¿Trabado? Click para Reset</p>
                       </div>
-                    ) : post.imageUrl ? (
+                    ) : post.imageUrl || post.scenes ? (
                       <div className="mt-2 mb-6 rounded-2xl overflow-hidden border border-slate-200/50 aspect-video bg-slate-50 flex items-center justify-center shadow-inner relative group-hover:border-indigo-200 transition-all">
-                        {post.type === 'Reel' || 
+                        {post.type === 'video_reel' || 
+                         post.type === 'reel' || 
+                         post.type === 'Reel' || 
+                         post.scenes || 
+                         (post.format && (post.format.toLowerCase().includes('reel') || post.format.toLowerCase().includes('short'))) ||
                          post.imageUrl?.toLowerCase().includes('.mp4') || 
                          post.imageUrl?.toLowerCase().includes('.mov') || 
                          post.imageUrl?.toLowerCase().includes('.webm') || 
                          post.imageUrl?.toLowerCase().includes('video') || 
                          post.imageUrl?.toLowerCase().includes('quicktime') ? (
                           <>
-                            <div className="absolute inset-0 bg-gradient-to-br from-rose-900 to-slate-900 flex flex-col items-center justify-center gap-3">
-                              <div className="w-14 h-14 rounded-full bg-white/15 border-2 border-white/30 flex items-center justify-center backdrop-blur-sm shadow-xl">
-                                <span className="text-white text-2xl pl-1">▶</span>
+                            {post.imageUrl ? (
+                              <img src={post.imageUrl} alt="Thumbnail Reel" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                            ) : null}
+                            <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2 group-hover:bg-slate-950/20 transition-all">
+                              <div className="w-12 h-12 rounded-full bg-white/90 text-indigo-600 flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform pl-0.5">
+                                <span className="text-xl">▶</span>
                               </div>
-                              <span className="text-white/70 text-[10px] font-black uppercase tracking-widest">Reel Generado</span>
+                              <span className="bg-slate-900/80 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-white/20 shadow-md">
+                                Previsualizar Reel
+                              </span>
                             </div>
-                            {post.imageUrls && post.imageUrls.length > 1 && (
-                              <div className="absolute top-3 right-3 bg-slate-900/80 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-widest px-2.5 py-1.5 rounded-lg shadow-sm border border-white/10 flex items-center gap-1.5">
-                                 <span>🎬</span> {post.imageUrls.length}
-                              </div>
-                            )}
                           </>
                         ) : (
                           <>
@@ -1577,7 +1578,7 @@ export default function RrssDashboard() {
                       </div>
                     ) : selectedPost.imageUrl ? (
                      <div>
-                       <div className="flex items-center justify-between mb-3 ml-2">
+                <div className="flex items-center justify-between mb-3 ml-2">
                            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Referencia Visual de IA</h3>
                            {['elite', 'business'].includes(userPlan) && (
                                <button 
@@ -1589,7 +1590,13 @@ export default function RrssDashboard() {
                            )}
                        </div>
                        <div className="rounded-[28px] p-2 bg-slate-50 border-2 border-slate-100">
-                         <DashboardCarouselViewer urls={selectedPost.imageUrls && selectedPost.imageUrls.length > 0 ? selectedPost.imageUrls : [selectedPost.imageUrl!]} />
+                         {selectedPost.scenes && selectedPost.scenes.length > 0 ? (
+                           <div className="flex flex-col items-center justify-center p-2">
+                             <RemotionReelPlayer composition={{ title: selectedPost.idea || selectedPost.title || 'Reel Animado', rubro: activeProfile?.rubro || 'General', totalDuration: selectedPost.scenes.reduce((acc: number, s: any) => acc + (s.duration || 4), 0), audioScript: selectedPost.audioScript || '', copyText: selectedPost.copy || selectedPost.text || '', scenes: selectedPost.scenes }} />
+                           </div>
+                         ) : (
+                           <DashboardCarouselViewer urls={selectedPost.imageUrls && selectedPost.imageUrls.length > 0 ? selectedPost.imageUrls : [selectedPost.imageUrl!]} />
+                         )}
                        </div>
                      </div>
                    ) : ['elite', 'business'].includes(userPlan) ? (

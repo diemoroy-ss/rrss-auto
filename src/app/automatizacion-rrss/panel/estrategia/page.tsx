@@ -349,12 +349,12 @@ export default function EstrategiaPage() {
              
              {/* Horizontal scrollable carousel */}
              <div className="relative">
-               <div className="flex gap-3 overflow-x-auto pb-2 hide-scrollbar snap-x snap-mandatory">
+               <div className="flex flex-col sm:flex-row gap-3 sm:overflow-x-auto sm:pb-2 sm:hide-scrollbar sm:snap-x sm:snap-mandatory">
                  {goals.map(g => (
                    <button
                      key={g.id}
                      onClick={() => setSelectedGoal(g.id)}
-                     className={`snap-start shrink-0 flex items-center gap-3 px-4 py-3 rounded-2xl border-2 transition-all text-left w-[200px] ${
+                     className={`sm:snap-start shrink-0 flex items-center gap-3 px-4 py-3 rounded-2xl border-2 transition-all text-left w-full sm:w-[200px] ${
                        selectedGoal === g.id
                        ? 'border-indigo-500 bg-indigo-50 shadow-md shadow-indigo-100 -translate-y-0.5'
                        : 'border-slate-100 bg-slate-50 hover:border-indigo-200 hover:bg-white hover:-translate-y-0.5'

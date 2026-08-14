@@ -48,6 +48,54 @@ export default function RemotionReelPlayer({ composition, onSceneChange }: Remot
     }
   }, [currentSceneIndex, onSceneChange]);
 
+  const [voiceLang, setVoiceLang] = useState<string>("es-MX");
+  const [motionEffect, setMotionEffect] = useState<string>("zoom_in");
+
+  const getMotionTransform = (effect: string, progress: number) => {
+    switch (effect) {
+      case "zoom_out":
+        return `scale(${1.25 - progress * 0.22})`;
+      case "slide_left":
+        return `translateX(${(progress - 0.5) * 12}%) scale(1.15)`;
+      case "pulse":
+        return `scale(${1 + Math.sin(progress * Math.PI) * 0.08})`;
+      case "flip_3d":
+        return `perspective(1000px) rotateY(${(progress - 0.5) * 12}deg) scale(1.1)`;
+      case "bounce":
+        return `translateY(${Math.sin(progress * Math.PI) * -10}px) scale(1.1)`;
+      case "zoom_in":
+      default:
+        return `scale(${1 + progress * 0.22})`;
+    }
+  };
+
+  const handleTestVoice = (langToUse?: string) => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const targetLang = langToUse || voiceLang;
+    const sampleText = composition.audioScript || activeScene?.subtitle || "Demostración de locución con Santisoft AI.";
+    const utterance = new SpeechSynthesisUtterance(sampleText.substring(0, 80));
+    utterance.lang = targetLang;
+    utterance.rate = 1.15;
+
+    if ('getVoices' in window.speechSynthesis) {
+      const voices = window.speechSynthesis.getVoices();
+      const targetVoice = voices.find(
+        (v) =>
+          v.lang.toLowerCase().replace('_', '-').startsWith(targetLang.toLowerCase().substring(0, 5)) ||
+          (targetLang !== 'es-ES' && (v.name.includes('Latin') || v.name.includes('Mexico') || v.name.includes('Chile') || v.name.includes('Spanish') || v.lang.startsWith('es')))
+      );
+      if (targetVoice) utterance.voice = targetVoice;
+    }
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const handleVoiceLangChange = (newLang: string) => {
+    setVoiceLang(newLang);
+    handleTestVoice(newLang);
+  };
+
   // Loop de Animación 60fps con requestAnimationFrame
   const animate = (time: number) => {
     if (lastTimeRef.current !== null) {
@@ -55,6 +103,9 @@ export default function RemotionReelPlayer({ composition, onSceneChange }: Remot
       setCurrentTime((prevTime) => {
         const nextTime = prevTime + delta;
         if (nextTime >= totalDuration) {
+          if (useVoiceSpeech && typeof window !== 'undefined' && 'speechSynthesis' in window && window.speechSynthesis.speaking) {
+            return totalDuration - 0.05; // Pausar reseteo hasta que la voz termine de hablar
+          }
           setIsPlaying(false);
           return 0; // Reset al terminar
         }
@@ -74,8 +125,19 @@ export default function RemotionReelPlayer({ composition, onSceneChange }: Remot
       if (useVoiceSpeech && 'speechSynthesis' in window && currentTime === 0) {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(composition.audioScript || activeScene?.subtitle || "");
-        utterance.lang = "es-ES";
-        utterance.rate = 1.05;
+        utterance.lang = voiceLang;
+        utterance.rate = 1.15;
+
+        if ('getVoices' in window.speechSynthesis) {
+          const voices = window.speechSynthesis.getVoices();
+          const targetVoice = voices.find(
+            (v) =>
+              v.lang.toLowerCase().replace('_', '-').startsWith(voiceLang.toLowerCase().substring(0, 5)) ||
+              (voiceLang !== 'es-ES' && (v.name.includes('Latin') || v.name.includes('Mexico') || v.name.includes('Chile') || v.name.includes('Spanish') || v.lang.startsWith('es')))
+          );
+          if (targetVoice) utterance.voice = targetVoice;
+        }
+
         window.speechSynthesis.speak(utterance);
       }
     } else {
@@ -90,7 +152,7 @@ export default function RemotionReelPlayer({ composition, onSceneChange }: Remot
     return () => {
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
     };
-  }, [isPlaying]);
+  }, [isPlaying, voiceLang]);
 
   const handleTogglePlay = () => {
     if (currentTime >= totalDuration) {
@@ -137,21 +199,21 @@ export default function RemotionReelPlayer({ composition, onSceneChange }: Remot
   };
 
   return (
-    <div className="flex flex-col items-center gap-4 select-none">
+    <div className="flex flex-col items-center gap-4 select-none w-full max-w-sm">
       {/* CONTENEDOR PRINCIPAL REEL 9:16 */}
       <div className="relative w-[310px] sm:w-[340px] h-[550px] sm:h-[600px] rounded-[36px] overflow-hidden shadow-2xl border-4 border-slate-900 bg-slate-950 flex flex-col justify-between p-5 text-white">
         
-        {/* FONDO DINÁMICO EN DEGRADADO */}
-        {/* FONDO DE IMAGEN DINÁMICA CON EFECTO KEN BURNS (ANIMACIÓN DE ZOOM/MOVIMIENTO) */}
+        {/* FONDO DINÁMICO DE IMAGEN CON EFECTO DE MOVIMIENTO SELECCIONADO */}
         {activeScene?.bgImageUrl ? (
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               key={activeScene.bgImageUrl}
               src={activeScene.bgImageUrl}
               alt="Fondo de escena"
               className="w-full h-full object-cover transition-transform duration-75 ease-linear"
               style={{
-                transform: `scale(${1 + sceneProgress * 0.18})`,
+                transform: getMotionTransform(motionEffect, sceneProgress),
               }}
             />
             {/* Máscara sutil para máxima claridad de imagen manteniendo contraste en texto */}
@@ -184,7 +246,7 @@ export default function RemotionReelPlayer({ composition, onSceneChange }: Remot
         <div className="relative z-10 my-auto text-center px-3 space-y-5">
           {/* TÍTULO PRINCIPAL DE LA ESCENA */}
           <div className="inline-block px-3 py-1 bg-black/50 backdrop-blur-md rounded-xl border border-white/10 text-[11px] font-extrabold uppercase tracking-widest text-slate-300 shadow-lg">
-            {activeScene?.title || "ESCIENA REEL"}
+            {activeScene?.title || "ESCENA REEL"}
           </div>
 
           {/* TEXTO ANAMÓRFICO GIGANTE (CAPTION HORMOZI) */}
@@ -226,31 +288,78 @@ export default function RemotionReelPlayer({ composition, onSceneChange }: Remot
         )}
       </div>
 
-      {/* CONTROLES DEL REPRODUCTOR */}
-      <div className="flex items-center gap-3 bg-white p-2.5 rounded-2xl border border-slate-200 shadow-sm text-xs font-bold">
-        <button
-          onClick={handleTogglePlay}
-          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition-all shadow-md flex items-center gap-1.5"
-        >
-          <span>{isPlaying ? "⏸️ Pausar" : "▶️ Reproducir"}</span>
-        </button>
+      {/* PANEL DE CONTROLES Y PREVISUALIZACIÓN */}
+      <div className="w-full bg-white p-3 rounded-2xl border border-slate-200 shadow-sm space-y-2.5 text-xs font-bold">
+        {/* REPRODUCCIÓN */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleTogglePlay}
+            className="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5"
+          >
+            <span>{isPlaying ? "⏸️ Pausar Video" : "▶️ Reproducir Reel"}</span>
+          </button>
 
-        <button
-          onClick={handleRestart}
-          className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-all border border-slate-300"
-        >
-          <span>🔄 Reiniciar</span>
-        </button>
+          <button
+            onClick={handleRestart}
+            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-all border border-slate-300"
+          >
+            <span>🔄 Reiniciar</span>
+          </button>
+        </div>
 
-        <label className="flex items-center gap-1.5 cursor-pointer text-slate-600 pl-2 border-l border-slate-200">
-          <input
-            type="checkbox"
-            checked={useVoiceSpeech}
-            onChange={(e) => setUseVoiceSpeech(e.target.checked)}
-            className="rounded text-indigo-600 focus:ring-indigo-500"
-          />
-          <span className="text-[11px]">Voz en Off (Locución)</span>
-        </label>
+        {/* AJUSTES DE VOZ & ACENTO */}
+        <div className="flex items-center gap-2 pt-2 border-t border-slate-100 flex-wrap">
+          <label className="flex items-center gap-1.5 cursor-pointer text-slate-600 font-semibold">
+            <input
+              type="checkbox"
+              checked={useVoiceSpeech}
+              onChange={(e) => setUseVoiceSpeech(e.target.checked)}
+              className="rounded text-indigo-600 focus:ring-indigo-500"
+            />
+            <span>Voz</span>
+          </label>
+
+          {useVoiceSpeech && (
+            <>
+              <select
+                value={voiceLang}
+                onChange={(e) => handleVoiceLangChange(e.target.value)}
+                className="flex-1 min-w-[130px] px-2 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-800 focus:outline-none transition-all cursor-pointer shadow-inner"
+              >
+                <option value="es-MX">🇲🇽 Latino Neutro</option>
+                <option value="es-CL">🇨🇱 Chile</option>
+                <option value="es-US">🇺🇸 Latino US</option>
+                <option value="es-AR">🇦🇷 Argentina</option>
+                <option value="es-ES">🇪🇸 España</option>
+              </select>
+
+              <button
+                onClick={() => handleTestVoice()}
+                title="Escuchar muestra de voz"
+                className="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-lg border border-indigo-200 transition-all text-[10px] font-black uppercase tracking-wider flex items-center gap-1"
+              >
+                <span>🔊 Probar</span>
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* MOVIMIENTO DE IMAGEN */}
+        <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+          <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 whitespace-nowrap">🎥 Movimiento:</span>
+          <select
+            value={motionEffect}
+            onChange={(e) => setMotionEffect(e.target.value)}
+            className="w-full px-2 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-800 focus:outline-none transition-all cursor-pointer shadow-inner"
+          >
+            <option value="zoom_in">🔍 Zoom In (Ken Burns)</option>
+            <option value="zoom_out">🔍 Zoom Out Retrayente</option>
+            <option value="slide_left">↔️ Desplazamiento Lateral</option>
+            <option value="pulse">🌊 Pulsación Suave</option>
+            <option value="flip_3d">🎲 Giro 3D Dinámico</option>
+            <option value="bounce">⚡ Elevación / Rebote</option>
+          </select>
+        </div>
       </div>
     </div>
   );

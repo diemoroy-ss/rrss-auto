@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { auth, db } from "../../../../lib/firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, doc, getDoc } from "firebase/firestore";
 import { useProfile } from "../../../../contexts/ProfileContext";
+import Link from "next/link";
 import RemotionReelPlayer from "../../../../components/video/RemotionReelPlayer";
 import { VideoComposition } from "../../../../lib/video-poc-service";
 
@@ -11,9 +12,12 @@ export default function VideoPoCPage() {
   const { activeProfile } = useProfile();
   const prof = activeProfile as any;
 
+  const [userDoc, setUserDoc] = useState<any>(null);
+
   const [topic, setTopic] = useState<string>("3 Consejos Clave para Triunfar en Gastronomía");
   const [rubro, setRubro] = useState<string>(prof?.rubro || prof?.niche || "Gastronomía & Restaurantes");
   const [style, setStyle] = useState<"vibrante" | "minimalista" | "cyberpunk" | "corporativo">("vibrante");
+  const [motionEffect, setMotionEffect] = useState<string>("zoom_in");
 
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
@@ -32,9 +36,37 @@ export default function VideoPoCPage() {
     return tmr.toISOString().split("T")[0];
   });
   const [scheduledTime, setScheduledTime] = useState<string>("15:00");
-  const [selectedNetworks, setSelectedNetworks] = useState<string[]>(["instagram", "tiktok"]);
+  const [selectedNetworks, setSelectedNetworks] = useState<string[]>([]);
   const [isScheduling, setIsScheduling] = useState<boolean>(false);
   const [scheduleSuccess, setScheduleSuccess] = useState<string>("");
+
+  const [isGeneratingCopy, setIsGeneratingCopy] = useState<boolean>(false);
+
+  useEffect(() => {
+    const u = auth.currentUser;
+    if (u) {
+      getDoc(doc(db, "users", u.uid))
+        .then((snap) => {
+          if (snap.exists()) setUserDoc(snap.data());
+        })
+        .catch(console.error);
+    }
+  }, []);
+
+  const isValidToken = (t: any) => !!t && t !== "null" && t !== "undefined" && t !== "";
+  const isDefault = activeProfile?.id === "default";
+
+  const hasIg = isValidToken(activeProfile?.instagramToken_enc) || (isDefault && isValidToken(userDoc?.instagramToken_enc));
+  const hasTt = isValidToken(activeProfile?.tiktokToken_enc) || (isDefault && isValidToken(userDoc?.tiktokToken_enc));
+  const hasYt = isValidToken(activeProfile?.youtubeToken_enc || activeProfile?.accounts?.youtube?.token || activeProfile?.youtubeConnected) || (isDefault && isValidToken(userDoc?.youtubeToken_enc));
+
+  useEffect(() => {
+    const connected: string[] = [];
+    if (hasIg) connected.push("instagram");
+    if (hasTt) connected.push("tiktok");
+    if (hasYt) connected.push("youtube");
+    setSelectedNetworks(connected);
+  }, [hasIg, hasTt, hasYt]);
 
   // Precargar imágenes de las escenas cuando la composición cambia
   useEffect(() => {
@@ -46,6 +78,13 @@ export default function VideoPoCPage() {
     });
     setImageStatus(newStatus);
 
+    const fallbackImages = [
+      "https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=1080&h=1920&q=80",
+      "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=1080&h=1920&q=80",
+      "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1080&h=1920&q=80",
+      "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1080&h=1920&q=80",
+    ];
+
     composition.scenes.forEach((scene, idx) => {
       if (scene.bgImageUrl) {
         const img = new Image();
@@ -54,13 +93,20 @@ export default function VideoPoCPage() {
           setImageStatus((prev) => ({ ...prev, [idx]: "ready" }));
         };
         img.onerror = () => {
-          setImageStatus((prev) => ({ ...prev, [idx]: "error" }));
+          const fallback = fallbackImages[idx % fallbackImages.length];
+          setComposition((prev) => {
+            if (!prev) return null;
+            const newScenes = [...prev.scenes];
+            newScenes[idx] = { ...newScenes[idx], bgImageUrl: fallback };
+            return { ...prev, scenes: newScenes };
+          });
+          setImageStatus((prev) => ({ ...prev, [idx]: "ready" }));
         };
       } else {
         setImageStatus((prev) => ({ ...prev, [idx]: "ready" }));
       }
     });
-  }, [composition]);
+  }, [composition?.scenes?.map((s) => s.bgImageUrl).join(",")]);
 
   const handleGenerateVideo = async () => {
     if (!topic.trim()) {
@@ -80,6 +126,7 @@ export default function VideoPoCPage() {
           topic: topic.trim(),
           rubro: rubro.trim() || "General",
           style,
+          motionEffect,
         }),
       });
 
@@ -94,6 +141,47 @@ export default function VideoPoCPage() {
       setErrorMsg(err.message || "Error al conectar con la IA.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGenerateCopy = async () => {
+    if (!topic.trim()) return;
+    setIsGeneratingCopy(true);
+    try {
+      const res = await fetch("/api/generate-post", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rubro, promo: topic, demoType: "rrss" }),
+      });
+      const data = await res.json();
+      if (data.text) {
+        setComposition((prev) => (prev ? { ...prev, copyText: data.text } : null));
+      }
+    } catch (err) {
+      console.error("Error al generar copy:", err);
+    } finally {
+      setIsGeneratingCopy(false);
+    }
+  };
+
+  const handleImproveCopy = async () => {
+    if (!composition?.copyText) return;
+    setIsGeneratingCopy(true);
+    try {
+      const promptText = `Mejora y haz más persuasivo este copy para Instagram Reel / TikTok / Shorts: "${composition.copyText}". Añade llamados a la acción potentes y hashtags.`;
+      const res = await fetch("/api/generate-post", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rubro, promo: promptText, demoType: "rrss" }),
+      });
+      const data = await res.json();
+      if (data.text) {
+        setComposition((prev) => (prev ? { ...prev, copyText: data.text } : null));
+      }
+    } catch (err) {
+      console.error("Error al mejorar copy:", err);
+    } finally {
+      setIsGeneratingCopy(false);
     }
   };
 
@@ -123,27 +211,43 @@ export default function VideoPoCPage() {
       const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}:00`);
 
       if (user && activeProfile?.id) {
-        await addDoc(collection(db, "posts"), {
+        await addDoc(collection(db, "social_posts"), {
           userId: user.uid,
+          profileId: activeProfile.id,
           businessId: activeProfile.id,
-          title: composition.title,
-          postText: composition.copyText,
+          idea: composition.title,
+          text: composition.copyText || composition.title,
+          copy: composition.copyText || composition.title,
           audioScript: composition.audioScript,
           type: "video_reel",
           format: "Reel 9:16",
           status: "confirmed", // Agendado
-          scheduledAt: scheduledDateTime,
+          scheduledFor: scheduledDateTime,
           networks: selectedNetworks,
           scenes: composition.scenes,
+          imageUrl: composition.scenes[0]?.bgImageUrl || "",
           createdAt: serverTimestamp(),
         });
+
+        // Registrar portada/miniatura en la Biblioteca (generated_images)
+        if (composition.scenes[0]?.bgImageUrl) {
+          await addDoc(collection(db, "generated_images"), {
+            userId: user.uid,
+            profileId: activeProfile.id,
+            url: composition.scenes[0].bgImageUrl,
+            source: "ia",
+            type: "Reel",
+            prompt: composition.title,
+            createdAt: serverTimestamp(),
+          });
+        }
       }
 
       setScheduleSuccess(`¡Reel agendado con éxito para el ${scheduledDate} a las ${scheduledTime} hrs!`);
       setShowScheduleModal(false);
     } catch (err: any) {
       console.error("Error al agendar Reel:", err);
-      setErrorMsg("No se pudo programar el Reel en la base de datos.");
+      setErrorMsg("No se pudo programar el Reel en la base de datos: " + (err.message || ""));
     } finally {
       setIsScheduling(false);
     }
@@ -162,16 +266,16 @@ export default function VideoPoCPage() {
         <div className="absolute -right-10 -bottom-10 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="relative z-10 space-y-3">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-xs font-bold uppercase tracking-wider">
-            <span>🎬 PoC Generación de Video</span>
+            <span>🎬 Generación de Video</span>
             <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
             <span className="text-[10px] text-amber-300 font-extrabold">Reels 9:16</span>
           </div>
 
           <h1 className="text-2xl md:text-4xl font-black tracking-tight text-white">
-            Generador de Reels Animados con IA & Remotion
+            Generador de Reels Animados
           </h1>
           <p className="text-slate-300 text-sm md:text-base max-w-3xl leading-relaxed">
-            Prueba de concepto para estructurar, animar y previsualizar Reels verticales a 60fps con subtítulos dinámicos estilo Alex Hormozi y marca de agua.
+            Estructura, anima y previsualiza Reels verticales a 60fps con subtítulos dinámicos estilo Alex Hormozi y marca de agua.
           </p>
         </div>
       </div>
@@ -209,7 +313,7 @@ export default function VideoPoCPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
                     Rubro / Industria
@@ -236,6 +340,24 @@ export default function VideoPoCPage() {
                     <option value="minimalista">Minimalista (Oscuro / Verde)</option>
                     <option value="cyberpunk">Cyberpunk (Neón / Azul)</option>
                     <option value="corporativo">Corporativo (Azul / Gris)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Efecto de Movimiento
+                  </label>
+                  <select
+                    value={motionEffect}
+                    onChange={(e) => setMotionEffect(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-white"
+                  >
+                    <option value="fade">✨ Fade In / Out (Desvanecimiento)</option>
+                    <option value="zoom_in">🔍 Zoom In (Ken Burns)</option>
+                    <option value="slide_left">↔️ Desplazamiento Lateral (Slide)</option>
+                    <option value="bounce">🏀 Rebote Suave (Bounce)</option>
+                    <option value="flip_3d">🔄 Giro 3D (Flip)</option>
+                    <option value="glitch_pulse">⚡ Pulso & Glitch (Dinámico)</option>
                   </select>
                 </div>
               </div>
@@ -375,6 +497,42 @@ export default function VideoPoCPage() {
                 </p>
               </div>
 
+              {/* EDICIÓN Y GENERACIÓN DE COPY CON IA */}
+              <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                    <span>📝 Copy / Caption del Reel</span>
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleGenerateCopy}
+                      disabled={isGeneratingCopy}
+                      className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-extrabold text-[11px] rounded-xl transition-all border border-indigo-200 flex items-center gap-1 disabled:opacity-50"
+                    >
+                      {isGeneratingCopy ? "⏳ Generando..." : "✨ Generar Copy IA"}
+                    </button>
+                    <button
+                      onClick={handleImproveCopy}
+                      disabled={isGeneratingCopy || !composition.copyText}
+                      className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 font-extrabold text-[11px] rounded-xl transition-all border border-amber-200 flex items-center gap-1 disabled:opacity-50"
+                    >
+                      {isGeneratingCopy ? "⏳ Mejorando..." : "🪄 Mejorar con IA"}
+                    </button>
+                  </div>
+                </div>
+
+                <textarea
+                  value={composition.copyText || ""}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setComposition((prev) => (prev ? { ...prev, copyText: val } : null));
+                  }}
+                  placeholder="Escribe o genera el copy descriptivo del Reel..."
+                  rows={4}
+                  className="w-full p-3.5 rounded-xl border border-slate-300 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all leading-relaxed"
+                />
+              </div>
+
               {/* BOTÓN PROGRAMAR PUBLICACIÓN */}
               <button
                 onClick={() => setShowScheduleModal(true)}
@@ -465,43 +623,66 @@ export default function VideoPoCPage() {
 
               <div>
                 <label className="block font-bold text-slate-800 mb-1.5">Redes Sociales Destino</label>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => toggleNetwork("instagram")}
-                    className={`px-3 py-1.5 rounded-xl font-bold transition-all border flex items-center gap-1.5 ${
-                      selectedNetworks.includes("instagram")
-                        ? "bg-pink-50 border-pink-300 text-pink-700"
-                        : "bg-slate-50 border-slate-200 text-slate-500"
-                    }`}
-                  >
-                    <span>📸 Instagram Reels</span>
-                  </button>
+                {!hasIg && !hasTt && !hasYt ? (
+                  <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl space-y-2">
+                    <p className="text-xs font-bold text-amber-800 flex items-center gap-1.5">
+                      <span>⚠️</span> No tienes redes de video conectadas a esta marca.
+                    </p>
+                    <p className="text-[11px] text-amber-700 font-medium">
+                      Conecta tu cuenta de Instagram, TikTok o YouTube en la sección de configuración para agendar y publicar tus Reels automáticamente.
+                    </p>
+                    <Link
+                      href="/automatizacion-rrss/panel/configuracion"
+                      className="inline-flex items-center gap-1 text-xs font-extrabold text-indigo-700 hover:underline"
+                    >
+                      ⚙️ Ir a Configuración de Marca ↗
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {hasIg && (
+                      <button
+                        type="button"
+                        onClick={() => toggleNetwork("instagram")}
+                        className={`px-3 py-1.5 rounded-xl font-bold transition-all border flex items-center gap-1.5 ${
+                          selectedNetworks.includes("instagram")
+                            ? "bg-pink-50 border-pink-300 text-pink-700"
+                            : "bg-slate-50 border-slate-200 text-slate-500"
+                        }`}
+                      >
+                        <span>📸 Instagram Reels</span>
+                      </button>
+                    )}
 
-                  <button
-                    type="button"
-                    onClick={() => toggleNetwork("tiktok")}
-                    className={`px-3 py-1.5 rounded-xl font-bold transition-all border flex items-center gap-1.5 ${
-                      selectedNetworks.includes("tiktok")
-                        ? "bg-slate-900 border-slate-900 text-white"
-                        : "bg-slate-50 border-slate-200 text-slate-500"
-                    }`}
-                  >
-                    <span>🎵 TikTok</span>
-                  </button>
+                    {hasTt && (
+                      <button
+                        type="button"
+                        onClick={() => toggleNetwork("tiktok")}
+                        className={`px-3 py-1.5 rounded-xl font-bold transition-all border flex items-center gap-1.5 ${
+                          selectedNetworks.includes("tiktok")
+                            ? "bg-slate-900 border-slate-900 text-white"
+                            : "bg-slate-50 border-slate-200 text-slate-500"
+                        }`}
+                      >
+                        <span>🎵 TikTok</span>
+                      </button>
+                    )}
 
-                  <button
-                    type="button"
-                    onClick={() => toggleNetwork("youtube")}
-                    className={`px-3 py-1.5 rounded-xl font-bold transition-all border flex items-center gap-1.5 ${
-                      selectedNetworks.includes("youtube")
-                        ? "bg-rose-50 border-rose-300 text-rose-700"
-                        : "bg-slate-50 border-slate-200 text-slate-500"
-                    }`}
-                  >
-                    <span>▶️ YouTube Shorts</span>
-                  </button>
-                </div>
+                    {hasYt && (
+                      <button
+                        type="button"
+                        onClick={() => toggleNetwork("youtube")}
+                        className={`px-3 py-1.5 rounded-xl font-bold transition-all border flex items-center gap-1.5 ${
+                          selectedNetworks.includes("youtube")
+                            ? "bg-rose-50 border-rose-300 text-rose-700"
+                            : "bg-slate-50 border-slate-200 text-slate-500"
+                        }`}
+                      >
+                        <span>▶️ YouTube Shorts</span>
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 

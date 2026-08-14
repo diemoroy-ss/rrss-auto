@@ -38,6 +38,7 @@ export async function generateVideoPoCComposition(params: VideoPoCInputParams): 
   const systemInstruction = `Eres un Director de Arte y Productor de Video especializado en Reels, TikToks y YouTube Shorts virales de alto impacto.
 Tu tarea es tomar una idea/tema y estructurar un video vertical 9:16 de exactamente 3 escenas (duración total 12-15 segundos).
 Para cada escena debes incluir un prompt en inglés altamente descriptivo para generar una imagen estática cinematográfica de fondo sin texto.
+IMPORTANTE: Queda estrictamente PROHIBIDO incluir llamadas a la acción pidiendo al usuario comentar palabras clave (como 'Comenta AUTO' o 'Escribe QUIERO'), ya que la respuesta automática por comentarios no está habilitada. Utiliza siempre CTAs estándar directos como 'Guarda este Reel', 'Síguenos para más consejos', 'Visita el enlace del perfil' o 'Agenda tu demo'.
 Debes devolver UNICAMENTE un objeto JSON válido con el esquema indicado.`;
 
   const prompt = `Crea la estructura de escenas para un Reel promocional corto sobre el siguiente tema:
@@ -80,8 +81,8 @@ Responde ÚNICAMENTE con un JSON con la siguiente estructura exacta:
       "id": "scene_3",
       "duration": 4,
       "title": "LLAMADO A LA ACCIÓN (CTA)",
-      "subtitle": "Comenta 'REEL' para enviarte la guía completa",
-      "highlightWords": ["REEL", "GUÍA"],
+      "subtitle": "Guarda este Reel y síguenos para más estrategias",
+      "highlightWords": ["GUARDA", "SÍGUENOS"],
       "gradientBg": "from-purple-950 via-indigo-900 to-slate-950",
       "textColor": "#FFFFFF",
       "accentColor": "#FF6B00",

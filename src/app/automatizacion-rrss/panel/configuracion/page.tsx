@@ -815,7 +815,8 @@ function ConfigContent() {
                            </span>
                            <h5 className="font-black text-slate-900">Meta (FB & IG)</h5>
                        </div>
-                       <p className="text-xs text-slate-500 font-medium mb-4">Conecta tu cuenta para publicar automáticamente en Facebook e Instagram.</p>
+                       <p className="text-xs text-slate-500 font-medium mb-2">Conecta tu cuenta para publicar automáticamente en Facebook e Instagram.</p>
+                       <p className="text-[10px] text-amber-600 bg-amber-50 p-2.5 rounded-lg font-bold mb-4 border border-amber-200">⚠️ Por reglas oficiales de Meta, la automatización solo está permitida para Páginas de Empresa (Fanpages) y cuentas de Instagram Creador/Empresa. No funciona con perfiles personales.</p>
                    </div>
                    
                    {fbStatus ? (

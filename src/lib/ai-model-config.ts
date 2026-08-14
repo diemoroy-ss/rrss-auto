@@ -18,7 +18,7 @@ export const AI_TASKS: TaskModelDefinition[] = [
     description: "Modelo base utilizado cuando no se especifica una tarea particular o como respaldo primario.",
     icon: "⚡",
     recommendedType: "balanced",
-    defaultModel: "gemini-2.5-flash",
+    defaultModel: "gemini-3.7-flash",
   },
   {
     key: "copywriter",
@@ -27,7 +27,7 @@ export const AI_TASKS: TaskModelDefinition[] = [
     description: "Generación de textos persuasivos, emojis, ganchos comerciales y hashtags para redes sociales.",
     icon: "✍️",
     recommendedType: "quality",
-    defaultModel: "gemini-2.5-flash",
+    defaultModel: "gemini-3.7-flash",
   },
   {
     key: "generate_post",
@@ -45,7 +45,7 @@ export const AI_TASKS: TaskModelDefinition[] = [
     description: "Generador de prompts para carteles publicitarios, imágenes para DALL-E/Midjourney y reformulación de ideas.",
     icon: "✨",
     recommendedType: "quality",
-    defaultModel: "gemini-2.5-flash",
+    defaultModel: "gemini-3.7-flash",
   },
   {
     key: "seo_strategy",
@@ -72,7 +72,7 @@ export const AI_TASKS: TaskModelDefinition[] = [
     description: "Creación de estructuras de guion segundo a segundo, locución y escenas visuales para videos cortos.",
     icon: "🎬",
     recommendedType: "balanced",
-    defaultModel: "gemini-2.5-flash",
+    defaultModel: "gemini-3.7-flash",
   },
   {
     key: "niche_radar",
@@ -81,7 +81,7 @@ export const AI_TASKS: TaskModelDefinition[] = [
     description: "Extracción y análisis de tendencias de búsqueda, preguntas frecuentes de la audiencia y dolores del cliente.",
     icon: "📡",
     recommendedType: "balanced",
-    defaultModel: "gemini-2.5-flash",
+    defaultModel: "gemini-3.7-flash",
   },
   {
     key: "metrics_analysis",
@@ -90,7 +90,7 @@ export const AI_TASKS: TaskModelDefinition[] = [
     description: "Interpretación de rendimiento de campañas de Meta Ads, alcance orgánico y recomendaciones de mejora.",
     icon: "📊",
     recommendedType: "speed",
-    defaultModel: "gemini-2.5-flash-lite",
+    defaultModel: "gemini-3.7-flash-lite",
   },
   {
     key: "webchat",
@@ -108,7 +108,7 @@ export const AI_TASKS: TaskModelDefinition[] = [
     description: "Atención automática y calificación de prospectos vía webhook de WhatsApp Cloud API.",
     icon: "📱",
     recommendedType: "speed",
-    defaultModel: "gemini-2.5-flash-lite",
+    defaultModel: "gemini-3.7-flash-lite",
   },
 ];
 
@@ -156,7 +156,7 @@ export async function getTaskModel(taskKey?: string): Promise<string> {
   if (taskKey && config[taskKey]) {
     return config[taskKey];
   }
-  return config["general"] || "gemini-2.5-flash";
+  return config["general"] || "gemini-3.7-flash";
 }
 
 export function invalidateModelConfigCache() {
