@@ -809,14 +809,22 @@ function ConfigContent() {
                 {/* 1. Meta (FB & IG) */}
                 <div className="p-5 border-2 border-slate-100 rounded-2xl bg-slate-50 flex flex-col justify-between">
                    <div>
-                       <div className="flex items-center gap-3 mb-2">
-                           <span className="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center font-bold">
-                              f
-                           </span>
-                           <h5 className="font-black text-slate-900">Meta (FB & IG)</h5>
+                       <div className="flex items-center justify-between mb-2">
+                           <div className="flex items-center gap-3">
+                               <span className="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center font-bold">
+                                  f
+                               </span>
+                               <h5 className="font-black text-slate-900">Meta (FB & IG)</h5>
+                           </div>
+                           <div className="relative group">
+                               <button type="button" className="w-5 h-5 bg-slate-200 text-slate-500 hover:bg-amber-100 hover:text-amber-600 rounded-full flex items-center justify-center font-bold text-[10px] transition-colors cursor-help">?</button>
+                               <div className="absolute right-0 top-7 w-56 bg-slate-800 text-white p-3 rounded-xl text-[10px] leading-relaxed shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none font-medium">
+                                   ⚠️ Por reglas oficiales de Meta, la automatización solo está permitida para Páginas de Empresa (Fanpages) y cuentas de Instagram Creador/Empresa. No funciona con perfiles personales.
+                                   <div className="absolute -top-1.5 right-1.5 w-3 h-3 bg-slate-800 rotate-45"></div>
+                               </div>
+                           </div>
                        </div>
-                       <p className="text-xs text-slate-500 font-medium mb-2">Conecta tu cuenta para publicar automáticamente en Facebook e Instagram.</p>
-                       <p className="text-[10px] text-amber-600 bg-amber-50 p-2.5 rounded-lg font-bold mb-4 border border-amber-200">⚠️ Por reglas oficiales de Meta, la automatización solo está permitida para Páginas de Empresa (Fanpages) y cuentas de Instagram Creador/Empresa. No funciona con perfiles personales.</p>
+                       <p className="text-xs text-slate-500 font-medium mb-4">Conecta tu cuenta para publicar automáticamente en Facebook e Instagram.</p>
                    </div>
                    
                    {fbStatus ? (
