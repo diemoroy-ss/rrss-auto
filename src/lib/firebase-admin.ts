@@ -7,7 +7,8 @@ if (!admin.apps.length) {
     if (serviceAccountString) {
       const serviceAccount = JSON.parse(serviceAccountString);
       admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount)
+        credential: admin.credential.cert(serviceAccount),
+        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
       });
     } else {
       console.warn("No FIREBASE_SERVICE_ACCOUNT variable found. Admin SDK will fail if no default credentials exist.");

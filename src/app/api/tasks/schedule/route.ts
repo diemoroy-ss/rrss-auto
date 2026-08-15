@@ -47,8 +47,8 @@ export async function POST(req: Request) {
              return NextResponse.json({ error: 'GCP Tasks config missing' }, { status: 500 });
         }
 
-        // Guardar el identificador nativo de la tarea para posibles cancelaciones posteriores
-        await postRef.update({ gcpTaskName: taskName });
+        // Guardar el identificador nativo de la tarea para posibles cancelaciones posteriores y limpiar errores anteriores
+        await postRef.update({ gcpTaskName: taskName, publishError: null });
 
         return NextResponse.json({ success: true, taskName });
 

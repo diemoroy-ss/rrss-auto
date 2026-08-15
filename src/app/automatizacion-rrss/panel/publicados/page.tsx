@@ -800,11 +800,11 @@ export default function RrssDashboard() {
       const isBlog = postToUpdate?.networks?.includes('blog');
       const collectionName = isBlog ? "blog_posts" : "social_posts";
 
-      await updateDoc(doc(db, collectionName, postId), { status: newStatus });
+      await updateDoc(doc(db, collectionName, postId), { status: newStatus, publishError: null });
       if (isBlog) {
-        setBlogPosts(prev => prev.map(p => p.id === postId ? { ...p, status: newStatus } : p));
+        setBlogPosts(prev => prev.map(p => p.id === postId ? { ...p, status: newStatus, publishError: undefined } : p));
       } else {
-        setPosts(prev => prev.map(p => p.id === postId ? { ...p, status: newStatus } : p));
+        setPosts(prev => prev.map(p => p.id === postId ? { ...p, status: newStatus, publishError: undefined } : p));
       }
       
       // Update quota only for social posts
@@ -817,7 +817,7 @@ export default function RrssDashboard() {
         }
       }
       
-      setSelectedPost(prev => prev ? { ...prev, status: newStatus } : null);
+      setSelectedPost(prev => (prev && prev.id === postId) ? { ...prev, status: newStatus, publishError: undefined } : null);
       setMessage({ type: 'success', text: `Estado de publicación actualizado a '${newStatus}'.` });
     } catch (e) {
       setMessage({ type: 'error', text: "Error al actualizar el estado." });
@@ -835,23 +835,25 @@ export default function RrssDashboard() {
         const postToUpdate = [...posts, ...blogPosts].find(p => p.id === rescheduleData.id);
         const isBlog = postToUpdate?.networks?.includes('blog');
         const collectionName = isBlog ? "blog_posts" : "social_posts";
-        const originalStatus = postToUpdate?.status || 'pending';
-        let newStatus = originalStatus === 'error' ? 'pending' : originalStatus; 
-        
-        if (isBlog && (newStatus === 'confirmed' || newStatus === 'pending')) {
-            newStatus = 'strategy_draft';
-        }
+        let newStatus = isBlog ? 'strategy_draft' : 'confirmed'; 
 
         await updateDoc(doc(db, collectionName, rescheduleData.id), { 
             scheduledFor: newDate,
-            status: newStatus
+            status: newStatus,
+            publishError: null
         });
         
-        if (isBlog) {
-            setBlogPosts(prev => prev.map(p => p.id === rescheduleData.id ? { ...p, scheduledFor: { toDate: () => newDate, toMillis: () => newDate.getTime() } as any, status: newStatus } : p));
-        } else {
-            setPosts(prev => prev.map(p => p.id === rescheduleData.id ? { ...p, scheduledFor: { toDate: () => newDate, toMillis: () => newDate.getTime() } as any, status: newStatus } : p));
+        if (!isBlog && postToUpdate && postToUpdate.status !== 'confirmed') {
+            const networksCount = postToUpdate.networks?.length || 1;
+            setQuotaUsed(prev => prev + networksCount);
         }
+        
+        if (isBlog) {
+            setBlogPosts(prev => prev.map(p => p.id === rescheduleData.id ? { ...p, scheduledFor: { toDate: () => newDate, toMillis: () => newDate.getTime() } as any, status: newStatus, publishError: undefined } : p));
+        } else {
+            setPosts(prev => prev.map(p => p.id === rescheduleData.id ? { ...p, scheduledFor: { toDate: () => newDate, toMillis: () => newDate.getTime() } as any, status: newStatus, publishError: undefined } : p));
+        }
+        setSelectedPost(prev => (prev && prev.id === rescheduleData.id) ? { ...prev, scheduledFor: { toDate: () => newDate, toMillis: () => newDate.getTime() } as any, status: newStatus, publishError: undefined } : prev);
 
         if (!isBlog) {
             // Push the new time to GCP tasks for social posts
