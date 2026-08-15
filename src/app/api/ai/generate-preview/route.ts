@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateElevenLabsAudio } from "../../../../lib/elevenlabs";
 import type { PosterConfig } from "../../../../types/poster";
+import { runInBatches } from "../../../../lib/batch-processor";
 
 // ═══════════════════════════════════════════════════════════════
 // EXTRACTOR DE CONCEPTO VISUAL
@@ -328,11 +329,50 @@ export async function POST(req: NextRequest) {
             posterConfig: posterConfig?.enabled ? posterConfig : null,
         };
 
-        // Si es carrusel, agregamos la secuencia por separado por si n8n la requiere
-        if (type === 'Carrusel') {
-            n8nPayload.promptsEnglish = enrichedPrompts;
+        // Si es Carrusel con múltiples láminas, enviamos peticiones sincrónicas en lotes de máximo 3 en paralelo
+        if (type === 'Carrusel' && enrichedPrompts.length > 1) {
+            console.log(`[GENERATE-PREVIEW-PROXY] Procesando Carrusel de ${enrichedPrompts.length} láminas en lotes de 3 N8N...`);
+
+            const batchResults = await runInBatches(enrichedPrompts, 3, async (slidePrompt, slideIdx) => {
+                const slidePayload = {
+                    ...n8nPayload,
+                    promptEnglish: slidePrompt,
+                    slideIndex: slideIdx,
+                    totalSlides: enrichedPrompts.length,
+                };
+
+                console.log(`[GENERATE-PREVIEW-PROXY] Enviando lámina ${slideIdx + 1}/${enrichedPrompts.length} a N8N...`);
+                const slideRes = await fetch(n8nUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(slidePayload)
+                });
+
+                if (!slideRes.ok) {
+                    const errText = await slideRes.text();
+                    console.error(`[GENERATE-PREVIEW-PROXY] Error N8N en lámina ${slideIdx + 1}:`, errText);
+                    return null;
+                }
+
+                const slideData = await slideRes.json();
+                const item = Array.isArray(slideData) ? slideData[0] : slideData;
+                const imgUrl = item?.imageUrl || item?.url || item?.image || item?.outputUrl || (typeof slideData === 'string' ? slideData : '');
+                return { slideIndex: slideIdx, imageUrl: imgUrl };
+            });
+
+            const validResults = batchResults.filter((r): r is { slideIndex: number; imageUrl: string } => r !== null && Boolean(r.imageUrl));
+            const imageUrls = validResults.map(r => r.imageUrl);
+
+            return NextResponse.json({
+                success: true,
+                type: 'Carrusel',
+                imageUrls: imageUrls,
+                imageUrl: imageUrls[0] || "",
+                carouselCount: imageUrls.length
+            });
         }
 
+        // Para posts individuales o carrusel de 1 sola lámina:
         const response = await fetch(n8nUrl, {
             method: 'POST',
             headers: {
