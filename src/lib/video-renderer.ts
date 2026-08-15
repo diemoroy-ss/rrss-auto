@@ -22,9 +22,10 @@ export async function renderAndUploadReel(post: any, userId: string, postId: str
 
     // 2. Empaquetar proyecto Remotion
     console.log(`[VideoRenderer] Empaquetando composición Remotion...`);
-    const rootPath = path.join(process.cwd(), 'src/remotion/Root.tsx');
+    const rootPath = path.join(process.cwd(), 'src/remotion/index.ts');
     const bundled = await bundle(rootPath, () => undefined, {
         webpackOverride: (config) => config,
+        ignoreRegisterRootWarning: true,
     });
 
     const inputProps = {

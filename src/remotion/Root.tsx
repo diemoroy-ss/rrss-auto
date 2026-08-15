@@ -1,5 +1,5 @@
 import React from 'react';
-import { Composition, registerRoot } from 'remotion';
+import { Composition } from 'remotion';
 import { ReelComposition } from './ReelComposition';
 import '../app/globals.css';
 
@@ -52,5 +52,3 @@ export const RemotionRoot: React.FC = () => {
     </>
   );
 };
-
-registerRoot(RemotionRoot);
