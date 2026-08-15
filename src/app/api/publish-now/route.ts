@@ -288,9 +288,13 @@ async function publishInBackground(postId: string, post: any, creds: {
     let imageUrl = post.imageUrl;
     let videoUrl = post.videoUrl || post.mediaUrl || imageUrl;
 
+    const isReel = post.type === 'video_reel' || post.type === 'reel' || post.type === 'Reel' || 
+                   (post.format && (post.format.toLowerCase().includes('reel') || post.format.toLowerCase().includes('short'))) ||
+                   (post.type && (post.type.toLowerCase().includes('reel') || post.type.toLowerCase().includes('short')));
+
     try {
         // JIT RENDER: Si es un reel generado y no tiene video final, lo renderizamos ahora
-        if (post.type === 'video_reel' && post.scenes && post.scenes.length > 0 && !post.videoUrl) {
+        if (isReel && post.scenes && post.scenes.length > 0 && !post.videoUrl) {
             infoLog += `Iniciando JIT Render de Remotion... `;
             try {
                 const finalUrl = await renderAndUploadReel(post, creds.uid, postId);
@@ -977,10 +981,10 @@ async function publishInBackground(postId: string, post: any, creds: {
         // YOUTUBE SHORTS
         if (post.networks?.includes('youtube') && creds.plainYtToken) {
             let plainToken = creds.plainYtToken;
-            let ytVideoUrl = videoUrl || post.videoUrl || post.mediaUrl || post.imageUrl;
+            let ytVideoUrl = post.videoUrl || (videoUrl && videoUrl !== imageUrl ? videoUrl : null);
 
             if (!ytVideoUrl) {
-                errorLog += `YouTube: Se requiere un archivo de video para publicar en YouTube Shorts. `;
+                errorLog += `YouTube: Se requiere un archivo de video MP4 renderizado para publicar en YouTube Shorts. `;
             } else {
                 const executeYouTubePost = async (token: string) => {
                     const videoStreamRes = await fetch(ytVideoUrl);
