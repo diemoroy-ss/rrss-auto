@@ -737,12 +737,22 @@ body:not(:has(.landing-page-root)) .eyebrow {
     font-family: var(--mono); font-size: 10px; font-weight: 700; color: var(--phosphor);
     background: var(--phosphor-soft); padding: 3px 7px; border-radius: 4px;
   }
-  & .plans-wrapper { position: relative; max-width: 100%; margin: 0 auto; }
+  & .plans-wrapper { position: relative; max-width: 100%; margin: 0 auto; overflow: hidden; }
   & .plans { 
-    display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 20px; 
-    padding: 10px 4px 30px; scrollbar-width: none; scroll-behavior: smooth;
+    display: flex;
+    padding: 10px 4px 30px; 
   }
-  & .plans::-webkit-scrollbar { display: none; }
+  & .plans-marquee {
+    display: flex; gap: 20px;
+    width: max-content;
+  }
+  & .plans-track {
+    display: flex; gap: 20px;
+    animation: marquee 35s linear infinite;
+  }
+  & .plans-marquee:hover .plans-track {
+    animation-play-state: paused;
+  }
   
   & .plan {
     flex: 0 0 340px; scroll-snap-align: center; max-width: 90vw;
@@ -1009,6 +1019,11 @@ html.light .landing-page-root,
   --phosphor-line: rgba(2, 132, 199, 0.3);
 
   --gold: #D97706;
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(calc(-100% - 20px)); }
 }
 
 @media (prefers-reduced-motion: reduce) {

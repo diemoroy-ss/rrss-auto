@@ -74,6 +74,7 @@ export async function POST(req: Request) {
 
   } catch (error: any) {
     console.error("Error al generar suscripción con Mercado Pago:", error);
-    return NextResponse.json({ error: "Fallo al generar orden de suscripción" }, { status: 500 });
+    const errorMsg = error.message || (error.cause && error.cause.message) || JSON.stringify(error);
+    return NextResponse.json({ error: `Fallo al generar orden de suscripción: ${errorMsg}` }, { status: 500 });
   }
 }

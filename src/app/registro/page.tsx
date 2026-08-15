@@ -6,6 +6,8 @@ import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import LogoMark from "../../components/LogoMark";
+import BrandHeader from "../../components/BrandHeader";
+import BrandFooter from "../../components/BrandFooter";
 
 function RegistroContent() {
   const router = useRouter();
@@ -139,18 +141,7 @@ function RegistroContent() {
 
   return (
     <div className="landing-page-root relative overflow-x-hidden min-h-screen flex flex-col">
-      <nav>
-        <div className="wrap">
-          <Link href="/" className="logo">
-            <LogoMark size={24} />
-            SANTISOFT AI
-          </Link>
-          <div className="nav-links">
-            <Link href="/#planes" className="ghost">Planes</Link>
-            <Link href="/login" className="ghost">Acceso Cliente</Link>
-          </div>
-        </div>
-      </nav>
+      <BrandHeader />
 
       <div className="flex-1 flex items-center justify-center p-4 font-sans mt-20 mb-20">
         <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 relative z-10">
@@ -195,7 +186,7 @@ function RegistroContent() {
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-semibold text-slate-700">Nombre completo</label>
-            <input required type="text" value={name} onChange={e => setName(e.target.value)} disabled={loading} className="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#DD4B19] outline-none" />
+            <input required type="text" value={name} onChange={e => setName(e.target.value)} disabled={loading} className="px-4 py-3 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:border-[#DD4B19] outline-none" />
           </div>
 
           {currentUser ? (
@@ -207,23 +198,23 @@ function RegistroContent() {
             <>
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-semibold text-slate-700">Correo electrónico</label>
-                <input required type="email" value={email} onChange={e => setEmail(e.target.value)} disabled={loading} className="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#DD4B19] outline-none" />
+                <input required type="email" value={email} onChange={e => setEmail(e.target.value)} disabled={loading} className="px-4 py-3 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:border-[#DD4B19] outline-none" />
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-semibold text-slate-700">Contraseña</label>
-                <input required type="password" value={password} onChange={e => setPassword(e.target.value)} disabled={loading} className="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#DD4B19] outline-none" />
+                <input required type="password" value={password} onChange={e => setPassword(e.target.value)} disabled={loading} className="px-4 py-3 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:border-[#DD4B19] outline-none" />
               </div>
             </>
           )}
 
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-semibold text-slate-700">Teléfono (WhatsApp)</label>
-            <input required type="tel" value={phone} onChange={e => setPhone(e.target.value)} disabled={loading} className="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#DD4B19] outline-none" placeholder="+56 9 1234 5678" />
+            <input required type="tel" value={phone} onChange={e => setPhone(e.target.value)} disabled={loading} className="px-4 py-3 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:border-[#DD4B19] outline-none" placeholder="+56 9 1234 5678" />
           </div>
           
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-semibold text-slate-700">Nombre de tu empresa / marca</label>
-            <input required type="text" value={company} onChange={e => setCompany(e.target.value)} disabled={loading} className="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#DD4B19] outline-none" />
+            <input required type="text" value={company} onChange={e => setCompany(e.target.value)} disabled={loading} className="px-4 py-3 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:border-[#DD4B19] outline-none" />
           </div>
 
           <button type="submit" disabled={loading} className="mt-4 w-full bg-[#DD4B19] text-white font-bold py-3.5 rounded-xl hover:bg-[#c23e11] transition-colors flex items-center justify-center">
@@ -241,15 +232,7 @@ function RegistroContent() {
       </div>
       </div>
 
-      <footer>
-        <div className="wrap">
-          <span className="fmono"><span className="on-air"></span>© 2026 SANTISOFT. TODOS LOS DERECHOS RESERVADOS.</span>
-          <div className="flinks">
-            <Link href="/privacidad">Privacidad</Link>
-            <Link href="/terminos">Términos</Link>
-          </div>
-        </div>
-      </footer>
+      <BrandFooter />
     </div>
   );
 }

@@ -47,7 +47,9 @@ export default function ProfileMenu({ user, userDoc }: ProfileMenuProps) {
       >
         <div className="hidden sm:flex flex-col text-right">
           <span className="text-[11px] font-bold text-slate-800 leading-tight">Hola, {userDoc?.name || user?.email?.split('@')[0]}</span>
-          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{isAdmin ? "Administrador" : "Usuario Pro"}</span>
+          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+            {isAdmin ? "Administrador" : `Usuario ${userDoc?.plan ? (userDoc.plan.charAt(0).toUpperCase() + userDoc.plan.slice(1)) : "Pro"}`}
+          </span>
         </div>
         <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-rose-500 to-orange-400 text-white flex items-center justify-center font-black text-sm shadow-inner group-hover:scale-105 transition-transform overflow-hidden">
           {userDoc?.avatarUrl ? (

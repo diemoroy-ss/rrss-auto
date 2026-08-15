@@ -22,7 +22,7 @@ type PlanConfig = {
   features: string[];
 };
 
-const PLAN_ORDER = ["free", "starter", "pro", "business"];
+const PLAN_ORDER = ["free", "starter", "pro", "business", "agency"];
 
 export default function PricingPlans() {
   const [plans, setPlans] = useState<Record<string, PlanConfig>>({});
@@ -66,54 +66,83 @@ export default function PricingPlans() {
           Anual <span className="save-badge">-10%</span>
         </span>
       </div>
-      <div className="plans-wrapper group" data-reveal>
-        <button 
-          className="absolute left-0 top-1/2 -translate-y-1/2 -ml-5 w-10 h-10 bg-white border border-slate-200 rounded-full shadow-lg z-10 hidden md:flex items-center justify-center text-slate-500 hover:text-indigo-600 hover:scale-105 transition-all opacity-0 group-hover:opacity-100" 
-          onClick={() => scrollPlans('left')}
-        >
-          ❮
-        </button>
-        <button 
-          className="absolute right-0 top-1/2 -translate-y-1/2 -mr-5 w-10 h-10 bg-white border border-slate-200 rounded-full shadow-lg z-10 hidden md:flex items-center justify-center text-slate-500 hover:text-indigo-600 hover:scale-105 transition-all opacity-0 group-hover:opacity-100" 
-          onClick={() => scrollPlans('right')}
-        >
-          ❯
-        </button>
-        <div className="plans" ref={plansContainerRef}>
+      <div className="plans-wrapper" data-reveal>
+        <div className="plans">
         {loadingPlans ? (
           <div className="col-span-full flex justify-center py-12 w-full">
             <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto"></div>
           </div>
         ) : (
-          PLAN_ORDER.map(id => {
-            const plan = plans[id];
-            if (!plan) return null;
+          <div className="plans-marquee">
+            <div className="plans-track">
+              {PLAN_ORDER.map((id, index) => {
+                const plan = plans[id];
+                if (!plan) return null;
 
-            const priceToShow = billingCycle === 'anual'
-              ? (plan.annualPrice > 0 ? plan.annualPrice : (plan.price === 0 ? 0 : Math.round((plan.price * 12) * 0.90)))
-              : plan.price;
+                const priceToShow = billingCycle === 'anual'
+                  ? (plan.annualPrice > 0 ? plan.annualPrice : (plan.price === 0 ? 0 : Math.round((plan.price * 12) * 0.90)))
+                  : plan.price;
 
-            const priceLabel = priceToShow === 0 ? "$0" : `$${priceToShow.toLocaleString('es-CL')}`;
+                const priceLabel = priceToShow === 0 ? "$0" : `$${priceToShow.toLocaleString('es-CL')}`;
 
-            return (
-              <div key={id} className={`plan ${plan.isPopular ? 'feat' : ''}`}>
-                <span className="plan-name">{plan.name}</span>
-                <div className="plan-price">
-                  {priceLabel}
-                  {plan.price > 0 && <span>/mes</span>}
-                </div>
-                <div className="plan-cycle">
-                  {plan.price === 0 ? "10 días de prueba" : (billingCycle === 'anual' ? "FACTURADO AL AÑO" : "CLP · IVA INCLUIDO")}
-                </div>
-                <ul className="plan-list">
-                  {plan.features.map((f, i) => <li key={i}>{f}</li>)}
-                </ul>
-                <Link href={`/registro?plan=${id}&billing=${billingCycle}`} className={`btn ${plan.isPopular ? 'btn-primary' : 'btn-ghost'}`}>
-                  ¡Lo quiero 🚀!
-                </Link>
-              </div>
-            );
-          })
+                return (
+                  <div key={`${id}-track1`} className={`plan ${plan.isPopular ? 'feat' : ''}`}>
+                    <span className="plan-name">{plan.name}</span>
+                    <div className="plan-price">
+                      {priceLabel}
+                      {plan.price > 0 && <span>/mes</span>}
+                    </div>
+                    <div className="plan-cycle">
+                      {plan.price === 0 ? "10 días de prueba" : 
+                       (plan.id === 'business' ? "CLP / mes · hasta 3 cuentas" :
+                        (plan.id === 'agency' ? "CLP / mes · hasta 10 cuentas" : 
+                         (billingCycle === 'anual' ? "FACTURADO AL AÑO" : "CLP · IVA INCLUIDO")))}
+                    </div>
+                    <ul className="plan-list">
+                      {plan.features.map((f, i) => <li key={i}>{f}</li>)}
+                    </ul>
+                    <Link href={`/registro?plan=${id}&billing=${billingCycle}`} className={`btn ${plan.isPopular ? 'btn-primary' : 'btn-ghost'}`}>
+                      {plan.ctaText || "¡Lo quiero 🚀!"}
+                    </Link>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="plans-track">
+              {PLAN_ORDER.map((id, index) => {
+                const plan = plans[id];
+                if (!plan) return null;
+
+                const priceToShow = billingCycle === 'anual'
+                  ? (plan.annualPrice > 0 ? plan.annualPrice : (plan.price === 0 ? 0 : Math.round((plan.price * 12) * 0.90)))
+                  : plan.price;
+
+                const priceLabel = priceToShow === 0 ? "$0" : `$${priceToShow.toLocaleString('es-CL')}`;
+
+                return (
+                  <div key={`${id}-track2`} className={`plan ${plan.isPopular ? 'feat' : ''}`}>
+                    <span className="plan-name">{plan.name}</span>
+                    <div className="plan-price">
+                      {priceLabel}
+                      {plan.price > 0 && <span>/mes</span>}
+                    </div>
+                    <div className="plan-cycle">
+                      {plan.price === 0 ? "10 días de prueba" : 
+                       (plan.id === 'business' ? "CLP / mes · hasta 3 cuentas" :
+                        (plan.id === 'agency' ? "CLP / mes · hasta 10 cuentas" : 
+                         (billingCycle === 'anual' ? "FACTURADO AL AÑO" : "CLP · IVA INCLUIDO")))}
+                    </div>
+                    <ul className="plan-list">
+                      {plan.features.map((f, i) => <li key={i}>{f}</li>)}
+                    </ul>
+                    <Link href={`/registro?plan=${id}&billing=${billingCycle}`} className={`btn ${plan.isPopular ? 'btn-primary' : 'btn-ghost'}`}>
+                      {plan.ctaText || "¡Lo quiero 🚀!"}
+                    </Link>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         )}
         </div>
       </div>

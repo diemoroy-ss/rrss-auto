@@ -245,11 +245,12 @@ function ConfigContent() {
   const [logoUrl, setLogoUrl] = useState("");
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
-  // Redundant auth listener removed to avoid extra renders
   useEffect(() => {
     setUser(auth.currentUser);
     setLoadingInitial(false);
   }, []);
+
+  const isAdmin = user?.email === "admin@santisoft.cl" || user?.email === "diemoroy@gmail.com" || user?.email === "spalezcom@gmail.com";
 
   // Use a separate effect for initial data loading from activeProfile to avoid loops
   useEffect(() => {
@@ -816,12 +817,12 @@ function ConfigContent() {
                                </span>
                                <h5 className="font-black text-slate-900">Meta (FB & IG)</h5>
                            </div>
-                           <div className="relative group">
-                               <button type="button" className="w-5 h-5 bg-slate-200 text-slate-500 hover:bg-amber-100 hover:text-amber-600 rounded-full flex items-center justify-center font-bold text-[10px] transition-colors cursor-help">?</button>
-                               <div className="absolute right-0 top-7 w-56 bg-slate-800 text-white p-3 rounded-xl text-[10px] leading-relaxed shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none font-medium">
-                                   ⚠️ Por reglas oficiales de Meta, la automatización solo está permitida para Páginas de Empresa (Fanpages) y cuentas de Instagram Creador/Empresa. No funciona con perfiles personales.
-                                   <div className="absolute -top-1.5 right-1.5 w-3 h-3 bg-slate-800 rotate-45"></div>
-                               </div>
+                           <div className="relative">
+                              <button type="button" className="peer w-5 h-5 bg-slate-200 text-slate-500 hover:bg-amber-100 hover:text-amber-600 rounded-full flex items-center justify-center font-bold text-[10px] transition-colors cursor-help">?</button>
+                              <div className="absolute right-0 top-7 w-56 bg-slate-800 text-white p-3 rounded-xl text-[10px] leading-relaxed shadow-xl opacity-0 invisible peer-hover:opacity-100 peer-hover:visible transition-all z-50 pointer-events-none font-medium">
+                                  ⚠️ Por reglas oficiales de Meta, la automatización solo está permitida para Páginas de Empresa (Fanpages) y cuentas de Instagram Creador/Empresa. No funciona con perfiles personales.
+                                  <div className="absolute -top-1.5 right-1.5 w-3 h-3 bg-slate-800 rotate-45"></div>
+                              </div>
                            </div>
                        </div>
                        <p className="text-xs text-slate-500 font-medium mb-4">Conecta tu cuenta para publicar automáticamente en Facebook e Instagram.</p>
@@ -1051,11 +1052,17 @@ function ConfigContent() {
                                <button type="button" onClick={handleDisconnectGBP} className="px-3 bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold rounded-xl text-xs transition-colors" title="Desconectar">X</button>
                            </div>
                        </div>
-                   ) : (
-                       <button type="button" onClick={handleConnectGBP} className="w-full bg-[#EA4335] hover:bg-[#d63022] text-white font-bold py-2.5 rounded-xl shadow-md text-sm transition-colors mt-auto">
-                           Conectar con Google
-                       </button>
-                   )}
+                    ) : (
+                        isAdmin ? (
+                            <button type="button" onClick={handleConnectGBP} className="w-full bg-[#EA4335] hover:bg-[#d63022] text-white font-bold py-2.5 rounded-xl shadow-md text-sm transition-colors mt-auto">
+                                Conectar con Google
+                            </button>
+                        ) : (
+                            <button type="button" disabled className="w-full bg-slate-100 text-slate-400 font-bold py-2.5 rounded-xl text-sm mt-auto cursor-not-allowed border border-slate-200">
+                                Próximamente
+                            </button>
+                        )
+                    )}
                 </div>
 
              </div>

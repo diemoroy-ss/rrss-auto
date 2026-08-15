@@ -174,7 +174,7 @@ export default function BrandHeader() {
 
           <ThemeToggle />
 
-          <Link href="/login" className="btn btn-primary btn-sm">
+          <Link href="/registro" className="btn btn-primary btn-sm">
             Empezar Gratis
           </Link>
         </div>
@@ -183,7 +183,7 @@ export default function BrandHeader() {
         <div className="nav-mobile-controls">
           <ThemeToggle />
 
-          <Link href="/login" className="btn btn-primary btn-sm nav-mobile-cta">
+          <Link href="/registro" className="btn btn-primary btn-sm nav-mobile-cta">
             Empezar
           </Link>
 
@@ -246,7 +246,7 @@ export default function BrandHeader() {
           </Link>
 
           <Link
-            href="/login"
+            href="/registro"
             onClick={() => setMobileMenuOpen(false)}
             className="btn btn-primary nav-mobile-cta-full"
           >
