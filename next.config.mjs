@@ -9,7 +9,7 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   experimental: {
-    serverComponentsExternalPackages: ['@google-cloud/tasks']
+    serverComponentsExternalPackages: ['@google-cloud/tasks', '@remotion/bundler', '@remotion/renderer']
   },
   async headers() {
     return [

@@ -3,6 +3,7 @@ import { adminDb } from '../../../lib/firebase-admin';
 import { decrypt, encrypt } from '../../../lib/encryption';
 import { getQuotaUsageAdmin, getPlanLimitAdmin } from '../../../lib/quota-admin';
 import nodemailer from 'nodemailer';
+import { renderAndUploadReel } from '../../../lib/video-renderer';
 
 // Helper function to fetch Meta Graph API with retry mechanism to handle transient errors
 async function fetchWithRetry(url: string, options: any, retries = 3, delay = 2000): Promise<any> {
@@ -284,9 +285,25 @@ async function publishInBackground(postId: string, post: any, creds: {
     let infoLog = '';
 
     const caption = post.postText || post.copy || post.text || post.idea || '';
-    const imageUrl = post.imageUrl;
+    let imageUrl = post.imageUrl;
+    let videoUrl = post.videoUrl || post.mediaUrl || imageUrl;
 
     try {
+        // JIT RENDER: Si es un reel generado y no tiene video final, lo renderizamos ahora
+        if (post.type === 'video_reel' && post.scenes && post.scenes.length > 0 && !post.videoUrl) {
+            infoLog += `Iniciando JIT Render de Remotion... `;
+            try {
+                const finalUrl = await renderAndUploadReel(post, creds.uid, postId);
+                videoUrl = finalUrl;
+                post.videoUrl = finalUrl;
+                await postRef.update({ videoUrl: finalUrl });
+                infoLog += `Render exitoso. `;
+            } catch (err: any) {
+                console.error("[publishInBackground] Error en JIT Render:", err);
+                errorLog += `Error Renderizando Video: ${err.message}. `;
+                throw new Error(`Fallo crítico al renderizar video: ${err.message}`);
+            }
+        }
         // FACEBOOK
         if (post.networks?.includes('facebook') && creds.plainFbToken && creds.pageId) {
             const plainToken = creds.plainFbToken;
@@ -960,13 +977,13 @@ async function publishInBackground(postId: string, post: any, creds: {
         // YOUTUBE SHORTS
         if (post.networks?.includes('youtube') && creds.plainYtToken) {
             let plainToken = creds.plainYtToken;
-            const videoUrl = post.videoUrl || post.mediaUrl || post.imageUrl;
+            let ytVideoUrl = videoUrl || post.videoUrl || post.mediaUrl || post.imageUrl;
 
-            if (!videoUrl) {
+            if (!ytVideoUrl) {
                 errorLog += `YouTube: Se requiere un archivo de video para publicar en YouTube Shorts. `;
             } else {
                 const executeYouTubePost = async (token: string) => {
-                    const videoStreamRes = await fetch(videoUrl);
+                    const videoStreamRes = await fetch(ytVideoUrl);
                     if (!videoStreamRes.ok) {
                         throw new Error(`No se pudo descargar el video para YouTube (${videoStreamRes.status})`);
                     }
