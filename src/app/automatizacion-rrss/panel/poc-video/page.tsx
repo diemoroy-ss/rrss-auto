@@ -426,16 +426,67 @@ export default function VideoPoCPage() {
                         </span>
                       </div>
 
-                      {scene.bgImageUrl && (
-                        <a
-                          href={scene.bgImageUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[10px] font-bold text-indigo-600 hover:underline"
+                      <div className="flex items-center gap-2">
+                        {/* Botón Regenerar IA */}
+                        <button
+                          onClick={() => {
+                            const newSeed = Math.floor(Math.random() * 1000000);
+                            const promptText = encodeURIComponent(scene.imagePrompt || `${rubro} ${scene.title} cinematic background`);
+                            const newBgUrl = `https://image.pollinations.ai/prompt/${promptText}?width=1080&height=1920&nologo=true&seed=${newSeed}`;
+                            
+                            setImageStatus((prev) => ({ ...prev, [idx]: "loading" }));
+                            setComposition((prev) => {
+                              if (!prev) return null;
+                              const newScenes = [...prev.scenes];
+                              newScenes[idx] = { ...newScenes[idx], bgImageUrl: newBgUrl };
+                              return { ...prev, scenes: newScenes };
+                            });
+                          }}
+                          className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-extrabold rounded-lg border border-indigo-200 transition-all flex items-center gap-1"
+                          title="Regenerar esta imagen con IA"
                         >
-                          Ver Imagen ↗
-                        </a>
-                      )}
+                          🔄 Regenerar IA
+                        </button>
+
+                        {/* Botón Subir Imagen Local */}
+                        <label className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[10px] font-extrabold rounded-lg border border-emerald-200 transition-all cursor-pointer flex items-center gap-1">
+                          📁 Subir Imagen
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              const reader = new FileReader();
+                              reader.onload = (event) => {
+                                const dataUrl = event.target?.result as string;
+                                if (dataUrl) {
+                                  setImageStatus((prev) => ({ ...prev, [idx]: "loading" }));
+                                  setComposition((prev) => {
+                                    if (!prev) return null;
+                                    const newScenes = [...prev.scenes];
+                                    newScenes[idx] = { ...newScenes[idx], bgImageUrl: dataUrl };
+                                    return { ...prev, scenes: newScenes };
+                                  });
+                                }
+                              };
+                              reader.readAsDataURL(file);
+                            }}
+                          />
+                        </label>
+
+                        {scene.bgImageUrl && (
+                          <a
+                            href={scene.bgImageUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[10px] font-bold text-indigo-600 hover:underline ml-1"
+                          >
+                            Ver ↗
+                          </a>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
@@ -481,6 +532,70 @@ export default function VideoPoCPage() {
                           onChange={(e) => handleUpdateSceneText(idx, "subtitle", e.target.value)}
                           className="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold text-slate-800"
                         />
+                      </div>
+
+                      <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          {scene.bgImageUrl && (
+                            <img
+                              src={scene.bgImageUrl}
+                              alt={`Escena ${idx + 1}`}
+                              className="w-8 h-12 object-cover rounded border border-slate-300 shadow-sm"
+                            />
+                          )}
+                          <span className="text-[10px] font-bold text-slate-500">
+                            Imagen de fondo
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newSeed = Math.floor(Math.random() * 1000000);
+                              const promptText = encodeURIComponent(scene.imagePrompt || `${rubro} ${scene.title} cinematic background`);
+                              const newBgUrl = `https://image.pollinations.ai/prompt/${promptText}?width=1080&height=1920&nologo=true&seed=${newSeed}`;
+                              
+                              setImageStatus((prev) => ({ ...prev, [idx]: "loading" }));
+                              setComposition((prev) => {
+                                if (!prev) return null;
+                                const newScenes = [...prev.scenes];
+                                newScenes[idx] = { ...newScenes[idx], bgImageUrl: newBgUrl };
+                                return { ...prev, scenes: newScenes };
+                              });
+                            }}
+                            className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-extrabold rounded-lg border border-indigo-200 transition-all flex items-center gap-1"
+                          >
+                            🔄 Regenerar IA
+                          </button>
+
+                          <label className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[10px] font-extrabold rounded-lg border border-emerald-200 transition-all cursor-pointer flex items-center gap-1">
+                            📁 Subir Foto
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                const reader = new FileReader();
+                                reader.onload = (event) => {
+                                  const dataUrl = event.target?.result as string;
+                                  if (dataUrl) {
+                                    setImageStatus((prev) => ({ ...prev, [idx]: "loading" }));
+                                    setComposition((prev) => {
+                                      if (!prev) return null;
+                                      const newScenes = [...prev.scenes];
+                                      newScenes[idx] = { ...newScenes[idx], bgImageUrl: dataUrl };
+                                      return { ...prev, scenes: newScenes };
+                                    });
+                                  }
+                                };
+                                reader.readAsDataURL(file);
+                              }}
+                            />
+                          </label>
+                        </div>
                       </div>
                     </div>
                   ))}
