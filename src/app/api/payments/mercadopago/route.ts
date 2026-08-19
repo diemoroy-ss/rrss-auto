@@ -57,10 +57,6 @@ export async function POST(req: Request) {
       }
     }
 
-    if (planId === 'starter') {
-        price = 1;
-    }
-
     const title = `Suscripción ${planConfig.name} ${titleSuffix} - Santisoft`;
 
     // Configurar SDK
