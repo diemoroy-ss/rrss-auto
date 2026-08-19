@@ -101,7 +101,7 @@ export default function PlanesPage() {
             window.location.href = data.url;
         } else {
             console.error("No url returned:", data);
-            setMessage({ type: 'error', text: "Hubo un problema al crear el link de pago." });
+            setMessage({ type: 'error', text: data.error || "Hubo un problema al crear el link de pago." });
         }
 
     } catch (e) {
