@@ -8,6 +8,8 @@ export const StrategyAnnotation = Annotation.Root({
   expectations: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "" }),
   connectedPlatforms: Annotation<string[]>({ reducer: (a, b) => b ?? a, default: () => ["Instagram", "Facebook"] }),
   history: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "Sin historial." }),
+  nicheContext: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "" }),
+  postsPerWeek: Annotation<number>({ reducer: (a, b) => b ?? a, default: () => 5 }),
   analysis: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "" }),
   rawStrategy: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "" }),
   strategy: Annotation<any[]>({ reducer: (a, b) => b ?? a, default: () => [] }),
@@ -37,7 +39,7 @@ PROPORCIONA:
 3. Tono de comunicación recomendado.
 4. Frecuencia de publicación sugerida.
 
-Sé profesional y estratégico.`;
+Sé profesional y estratégico. NUNCA menciones que eres una IA o Inteligencia Artificial. Refiérete a ti mismo como parte de "nuestros agentes especializados".`;
 
   const analysis = await generateFreeText(prompt);
   return { analysis };
@@ -47,32 +49,48 @@ Sé profesional y estratégico.`;
 async function planningNode(state: StrategyState): Promise<Partial<StrategyState>> {
   console.log(`[LangGraph Strategy] planningNode - Generando plan táctico...`);
 
-  const prompt = `Eres un Social Media Planner experto. Basándote en el siguiente análisis, genera un plan táctico de publicaciones.
+  // BH Skills rules adaptation
+  const mixDeContenido = "40% Educativo / 30% Entretenimiento o Conexión / 20% Autoridad (Detrás de cámaras) / 10% Venta Directa";
+  const rules = `
+REGLAS Y MENTALIDAD DE BH-SKILLS PARA CRECIMIENTO ORGÁNICO:
+1. Mix de Contenido Obligatorio: ${mixDeContenido}.
+2. Los temas deben ser ESPECÍFICOS, no genéricos. Resuelve dolores reales.
+3. El Hook debe ser un "Scroll-Stopper" (ej. "El error que comete el 90% al hacer X").
+4. Cero frases de IA ("en el vertiginoso mundo", "descubre", "sumérgete").
+5. Los CTA (Call to Action) deben ser únicos y claros (ej. "Guarda este post", "Comenta X para info").
+6. IMPORTANTE: NUNCA menciones que eres una IA o Inteligencia Artificial. Refiérete a ti mismo y a tus acciones como "nuestros agentes" o "nuestro equipo de agentes especializados". Tampoco hables de "lo que se puede hacer con IA".`;
+
+  const prompt = `Eres un Social Media Planner experto, entrenado con los mejores frameworks de crecimiento (BH Skills). 
+Basándote en el siguiente análisis, genera un plan táctico de publicaciones.
 
 ANÁLISIS ESTRATÉGICO:
 ${state.analysis}
+
+${state.nicheContext ? `CONTEXTO DEL RADAR DE NICHO (Últimos 30 días):\n${state.nicheContext}\n\n` : ""}
 
 HISTORIAL DE POSTS Y RENDIMIENTO (Analiza esto para replicar qué formatos/ideas tuvieron más likes/alcance, y descarta lo que no sirvió):
 ${state.history}
 
 ${state.feedback ? `\n¡ATENCIÓN! El Agente Revisor rechazó tu última estrategia por el siguiente motivo:\n"${state.feedback}"\nCORRIGE Y MEJORA ESTA VERSIÓN PARA QUE SEA APROBADA.\n` : ""}
 
-REGLAS DE NEGOCIO 2026:
-- Si la plataforma incluye 'TikTok', el formato DEBE ser 'Reel'.
+${rules}
+
+REGLAS DE NEGOCIO:
+- Si la plataforma incluye 'TikTok', el formato DEBE ser 'Reel' o 'Video'.
 - Formatos permitidos: Reel, Carrusel, Historia, Post Fijo.
 
 DEBES GENERAR UNA ESTRUCTURA DE JSON válida que contenga un arreglo 'strategy' con exactamente este formato por cada publicación:
 {
   "weekNumber": 1, 
-  "dayOffset": 0, // 0 = hoy, 1 = mañana...
+  "dayOffset": 0, // 0 = hoy, 1 = mañana... hasta 6
   "suggestedTime": "HH:MM",
   "format": "Formato exacto",
   "hook": "Gancho corto y potente",
-  "content": "Resumen del contenido",
+  "content": "Resumen del contenido a grabar/diseñar",
   "cta": "Llamado a la acción"
 }
 
-GENERA entre 5 y 10 publicaciones distribuidas en 14 días.
+GENERA EXACTAMENTE ${state.postsPerWeek} PUBLICACIONES DISTRIBUIDAS EN LOS PRÓXIMOS 7 DÍAS (weekNumber: 1, dayOffset: de 0 a 6).
 DEVUELVE ÚNICAMENTE EL JSON.`;
 
   const rawStrategy = await generateFreeText(prompt);
@@ -198,7 +216,9 @@ export async function runProfessionalStrategyWorkflow(
     goal: string, 
     expectations: string, 
     connectedPlatforms: string[],
-    history: string
+    history: string,
+    nicheContext: string = "",
+    postsPerWeek: number = 5
 ) {
   const app = createStrategyWorkflow();
   const initialState = {
@@ -207,6 +227,8 @@ export async function runProfessionalStrategyWorkflow(
     expectations,
     connectedPlatforms,
     history,
+    nicheContext,
+    postsPerWeek,
     analysis: "",
     rawStrategy: "",
     strategy: [],

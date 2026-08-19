@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { auth, db } from "../../../../lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc, collection, addDoc, query, where, getDocs, orderBy } from "firebase/firestore";
 import { useProfile } from "../../../../contexts/ProfileContext";
 import { useRouter } from "next/navigation";
 import { RadarAnalysisResult, TrendItem, AudienceQuestion, HookItem, ContentIdea } from "../../../../lib/niche-radar";
@@ -23,9 +24,95 @@ export default function NicheRadarPage() {
   const [copiedHookId, setCopiedHookId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string>("");
 
+  // Plan and Limits
+  const [userPlan, setUserPlan] = useState<string>("free");
+  const [systemPlans, setSystemPlans] = useState<any>({});
+  const [postsThisMonth, setPostsThisMonth] = useState<number>(0);
+  const [videosThisMonth, setVideosThisMonth] = useState<number>(0);
+
+  // Strategy State
+  const [strategyGoal, setStrategyGoal] = useState<string>("");
+  const [strategyExpectations, setStrategyExpectations] = useState<string>("");
+  const [generatingStrategy, setGeneratingStrategy] = useState<boolean>(false);
+  const [strategyResult, setStrategyResult] = useState<any[] | null>(null);
+  const [acceptingStrategy, setAcceptingStrategy] = useState<boolean>(false);
+
+  // Modal State
+  const [postModal, setPostModal] = useState<{isOpen: boolean, idea: ContentIdea | null}>({isOpen: false, idea: null});
+
+  // History State
+  const [historicalAnalyses, setHistoricalAnalyses] = useState<any[]>([]);
+
+  const goals = [
+    { id: 'ventas', title: 'Ventas & Conversión', description: 'Maximizar pedidos y ventas', icon: '💰' },
+    { id: 'autoridad', title: 'Autoridad & Marca', description: 'Posicionarte como experto', icon: '🎙️' },
+    { id: 'viralidad', title: 'Viralidad & Alcance', description: 'Llegar a miles de cuentas', icon: '🚀' },
+    { id: 'lealtad', title: 'Comunidad & Lealtad', description: 'Crear fans y embajadores', icon: '❤️' },
+    { id: 'prospectos', title: 'Captación de Prospectos', description: 'Atraer registros y DMs', icon: '📥' }
+  ];
+
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const autoGoal = urlParams.get('autoGoal');
+      if (autoGoal) {
+        const mapping: any = {
+           crecimiento: 'viralidad',
+           ventas: 'ventas',
+           autoridad: 'autoridad',
+           interaccion: 'lealtad'
+        };
+        const targetId = mapping[autoGoal.toLowerCase()] || autoGoal.toLowerCase();
+        if (goals.find(g => g.id === targetId)) {
+           setStrategyGoal(targetId);
+           setTimeout(() => {
+               document.getElementById('generador-estrategia')?.scrollIntoView({ behavior: 'smooth' });
+           }, 800);
+        }
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (u) => {
       setUser(u);
+      if (u) {
+        try {
+          // Fetch plans config
+          const sysSnap = await getDoc(doc(db, "system_config", "plans"));
+          if (sysSnap.exists()) {
+            setSystemPlans(sysSnap.data());
+          }
+
+          // Fetch user plan and stats
+          const userDoc = await getDoc(doc(db, "users", u.uid));
+          if (userDoc.exists()) {
+             setUserPlan(userDoc.data().plan || "free");
+             
+             const firstDayOfMonth = new Date();
+             firstDayOfMonth.setDate(1);
+             firstDayOfMonth.setHours(0, 0, 0, 0);
+
+             const q = query(collection(db, "social_posts"), where("userId", "==", u.uid));
+             const snap = await getDocs(q);
+             let pCount = 0;
+             let vCount = 0;
+             snap.docs.forEach(d => {
+                 const data = d.data();
+                 if (data.createdAt && data.createdAt.toDate() >= firstDayOfMonth) {
+                    pCount++;
+                    if (data.type === 'Reel' || data.type === 'Video') {
+                        vCount++;
+                    }
+                 }
+             });
+             setPostsThisMonth(pCount);
+             setVideosThisMonth(vCount);
+          }
+        } catch (e) {
+          console.error("Error fetching user stats", e);
+        }
+      }
     });
     return () => unsub();
   }, []);
@@ -53,28 +140,46 @@ export default function NicheRadarPage() {
       }
       setInitialChecking(true);
       try {
-        const prof = activeProfile as any;
-        const token = await user.getIdToken();
-        const res = await fetch("/api/nicho/radar", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            niche: nicheInput || prof.rubro || "General",
-            businessName: prof.name || prof.businessName || "Mi Negocio",
-            targetAudience: audienceInput,
-            userId: user.uid,
-            businessId: activeProfile.id,
-            checkCacheOnly: true,
-            forceRefresh: false,
-          }),
+        // Fetch radar history from firestore directly
+        const radarCol = collection(db, "users", user.uid, "businesses", activeProfile.id, "radar");
+        const q = query(radarCol, orderBy("createdAt", "desc"));
+        const snap = await getDocs(q);
+        
+        const history: any[] = [];
+        snap.forEach(d => {
+            history.push({ id: d.id, ...d.data() });
         });
+        
+        setHistoricalAnalyses(history);
 
-        const data = await res.json();
-        if (data.success && data.analysis) {
-          setAnalysis(data.analysis);
+        if (history.length > 0) {
+            setAnalysis(history[0]); // Load the most recent one
+        } else {
+            // Check fallback from API if somehow not in firestore directly
+            const prof = activeProfile as any;
+            const token = await user.getIdToken();
+            const res = await fetch("/api/nicho/radar", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                niche: nicheInput || prof.rubro || "General",
+                businessName: prof.name || prof.businessName || "Mi Negocio",
+                targetAudience: audienceInput,
+                userId: user.uid,
+                businessId: activeProfile.id,
+                checkCacheOnly: true,
+                forceRefresh: false,
+              }),
+            });
+
+            const data = await res.json();
+            if (data.success && data.analysis) {
+              setAnalysis(data.analysis);
+              setHistoricalAnalyses([data.analysis]);
+            }
         }
       } catch (err) {
         console.warn("No se pudo cargar el análisis inicial del radar:", err);
@@ -126,6 +231,13 @@ export default function NicheRadarPage() {
       }
 
       setAnalysis(data.analysis);
+      
+      // Añadir al historial localmente para que se refleje de inmediato
+      setHistoricalAnalyses(prev => {
+          // avoid duplicates if same id
+          if (prev.find(p => p.id === data.analysis.id)) return prev;
+          return [data.analysis, ...prev];
+      });
     } catch (err: any) {
       console.error("Error al ejecutar radar:", err);
       setErrorMsg(err.message || "Error al conectar con la IA.");
@@ -134,10 +246,106 @@ export default function NicheRadarPage() {
     }
   };
 
+  const handleGenerateStrategy = async () => {
+    if (!strategyGoal) {
+      setErrorMsg("Selecciona una meta para tu estrategia.");
+      return;
+    }
+    setGeneratingStrategy(true);
+    setStrategyResult(null);
+
+    let postsPerWeek = 1;
+    if (userPlan === 'starter') postsPerWeek = 3;
+    if (userPlan === 'pro') postsPerWeek = 5;
+    if (userPlan === 'business') postsPerWeek = 20;
+    if (userPlan === 'agency') postsPerWeek = 50;
+
+    try {
+      const token = await user.getIdToken();
+      const prof = activeProfile as any;
+      const res = await fetch("/api/ai/generate-strategy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify({
+          goal: strategyGoal,
+          goalName: goals.find(g => g.id === strategyGoal)?.title,
+          businessType: prof?.rubro || "General",
+          userId: user.uid,
+          expectations: strategyExpectations,
+          businessData: { website: prof?.website },
+          connectedPlatforms: {
+              facebook: !!prof?.facebookToken_enc,
+              instagram: !!prof?.instagramToken_enc,
+              tiktok: !!prof?.tiktokToken_enc,
+              linkedin: !!prof?.linkedinUserToken_enc
+          },
+          nicheContext: analysis?.summary || "",
+          postsPerWeek
+        })
+      });
+
+      if (!res.ok) throw new Error("Error al generar estrategia");
+      const data = await res.json();
+      setStrategyResult(data.strategy);
+    } catch (err: any) {
+      setErrorMsg("Error al generar la estrategia.");
+    } finally {
+      setGeneratingStrategy(false);
+    }
+  };
+
+  const handleAcceptStrategy = async () => {
+    if (!strategyResult || !user) return;
+    setAcceptingStrategy(true);
+    try {
+      const postsRef = collection(db, "social_posts");
+      for (const post of strategyResult) {
+          const scheduledDate = new Date();
+          scheduledDate.setDate(scheduledDate.getDate() + post.dayOffset);
+          try {
+              if (post.suggestedTime && post.suggestedTime.includes(':')) {
+                  const [hours, minutes] = post.suggestedTime.split(':');
+                  scheduledDate.setHours(parseInt(hours, 10) || 12, parseInt(minutes, 10) || 0, 0, 0);
+              } else {
+                  scheduledDate.setHours(12, 0, 0, 0);
+              }
+          } catch (e) {
+              scheduledDate.setHours(12, 0, 0, 0);
+          }
+
+          const fmt = post.format?.toLowerCase() || "";
+          const postType = fmt.includes('reel') || fmt.includes('video') ? 'Reel' : (fmt.includes('historia') || fmt.includes('story') ? 'Story' : 'Post');
+
+          await addDoc(postsRef, {
+              userId: user.uid,
+              profileId: activeProfile?.id || 'default',
+              text: `${post.content}\n\n${post.cta}`,
+              idea: post.hook,
+              type: postType,
+              status: 'pending',
+              scheduledFor: scheduledDate,
+              createdAt: new Date(),
+              networks: ['instagram', 'facebook'],
+              generatedBy: 'ai_strategy_radar'
+          });
+      }
+      router.push("/automatizacion-rrss/panel");
+    } catch (e) {
+      setErrorMsg("Error al guardar planificación.");
+      setAcceptingStrategy(false);
+    }
+  };
+
   const handleCreatePostFromIdea = (idea: ContentIdea) => {
+    setPostModal({isOpen: true, idea});
+  };
+
+  const handleModalPostCreate = (type: 'Post' | 'Reel') => {
+    if (!postModal.idea) return;
+    const idea = postModal.idea;
     const params = new URLSearchParams({
       topic: idea.title,
-      format: idea.format,
+      format: type,
       hook: idea.draftHook || "",
       angle: idea.angle || "",
     });
@@ -186,9 +394,35 @@ export default function NicheRadarPage() {
 
       {/* FORM DE BÚSQUEDA Y PARÁMETROS */}
       <div className="bg-white rounded-2xl p-5 md:p-6 shadow-sm border border-slate-200/80 space-y-4">
-        <h2 className="text-sm font-black uppercase tracking-wider text-slate-500 flex items-center gap-2">
-          <span>⚙️ Configurar Nicho de Investigación</span>
-        </h2>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <h2 className="text-sm font-black uppercase tracking-wider text-slate-500 flex items-center gap-2">
+              <span>⚙️ Configurar Nicho de Investigación</span>
+            </h2>
+            
+            {historicalAnalyses.length > 0 && (
+                <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-500">Cargar Anterior:</span>
+                    <select 
+                        className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 outline-none focus:border-indigo-500 transition-colors"
+                        onChange={(e) => {
+                            const selected = historicalAnalyses.find(h => h.id === e.target.value);
+                            if (selected) {
+                                setAnalysis(selected);
+                                setNicheInput(selected.niche || "");
+                                setAudienceInput(selected.targetAudience || "");
+                            }
+                        }}
+                        value={analysis?.id || ""}
+                    >
+                        {historicalAnalyses.map((h: any) => (
+                            <option key={h.id} value={h.id}>
+                                {h.niche} - {new Date(h.createdAt).toLocaleDateString()}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            )}
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
@@ -515,6 +749,79 @@ export default function NicheRadarPage() {
               ))}
             </div>
           )}
+          {/* ESTRATEGIA GENERATOR */}
+          <div id="generador-estrategia" className="bg-white rounded-2xl p-6 md:p-8 border border-slate-200 shadow-sm mt-8 space-y-6">
+              <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
+                <span>🤖</span> Planificación Estratégica Automática
+              </h2>
+              <p className="text-sm text-slate-500">¿Qué deseas lograr? Selecciona tu meta para crear un calendario de posts usando los insights del Radar.</p>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                 {goals.map(g => (
+                   <button
+                     key={g.id}
+                     onClick={() => setStrategyGoal(g.id)}
+                     className={`flex items-center gap-3 px-4 py-3 rounded-2xl border-2 transition-all text-left ${
+                       strategyGoal === g.id
+                       ? 'border-indigo-500 bg-indigo-50 shadow-md shadow-indigo-100'
+                       : 'border-slate-100 bg-slate-50 hover:border-indigo-200 hover:bg-white'
+                     }`}
+                   >
+                     <span className="text-xl">{g.icon}</span>
+                     <div>
+                       <div className={`font-black text-xs ${strategyGoal === g.id ? 'text-indigo-900' : 'text-slate-800'}`}>{g.title}</div>
+                     </div>
+                   </button>
+                 ))}
+              </div>
+
+              <div>
+                  <textarea 
+                     value={strategyExpectations}
+                     onChange={e => setStrategyExpectations(e.target.value)}
+                     placeholder="¿Alguna expectativa u oferta especial para estos días? (Opcional)"
+                     className="w-full bg-slate-50 border-2 border-slate-100 px-4 py-3 rounded-[20px] font-medium text-slate-700 outline-none focus:border-indigo-500 transition-colors resize-none text-sm"
+                     rows={2}
+                  />
+              </div>
+
+              <div className="flex justify-end pt-2">
+                  <button
+                     onClick={handleGenerateStrategy}
+                     disabled={generatingStrategy || !strategyGoal}
+                     className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-extrabold py-3 px-8 rounded-xl shadow-md transition-all flex items-center gap-2"
+                  >
+                     {generatingStrategy ? 'Generando...' : 'Crear Calendario Semanal 📅'}
+                  </button>
+              </div>
+
+              {strategyResult && strategyResult.length > 0 && (
+                  <div className="mt-8 pt-8 border-t border-slate-100 space-y-6">
+                      <h3 className="text-lg font-black text-slate-900">Tu Plan Estratégico Generado</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {strategyResult.map((post, idx) => (
+                             <div key={idx} className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                                 <div className="flex justify-between items-center text-xs">
+                                     <span className="font-bold text-slate-500">Día {post.dayOffset} a las {post.suggestedTime}</span>
+                                     <span className="bg-indigo-100 text-indigo-700 font-bold px-2 py-0.5 rounded-full">{post.format}</span>
+                                 </div>
+                                 <p className="font-black text-sm text-slate-800">"{post.hook}"</p>
+                                 <p className="text-xs text-slate-600 line-clamp-3">{post.content}</p>
+                             </div>
+                          ))}
+                      </div>
+                      <div className="flex justify-end mt-4">
+                          <button
+                             onClick={handleAcceptStrategy}
+                             disabled={acceptingStrategy}
+                             className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-black py-3 px-8 rounded-xl shadow-md transition-all"
+                          >
+                             {acceptingStrategy ? 'Agendando...' : 'Aceptar y Agendar Posts ✅'}
+                          </button>
+                      </div>
+                  </div>
+              )}
+          </div>
         </div>
       ) : (
         /* ESTADO INICIAL VACÍO */
@@ -549,6 +856,73 @@ export default function NicheRadarPage() {
           </button>
         </div>
       )}
+
+      {/* MODAL DE FORMATO DE POST */}
+      {postModal.isOpen && postModal.idea && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+           <div className="bg-white rounded-[32px] p-6 md:p-8 max-w-md w-full shadow-2xl relative">
+              <button 
+                onClick={() => setPostModal({isOpen: false, idea: null})}
+                className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 transition-colors"
+              >
+                ✕
+              </button>
+              
+              <h2 className="text-xl font-black text-slate-900 mb-2">Crear Post Individual</h2>
+              <p className="text-sm text-slate-500 mb-6 font-medium">¿En qué formato deseas desarrollar la idea <strong className="text-slate-800">"{postModal.idea.title}"</strong>?</p>
+              
+              <div className="space-y-4">
+                  {/* OPción Post/Carrusel */}
+                  <button 
+                    onClick={() => handleModalPostCreate('Post')}
+                    className="w-full flex items-center gap-4 p-4 border-2 border-slate-100 hover:border-indigo-300 rounded-2xl bg-slate-50 hover:bg-indigo-50 transition-all text-left"
+                  >
+                     <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 text-2xl">🖼️</div>
+                     <div>
+                        <div className="font-black text-slate-900">Imagen o Carrusel</div>
+                        <div className="text-xs text-slate-500 font-medium">Post tradicional para el Feed.</div>
+                     </div>
+                  </button>
+
+                  {/* Opcion Video/Reel */}
+                  {(() => {
+                      const limit = systemPlans[userPlan]?.videosLimit ?? 0;
+                      const hasVideosLeft = userPlan === 'business' || userPlan === 'agency' || limit > videosThisMonth;
+                      
+                      if (hasVideosLeft) {
+                          return (
+                              <button 
+                                onClick={() => handleModalPostCreate('Reel')}
+                                className="w-full flex items-center gap-4 p-4 border-2 border-slate-100 hover:border-pink-300 rounded-2xl bg-slate-50 hover:bg-pink-50 transition-all text-left"
+                              >
+                                <div className="w-12 h-12 rounded-xl bg-pink-100 flex items-center justify-center text-pink-600 text-2xl">🎬</div>
+                                <div>
+                                    <div className="font-black text-slate-900">Reel o Video Corto</div>
+                                    <div className="text-xs text-slate-500 font-medium">Formato vertical para mayor viralidad.</div>
+                                </div>
+                              </button>
+                          );
+                      } else {
+                          return (
+                              <div className="w-full flex items-center gap-4 p-4 border-2 border-slate-100 rounded-2xl bg-slate-100 opacity-60 relative text-left">
+                                <div className="w-12 h-12 rounded-xl bg-slate-200 flex items-center justify-center text-slate-400 text-2xl">🎬</div>
+                                <div className="flex-1">
+                                    <div className="font-black text-slate-700 flex items-center gap-2">
+                                        Reel o Video Corto 
+                                        <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md uppercase">Límite Mensual</span>
+                                    </div>
+                                    <div className="text-xs text-slate-500 font-medium">Agotaste tu saldo de videos de tu plan actual.</div>
+                                </div>
+                                <a href="/automatizacion-rrss/panel/planes" className="absolute inset-0 z-10" title="Mejorar Plan"></a>
+                              </div>
+                          );
+                      }
+                  })()}
+              </div>
+           </div>
+        </div>
+      )}
+
     </div>
   );
 }

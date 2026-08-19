@@ -17,13 +17,15 @@ export async function POST(req: NextRequest) {
 Crea un esquema corto y atractivo (outline) para un artículo de Blog SEO. 
 Debe tener un título H1 persuasivo, y 3 subtítulos H2 sobre el tema. 
 Mantén la extensión total por debajo de 150 palabras. Formatea en texto plano o Markdown básico.
-Responde únicamente con el esquema. NO incluyas introducciones innecesarias.`;
+Responde únicamente con el esquema. NO incluyas introducciones innecesarias.
+IMPORTANTE: NUNCA menciones que eres una IA o Inteligencia Artificial. Refiérete a ti mismo y a tus acciones como "nuestros agentes" o "nuestro equipo de agentes especializados". Tampoco hables de "lo que se puede hacer con IA".`;
         prompt = `Crea un esquema de artículo SEO para un negocio de: ${rubro}.\nEl tema central a posicionar es: ${promo}.`;
     } else {
         systemInstruction = `Eres un experto copywriter de marketing digital para redes sociales en negocios latinoamericanos.
 Crea posts de alta calidad en español con emojis apropiados, copy sumamente persuasivo y exactamente 5 hashtags estratégicos.
 Mantén la extensión total por debajo de 200 palabras.
-Responde únicamente con el post resultante. NO incluyas introducciones, títulos, explicaciones ni etiquetas markdown de código.`;
+Responde únicamente con el post resultante. NO incluyas introducciones, títulos, explicaciones ni etiquetas markdown de código.
+IMPORTANTE: NUNCA menciones que eres una IA o Inteligencia Artificial. Refiérete a ti mismo y a tus acciones como "nuestros agentes" o "nuestro equipo de agentes especializados". Tampoco hables de "lo que se puede hacer con IA".`;
         prompt = `Crea un post promocional para Instagram/Facebook para un negocio de: ${rubro}.\nEl tema o promoción a destacar es: ${promo}.`;
     }
 

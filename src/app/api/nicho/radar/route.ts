@@ -27,15 +27,18 @@ export async function POST(req: Request) {
     // Verificar si existe caché reciente en Firestore si no es forceRefresh
     if (!forceRefresh && authUid && businessId && adminDb) {
       try {
-        const cacheRef = adminDb.collection('users').doc(authUid).collection('businesses').doc(businessId).collection('radar').doc('latest');
-        const cacheSnap = await cacheRef.get();
-        if (cacheSnap.exists) {
-          const cachedData = cacheSnap.data();
-          const updatedAt = cachedData?.updatedAt ? new Date(cachedData.updatedAt).getTime() : 0;
-          const hoursAgo = (Date.now() - updatedAt) / (1000 * 60 * 60);
-          // Si tiene menos de 24 horas y coincide el nicho, retornar caché
-          if (hoursAgo < 24 && cachedData?.niche?.toLowerCase() === niche.trim().toLowerCase()) {
-            return NextResponse.json({ success: true, analysis: cachedData, fromCache: true });
+        const radarRef = adminDb.collection('users').doc(authUid).collection('businesses').doc(businessId).collection('radar');
+        const cacheSnap = await radarRef.orderBy('createdAt', 'desc').limit(1).get();
+        if (!cacheSnap.empty) {
+          const cachedData = cacheSnap.docs[0].data();
+          const docId = cacheSnap.docs[0].id;
+          const createdAt = cachedData?.createdAt ? new Date(cachedData.createdAt).getTime() : (cachedData?.updatedAt ? new Date(cachedData.updatedAt).getTime() : 0);
+          const hoursAgo = (Date.now() - createdAt) / (1000 * 60 * 60);
+          
+          // Retornar si es checkCacheOnly (UI usa esto para cargar el último sin importar el nicho), 
+          // O si el nicho coincide y tiene menos de 24 horas.
+          if (checkCacheOnly || (hoursAgo < 24 && cachedData?.niche?.toLowerCase() === niche.trim().toLowerCase())) {
+            return NextResponse.json({ success: true, analysis: { id: docId, ...cachedData }, fromCache: true });
           }
         }
       } catch (cacheErr) {
@@ -59,8 +62,12 @@ export async function POST(req: Request) {
     // Guardar en Firestore si tenemos datos del usuario y negocio
     if (authUid && businessId && adminDb) {
       try {
-        const cacheRef = adminDb.collection('users').doc(authUid).collection('businesses').doc(businessId).collection('radar').doc('latest');
-        await cacheRef.set(analysis, { merge: true });
+        const radarRef = adminDb.collection('users').doc(authUid).collection('businesses').doc(businessId).collection('radar');
+        const newDoc = await radarRef.add({
+            ...analysis,
+            createdAt: new Date().toISOString() // add explicit createdAt for sorting
+        });
+        analysis.id = newDoc.id; // attach generated ID
       } catch (saveErr) {
         console.warn('Error al guardar el radar en Firestore:', saveErr);
       }

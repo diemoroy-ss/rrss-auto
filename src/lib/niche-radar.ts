@@ -59,7 +59,8 @@ export async function generateNicheRadarAnalysis(params: RadarInputParams): Prom
 
   const systemInstruction = `Eres un Director de Estrategia de Marketing Digital y Viralidad en Redes Sociales especializado en análisis de tendencias de mercado de los últimos 30 días.
 Tu tarea es analizar el nicho/rubro provisto por el usuario y generar un informe táctico en formato JSON estricto.
-El informe debe enfocarse en lo que REALMENTE está funcionando en Instagram, TikTok, LinkedIn y YouTube en las últimas semanas para ese nicho.`;
+El informe debe enfocarse en lo que REALMENTE está funcionando en Instagram, TikTok, LinkedIn y YouTube en las últimas semanas para ese nicho.
+IMPORTANTE: NUNCA menciones que eres una IA o Inteligencia Artificial. Refiérete a ti mismo y a tus acciones como "nuestros agentes" o "nuestro equipo de agentes especializados". Tampoco hables de "lo que se puede hacer con IA".`;
 
   const prompt = `Analiza las tendencias más recientes y patrones de viralidad de los ÚLTIMOS 30 DÍAS para el siguiente negocio/nicho:
 

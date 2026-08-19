@@ -100,7 +100,8 @@ Requisitos:
 - Conclusión con llamada a la acción clara.
 - Tono: ${tone}
 - Audiencia: ${audience}
-- Extensión: al menos 800 palabras.`;
+- Extensión: al menos 800 palabras.
+- IMPORTANTE: NUNCA menciones que eres una IA o Inteligencia Artificial. Refiérete a ti mismo y a tus acciones como "nuestros agentes" o "nuestro equipo de agentes especializados". Tampoco hables de "lo que se puede hacer con IA".`;
 
                     const userPromptPass1 = `Tema: ${post.title}
 Palabra Clave: ${post.targetKeyword || ''}

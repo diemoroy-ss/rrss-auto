@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { auth, db } from "../../../../lib/firebase";
-import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, getDoc, orderBy } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { useProfile } from "../../../../contexts/ProfileContext";
 import Link from "next/link";
@@ -52,6 +52,9 @@ export default function MetricasDashboard() {
   const [showPosts, setShowPosts] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState("");
+  const [aiRecommendation, setAiRecommendation] = useState<{goalId: string, reason: string} | null>(null);
+  const [analyticsHistory, setAnalyticsHistory] = useState<any[]>([]);
+  const [currentAnalysisId, setCurrentAnalysisId] = useState<string>("");
   const [showAiAnalysis, setShowAiAnalysis] = useState(true);
   const [hasNetworks, setHasNetworks] = useState(false);
   const router = useRouter();
@@ -203,17 +206,42 @@ export default function MetricasDashboard() {
   };
 
   const handleAnalyze = async () => {
+     if (!user || !activeProfile) return;
      setAnalyzing(true);
      setAiAnalysis("");
+     setAiRecommendation(null);
      try {
+       const token = await user.getIdToken();
        const res = await fetch("/api/ai/analyze-metrics", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ posts: publishedPosts, profileName: activeProfile?.name || 'Mi Marca' })
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({ 
+            posts: publishedPosts, 
+            profileName: activeProfile?.name || 'Mi Marca',
+            userId: user.uid,
+            profileId: activeProfile.id
+          })
        });
        if (!res.ok) throw new Error("Error al analizar métricas");
        const data = await res.json();
+       
        setAiAnalysis(data.analysis);
+       if (data.recommendation) setAiRecommendation(data.recommendation);
+       if (data.id) setCurrentAnalysisId(data.id);
+       
+       // Update history locally
+       setAnalyticsHistory(prev => {
+           if (prev.find(p => p.id === data.id)) return prev;
+           return [{
+               id: data.id,
+               analysisHtml: data.analysis,
+               recommendation: data.recommendation,
+               createdAt: new Date().toISOString()
+           }, ...prev];
+       });
      } catch (e) {
        console.error("Error AI Analysis:", e);
        setAiAnalysis("<p>No se pudo generar el análisis en este momento. Intenta de nuevo más tarde o verifica tu conexión.</p>");
@@ -221,6 +249,30 @@ export default function MetricasDashboard() {
        setAnalyzing(false);
      }
   };
+
+  useEffect(() => {
+     async function fetchHistory() {
+         if (!user || !activeProfile?.id) return;
+         try {
+             const hCol = collection(db, "users", user.uid, "businesses", activeProfile.id, "analytics_history");
+             const q = query(hCol, orderBy("createdAt", "desc"));
+             const snap = await getDocs(q);
+             const history: any[] = [];
+             snap.forEach(d => {
+                 history.push({ id: d.id, ...d.data() });
+             });
+             setAnalyticsHistory(history);
+             if (history.length > 0 && !aiAnalysis) {
+                 setAiAnalysis(history[0].analysisHtml || "");
+                 setAiRecommendation(history[0].recommendation || null);
+                 setCurrentAnalysisId(history[0].id);
+             }
+         } catch(e) {
+             console.warn("Could not fetch analytics history", e);
+         }
+     }
+     fetchHistory();
+  }, [user, activeProfile?.id]);
 
   const fetchMetrics = async (uid: string) => {
     try {
@@ -554,6 +606,27 @@ export default function MetricasDashboard() {
                     >
                        {analyzing ? <><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Analizando...</> : !hasNetworks ? 'Conecta RRSS para analizar' : 'Generar Reporte AI ✨'}
                     </button>
+                    {analyticsHistory.length > 0 && (
+                       <select 
+                          className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 outline-none focus:border-indigo-500 transition-colors"
+                          onChange={(e) => {
+                             const sel = analyticsHistory.find(h => h.id === e.target.value);
+                             if (sel) {
+                                 setAiAnalysis(sel.analysisHtml);
+                                 setAiRecommendation(sel.recommendation || null);
+                                 setCurrentAnalysisId(sel.id);
+                             }
+                          }}
+                          value={currentAnalysisId || ""}
+                       >
+                          <option value="" disabled>Selecciona un historial...</option>
+                          {analyticsHistory.map(h => (
+                              <option key={h.id} value={h.id}>
+                                  Historial: {new Date(h.createdAt).toLocaleDateString()} {new Date(h.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                              </option>
+                          ))}
+                       </select>
+                    )}
                     {aiAnalysis && (
                        <button
                           onClick={() => setShowAiAnalysis(!showAiAnalysis)}
@@ -614,7 +687,21 @@ export default function MetricasDashboard() {
                              </div>
                          </div>
                       )}
-                   </div>
+                      
+                      {aiRecommendation && (
+                          <div className="mt-8 bg-indigo-50 p-6 rounded-2xl border-2 border-indigo-100 flex flex-col sm:flex-row sm:items-center justify-between gap-6 print:hidden">
+                             <div>
+                                 <h4 className="text-lg font-black text-indigo-900 flex items-center gap-2">
+                                     <span>💡</span> Estrategia Sugerida: {aiRecommendation.goalId.toUpperCase()}
+                                 </h4>
+                                 <p className="text-indigo-700 text-sm mt-1 max-w-lg font-medium">{aiRecommendation.reason}</p>
+                             </div>
+                             <Link href={`/automatizacion-rrss/panel/radar?autoGoal=${aiRecommendation.goalId}`} className="shrink-0 bg-indigo-600 text-white font-bold py-3 px-6 rounded-xl hover:bg-indigo-700 transition-all shadow-md flex items-center gap-2">
+                                 <span>🎯</span> Lanzar Estrategia
+                             </Link>
+                          </div>
+                       )}
+                    </div>
 
                    {/* Actions Row */}
                    <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-6 bg-slate-50 p-6 rounded-2xl border-2 border-slate-100 relative z-20 print:hidden">
