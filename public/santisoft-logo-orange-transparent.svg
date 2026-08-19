@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 850 200" width="1700" height="400">
+  <g transform="translate(30, 20) scale(2.5)">
+    <path d="M 64 8 L 32 8 L 8 32 L 56 32 L 32 56 L 0 56" fill="none" stroke="#FF6B00" stroke-width="16" stroke-linecap="butt" stroke-linejoin="bevel" />
+  </g>
+  <text x="230" y="135" font-family="Arial, Helvetica, sans-serif" font-size="96" font-weight="900" fill="#FFFFFF" letter-spacing="2">Santisoft AI</text>
+</svg>

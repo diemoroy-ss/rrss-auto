@@ -1,6 +1,7 @@
 import { StateGraph, START, END, MemorySaver, Annotation } from "@langchain/langgraph";
 
 import { generateFreeText } from "./gemini-free";
+import { runAntiBanAudit } from "./bh-skills";
 
 // Reglas y límites de caracteres según la plataforma
 const PLATFORM_RULES: Record<string, { maxLength: number; tone: string; guidelines: string }> = {
@@ -39,6 +40,8 @@ export const WorkflowAnnotation = Annotation.Root({
   critique: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "" }),
   finalPost: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "" }),
   options: Annotation<string[]>({ reducer: (a, b) => b ?? a, default: () => [] }),
+  // BH Anti-Ban: reporte de auditoría automática del contenido final
+  antiBanReport: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "" }),
 });
 
 export type WorkflowState = typeof WorkflowAnnotation.State;
@@ -170,6 +173,52 @@ Texto de la opción 3...`;
 }
 
 
+// 4.5 Nodo BH Anti-Ban: audita automáticamente el contenido final antes de entregarlo
+async function antiBanAuditNode(state: WorkflowState): Promise<Partial<WorkflowState>> {
+  // Solo auditar contenido de Instagram (Reels, Stories, feed)
+  const isInstagram = state.platform?.toLowerCase().includes("instagram");
+  if (!isInstagram) {
+    console.log(`[LangGraph Node] antiBanAuditNode - Plataforma no es Instagram, omitiendo auditoría.`);
+    return { antiBanReport: "" };
+  }
+
+  console.log(`[LangGraph Node] antiBanAuditNode - Auditando contenido de Instagram...`);
+
+  try {
+    // Extraer hashtags del contenido final (busca palabras que empiezan con #)
+    const firstOption = state.options?.[0] ?? state.finalPost ?? "";
+    const hashtagMatches = firstOption.match(/#(\w+)/g) ?? [];
+    const hashtags = hashtagMatches.map(h => h.replace("#", "").toLowerCase());
+
+    // Correr la auditoría
+    const auditResult = await runAntiBanAudit({
+      caption: firstOption,
+      hashtags,
+      contentType: "reel",
+    });
+
+    // Formatear el reporte para mostrar en la UI
+    const levelEmoji = {
+      seguro: "🟢",
+      precaucion: "🟡",
+      riesgo: "🟠",
+      peligro: "🔴",
+    }[auditResult.level];
+
+    const report = `${levelEmoji} AUDITORÍA ANTI-BAN: ${auditResult.score}/100 — ${auditResult.level.toUpperCase()}
+${auditResult.aptToPublish ? "✅ Apto para publicar" : "⛔ Revisar antes de publicar"}
+${auditResult.bannedHashtags.length > 0 ? `❌ Hashtags problemáticos: ${auditResult.bannedHashtags.join(", ")}` : ""}
+${auditResult.captionIssues.length > 0 ? `⚠️ Problemas en caption: ${auditResult.captionIssues.join(" | ")}` : ""}`;
+
+    console.log(`[LangGraph Node] antiBanAuditNode - Score: ${auditResult.score}, Level: ${auditResult.level}`);
+    return { antiBanReport: report };
+  } catch (error) {
+    console.error(`[LangGraph Node] antiBanAuditNode - Error en auditoría:`, error);
+    return { antiBanReport: "⚪ Auditoría anti-ban no disponible" };
+  }
+}
+
+
 
 // Instancia global en memoria del Checkpointer (MemorySaver)
 const memorySaver = new MemorySaver();
@@ -181,10 +230,12 @@ export function createContentWorkflow() {
     .addNode("generateDraft", generateDraftNode)
     .addNode("critiqueDraft", critiqueNode)
     .addNode("refineDraft", refineNode)
+    .addNode("antiBanAudit", antiBanAuditNode)  // BH: nodo de auditoría anti-ban
     .addEdge(START, "generateDraft")
     .addEdge("generateDraft", "critiqueDraft")
     .addEdge("critiqueDraft", "refineDraft")
-    .addEdge("refineDraft", END);
+    .addEdge("refineDraft", "antiBanAudit")     // BH: pasar por auditoría antes de END
+    .addEdge("antiBanAudit", END);
 
   // Compilamos el grafo añadiendo el checkpointer y pausando ANTES de refineDraft
   return workflow.compile({
@@ -268,10 +319,12 @@ export function createFullContentWorkflow() {
     .addNode("generateDraft", generateDraftNode)
     .addNode("critiqueDraft", critiqueNode)
     .addNode("refineDraft", refineNode)
+    .addNode("antiBanAudit", antiBanAuditNode)  // BH: nodo de auditoría anti-ban
     .addEdge(START, "generateDraft")
     .addEdge("generateDraft", "critiqueDraft")
     .addEdge("critiqueDraft", "refineDraft")
-    .addEdge("refineDraft", END);
+    .addEdge("refineDraft", "antiBanAudit")     // BH: auditoría automática post-refinado
+    .addEdge("antiBanAudit", END);
 
   return workflow.compile();
 }
@@ -300,7 +353,8 @@ export async function runFullContentWorkflow(topic: string, platform: string = "
       draft: finalState.draft,
       critique: finalState.critique,
       finalPost: finalState.finalPost,
-      options: finalState.options || []
+      options: finalState.options || [],
+      antiBanReport: finalState.antiBanReport || "",  // BH: reporte de auditoría anti-ban
     };
 
   } catch (error: any) {
