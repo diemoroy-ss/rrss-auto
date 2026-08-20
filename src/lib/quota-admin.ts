@@ -50,6 +50,7 @@ export async function getPlanLimitAdmin(plan: string, email?: string): Promise<n
         pro:      20,  // 5 posts/semana
         elite:    20,  // alias legacy → pro
         business: 30,  // 1 post/día
+        agency:   9999 // posts ilimitados
     };
     return fallbacks[(plan || 'free').toLowerCase()] ?? 3;
 }
@@ -78,6 +79,7 @@ export async function getAiPlanLimitAdmin(plan: string, type: 'image' | 'video' 
         pro:      { image: 50,  video: 8,  blog: 4  },
         elite:    { image: 50,  video: 8,  blog: 4  }, // alias legacy → pro
         business: { image: 120, video: 20, blog: 12 },
+        agency:   { image: 9999, video: 999, blog: 999 }, // ilimitado
     };
     return fallbacks[(plan || 'free').toLowerCase()]?.[type] ?? (type === 'image' ? 5 : 0);
 }
