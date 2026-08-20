@@ -402,11 +402,18 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
                         post.scenes = comp.scenes;
                         post.audioScript = comp.audioScript;
                         post.copyText = comp.copyText;
+                        // Keep marketing copy (caption) separate from audioScript/guión del video
+                        // Only update copy in Firestore if we don't already have a JIT-generated marketing copy
+                        const reelCopyToSave = post.copy && !copyLooksLikeInstruction ? post.copy : (comp.copyText || post.copy);
                         await postRef.update({ 
                             scenes: comp.scenes, 
                             audioScript: comp.audioScript, 
-                            copy: comp.copyText || post.copy 
+                            copy: reelCopyToSave
                         });
+                        // Update caption with marketing-friendly version if available, otherwise use script
+                        if (!caption || caption === rawCaption) {
+                            caption = comp.copyText || caption;
+                        }
                         infoLog += `Guion y Escenas de Reel generados JIT. `;
                     } catch (e: any) {
                         throw new Error("Fallo al generar el guion del Reel JIT: " + e.message);
