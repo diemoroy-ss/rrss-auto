@@ -30,7 +30,7 @@ export async function POST(req: Request) {
 
         // --- AI QUOTA ENFORCEMENT ---
         let requiredType: 'image' | 'video' = type === 'Reel' ? 'video' : 'image';
-        let requiredCount = type === 'Carrusel' ? (carouselCount || 1) : 1;
+        let requiredCount = type === 'Carrusel' ? Math.min(carouselCount || 3, 3) : 1;
         
         try {
             const userDoc = await adminDb.collection("users").doc(userId).get();
@@ -58,7 +58,8 @@ export async function POST(req: Request) {
 
         // 1. Logic for prompts using Vertex AI
         if (type === 'Carrusel') {
-            const systemInstruction = `Eres un experto Director de Arte. Tu misión es generar una lista estructurada en JSON puro que contenga EXACTAMENTE ${carouselCount} instrucciones descriptivas detalladas para un generador de imágenes de Inteligencia Artificial (Midjourney/DALL-E) en INGLÉS. Las imágenes conformarán un carrusel coherente secuencial.
+            const actualCount = Math.min(carouselCount || 3, 3);
+            const systemInstruction = `Eres un experto Director de Arte. Tu misión es generar una lista estructurada en JSON puro que contenga EXACTAMENTE ${actualCount} instrucciones descriptivas detalladas para un generador de imágenes de Inteligencia Artificial (Midjourney/DALL-E) en INGLÉS. Las imágenes conformarán un carrusel coherente secuencial.
 
 INSTRUCCIONES CLAVE:
 1. NO escribas otra cosa más que un Array JSON ("["..." , "..."]").

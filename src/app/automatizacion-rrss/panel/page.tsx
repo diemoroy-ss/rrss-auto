@@ -1608,7 +1608,7 @@ export default function RrssDashboard() {
                             <input 
                                 type="range" 
                                 min="2" 
-                                max="4" 
+                                max="3" 
                                 value={selectedPost.carouselCount || 3} 
                                 onChange={(e) => handleChangeCarouselCount(selectedPost, parseInt(e.target.value))}
                                 className="w-full h-1.5 bg-purple-200 rounded-lg appearance-none cursor-pointer accent-purple-600"

@@ -36,7 +36,7 @@ export async function getPlanLimitAdmin(plan: string, email?: string): Promise<n
         const plansDoc = await adminDb.collection("system_config").doc("plans").get();
         if (plansDoc.exists) {
             const config = plansDoc.data() as any;
-            const planId = plan || 'free';
+            const planId = (plan || 'free').toLowerCase();
             return config[planId]?.postsLimit ?? 4;
         }
     } catch (e) {
@@ -51,7 +51,7 @@ export async function getPlanLimitAdmin(plan: string, email?: string): Promise<n
         elite:    20,  // alias legacy → pro
         business: 30,  // 1 post/día
     };
-    return fallbacks[plan || 'free'] ?? 3;
+    return fallbacks[(plan || 'free').toLowerCase()] ?? 3;
 }
 
 export async function getAiPlanLimitAdmin(plan: string, type: 'image' | 'video' | 'blog', email?: string): Promise<number> {
@@ -61,7 +61,7 @@ export async function getAiPlanLimitAdmin(plan: string, type: 'image' | 'video' 
         const plansDoc = await adminDb.collection("system_config").doc("plans").get();
         if (plansDoc.exists) {
             const config = plansDoc.data() as any;
-            const planId = plan || 'free';
+            const planId = (plan || 'free').toLowerCase();
             if (type === 'image') return config[planId]?.aiImagesLimit ?? 5;
             if (type === 'video') return config[planId]?.aiVideosLimit ?? 0;
             if (type === 'blog') return config[planId]?.seoBlogsLimit ?? 0;
@@ -79,7 +79,7 @@ export async function getAiPlanLimitAdmin(plan: string, type: 'image' | 'video' 
         elite:    { image: 50,  video: 8,  blog: 4  }, // alias legacy → pro
         business: { image: 120, video: 20, blog: 12 },
     };
-    return fallbacks[plan || 'free']?.[type] ?? (type === 'image' ? 5 : 0);
+    return fallbacks[(plan || 'free').toLowerCase()]?.[type] ?? (type === 'image' ? 5 : 0);
 }
 
 export async function getAiGenerationUsageAdmin(userId: string, type: 'image' | 'video' | 'blog'): Promise<number> {
