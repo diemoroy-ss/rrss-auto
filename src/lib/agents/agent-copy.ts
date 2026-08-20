@@ -65,7 +65,7 @@ ${contactInfoBlock}`;
 
     if (generatedText) {
       console.log(`[AgentCopy] ✅ Copy generado exitosamente vía Vertex AI.`);
-      return generatedText;
+      return cleanCopyFormat(generatedText);
     }
   } catch (vertexErr: any) {
     console.warn(`[AgentCopy] ⚠️ Vertex AI no disponible o falló (${vertexErr.message || vertexErr}). Ejecutando fallback a Gemini Free...`);
@@ -77,7 +77,7 @@ ${contactInfoBlock}`;
     const freeText = await generateFreeText(userPrompt, sysInstruction, true);
     if (freeText && freeText.trim()) {
       console.log(`[AgentCopy] ✅ Copy generado exitosamente vía Gemini Free.`);
-      return freeText.trim();
+      return cleanCopyFormat(freeText);
     }
   } catch (freeErr: any) {
     console.error(`[AgentCopy] ❌ Falló también el fallback de Gemini Free:`, freeErr);
@@ -85,5 +85,43 @@ ${contactInfoBlock}`;
 
   // Intento 3: Fallback de seguridad (construcción manual garantizada)
   const contactSuffix = contactArr.length > 0 ? `\n\n${contactArr.join(' | ')}` : '';
-  return `${idea}\n\nGuarda este post o contáctanos para más información.${contactSuffix}\n\n#${rubro.replace(/\s+/g, '')} #Marketing`;
+  return cleanCopyFormat(`${idea}\n\nGuarda este post o contáctanos para más información.${contactSuffix}\n\n#${rubro.replace(/\s+/g, '')} #Marketing`);
 }
+
+/**
+ * Limpia el texto en caso de que el modelo haya devuelto un objeto JSON (ej: { "copy": "..." })
+ * o saltos de línea escapados de forma literal (\\n).
+ */
+function cleanCopyFormat(rawText: string): string {
+  if (!rawText) return '';
+  let cleaned = rawText.trim();
+
+  // 1. Si viene envuelto en bloque de código markdown tipo ```json ... ```
+  cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+
+  // 2. Si es un JSON estructurado
+  if (cleaned.startsWith('{') && cleaned.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(cleaned);
+      if (parsed.copy) cleaned = parsed.copy;
+      else if (parsed.text) cleaned = parsed.text;
+      else if (parsed.post) cleaned = parsed.post;
+      else if (parsed.caption) cleaned = parsed.caption;
+    } catch (e) {
+      // Si falla el parseo JSON, intentamos extracción por Regex
+      const match = cleaned.match(/"copy"\s*:\s*"([\s\S]*)"\s*}/);
+      if (match && match[1]) {
+        cleaned = match[1];
+      }
+    }
+  }
+
+  // 3. Reemplazar saltos de línea escapados como caracteres literales \n por saltos de línea reales
+  cleaned = cleaned.replace(/\\n/g, '\n');
+
+  // 4. Remover comillas de inicio y fin si quedaron envolviendo todo el copy
+  cleaned = cleaned.replace(/^["']|["']$/g, '').trim();
+
+  return cleaned;
+}
+

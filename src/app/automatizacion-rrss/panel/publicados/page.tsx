@@ -637,7 +637,7 @@ export default function RrssDashboard() {
 
   const handlePublishNow = async (postId: string) => {
     const postToUpdate = [...posts, ...blogPosts].find(p => p.id === postId);
-    const hasError = postToUpdate?.status === 'error';
+    const hasError = postToUpdate?.status === 'error' || !!postToUpdate?.publishError || selectedPost?.status === 'error' || !!selectedPost?.publishError;
 
     requestConfirmation(
       "¿Publicar Ahora?", 
@@ -690,10 +690,11 @@ export default function RrssDashboard() {
         text: 'Agendar en su lugar',
         onClick: () => {
             setConfirmModalState(null);
-            if (postToUpdate) {
-                const dateObj = postToUpdate.scheduledFor?.toDate ? postToUpdate.scheduledFor.toDate() : new Date();
+            const targetPost = postToUpdate || selectedPost;
+            if (targetPost) {
+                const dateObj = targetPost.scheduledFor?.toDate ? targetPost.scheduledFor.toDate() : new Date();
                 setRescheduleData({
-                    id: postToUpdate.id,
+                    id: targetPost.id,
                     date: format(dateObj, "yyyy-MM-dd'T'HH:mm")
                 });
             }

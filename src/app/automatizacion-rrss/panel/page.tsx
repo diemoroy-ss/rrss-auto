@@ -674,7 +674,7 @@ export default function RrssDashboard() {
 
   const handlePublishNow = async (postId: string) => {
     const postToUpdate = [...posts, ...blogPosts].find(p => p.id === postId);
-    const hasError = postToUpdate?.status === 'error';
+    const hasError = postToUpdate?.status === 'error' || !!postToUpdate?.publishError || selectedPost?.status === 'error' || !!selectedPost?.publishError;
 
     requestConfirmation(
       "¿Publicar Ahora?", 
@@ -734,10 +734,11 @@ export default function RrssDashboard() {
         text: 'Agendar en su lugar',
         onClick: () => {
             setConfirmModalState(null);
-            if (postToUpdate) {
-                const dateObj = postToUpdate.scheduledFor?.toDate ? postToUpdate.scheduledFor.toDate() : new Date();
+            const targetPost = postToUpdate || selectedPost;
+            if (targetPost) {
+                const dateObj = targetPost.scheduledFor?.toDate ? targetPost.scheduledFor.toDate() : new Date();
                 setRescheduleData({
-                    id: postToUpdate.id,
+                    id: targetPost.id,
                     date: format(dateObj, "yyyy-MM-dd'T'HH:mm")
                 });
             }
@@ -1579,19 +1580,7 @@ export default function RrssDashboard() {
                      </div>
                    )}
 
-                   {selectedPost.publishInfo && (
-                     <div className="bg-sky-50 border-2 border-sky-200 rounded-[24px] p-6 text-sky-800 animate-in slide-in-from-top-2 fade-in shadow-sm">
-                       <div className="flex gap-3 items-start">
-                         <span className="text-2xl">ℹ️</span>
-                         <div>
-                           <h4 className="font-black text-sm tracking-tight text-sky-900 uppercase">⚙️ Generación Automática (JIT)</h4>
-                           <p className="text-xs font-bold text-sky-700/90 mt-1 leading-relaxed">
-                             {selectedPost.publishInfo}
-                           </p>
-                         </div>
-                       </div>
-                     </div>
-                   )}
+
                    <div className="flex flex-wrap items-center gap-3">
                      <span className="text-[10px] font-black uppercase tracking-widest px-4 py-2 bg-slate-100 text-slate-500 rounded-xl border border-slate-200">Formato</span>
                      <div className="flex gap-2">
