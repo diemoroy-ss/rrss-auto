@@ -24,6 +24,24 @@ async function fetchWithRetry(url: string, options: any, retries = 3, delay = 20
     }
 }
 
+function explainError(msg: string): string {
+    if (!msg) return "Error desconocido de la API.";
+    const lower = msg.toLowerCase();
+    if (lower.includes('token') || lower.includes('expired') || lower.includes('unauthorized') || lower.includes('code 190') || lower.includes('auth')) {
+        return "La conexión expiró o el permiso fue revocado. Ve al Panel de Configuración y vuelve a conectar tu cuenta.";
+    }
+    if (lower.includes('video_url is required') || lower.includes('uploading your video file') || lower.includes('media_type') || lower.includes('format')) {
+        return "La red social rechazó el archivo. Es probable que se requiriera un video válido (MP4) y no se pudo procesar correctamente.";
+    }
+    if (lower.includes('buffer') || lower.includes('tostring') || lower.includes('undefined')) {
+        return "Error interno al procesar el archivo multimedia antes de enviarlo.";
+    }
+    if (lower.includes('timeout') || lower.includes('agotado') || lower.includes('wait') || lower.includes('not ready')) {
+        return "El servidor de la red social tardó demasiado en procesar la publicación o no respondió a tiempo.";
+    }
+    return "Error general reportado por la plataforma.";
+}
+
 export async function POST(req: Request) {
     try {
         const { postId } = await req.json();
@@ -459,7 +477,7 @@ async function publishInBackground(postId: string, post: any, creds: {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            file_url: imageUrl,
+                            file_url: videoUrl,
                             description: caption,
                             access_token: plainToken
                         })
@@ -509,8 +527,9 @@ async function publishInBackground(postId: string, post: any, creds: {
                 successNetworks.push('facebook');
             } catch (e: any) {
                 console.error("FB Publish Error:", e.message);
-                errorLog += `FB: ${e.message}. `;
-                userErrorLog += `FB: No ok, contactar con administrador. `;
+                const explanation = explainError(e.message);
+                errorLog += `FB: ${e.message} (${explanation}). `;
+                userErrorLog += `FB: No ok, ${explanation} `;
             }
         }
 
@@ -574,7 +593,7 @@ async function publishInBackground(postId: string, post: any, creds: {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            video_url: imageUrl,
+                            video_url: videoUrl,
                             caption: caption,
                             media_type: 'REELS',
                             access_token: plainToken
@@ -695,8 +714,9 @@ async function publishInBackground(postId: string, post: any, creds: {
                 successNetworks.push('instagram');
             } catch (e: any) {
                 console.error("IG Publish Error:", e.message);
-                errorLog += `IG: ${e.message}. `;
-                userErrorLog += `IG: No ok, contactar con administrador. `;
+                const explanation = explainError(e.message);
+                errorLog += `IG: ${e.message} (${explanation}). `;
+                userErrorLog += `IG: No ok, ${explanation} `;
             }
         }
 
@@ -811,8 +831,9 @@ async function publishInBackground(postId: string, post: any, creds: {
                 });
             } catch (e: any) {
                 console.error("LI Publish Error:", e.message);
-                errorLog += `LI: ${e.message}. `;
-                userErrorLog += `LinkedIn: No ok, contactar con administrador. `;
+                const explanation = explainError(e.message);
+                errorLog += `LI: ${e.message} (${explanation}). `;
+                userErrorLog += `LinkedIn: No ok, ${explanation} `;
             }
         }
 
@@ -937,8 +958,9 @@ async function publishInBackground(postId: string, post: any, creds: {
 
             } catch (e: any) {
                 console.error("TikTok Publish Error:", e.message);
-                errorLog += `TikTok: ${e.message}. `;
-                userErrorLog += `TikTok: No ok, contactar con administrador. `;
+                const explanation = explainError(e.message);
+                errorLog += `TikTok: ${e.message} (${explanation}). `;
+                userErrorLog += `TikTok: No ok, ${explanation} `;
             }
         }
 
@@ -1080,8 +1102,9 @@ async function publishInBackground(postId: string, post: any, creds: {
 
             } catch (e: any) {
                 console.error("Google Business Publish Error:", e.message);
-                errorLog += `GoogleBusiness: ${e.message}. `;
-                userErrorLog += `Google Business: No ok, contactar con administrador. `;
+                const explanation = explainError(e.message);
+                errorLog += `GoogleBusiness: ${e.message} (${explanation}). `;
+                userErrorLog += `Google Business: No ok, ${explanation} `;
             }
         }
 
@@ -1223,13 +1246,15 @@ async function publishInBackground(postId: string, post: any, creds: {
                             }
                         } catch (refreshErr: any) {
                             console.error('YouTube Token Refresh Error:', refreshErr.message);
-                            errorLog += `YouTube: ${refreshErr.message}. `;
-                            userErrorLog += `YouTube: No ok, contactar con administrador. `;
+                            const explanation = explainError(refreshErr.message);
+                            errorLog += `YouTube: ${refreshErr.message} (${explanation}). `;
+                            userErrorLog += `YouTube: No ok, ${explanation} `;
                         }
                     } else {
                         console.error('YouTube Publish Error:', ytErr.message);
-                        errorLog += `YouTube: ${ytErr.message}. `;
-                        userErrorLog += `YouTube: No ok, contactar con administrador. `;
+                        const explanation = explainError(ytErr.message);
+                        errorLog += `YouTube: ${ytErr.message} (${explanation}). `;
+                        userErrorLog += `YouTube: No ok, ${explanation} `;
                     }
                 }
             }
@@ -1272,10 +1297,13 @@ async function publishInBackground(postId: string, post: any, creds: {
                 }
             } catch (xErr: any) {
                 console.error('X Publish Error:', xErr.message);
-                errorLog += `X (Twitter): ${xErr.message}. `;
-                userErrorLog += `X (Twitter): No ok, contactar con administrador. `;
+                const explanation = explainError(xErr.message);
+                errorLog += `X (Twitter): ${xErr.message} (${explanation}). `;
+                userErrorLog += `X (Twitter): No ok, ${explanation} `;
             }
         }
+
+
 
         // --- SEAL ACCOUNT LOCKS ON SUCCESSFUL PUBLISH (non-business plans) ---
         if (successNetworks.length > 0) {
