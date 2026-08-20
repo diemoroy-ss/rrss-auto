@@ -374,6 +374,17 @@ export default function RrssDashboard() {
       await updateDoc(doc(db, "social_posts", post.id), { status: 'confirmed' });
       setPosts(prev => prev.map(p => p.id === post.id ? { ...p, status: 'confirmed' } : p));
       setQuotaUsed(prev => prev + (post.networks?.length || 1));
+      
+      const idToken = await auth.currentUser?.getIdToken();
+      if (post.scheduledFor && idToken) {
+          const dateObj = typeof post.scheduledFor.toDate === 'function' ? post.scheduledFor.toDate() : new Date(post.scheduledFor);
+          await fetch('/api/tasks/schedule', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+              body: JSON.stringify({ postId: post.id, scheduledFor: dateObj.toISOString() })
+          });
+      }
+      
       setSelectedPost(null);
     } catch (e) {
       setMessage({ type: 'error', text: "Error al confirmar el agendamiento." });
@@ -478,6 +489,20 @@ export default function RrssDashboard() {
               const promises = pendingPosts.map(p => updateDoc(doc(db, "social_posts", p.id), { status: 'confirmed' }));
               await Promise.all(promises);
               
+              const idToken = await auth.currentUser?.getIdToken();
+              if (idToken) {
+                  const schedulePromises = pendingPosts.map(async p => {
+                      if (!p.scheduledFor) return;
+                      const dateObj = typeof p.scheduledFor.toDate === 'function' ? p.scheduledFor.toDate() : new Date(p.scheduledFor);
+                      return fetch('/api/tasks/schedule', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+                          body: JSON.stringify({ postId: p.id, scheduledFor: dateObj.toISOString() })
+                      });
+                  });
+                  await Promise.allSettled(schedulePromises);
+              }
+              
               setPosts(prev => prev.map(p => p.status === 'pending' ? { ...p, status: 'confirmed' } : p));
               setQuotaUsed(prev => prev + totalPendingNetworks);
               setMessage({ type: 'success', text: `¡${pendingPosts.length} publicaciones agendadas!` });
@@ -504,6 +529,20 @@ export default function RrssDashboard() {
       try {
           const promises = selectedPosts.map(p => updateDoc(doc(db, "social_posts", p.id), { status: 'confirmed' }));
           await Promise.all(promises);
+          
+          const idToken = await auth.currentUser?.getIdToken();
+          if (idToken) {
+              const schedulePromises = selectedPosts.map(async p => {
+                  if (!p.scheduledFor) return;
+                  const dateObj = typeof p.scheduledFor.toDate === 'function' ? p.scheduledFor.toDate() : new Date(p.scheduledFor);
+                  return fetch('/api/tasks/schedule', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+                      body: JSON.stringify({ postId: p.id, scheduledFor: dateObj.toISOString() })
+                  });
+              });
+              await Promise.allSettled(schedulePromises);
+          }
           
           setPosts(prev => prev.map(p => selectedPostIds.includes(p.id) && p.status === 'pending' ? { ...p, status: 'confirmed' } : p));
           setQuotaUsed(prev => prev + totalNetworks);

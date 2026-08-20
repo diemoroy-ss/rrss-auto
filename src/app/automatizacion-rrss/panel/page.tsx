@@ -322,10 +322,46 @@ export default function RrssDashboard() {
   const handleGenerateMedia = async (postId: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     try {
+      const post = posts.find(p => p.id === postId);
+      if (!post) return;
+
       setPosts(prev => prev.map(p => p.id === postId ? { ...p, isGeneratingImage: true } : p));
       if (selectedPost && selectedPost.id === postId) {
         setSelectedPost({ ...selectedPost, isGeneratingImage: true });
       }
+
+      const isReel = post.type === 'Reel' || post.type === 'video_reel' || (post.format && post.format.toLowerCase().includes('reel'));
+
+      // ESTRATEGIA DUAL PARA VIDEOS
+      if (isReel && userPlan !== 'premium') {
+          // Usuarios FREE: Usar IA generadora de guion y renderizar con Remotion
+          const res = await fetch('/api/poc/video', {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({ topic: post.idea || post.text, rubro: activeProfile?.rubro || 'General' })
+          });
+          
+          if (!res.ok) throw new Error("Error contactando al generador de guiones.");
+          const data = await res.json();
+          
+          if (data.composition) {
+              const comp = data.composition;
+              await updateDoc(doc(db, "social_posts", postId), {
+                  scenes: comp.scenes,
+                  audioScript: comp.audioScript,
+                  copy: comp.copyText,
+                  isGeneratingImage: false
+              });
+              
+              setPosts(prev => prev.map(p => p.id === postId ? { ...p, scenes: comp.scenes, audioScript: comp.audioScript, copy: comp.copyText, isGeneratingImage: false } : p));
+              if (selectedPost && selectedPost.id === postId) {
+                 setSelectedPost({ ...selectedPost, scenes: comp.scenes, audioScript: comp.audioScript, copy: comp.copyText, isGeneratingImage: false });
+              }
+              return;
+          }
+      }
+
+      // Usuarios PREMIUM (o Imágenes regulares): Usar Generador Visual IA (Luma/Runway/Midjourney)
       const res = await fetch('/api/n8n/request-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -375,6 +411,17 @@ export default function RrssDashboard() {
       await updateDoc(doc(db, "social_posts", post.id), { status: 'confirmed', publishError: null });
       setPosts(prev => prev.map(p => p.id === post.id ? { ...p, status: 'confirmed', publishError: undefined } : p));
       setQuotaUsed(prev => prev + (post.networks?.length || 1));
+      
+      const idToken = await auth.currentUser?.getIdToken();
+      if (post.scheduledFor && idToken) {
+          const dateObj = typeof post.scheduledFor.toDate === 'function' ? post.scheduledFor.toDate() : new Date(post.scheduledFor);
+          await fetch('/api/tasks/schedule', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+              body: JSON.stringify({ postId: post.id, scheduledFor: dateObj.toISOString() })
+          });
+      }
+      
       setSelectedPost(null);
     } catch (e) {
       setMessage({ type: 'error', text: "Error al confirmar el agendamiento." });
@@ -479,6 +526,20 @@ export default function RrssDashboard() {
               const promises = pendingPosts.map(p => updateDoc(doc(db, "social_posts", p.id), { status: 'confirmed' }));
               await Promise.all(promises);
               
+              const idToken = await auth.currentUser?.getIdToken();
+              if (idToken) {
+                  const schedulePromises = pendingPosts.map(async p => {
+                      if (!p.scheduledFor) return;
+                      const dateObj = typeof p.scheduledFor.toDate === 'function' ? p.scheduledFor.toDate() : new Date(p.scheduledFor);
+                      return fetch('/api/tasks/schedule', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+                          body: JSON.stringify({ postId: p.id, scheduledFor: dateObj.toISOString() })
+                      });
+                  });
+                  await Promise.allSettled(schedulePromises);
+              }
+              
               setPosts(prev => prev.map(p => p.status === 'pending' ? { ...p, status: 'confirmed' } : p));
               setQuotaUsed(prev => prev + totalPendingNetworks);
               setMessage({ type: 'success', text: `¡${pendingPosts.length} publicaciones agendadas!` });
@@ -505,6 +566,20 @@ export default function RrssDashboard() {
       try {
           const promises = selectedPosts.map(p => updateDoc(doc(db, "social_posts", p.id), { status: 'confirmed' }));
           await Promise.all(promises);
+          
+          const idToken = await auth.currentUser?.getIdToken();
+          if (idToken) {
+              const schedulePromises = selectedPosts.map(async p => {
+                  if (!p.scheduledFor) return;
+                  const dateObj = typeof p.scheduledFor.toDate === 'function' ? p.scheduledFor.toDate() : new Date(p.scheduledFor);
+                  return fetch('/api/tasks/schedule', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+                      body: JSON.stringify({ postId: p.id, scheduledFor: dateObj.toISOString() })
+                  });
+              });
+              await Promise.allSettled(schedulePromises);
+          }
           
           setPosts(prev => prev.map(p => selectedPostIds.includes(p.id) && p.status === 'pending' ? { ...p, status: 'confirmed' } : p));
           setQuotaUsed(prev => prev + totalNetworks);
