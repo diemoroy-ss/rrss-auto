@@ -41,14 +41,21 @@ export async function POST(req: Request) {
         // Si el post está en 'pending', es un borrador y no debe publicarse.
         if (postData.status !== 'confirmed') {
             console.log(`[GCP EXECUTE] Post ${postId} is in status '${postData.status}'. Skipping.`);
+            await adminDb.collection("admin_logs").add({
+                timestamp: new Date(), action: 'execute_post_skipped', postId,
+                status: 'skipped', message: `Omitido: el post estaba en estado ${postData.status} (no confirmado)`
+            });
             return NextResponse.json({ message: "Post is not confirmed. Skipping auto-publish." });
         }
 
-        // Si el post fue reagendado, la fecha programada será en el futuro respecto a esta tarea obsoleta.
         const scheduledTime = postData.scheduledFor?.toDate().getTime() || 0;
         const now = Date.now();
         if (scheduledTime - now > 2 * 60 * 1000) { // Tolerancia de 2 minutos
             console.log(`[GCP EXECUTE] Post ${postId} was rescheduled for ${new Date(scheduledTime).toISOString()}. Skipping old obsolete task.`);
+            await adminDb.collection("admin_logs").add({
+                timestamp: new Date(), action: 'execute_post_skipped', postId,
+                status: 'skipped', message: `Omitido: Tarea obsoleta, el post fue reagendado para el futuro.`
+            });
             return NextResponse.json({ message: "Task is obsolete, post was rescheduled." });
         }
 
@@ -86,6 +93,11 @@ export async function POST(req: Request) {
              // Mark as quota exceeded
              await postRef.update({ status: 'quota_exceeded' });
              console.log(`[GCP EXECUTE] User ${uid} exceeded quota. Marking post ${postId} as failed.`);
+             await adminDb.collection("admin_logs").add({
+                timestamp: new Date(), action: 'execute_post_failed', postId, userId: uid,
+                clientEmail: userData.email || 'Desconocido', postType: postData.type || 'Desconocido',
+                status: 'error', message: `Falló: Cuota excedida (uso: ${usage}, límite: ${limit})`
+             });
              return NextResponse.json({ error: "Quota exceeded" }, { status: 403 });
         }
 

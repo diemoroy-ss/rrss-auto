@@ -284,7 +284,7 @@ async function publishInBackground(postId: string, post: any, creds: {
     let errorLog = '';
     let infoLog = '';
 
-    const caption = post.postText || post.copy || post.text || post.idea || '';
+    let caption = post.postText || post.copy || post.text || post.idea || '';
     let imageUrl = post.imageUrl;
     let videoUrl = post.videoUrl || post.mediaUrl || imageUrl;
 
@@ -325,12 +325,38 @@ async function publishInBackground(postId: string, post: any, creds: {
                 const seed = Math.floor(Math.random() * 100000);
                 const fallbackImageUrl = `https://image.pollinations.ai/prompt/${promptText}?width=1080&height=1080&nologo=true&seed=${seed}`;
                 
+                // Generar copy de respaldo si falta o si el actual parece una instrucción visual en lugar de un copy final
+                if (!post.copy || post.copy === (post.text || "") || post.copy === post.idea || post.copy.includes('Carrusel de') || post.copy.includes('Post de') || post.copy.includes('mostrando')) {
+                    try {
+                        const { getVertexModel } = await import('../../../../lib/vertexai');
+                        const systemInstruction = `Eres un Copywriter persuasivo. Tu misión es redactar el texto (copy) que acompañará a la imagen en redes sociales.
+                        INSTRUCCIONES CLAVES:
+                        - Toma la Idea Principal y desarróllala en un texto atractivo.
+                        - Usa emojis adecuados y lenguaje cercano.
+                        - Cierra SIEMPRE con un Llamado a la Acción (CTA) fuerte.
+                        - NO MENCIONES LA IMAGEN de forma literal.
+                        - NADA de comillas iniciales ni introducciones.`;
+                        const model = await getVertexModel(undefined, systemInstruction);
+                        const aiPrompt = `Idea del Post: ${post.idea || caption}\n\nEscribe el Pie de Foto Listo para Publicar:`;
+                        const result = await model.generateContent(aiPrompt);
+                        const generatedText = (await result.response).candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+                        if (generatedText) {
+                            post.copy = generatedText;
+                            caption = generatedText; // Actualiza la variable usada por las redes
+                            infoLog += `Copy generado JIT. `;
+                        }
+                    } catch (e: any) {
+                        console.error("Fallo al generar copy JIT:", e.message);
+                    }
+                }
+
                 imageUrl = fallbackImageUrl;
                 post.imageUrl = fallbackImageUrl;
                 post.imageUrls = [fallbackImageUrl]; // Previene que la lógica intente procesarlo como un Carrusel múltiple
                 await postRef.update({ 
                     imageUrl: fallbackImageUrl,
-                    imageUrls: [fallbackImageUrl]
+                    imageUrls: [fallbackImageUrl],
+                    copy: post.copy || caption
                 });
                 infoLog += `Imagen única generada JIT. `;
             }
@@ -1301,9 +1327,27 @@ async function publishInBackground(postId: string, post: any, creds: {
 
     } catch (e: any) {
         console.error(`[Background Publish Exception] Critical error for post ${postId}:`, e.message);
+        errorLog += `Critical Error: ${e.message}`;
         await postRef.update({
             status: 'error',
-            publishError: `Critical Error: ${e.message}`
+            publishError: errorLog
         });
+    } finally {
+        // --- ADMIN LOGGING ---
+        try {
+            await adminDb.collection("admin_logs").add({
+                timestamp: new Date(),
+                action: 'publish_post',
+                postId: postId,
+                userId: creds.uid,
+                postType: post.type || 'Desconocido',
+                clientEmail: post.userEmail || 'Desconocido',
+                status: errorLog ? 'error' : 'success',
+                message: errorLog ? `Falló: ${errorLog}` : `Publicado exitosamente en: ${successNetworks.join(', ')}`,
+                details: infoLog || ''
+            });
+        } catch (logErr) {
+            console.error("[Background Publish] Error saving admin log:", logErr);
+        }
     }
 }

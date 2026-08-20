@@ -1530,7 +1530,7 @@ export default function RrssDashboard() {
                        <div className="flex gap-3 items-start">
                          <span className="text-2xl">ℹ️</span>
                          <div>
-                           <h4 className="font-black text-sm tracking-tight text-sky-900 uppercase">Aviso de Publicación (Sandbox)</h4>
+                           <h4 className="font-black text-sm tracking-tight text-sky-900 uppercase">⚙️ Generación Automática (JIT)</h4>
                            <p className="text-xs font-bold text-sky-700/90 mt-1 leading-relaxed">
                              {selectedPost.publishInfo}
                            </p>
