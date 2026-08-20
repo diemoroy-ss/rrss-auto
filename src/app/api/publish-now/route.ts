@@ -282,6 +282,7 @@ async function publishInBackground(postId: string, post: any, creds: {
     const postRef = adminDb.collection("social_posts").doc(postId);
     let successNetworks: string[] = [];
     let errorLog = '';
+    let userErrorLog = '';
     let infoLog = '';
 
     let caption = post.postText || post.copy || post.text || post.idea || '';
@@ -397,6 +398,7 @@ async function publishInBackground(postId: string, post: any, creds: {
             } catch (err: any) {
                 console.error("[publishInBackground] Error en JIT Render:", err);
                 errorLog += `Error Renderizando Video: ${err.message}. `;
+                userErrorLog += `Error Renderizando Video. Contactar con administrador. `;
                 throw new Error(`Fallo crítico al renderizar video: ${err.message}`);
             }
         }
@@ -500,6 +502,7 @@ async function publishInBackground(postId: string, post: any, creds: {
             } catch (e: any) {
                 console.error("FB Publish Error:", e.message);
                 errorLog += `FB: ${e.message}. `;
+                userErrorLog += `FB: No ok, contactar con administrador. `;
             }
         }
 
@@ -685,6 +688,7 @@ async function publishInBackground(postId: string, post: any, creds: {
             } catch (e: any) {
                 console.error("IG Publish Error:", e.message);
                 errorLog += `IG: ${e.message}. `;
+                userErrorLog += `IG: No ok, contactar con administrador. `;
             }
         }
 
@@ -800,6 +804,7 @@ async function publishInBackground(postId: string, post: any, creds: {
             } catch (e: any) {
                 console.error("LI Publish Error:", e.message);
                 errorLog += `LI: ${e.message}. `;
+                userErrorLog += `LinkedIn: No ok, contactar con administrador. `;
             }
         }
 
@@ -925,6 +930,7 @@ async function publishInBackground(postId: string, post: any, creds: {
             } catch (e: any) {
                 console.error("TikTok Publish Error:", e.message);
                 errorLog += `TikTok: ${e.message}. `;
+                userErrorLog += `TikTok: No ok, contactar con administrador. `;
             }
         }
 
@@ -1067,6 +1073,7 @@ async function publishInBackground(postId: string, post: any, creds: {
             } catch (e: any) {
                 console.error("Google Business Publish Error:", e.message);
                 errorLog += `GoogleBusiness: ${e.message}. `;
+                userErrorLog += `Google Business: No ok, contactar con administrador. `;
             }
         }
 
@@ -1075,8 +1082,10 @@ async function publishInBackground(postId: string, post: any, creds: {
             let plainToken = creds.plainYtToken;
             let ytVideoUrl = post.videoUrl || (videoUrl && videoUrl !== imageUrl ? videoUrl : null);
 
-            if (!ytVideoUrl) {
+            if (isReel && !ytVideoUrl) {
+                console.error('YouTube Publish Error: No videoUrl provided for Reel/Short');
                 errorLog += `YouTube: Se requiere un archivo de video MP4 renderizado para publicar en YouTube Shorts. `;
+                userErrorLog += `YouTube: Se requiere generar el video primero. `;
             } else {
                 const executeYouTubePost = async (token: string) => {
                     const videoStreamRes = await fetch(ytVideoUrl);
@@ -1205,11 +1214,14 @@ async function publishInBackground(postId: string, post: any, creds: {
                                 throw new Error('No se pudo renovar el token de YouTube.');
                             }
                         } catch (refreshErr: any) {
+                            console.error('YouTube Token Refresh Error:', refreshErr.message);
                             errorLog += `YouTube: ${refreshErr.message}. `;
+                            userErrorLog += `YouTube: No ok, contactar con administrador. `;
                         }
                     } else {
                         console.error('YouTube Publish Error:', ytErr.message);
                         errorLog += `YouTube: ${ytErr.message}. `;
+                        userErrorLog += `YouTube: No ok, contactar con administrador. `;
                     }
                 }
             }
@@ -1253,6 +1265,7 @@ async function publishInBackground(postId: string, post: any, creds: {
             } catch (xErr: any) {
                 console.error('X Publish Error:', xErr.message);
                 errorLog += `X (Twitter): ${xErr.message}. `;
+                userErrorLog += `X (Twitter): No ok, contactar con administrador. `;
             }
         }
 
@@ -1299,7 +1312,7 @@ async function publishInBackground(postId: string, post: any, creds: {
             await postRef.update({
                 status: 'published',
                 publishedAt: new Date(),
-                publishError: errorLog || null,
+                publishError: userErrorLog || null,
                 publishInfo: infoLog || null,
                 publishedIn: successNetworks
             });
@@ -1343,7 +1356,7 @@ async function publishInBackground(postId: string, post: any, creds: {
         } else {
             await postRef.update({
                 status: 'error',
-                publishError: errorLog || 'No se pudo publicar en ninguna red'
+                publishError: userErrorLog || 'No se pudo publicar en ninguna red'
             });
             console.log(`[Background Publish] Post ${postId} failed. Errors: ${errorLog}`);
         }
@@ -1351,9 +1364,10 @@ async function publishInBackground(postId: string, post: any, creds: {
     } catch (e: any) {
         console.error(`[Background Publish Exception] Critical error for post ${postId}:`, e.message);
         errorLog += `Critical Error: ${e.message}`;
+        userErrorLog += `Error crítico, contactar con administrador. `;
         await postRef.update({
             status: 'error',
-            publishError: errorLog
+            publishError: userErrorLog
         });
     } finally {
         // --- ADMIN LOGGING ---
