@@ -11,6 +11,7 @@ const nextConfig = {
   experimental: {
     serverComponentsExternalPackages: ['@google-cloud/tasks', '@remotion/bundler', '@remotion/renderer']
   },
+  outputFileTracing: false,
   async headers() {
     return [
       {
