@@ -313,6 +313,14 @@ export default function NicheRadarPage() {
               scheduledDate.setHours(12, 0, 0, 0);
           }
 
+          // Validación de Fecha Pasada: Asegurarnos de que no agendemos en el pasado.
+          const now = new Date();
+          // Si es el mismo día y la hora sugerida ya pasó, o está a menos de 30 mins
+          if (scheduledDate.getTime() < now.getTime() + 30 * 60000) {
+              // Ajustar la fecha a +2 horas a partir de este momento para el primer post
+              scheduledDate.setTime(now.getTime() + 2 * 60 * 60 * 1000); 
+          }
+
           const fmt = post.format?.toLowerCase() || "";
           const postType = fmt.includes('reel') || fmt.includes('video') ? 'Reel' : (fmt.includes('historia') || fmt.includes('story') ? 'Story' : 'Post');
 

@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { db } from '../../../../../lib/firebase';
-import { collection, query, orderBy, limit, getDocs, where } from 'firebase/firestore';
-import { useAuth } from '../../../../../context/AuthContext';
+import { auth, db } from '../../../../../lib/firebase';
+import { collection, query, orderBy, limit, getDocs, doc, getDoc } from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -22,7 +22,6 @@ interface AdminLog {
 }
 
 export default function AdminLogsPage() {
-    const { user, profile } = useAuth();
     const router = useRouter();
     const [logs, setLogs] = useState<AdminLog[]>([]);
     const [loading, setLoading] = useState(true);
@@ -33,13 +32,21 @@ export default function AdminLogsPage() {
     const [filterStatus, setFilterStatus] = useState('all'); // all, success, error, skipped
 
     useEffect(() => {
-        if (!user || profile?.role !== 'admin') {
-            router.push('/automatizacion-rrss/panel');
-            return;
-        }
-
-        fetchLogs();
-    }, [user, profile]);
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+            if (currentUser) {
+                const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+                const userData = userDoc.data();
+                if (userData?.role !== "admin") {
+                    router.push('/automatizacion-rrss/panel');
+                } else {
+                    fetchLogs();
+                }
+            } else {
+                router.push('/automatizacion-rrss/panel');
+            }
+        });
+        return () => unsubscribe();
+    }, [router]);
 
     const fetchLogs = async () => {
         setLoading(true);

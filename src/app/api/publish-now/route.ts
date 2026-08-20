@@ -328,14 +328,37 @@ async function publishInBackground(postId: string, post: any, creds: {
                 // Generar copy de respaldo si falta o si el actual parece una instrucción visual en lugar de un copy final
                 if (!post.copy || post.copy === (post.text || "") || post.copy === post.idea || post.copy.includes('Carrusel de') || post.copy.includes('Post de') || post.copy.includes('mostrando')) {
                     try {
-                        const { getVertexModel } = await import('../../../../lib/vertexai');
+                        const { getVertexModel } = await import('../../../lib/vertexai');
+                        
+                        let brandContext = "";
+                        let contactInfo = "";
+                        const rubro = targetProfile.rubro || "General";
+                        const desc = targetProfile.businessDescription || "";
+                        if (rubro || desc) {
+                            brandContext = `\nCONTEXTO DE MARCA:\n- Rubro/Industria: ${rubro}\n- Descripción del Negocio: ${desc}\nUsa este contexto para que el tono y contenido del texto sean pertinentes al negocio.`;
+                        }
+                        
+                        const includeWeb = targetProfile.includeWebsiteInCopy !== false;
+                        const includeEmail = targetProfile.includeEmailInCopy !== false;
+                        const includePhone = targetProfile.includePhoneInCopy !== false;
+                        
+                        let contactArr = [];
+                        if (includeWeb && targetProfile.website) contactArr.push(`🌐 Visita: ${targetProfile.website}`);
+                        if (includeEmail && targetProfile.email) contactArr.push(`📧 Escríbenos: ${targetProfile.email}`);
+                        if (includePhone && targetProfile.phone) contactArr.push(`📞 WhatsApp: ${targetProfile.phone}`);
+                        
+                        if (contactArr.length > 0) {
+                            contactInfo = `\nDATOS DE CONTACTO (Obligatorio incluir al final después del CTA):\n${contactArr.join(' | ')}`;
+                        }
+                        
                         const systemInstruction = `Eres un Copywriter persuasivo. Tu misión es redactar el texto (copy) que acompañará a la imagen en redes sociales.
                         INSTRUCCIONES CLAVES:
                         - Toma la Idea Principal y desarróllala en un texto atractivo.
                         - Usa emojis adecuados y lenguaje cercano.
                         - Cierra SIEMPRE con un Llamado a la Acción (CTA) fuerte.
                         - NO MENCIONES LA IMAGEN de forma literal.
-                        - NADA de comillas iniciales ni introducciones.`;
+                        - NADA de comillas iniciales ni introducciones.${brandContext}${contactInfo}`;
+                        
                         const model = await getVertexModel(undefined, systemInstruction);
                         const aiPrompt = `Idea del Post: ${post.idea || caption}\n\nEscribe el Pie de Foto Listo para Publicar:`;
                         const result = await model.generateContent(aiPrompt);

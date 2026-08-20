@@ -28,10 +28,11 @@ export async function POST(req: Request) {
         const postData = postSnap.data();
         const { idea, type, carouselCount, userId, profileId } = postData;
 
-        // --- AI QUOTA ENFORCEMENT ---
+        // --- AI QUOTA ENFORCEMENT & BRAND CONTEXT ---
         let requiredType: 'image' | 'video' = type === 'Reel' ? 'video' : 'image';
         let requiredCount = type === 'Carrusel' ? Math.min(carouselCount || 3, 3) : 1;
         
+        let brandContext = "";
         try {
             const userDoc = await adminDb.collection("users").doc(userId).get();
             const userData = userDoc.data() || {};
@@ -45,12 +46,24 @@ export async function POST(req: Request) {
                 return NextResponse.json({ error: `Has superado tu límite mensual de generación de ${requiredType === 'video' ? 'videos' : 'imágenes'} IA para tu plan.` }, { status: 403 });
             }
             
+            // Fetch brand data from profile
+            if (userData.profiles) {
+                const prof = userData.profiles.find((p: any) => p.id === profileId) || userData.profiles[0];
+                if (prof) {
+                    const rubro = prof.rubro || "General";
+                    const desc = prof.businessDescription || "";
+                    if (rubro || desc) {
+                        brandContext = `\nCONTEXTO DE MARCA (IMPORTANTE):\n- Rubro/Industria: ${rubro}\n- Descripción del Negocio: ${desc}\nAsegúrate de que los elementos visuales reflejen este rubro y negocio.`;
+                    }
+                }
+            }
+            
             // Log the generations upfront (or log them per image)
             for (let i = 0; i < requiredCount; i++) {
                 await logAiGenerationAdmin(userId, profileId || 'default', requiredType, { postId });
             }
         } catch (qErr) {
-            console.error("Error checking AI quota:", qErr);
+            console.error("Error checking AI quota or fetching brand:", qErr);
         }
         // -----------------------------
 
@@ -65,7 +78,7 @@ INSTRUCCIONES CLAVE:
 1. NO escribas otra cosa más que un Array JSON ("["..." , "..."]").
 2. Escribe cada prompt en INGLÉS técnico y descriptivo enfocado en colores, iluminación y composición.
 3. Asegura coherencia de Estilo Visual entre las imágenes.
-4. NADA de comillas inversas markdown, solo el arreglo puro.`;
+4. NADA de comillas inversas markdown, solo el arreglo puro.${brandContext}`;
 
             const model = await getVertexModel(undefined, systemInstruction);
             const result = await model.generateContent(`Genera descripciones para: ${idea}`);
@@ -88,7 +101,7 @@ INSTRUCCIONES CLAVE:
 INSTRUCCIONES CLAVE:
 1. NO escribas introducciones ni comillas. Escribe SOLO el prompt técnico en inglés.
 2. Especifica movimientos de cámara dinámicos pertinentes a RRSS.
-3. Asegura impacto visual en formato vertical.`;
+3. Asegura impacto visual en formato vertical.${brandContext}`;
 
             const model = await getVertexModel(undefined, systemInstruction);
             const result = await model.generateContent(`Prompt de video para: ${idea}`);

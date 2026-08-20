@@ -43,6 +43,40 @@ export async function POST(req: Request) {
                 const postData = postSnap.data();
                 const idea = postData.idea || "Publicación promocional genérica";
                 const textoVisual = postData.text || "No hay instrucciones visuales específicas.";
+                const userId = postData.userId;
+                const profileId = postData.profileId;
+                
+                let brandContext = "";
+                let contactInfo = "";
+
+                if (userId) {
+                    const { adminDb } = await import('../../../../lib/firebase-admin');
+                    const userDoc = await adminDb.collection("users").doc(userId).get();
+                    const userData = userDoc.data() || {};
+                    if (userData.profiles) {
+                        const prof = userData.profiles.find((p: any) => p.id === profileId) || userData.profiles[0];
+                        if (prof) {
+                            const rubro = prof.rubro || "General";
+                            const desc = prof.businessDescription || "";
+                            if (rubro || desc) {
+                                brandContext = `\nCONTEXTO DE MARCA:\n- Rubro/Industria: ${rubro}\n- Descripción del Negocio: ${desc}\nUsa este contexto para que el tono y contenido del texto sean pertinentes al negocio.`;
+                            }
+                            
+                            const includeWeb = prof.includeWebsiteInCopy !== false;
+                            const includeEmail = prof.includeEmailInCopy !== false;
+                            const includePhone = prof.includePhoneInCopy !== false;
+                            
+                            let contactArr = [];
+                            if (includeWeb && prof.website) contactArr.push(`🌐 Visita: ${prof.website}`);
+                            if (includeEmail && prof.email) contactArr.push(`📧 Escríbenos: ${prof.email}`);
+                            if (includePhone && prof.phone) contactArr.push(`📞 WhatsApp: ${prof.phone}`);
+                            
+                            if (contactArr.length > 0) {
+                                contactInfo = `\nDATOS DE CONTACTO (Obligatorio incluir al final después del CTA):\n${contactArr.join(' | ')}`;
+                            }
+                        }
+                    }
+                }
                 
                 const systemInstruction = `Eres un Community Manager Experto y Copywriter persuasivo. 
                 Tu misión es redactar el texto O "Pie de Foto" (copy) que acompañará a la imagen publicitaria en redes sociales (Facebook/Instagram).
@@ -53,7 +87,7 @@ export async function POST(req: Request) {
                 - Usa emojis adecuados, viñetas si es necesario, y lenguaje cercano al cliente.
                 - Cierra SIEMPRE con un Llamado a la Acción (CTA) fuerte.
                 - NO MENCIONES LA IMAGEN en el texto de forma literal.
-                - NADA de comillas iniciales ni introducciones.`;
+                - NADA de comillas iniciales ni introducciones.${brandContext}${contactInfo}`;
 
                 const model = await getVertexModel(undefined, systemInstruction);
 

@@ -242,6 +242,12 @@ function ConfigContent() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   
+  const [rubro, setRubro] = useState("");
+  const [businessDescription, setBusinessDescription] = useState("");
+  const [includeWebsiteInCopy, setIncludeWebsiteInCopy] = useState(true);
+  const [includeEmailInCopy, setIncludeEmailInCopy] = useState(true);
+  const [includePhoneInCopy, setIncludePhoneInCopy] = useState(true);
+  
   const [logoUrl, setLogoUrl] = useState("");
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
@@ -264,6 +270,13 @@ function ConfigContent() {
       // Only set these if they are different to avoid unnecessary re-renders
       if (activeProfile.name !== brandName) setBrandName(activeProfile.name || "");
       if (activeProfile.website !== website) setWebsite(activeProfile.website || "");
+
+      if (activeProfile.rubro !== rubro) setRubro(activeProfile.rubro || "");
+      if (activeProfile.businessDescription !== businessDescription) setBusinessDescription(activeProfile.businessDescription || "");
+      
+      if (activeProfile.includeWebsiteInCopy !== undefined && activeProfile.includeWebsiteInCopy !== includeWebsiteInCopy) setIncludeWebsiteInCopy(activeProfile.includeWebsiteInCopy);
+      if (activeProfile.includeEmailInCopy !== undefined && activeProfile.includeEmailInCopy !== includeEmailInCopy) setIncludeEmailInCopy(activeProfile.includeEmailInCopy);
+      if (activeProfile.includePhoneInCopy !== undefined && activeProfile.includePhoneInCopy !== includePhoneInCopy) setIncludePhoneInCopy(activeProfile.includePhoneInCopy);
 
       if (activeProfile.facebookUrl !== facebookUrl) setFacebookUrl(activeProfile.facebookUrl || "");
       if (activeProfile.instagramUrl !== instagramUrl) setInstagramUrl(activeProfile.instagramUrl || "");
@@ -369,6 +382,12 @@ function ConfigContent() {
   const handleSaveData = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !activeProfile) return;
+    
+    if (!rubro.trim() || !businessDescription.trim()) {
+      setErrorMsg("El Rubro y la Descripción del Negocio son obligatorios.");
+      return;
+    }
+
     setSaving(true);
     setSuccess(false);
     setErrorMsg("");
@@ -383,7 +402,11 @@ function ConfigContent() {
                 ...p,
                 name: brandName,
                 website,
-
+                rubro,
+                businessDescription,
+                includeWebsiteInCopy,
+                includeEmailInCopy,
+                includePhoneInCopy,
                 facebookUrl,
                 instagramUrl,
                 tiktokUrl,
@@ -784,20 +807,42 @@ function ConfigContent() {
               <input type="text" value={brandName} onChange={e => setBrandName(e.target.value)} placeholder="Ej: Mi Restaurante" className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700" />
           </div>
 
+          <div className="mb-8">
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">🏭 Rubro / Industria <span className="text-rose-500">*</span></label>
+              <input type="text" value={rubro} onChange={e => setRubro(e.target.value)} placeholder="Ej: Clínica Dental, Restaurante Vegano, Inmobiliaria..." required className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700" />
+          </div>
+
+          <div className="mb-8">
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">📝 Descripción del Negocio <span className="text-rose-500">*</span></label>
+              <textarea value={businessDescription} onChange={e => setBusinessDescription(e.target.value)} placeholder="Describe qué hace tu negocio, qué problemas resuelve, cuál es tu público objetivo y el tono de tu marca. Esto ayudará a la IA a redactar copys e imágenes perfectas para ti." required rows={4} className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700 resize-none"></textarea>
+          </div>
+
           <div className="grid md:grid-cols-2 gap-6 mb-8">
 
               <div>
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">🌐 Sitio Web</label>
                   <input type="text" value={website} onChange={e => setWebsite(e.target.value)} placeholder="mi-negocio.com o enlace" className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700" />
+                  <label className="flex items-center gap-2 mt-2 cursor-pointer group">
+                      <input type="checkbox" checked={includeWebsiteInCopy} onChange={e => setIncludeWebsiteInCopy(e.target.checked)} className="w-4 h-4 text-indigo-600 bg-slate-100 border-slate-300 rounded focus:ring-indigo-500 focus:ring-2" />
+                      <span className="text-[11px] font-bold text-slate-500 group-hover:text-slate-700 transition-colors">Incluir en publicaciones automáticas</span>
+                  </label>
               </div>
               <div className="grid grid-cols-2 gap-4">
                   <div>
                       <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">📧 Correo Contacto</label>
                       <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="hola@marca.cl" className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700" />
+                      <label className="flex items-center gap-2 mt-2 cursor-pointer group">
+                          <input type="checkbox" checked={includeEmailInCopy} onChange={e => setIncludeEmailInCopy(e.target.checked)} className="w-4 h-4 text-indigo-600 bg-slate-100 border-slate-300 rounded focus:ring-indigo-500 focus:ring-2" />
+                          <span className="text-[11px] font-bold text-slate-500 group-hover:text-slate-700 transition-colors">Incluir en posts</span>
+                      </label>
                   </div>
                   <div>
                       <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">📞 Teléfono (WhatsApp)</label>
                       <input type="text" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+56 9 ..." className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700" />
+                      <label className="flex items-center gap-2 mt-2 cursor-pointer group">
+                          <input type="checkbox" checked={includePhoneInCopy} onChange={e => setIncludePhoneInCopy(e.target.checked)} className="w-4 h-4 text-indigo-600 bg-slate-100 border-slate-300 rounded focus:ring-indigo-500 focus:ring-2" />
+                          <span className="text-[11px] font-bold text-slate-500 group-hover:text-slate-700 transition-colors">Incluir en posts</span>
+                      </label>
                   </div>
               </div>
           </div>

@@ -39,8 +39,7 @@ jobs:
             
             echo "Construyendo la aplicación..."
             # Limitamos la memoria de Node.js para evitar el swapping y congelamiento en VPS de bajos recursos
-            export NODE_OPTIONS="--max-old-space-size=768"
-            npm run build
+            NODE_OPTIONS="--max-old-space-size=768" npm run build
             
             echo "Reiniciando PM2..."
             pm2 reload ecosystem.config.js --env production || pm2 start ecosystem.config.js --env production
