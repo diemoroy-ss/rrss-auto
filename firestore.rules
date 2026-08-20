@@ -121,5 +121,9 @@ service cloud.firestore {
     match /analytics_daily/{dailyId} {
       allow read, write: if isAdmin();
     }
+    match /admin_logs/{logId} {
+      allow read: if isAdmin();
+      allow write: if false; // Only written via Admin SDK backend
+    }
   }
 }
