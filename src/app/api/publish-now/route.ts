@@ -303,9 +303,8 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
     let userErrorLog = '';
     let infoLog = '';
 
-    // --- JIT COPY GENERATION (GLOBAL - runs regardless of media state) ---
-    // Detect if the existing copy/caption is actually a visual instruction and not proper marketing copy
-    const rawCaption = post.postText || post.copy || post.text || post.idea || '';
+    // --- AGENTE 3: GENERADOR DE COPY PERSUASIVO Y DATOS DE CONTACTO ---
+    const rawCaption = post.copy || post.postText || post.text || post.idea || '';
     const copyLooksLikeInstruction = (
         !post.copy ||
         post.copy === (post.text || '') ||
@@ -330,49 +329,23 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
 
     if (copyLooksLikeInstruction) {
         try {
-            infoLog += `Copy inicial parece instrucción visual, generando copy de marketing JIT... `;
-            const { getVertexModel } = await import('../../../lib/vertexai');
-
-            let brandContext = '';
-            let contactInfo = '';
-            const rubro = targetProfile?.rubro || 'General';
-            const desc = targetProfile?.businessDescription || '';
-            if (rubro || desc) {
-                brandContext = `\nCONTEXTO DE MARCA:\n- Rubro/Industria: ${rubro}\n- Descripción del Negocio: ${desc}\nUsa este contexto para que el tono y contenido del texto sean pertinentes al negocio.`;
-            }
-
-            const includeWeb = targetProfile?.includeWebsiteInCopy !== false;
-            const includeEmail = targetProfile?.includeEmailInCopy !== false;
-            const includePhone = targetProfile?.includePhoneInCopy !== false;
-
-            const contactArr: string[] = [];
-            if (includeWeb && targetProfile?.website) contactArr.push(`🌐 Visita: ${targetProfile.website}`);
-            if (includeEmail && targetProfile?.email) contactArr.push(`📧 Escríbenos: ${targetProfile.email}`);
-            if (includePhone && targetProfile?.phone) contactArr.push(`📞 WhatsApp: ${targetProfile.phone}`);
-            if (contactArr.length > 0) {
-                contactInfo = `\nDATOS DE CONTACTO (Obligatorio incluir al final después del CTA):\n${contactArr.join(' | ')}`;
-            }
-
-            const sysInstruction = `Eres un Copywriter persuasivo experto en redes sociales. Tu misión es redactar el texto (copy) que acompañará a la publicación.\nINSTRUCCIONES CLAVES:\n- Toma la Idea Principal y desarróllala en un texto atractivo y humano.\n- Usa emojis adecuados y lenguaje cercano, directo.\n- Cierra SIEMPRE con un Llamado a la Acción (CTA) fuerte.\n- NO menciones la imagen ni la instrucción visual de forma literal.\n- NADA de comillas iniciales ni introducciones genéricas.\n- El copy debe sonar 100% natural, como escrito por un humano.${brandContext}${contactInfo}`;
-
-            const vertexModel = await getVertexModel(undefined, sysInstruction);
-            const aiPrompt = `Idea del Post: ${post.idea || post.text || 'Publicación de marketing'}\n\nEscribe el Pie de Foto Listo para Publicar:`;
-            const vertexResult = await vertexModel.generateContent(aiPrompt);
-            const generatedText = (await vertexResult.response).candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-            if (generatedText) {
-                post.copy = generatedText;
-                caption = generatedText;
-                infoLog += `Copy de marketing generado JIT correctamente. `;
-                // Save the generated copy immediately
-                await adminDb.collection('social_posts').doc(postId).update({ copy: generatedText });
-            }
-        } catch (e: any) {
-            console.error('[publishInBackground] Fallo al generar copy JIT global:', e.message);
-            infoLog += `Fallo al generar copy JIT (se usará texto disponible): ${e.message}. `;
-            // Fallback: use idea as caption if copy was the visual instruction
+            infoLog += `Iniciando Agente de Copy Persuasivo... `;
+            const { generateCopyWithAgent } = await import('../../../lib/agents/agent-copy');
+            const newCopy = await generateCopyWithAgent({
+                idea: post.idea || post.text || 'Publicación promocional del negocio',
+                targetProfile
+            });
+            post.copy = newCopy;
+            caption = newCopy;
+            await postRef.update({ copy: newCopy });
+            infoLog += `Copy generado y guardado exitosamente. `;
+        } catch (copyErr: any) {
+            console.error('[publishInBackground] Error en Agente de Copy:', copyErr);
+            infoLog += `Fallo en Agente de Copy (se usará texto básico): ${copyErr.message}. `;
             caption = post.idea || post.text || '';
         }
     }
+
     const isReel = post.type === 'video_reel' || post.type === 'reel' || post.type === 'Reel' || 
                    (post.format && (post.format.toLowerCase().includes('reel') || post.format.toLowerCase().includes('short'))) ||
                    (post.type && (post.type.toLowerCase().includes('reel') || post.type.toLowerCase().includes('short')));
@@ -381,83 +354,54 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
     let videoUrl = post.videoUrl || post.mediaUrl || (isReel ? null : imageUrl);
 
     try {
-        // --- JIT MEDIA GENERATION (FALLBACK EMERGENCIA) ---
         if (isReel) {
             if (!videoUrl) {
-                infoLog += `Iniciando Vía Rápida de Emergencia (JIT Fallback para Reel)... `;
-                // Generar Escenas de Reel si no existen
-                if (!post.scenes || post.scenes.length === 0) {
-                    const { generateVideoPoCComposition } = await import('../../../lib/video-poc-service');
-                    try {
-                        const comp = await generateVideoPoCComposition({
-                            topic: caption || post.idea || 'Post de marketing',
-                            rubro: targetProfile?.rubro || 'General'
-                        });
-                        
-                        // Si ya teníamos una imageUrl generada previamente por n8n, inyectémosla como fondo de todas las escenas
-                        if (imageUrl) {
-                            comp.scenes = comp.scenes.map(s => ({ ...s, bgImageUrl: imageUrl }));
-                        }
-                        
-                        post.scenes = comp.scenes;
-                        post.audioScript = comp.audioScript;
-                        post.copyText = comp.copyText;
-                        // Keep marketing copy (caption) separate from audioScript/guión del video
-                        // Only update copy in Firestore if we don't already have a JIT-generated marketing copy
-                        const reelCopyToSave = post.copy && !copyLooksLikeInstruction ? post.copy : (comp.copyText || post.copy);
-                        await postRef.update({ 
-                            scenes: comp.scenes, 
-                            audioScript: comp.audioScript, 
-                            copy: reelCopyToSave
-                        });
-                        // Update caption with marketing-friendly version if available, otherwise use script
-                        if (!caption || caption === rawCaption) {
-                            caption = comp.copyText || caption;
-                        }
-                        infoLog += `Guion y Escenas de Reel generados JIT. `;
-                    } catch (e: any) {
-                        throw new Error("Fallo al generar el guion del Reel JIT: " + e.message);
-                    }
-                }
-                
-                // JIT RENDER: Si es un reel generado y no tiene video final, lo renderizamos ahora
-                if (post.scenes && post.scenes.length > 0) {
-                    infoLog += `Iniciando JIT Render de Remotion... `;
-                    try {
-                        const finalUrl = await renderAndUploadReel(post, creds.uid, postId);
-                        videoUrl = finalUrl;
-                        post.videoUrl = finalUrl;
-                        await postRef.update({ videoUrl: finalUrl });
-                        infoLog += `Render exitoso. `;
-                    } catch (err: any) {
-                        console.error("[publishInBackground] Error en JIT Render:", err);
-                        errorLog += `Error Renderizando Video: ${err.message}. `;
-                        userErrorLog += `Error Renderizando Video. Contactar con administrador. `;
-                        throw new Error(`Fallo crítico al renderizar video: ${err.message}`);
-                    }
+                infoLog += `Iniciando Agente 2 (Video/Reel con Remotion)... `;
+                try {
+                    const { generateReelWithAgent } = await import('../../../lib/agents/agent-reel');
+                    const { videoUrl: generatedVideoUrl } = await generateReelWithAgent({
+                        postId,
+                        post,
+                        targetProfile,
+                        userId: creds.uid
+                    });
+                    videoUrl = generatedVideoUrl;
+                    post.videoUrl = generatedVideoUrl;
+                    await postRef.update({ videoUrl: generatedVideoUrl });
+                    infoLog += `Reel 9:16 generado y subido exitosamente. `;
+                } catch (reelErr: any) {
+                    console.error('[publishInBackground] Error crítico en Agente de Reel:', reelErr);
+                    errorLog += `Error Renderizando Reel: ${reelErr.message}. `;
+                    userErrorLog += `Error procesando video del Reel. `;
+                    throw new Error(`Fallo en Agente de Reel: ${reelErr.message}`);
                 }
             }
         } else {
             if (!imageUrl && !videoUrl) {
-                infoLog += `Iniciando Vía Rápida de Emergencia (JIT Fallback para Imagen)... `;
-                // Generar Imagen de Respaldo para Post o Carrusel (Forzar a imagen única)
-                const promptText = encodeURIComponent(post.idea || caption || 'Fondo profesional corporativo cinematografico');
-                const seed = Math.floor(Math.random() * 100000);
-                const fallbackImageUrl = `https://image.pollinations.ai/prompt/${promptText}?width=1080&height=1080&nologo=true&seed=${seed}`;
-                
-                // Copy ya se generó en el bloque JIT global (arriba). Aquí solo actualizamos caption por si el JIT global lo regeneró
-
-                imageUrl = fallbackImageUrl;
-                post.imageUrl = fallbackImageUrl;
-                post.imageUrls = [fallbackImageUrl]; // Previene que la lógica intente procesarlo como un Carrusel múltiple
-                await postRef.update({ 
-                    imageUrl: fallbackImageUrl,
-                    imageUrls: [fallbackImageUrl],
-                    copy: post.copy || caption
-                });
-                infoLog += `Imagen única generada JIT. `;
+                infoLog += `Iniciando Agente 1 (Generación de Imagen con Claude-Banana & n8n/Pollinations)... `;
+                try {
+                    const { generateImageWithAgent } = await import('../../../lib/agents/agent-image');
+                    const generatedImageUrl = await generateImageWithAgent({
+                        idea: post.idea || caption || 'Fotografía promocional profesional',
+                        rubro: targetProfile?.rubro || 'General',
+                        businessDescription: targetProfile?.businessDescription || '',
+                        aspectRatio: '1:1'
+                    });
+                    imageUrl = generatedImageUrl;
+                    post.imageUrl = generatedImageUrl;
+                    post.imageUrls = [generatedImageUrl];
+                    await postRef.update({
+                        imageUrl: generatedImageUrl,
+                        imageUrls: [generatedImageUrl]
+                    });
+                    infoLog += `Imagen generada exitosamente por Agente 1. `;
+                } catch (imgErr: any) {
+                    console.error('[publishInBackground] Error en Agente de Imagen:', imgErr);
+                    errorLog += `Error Generando Imagen: ${imgErr.message}. `;
+                }
             }
         }
+
         // FACEBOOK
         if (post.networks?.includes('facebook') && creds.plainFbToken && creds.pageId) {
             const plainToken = creds.plainFbToken;
