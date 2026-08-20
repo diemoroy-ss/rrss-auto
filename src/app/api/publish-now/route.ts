@@ -260,7 +260,7 @@ export async function POST(req: Request) {
         });
 
         // --- RUN PUBLISH PROCESS IN BACKGROUND ---
-        publishInBackground(postId, post, {
+        publishInBackground(postId, post, targetProfile, {
             plainFbToken, pageId,
             plainIgToken, igAccountId,
             plainLiToken, authorUrn,
@@ -284,7 +284,7 @@ export async function POST(req: Request) {
     }
 }
 
-async function publishInBackground(postId: string, post: any, creds: {
+async function publishInBackground(postId: string, post: any, targetProfile: any, creds: {
     plainFbToken: string | null; pageId: string | null;
     plainIgToken: string | null; igAccountId: string | null;
     plainLiToken: string | null; authorUrn: string | null;
@@ -303,7 +303,76 @@ async function publishInBackground(postId: string, post: any, creds: {
     let userErrorLog = '';
     let infoLog = '';
 
-    let caption = post.postText || post.copy || post.text || post.idea || '';
+    // --- JIT COPY GENERATION (GLOBAL - runs regardless of media state) ---
+    // Detect if the existing copy/caption is actually a visual instruction and not proper marketing copy
+    const rawCaption = post.postText || post.copy || post.text || post.idea || '';
+    const copyLooksLikeInstruction = (
+        !post.copy ||
+        post.copy === (post.text || '') ||
+        post.copy === (post.postText || '') ||
+        post.copy === post.idea ||
+        post.copy.startsWith('Infografía') ||
+        post.copy.startsWith('Desglose') ||
+        post.copy.startsWith('Escenificación') ||
+        post.copy.startsWith('Pitch') ||
+        post.copy.startsWith('Carrusel') ||
+        post.copy.startsWith('Post de') ||
+        post.copy.startsWith('Secuencia') ||
+        post.copy.startsWith('Consejos') ||
+        post.copy.includes('mostrando') ||
+        post.copy.includes('deslizable') ||
+        post.copy.includes('visual y textual') ||
+        post.copy.includes('capturas de pantalla') ||
+        post.copy.includes('instrucción')
+    );
+
+    let caption = rawCaption;
+
+    if (copyLooksLikeInstruction) {
+        try {
+            infoLog += `Copy inicial parece instrucción visual, generando copy de marketing JIT... `;
+            const { getVertexModel } = await import('../../../lib/vertexai');
+
+            let brandContext = '';
+            let contactInfo = '';
+            const rubro = targetProfile?.rubro || 'General';
+            const desc = targetProfile?.businessDescription || '';
+            if (rubro || desc) {
+                brandContext = `\nCONTEXTO DE MARCA:\n- Rubro/Industria: ${rubro}\n- Descripción del Negocio: ${desc}\nUsa este contexto para que el tono y contenido del texto sean pertinentes al negocio.`;
+            }
+
+            const includeWeb = targetProfile?.includeWebsiteInCopy !== false;
+            const includeEmail = targetProfile?.includeEmailInCopy !== false;
+            const includePhone = targetProfile?.includePhoneInCopy !== false;
+
+            const contactArr: string[] = [];
+            if (includeWeb && targetProfile?.website) contactArr.push(`🌐 Visita: ${targetProfile.website}`);
+            if (includeEmail && targetProfile?.email) contactArr.push(`📧 Escríbenos: ${targetProfile.email}`);
+            if (includePhone && targetProfile?.phone) contactArr.push(`📞 WhatsApp: ${targetProfile.phone}`);
+            if (contactArr.length > 0) {
+                contactInfo = `\nDATOS DE CONTACTO (Obligatorio incluir al final después del CTA):\n${contactArr.join(' | ')}`;
+            }
+
+            const sysInstruction = `Eres un Copywriter persuasivo experto en redes sociales. Tu misión es redactar el texto (copy) que acompañará a la publicación.\nINSTRUCCIONES CLAVES:\n- Toma la Idea Principal y desarróllala en un texto atractivo y humano.\n- Usa emojis adecuados y lenguaje cercano, directo.\n- Cierra SIEMPRE con un Llamado a la Acción (CTA) fuerte.\n- NO menciones la imagen ni la instrucción visual de forma literal.\n- NADA de comillas iniciales ni introducciones genéricas.\n- El copy debe sonar 100% natural, como escrito por un humano.${brandContext}${contactInfo}`;
+
+            const vertexModel = await getVertexModel(undefined, sysInstruction);
+            const aiPrompt = `Idea del Post: ${post.idea || post.text || 'Publicación de marketing'}\n\nEscribe el Pie de Foto Listo para Publicar:`;
+            const vertexResult = await vertexModel.generateContent(aiPrompt);
+            const generatedText = (await vertexResult.response).candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+            if (generatedText) {
+                post.copy = generatedText;
+                caption = generatedText;
+                infoLog += `Copy de marketing generado JIT correctamente. `;
+                // Save the generated copy immediately
+                await adminDb.collection('social_posts').doc(postId).update({ copy: generatedText });
+            }
+        } catch (e: any) {
+            console.error('[publishInBackground] Fallo al generar copy JIT global:', e.message);
+            infoLog += `Fallo al generar copy JIT (se usará texto disponible): ${e.message}. `;
+            // Fallback: use idea as caption if copy was the visual instruction
+            caption = post.idea || post.text || '';
+        }
+    }
     const isReel = post.type === 'video_reel' || post.type === 'reel' || post.type === 'Reel' || 
                    (post.format && (post.format.toLowerCase().includes('reel') || post.format.toLowerCase().includes('short'))) ||
                    (post.type && (post.type.toLowerCase().includes('reel') || post.type.toLowerCase().includes('short')));
@@ -369,53 +438,7 @@ async function publishInBackground(postId: string, post: any, creds: {
                 const seed = Math.floor(Math.random() * 100000);
                 const fallbackImageUrl = `https://image.pollinations.ai/prompt/${promptText}?width=1080&height=1080&nologo=true&seed=${seed}`;
                 
-                // Generar copy de respaldo si falta o si el actual parece una instrucción visual en lugar de un copy final
-                if (!post.copy || post.copy === (post.text || "") || post.copy === post.idea || post.copy.includes('Carrusel de') || post.copy.includes('Post de') || post.copy.includes('mostrando')) {
-                    try {
-                        const { getVertexModel } = await import('../../../lib/vertexai');
-                        
-                        let brandContext = "";
-                        let contactInfo = "";
-                        const rubro = targetProfile.rubro || "General";
-                        const desc = targetProfile.businessDescription || "";
-                        if (rubro || desc) {
-                            brandContext = `\nCONTEXTO DE MARCA:\n- Rubro/Industria: ${rubro}\n- Descripción del Negocio: ${desc}\nUsa este contexto para que el tono y contenido del texto sean pertinentes al negocio.`;
-                        }
-                        
-                        const includeWeb = targetProfile.includeWebsiteInCopy !== false;
-                        const includeEmail = targetProfile.includeEmailInCopy !== false;
-                        const includePhone = targetProfile.includePhoneInCopy !== false;
-                        
-                        let contactArr = [];
-                        if (includeWeb && targetProfile.website) contactArr.push(`🌐 Visita: ${targetProfile.website}`);
-                        if (includeEmail && targetProfile.email) contactArr.push(`📧 Escríbenos: ${targetProfile.email}`);
-                        if (includePhone && targetProfile.phone) contactArr.push(`📞 WhatsApp: ${targetProfile.phone}`);
-                        
-                        if (contactArr.length > 0) {
-                            contactInfo = `\nDATOS DE CONTACTO (Obligatorio incluir al final después del CTA):\n${contactArr.join(' | ')}`;
-                        }
-                        
-                        const systemInstruction = `Eres un Copywriter persuasivo. Tu misión es redactar el texto (copy) que acompañará a la imagen en redes sociales.
-                        INSTRUCCIONES CLAVES:
-                        - Toma la Idea Principal y desarróllala en un texto atractivo.
-                        - Usa emojis adecuados y lenguaje cercano.
-                        - Cierra SIEMPRE con un Llamado a la Acción (CTA) fuerte.
-                        - NO MENCIONES LA IMAGEN de forma literal.
-                        - NADA de comillas iniciales ni introducciones.${brandContext}${contactInfo}`;
-                        
-                        const model = await getVertexModel(undefined, systemInstruction);
-                        const aiPrompt = `Idea del Post: ${post.idea || caption}\n\nEscribe el Pie de Foto Listo para Publicar:`;
-                        const result = await model.generateContent(aiPrompt);
-                        const generatedText = (await result.response).candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-                        if (generatedText) {
-                            post.copy = generatedText;
-                            caption = generatedText; // Actualiza la variable usada por las redes
-                            infoLog += `Copy generado JIT. `;
-                        }
-                    } catch (e: any) {
-                        console.error("Fallo al generar copy JIT:", e.message);
-                    }
-                }
+                // Copy ya se generó en el bloque JIT global (arriba). Aquí solo actualizamos caption por si el JIT global lo regeneró
 
                 imageUrl = fallbackImageUrl;
                 post.imageUrl = fallbackImageUrl;
