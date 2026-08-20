@@ -79,8 +79,8 @@ export async function POST(req: Request) {
             if (userId && adminDb) {
                 let planId = "free";
                 if (planName?.includes("PRO")) planId = "pro";
-                else if (planName?.includes("ELITE")) planId = "elite";
                 else if (planName?.includes("BUSINESS")) planId = "business";
+                else if (planName?.includes("AGENCY")) planId = "agency";
 
                 await adminDb.collection("users").doc(userId).update({
                     plan: planId,

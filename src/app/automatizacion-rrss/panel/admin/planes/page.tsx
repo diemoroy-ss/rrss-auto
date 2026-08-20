@@ -25,7 +25,7 @@ type PlanConfig = {
     features: string[];
 };
 
-const PLAN_ORDER = ["free", "pro", "elite", "business"];
+const PLAN_ORDER = ["free", "pro", "business", "agency"];
 
 function PlanPreviewCard({ plan }: { plan: PlanConfig }) {
     const isUnlimited = plan.postsLimit >= 999999;

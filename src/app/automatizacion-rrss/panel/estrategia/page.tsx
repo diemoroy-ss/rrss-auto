@@ -217,8 +217,8 @@ export default function EstrategiaPage() {
     
     let limit = 4;
     if (userPlan === "pro") limit = 20;
-    if (userPlan === "elite") limit = 60;
-    if (userPlan === "business") limit = 999999;
+    if (userPlan === "business") limit = 150;
+    if (userPlan === "agency") limit = 999999;
     
     if (postsThisMonth + strategyResult.length > limit && user?.email !== 'diemoroy@gmail.com') {
        setError(`¡Límite Excedido! Tu plan permite ${limit} posts al mes. Ya tienes ${postsThisMonth} agendados y esta estrategia suma ${strategyResult.length}.`);

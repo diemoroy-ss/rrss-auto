@@ -149,9 +149,9 @@ export default function MiPerfil() {
 
   const planTitles: { [key: string]: string } = {
     free: "Plan Free",
-    pro: "Plan PRO",
-    elite: "Plan Elite",
-    business: "Plan Business"
+    pro: "Plan Pro",
+    business: "Plan Business",
+    agency: "Plan Agency"
   };
 
   if (loading) return <div className="animate-pulse space-y-4 max-w-2xl"><div className="h-10 bg-slate-200 rounded w-1/3"></div><div className="h-64 bg-slate-200 rounded"></div></div>;

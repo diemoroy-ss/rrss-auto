@@ -26,9 +26,12 @@ export async function POST(req: Request) {
     if (planId === "pro") {
       title = "Suscripción Santisoft Pro";
       unitPrice = 19990;
-    } else if (planId === "elite") {
-      title = "Suscripción Santisoft Elite";
-      unitPrice = 49990;
+    } else if (planId === "business") {
+      title = "Suscripción Santisoft Business";
+      unitPrice = 79990;
+    } else if (planId === "agency") {
+      title = "Suscripción Santisoft Agency";
+      unitPrice = 299990;
     } else {
       return NextResponse.json({ error: "Invalid plan ID" }, { status: 400 });
     }

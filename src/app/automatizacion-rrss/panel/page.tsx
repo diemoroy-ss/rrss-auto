@@ -1352,7 +1352,7 @@ export default function RrssDashboard() {
                         )}
                       </div>
 
-                    ) : ['elite', 'business', 'agency'].includes(userPlan) ? (
+                    ) : ['business', 'agency'].includes(userPlan) ? (
                       <div 
                         className="mt-2 mb-6 rounded-2xl overflow-hidden border-2 border-dashed border-slate-200 aspect-video bg-slate-50/50 flex items-center justify-center shadow-inner hover:bg-indigo-50 hover:border-indigo-300 transition-all cursor-pointer group/media" 
                         onClick={(e) => handleGenerateMedia(post.id, e)}
@@ -1369,7 +1369,7 @@ export default function RrssDashboard() {
                           <div className="text-center p-4">
                               <div className="w-10 h-10 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-500 text-lg mx-auto mb-2 opacity-80 shadow-inner border border-emerald-100/50">🤖</div>
                               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Post en Piloto Automático</p>
-                              <Link href="/automatizacion-rrss/panel/planes" className="text-[10px] font-black text-indigo-500 hover:text-indigo-600 mt-2 hover:underline uppercase block">Mejorar a Elite para Vista Previa</Link>
+                              <Link href="/automatizacion-rrss/panel/planes" className="text-[10px] font-black text-indigo-500 hover:text-indigo-600 mt-2 hover:underline uppercase block">Mejorar a Business para Vista Previa</Link>
                           </div>
                       </div>
                     )}
@@ -1660,7 +1660,7 @@ export default function RrssDashboard() {
                      <div>
                 <div className="flex items-center justify-between mb-3 ml-2">
                            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Referencia Visual de IA</h3>
-                           {['elite', 'business', 'agency'].includes(userPlan) && (
+                           {['business', 'agency'].includes(userPlan) && (
                                <button 
                                  onClick={(e) => handleGenerateMedia(selectedPost.id, e)}
                                  className="text-[10px] font-black uppercase tracking-widest text-indigo-500 hover:text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100 transition-all flex items-center gap-1.5 shadow-sm"
@@ -1679,7 +1679,7 @@ export default function RrssDashboard() {
                          )}
                        </div>
                      </div>
-                   ) : ['elite', 'business', 'agency'].includes(userPlan) ? (
+                   ) : ['business', 'agency'].includes(userPlan) ? (
                      <div 
                        onClick={(e) => handleGenerateMedia(selectedPost.id, e)}
                        className="rounded-[28px] p-8 bg-slate-50 border-2 border-dashed border-slate-200 flex flex-col items-center justify-center cursor-pointer hover:bg-indigo-50 hover:border-indigo-300 transition-all group/modalmedia"
@@ -1691,7 +1691,7 @@ export default function RrssDashboard() {
                      <div className="rounded-[28px] p-8 bg-slate-50 border border-slate-200 flex flex-col items-center justify-center">
                         <div className="w-14 h-14 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center text-3xl shadow-sm mx-auto mb-4">🤖</div>
                         <p className="text-sm font-black text-slate-500 uppercase tracking-widest">Confía en Piloto Automático</p>
-                        <p className="text-xs text-slate-400 mt-2 text-center max-w-sm">Mejora a Elite o Business para pre-visualizar y editar las imágenes generadas antes de que sean publicadas.</p>
+                        <p className="text-xs text-slate-400 mt-2 text-center max-w-sm">Mejora a Business o Agency para pre-visualizar y editar las imágenes generadas antes de que sean publicadas.</p>
                      </div>
                    )}
                 </div>

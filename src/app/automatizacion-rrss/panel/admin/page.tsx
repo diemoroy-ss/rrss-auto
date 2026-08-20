@@ -235,8 +235,8 @@ export default function AdminUsersPage() {
                                 <>
                                    <option value="free">Free</option>
                                    <option value="pro">Pro</option>
-                                   <option value="elite">Elite</option>
                                    <option value="business">Business</option>
+                                   <option value="agency">Agency</option>
                                 </>
                             )}
                         </select>
@@ -395,8 +395,8 @@ export default function AdminUsersPage() {
                               >
                                 <option value="free">FREE Tier</option>
                                 <option value="pro">PRO Professional</option>
-                                <option value="elite">ELITE Analytics+</option>
                                 <option value="business">BUSINESS Enterprise</option>
+                                <option value="agency">AGENCY Unlimited</option>
                               </select>
                           </div>
                           <div>
