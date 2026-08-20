@@ -179,11 +179,11 @@ export default function RrssDashboard() {
   // Modals state
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const [confirmModalState, setConfirmModalState] = useState<{ isOpen: boolean; title: string; desc: string; confirmText: string; cancelText: string; isDanger: boolean; onConfirm: () => void; } | null>(null);
+  const [confirmModalState, setConfirmModalState] = useState<{ isOpen: boolean; title: string; desc: string; confirmText: string; cancelText: string; isDanger: boolean; onConfirm: () => void; secondaryAction?: { text: string, onClick: () => void } } | null>(null);
   const [storyFormatWarning, setStoryFormatWarning] = useState<{ isOpen: boolean; post: SocialPost; imageUrl: string; } | null>(null);
   const [isRegeneratingStoryMedia, setIsRegeneratingStoryMedia] = useState(false);
 
-  const requestConfirmation = (title: string, desc: string, onConfirm: () => void, isDanger: boolean = false) => {
+  const requestConfirmation = (title: string, desc: string, onConfirm: () => void, isDanger: boolean = false, secondaryAction?: { text: string, onClick: () => void }) => {
     setConfirmModalState({
       isOpen: true,
       title,
@@ -191,7 +191,8 @@ export default function RrssDashboard() {
       confirmText: isDanger ? 'Sí, eliminar' : 'Sí, continuar',
       cancelText: 'Cancelar',
       isDanger,
-      onConfirm
+      onConfirm,
+      secondaryAction
     });
   };
 
@@ -635,10 +636,16 @@ export default function RrssDashboard() {
   };
 
   const handlePublishNow = async (postId: string) => {
-    requestConfirmation("¿Publicar Ahora?", "Esta publicación se enviará de inmediato a tus redes sociales configuradas. ¿Deseas continuar?", async () => {
-      setPublishingPostId(postId);
-      setConfirmModalState(null);
-      try {
+    const postToUpdate = [...posts, ...blogPosts].find(p => p.id === postId);
+    const hasError = postToUpdate?.status === 'error';
+
+    requestConfirmation(
+      "¿Publicar Ahora?", 
+      "Esta publicación se enviará de inmediato a tus redes sociales configuradas. ¿Deseas continuar?", 
+      async () => {
+        setPublishingPostId(postId);
+        setConfirmModalState(null);
+        try {
         const res = await fetch('/api/publish-now', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -675,18 +682,23 @@ export default function RrssDashboard() {
           }
         }
       } catch (err: any) {
-        console.error(err);
-        setPublishResult({
-          isOpen: true,
-          success: false,
-          published: [],
-          errors: err.message || "Error de red al intentar publicar"
-        });
-        setMessage({ type: 'error', text: err.message || "Error al publicar ahora" });
-      } finally {
-        setPublishingPostId(null);
-      }
-    });
+          setMessage({ type: 'error', text: err.message || "Error al intentar publicar." });
+        } finally {
+          setPublishingPostId(null);
+        }
+    }, false, hasError ? {
+        text: 'Agendar en su lugar',
+        onClick: () => {
+            setConfirmModalState(null);
+            if (postToUpdate) {
+                const dateObj = postToUpdate.scheduledFor?.toDate ? postToUpdate.scheduledFor.toDate() : new Date();
+                setRescheduleData({
+                    id: postToUpdate.id,
+                    date: format(dateObj, "yyyy-MM-dd'T'HH:mm")
+                });
+            }
+        }
+    } : undefined);
   };
 
   const checkImageAspectIsVertical = (url: string): Promise<boolean> => {
@@ -1782,6 +1794,14 @@ export default function RrssDashboard() {
                 >
                   {confirmModalState.confirmText}
                 </button>
+                {confirmModalState.secondaryAction && (
+                  <button 
+                    onClick={confirmModalState.secondaryAction.onClick} 
+                    className="py-3 text-indigo-600 font-bold hover:bg-indigo-50 border-2 border-indigo-100 rounded-xl transition-colors"
+                  >
+                    {confirmModalState.secondaryAction.text}
+                  </button>
+                )}
                 <button onClick={() => setConfirmModalState(null)} className="py-2.5 text-slate-500 font-bold hover:bg-slate-50 rounded-xl transition-colors">
                   {confirmModalState.cancelText}
                 </button>
