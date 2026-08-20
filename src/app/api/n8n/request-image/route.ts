@@ -101,7 +101,8 @@ INSTRUCCIONES CLAVE:
 INSTRUCCIONES CLAVE:
 1. NO escribas introducciones ni comillas. Escribe SOLO el prompt técnico en inglés.
 2. Especifica movimientos de cámara dinámicos pertinentes a RRSS.
-3. Asegura impacto visual en formato vertical.${brandContext}`;
+3. Asegura impacto visual en formato vertical.
+4. IMPORTANTE: Agrega al final del prompt EXACTAMENTE el texto "--ar 9:16" para asegurar el formato vertical para Reels/Shorts.${brandContext}`;
 
             const model = await getVertexModel(undefined, systemInstruction);
             const result = await model.generateContent(`Prompt de video para: ${idea}`);

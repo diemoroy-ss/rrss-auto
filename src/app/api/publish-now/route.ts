@@ -286,27 +286,32 @@ async function publishInBackground(postId: string, post: any, creds: {
     let infoLog = '';
 
     let caption = post.postText || post.copy || post.text || post.idea || '';
-    let imageUrl = post.imageUrl;
-    let videoUrl = post.videoUrl || post.mediaUrl || imageUrl;
-
     const isReel = post.type === 'video_reel' || post.type === 'reel' || post.type === 'Reel' || 
                    (post.format && (post.format.toLowerCase().includes('reel') || post.format.toLowerCase().includes('short'))) ||
                    (post.type && (post.type.toLowerCase().includes('reel') || post.type.toLowerCase().includes('short')));
 
+    let imageUrl = post.imageUrl;
+    let videoUrl = post.videoUrl || post.mediaUrl || (isReel ? null : imageUrl);
+
     try {
         // --- JIT MEDIA GENERATION (FALLBACK EMERGENCIA) ---
-        if (!imageUrl && !videoUrl) {
-            infoLog += `Iniciando Vía Rápida de Emergencia (JIT Fallback)... `;
-            
-            if (isReel) {
+        if (isReel) {
+            if (!videoUrl) {
+                infoLog += `Iniciando Vía Rápida de Emergencia (JIT Fallback para Reel)... `;
                 // Generar Escenas de Reel si no existen
                 if (!post.scenes || post.scenes.length === 0) {
                     const { generateVideoPoCComposition } = await import('../../../lib/video-poc-service');
                     try {
                         const comp = await generateVideoPoCComposition({
                             topic: caption || post.idea || 'Post de marketing',
-                            rubro: 'General'
+                            rubro: targetProfile?.rubro || 'General'
                         });
+                        
+                        // Si ya teníamos una imageUrl generada previamente por n8n, inyectémosla como fondo de todas las escenas
+                        if (imageUrl) {
+                            comp.scenes = comp.scenes.map(s => ({ ...s, bgImageUrl: imageUrl }));
+                        }
+                        
                         post.scenes = comp.scenes;
                         post.audioScript = comp.audioScript;
                         post.copyText = comp.copyText;
@@ -320,7 +325,27 @@ async function publishInBackground(postId: string, post: any, creds: {
                         throw new Error("Fallo al generar el guion del Reel JIT: " + e.message);
                     }
                 }
-            } else {
+                
+                // JIT RENDER: Si es un reel generado y no tiene video final, lo renderizamos ahora
+                if (post.scenes && post.scenes.length > 0) {
+                    infoLog += `Iniciando JIT Render de Remotion... `;
+                    try {
+                        const finalUrl = await renderAndUploadReel(post, creds.uid, postId);
+                        videoUrl = finalUrl;
+                        post.videoUrl = finalUrl;
+                        await postRef.update({ videoUrl: finalUrl });
+                        infoLog += `Render exitoso. `;
+                    } catch (err: any) {
+                        console.error("[publishInBackground] Error en JIT Render:", err);
+                        errorLog += `Error Renderizando Video: ${err.message}. `;
+                        userErrorLog += `Error Renderizando Video. Contactar con administrador. `;
+                        throw new Error(`Fallo crítico al renderizar video: ${err.message}`);
+                    }
+                }
+            }
+        } else {
+            if (!imageUrl && !videoUrl) {
+                infoLog += `Iniciando Vía Rápida de Emergencia (JIT Fallback para Imagen)... `;
                 // Generar Imagen de Respaldo para Post o Carrusel (Forzar a imagen única)
                 const promptText = encodeURIComponent(post.idea || caption || 'Fondo profesional corporativo cinematografico');
                 const seed = Math.floor(Math.random() * 100000);
@@ -383,23 +408,6 @@ async function publishInBackground(postId: string, post: any, creds: {
                     copy: post.copy || caption
                 });
                 infoLog += `Imagen única generada JIT. `;
-            }
-        }
-
-        // JIT RENDER: Si es un reel generado y no tiene video final, lo renderizamos ahora
-        if (isReel && post.scenes && post.scenes.length > 0 && !post.videoUrl) {
-            infoLog += `Iniciando JIT Render de Remotion... `;
-            try {
-                const finalUrl = await renderAndUploadReel(post, creds.uid, postId);
-                videoUrl = finalUrl;
-                post.videoUrl = finalUrl;
-                await postRef.update({ videoUrl: finalUrl });
-                infoLog += `Render exitoso. `;
-            } catch (err: any) {
-                console.error("[publishInBackground] Error en JIT Render:", err);
-                errorLog += `Error Renderizando Video: ${err.message}. `;
-                userErrorLog += `Error Renderizando Video. Contactar con administrador. `;
-                throw new Error(`Fallo crítico al renderizar video: ${err.message}`);
             }
         }
         // FACEBOOK
