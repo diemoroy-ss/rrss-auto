@@ -1583,6 +1583,9 @@ export default function RrssDashboard() {
                                 <span className="text-[9px] font-black text-purple-400 uppercase tracking-widest">imgs</span>
                             </div>
                         </div>
+                        <p className="mt-3 text-[10px] leading-tight text-purple-600/80 bg-purple-50 p-2 rounded-lg border border-purple-100/50">
+                            👉 <span className="font-semibold">Nota:</span> Para que se publiquen todas las imágenes del carrusel, debes presionar "Generar Multimedia" antes de la hora agendada. Si llega la hora y no las has generado, el bot publicará solo una (1) imagen de emergencia.
+                        </p>
                      </div>
                    )}
 

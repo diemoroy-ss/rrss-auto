@@ -40,7 +40,7 @@ export async function POST(req: Request) {
 
         const post = postSnap.data()!;
         
-        if (!post.imageUrl) return NextResponse.json({ error: "Imagen no generada. Debes generar la multimedia primero." }, { status: 400 });
+        // El bloqueo estricto ha sido eliminado para permitir Auto-Generación JIT.
 
         const uid = post.userId;
         const profileId = post.profileId;
@@ -293,6 +293,49 @@ async function publishInBackground(postId: string, post: any, creds: {
                    (post.type && (post.type.toLowerCase().includes('reel') || post.type.toLowerCase().includes('short')));
 
     try {
+        // --- JIT MEDIA GENERATION (FALLBACK EMERGENCIA) ---
+        if (!imageUrl && !videoUrl) {
+            infoLog += `Iniciando Vía Rápida de Emergencia (JIT Fallback)... `;
+            
+            if (isReel) {
+                // Generar Escenas de Reel si no existen
+                if (!post.scenes || post.scenes.length === 0) {
+                    const { generateVideoPoCComposition } = await import('../../../lib/video-poc-service');
+                    try {
+                        const comp = await generateVideoPoCComposition({
+                            topic: caption || post.idea || 'Post de marketing',
+                            rubro: 'General'
+                        });
+                        post.scenes = comp.scenes;
+                        post.audioScript = comp.audioScript;
+                        post.copyText = comp.copyText;
+                        await postRef.update({ 
+                            scenes: comp.scenes, 
+                            audioScript: comp.audioScript, 
+                            copy: comp.copyText || post.copy 
+                        });
+                        infoLog += `Guion y Escenas de Reel generados JIT. `;
+                    } catch (e: any) {
+                        throw new Error("Fallo al generar el guion del Reel JIT: " + e.message);
+                    }
+                }
+            } else {
+                // Generar Imagen de Respaldo para Post o Carrusel (Forzar a imagen única)
+                const promptText = encodeURIComponent(post.idea || caption || 'Fondo profesional corporativo cinematografico');
+                const seed = Math.floor(Math.random() * 100000);
+                const fallbackImageUrl = `https://image.pollinations.ai/prompt/${promptText}?width=1080&height=1080&nologo=true&seed=${seed}`;
+                
+                imageUrl = fallbackImageUrl;
+                post.imageUrl = fallbackImageUrl;
+                post.imageUrls = [fallbackImageUrl]; // Previene que la lógica intente procesarlo como un Carrusel múltiple
+                await postRef.update({ 
+                    imageUrl: fallbackImageUrl,
+                    imageUrls: [fallbackImageUrl]
+                });
+                infoLog += `Imagen única generada JIT. `;
+            }
+        }
+
         // JIT RENDER: Si es un reel generado y no tiene video final, lo renderizamos ahora
         if (isReel && post.scenes && post.scenes.length > 0 && !post.videoUrl) {
             infoLog += `Iniciando JIT Render de Remotion... `;
