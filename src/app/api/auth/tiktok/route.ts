@@ -1,4 +1,4 @@
-﻿export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import { adminAuth } from '../../../../lib/firebase-admin';
@@ -27,7 +27,7 @@ export async function GET(req: Request) {
         }
 
         const redirectUri = `${origin}/api/auth/tiktok/callback`;
-        const scopes = 'user.info.basic,video.publish';
+        const scopes = 'user.info.basic,video.publish,video.upload';
         
         // State formatted similarly to Meta and LinkedIn
         const state = encodeURIComponent(`${decodedToken.uid}|${profileId}|${origin}`);
