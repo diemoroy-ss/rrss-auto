@@ -32,8 +32,8 @@ No devuelvas NADA MÁS que el prompt en inglés. Ni saludos ni comillas.`;
   console.log(`[AgentVideoPremium] Prompt de video generado:`, optimizedPrompt);
 
   // 2. Iniciar el trabajo en el Webhook de n8n
-  const startWebhookUrl = process.env.NEXT_PUBLIC_N8N_VIDEO_PREMIUM_URL || 'https://n8n.santisoft.cl/webhook-test/video-premium';
-  const statusWebhookUrl = process.env.NEXT_PUBLIC_N8N_VIDEO_PREMIUM_STATUS_URL || 'https://n8n.santisoft.cl/webhook-test/video-premium-status';
+  const startWebhookUrl = process.env.NEXT_PUBLIC_N8N_VIDEO_PREMIUM_URL || 'https://n8n.santisoft.cl/webhook/video-premium';
+  const statusWebhookUrl = process.env.NEXT_PUBLIC_N8N_VIDEO_PREMIUM_STATUS_URL || 'https://n8n.santisoft.cl/webhook/video-premium-status';
 
   let jobId = '';
 

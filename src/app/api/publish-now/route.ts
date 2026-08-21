@@ -413,13 +413,14 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
                 infoLog += `Iniciando Agente 1 (Generación de Imagen con Claude-Banana & n8n/Pollinations)... `;
                 try {
                     const { generateImageWithAgent } = await import('../../../lib/agents/agent-image');
+                    const isStoryPost = post.type === 'Historia' || post.type === 'Story' || (post.type && post.type.toLowerCase().includes('stor'));
                     const generatedImageUrl = await generateImageWithAgent({
                         idea: post.idea || caption || 'Fotografía promocional profesional',
                         rubro: targetProfile?.rubro || 'General',
                         businessDescription: targetProfile?.businessDescription || '',
-                        aspectRatio: '1:1',
+                        aspectRatio: isStoryPost ? '9:16' : '1:1',
                         logoPrompt: targetProfile?.logoPrompt || '',
-                        includeLogo: post.includeLogo === true,
+                        includeLogo: post.includeLogo === true || (post.includeLogo !== false && targetProfile?.alwaysIncludeLogo === true),
                     });
                     imageUrl = generatedImageUrl;
                     post.imageUrl = generatedImageUrl;

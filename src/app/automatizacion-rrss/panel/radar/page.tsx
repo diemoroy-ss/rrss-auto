@@ -42,6 +42,22 @@ export default function NicheRadarPage() {
 
   // History State
   const [historicalAnalyses, setHistoricalAnalyses] = useState<any[]>([]);
+  const [includeLogoInStrategy, setIncludeLogoInStrategy] = useState<boolean>(true);
+
+  const formatRadarDate = (createdAt: any) => {
+    if (!createdAt) return "";
+    let d: Date;
+    if (createdAt?.toDate && typeof createdAt.toDate === 'function') {
+      d = createdAt.toDate();
+    } else if (createdAt?._seconds) {
+      d = new Date(createdAt._seconds * 1000);
+    } else if (createdAt?.seconds) {
+      d = new Date(createdAt.seconds * 1000);
+    } else {
+      d = new Date(createdAt);
+    }
+    return isNaN(d.getTime()) ? "" : d.toLocaleDateString();
+  };
 
   const goals = [
     { id: 'ventas', title: 'Ventas & Conversión', description: 'Maximizar pedidos y ventas', icon: '💰' },
@@ -140,46 +156,50 @@ export default function NicheRadarPage() {
       }
       setInitialChecking(true);
       try {
-        // Fetch radar history from firestore directly
-        const radarCol = collection(db, "users", user.uid, "businesses", activeProfile.id, "radar");
-        const q = query(radarCol, orderBy("createdAt", "desc"));
-        const snap = await getDocs(q);
-        
-        const history: any[] = [];
-        snap.forEach(d => {
+        let history: any[] = [];
+        try {
+          const radarCol = collection(db, "users", user.uid, "businesses", activeProfile.id, "radar");
+          const q = query(radarCol, orderBy("createdAt", "desc"));
+          const snap = await getDocs(q);
+          snap.forEach(d => {
             history.push({ id: d.id, ...d.data() });
-        });
-        
-        setHistoricalAnalyses(history);
+          });
+        } catch (directErr) {
+          console.warn("Consulta directa a Firestore falló o no tiene permiso, usando API fallback:", directErr);
+        }
 
         if (history.length > 0) {
-            setAnalysis(history[0]); // Load the most recent one
+          setHistoricalAnalyses(history);
+          setAnalysis(history[0]);
+          if (history[0].niche && !nicheInput) setNicheInput(history[0].niche);
+          if (history[0].targetAudience && !audienceInput) setAudienceInput(history[0].targetAudience);
         } else {
-            // Check fallback from API if somehow not in firestore directly
-            const prof = activeProfile as any;
-            const token = await user.getIdToken();
-            const res = await fetch("/api/nicho/radar", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({
-                niche: nicheInput || prof.rubro || "General",
-                businessName: prof.name || prof.businessName || "Mi Negocio",
-                targetAudience: audienceInput,
-                userId: user.uid,
-                businessId: activeProfile.id,
-                checkCacheOnly: true,
-                forceRefresh: false,
-              }),
-            });
+          const prof = activeProfile as any;
+          const token = await user.getIdToken();
+          const res = await fetch("/api/nicho/radar", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              niche: nicheInput || prof.rubro || "General",
+              businessName: prof.name || prof.businessName || "Mi Negocio",
+              targetAudience: audienceInput,
+              userId: user.uid,
+              businessId: activeProfile.id,
+              checkCacheOnly: true,
+              forceRefresh: false,
+            }),
+          });
 
-            const data = await res.json();
-            if (data.success && data.analysis) {
-              setAnalysis(data.analysis);
-              setHistoricalAnalyses([data.analysis]);
-            }
+          const data = await res.json();
+          if (data.success && data.analysis) {
+            setAnalysis(data.analysis);
+            setHistoricalAnalyses([data.analysis]);
+            if (data.analysis.niche && !nicheInput) setNicheInput(data.analysis.niche);
+            if (data.analysis.targetAudience && !audienceInput) setAudienceInput(data.analysis.targetAudience);
+          }
         }
       } catch (err) {
         console.warn("No se pudo cargar el análisis inicial del radar:", err);
@@ -334,7 +354,8 @@ export default function NicheRadarPage() {
               scheduledFor: scheduledDate,
               createdAt: new Date(),
               networks: ['instagram', 'facebook'],
-              generatedBy: 'ai_strategy_radar'
+              generatedBy: 'ai_strategy_radar',
+              includeLogo: includeLogoInStrategy
           });
       }
       router.push("/automatizacion-rrss/panel");
@@ -424,7 +445,7 @@ export default function NicheRadarPage() {
                     >
                         {historicalAnalyses.map((h: any) => (
                             <option key={h.id} value={h.id}>
-                                {h.niche} - {new Date(h.createdAt).toLocaleDateString()}
+                                {h.niche || "Análisis"} {formatRadarDate(h.createdAt) ? `- ${formatRadarDate(h.createdAt)}` : ''}
                             </option>
                         ))}
                     </select>
@@ -792,6 +813,32 @@ export default function NicheRadarPage() {
                      rows={2}
                   />
               </div>
+
+              {/* CONTROL DE LOGO DE MARCA */}
+               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl">🏷️</span>
+                    <div>
+                      <p className="text-xs font-black text-slate-800">Incluir Logo en las Imágenes</p>
+                      <p className="text-[11px] font-medium text-slate-500">
+                        {activeProfile?.logoPrompt 
+                          ? `Se inyectará el prompt visual de tu logo (${activeProfile.logoPrompt.slice(0, 45)}...) en las imágenes.` 
+                          : `Sube o analiza tu logo en la pestaña Configuración para que la IA dibuje tu marca.`}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIncludeLogoInStrategy(!includeLogoInStrategy)}
+                    className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 ${
+                      includeLogoInStrategy 
+                        ? 'bg-indigo-600 text-white shadow-sm' 
+                        : 'bg-white border border-slate-200 text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    <span>{includeLogoInStrategy ? '✓ Logo Activado' : 'Sin Logo'}</span>
+                  </button>
+               </div>
 
               <div className="flex justify-end pt-2">
                   <button

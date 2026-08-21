@@ -2,7 +2,7 @@ import React from 'react';
 import { AbsoluteFill, useCurrentFrame, useVideoConfig, Audio, Img } from 'remotion';
 import { ReelProps } from './Root';
 
-export const ReelComposition: React.FC<ReelProps> = ({ scenes, audioUrl }) => {
+export const ReelComposition: React.FC<ReelProps> = ({ scenes = [], audioUrl }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
@@ -11,8 +11,19 @@ export const ReelComposition: React.FC<ReelProps> = ({ scenes, audioUrl }) => {
   let currentSceneIndex = 0;
   let sceneProgress = 0;
 
-  for (let i = 0; i < scenes.length; i++) {
-    const sceneDurationFrames = scenes[i].duration * fps;
+  const validScenes = scenes.length > 0 ? scenes : [{
+    id: "scene_default",
+    duration: 10,
+    title: "REEL EXCLUSIVO",
+    subtitle: "Solución Inteligente para tu Negocio",
+    highlightWords: ["INTELIGENTE", "NEGOCIO"],
+    gradientBg: "linear-gradient(135deg, #020617 0%, #1e1b4b 50%, #0f172a 100%)",
+    textColor: "#FFFFFF",
+    accentColor: "#F59E0B",
+  }];
+
+  for (let i = 0; i < validScenes.length; i++) {
+    const sceneDurationFrames = (validScenes[i].duration || 4) * fps;
     if (frame >= accumulatedFrames && frame < accumulatedFrames + sceneDurationFrames) {
       currentSceneIndex = i;
       sceneProgress = (frame - accumulatedFrames) / sceneDurationFrames;
@@ -22,17 +33,17 @@ export const ReelComposition: React.FC<ReelProps> = ({ scenes, audioUrl }) => {
   }
 
   // Si nos pasamos, usar la última
-  if (frame >= accumulatedFrames && scenes.length > 0) {
-    currentSceneIndex = scenes.length - 1;
+  if (frame >= accumulatedFrames && validScenes.length > 0) {
+    currentSceneIndex = validScenes.length - 1;
     sceneProgress = 1;
   }
 
-  const activeScene = scenes[currentSceneIndex] || scenes[0];
+  const activeScene = validScenes[currentSceneIndex] || validScenes[0];
 
-  const renderHormoziText = (text: string, highlightWords: string[] = [], accentColor: string = "#FF6B00") => {
+  const renderHormoziText = (text: string = "", highlightWords: string[] = [], accentColor: string = "#FF6B00") => {
     if (!text) return null;
     const words = text.split(" ");
-    const upperHighlights = highlightWords.map((w) => w.toUpperCase());
+    const upperHighlights = (highlightWords || []).map((w) => (w || "").toUpperCase());
 
     return words.map((word, idx) => {
       const cleanWord = word.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ]/g, "").toUpperCase();
@@ -41,13 +52,17 @@ export const ReelComposition: React.FC<ReelProps> = ({ scenes, audioUrl }) => {
       return (
         <span
           key={idx}
-          className={`inline-block mr-2 transition-transform ${
-            isHighlighted ? "font-black underline decoration-4" : "font-extrabold opacity-95"
-          }`}
           style={{
-            color: isHighlighted ? accentColor : "#FFFFFF",
-            textDecorationColor: isHighlighted ? accentColor : "transparent",
-            transform: isHighlighted ? "scale(1.1)" : "scale(1)",
+            display: 'inline-block',
+            marginRight: 14,
+            fontWeight: 900,
+            color: isHighlighted ? accentColor : '#FFFFFF',
+            textDecoration: isHighlighted ? `underline 6px ${accentColor}` : 'none',
+            transform: isHighlighted ? 'scale(1.12)' : 'scale(1)',
+            transition: 'transform 0.2s ease',
+            textShadow: isHighlighted 
+              ? `0 0 20px ${accentColor}88, 0 4px 16px rgba(0,0,0,0.9)` 
+              : '0 4px 20px rgba(0,0,0,0.95), 0 2px 8px rgba(0,0,0,0.9)'
           }}
         >
           {word}
@@ -57,64 +72,165 @@ export const ReelComposition: React.FC<ReelProps> = ({ scenes, audioUrl }) => {
   };
 
   const getMotionTransform = (progress: number) => {
-    // Zoom in suave
-    return `scale(${1 + progress * 0.22})`;
+    // Zoom in suave constante
+    return `scale(${1 + progress * 0.18})`;
   };
 
   return (
-    <AbsoluteFill className="bg-slate-950 text-white flex flex-col justify-between p-12">
+    <AbsoluteFill style={{ 
+      backgroundColor: '#020617', 
+      color: '#FFFFFF', 
+      position: 'relative', 
+      width: 1080, 
+      height: 1920, 
+      overflow: 'hidden',
+      fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+    }}>
       {/* Fondo Animado o Gradiente */}
-      <AbsoluteFill>
+      <AbsoluteFill style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
         {activeScene?.bgImageUrl ? (
           <>
             <Img
               src={activeScene.bgImageUrl}
-              className="w-full h-full object-cover"
               style={{
+                width: 1080,
+                height: 1920,
+                objectFit: 'cover',
                 transform: getMotionTransform(sceneProgress),
+                transformOrigin: 'center center'
               }}
             />
-            <AbsoluteFill className="bg-gradient-to-t from-slate-950/70 via-black/20 to-slate-950/30" />
+            {/* Sombreado de alto contraste para lectura perfecta */}
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'linear-gradient(180deg, rgba(2,6,23,0.7) 0%, rgba(0,0,0,0.3) 40%, rgba(0,0,0,0.5) 70%, rgba(2,6,23,0.85) 100%)'
+            }} />
           </>
         ) : (
-          <AbsoluteFill
-            className={`bg-gradient-to-b ${
-              activeScene?.gradientBg || "from-slate-950 via-purple-950 to-indigo-950"
-            }`}
-          />
+          <div style={{
+            width: 1080,
+            height: 1920,
+            background: activeScene?.gradientBg || 'linear-gradient(180deg, #020617 0%, #312e81 50%, #0f172a 100%)'
+          }} />
         )}
       </AbsoluteFill>
 
-      {/* Marca de agua top */}
-      <div className="absolute top-10 left-10 z-10 bg-black/40 px-5 py-3 rounded-full border border-white/10 flex items-center gap-3">
-         <span className="text-xl font-black tracking-wider text-slate-100 uppercase">SANTISOFT AI</span>
+      {/* Marca de agua top izquierda */}
+      <div style={{
+        position: 'absolute',
+        top: 56,
+        left: 48,
+        zIndex: 30,
+        backgroundColor: 'rgba(0,0,0,0.65)',
+        padding: '14px 28px',
+        borderRadius: 999,
+        border: '1.5px solid rgba(255,255,255,0.25)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        boxShadow: '0 8px 24px rgba(0,0,0,0.6)'
+      }}>
+        <span style={{ fontSize: 26 }}>⚡</span>
+        <span style={{ fontSize: 22, fontWeight: 900, letterSpacing: '0.15em', color: '#F8FAFC', textTransform: 'uppercase' }}>
+          SANTISOFT
+        </span>
       </div>
 
-      <div className="absolute top-10 right-10 z-10 bg-white/10 px-5 py-3 rounded-full text-xl font-bold text-slate-200 border border-white/15">
-        Escena {currentSceneIndex + 1}/{scenes.length}
+      {/* Indicador de Escena top derecha */}
+      <div style={{
+        position: 'absolute',
+        top: 56,
+        right: 48,
+        zIndex: 30,
+        backgroundColor: 'rgba(255,255,255,0.15)',
+        padding: '14px 28px',
+        borderRadius: 999,
+        border: '1.5px solid rgba(255,255,255,0.3)',
+        fontSize: 22,
+        fontWeight: 800,
+        color: '#F8FAFC',
+        backdropFilter: 'blur(10px)',
+        boxShadow: '0 8px 24px rgba(0,0,0,0.5)'
+      }}>
+        Escena {currentSceneIndex + 1}/{validScenes.length}
       </div>
 
-      {/* Textos Centrales */}
-      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center px-12 space-y-12 text-center">
-        <div className="px-6 py-2 bg-black/50 rounded-2xl border border-white/10 text-3xl font-extrabold uppercase tracking-widest text-slate-300 shadow-xl">
-          {activeScene?.title || "ESCENA REEL"}
+      {/* Textos Centrales Subtítulos Hormozi */}
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 30,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '0 64px',
+        textAlign: 'center',
+        gap: 36
+      }}>
+        {/* Título de la escena en badge */}
+        <div style={{
+          backgroundColor: 'rgba(0,0,0,0.75)',
+          padding: '16px 36px',
+          borderRadius: 24,
+          border: '2px solid rgba(255,255,255,0.25)',
+          fontSize: 32,
+          fontWeight: 900,
+          textTransform: 'uppercase',
+          letterSpacing: '0.18em',
+          color: '#E2E8F0',
+          boxShadow: '0 12px 32px rgba(0,0,0,0.7)'
+        }}>
+          {activeScene?.title || "REEL EXCLUSIVO"}
         </div>
         
-        <div className="text-6xl leading-tight px-4 drop-shadow-2xl">
-          {renderHormoziText(activeScene?.subtitle || "Subtítulo", activeScene?.highlightWords, activeScene?.accentColor)}
+        {/* Subtítulo dinámico con palabras destacadas */}
+        <div style={{
+          fontSize: 60,
+          fontWeight: 900,
+          lineHeight: 1.25,
+          padding: '0 20px',
+          maxWidth: 960
+        }}>
+          {renderHormoziText(activeScene?.subtitle || "Descubre cómo escalar tu negocio", activeScene?.highlightWords, activeScene?.accentColor || "#F59E0B")}
         </div>
       </div>
 
-      {/* Progress Bar Bottom */}
-      <div className="absolute bottom-10 left-10 right-10 z-10 h-3 bg-white/20 rounded-full overflow-hidden backdrop-blur-md">
+      {/* Barra de Progreso Inferior */}
+      <div style={{
+        position: 'absolute',
+        bottom: 56,
+        left: 48,
+        right: 48,
+        height: 16,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        borderRadius: 999,
+        overflow: 'hidden',
+        zIndex: 30,
+        border: '1px solid rgba(255,255,255,0.15)',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.5)'
+      }}>
         <div
-          className="h-full bg-gradient-to-r from-blue-500 to-cyan-400"
-          style={{ width: `${Math.max(0, Math.min(100, sceneProgress * 100))}%` }}
+          style={{
+            height: '100%',
+            width: `${Math.max(0, Math.min(100, sceneProgress * 100))}%`,
+            background: 'linear-gradient(90deg, #3B82F6 0%, #06B6D4 100%)',
+            borderRadius: 999,
+            transition: 'width 0.05s linear'
+          }}
         />
       </div>
 
-      {/* Pista de Audio de ElevenLabs - Esencial para YouTube Shorts */}
+      {/* Pista de Audio de ElevenLabs */}
       {audioUrl && <Audio src={audioUrl} />}
     </AbsoluteFill>
   );
 };
+

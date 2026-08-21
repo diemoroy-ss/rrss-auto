@@ -27,10 +27,12 @@ export async function generateImageWithAgent(params: ImageAgentParams): Promise<
   }
 
   // 1. Diseñar el Prompt usando la técnica Claude-Banana (7 componentes)
+  const isVerticalStory = aspectRatio === '9:16';
   const sysInstruction = `Eres Claude Banana, un arquitecto de prompts para modelos de generación de imagen de alta fidelidad.
 Tu objetivo es tomar la idea de un post y el rubro del cliente y generar UN ÚNICO PROMPT en INGLÉS descriptivo en prosa narrativa (120 a 180 palabras).
 
 REGLA DE ORO: El prompt DEBE evocar UNA FOTOGRAFÍA REAL tomada con cámara profesional. Nunca ilustración, render 3D ni animación.
+${isVerticalStory ? 'FORMATO OBLIGATORIO: Vertical 9:16 (Instagram Story). Encuadre vertical dinámico de alto impacto con sujeto principal llamativo en el tercio medio/inferior y composición cinematográfica limpia.' : ''}
 
 Estructura obligatoria de 7 componentes:
 1. Subject (25%): Describe una persona real (edad aproximada, rasgos físicos específicos como tono de piel, expresión, ropa de trabajo/profesional). Directamente relacionado con el rubro (${rubro}) y la idea del post.
@@ -38,7 +40,7 @@ Estructura obligatoria de 7 componentes:
 3. Environment (15%): Escenario real y cotidiano coherente con el rubro. Lugar de trabajo, oficina, local comercial, calle real.
 4. Lighting & Atmosphere (15%): Luz natural suave desde ventana lateral, o luz de estudio softbox difusa. Temperaturas de color específicas (5500K luz de día, 3200K luz cálida de interior).
 5. Action & Dynamics (10%): Acción natural y auténtica en tiempo presente — persona trabajando, atendiendo cliente, revisando documento.
-6. Composition & Camera (10%): Encuadre específico: "medium close-up", "rule of thirds", "shallow depth of field with bokeh background".
+6. Composition & Camera (10%): Encuadre específico: ${isVerticalStory ? '"vertical 9:16 composition, medium eye-level shot with clean visual focal point"' : '"medium close-up, rule of thirds, shallow depth of field with bokeh background"'}.
 7. Material & Texture (5%): Detalles táctiles reales: textura de tela, madera, metal, piel humana con poros visibles.
 
 REGLAS CRÍTICAS:
@@ -51,7 +53,7 @@ REGLAS CRÍTICAS:
   const promptInput = `Negocio / Rubro: ${rubro}
 Descripción del Negocio: ${businessDescription}
 Idea o Tema del Post: ${idea}
-Relación de Aspecto: ${aspectRatio}
+Relación de Aspecto: ${aspectRatio} (${isVerticalStory ? 'Formato Vertical Historia 9:16' : 'Formato Cuadrado Feed 1:1'})
 
 Genera el prompt narrativo en inglés (prosa, 120-180 palabras, fotografía real de cámara):`;
 
@@ -61,13 +63,13 @@ Genera el prompt narrativo en inglés (prosa, 120-180 palabras, fotografía real
     optimizedPrompt = optimizedPrompt.trim().replace(/^["']|["']$/g, '');
   } catch (err) {
     console.warn('[AgentImage] Error generando prompt con Claude-Banana, usando fallback directo:', err);
-    optimizedPrompt = `A professional business owner in their early 30s with warm olive skin, wearing a neat casual blazer, smiling confidently while working at a modern desk in a bright office. Shot on Canon EOS R5 with 85mm f/1.4 lens, natural side window light at 5500K. Medium close-up framing with shallow depth of field, background softly blurred showing a clean workspace. Scene related to ${rubro}. Authentic, documentary-style commercial photograph with realistic skin texture and natural colors. No text overlay.`;
+    optimizedPrompt = `A professional business owner in their early 30s with warm olive skin, wearing a neat casual blazer, smiling confidently while working at a modern desk in a bright office. Shot on Canon EOS R5 with 85mm f/1.4 lens, natural side window light at 5500K. ${isVerticalStory ? 'Vertical 9:16 composition' : 'Medium close-up framing'} with shallow depth of field, background softly blurred showing a clean workspace. Scene related to ${rubro}. Authentic, documentary-style commercial photograph with realistic skin texture and natural colors. No text overlay.`;
   }
 
   // Si el usuario activó "Incluir logo", se añade la descripción del logo al prompt
   if (includeLogo && logoPrompt) {
-    optimizedPrompt += ` In the lower-right corner of the image, include a small tasteful brand mark: ${logoPrompt}. The brand mark should be subtle and not overpower the main scene.`;
-    console.log('[AgentImage] 🏷️ Logo prompt inyectado en la imagen.');
+    optimizedPrompt += ` In the lower corner of the frame, include a clear, professional brand mark: ${logoPrompt}. The emblem should look sharp, clean and modern.`;
+    console.log('[AgentImage] 🏷️ Logo prompt inyectado en la imagen:', logoPrompt);
   }
 
   console.log(`[AgentImage] Prompt Claude-Banana generado (${aspectRatio}):`, optimizedPrompt);
@@ -89,6 +91,8 @@ Genera el prompt narrativo en inglés (prosa, 120-180 palabras, fotografía real
         rawIdea: idea,
         rubro: rubro,
         aspectRatio: aspectRatio,
+        includeLogo: includeLogo,
+        logoPrompt: logoPrompt,
         width: width,
         height: height
       }),
