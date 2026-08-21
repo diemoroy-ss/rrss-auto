@@ -50,6 +50,26 @@ export default function RemotionReelPlayer({ composition, onSceneChange }: Remot
 
   const [voiceLang, setVoiceLang] = useState<string>("es-MX");
   const [motionEffect, setMotionEffect] = useState<string>("zoom_in");
+  const [browserVoices, setBrowserVoices] = useState<SpeechSynthesisVoice[]>([]);
+
+  // Cargar y escuchar cambios en las voces del navegador
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+
+    const updateVoices = () => {
+      const vList = window.speechSynthesis.getVoices() || [];
+      setBrowserVoices(vList);
+    };
+
+    updateVoices();
+    window.speechSynthesis.onvoiceschanged = updateVoices;
+
+    return () => {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.onvoiceschanged = null;
+      }
+    };
+  }, []);
 
   const getMotionTransform = (effect: string, progress: number) => {
     switch (effect) {
@@ -69,23 +89,75 @@ export default function RemotionReelPlayer({ composition, onSceneChange }: Remot
     }
   };
 
+  // Selector inteligente de voz que excluye acento de España a menos que se pida explícitamente
+  const pickBestVoice = (targetLang: string): SpeechSynthesisVoice | null => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return null;
+    const voices = browserVoices.length > 0 ? browserVoices : window.speechSynthesis.getVoices();
+    if (!voices || voices.length === 0) return null;
+
+    const normalizedTarget = targetLang.toLowerCase().replace('_', '-');
+
+    // 1. Coincidencia exacta de idioma/región (ej: 'es-cl', 'es-mx', 'es-us', 'es-419')
+    let found = voices.find((v) => v.lang.toLowerCase().replace('_', '-') === normalizedTarget);
+    if (found) return found;
+
+    // 2. Coincidencia por nombre de país en el nombre de la voz
+    if (targetLang === 'es-CL') {
+      found = voices.find((v) => v.name.toLowerCase().includes('chile') || v.lang.toLowerCase().includes('es-cl'));
+    } else if (targetLang === 'es-MX') {
+      found = voices.find((v) => 
+        v.name.toLowerCase().includes('mexico') || 
+        v.name.toLowerCase().includes('méxico') || 
+        v.name.toLowerCase().includes('sabina') || 
+        v.name.toLowerCase().includes('dalia') || 
+        v.name.toLowerCase().includes('raul') ||
+        v.lang.toLowerCase().includes('es-mx') ||
+        v.lang.toLowerCase().includes('es-419')
+      );
+    } else if (targetLang === 'es-US') {
+      found = voices.find((v) => v.name.toLowerCase().includes('united states') || v.name.toLowerCase().includes('estados unidos') || v.lang.toLowerCase().includes('es-us'));
+    } else if (targetLang === 'es-AR') {
+      found = voices.find((v) => v.name.toLowerCase().includes('argentina') || v.lang.toLowerCase().includes('es-ar'));
+    }
+
+    if (found) return found;
+
+    // 3. Si se pidió cualquier acento LATINO (no España), buscar cualquier voz en español que NO sea es-ES
+    if (targetLang !== 'es-ES') {
+      found = voices.find((v) => {
+        const l = v.lang.toLowerCase().replace('_', '-');
+        const isSpanish = l.startsWith('es');
+        const isSpain = l === 'es-es' || v.name.toLowerCase().includes('spain') || v.name.toLowerCase().includes('españa') || v.name.toLowerCase().includes('helena') || v.name.toLowerCase().includes('laura');
+        return isSpanish && !isSpain;
+      });
+      if (found) return found;
+    }
+
+    // 4. Si se pidió España explícitamente
+    if (targetLang === 'es-ES') {
+      found = voices.find((v) => v.lang.toLowerCase().replace('_', '-') === 'es-es' || v.name.toLowerCase().includes('spain') || v.name.toLowerCase().includes('españa'));
+      if (found) return found;
+    }
+
+    // 5. Último fallback: Cualquier voz en español
+    return voices.find((v) => v.lang.toLowerCase().startsWith('es')) || null;
+  };
+
   const handleTestVoice = (langToUse?: string) => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
-    const targetLang = langToUse || voiceLang;
-    const sampleText = composition.audioScript || activeScene?.subtitle || "Demostración de locución con Santisoft AI.";
-    const utterance = new SpeechSynthesisUtterance(sampleText.substring(0, 80));
-    utterance.lang = targetLang;
-    utterance.rate = 1.15;
 
-    if ('getVoices' in window.speechSynthesis) {
-      const voices = window.speechSynthesis.getVoices();
-      const targetVoice = voices.find(
-        (v) =>
-          v.lang.toLowerCase().replace('_', '-').startsWith(targetLang.toLowerCase().substring(0, 5)) ||
-          (targetLang !== 'es-ES' && (v.name.includes('Latin') || v.name.includes('Mexico') || v.name.includes('Chile') || v.name.includes('Spanish') || v.lang.startsWith('es')))
-      );
-      if (targetVoice) utterance.voice = targetVoice;
+    const targetLang = langToUse || voiceLang;
+    const sampleText = composition.audioScript || activeScene?.subtitle || "Demostración de locución en español latino con Santisoft.";
+    const utterance = new SpeechSynthesisUtterance(sampleText.substring(0, 90));
+    
+    utterance.lang = targetLang === 'es-CL' ? 'es-CL' : (targetLang === 'es-MX' ? 'es-MX' : targetLang);
+    utterance.rate = 1.12;
+
+    const chosenVoice = pickBestVoice(targetLang);
+    if (chosenVoice) {
+      utterance.voice = chosenVoice;
+      console.log('[RemotionPlayer] Voz seleccionada para prueba:', chosenVoice.name, chosenVoice.lang);
     }
 
     window.speechSynthesis.speak(utterance);
@@ -124,18 +196,15 @@ export default function RemotionReelPlayer({ composition, onSceneChange }: Remot
       requestRef.current = requestAnimationFrame(animate);
       if (useVoiceSpeech && 'speechSynthesis' in window && currentTime === 0) {
         window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(composition.audioScript || activeScene?.subtitle || "");
+        const scriptText = composition.audioScript || activeScene?.subtitle || "";
+        const utterance = new SpeechSynthesisUtterance(scriptText);
         utterance.lang = voiceLang;
-        utterance.rate = 1.15;
+        utterance.rate = 1.12;
 
-        if ('getVoices' in window.speechSynthesis) {
-          const voices = window.speechSynthesis.getVoices();
-          const targetVoice = voices.find(
-            (v) =>
-              v.lang.toLowerCase().replace('_', '-').startsWith(voiceLang.toLowerCase().substring(0, 5)) ||
-              (voiceLang !== 'es-ES' && (v.name.includes('Latin') || v.name.includes('Mexico') || v.name.includes('Chile') || v.name.includes('Spanish') || v.lang.startsWith('es')))
-          );
-          if (targetVoice) utterance.voice = targetVoice;
+        const chosenVoice = pickBestVoice(voiceLang);
+        if (chosenVoice) {
+          utterance.voice = chosenVoice;
+          console.log('[RemotionPlayer] Reproduciendo con voz:', chosenVoice.name, chosenVoice.lang);
         }
 
         window.speechSynthesis.speak(utterance);
