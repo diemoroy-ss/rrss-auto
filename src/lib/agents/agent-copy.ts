@@ -40,6 +40,13 @@ export async function generateCopyWithAgent(params: CopyAgentParams): Promise<st
 
   const sysInstruction = `Eres un Copywriter estrella especializado en redes sociales y respuesta directa. Tu misión es transformar una idea en un copy altamente persuasivo, humano y atractivo.
 
+⛔ FORMATO DE RESPUESTA — CRÍTICO:
+- Responde ÚNICAMENTE con el texto del copy listo para publicar.
+- JAMÁS envuelvas tu respuesta en JSON, diccionarios, objetos, comillas de JSON ni bloques de código.
+- JAMÁS uses estructuras como { "copy": ... }, { "post_copy": ... } o similares.
+- JAMÁS pongas comillas al inicio y al final del texto completo.
+- El texto debe comenzar directamente con el Hook/Gancho sin introducción previa.
+
 REGLAS DE ORO DE COPYWRITING & HUMANIZACIÓN:
 1. Aplica obligatoriamente un tono 100% natural, cercano, fluido y directo ("tú a tú").
 2. Queda ESTRICTAMENTE PROHIBIDO usar clichés/muletillas de IA como "En el vertiginoso mundo actual", "En conclusión", "Desbloquea el potencial", "Sumérgete en", "Descubre cómo", "Potencia tu", "In today's fast-paced world".
@@ -49,7 +56,7 @@ REGLAS DE ORO DE COPYWRITING & HUMANIZACIÓN:
    - Desarrollo del problema/solución con valor real.
    - Llamado a la acción (CTA) claro y directo.
    - Datos de contacto obligatorios de la marca al final.
-   - 3-5 Hashtags estratégicos relacionados con el rubro.
+   - 3-5 Hashtags estratégicos (solo el texto del hashtag, sin links ni URLs).
 
 ${brandContextBlock}
 ${contactInfoBlock}`;
@@ -99,21 +106,31 @@ function cleanCopyFormat(rawText: string): string {
   // 1. Si viene envuelto en bloque de código markdown tipo ```json ... ```
   cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
 
-  // 2. Si es un JSON estructurado
+  // 2. Si es un JSON estructurado — extrae el valor de cualquier clave conocida
   if (cleaned.startsWith('{') && cleaned.endsWith('}')) {
     try {
       const parsed = JSON.parse(cleaned);
-      if (parsed.copy) cleaned = parsed.copy;
-      else if (parsed.text) cleaned = parsed.text;
-      else if (parsed.post) cleaned = parsed.post;
-      else if (parsed.caption) cleaned = parsed.caption;
+      // Lista completa de claves que podría usar el modelo
+      const knownKeys = ['copy', 'post_copy', 'caption', 'text', 'post', 'content', 'message', 'body'];
+      for (const key of knownKeys) {
+        if (parsed[key] && typeof parsed[key] === 'string') {
+          cleaned = parsed[key];
+          break;
+        }
+      }
     } catch (e) {
-      // Si falla el parseo JSON, intentamos extracción por Regex
-      const match = cleaned.match(/"copy"\s*:\s*"([\s\S]*)"\s*}/);
+      // Si falla el parseo JSON, extraemos con Regex el valor de CUALQUIER clave string del JSON
+      const match = cleaned.match(/"[\w_]+"\s*:\s*"([\s\S]+?)"\s*\}\s*$/);
       if (match && match[1]) {
         cleaned = match[1];
       }
     }
+  }
+
+  // 2b. Si tras la extracción todavía empieza con { (JSON anidado), limpiar también el wrapper exterior
+  if (cleaned.startsWith('{') && cleaned.includes('"')) {
+    const match = cleaned.match(/"[\w_]+"\s*:\s*"([\s\S]+?)"\s*\}?\s*$/);
+    if (match && match[1]) cleaned = match[1];
   }
 
   // 3. Reemplazar saltos de línea escapados como caracteres literales \n por saltos de línea reales

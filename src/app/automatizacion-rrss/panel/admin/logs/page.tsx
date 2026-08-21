@@ -123,7 +123,7 @@ export default function AdminLogsPage() {
                     <select 
                         value={filterStatus}
                         onChange={(e) => setFilterStatus(e.target.value)}
-                        className="w-full border-slate-200 rounded-xl text-sm focus:ring-indigo-500 focus:border-indigo-500"
+                        className="w-full border-slate-200 rounded-xl text-sm text-slate-700 bg-white focus:ring-indigo-500 focus:border-indigo-500"
                     >
                         <option value="all">Todos</option>
                         <option value="success">Exitosos</option>
@@ -174,9 +174,9 @@ export default function AdminLogsPage() {
                                                     {log.status}
                                                 </span>
                                             </td>
-                                            <td className="p-4 pr-6">
+                                            <td className="p-4 pr-6 max-w-lg">
                                                 <p className="text-slate-700 font-medium">{log.message}</p>
-                                                {log.details && <p className="text-[11px] text-slate-500 mt-1 italic">{log.details}</p>}
+                                                {log.details && <p className="text-[11px] text-slate-500 mt-1 italic line-clamp-3" title={log.details}>{log.details}</p>}
                                             </td>
                                         </tr>
                                     );

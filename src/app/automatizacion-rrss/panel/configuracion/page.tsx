@@ -249,7 +249,10 @@ function ConfigContent() {
   const [includePhoneInCopy, setIncludePhoneInCopy] = useState(true);
   
   const [logoUrl, setLogoUrl] = useState("");
+  const [logoPrompt, setLogoPrompt] = useState("");
+  const [alwaysIncludeLogo, setAlwaysIncludeLogo] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [isAnalyzingLogo, setIsAnalyzingLogo] = useState(false);
 
   useEffect(() => {
     setUser(auth.currentUser);
@@ -285,6 +288,8 @@ function ConfigContent() {
       if (activeProfile.email !== email) setEmail(activeProfile.email || "");
       if (activeProfile.phone !== phone) setPhone(activeProfile.phone || "");
       if (activeProfile.logoUrl !== logoUrl) setLogoUrl(activeProfile.logoUrl || "");
+      if (activeProfile.logoPrompt !== logoPrompt) setLogoPrompt(activeProfile.logoPrompt || "");
+      if (activeProfile.alwaysIncludeLogo !== undefined && activeProfile.alwaysIncludeLogo !== alwaysIncludeLogo) setAlwaysIncludeLogo(activeProfile.alwaysIncludeLogo);
     }
   }, [activeProfile]); // Only depend on activeProfile for data syncing
 
@@ -357,13 +362,37 @@ function ConfigContent() {
         await uploadBytes(storageRef, file);
         const url = await getDownloadURL(storageRef);
         setLogoUrl(url);
+
+        // Analizar logo con Gemini Vision para generar prompt de recreación
+        setIsAnalyzingLogo(true);
+        let analyzedPrompt = '';
+        try {
+          const analyzeRes = await fetch('/api/analyze-logo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              logoUrl: url,
+              rubro: rubro,
+              businessDescription: businessDescription,
+            }),
+          });
+          if (analyzeRes.ok) {
+            const analyzeData = await analyzeRes.json();
+            analyzedPrompt = analyzeData.logoPrompt || '';
+            setLogoPrompt(analyzedPrompt);
+          }
+        } catch (analyzeErr) {
+          console.warn('[Logo] Error analizando logo con IA:', analyzeErr);
+        } finally {
+          setIsAnalyzingLogo(false);
+        }
         
         const userDocRef = doc(db, "users", user.uid);
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists() && activeProfile) {
             const data = userDoc.data();
             const updatedProfiles = (data.profiles || []).map((p: any) => 
-               p.id === activeProfile.id ? { ...p, logoUrl: url } : p
+               p.id === activeProfile.id ? { ...p, logoUrl: url, logoPrompt: analyzedPrompt } : p
             );
             await updateDoc(userDocRef, { profiles: updatedProfiles });
             await loadProfiles();
@@ -412,7 +441,9 @@ function ConfigContent() {
                 tiktokUrl,
                 linkedinUrl,
                 email,
-                phone
+                phone,
+                alwaysIncludeLogo
+
              } : p
           );
           await updateDoc(userDocRef, { profiles: updatedProfiles });
@@ -783,24 +814,110 @@ function ConfigContent() {
 
           <div className="mb-8">
               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Logo Corporativo (Máx 2MB)</label>
-              <div className="flex gap-4 items-center">
+              <div className="flex gap-4 items-start">
                   <div className="w-24 h-24 bg-slate-50 rounded-2xl border-2 border-dashed border-indigo-200 flex items-center justify-center overflow-hidden shrink-0 relative hover:border-indigo-400 transition-colors">
                       {logoUrl ? (
                           <img src={logoUrl} alt="Logo" className="w-full h-full object-contain p-2" />
                       ) : (
                           <span className="text-3xl opacity-50">🖼️</span>
                       )}
-                      {isUploadingLogo && <div className="absolute inset-0 bg-white/80 flex items-center justify-center"><div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div></div>}
+                      {(isUploadingLogo || isAnalyzingLogo) && <div className="absolute inset-0 bg-white/80 flex items-center justify-center"><div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div></div>}
                   </div>
                   <div className="flex-1">
-                      <p className="text-xs font-medium text-slate-500 mb-3">Sube tu logo oficial. Se usará como marca de agua en los banners si lo habilitas.</p>
+                      <p className="text-xs font-medium text-slate-500 mb-3">
+                        Sube tu logo oficial. Nuestros agentes lo analizarán automáticamente para poder recrearlo en las imágenes de tus posts cuando lo actives.
+                      </p>
                       <label className="cursor-pointer bg-white border border-slate-200 text-slate-700 font-bold px-4 py-2 rounded-lg text-sm hover:bg-slate-50 transition-colors shadow-sm inline-block">
-                          {logoUrl ? 'Cambiar Logo' : 'Subir Logo'}
-                          <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} disabled={isUploadingLogo} />
+                          {isUploadingLogo ? 'Subiendo...' : isAnalyzingLogo ? '✨ Analizando logo...' : logoUrl ? 'Cambiar Logo' : 'Subir Logo'}
+                          <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} disabled={isUploadingLogo || isAnalyzingLogo} />
                       </label>
                   </div>
               </div>
+
+              {/* Sección de prompt generado — visible solo si ya existe */}
+              {logoUrl && (
+                <div className="mt-5 p-4 bg-indigo-50 rounded-2xl border border-indigo-100">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      {logoPrompt ? (
+                        <span className="text-xs font-black text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full">✨ Descripción de logo lista</span>
+                      ) : isAnalyzingLogo ? (
+                        <span className="text-xs font-black text-indigo-600 bg-indigo-100 px-3 py-1 rounded-full animate-pulse">🔍 Analizando logo con IA...</span>
+                      ) : (
+                        <span className="text-xs font-black text-slate-500 bg-slate-100 px-3 py-1 rounded-full">Sin análisis aún</span>
+                      )}
+                    </div>
+                    {logoUrl && !isAnalyzingLogo && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          setIsAnalyzingLogo(true);
+                          try {
+                            const res = await fetch('/api/analyze-logo', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ logoUrl, rubro, businessDescription }),
+                            });
+                            if (res.ok) {
+                              const data = await res.json();
+                              const newPrompt = data.logoPrompt || '';
+                              setLogoPrompt(newPrompt);
+                              // Guardar en Firestore también
+                              if (user && activeProfile) {
+                                const { doc, getDoc, updateDoc } = await import('firebase/firestore');
+                                const { db } = await import('../../../../lib/firebase');
+                                const userDocRef = doc(db, 'users', user.uid);
+                                const userDoc = await getDoc(userDocRef);
+                                if (userDoc.exists()) {
+                                  const updatedProfiles = (userDoc.data().profiles || []).map((p: any) =>
+                                    p.id === activeProfile.id ? { ...p, logoPrompt: newPrompt } : p
+                                  );
+                                  await updateDoc(userDocRef, { profiles: updatedProfiles });
+                                  await loadProfiles();
+                                }
+                              }
+                            }
+                          } catch (err) {
+                            console.warn('Error re-analizando logo:', err);
+                          } finally {
+                            setIsAnalyzingLogo(false);
+                          }
+                        }}
+                        className="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors"
+                      >
+                        🔄 Re-analizar
+                      </button>
+                    )}
+                  </div>
+                  {logoPrompt && (
+                    <>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Descripción para recreación (editable)</p>
+                      <textarea
+                        value={logoPrompt}
+                        onChange={e => setLogoPrompt(e.target.value)}
+                        rows={3}
+                        className="w-full text-xs text-slate-600 bg-white border border-indigo-200 rounded-xl px-3 py-2 resize-none focus:outline-none focus:border-indigo-400 font-mono leading-relaxed"
+                      />
+                      <p className="text-[10px] text-slate-400 mt-1">Esta descripción se usará para recrear tu logo cuando actives "Incluir logo" al crear un post.</p>
+                      
+                      <div className="mt-4 border-t border-indigo-100 pt-4">
+                        <label className="flex items-center gap-3 cursor-pointer group">
+                          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${alwaysIncludeLogo ? 'bg-indigo-500 border-indigo-500' : 'bg-white border-slate-300 group-hover:border-indigo-400'}`}>
+                            {alwaysIncludeLogo && <span className="w-2 h-2 bg-white rounded-sm" />}
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-slate-700">Incluir siempre logo en posts creados</p>
+                            <p className="text-[10px] text-slate-500">Marcará automáticamente la opción "Incluir logo" al crear nuevos posts.</p>
+                          </div>
+                          <input type="checkbox" className="hidden" checked={alwaysIncludeLogo} onChange={e => setAlwaysIncludeLogo(e.target.checked)} />
+                        </label>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
           </div>
+
 
           <div className="mb-8">
               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">🏷️ Nombre de la Marca / Negocio</label>

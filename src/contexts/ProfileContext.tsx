@@ -52,9 +52,13 @@ export type BusinessProfile = {
 
   youtubeConnected?: boolean;
   youtubeChannelName?: string;
+  youtubeToken_enc?: string;
+  youtubeRefreshToken_enc?: string;
   
   xConnected?: boolean;
   xUsername?: string;
+  xToken_enc?: string;
+  xRefreshToken_enc?: string;
 
   accounts?: Record<string, any>;
   
@@ -64,14 +68,20 @@ export type BusinessProfile = {
 
   rubro?: string;
   website?: string;
+  businessDescription?: string;
   facebookUrl?: string;
   instagramUrl?: string;
   tiktokUrl?: string;
   twitterUrl?: string;
   linkedinUrl?: string;
   logoUrl?: string;
+  logoPrompt?: string;         // Descripción textual del logo generada por Gemini Vision
   email?: string;
   phone?: string;
+  includeWebsiteInCopy?: boolean;
+  includeEmailInCopy?: boolean;
+  includePhoneInCopy?: boolean;
+  alwaysIncludeLogo?: boolean;
   // Account lock: records which social account IDs have been used in a publish (non-business plan protection)
   accountLocks?: {
     facebook?: string;   // facebookPageId

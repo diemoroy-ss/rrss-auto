@@ -54,6 +54,8 @@ export default function RrssCreatePost() {
   const [postText, setPostText] = useState("");
   /** Configuración del cartel publicitario (opcional) */
   const [posterConfig, setPosterConfig] = useState<PosterConfig>(DEFAULT_POSTER_CONFIG);
+  /** Incluir logo recreado con IA en la imagen generada */
+  const [includeLogo, setIncludeLogo] = useState(false);
   const [postType, setPostType] = useState("Post");
   const [carouselCount, setCarouselCount] = useState(3);
   const [businessType, setBusinessType] = useState("");
@@ -155,6 +157,7 @@ export default function RrssCreatePost() {
             setHasX(xOK);
             setBusinessType(activeProfile?.rubro || (isDefault ? data.rubro : "") || "");
             setUserLogo(activeProfile?.logoUrl || (isDefault ? data.logoUrl : "") || "");
+            setIncludeLogo(activeProfile?.alwaysIncludeLogo === true);
             
             setNetworks({ facebook: fbOK, instagram: igOK, linkedin: false, tiktok: ttOK, googleBusiness: gbpOK, youtube: ytOK, x: xOK });
             
@@ -920,7 +923,8 @@ export default function RrssCreatePost() {
         scheduledFor: scheduledDate,
         createdAt: new Date(),
         // Si hay cartel
-        posterConfig: posterConfig.enabled ? posterConfig : null
+        posterConfig: posterConfig.enabled ? posterConfig : null,
+        includeLogo: includeLogo,
       };
 
       const newPostRef = await addDoc(collection(db, "social_posts"), postPayload);
@@ -1795,6 +1799,31 @@ export default function RrssCreatePost() {
 
             {/* Footer Buttons */}
             <div className="p-6 bg-white border-t border-slate-100 flex flex-col gap-3">
+
+               {/* Toggle: Incluir Logo */}
+               {activeProfile?.logoPrompt && (
+                 <button
+                   type="button"
+                   onClick={() => setIncludeLogo(prev => !prev)}
+                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl border-2 transition-all text-sm font-bold ${
+                     includeLogo
+                       ? 'border-indigo-400 bg-indigo-50 text-indigo-700'
+                       : 'border-slate-200 bg-slate-50 text-slate-500 hover:border-slate-300'
+                   }`}
+                 >
+                   <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
+                     includeLogo ? 'border-indigo-500 bg-indigo-500' : 'border-slate-300 bg-white'
+                   }`}>
+                     {includeLogo && <span className="w-2 h-2 rounded-full bg-white block" />}
+                   </span>
+                   <span className="flex items-center gap-2">
+                     <span>🏷️</span>
+                     <span>Incluir logo de la marca en la imagen</span>
+                   </span>
+                   {includeLogo && <span className="ml-auto text-[10px] font-black text-indigo-500 uppercase tracking-widest">Activado</span>}
+                 </button>
+               )}
+
                {showScheduler ? (
                  <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
                     <div className="flex gap-4 mb-4">
