@@ -240,23 +240,12 @@ export default function RrssDashboard() {
         where("profileId", "==", activeProfile.id),
         where("scheduledFor", ">=", thirtyDaysAgo),
         orderBy("scheduledFor", "desc"),
-        limit(50)
+        limit(24)
     );
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
         const newData = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as SocialPost));
-        newData.sort((a, b) => {
-          const timeA = a.scheduledFor?.toMillis ? a.scheduledFor.toMillis() : 0;
-          const timeB = b.scheduledFor?.toMillis ? b.scheduledFor.toMillis() : 0;
-          return timeA - timeB;
-        });
-
-        // Check for deep equality to avoid redundant re-renders
-        setPosts(prev => {
-           if (JSON.stringify(prev) === JSON.stringify(newData)) return prev;
-           return newData;
-        });
-        
+        setPosts(newData);
         setLoading(false);
         
         setSelectedPost(prev => {
@@ -954,12 +943,29 @@ export default function RrssDashboard() {
   const combinedPosts = useMemo(() => {
     const all = [...posts, ...blogPosts];
     all.sort((a, b) => {
-      const timeA = a.scheduledFor?.toMillis ? a.scheduledFor.toMillis() : 0;
-      const timeB = b.scheduledFor?.toMillis ? b.scheduledFor.toMillis() : 0;
+      const getMillis = (item: any) => {
+        if (!item) return 0;
+        const val = item.publishedAt || item.scheduledFor || item.createdAt;
+        if (!val) return 0;
+        if (val.toMillis) return val.toMillis();
+        if (val.toDate) return val.toDate().getTime();
+        if (val.seconds) return val.seconds * 1000;
+        if (val._seconds) return val._seconds * 1000;
+        const d = new Date(val);
+        return isNaN(d.getTime()) ? 0 : d.getTime();
+      };
+      const timeA = getMillis(a);
+      const timeB = getMillis(b);
+
+      // En la pestaña de publicados, ordenar del más nuevo al más antiguo
+      if (activeTab === 'published') {
+        return timeB - timeA;
+      }
+      // En próximas publicaciones, ordenar por fecha más cercana
       return timeA - timeB;
     });
     return all;
-  }, [posts, blogPosts]);
+  }, [posts, blogPosts, activeTab]);
 
   const filteredPosts = useMemo(() => {
     return combinedPosts.filter(p => {
@@ -981,7 +987,7 @@ export default function RrssDashboard() {
     });
   }, [combinedPosts, activeTab, selectedDateFilter, networkFilter]);
 
-  const POSTS_PER_PAGE = 10;
+  const POSTS_PER_PAGE = 12;
   const totalPages = Math.max(1, Math.ceil(filteredPosts.length / POSTS_PER_PAGE));
   const paginatedPosts = filteredPosts.slice((currentPage - 1) * POSTS_PER_PAGE, currentPage * POSTS_PER_PAGE);
 
