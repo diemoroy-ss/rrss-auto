@@ -1801,7 +1801,7 @@ export default function RrssCreatePost() {
             <div className="p-6 bg-white border-t border-slate-100 flex flex-col gap-3">
 
                {/* Toggle: Incluir Logo */}
-               {activeProfile?.logoPrompt && (
+               {activeProfile?.logoUrl && (
                  <button
                    type="button"
                    onClick={() => setIncludeLogo(prev => !prev)}

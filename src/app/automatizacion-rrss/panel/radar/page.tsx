@@ -865,9 +865,9 @@ export default function NicheRadarPage() {
                     <div>
                       <p className="text-xs font-black text-slate-800">Incluir Logo en las Imágenes</p>
                       <p className="text-[11px] font-medium text-slate-500">
-                        {activeProfile?.logoPrompt 
-                          ? `Se inyectará el prompt visual de tu logo (${activeProfile.logoPrompt.slice(0, 45)}...) en las imágenes.` 
-                          : `Sube o analiza tu logo en la pestaña Configuración para que la IA dibuje tu marca.`}
+                        {activeProfile?.logoUrl 
+                          ? `Se estampará tu logo oficial en la esquina inferior de las imágenes generadas.` 
+                          : `Sube tu logo en la pestaña Configuración para que nuestros agentes lo estampen en tus posts.`}
                       </p>
                     </div>
                   </div>
