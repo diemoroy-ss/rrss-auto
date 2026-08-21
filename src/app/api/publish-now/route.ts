@@ -1151,14 +1151,39 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
                     }
                     const videoBuffer = Buffer.from(await videoStreamRes.arrayBuffer());
 
-                    const titleText = (caption || 'Video de Santisoft AI').slice(0, 95);
-                    const descText = `${caption}\n\n#Shorts #SantisoftAI`;
+                    // 1. Título conciso y atractivo para YouTube Shorts (máximo 95 caracteres)
+                    let cleanTitle = '';
+                    if (post.idea && typeof post.idea === 'string' && post.idea.trim().length > 3) {
+                        cleanTitle = post.idea.trim();
+                    } else if (post.title && typeof post.title === 'string' && post.title.trim().length > 3) {
+                        cleanTitle = post.title.trim();
+                    } else {
+                        const firstLine = (caption || '').split('\n')[0].trim();
+                        cleanTitle = firstLine || 'Video de Santisoft';
+                    }
+
+                    cleanTitle = cleanTitle.replace(/^["']|["']$/g, '').trim();
+                    if (cleanTitle.length > 95) {
+                        cleanTitle = cleanTitle.slice(0, 92).trim();
+                        const lastSpace = cleanTitle.lastIndexOf(' ');
+                        if (lastSpace > 40) {
+                            cleanTitle = cleanTitle.slice(0, lastSpace);
+                        }
+                    }
+
+                    const titleText = cleanTitle;
+
+                    // 2. Descripción completa con el copy persuasivo, datos de contacto y hashtags
+                    let descText = (caption || post.copy || post.text || '').trim();
+                    if (!descText.toLowerCase().includes('#shorts')) {
+                        descText += '\n\n#Shorts #SantisoftAI';
+                    }
 
                     const metadata = {
                         snippet: {
                             title: titleText,
                             description: descText,
-                            tags: ['Shorts', 'SantisoftAI'],
+                            tags: ['Shorts', 'SantisoftAI', 'MarketingDigital'],
                             categoryId: '22',
                         },
                         status: {
