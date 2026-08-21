@@ -59,6 +59,48 @@ export default function NicheRadarPage() {
     return isNaN(d.getTime()) ? "" : d.toLocaleDateString();
   };
 
+  const resolveStrategyDates = (strategy: any[], existingDates: number[]) => {
+    const allocated: number[] = [...existingDates];
+    const now = Date.now();
+
+    return strategy.map((post, idx) => {
+      let targetDate = new Date();
+      const dayOffset = typeof post.dayOffset === 'number' ? post.dayOffset : (idx + 1);
+      targetDate.setDate(targetDate.getDate() + dayOffset);
+
+      let hour = 12;
+      let minute = 0;
+      if (post.suggestedTime && post.suggestedTime.includes(':')) {
+        const [h, m] = post.suggestedTime.split(':');
+        hour = parseInt(h, 10) || 12;
+        minute = parseInt(m, 10) || 0;
+      }
+      targetDate.setHours(hour, minute, 0, 0);
+
+      // Si la fecha calculada ya pasó o está muy cerca de este momento (menos de 45 mins)
+      if (targetDate.getTime() < now + 45 * 60 * 1000) {
+        targetDate.setTime(now + 2 * 60 * 60 * 1000);
+      }
+
+      // Evitar colisión con posts existentes o previos (mínimo 2 horas de diferencia)
+      let attempts = 0;
+      while (allocated.some(ts => Math.abs(ts - targetDate.getTime()) < 2 * 60 * 60 * 1000) && attempts < 25) {
+        attempts++;
+        targetDate.setHours(targetDate.getHours() + 3);
+        if (targetDate.getHours() >= 22 || targetDate.getHours() < 9) {
+          targetDate.setDate(targetDate.getDate() + 1);
+          targetDate.setHours(11, 0, 0, 0);
+        }
+      }
+
+      allocated.push(targetDate.getTime());
+      return {
+        ...post,
+        computedScheduledDate: targetDate
+      };
+    });
+  };
+
   const goals = [
     { id: 'ventas', title: 'Ventas & Conversión', description: 'Maximizar pedidos y ventas', icon: '💰' },
     { id: 'autoridad', title: 'Autoridad & Marca', description: 'Posicionarte como experto', icon: '🎙️' },
@@ -306,7 +348,28 @@ export default function NicheRadarPage() {
 
       if (!res.ok) throw new Error("Error al generar estrategia");
       const data = await res.json();
-      setStrategyResult(data.strategy);
+
+      let upcomingTimestamps: number[] = [];
+      try {
+        const qPosts = query(
+          collection(db, "social_posts"),
+          where("userId", "==", user.uid),
+          where("status", "in", ["pending", "confirmed"])
+        );
+        const snapPosts = await getDocs(qPosts);
+        snapPosts.forEach(d => {
+          const s = d.data()?.scheduledFor;
+          if (s?.toDate) upcomingTimestamps.push(s.toDate().getTime());
+          else if (s?._seconds) upcomingTimestamps.push(s._seconds * 1000);
+          else if (s?.seconds) upcomingTimestamps.push(s.seconds * 1000);
+          else if (s) upcomingTimestamps.push(new Date(s).getTime());
+        });
+      } catch (qErr) {
+        console.warn("No se pudieron consultar posts previos para evitar solapamientos:", qErr);
+      }
+
+      const resolved = resolveStrategyDates(data.strategy || [], upcomingTimestamps);
+      setStrategyResult(resolved);
     } catch (err: any) {
       setErrorMsg("Error al generar la estrategia.");
     } finally {
@@ -320,26 +383,7 @@ export default function NicheRadarPage() {
     try {
       const postsRef = collection(db, "social_posts");
       for (const post of strategyResult) {
-          const scheduledDate = new Date();
-          scheduledDate.setDate(scheduledDate.getDate() + post.dayOffset);
-          try {
-              if (post.suggestedTime && post.suggestedTime.includes(':')) {
-                  const [hours, minutes] = post.suggestedTime.split(':');
-                  scheduledDate.setHours(parseInt(hours, 10) || 12, parseInt(minutes, 10) || 0, 0, 0);
-              } else {
-                  scheduledDate.setHours(12, 0, 0, 0);
-              }
-          } catch (e) {
-              scheduledDate.setHours(12, 0, 0, 0);
-          }
-
-          // Validación de Fecha Pasada: Asegurarnos de que no agendemos en el pasado.
-          const now = new Date();
-          // Si es el mismo día y la hora sugerida ya pasó, o está a menos de 30 mins
-          if (scheduledDate.getTime() < now.getTime() + 30 * 60000) {
-              // Ajustar la fecha a +2 horas a partir de este momento para el primer post
-              scheduledDate.setTime(now.getTime() + 2 * 60 * 60 * 1000); 
-          }
+          const scheduledDate = post.computedScheduledDate ? new Date(post.computedScheduledDate) : new Date();
 
           const fmt = post.format?.toLowerCase() || "";
           const postType = fmt.includes('reel') || fmt.includes('video') ? 'Reel' : (fmt.includes('historia') || fmt.includes('story') ? 'Story' : 'Post');
@@ -852,24 +896,38 @@ export default function NicheRadarPage() {
 
               {strategyResult && strategyResult.length > 0 && (
                   <div className="mt-8 pt-8 border-t border-slate-100 space-y-6">
-                      <h3 className="text-lg font-black text-slate-900">Tu Plan Estratégico Generado</h3>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                           <h3 className="text-lg font-black text-slate-900">Tu Plan Estratégico Generado</h3>
+                           <span className="text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200/60 px-3 py-1 rounded-full flex items-center gap-1.5 w-fit">
+                             <span>🗓️</span> Fechas sincronizadas sin solapamientos
+                           </span>
+                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {strategyResult.map((post, idx) => (
-                             <div key={idx} className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
-                                 <div className="flex justify-between items-center text-xs">
-                                     <span className="font-bold text-slate-500">Día {post.dayOffset} a las {post.suggestedTime}</span>
-                                     <span className="bg-indigo-100 text-indigo-700 font-bold px-2 py-0.5 rounded-full">{post.format}</span>
-                                 </div>
-                                 <p className="font-black text-sm text-slate-800">"{post.hook}"</p>
-                                 <p className="text-xs text-slate-600 line-clamp-3">{post.content}</p>
-                             </div>
-                          ))}
+                          {strategyResult.map((post, idx) => {
+                             const dt = post.computedScheduledDate ? new Date(post.computedScheduledDate) : null;
+                             const dateDisplay = dt 
+                               ? dt.toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short' }) + ' - ' + dt.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) + ' hrs' 
+                               : `Día ${post.dayOffset} a las ${post.suggestedTime}`;
+
+                             return (
+                               <div key={idx} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3 shadow-sm hover:border-indigo-200 transition-colors">
+                                   <div className="flex justify-between items-center text-xs">
+                                       <span className="font-extrabold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100/80 flex items-center gap-1">
+                                         <span>📅</span> {dateDisplay}
+                                       </span>
+                                       <span className="bg-white border border-slate-200 text-slate-700 font-bold px-2 py-0.5 rounded-full">{post.format}</span>
+                                   </div>
+                                   <p className="font-black text-sm text-slate-800">"{post.hook}"</p>
+                                   <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed">{post.content}</p>
+                               </div>
+                             );
+                          })}
                       </div>
                       <div className="flex justify-end mt-4">
                           <button
                              onClick={handleAcceptStrategy}
                              disabled={acceptingStrategy}
-                             className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-black py-3 px-8 rounded-xl shadow-md transition-all"
+                             className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-black py-3 px-8 rounded-xl shadow-md transition-all flex items-center gap-2"
                           >
                              {acceptingStrategy ? 'Agendando...' : 'Aceptar y Agendar Posts ✅'}
                           </button>

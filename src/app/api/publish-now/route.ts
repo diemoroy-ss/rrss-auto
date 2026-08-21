@@ -420,6 +420,8 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
                         businessDescription: targetProfile?.businessDescription || '',
                         aspectRatio: isStoryPost ? '9:16' : '1:1',
                         logoPrompt: targetProfile?.logoPrompt || '',
+                        logoUrl: targetProfile?.logoUrl || '',
+                        userId: creds.uid,
                         includeLogo: post.includeLogo === true || (post.includeLogo !== false && targetProfile?.alwaysIncludeLogo === true),
                     });
                     imageUrl = generatedImageUrl;

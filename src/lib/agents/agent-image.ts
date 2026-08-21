@@ -5,16 +5,28 @@ export interface ImageAgentParams {
   rubro?: string;
   businessDescription?: string;
   aspectRatio?: '1:1' | '9:16' | '16:9';
-  logoPrompt?: string;   // Descripción textual del logo generada por Gemini Vision
-  includeLogo?: boolean; // Si true, el logo se recrea dentro de la imagen
+  logoPrompt?: string;
+  logoUrl?: string;     // URL del logo PNG original en Firebase Storage
+  userId?: string;      // ID de usuario para almacenar la imagen con marca
+  includeLogo?: boolean;
 }
 
 /**
  * Agente de Imagen: Usa la fórmula de 7 componentes de Claude-Banana para diseñar el prompt
- * alineado al rubro del negocio, luego consulta a n8n y hace fallback a Pollinations.
+ * fotográfico limpio, genera la imagen vía n8n (o Pollinations) y, si se solicita,
+ * estampa el logo PNG real y nítido del cliente encima usando Sharp.
  */
 export async function generateImageWithAgent(params: ImageAgentParams): Promise<string> {
-  const { idea, rubro = 'General', businessDescription = '', aspectRatio = '1:1', logoPrompt = '', includeLogo = false } = params;
+  const { 
+    idea, 
+    rubro = 'General', 
+    businessDescription = '', 
+    aspectRatio = '1:1', 
+    logoPrompt = '', 
+    logoUrl = '', 
+    userId = 'system',
+    includeLogo = false 
+  } = params;
 
   let width = 1080;
   let height = 1080;
@@ -48,7 +60,8 @@ REGLAS CRÍTICAS:
 - El prompt DEBE estar en INGLÉS.
 - Debe ser en texto plano continuo (prosa), SIN etiquetas, SIN listas, SIN comillas extra.
 - Comienza el prompt directamente con la descripción del sujeto principal.
-- Evita términos que activen modo ilustración: "cartoon", "anime", "digital art", "3D render", "CGI".`;
+- Evita términos que activen modo ilustración: "cartoon", "anime", "digital art", "3D render", "CGI".
+- No intentes dibujar texto ni logos con la IA; la fotografía debe ser limpia y realista.`;
 
   const promptInput = `Negocio / Rubro: ${rubro}
 Descripción del Negocio: ${businessDescription}
@@ -66,13 +79,9 @@ Genera el prompt narrativo en inglés (prosa, 120-180 palabras, fotografía real
     optimizedPrompt = `A professional business owner in their early 30s with warm olive skin, wearing a neat casual blazer, smiling confidently while working at a modern desk in a bright office. Shot on Canon EOS R5 with 85mm f/1.4 lens, natural side window light at 5500K. ${isVerticalStory ? 'Vertical 9:16 composition' : 'Medium close-up framing'} with shallow depth of field, background softly blurred showing a clean workspace. Scene related to ${rubro}. Authentic, documentary-style commercial photograph with realistic skin texture and natural colors. No text overlay.`;
   }
 
-  // Si el usuario activó "Incluir logo", se añade la descripción del logo al prompt
-  if (includeLogo && logoPrompt) {
-    optimizedPrompt += ` In the lower corner of the frame, include a clear, professional brand mark: ${logoPrompt}. The emblem should look sharp, clean and modern.`;
-    console.log('[AgentImage] 🏷️ Logo prompt inyectado en la imagen:', logoPrompt);
-  }
-
   console.log(`[AgentImage] Prompt Claude-Banana generado (${aspectRatio}):`, optimizedPrompt);
+
+  let rawGeneratedUrl = '';
 
   // 2. Intento Primario: Webhook de n8n
   const n8nWebhookUrl = 'https://n8n.santisoft.cl/webhook/img-rrss-auto';
@@ -106,20 +115,39 @@ Genera el prompt narrativo en inglés (prosa, 120-180 palabras, fotografía real
       const n8nImageUrl = data.img_url || data.imageUrl || data.url || data.output || data.image;
       if (n8nImageUrl && typeof n8nImageUrl === 'string' && n8nImageUrl.startsWith('http')) {
         console.log(`[AgentImage] ✅ Imagen generada con éxito por n8n:`, n8nImageUrl);
-        return n8nImageUrl;
+        rawGeneratedUrl = n8nImageUrl;
       }
+    } else {
+      console.warn(`[AgentImage] ⚠️ n8n respondió con status: ${n8nRes.status}`);
     }
-    console.warn(`[AgentImage] ⚠️ n8n respondió sin una URL de imagen válida. Status: ${n8nRes.status}`);
   } catch (n8nErr: any) {
     console.warn(`[AgentImage] ⚠️ Fallo o Timeout al llamar al webhook de n8n:`, n8nErr.message || n8nErr);
   }
 
-  // 3. Fallback: Pollinations con el prompt narrativo de Claude-Banana
-  // Usando modelo "flux" que genera imágenes mucho más realistas que el modelo por defecto
-  console.log(`[AgentImage] 🔄 Ejecutando Fallback a Pollinations (modelo flux) con el prompt narrativo...`);
-  const seed = Math.floor(Math.random() * 1000000);
-  const encodedPrompt = encodeURIComponent(optimizedPrompt);
-  const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${width}&height=${height}&model=flux&nologo=true&enhance=true&seed=${seed}`;
+  // 3. Fallback si n8n no entregó imagen: Pollinations (Flux)
+  if (!rawGeneratedUrl) {
+    console.log(`[AgentImage] 🔄 Ejecutando Fallback a Pollinations (modelo flux) con el prompt narrativo...`);
+    const seed = Math.floor(Math.random() * 1000000);
+    const encodedPrompt = encodeURIComponent(optimizedPrompt);
+    rawGeneratedUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${width}&height=${height}&model=flux&nologo=true&enhance=true&seed=${seed}`;
+  }
 
-  return pollinationsUrl;
+  // 4. Superposición del Logo PNG Real con Sharp (si el usuario lo solicitó y tiene logo configurado)
+  if (includeLogo && logoUrl) {
+    try {
+      console.log(`[AgentImage] 🏷️ Estampando logo PNG real de la marca (${logoUrl}) sobre la imagen...`);
+      const { overlayLogoOnImage } = await import('../image-watermark');
+      const watermarkedUrl = await overlayLogoOnImage(rawGeneratedUrl, logoUrl, userId, {
+        position: 'bottom-right',
+        padding: isVerticalStory ? 48 : 36,
+        logoWidthPercent: isVerticalStory ? 0.20 : 0.16
+      });
+      return watermarkedUrl;
+    } catch (wmErr: any) {
+      console.warn('[AgentImage] Error aplicando watermark de logo, devolviendo imagen sin marca:', wmErr.message || wmErr);
+      return rawGeneratedUrl;
+    }
+  }
+
+  return rawGeneratedUrl;
 }

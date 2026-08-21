@@ -1539,13 +1539,13 @@ export default function RrssDashboard() {
                    )}
 
                    {selectedPost.publishInfo && (
-                     <div className="bg-sky-50 border-2 border-sky-200 rounded-[24px] p-6 text-sky-800 animate-in slide-in-from-top-2 fade-in shadow-sm">
-                       <div className="flex gap-3 items-start">
-                         <span className="text-2xl">ℹ️</span>
+                     <div className="bg-sky-50 border border-sky-200/80 rounded-2xl p-4 text-sky-800 animate-in slide-in-from-top-2 fade-in shadow-sm">
+                       <div className="flex gap-3 items-center">
+                         <span className="text-xl">⚙️</span>
                          <div>
-                           <h4 className="font-black text-sm tracking-tight text-sky-900 uppercase">⚙️ Generación Automática (JIT)</h4>
-                           <p className="text-xs font-bold text-sky-700/90 mt-1 leading-relaxed">
-                             {selectedPost.publishInfo}
+                           <h4 className="font-black text-xs tracking-tight text-sky-900 uppercase">Generación Automática</h4>
+                           <p className="text-[11px] font-semibold text-sky-700/90 mt-0.5">
+                             Contenido multimedia y copy optimizados y generados con éxito por nuestros agentes.
                            </p>
                          </div>
                        </div>
