@@ -1287,11 +1287,11 @@ export default function RrssDashboard() {
                     <div className="flex items-center justify-between w-full">
                       <div className="flex items-center gap-1 bg-white/60 px-2.5 py-1 rounded-md border border-slate-200/50 shadow-sm">
                         <span className="text-[9px] font-black tracking-widest uppercase text-slate-500">
-                          {post.type === 'video_reel' || post.type === 'reel' || post.type === 'Reel' || (post.format && (post.format.toLowerCase().includes('reel') || post.format.toLowerCase().includes('short')))
+                          {post.type === 'video_reel' || post.type === 'reel' || post.type === 'Reel' || (post.format && (post.format.toLowerCase().includes('reel') || post.format.toLowerCase().includes('short'))) || (post.type && post.type.toLowerCase().includes('reel'))
                             ? '🎬 Reel / Short'
-                            : post.type === 'Carrusel'
+                            : post.type === 'Carrusel' || (post.type && post.type.toLowerCase().includes('carrusel')) || (post.type && post.type.toLowerCase().includes('carousel'))
                             ? '📑 Carrusel'
-                            : post.type === 'Historia'
+                            : post.type === 'Historia' || post.type === 'Story' || (post.type && post.type.toLowerCase().includes('stor')) || (post.type && post.type.toLowerCase().includes('historia'))
                             ? '📱 Historia'
                             : post.type === 'Blog'
                             ? '📝 Blog'

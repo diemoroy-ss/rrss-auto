@@ -99,7 +99,7 @@ Genera el prompt narrativo en inglés (prosa, 120-180 palabras, fotografía real
 
     if (n8nRes.ok) {
       const data = await n8nRes.json();
-      const n8nImageUrl = data.imageUrl || data.url || data.output || data.image;
+      const n8nImageUrl = data.img_url || data.imageUrl || data.url || data.output || data.image;
       if (n8nImageUrl && typeof n8nImageUrl === 'string' && n8nImageUrl.startsWith('http')) {
         console.log(`[AgentImage] ✅ Imagen generada con éxito por n8n:`, n8nImageUrl);
         return n8nImageUrl;
