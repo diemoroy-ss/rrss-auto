@@ -27,19 +27,22 @@ async function fetchWithRetry(url: string, options: any, retries = 3, delay = 20
 function explainError(msg: string): string {
     if (!msg) return "Error desconocido de la API.";
     const lower = msg.toLowerCase();
-    if (lower.includes('token') || lower.includes('expired') || lower.includes('unauthorized') || lower.includes('code 190') || lower.includes('auth')) {
-        return "La conexión expiró o el permiso fue revocado. Ve al Panel de Configuración y vuelve a conectar tu cuenta.";
+    if (lower.includes('unaudited_client') || lower.includes('sandbox') || lower.includes('guidelines')) {
+        return "Tu App de TikTok está en modo desarrollo (Sandbox). En Sandbox, TikTok exige que tu cuenta esté agregada como tester en tu Developer Portal y en modo privado en el celular.";
     }
-    if (lower.includes('video_url is required') || lower.includes('uploading your video file') || lower.includes('media_type') || lower.includes('format')) {
-        return "La red social rechazó el archivo. Es probable que se requiriera un video válido (MP4) y no se pudo procesar correctamente.";
+    if (lower.includes('token') || lower.includes('expired') || lower.includes('unauthorized') || lower.includes('code 190') || lower.includes('auth') || lower.includes('scope_not_authorized')) {
+        return "La conexión de la red social expiró o el permiso fue revocado. Ve a Configuración y vuelve a conectar tu cuenta.";
+    }
+    if (lower.includes('video_url is required') || lower.includes('uploading your video file') || lower.includes('media_type') || lower.includes('format') || lower.includes('file_format')) {
+        return "La red social requiere un archivo de video MP4 válido en formato vertical 9:16.";
     }
     if (lower.includes('buffer') || lower.includes('tostring') || lower.includes('undefined')) {
-        return "Error interno al procesar el archivo multimedia antes de enviarlo.";
+        return "Error al procesar el archivo multimedia antes de enviarlo.";
     }
     if (lower.includes('timeout') || lower.includes('agotado') || lower.includes('wait') || lower.includes('not ready')) {
-        return "El servidor de la red social tardó demasiado en procesar la publicación o no respondió a tiempo.";
+        return "El servidor de la red social tardó demasiado en responder.";
     }
-    return "Error general reportado por la plataforma.";
+    return "Error reportado por la plataforma: " + msg.slice(0, 120);
 }
 
 export async function POST(req: Request) {
@@ -855,9 +858,14 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
         if (post.networks?.includes('tiktok') && creds.plainTtToken) {
             const plainToken = creds.plainTtToken;
             try {
-                console.log(`[TikTok Publish] Downloading video from: ${imageUrl}`);
-                const videoRes = await fetch(imageUrl);
-                if (!videoRes.ok) throw new Error(`No se pudo descargar el video: HTTP ${videoRes.status}`);
+                const targetMediaUrl = videoUrl || post.videoUrl || imageUrl || post.imageUrl;
+                if (!targetMediaUrl) {
+                    throw new Error("No se encontró ningún archivo de video MP4 generado para publicar en TikTok.");
+                }
+
+                console.log(`[TikTok Publish] Downloading video from: ${targetMediaUrl}`);
+                const videoRes = await fetch(targetMediaUrl);
+                if (!videoRes.ok) throw new Error(`No se pudo descargar el video para TikTok: HTTP ${videoRes.status}`);
                 
                 const videoBuffer = await videoRes.arrayBuffer();
                 const videoSize = videoBuffer.byteLength;
@@ -890,13 +898,16 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
                 let initData = await initRes.json();
                 console.log('[TikTok Publish] First Init response:', JSON.stringify(initData));
 
-                const isGuidelinesError = initData.error?.message?.toLowerCase().includes('guidelines') || 
-                                          JSON.stringify(initData).toLowerCase().includes('guidelines') ||
-                                          initData.error?.code === 'spam_or_sensitive_content' || 
-                                          initData.error?.code === 'unaudited_client_can_only_post_to_private_accounts';
+                const isGuidelinesError = initData.error?.code !== 'ok' && (
+                    initData.error?.message?.toLowerCase().includes('guidelines') || 
+                    JSON.stringify(initData).toLowerCase().includes('guidelines') ||
+                    initData.error?.code === 'spam_or_sensitive_content' || 
+                    initData.error?.code === 'unaudited_client_can_only_post_to_private_accounts' ||
+                    initData.error?.code === 'invalid_params'
+                );
 
                 if (isGuidelinesError) {
-                    console.warn('[TikTok Publish] Detected Sandbox mode or integration guidelines restriction. Retrying with SELF_ONLY privacy level...');
+                    console.warn('[TikTok Publish] Detected Sandbox mode or private account requirement. Retrying with SELF_ONLY privacy level...');
                     initRes = await fetch("https://open.tiktokapis.com/v2/post/publish/video/init/", {
                         method: 'POST',
                         headers: {
@@ -923,13 +934,14 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
                     console.log('[TikTok Publish] Sandbox retry Init response:', JSON.stringify(initData));
                     
                     if (initData.error?.code === 'ok' && initData.data?.upload_url) {
-                        infoLog += "TikTok Sandbox: El video se subió exitosamente en modo privado 'Solo Yo' (Para hacerlo público de forma automática a todo el mundo en futuros videos, debes solicitar la revisión de tu App en el panel de desarrolladores de TikTok). ";
+                        infoLog += "TikTok Sandbox: El video se subió exitosamente en modo privado 'Solo Yo' (Para publicarlo público a todo el mundo de forma directa, debes solicitar la revisión de tu App en el panel de desarrolladores de TikTok). ";
                     }
                 }
 
                 if (initData.error?.code !== 'ok' || !initData.data?.upload_url) {
+                    const errCode = initData.error?.code || 'unknown_error';
                     const errMessage = initData.error?.message || JSON.stringify(initData);
-                    throw new Error(`TikTok API error: ${errMessage} (Nota de Sandbox: Si tu App de TikTok está en modo de pruebas, TikTok exige que tu cuenta de TikTok esté configurada como 'Cuenta Privada' en tu celular para poder recibir videos de prueba).`);
+                    throw new Error(`TikTok API error [${errCode}]: ${errMessage}`);
                 }
 
                 const uploadUrl = initData.data.upload_url;
