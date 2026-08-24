@@ -3,29 +3,37 @@ import { generateFreeText } from "../gemini-free";
 export interface ImageAgentParams {
   idea: string;
   rubro?: string;
+  businessName?: string;
   businessDescription?: string;
   aspectRatio?: '1:1' | '9:16' | '16:9';
   logoPrompt?: string;
   logoUrl?: string;     // URL del logo PNG original en Firebase Storage
   userId?: string;      // ID de usuario para almacenar la imagen con marca
   includeLogo?: boolean;
+  bannerStyle?: 'banner' | 'clean'; // 'banner' (cartel publicitario con textos y badge) o 'clean' (solo foto)
+  promotions?: string;  // Promociones habituales del perfil (Nivel 1) o de la quincena (Nivel 2)
+  customOffer?: string; // Oferta específica de este post (Nivel 3)
 }
 
 /**
  * Agente de Imagen: Usa la fórmula de 7 componentes de Claude-Banana para diseñar el prompt
  * fotográfico limpio, genera la imagen vía n8n (o Pollinations) y, si se solicita,
- * estampa el logo PNG real y nítido del cliente encima usando Sharp.
+ * estampa el cartel publicitario comercial con titulares, badges y logo usando Sharp.
  */
 export async function generateImageWithAgent(params: ImageAgentParams): Promise<string> {
   const { 
     idea, 
     rubro = 'General', 
+    businessName = '',
     businessDescription = '', 
     aspectRatio = '1:1', 
     logoPrompt = '', 
     logoUrl = '', 
     userId = 'system',
-    includeLogo = false 
+    includeLogo = false,
+    bannerStyle = 'banner',
+    promotions = '',
+    customOffer = ''
   } = params;
 
   let width = 1080;
@@ -132,10 +140,44 @@ Genera el prompt narrativo en inglés (prosa, 120-180 palabras, fotografía real
     rawGeneratedUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${width}&height=${height}&model=flux&nologo=true&enhance=true&seed=${seed}`;
   }
 
-  // 4. Superposición del Logo PNG Real con Sharp (si el usuario lo solicitó y tiene logo configurado)
+  // 4. Modo Cartel Publicitario: Generar micro-copys de venta y estampar con Sharp + SVG
+  if (bannerStyle === 'banner') {
+    try {
+      console.log(`[AgentImage] 🎯 Modo Cartel Publicitario activo. Invocando Agente de Textos Publicitarios...`);
+      const { generateBannerCopyWithAgent } = await import('./agent-banner-copy');
+      const { composeBannerOnImage } = await import('../banner-compositor');
+
+      const bannerCopy = await generateBannerCopyWithAgent({
+        idea,
+        rubro,
+        businessName,
+        businessDescription,
+        promotions,
+        customOffer,
+        aspectRatio: isVerticalStory ? '9:16' : '1:1'
+      });
+
+      console.log(`[AgentImage] 🎨 Textos comerciales generados:`, bannerCopy.badgeText, '-', bannerCopy.mainHeadline);
+
+      const finalBannerUrl = await composeBannerOnImage({
+        baseImageUrl: rawGeneratedUrl,
+        bannerCopy,
+        logoUrl,
+        userId,
+        aspectRatio: isVerticalStory ? '9:16' : '1:1',
+        includeLogo
+      });
+
+      return finalBannerUrl;
+    } catch (bannerErr: any) {
+      console.warn('[AgentImage] Error en composición de banner, recurriendo a modo estándar:', bannerErr.message || bannerErr);
+    }
+  }
+
+  // 5. Modo Fotografía Limpia: Superposición de Logo PNG tradicional
   if (includeLogo && logoUrl) {
     try {
-      console.log(`[AgentImage] 🏷️ Estampando logo PNG real de la marca (${logoUrl}) sobre la imagen...`);
+      console.log(`[AgentImage] 🏷️ Estampando logo PNG real de la marca (${logoUrl}) sobre la imagen limpia...`);
       const { overlayLogoOnImage } = await import('../image-watermark');
       const watermarkedUrl = await overlayLogoOnImage(rawGeneratedUrl, logoUrl, userId, {
         position: 'bottom-right',

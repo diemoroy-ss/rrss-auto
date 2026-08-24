@@ -1,8 +1,15 @@
 import React from 'react';
-import { AbsoluteFill, useCurrentFrame, useVideoConfig, Audio, Img } from 'remotion';
+import { AbsoluteFill, useCurrentFrame, useVideoConfig, Audio, Img, OffthreadVideo } from 'remotion';
 import { ReelProps } from './Root';
 
-export const ReelComposition: React.FC<ReelProps> = ({ scenes = [], audioUrl }) => {
+export const ReelComposition: React.FC<ReelProps> = ({ 
+  scenes = [], 
+  bgVideoUrl = '', 
+  audioUrl = '', 
+  showWatermark = false,
+  logoUrl = '',
+  businessName = ''
+}) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
@@ -22,18 +29,21 @@ export const ReelComposition: React.FC<ReelProps> = ({ scenes = [], audioUrl }) 
     accentColor: "#F59E0B",
   }];
 
+  let found = false;
+
   for (let i = 0; i < validScenes.length; i++) {
     const sceneDurationFrames = (validScenes[i].duration || 4) * fps;
     if (frame >= accumulatedFrames && frame < accumulatedFrames + sceneDurationFrames) {
       currentSceneIndex = i;
       sceneProgress = (frame - accumulatedFrames) / sceneDurationFrames;
+      found = true;
       break;
     }
     accumulatedFrames += sceneDurationFrames;
   }
 
   // Si nos pasamos, usar la última
-  if (frame >= accumulatedFrames && validScenes.length > 0) {
+  if (!found && validScenes.length > 0) {
     currentSceneIndex = validScenes.length - 1;
     sceneProgress = 1;
   }
@@ -86,9 +96,29 @@ export const ReelComposition: React.FC<ReelProps> = ({ scenes = [], audioUrl }) 
       overflow: 'hidden',
       fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
     }}>
-      {/* Fondo Animado o Gradiente */}
+      {/* Fondo Animado, Video de Fondo o Gradiente */}
       <AbsoluteFill style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
-        {activeScene?.bgImageUrl ? (
+        {(bgVideoUrl || activeScene?.bgVideoUrl) ? (
+          <>
+            <OffthreadVideo
+              src={bgVideoUrl || activeScene?.bgVideoUrl}
+              style={{
+                width: 1080,
+                height: 1920,
+                objectFit: 'cover'
+              }}
+            />
+            {/* Sombreado de alto contraste para lectura perfecta */}
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'linear-gradient(180deg, rgba(2,6,23,0.6) 0%, rgba(0,0,0,0.2) 35%, rgba(0,0,0,0.4) 65%, rgba(2,6,23,0.85) 100%)'
+            }} />
+          </>
+        ) : activeScene?.bgImageUrl ? (
           <>
             <Img
               src={activeScene.bgImageUrl}
@@ -119,97 +149,113 @@ export const ReelComposition: React.FC<ReelProps> = ({ scenes = [], audioUrl }) 
         )}
       </AbsoluteFill>
 
-      {/* Marca de agua top izquierda */}
-      <div style={{
-        position: 'absolute',
-        top: 56,
-        left: 48,
-        zIndex: 30,
-        backgroundColor: 'rgba(0,0,0,0.65)',
-        padding: '14px 28px',
-        borderRadius: 999,
-        border: '1.5px solid rgba(255,255,255,0.25)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        boxShadow: '0 8px 24px rgba(0,0,0,0.6)'
-      }}>
-        <span style={{ fontSize: 26 }}>⚡</span>
-        <span style={{ fontSize: 22, fontWeight: 900, letterSpacing: '0.15em', color: '#F8FAFC', textTransform: 'uppercase' }}>
-          SANTISOFT
-        </span>
-      </div>
+      {/* Logo personalizado del cliente o Marca de agua Santisoft (condicional) */}
+      {(logoUrl || showWatermark) && (
+        <div style={{
+          position: 'absolute',
+          top: 60,
+          left: 48,
+          zIndex: 30,
+          backgroundColor: 'rgba(0,0,0,0.75)',
+          padding: logoUrl ? '10px 24px' : '14px 28px',
+          borderRadius: 999,
+          border: '1.5px solid rgba(255,255,255,0.25)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
+          backdropFilter: 'blur(8px)'
+        }}>
+          {logoUrl ? (
+            <>
+              <Img
+                src={logoUrl}
+                style={{
+                  height: 38,
+                  maxWidth: 120,
+                  objectFit: 'contain'
+                }}
+              />
+              {businessName && (
+                <span style={{ fontSize: 20, fontWeight: 900, letterSpacing: '0.1em', color: '#F8FAFC', textTransform: 'uppercase' }}>
+                  {businessName}
+                </span>
+              )}
+            </>
+          ) : (
+            <>
+              <span style={{ fontSize: 26 }}>⚡</span>
+              <span style={{ fontSize: 22, fontWeight: 900, letterSpacing: '0.15em', color: '#F8FAFC', textTransform: 'uppercase' }}>
+                SANTISOFT
+              </span>
+            </>
+          )}
+        </div>
+      )}
 
-      {/* Indicador de Escena top derecha */}
+      {/* Título de la escena en badge (Posicionado en Safe Zone Superior) */}
       <div style={{
         position: 'absolute',
-        top: 56,
-        right: 48,
-        zIndex: 30,
-        backgroundColor: 'rgba(255,255,255,0.15)',
-        padding: '14px 28px',
-        borderRadius: 999,
-        border: '1.5px solid rgba(255,255,255,0.3)',
-        fontSize: 22,
-        fontWeight: 800,
-        color: '#F8FAFC',
-        backdropFilter: 'blur(10px)',
-        boxShadow: '0 8px 24px rgba(0,0,0,0.5)'
-      }}>
-        Escena {currentSceneIndex + 1}/{validScenes.length}
-      </div>
-
-      {/* Textos Centrales Subtítulos Hormozi */}
-      <div style={{
-        position: 'absolute',
-        top: 0,
-        bottom: 0,
+        top: showWatermark ? 220 : 160,
         left: 0,
         right: 0,
         zIndex: 30,
         display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
         justifyContent: 'center',
-        padding: '0 64px',
-        textAlign: 'center',
-        gap: 36
+        padding: '0 48px'
       }}>
-        {/* Título de la escena en badge */}
         <div style={{
-          backgroundColor: 'rgba(0,0,0,0.75)',
-          padding: '16px 36px',
-          borderRadius: 24,
-          border: '2px solid rgba(255,255,255,0.25)',
-          fontSize: 32,
+          backgroundColor: 'rgba(0,0,0,0.85)',
+          padding: '14px 32px',
+          borderRadius: 20,
+          border: '2px solid rgba(255,255,255,0.3)',
+          fontSize: 28,
           fontWeight: 900,
           textTransform: 'uppercase',
           letterSpacing: '0.18em',
           color: '#E2E8F0',
-          boxShadow: '0 12px 32px rgba(0,0,0,0.7)'
+          boxShadow: '0 12px 32px rgba(0,0,0,0.7)',
+          backdropFilter: 'blur(8px)'
         }}>
           {activeScene?.title || "REEL EXCLUSIVO"}
         </div>
-        
-        {/* Subtítulo dinámico con palabras destacadas */}
+      </div>
+
+      {/* Subtítulo dinámico con palabras destacadas (Posicionado en Safe Zone Inferior TikTok/Reels) */}
+      <div style={{
+        position: 'absolute',
+        bottom: 420,
+        left: 0,
+        right: 0,
+        zIndex: 30,
+        display: 'flex',
+        justifyContent: 'center',
+        padding: '0 48px',
+        textAlign: 'center'
+      }}>
         <div style={{
-          fontSize: 60,
+          fontSize: 48,
           fontWeight: 900,
           lineHeight: 1.25,
-          padding: '0 20px',
-          maxWidth: 960
+          padding: '24px 32px',
+          backgroundColor: 'rgba(0,0,0,0.75)',
+          borderRadius: 32,
+          border: '1.5px solid rgba(255,255,255,0.2)',
+          backdropFilter: 'blur(12px)',
+          maxWidth: 980,
+          boxShadow: '0 16px 40px rgba(0,0,0,0.6)'
         }}>
           {renderHormoziText(activeScene?.subtitle || "Descubre cómo escalar tu negocio", activeScene?.highlightWords, activeScene?.accentColor || "#F59E0B")}
         </div>
       </div>
 
-      {/* Barra de Progreso Inferior */}
+      {/* Barra de Progreso (Ubicada justo debajo del subtítulo en Safe Zone) */}
       <div style={{
         position: 'absolute',
-        bottom: 56,
-        left: 48,
-        right: 48,
-        height: 16,
+        bottom: 370,
+        left: 64,
+        right: 64,
+        height: 14,
         backgroundColor: 'rgba(255,255,255,0.2)',
         borderRadius: 999,
         overflow: 'hidden',

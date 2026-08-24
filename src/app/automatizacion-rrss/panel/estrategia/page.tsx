@@ -40,6 +40,10 @@ export default function EstrategiaPage() {
   const [error, setError] = useState("");
   const router = useRouter();
   const [expectations, setExpectations] = useState("");
+  const [promoMode, setPromoMode] = useState<'profile' | 'custom'>('profile');
+  const [customPromotions, setCustomPromotions] = useState("");
+  const [radarAnalysis, setRadarAnalysis] = useState<any>(null);
+  const [useRadarContext, setUseRadarContext] = useState<boolean>(true);
   const [businessData, setBusinessData] = useState<any>({});
   const [postsThisMonth, setPostsThisMonth] = useState(0);
   const [hasNetworks, setHasNetworks] = useState(false);
@@ -148,6 +152,28 @@ export default function EstrategiaPage() {
               localStorage.removeItem('metrics_ai_context');
           }
 
+          // Cargar último análisis del Radar de Nicho para este perfil
+          try {
+              const radarRes = await fetch("/api/nicho/radar", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+                  body: JSON.stringify({
+                      checkCacheOnly: true,
+                      userId: u.uid,
+                      businessId: activeProfile?.id || 'default',
+                      niche: activeProfile?.rubro || data.rubro || 'General'
+                  })
+              });
+              if (radarRes.ok) {
+                  const rData = await radarRes.json();
+                  if (rData.success && rData.analysis) {
+                      setRadarAnalysis(rData.analysis);
+                  }
+              }
+          } catch (rErr) {
+              console.warn("No se pudo cargar análisis previo del radar:", rErr);
+          }
+
         } catch (e) {
           console.error("Error fetching data:", e);
         }
@@ -167,6 +193,10 @@ export default function EstrategiaPage() {
       setError("");
       setStrategyResult(null);
       try {
+         const activePromotions = promoMode === 'profile'
+             ? (activeProfile?.promotions || "")
+             : (customPromotions || activeProfile?.promotions || "");
+
          const res = await fetch("/api/ai/generate-strategy", {
              method: "POST",
              headers: { "Content-Type": "application/json" },
@@ -175,6 +205,8 @@ export default function EstrategiaPage() {
                  goalName: goals.find(g => g.id === selectedGoal)?.title, 
                  businessType, 
                  expectations,
+                 promotions: activePromotions,
+                 nicheContext: useRadarContext && radarAnalysis ? (radarAnalysis.summary || JSON.stringify(radarAnalysis.trends || [])) : "",
                  businessData,
                  userId: user?.uid,
                  profileId: activeProfile?.id || 'default',
@@ -379,23 +411,108 @@ export default function EstrategiaPage() {
                )}
              </div>
 
-             <div>
-                 <h3 className="text-sm font-black text-slate-900 tracking-tight mb-3">2. ¿Tienes alguna expectativa especial? <span className="text-slate-400 font-medium">(Opcional)</span></h3>
-                 <div className="relative">
-                     <textarea 
-                        value={expectations}
-                        onChange={e => setExpectations(e.target.value)}
-                        placeholder="Ej: Quiero enfocarme en vender zapatos rojos de verano... o lanzamos una nueva sucursal en Madrid..."
-                        className="w-full bg-slate-50 border-2 border-slate-100 pl-4 pr-12 py-4 rounded-[20px] font-medium text-slate-700 outline-none focus:border-indigo-500 transition-colors resize-none mb-2 text-sm"
-                        rows={3}
-                     />
-                     <VoiceMic 
-                        onResult={(text) => setExpectations(prev => prev + (prev ? " " : "") + text)} 
-                        className="absolute right-4 top-4 z-20"
-                     />
-                 </div>
-                 <p className="text-xs text-slate-400 font-bold px-2">Combinado con tus <Link href="/automatizacion-rrss/panel/configuracion" className="text-indigo-500 underline">Datos de Negocio</Link>, la IA será mucho más precisa.</p>
-             </div>
+              {/* NIVEL 2: PROMOCIONES PARA ESTA PLANIFICACIÓN */}
+              <div className="p-6 bg-gradient-to-br from-amber-500/5 via-indigo-500/5 to-purple-500/5 rounded-3xl border-2 border-amber-400/30 space-y-4">
+                  <div className="flex items-center gap-3">
+                     <span className="text-2xl">🏷️</span>
+                     <div>
+                        <h3 className="text-sm font-black text-slate-900 tracking-tight">2. Promociones y Ofertas para esta Planificación</h3>
+                        <p className="text-xs font-medium text-slate-500">Nuestros agentes incluirán estas promociones en los ganchos y carteles publicitarios.</p>
+                     </div>
+                  </div>
+
+                  {/* Resumen de lo configurado en el perfil */}
+                  {activeProfile?.promotions ? (
+                    <div className="p-4 bg-white rounded-2xl border border-amber-200/60 shadow-sm text-left">
+                      <p className="text-[10px] font-black uppercase tracking-wider text-amber-700 mb-1">📌 Promociones activas de tu perfil (Nivel 1):</p>
+                      <p className="text-xs font-semibold text-slate-700 whitespace-pre-line">{activeProfile.promotions}</p>
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-amber-50 rounded-2xl border border-amber-200 text-left">
+                      <p className="text-xs text-amber-800 font-medium">
+                        💡 No tienes promociones guardadas en tu perfil. Puedes escribir tus ofertas para esta estrategia aquí o configurarlas en <Link href="/automatizacion-rrss/panel/configuracion" className="underline font-bold">Configuración de Marca</Link>.
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="space-y-2.5">
+                    {activeProfile?.promotions && (
+                      <label 
+                        onClick={() => setPromoMode('profile')}
+                        className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${promoMode === 'profile' ? 'bg-white border-amber-500 shadow-sm' : 'bg-white/60 border-slate-100 hover:bg-white'}`}
+                      >
+                        <input type="radio" name="promoMode" checked={promoMode === 'profile'} onChange={() => setPromoMode('profile')} className="accent-amber-600" />
+                        <span className="text-xs font-bold text-slate-800">Usar las promociones habituales de mi perfil</span>
+                      </label>
+                    )}
+
+                    <label 
+                      onClick={() => setPromoMode('custom')}
+                      className={`flex items-start gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${promoMode === 'custom' || !activeProfile?.promotions ? 'bg-white border-amber-500 shadow-sm' : 'bg-white/60 border-slate-100 hover:bg-white'}`}
+                    >
+                      <input type="radio" name="promoMode" checked={promoMode === 'custom' || !activeProfile?.promotions} onChange={() => setPromoMode('custom')} className="mt-0.5 accent-amber-600" />
+                      <div className="flex-1">
+                        <span className="text-xs font-bold text-slate-800">
+                          {activeProfile?.promotions ? "Quiero cambiar o agregar una promo especial para estos 14 días" : "Escribir promociones u ofertas para este plan"}
+                        </span>
+                        {(promoMode === 'custom' || !activeProfile?.promotions) && (
+                          <textarea
+                            value={customPromotions}
+                            onChange={e => setCustomPromotions(e.target.value)}
+                            placeholder="Ej: Este fin de semana 3x2 en postres, o 20% OFF en corte y barba..."
+                            rows={3}
+                            className="w-full mt-2 bg-slate-50 border border-amber-200/60 p-3 rounded-xl text-xs font-bold text-slate-700 outline-none focus:bg-white focus:ring-2 focus:ring-amber-400 resize-none"
+                          />
+                        )}
+                      </div>
+                    </label>
+                  </div>
+              </div>
+
+              {/* RADAR DE NICHO VINCULADO */}
+              {radarAnalysis && (
+                <div className="p-5 bg-gradient-to-r from-sky-500/10 via-indigo-500/10 to-purple-500/10 rounded-3xl border-2 border-sky-400/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in fade-in">
+                    <div className="flex items-center gap-3">
+                       <span className="text-3xl">📡</span>
+                       <div>
+                          <div className="flex items-center gap-2">
+                             <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">Radar de Nicho Activo: {radarAnalysis.niche || activeProfile?.rubro}</h4>
+                             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                          </div>
+                          <p className="text-[11px] text-slate-600 font-medium mt-0.5">
+                            Se detectaron {radarAnalysis.trends?.length || 0} temas candentes y {radarAnalysis.ideas?.length || 0} ideas que alimentarán esta estrategia.
+                          </p>
+                       </div>
+                    </div>
+                    <label className="flex items-center gap-2 cursor-pointer bg-white px-3 py-1.5 rounded-xl border border-sky-200 shadow-sm shrink-0">
+                       <input 
+                         type="checkbox" 
+                         checked={useRadarContext} 
+                         onChange={e => setUseRadarContext(e.target.checked)} 
+                         className="w-4 h-4 accent-sky-600 rounded" 
+                       />
+                       <span className="text-xs font-bold text-sky-800">Conectar Radar</span>
+                    </label>
+                </div>
+              )}
+
+              <div>
+                  <h3 className="text-sm font-black text-slate-900 tracking-tight mb-3">3. ¿Tienes alguna expectativa especial? <span className="text-slate-400 font-medium">(Opcional)</span></h3>
+                  <div className="relative">
+                      <textarea 
+                         value={expectations}
+                         onChange={e => setExpectations(e.target.value)}
+                         placeholder="Ej: Quiero enfocarme en vender zapatos rojos de verano... o lanzamos una nueva sucursal en Madrid..."
+                         className="w-full bg-slate-50 border-2 border-slate-100 pl-4 pr-12 py-4 rounded-[20px] font-medium text-slate-700 outline-none focus:border-indigo-500 transition-colors resize-none mb-2 text-sm"
+                         rows={3}
+                      />
+                      <VoiceMic 
+                         onResult={(text) => setExpectations(prev => prev + (prev ? " " : "") + text)} 
+                         className="absolute right-4 top-4 z-20"
+                      />
+                  </div>
+                  <p className="text-xs text-slate-400 font-bold px-2">Combinado con tus <Link href="/automatizacion-rrss/panel/configuracion" className="text-indigo-500 underline">Datos de Negocio</Link>, nuestros agentes serán mucho más precisos.</p>
+              </div>
 
              <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
                  <p className="text-slate-400 font-bold text-xs">Negocio: <span className="text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">{businessType || 'General'}</span></p>

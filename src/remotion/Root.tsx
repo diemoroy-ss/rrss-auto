@@ -17,9 +17,14 @@ export interface ReelProps {
     accentColor: string;
     imagePrompt?: string;
     bgImageUrl?: string;
+    bgVideoUrl?: string;
   }[];
-  audioUrl?: string; // MP3 de ElevenLabs
+  bgVideoUrl?: string;
+  audioUrl?: string;
   totalDurationInFrames: number;
+  showWatermark?: boolean;
+  logoUrl?: string;
+  businessName?: string;
 }
 
 export const RemotionRoot: React.FC = () => {
@@ -28,10 +33,16 @@ export const RemotionRoot: React.FC = () => {
       <Composition
         id="SantisoftReel"
         component={ReelComposition}
-        durationInFrames={360} // Valor por defecto, se sobreescribe al renderizar
+        durationInFrames={360}
         fps={30}
         width={1080}
         height={1920}
+        calculateMetadata={({ props }) => {
+          const durationInFrames = props?.totalDurationInFrames || 360;
+          return {
+            durationInFrames,
+          };
+        }}
         defaultProps={{
           compositionId: "default",
           totalDurationInFrames: 360,

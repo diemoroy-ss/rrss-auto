@@ -1,4 +1,4 @@
-﻿export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '../../../../../lib/firebase-admin';
@@ -39,19 +39,59 @@ export async function GET(req: Request) {
              return NextResponse.json({ error: "Error decoding Token" }, { status: 500 });
         }
 
-        // Consultar páginas (incluyendo la foto de perfil de Facebook y de Instagram)
+        // 1. Verificar permisos otorgados para diagnóstico
+        try {
+            const permRes = await fetch(`https://graph.facebook.com/v19.0/me/permissions?access_token=${userAccessToken}`);
+            const permData = await permRes.json();
+            console.log("[Meta Pages] Permisos del token:", JSON.stringify(permData));
+        } catch (pErr) {
+            console.warn("[Meta Pages] No se pudieron leer permisos:", pErr);
+        }
+
+        const pageMap = new Map<string, any>();
+
+        // 2. Consultar páginas directas del usuario (/me/accounts)
         const pagesUrl = `https://graph.facebook.com/v19.0/me/accounts?fields=id,name,access_token,picture{url},instagram_business_account{id,username,profile_picture_url}&access_token=${userAccessToken}`;
-        
         const res = await fetch(pagesUrl);
         const data = await res.json();
+        console.log("[Meta Pages] Respuesta /me/accounts:", JSON.stringify(data));
 
-        console.log("DEBUG FB me/accounts response:", JSON.stringify(data));
+        if (data.data && Array.isArray(data.data)) {
+            for (const page of data.data) {
+                pageMap.set(page.id, page);
+            }
+        }
 
-        if (data.error) {
+        // 3. Si no hay páginas o para complementar, consultar portfolios de negocios (/me/businesses)
+        try {
+            const bizUrl = `https://graph.facebook.com/v19.0/me/businesses?fields=id,name,owned_pages{id,name,access_token,picture{url},instagram_business_account{id,username,profile_picture_url}},client_pages{id,name,access_token,picture{url},instagram_business_account{id,username,profile_picture_url}}&access_token=${userAccessToken}`;
+            const bizRes = await fetch(bizUrl);
+            const bizData = await bizRes.json();
+            console.log("[Meta Pages] Respuesta /me/businesses:", JSON.stringify(bizData));
+
+            if (bizData.data && Array.isArray(bizData.data)) {
+                for (const biz of bizData.data) {
+                    const owned = biz.owned_pages?.data || [];
+                    const client = biz.client_pages?.data || [];
+                    for (const page of [...owned, ...client]) {
+                        if (!pageMap.has(page.id)) {
+                            pageMap.set(page.id, page);
+                        }
+                    }
+                }
+            }
+        } catch (bizErr) {
+            console.warn("[Meta Pages] Error consultando /me/businesses:", bizErr);
+        }
+
+        const allPages = Array.from(pageMap.values());
+        console.log(`[Meta Pages] Total páginas encontradas: ${allPages.length}`);
+
+        if (data.error && allPages.length === 0) {
              return NextResponse.json({ error: data.error.message }, { status: 500 });
         }
 
-        return NextResponse.json({ data: data.data || [] });
+        return NextResponse.json({ data: allPages });
 
     } catch (error: any) {
         console.error("Meta Pages Error:", error);

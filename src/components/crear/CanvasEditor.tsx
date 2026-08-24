@@ -56,6 +56,38 @@ export default function CanvasEditor({
   
   const [textLayers, setTextLayers] = useState<TextLayer[]>(defaultTextLayers);
   const [imagePalette, setImagePalette] = useState<string[]>(['#ffffff', '#000000', '#f43f5e', '#3b82f6', '#10b981', '#facc15']);
+  const [isGeneratingBanner, setIsGeneratingBanner] = useState(false);
+
+  const handleGenerateBannerText = async () => {
+    setIsGeneratingBanner(true);
+    try {
+      const res = await fetch("/api/ai/banner-text", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "generate_text",
+          idea: suggestedCopy || "Promoción comercial destacada",
+          businessName: "",
+          rubro: "General"
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.bannerCopy) {
+          const b = data.bannerCopy;
+          setTextLayers([
+            { text: b.badgeText, color: b.badgeTextColor, font: "Montserrat", size: "20", x: 50, y: 15, textAlign: 'center', isBold: true, isItalic: false, shadowLevel: 'soft', backgroundColor: b.badgeBgColor, isPill: true, textTransform: 'uppercase', letterSpacing: 'wide', textStroke: false, opacity: 1 },
+            { text: b.mainHeadline, color: b.headlineColor, font: "Montserrat", size: "36", x: 50, y: 35, textAlign: 'center', isBold: true, isItalic: false, shadowLevel: 'strong', backgroundColor: 'transparent', isPill: false, textTransform: 'uppercase', letterSpacing: 'normal', textStroke: false, opacity: 1 },
+            { text: b.benefitText, color: b.benefitTextColor, font: "Montserrat", size: "18", x: 50, y: 65, textAlign: 'center', isBold: true, isItalic: false, shadowLevel: 'soft', backgroundColor: b.benefitBgColor, isPill: true, textTransform: 'none', letterSpacing: 'normal', textStroke: false, opacity: 1 },
+          ]);
+        }
+      }
+    } catch (e) {
+      console.warn("Error generando textos de banner con agente:", e);
+    } finally {
+      setIsGeneratingBanner(false);
+    }
+  };
 
   // Extraer paleta de colores de la imagen
   useEffect(() => {
@@ -436,7 +468,24 @@ export default function CanvasEditor({
     {/* Butterfly Editor Controls */}
     {showEditor && !finalImageUrl && (
         <div className="bg-white p-6 rounded-2xl border border-slate-200 space-y-4 shadow-sm animate-in slide-in-from-top-4">
-            <h5 className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-2 border-b border-slate-100 pb-2">🦋 Butterfly IA (Toque Final)</h5>
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+               <h5 className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">🦋 Personalizar Cartel & Capas</h5>
+               <span className="text-[10px] font-bold text-slate-400">3 Capas de Texto + Logo</span>
+            </div>
+
+            {/* Botón de Generación de Textos de Anuncio con Agente */}
+            <button
+               type="button"
+               onClick={handleGenerateBannerText}
+               disabled={isGeneratingBanner}
+               className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-amber-500 via-amber-600 to-indigo-600 hover:from-amber-600 hover:to-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-md shadow-amber-500/20 transition-all disabled:opacity-50 group hover:-translate-y-0.5"
+            >
+               {isGeneratingBanner ? (
+                  <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Diseñando Textos con Agente...</>
+               ) : (
+                  <><span>✨</span> Sugerir Titulares Comerciales (Agente de Banners)</>
+               )}
+            </button>
             
             <div className="flex gap-2 mb-2">
                 {[0, 1, 2].map(i => (

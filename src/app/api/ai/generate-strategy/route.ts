@@ -4,7 +4,7 @@ import { adminDb } from '../../../../lib/firebase-admin';
 
 export async function POST(req: NextRequest) {
   try {
-    const { goal, goalName, businessType, userId, expectations, businessData, connectedPlatforms, nicheContext, postsPerWeek } = await req.json();
+    const { goal, goalName, businessType, userId, expectations, promotions, businessData, connectedPlatforms, nicheContext, postsPerWeek } = await req.json();
 
     if (!goal) {
       return NextResponse.json({ error: "Goal is required" }, { status: 400 });
@@ -63,7 +63,8 @@ export async function POST(req: NextRequest) {
         platforms,
         history,
         nicheContext || "",
-        postsPerWeek || 5
+        postsPerWeek || 5,
+        promotions || ""
     );
 
     console.log("[STRATEGY] LangGraph Strategy generated successfully.");

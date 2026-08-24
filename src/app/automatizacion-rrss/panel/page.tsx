@@ -1073,11 +1073,15 @@ export default function RrssDashboard() {
           <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
             <div className="bg-white border border-slate-200 rounded-xl px-4 py-2.5 flex items-center justify-between gap-4 shadow-sm">
                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Cuota Imágenes</span>
-               <span className={`font-black text-sm ${quotaUsed >= planLimit ? 'text-rose-600' : 'text-indigo-600'}`}>{quotaUsed} / {planLimit}</span>
+               <span className={`font-black text-sm ${(quotaUsed >= planLimit && planLimit < 99999) ? 'text-rose-600' : 'text-indigo-600'}`}>
+                 {quotaUsed} / {planLimit >= 99999 ? '∞' : planLimit}
+               </span>
             </div>
             <div className="bg-white border border-slate-200 rounded-xl px-4 py-2.5 flex items-center justify-between gap-4 shadow-sm">
                <span className="text-[10px] font-black uppercase tracking-widest text-pink-400">Cuotas Reel</span>
-               <span className={`font-black text-sm ${videosUsed >= videoLimit ? 'text-rose-600' : 'text-pink-600'}`}>{videosUsed} / {videoLimit}</span>
+               <span className={`font-black text-sm ${(videosUsed >= videoLimit && videoLimit < 99999) ? 'text-rose-600' : 'text-pink-600'}`}>
+                 {videosUsed} / {videoLimit >= 99999 ? '∞' : videoLimit}
+               </span>
             </div>
             <Link id="tour-btn-new-post" href="/automatizacion-rrss/panel/crear" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-6 rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2">
               <span>✍️</span> Agendar Nuevo
@@ -1268,7 +1272,8 @@ export default function RrssDashboard() {
                 confirmed: { color: 'text-indigo-600 bg-indigo-50 border-indigo-200', text: '⏳ Agendado por Santisoft' },
                 publishing: { color: 'text-blue-600 bg-blue-50 border-blue-200 shadow-sm animate-pulse', text: '⚡ Publicando...' },
                 published: { color: 'text-emerald-600 bg-emerald-50 border-emerald-200', text: '✅ Publicado' },
-                error: { color: 'text-rose-600 bg-rose-50 border-rose-200', text: '❌ Error' }
+                error: { color: 'text-rose-600 bg-rose-50 border-rose-200', text: '❌ Error' },
+                quota_exceeded: { color: 'text-amber-700 bg-amber-50 border-amber-300', text: '⚠️ Cuota Excedida (Reagendar)' }
               }[effectiveStatus] || { color: 'text-slate-600 bg-slate-50 border-slate-200', text: effectiveStatus };
               
               return (
@@ -1336,37 +1341,45 @@ export default function RrssDashboard() {
                         className="mt-2 mb-6 rounded-2xl overflow-hidden border border-slate-200/50 aspect-video bg-indigo-50 flex flex-col items-center justify-center shadow-inner relative animate-pulse cursor-pointer group/stuck"
                       >
                         <div className="w-8 h-8 rounded-full border-4 border-indigo-200 border-t-indigo-500 animate-spin mb-3 shadow-md"></div>
-                        <p className="text-[10px] font-black text-indigo-500 tracking-widest uppercase bg-white/60 px-3 py-1 rounded-full shadow-sm group-hover/stuck:hidden">Generando ia...</p>
+                        <p className="text-[10px] font-black text-indigo-500 tracking-widest uppercase bg-white/60 px-3 py-1 rounded-full shadow-sm group-hover/stuck:hidden">Generando...</p>
                         <p className="text-[10px] font-black text-rose-500 tracking-widest uppercase bg-white/80 px-3 py-1 rounded-full shadow-sm hidden group-hover/stuck:block">¿Trabado? Click para Reset</p>
                       </div>
-                    ) : post.imageUrl || post.scenes ? (
-                      <div className="mt-2 mb-6 rounded-2xl overflow-hidden border border-slate-200/50 aspect-video bg-slate-50 flex items-center justify-center shadow-inner relative group-hover:border-indigo-200 transition-all">
-                        {post.type === 'video_reel' || 
-                         post.type === 'reel' || 
-                         post.type === 'Reel' || 
-                         post.scenes || 
-                         (post.format && (post.format.toLowerCase().includes('reel') || post.format.toLowerCase().includes('short'))) ||
-                         post.imageUrl?.toLowerCase().includes('.mp4') || 
-                         post.imageUrl?.toLowerCase().includes('.mov') || 
-                         post.imageUrl?.toLowerCase().includes('.webm') || 
-                         post.imageUrl?.toLowerCase().includes('video') || 
-                         post.imageUrl?.toLowerCase().includes('quicktime') ? (
-                          <>
-                            {post.imageUrl ? (
-                              <img src={post.imageUrl} alt="Thumbnail Reel" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                            ) : null}
-                            <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2 group-hover:bg-slate-950/20 transition-all">
-                              <div className="w-12 h-12 rounded-full bg-white/90 text-indigo-600 flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform pl-0.5">
-                                <span className="text-xl">▶</span>
+                    ) : (post.videoUrl || post.imageUrl || (post.scenes && post.scenes.length > 0)) ? (
+                      <div className="mt-2 mb-6 rounded-2xl overflow-hidden border border-slate-200/50 aspect-video bg-slate-950 flex items-center justify-center shadow-inner relative group-hover:border-indigo-200 transition-all cursor-pointer">
+                        {(post.videoUrl || (post.imageUrl && (post.imageUrl.includes('.mp4') || post.imageUrl.includes('.mov') || post.imageUrl.includes('video') || (post.type === 'Reel' && post.imageUrl.includes('firebasestorage'))))) ? (
+                          <div className="w-full h-full relative bg-slate-950 flex items-center justify-center">
+                            <video 
+                              src={post.videoUrl || post.imageUrl} 
+                              className="w-full h-full object-cover opacity-85 group-hover:opacity-100 transition-opacity"
+                              muted 
+                              playsInline 
+                              preload="metadata"
+                            />
+                            <div className="absolute inset-0 bg-slate-950/30 backdrop-blur-[1px] flex flex-col items-center justify-center gap-1.5">
+                              <div className="w-10 h-10 rounded-full bg-white/95 text-indigo-600 flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform pl-0.5">
+                                <span className="text-base">▶</span>
                               </div>
-                              <span className="bg-slate-900/80 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-white/20 shadow-md">
-                                Previsualizar Reel
+                              <span className="bg-slate-900/90 text-white text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border border-white/20 shadow-md">
+                                🎬 Video Listo
                               </span>
                             </div>
-                          </>
+                          </div>
+                        ) : post.scenes && post.scenes.length > 0 ? (
+                          <div className="w-full h-full relative bg-indigo-950 flex items-center justify-center">
+                            {post.scenes[0]?.bgImageUrl && (
+                              <img src={post.scenes[0].bgImageUrl} alt="Reel Scene" className="w-full h-full object-cover opacity-80" />
+                            )}
+                            <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-[1px] flex flex-col items-center justify-center gap-1.5">
+                              <div className="w-10 h-10 rounded-full bg-white/95 text-indigo-600 flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform pl-0.5">
+                                <span className="text-base">▶</span>
+                              </div>
+                              <span className="bg-slate-900/90 text-white text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border border-white/20 shadow-md">
+                                ✨ Previsualizar Reel
+                              </span>
+                            </div>
+                          </div>
                         ) : (
                           <>
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={post.imageUrl} alt="Ref" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                             <div className="absolute inset-0 bg-gradient-to-t from-slate-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                             {post.imageUrls && post.imageUrls.length > 1 && (
@@ -1377,7 +1390,6 @@ export default function RrssDashboard() {
                           </>
                         )}
                       </div>
-
                     ) : ['business', 'agency'].includes(userPlan) ? (
                       <div 
                         className="mt-2 mb-6 rounded-2xl overflow-hidden border-2 border-dashed border-slate-200 aspect-video bg-slate-50/50 flex items-center justify-center shadow-inner hover:bg-indigo-50 hover:border-indigo-300 transition-all cursor-pointer group/media" 
@@ -1660,56 +1672,94 @@ export default function RrssDashboard() {
                    </div>
 
                    {selectedPost.isGeneratingImage ? (
-                      <div className="rounded-[28px] p-8 bg-indigo-50 border border-indigo-100 flex flex-col items-center justify-center animate-pulse">
-                         <div className="w-10 h-10 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin mb-4 shadow-md"></div>
-                         <p className="text-xs font-black text-indigo-600 tracking-widest uppercase mb-4">Pintando con n8n...</p>
-                         <button 
-                           onClick={(e) => handleResetGeneratingState(selectedPost.id, e)}
-                           className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-rose-500 bg-white px-4 py-2 rounded-xl border border-slate-100 transition-all"
-                         >
-                            Resetear Estado (Si está trabado)
-                         </button>
-                      </div>
-                    ) : selectedPost.imageUrl ? (
-                     <div>
-                <div className="flex items-center justify-between mb-3 ml-2">
-                           <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Referencia Visual de IA</h3>
-                           {['business', 'agency'].includes(userPlan) && (
-                               <button 
-                                 onClick={(e) => handleGenerateMedia(selectedPost.id, e)}
-                                 className="text-[10px] font-black uppercase tracking-widest text-indigo-500 hover:text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100 transition-all flex items-center gap-1.5 shadow-sm"
+                       <div className="rounded-[28px] p-8 bg-indigo-50 border border-indigo-100 flex flex-col items-center justify-center animate-pulse">
+                          <div className="w-10 h-10 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin mb-4 shadow-md"></div>
+                          <p className="text-xs font-black text-indigo-600 tracking-widest uppercase mb-4">Pintando con n8n...</p>
+                          <button 
+                            onClick={(e) => handleResetGeneratingState(selectedPost.id, e)}
+                            className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-rose-500 bg-white px-4 py-2 rounded-xl border border-slate-100 transition-all"
+                          >
+                             Resetear Estado (Si está trabado)
+                          </button>
+                       </div>
+                     ) : (selectedPost.videoUrl || selectedPost.imageUrl || (selectedPost.scenes && selectedPost.scenes.length > 0)) ? (
+                       <div>
+                         <div className="flex items-center justify-between mb-3 ml-2">
+                             <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                               {(selectedPost.videoUrl || (selectedPost.imageUrl && (selectedPost.imageUrl.includes('.mp4') || selectedPost.imageUrl.includes('video') || (selectedPost.type === 'Reel' && selectedPost.imageUrl.includes('firebasestorage'))))) ? "🎬 Video Generado / Publicado" : "Referencia Visual"}
+                             </h3>
+                             {(selectedPost.videoUrl || (selectedPost.imageUrl && (selectedPost.imageUrl.includes('.mp4') || selectedPost.imageUrl.includes('video') || (selectedPost.type === 'Reel' && selectedPost.imageUrl.includes('firebasestorage'))))) ? (
+                               <a
+                                 href={selectedPost.videoUrl || selectedPost.imageUrl}
+                                 target="_blank"
+                                 rel="noopener noreferrer"
+                                 className="text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg border border-indigo-200 transition-all flex items-center gap-1.5 shadow-sm"
                                >
-                                  <span>✨</span> Volver a Generar
-                               </button>
+                                 <span>🔗</span> Abrir / Descargar MP4 ↗
+                               </a>
+                             ) : ['business', 'agency'].includes(userPlan) ? (
+                                 <button 
+                                   onClick={(e) => handleGenerateMedia(selectedPost.id, e)}
+                                   className="text-[10px] font-black uppercase tracking-widest text-indigo-500 hover:text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100 transition-all flex items-center gap-1.5 shadow-sm"
+                                 >
+                                    <span>✨</span> Volver a Generar
+                                 </button>
+                             ) : null}
+                         </div>
+                         <div className="rounded-[28px] p-4 bg-slate-950 border-2 border-slate-900 flex flex-col items-center justify-center">
+                           {(selectedPost.videoUrl || (selectedPost.imageUrl && (selectedPost.imageUrl.includes('.mp4') || selectedPost.imageUrl.includes('video') || (selectedPost.type === 'Reel' && selectedPost.imageUrl.includes('firebasestorage'))))) ? (
+                             <div className="w-full flex flex-col items-center gap-3">
+                               <div className="relative w-full max-w-[280px] aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl bg-black border border-slate-800">
+                                 <video 
+                                   src={selectedPost.videoUrl || selectedPost.imageUrl} 
+                                   controls 
+                                   autoPlay 
+                                   loop 
+                                   playsInline 
+                                   className="w-full h-full object-cover" 
+                                 />
+                               </div>
+                               <div className="w-full bg-slate-900/90 rounded-xl p-3 border border-slate-800 flex items-center justify-between gap-2 text-xs">
+                                 <div className="flex items-center gap-2 text-slate-300 truncate">
+                                   <span className="text-emerald-400 font-bold">● MP4 HD</span>
+                                   <span className="text-[11px] text-slate-400 truncate max-w-[180px] font-mono">{selectedPost.videoUrl || selectedPost.imageUrl}</span>
+                                 </div>
+                                 <a
+                                   href={selectedPost.videoUrl || selectedPost.imageUrl}
+                                   target="_blank"
+                                   rel="noopener noreferrer"
+                                   className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[10px] uppercase rounded-lg shrink-0 transition-all"
+                                 >
+                                   Ver Pantalla Completa ↗
+                                 </a>
+                               </div>
+                             </div>
+                           ) : selectedPost.scenes && selectedPost.scenes.length > 0 ? (
+                             <div className="flex flex-col items-center justify-center p-2 bg-slate-50 rounded-2xl w-full">
+                               <RemotionReelPlayer composition={{ title: selectedPost.idea || selectedPost.title || 'Reel Animado', rubro: activeProfile?.rubro || 'General', totalDuration: selectedPost.scenes.reduce((acc, s) => acc + (s.duration || 4), 0), audioScript: selectedPost.audioScript || '', copyText: selectedPost.copy || selectedPost.text || '', scenes: selectedPost.scenes }} />
+                             </div>
+                           ) : (
+                             <DashboardCarouselViewer urls={selectedPost.imageUrls && selectedPost.imageUrls.length > 0 ? selectedPost.imageUrls : [selectedPost.imageUrl]} />
                            )}
+                         </div>
                        </div>
-                       <div className="rounded-[28px] p-2 bg-slate-50 border-2 border-slate-100">
-                         {selectedPost.scenes && selectedPost.scenes.length > 0 ? (
-                           <div className="flex flex-col items-center justify-center p-2">
-                             <RemotionReelPlayer composition={{ title: selectedPost.idea || selectedPost.title || 'Reel Animado', rubro: activeProfile?.rubro || 'General', totalDuration: selectedPost.scenes.reduce((acc: number, s: any) => acc + (s.duration || 4), 0), audioScript: selectedPost.audioScript || '', copyText: selectedPost.copy || selectedPost.text || '', scenes: selectedPost.scenes }} />
-                           </div>
-                         ) : (
-                           <DashboardCarouselViewer urls={selectedPost.imageUrls && selectedPost.imageUrls.length > 0 ? selectedPost.imageUrls : [selectedPost.imageUrl!]} />
-                         )}
-                       </div>
-                     </div>
-                   ) : ['business', 'agency'].includes(userPlan) ? (
-                     <div 
-                       onClick={(e) => handleGenerateMedia(selectedPost.id, e)}
-                       className="rounded-[28px] p-8 bg-slate-50 border-2 border-dashed border-slate-200 flex flex-col items-center justify-center cursor-pointer hover:bg-indigo-50 hover:border-indigo-300 transition-all group/modalmedia"
-                     >
-                        <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center text-2xl shadow-sm text-indigo-500 mx-auto mb-4 group-hover/modalmedia:scale-110 group-hover/modalmedia:bg-indigo-500 group-hover/modalmedia:text-white transition-all">✨</div>
-                        <p className="text-sm font-black text-slate-500 uppercase tracking-widest group-hover/modalmedia:text-indigo-600">Generar Vista Previa Ahora</p>
-                     </div>
-                   ) : (
-                     <div className="rounded-[28px] p-8 bg-slate-50 border border-slate-200 flex flex-col items-center justify-center">
-                        <div className="w-14 h-14 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center text-3xl shadow-sm mx-auto mb-4">🤖</div>
-                        <p className="text-sm font-black text-slate-500 uppercase tracking-widest">Confía en Piloto Automático</p>
-                        <p className="text-xs text-slate-400 mt-2 text-center max-w-sm">Mejora a Business o Agency para pre-visualizar y editar las imágenes generadas antes de que sean publicadas.</p>
-                     </div>
-                   )}
-                </div>
-            </div>
+                     ) : ['business', 'agency'].includes(userPlan) ? (
+                      <div 
+                        onClick={(e) => handleGenerateMedia(selectedPost.id, e)}
+                        className="rounded-[28px] p-8 bg-slate-50 border-2 border-dashed border-slate-200 flex flex-col items-center justify-center cursor-pointer hover:bg-indigo-50 hover:border-indigo-300 transition-all group/modalmedia"
+                      >
+                         <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center text-2xl shadow-sm text-indigo-500 mx-auto mb-4 group-hover/modalmedia:scale-110 group-hover/modalmedia:bg-indigo-500 group-hover/modalmedia:text-white transition-all">✨</div>
+                         <p className="text-sm font-black text-slate-500 uppercase tracking-widest group-hover/modalmedia:text-indigo-600">Generar Vista Previa Ahora</p>
+                      </div>
+                    ) : (
+                      <div className="rounded-[28px] p-8 bg-slate-50 border border-slate-200 flex flex-col items-center justify-center">
+                         <div className="w-14 h-14 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center text-3xl shadow-sm mx-auto mb-4">🤖</div>
+                         <p className="text-sm font-black text-slate-500 uppercase tracking-widest">Confía en Piloto Automático</p>
+                         <p className="text-xs text-slate-400 mt-2 text-center max-w-sm">Mejora a Business o Agency para pre-visualizar y editar las imágenes generadas antes de que sean publicadas.</p>
+                      </div>
+                    )}
+                 </div>
+             </div>
 
             {/* Sticky Actions Bar Mobile / Footer Desktop */}
             <div className="shrink-0 p-6 sm:p-10 border-t border-slate-100 bg-white/80 backdrop-blur-xl absolute bottom-0 inset-x-0 z-20">

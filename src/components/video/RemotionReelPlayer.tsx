@@ -13,6 +13,7 @@ export default function RemotionReelPlayer({ composition, onSceneChange }: Remot
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [useVoiceSpeech, setUseVoiceSpeech] = useState<boolean>(true);
+    const [showWatermark, setShowWatermark] = useState<boolean>(false);
 
   const requestRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number | null>(null);
@@ -89,58 +90,40 @@ export default function RemotionReelPlayer({ composition, onSceneChange }: Remot
     }
   };
 
-  // Selector inteligente de voz que excluye acento de España a menos que se pida explícitamente
-  const pickBestVoice = (targetLang: string): SpeechSynthesisVoice | null => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return null;
+    const pickBestVoice = (targetLang: string): SpeechSynthesisVoice | null => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return null;
     const voices = browserVoices.length > 0 ? browserVoices : window.speechSynthesis.getVoices();
-    if (!voices || voices.length === 0) return null;
-
-    const normalizedTarget = targetLang.toLowerCase().replace('_', '-');
-
-    // 1. Coincidencia exacta de idioma/región (ej: 'es-cl', 'es-mx', 'es-us', 'es-419')
-    let found = voices.find((v) => v.lang.toLowerCase().replace('_', '-') === normalizedTarget);
-    if (found) return found;
-
-    // 2. Coincidencia por nombre de país en el nombre de la voz
-    if (targetLang === 'es-CL') {
-      found = voices.find((v) => v.name.toLowerCase().includes('chile') || v.lang.toLowerCase().includes('es-cl'));
-    } else if (targetLang === 'es-MX') {
-      found = voices.find((v) => 
-        v.name.toLowerCase().includes('mexico') || 
-        v.name.toLowerCase().includes('méxico') || 
-        v.name.toLowerCase().includes('sabina') || 
-        v.name.toLowerCase().includes('dalia') || 
-        v.name.toLowerCase().includes('raul') ||
-        v.lang.toLowerCase().includes('es-mx') ||
-        v.lang.toLowerCase().includes('es-419')
-      );
-    } else if (targetLang === 'es-US') {
-      found = voices.find((v) => v.name.toLowerCase().includes('united states') || v.name.toLowerCase().includes('estados unidos') || v.lang.toLowerCase().includes('es-us'));
-    } else if (targetLang === 'es-AR') {
-      found = voices.find((v) => v.name.toLowerCase().includes('argentina') || v.lang.toLowerCase().includes('es-ar'));
+    const normalizedTarget = targetLang.toLowerCase().replace("_", "-");
+    const findFemale = (list: SpeechSynthesisVoice[]) => {
+      return list.find(v => {
+        const name = v.name.toLowerCase();
+        return name.includes("female") || name.includes("mujer") || name.includes("femenina") || 
+               name.includes("monica") || name.includes("paulina") || name.includes("sabina") || 
+               name.includes("mia") || name.includes("elena") || name.includes("victoria") || name.includes("laura");
+      }) || list[0];
+    };
+    let matches = voices.filter((v) => v.lang.toLowerCase().replace("_", "-") === normalizedTarget);
+    if (matches.length > 0) return findFemale(matches);
+    if (targetLang === "es-CL") {
+      matches = voices.filter((v) => v.name.toLowerCase().includes("chile") || v.lang.toLowerCase().includes("es-cl"));
+    } else if (targetLang === "es-MX") {
+      matches = voices.filter((v) => v.name.toLowerCase().includes("mexico") || v.lang.toLowerCase().includes("es-mx") || v.lang.toLowerCase().includes("es-419"));
+    } else if (targetLang === "es-US") {
+      matches = voices.filter((v) => v.name.toLowerCase().includes("united states") || v.name.toLowerCase().includes("estados unidos") || v.lang.toLowerCase().includes("es-us"));
+    } else if (targetLang === "es-AR") {
+      matches = voices.filter((v) => v.name.toLowerCase().includes("argentina") || v.lang.toLowerCase().includes("es-ar"));
     }
-
-    if (found) return found;
-
-    // 3. Si se pidió cualquier acento LATINO (no España), buscar cualquier voz en español que NO sea es-ES
-    if (targetLang !== 'es-ES') {
-      found = voices.find((v) => {
-        const l = v.lang.toLowerCase().replace('_', '-');
-        const isSpanish = l.startsWith('es');
-        const isSpain = l === 'es-es' || v.name.toLowerCase().includes('spain') || v.name.toLowerCase().includes('españa') || v.name.toLowerCase().includes('helena') || v.name.toLowerCase().includes('laura');
-        return isSpanish && !isSpain;
+    if (matches.length > 0) return findFemale(matches);
+    if (targetLang !== "es-ES") {
+      matches = voices.filter((v) => {
+        const l = v.lang.toLowerCase().replace("_", "-");
+        return l.startsWith("es") && !l.includes("es-es");
       });
-      if (found) return found;
+      if (matches.length > 0) return findFemale(matches);
     }
-
-    // 4. Si se pidió España explícitamente
-    if (targetLang === 'es-ES') {
-      found = voices.find((v) => v.lang.toLowerCase().replace('_', '-') === 'es-es' || v.name.toLowerCase().includes('spain') || v.name.toLowerCase().includes('españa'));
-      if (found) return found;
-    }
-
-    // 5. Último fallback: Cualquier voz en español
-    return voices.find((v) => v.lang.toLowerCase().startsWith('es')) || null;
+    matches = voices.filter((v) => v.lang.toLowerCase().startsWith("es"));
+    if (matches.length > 0) return findFemale(matches);
+    return null;
   };
 
   const handleTestVoice = (langToUse?: string) => {
@@ -299,38 +282,36 @@ export default function RemotionReelPlayer({ composition, onSceneChange }: Remot
         {/* PATRÓN ABSTRACTO DE FONDO ANIMADO */}
         <div className="absolute inset-0 opacity-15 pointer-events-none bg-[radial-gradient(#rgba(255,255,255,0.15)_1px,transparent_1px)] [background-size:16px_16px]" />
 
-        {/* 1. TOP BAR - BRAND WATERMARK & SCENE BADGE */}
-        <div className="relative z-10 flex items-center justify-between gap-2 pt-2">
-          <div className="bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
-            <LogoMark size={20} />
-            <span className="text-[11px] font-black tracking-wider text-slate-100 uppercase">SANTISOFT AI</span>
-          </div>
-
-          <div className="bg-white/10 backdrop-blur-md px-2.5 py-1 rounded-full text-[10px] font-bold text-slate-200 border border-white/15">
-            Escena {currentSceneIndex + 1}/{scenes.length}
+                {/* 1. TOP BAR - BRAND WATERMARK & SCENE TITLE (SAFE ZONE SUPERIOR) */}
+        <div className="relative z-10 flex flex-col items-center gap-2 pt-6">
+          {showWatermark && (
+            <div className="bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
+              <LogoMark size={18} />
+              <span className="text-[10px] font-black tracking-wider text-slate-100 uppercase">SANTISOFT AI</span>
+            </div>
+          )}
+          
+          {/* TÍTULO PRINCIPAL DE LA ESCENA (BAJADO LEVEMENTE PARA EVITAR ICONOS) */}
+          <div className="inline-block px-3 py-1 bg-black/70 backdrop-blur-md rounded-xl border border-white/20 text-[10px] sm:text-[11px] font-extrabold uppercase tracking-widest text-slate-200 shadow-lg">
+            {activeScene?.title || "ESCENA REEL"}
           </div>
         </div>
 
-        {/* 2. CENTER CONTENT - TITLES & HORMOZI SUBTITLES */}
-        <div className="relative z-10 my-auto text-center px-3 space-y-5">
-          {/* TÍTULO PRINCIPAL DE LA ESCENA */}
-          <div className="inline-block px-3 py-1 bg-black/50 backdrop-blur-md rounded-xl border border-white/10 text-[11px] font-extrabold uppercase tracking-widest text-slate-300 shadow-lg">
-            {activeScene?.title || "ESCENA REEL"}
-          </div>
+        {/* 2. ESPACIO CENTRAL LIBRE (IMAGEN COMPLETAMENTE DESPEJADA Y VISIBLE) */}
+        <div className="flex-1" />
 
-          {/* TEXTO ANAMÓRFICO GIGANTE (CAPTION HORMOZI) */}
-          <div className="text-2xl sm:text-3xl leading-tight font-black tracking-tight drop-shadow-2xl">
+        {/* 3. INFERIOR - SUBTÍTULO HORMOZI (SUBIDO PARA SAFE ZONE TIKTOK/REELS) */}
+        <div className="relative z-10 space-y-2.5 pb-8">
+          {/* SUBTÍTULO HORMOZI (SUBIDO PARA NO CHOCAR CON TEXTOS DE TIKTOK) */}
+          <div className="text-center px-3 py-2.5 bg-black/70 backdrop-blur-md rounded-2xl border border-white/10 text-base sm:text-lg leading-snug font-black tracking-tight drop-shadow-xl mb-1">
             {renderHormoziText(
               activeScene?.subtitle || "",
               activeScene?.highlightWords,
               activeScene?.accentColor
             )}
           </div>
-        </div>
 
-        {/* 3. BOTTOM BAR - PROGRESS & PLAYBACK TIME */}
-        <div className="relative z-10 space-y-3 pb-2">
-          {/* BARRA DE PROGRESO INFERIOR */}
+          {/* BARRA DE PROGRESO */}
           <div className="w-full bg-white/20 h-1.5 rounded-full overflow-hidden backdrop-blur-sm">
             <div
               className="h-full bg-gradient-to-r from-amber-400 via-indigo-400 to-emerald-400 transition-all duration-75 ease-linear rounded-full"
@@ -376,8 +357,18 @@ export default function RemotionReelPlayer({ composition, onSceneChange }: Remot
           </button>
         </div>
 
-        {/* AJUSTES DE VOZ & ACENTO */}
+                {/* AJUSTES DE VOZ & ACENTO & LOGO */}
         <div className="flex items-center gap-2 pt-2 border-t border-slate-100 flex-wrap">
+          <label className="flex items-center gap-1.5 cursor-pointer text-slate-600 font-semibold">
+            <input
+              type="checkbox"
+              checked={showWatermark}
+              onChange={(e) => setShowWatermark(e.target.checked)}
+              className="rounded text-indigo-600 focus:ring-indigo-500"
+            />
+            <span className="text-xs">Logo</span>
+          </label>
+          <div className="w-[1px] h-4 bg-slate-200 mx-1"></div>
           <label className="flex items-center gap-1.5 cursor-pointer text-slate-600 font-semibold">
             <input
               type="checkbox"
@@ -433,3 +424,5 @@ export default function RemotionReelPlayer({ composition, onSceneChange }: Remot
     </div>
   );
 }
+
+

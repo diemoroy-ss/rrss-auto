@@ -10,11 +10,14 @@ export async function renderAndUploadReel(post: any, userId: string, postId: str
     
     // 1. Generar Audio (si tiene guión)
     let audioUrl = '';
-    if (post.audioScript && process.env.ELEVENLABS_API_KEY) {
-        console.log(`[VideoRenderer] Generando locución con ElevenLabs...`);
+    if (post.audioScript) {
+        console.log(`[VideoRenderer] Generando locución de voz para el Reel...`);
         try {
              const url = await generateElevenLabsAudio(post.audioScript, userId);
-             if (url) audioUrl = url;
+             if (url) {
+                 audioUrl = url;
+                 console.log(`[VideoRenderer] Pista de audio adjuntada a Remotion: ${audioUrl}`);
+             }
         } catch (e) {
              console.error(`[VideoRenderer] Error generando audio, continuando sin voz:`, e);
         }
@@ -28,11 +31,31 @@ export async function renderAndUploadReel(post: any, userId: string, postId: str
         ignoreRegisterRootWarning: true,
     });
 
+    // 2.1 Calcular duración requerida por la locución para evitar cortes
+    const wordCount = (post.audioScript || '').trim().split(/\s+/).filter(Boolean).length;
+    const estimatedAudioSec = wordCount > 0 ? Math.ceil((wordCount / 2.2) + 1.5) : 12;
+    const rawSceneSec = (post.scenes || []).reduce((acc: number, s: any) => acc + (s.duration || 4), 0) || 12;
+    const finalTotalSec = Math.max(rawSceneSec, estimatedAudioSec);
+
+    const sceneCount = (post.scenes || []).length || 1;
+    const adjustedSceneDuration = Math.round((finalTotalSec / sceneCount) * 10) / 10;
+    const adjustedScenes = (post.scenes || []).map((s: any) => ({
+        ...s,
+        duration: adjustedSceneDuration
+    }));
+    const totalDurationInFrames = Math.ceil(finalTotalSec * 30);
+
+    console.log(`[VideoRenderer] Duración calibrada: ${finalTotalSec}s (${totalDurationInFrames} frames) para ${wordCount} palabras.`);
+
     const inputProps = {
         compositionId: postId,
-        scenes: post.scenes || [],
+        scenes: adjustedScenes,
         audioUrl: audioUrl,
-        totalDurationInFrames: (post.scenes || []).reduce((acc: number, s: any) => acc + (s.duration * 30), 0) || 360,
+        bgVideoUrl: post.bgVideoUrl || '',
+        logoUrl: post.logoUrl || '',
+        businessName: post.businessName || '',
+        showWatermark: post.showWatermark ?? false,
+        totalDurationInFrames: totalDurationInFrames,
     };
 
     console.log(`[VideoRenderer] Seleccionando composición...`);

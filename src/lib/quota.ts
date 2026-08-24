@@ -73,16 +73,25 @@ export async function getQuotaUsage(userId: string, profileId: string = 'default
     return used;
 }
 
+const ADMIN_EMAILS = ['diemoroy@gmail.com', 'admin@santisoft.cl', 'spalezcom@gmail.com'];
+
+export function isUserAdmin(email?: string): boolean {
+    if (!email) return false;
+    return ADMIN_EMAILS.includes(email.toLowerCase().trim());
+}
+
 export async function getPlanLimit(plan: string, email?: string): Promise<number> {
-    if (email === 'spalezcom@gmail.com') return 999999;
+    if (isUserAdmin(email)) return 999999;
+    const planId = (plan || 'free').toLowerCase();
+    if (planId === 'business' || planId === 'agency' || planId === 'unlimited') return 999999;
     const config = await getPlansConfig();
-    const planId = plan || 'free';
     return config[planId]?.postsLimit ?? (config['free']?.postsLimit || 4);
 }
 
 export async function getVideoPlanLimit(plan: string, email?: string): Promise<number> {
-    if (email === 'spalezcom@gmail.com') return 999999;
+    if (isUserAdmin(email)) return 999999;
+    const planId = (plan || 'free').toLowerCase();
+    if (planId === 'business' || planId === 'agency' || planId === 'unlimited') return 999999;
     const config = await getPlansConfig();
-    const planId = plan || 'free';
     return config[planId]?.videosLimit ?? (config['free']?.videosLimit || 0);
 }

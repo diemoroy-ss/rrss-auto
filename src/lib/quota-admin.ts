@@ -27,8 +27,17 @@ export async function getQuotaUsageAdmin(userId: string, profileId: string = 'de
     return used;
 }
 
+const ADMIN_EMAILS = ['diemoroy@gmail.com', 'admin@santisoft.cl', 'spalezcom@gmail.com'];
+
+export function isAdminAdmin(email?: string): boolean {
+    if (!email) return false;
+    return ADMIN_EMAILS.includes(email.toLowerCase().trim());
+}
+
 export async function getPlanLimitAdmin(plan: string, email?: string): Promise<number> {
-    if (email === 'spalezcom@gmail.com') return 999999;
+    if (isAdminAdmin(email)) return 999999;
+    const planId = (plan || 'free').toLowerCase();
+    if (planId === 'business' || planId === 'agency' || planId === 'unlimited') return 999999;
     if (!adminDb) {
         return 4; // fallback
     }
@@ -36,7 +45,6 @@ export async function getPlanLimitAdmin(plan: string, email?: string): Promise<n
         const plansDoc = await adminDb.collection("system_config").doc("plans").get();
         if (plansDoc.exists) {
             const config = plansDoc.data() as any;
-            const planId = (plan || 'free').toLowerCase();
             return config[planId]?.postsLimit ?? 4;
         }
     } catch (e) {
@@ -45,24 +53,25 @@ export async function getPlanLimitAdmin(plan: string, email?: string): Promise<n
     
     // Fallback to hardcoded values if Firestore fails
     const fallbacks: Record<string, number> = {
-        free:     3,   // 3 posts totales (prueba)
-        starter:  12,  // 3 posts/semana
-        pro:      20,  // 5 posts/semana
-        elite:    20,  // alias legacy → pro
-        business: 30,  // 1 post/día
-        agency:   9999 // posts ilimitados
+        free:     3,      // 3 posts totales (prueba)
+        starter:  12,     // 3 posts/semana
+        pro:      20,     // 5 posts/semana
+        elite:    20,     // alias legacy → pro
+        business: 999999, // Business sin límites
+        agency:   999999  // Agency ilimitado
     };
-    return fallbacks[(plan || 'free').toLowerCase()] ?? 3;
+    return fallbacks[planId] ?? 3;
 }
 
 export async function getAiPlanLimitAdmin(plan: string, type: 'image' | 'video' | 'blog', email?: string): Promise<number> {
-    if (email === 'spalezcom@gmail.com') return 999999;
+    if (isAdminAdmin(email)) return 999999;
+    const planId = (plan || 'free').toLowerCase();
+    if (planId === 'business' || planId === 'agency' || planId === 'unlimited') return 999999;
     if (!adminDb) return type === 'image' ? 5 : 0;
     try {
         const plansDoc = await adminDb.collection("system_config").doc("plans").get();
         if (plansDoc.exists) {
             const config = plansDoc.data() as any;
-            const planId = (plan || 'free').toLowerCase();
             if (type === 'image') return config[planId]?.aiImagesLimit ?? 5;
             if (type === 'video') return config[planId]?.aiVideosLimit ?? 0;
             if (type === 'blog') return config[planId]?.seoBlogsLimit ?? 0;
@@ -74,14 +83,14 @@ export async function getAiPlanLimitAdmin(plan: string, type: 'image' | 'video' 
     // video: videos PREMIUM (con voz+guión LangGraph) — Free/Starter = 0
     // blog: artículos SEO/GEO — solo Pro y Business
     const fallbacks: Record<string, { image: number, video: number, blog: number }> = {
-        free:     { image: 5,   video: 0,  blog: 0  },
-        starter:  { image: 20,  video: 0,  blog: 0  },
-        pro:      { image: 50,  video: 8,  blog: 4  },
-        elite:    { image: 50,  video: 8,  blog: 4  }, // alias legacy → pro
-        business: { image: 120, video: 20, blog: 12 },
-        agency:   { image: 9999, video: 999, blog: 999 }, // ilimitado
+        free:     { image: 5,      video: 0,      blog: 0      },
+        starter:  { image: 20,     video: 0,      blog: 0      },
+        pro:      { image: 50,     video: 8,      blog: 4      },
+        elite:    { image: 50,     video: 8,      blog: 4      }, // alias legacy → pro
+        business: { image: 999999, video: 999999, blog: 999999 },
+        agency:   { image: 999999, video: 999999, blog: 999999 }, // ilimitado
     };
-    return fallbacks[(plan || 'free').toLowerCase()]?.[type] ?? (type === 'image' ? 5 : 0);
+    return fallbacks[planId]?.[type] ?? (type === 'image' ? 5 : 0);
 }
 
 export async function getAiGenerationUsageAdmin(userId: string, type: 'image' | 'video' | 'blog'): Promise<number> {

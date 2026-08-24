@@ -82,6 +82,8 @@ export type BusinessProfile = {
   includeEmailInCopy?: boolean;
   includePhoneInCopy?: boolean;
   alwaysIncludeLogo?: boolean;
+  promotions?: string;        // Nivel 1: Promociones y ofertas permanentes/frecuentes del local
+  bannerStyle?: 'banner' | 'clean'; // Estilo por defecto: 'banner' (cartel publicitario con textos) o 'clean' (solo foto)
   // Account lock: records which social account IDs have been used in a publish (non-business plan protection)
   accountLocks?: {
     facebook?: string;   // facebookPageId

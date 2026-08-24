@@ -142,3 +142,107 @@ function cleanCopyFormat(rawText: string): string {
   return cleaned;
 }
 
+
+export interface MultiNetworkCopyParams {
+  idea: string;
+  targetProfile?: any;
+  networks?: string[];
+  visualDirection?: string;
+}
+
+export interface NetworkCopiesResult {
+  tiktok?: string;
+  instagram?: string;
+  youtube?: string;
+  facebook?: string;
+  linkedin?: string;
+  twitter?: string;
+  defaultCopy: string;
+}
+
+/**
+ * Genera copys especializados y calibrados para los algoritmos y formatos de cada red social.
+ * TikTok: Ultra-corto (máx 140-150 chars), gancho en 1ª línea, 2-3 hashtags.
+ * Instagram: Estructurado, emojis, saltos de línea, CTA y 5-8 hashtags.
+ * YouTube Shorts: Título SEO + descripción concisa con palabras clave y #Shorts.
+ * Facebook / LinkedIn: Adaptados a su audiencia.
+ */
+export async function generateMultiNetworkCopiesWithAgent(params: MultiNetworkCopyParams): Promise<NetworkCopiesResult> {
+  const { idea, targetProfile, networks = ['tiktok', 'instagram', 'youtube'], visualDirection = '' } = params;
+
+  const rubro = targetProfile?.rubro || targetProfile?.businessType || 'General';
+  const businessName = targetProfile?.businessName || targetProfile?.companyName || targetProfile?.name || '';
+  const phone = targetProfile?.phone || '';
+
+  const sysInstruction = `Eres un estratega de contenido y Copywriter Senior especializado en optimización por plataforma para redes sociales.
+Tu tarea es tomar una idea/tema de video y redactar el copy o caption perfecto ADAPTADO a cada red social solicitada:
+
+1. **TIKTOK (CRÍTICO - REGLA ESTRICTA DE LONGITUD)**:
+   - Longitud MÁXIMA TOTAL: 140 caracteres (para que entre completo sin cortarse en el feed móvil ni en la API de TikTok).
+   - Estructura: Gancho corto de 1 línea + CTA directo + 2 hashtags de nicho.
+   - Ejemplo: "Llena la agenda de tu barbería 24/7 sin perder clientes por responder tarde. Guarda este video 📲 #Barberia #Negocios"
+
+2. **INSTAGRAM (REELS / FEED)**:
+   - Gancho magnético de 1 línea.
+   - Desarrollo conciso de 2-3 oraciones con emojis limpios.
+   - Llamado a la acción (CTA) invitando a guardar o comentar.
+   - 4-6 hashtags estratégicos de nicho.
+
+3. **YOUTUBE SHORTS**:
+   - Título SEO de alto impacto (máx 60 caracteres).
+   - Descripción corta optimizada para el buscador con palabras clave y #Shorts.
+
+4. **FACEBOOK**:
+   - Tono conversacional y cercano.
+   - Llamado a la acción directo con contacto/WhatsApp (${phone ? `WhatsApp: ${phone}` : 'mensaje directo'}).
+
+5. **LINKEDIN**:
+   - Enfoque profesional, métricas y automatización operativa.
+
+REGLAS DE HUMANIZACIÓN:
+- Tono 100% natural, directo ("tú a tú") y sin muletillas de IA como "En el vertiginoso mundo", "Descubre cómo", "Desbloquea".
+- NUNCA menciones la palabra "IA", usa "nuestros agentes" si fuera necesario.
+
+Responde ÚNICAMENTE con un JSON válido con la siguiente estructura:
+{
+  "tiktok": "Texto ultra-corto de máx 140 caracteres con 2 hashtags",
+  "instagram": "Texto estructurado para Instagram con emojis y hashtags",
+  "youtube": "Título SEO | Descripción breve con #Shorts",
+  "facebook": "Texto amigable para Facebook con CTA",
+  "linkedin": "Texto profesional para LinkedIn",
+  "defaultCopy": "Texto general"
+}`;
+
+  const userPrompt = `Idea del Video: "${idea}"
+Rubro: "${rubro}"
+Nombre Negocio: "${businessName}"
+${visualDirection ? `Elementos visuales del video: "${visualDirection}"` : ''}
+Redes objetivo: ${networks.join(', ')}
+
+Genera el JSON con los copys adaptados a cada plataforma:`;
+
+  try {
+    const rawJson = await generateFreeText(userPrompt, sysInstruction, true);
+    const cleaned = rawJson.trim().replace(/^\`\`\`json\s*/i, '').replace(/^\`\`\`\s*/, '').replace(/\s*\`\`\`$/, '');
+    const parsed = JSON.parse(cleaned);
+    return {
+      tiktok: (parsed.tiktok || '').slice(0, 150).trim(),
+      instagram: parsed.instagram || parsed.defaultCopy || idea,
+      youtube: parsed.youtube || parsed.defaultCopy || idea,
+      facebook: parsed.facebook || parsed.defaultCopy || idea,
+      linkedin: parsed.linkedin || parsed.defaultCopy || idea,
+      defaultCopy: parsed.defaultCopy || parsed.instagram || idea
+    };
+  } catch (err: any) {
+    console.warn('[AgentCopy] Error generando copys multi-red, usando fallback estructurado:', err.message);
+    const tag = '#' + rubro.replace(/\s+/g, '');
+    return {
+      tiktok: `${idea.slice(0, 100)}. Guarda este video para más tips ${tag} #Tips`.slice(0, 140),
+      instagram: `${idea}\n\nGuarda este Reel y síguenos para más consejos diarios.\n\n${tag} #Emprendedores #Negocio`,
+      youtube: `${idea.slice(0, 60)} | Consejos para ${rubro} #Shorts ${tag}`,
+      facebook: `${idea}. Escríbenos para conocer más detalles sobre nuestras soluciones para ${rubro}.`,
+      linkedin: `Innovación y automatización para ${rubro}: ${idea}.`,
+      defaultCopy: idea
+    };
+  }
+}

@@ -16,6 +16,7 @@ export default function VideoPoCPage() {
 
   const [topic, setTopic] = useState<string>("3 Consejos Clave para Triunfar en Gastronomía");
   const [rubro, setRubro] = useState<string>(prof?.rubro || prof?.niche || "Gastronomía & Restaurantes");
+  const [visualDirection, setVisualDirection] = useState<string>("");
   const [style, setStyle] = useState<"vibrante" | "minimalista" | "cyberpunk" | "corporativo">("vibrante");
   const [motionEffect, setMotionEffect] = useState<string>("zoom_in");
 
@@ -27,6 +28,47 @@ export default function VideoPoCPage() {
 
   // Estado del Checklist de carga de imágenes de fondo por escena
   const [imageStatus, setImageStatus] = useState<Record<number, "loading" | "ready" | "error">>({});
+  const [networkCopies, setNetworkCopies] = useState<Record<string, string>>({});
+  const [activeNetworkTab, setActiveNetworkTab] = useState<string>("tiktok");
+
+  const handleRegenerateSceneImage = async (idx: number, scene: any) => {
+    setImageStatus((prev) => ({ ...prev, [idx]: "loading" }));
+    try {
+      const res = await fetch("/api/poc/video/regenerate-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: scene.imagePrompt || `${rubro} ${scene.title} cinematic background`,
+          rubro: rubro
+        })
+      });
+      const data = await res.json();
+      if (data.bgImageUrl) {
+        setComposition((prev) => {
+          if (!prev) return null;
+          const newScenes = [...prev.scenes];
+          newScenes[idx] = { ...newScenes[idx], bgImageUrl: data.bgImageUrl };
+          return { ...prev, scenes: newScenes };
+        });
+        setImageStatus((prev) => ({ ...prev, [idx]: "ready" }));
+        return;
+      }
+    } catch (e) {
+      console.warn("Error regenerando imagen vía agente, aplicando fallback:", e);
+    }
+    // Fallback directo
+    const newSeed = Math.floor(Math.random() * 1000000);
+    const promptText = encodeURIComponent(scene.imagePrompt || `${rubro} ${scene.title} cinematic background`);
+    const newBgUrl = `https://image.pollinations.ai/prompt/${promptText}?width=1080&height=1920&nologo=true&seed=${newSeed}`;
+    setComposition((prev) => {
+      if (!prev) return null;
+      const newScenes = [...prev.scenes];
+      newScenes[idx] = { ...newScenes[idx], bgImageUrl: newBgUrl };
+      return { ...prev, scenes: newScenes };
+    });
+    setImageStatus((prev) => ({ ...prev, [idx]: "ready" }));
+  };
+
 
   // Estado del Modal de Programación
   const [showScheduleModal, setShowScheduleModal] = useState<boolean>(false);
@@ -137,6 +179,16 @@ export default function VideoPoCPage() {
       }
 
       setComposition(data.composition);
+      if (data.composition?.copiesByNetwork) {
+        setNetworkCopies(data.composition.copiesByNetwork);
+      } else if (data.composition?.copyText) {
+        setNetworkCopies({
+          tiktok: data.composition.copyText.slice(0, 140),
+          instagram: data.composition.copyText,
+          youtube: data.composition.copyText.slice(0, 100) + ' #Shorts',
+          facebook: data.composition.copyText,
+        });
+      }
     } catch (err: any) {
       console.error("Error al generar Reel:", err);
       setErrorMsg(err.message || "Error al conectar con la IA.");
@@ -149,41 +201,33 @@ export default function VideoPoCPage() {
     if (!topic.trim()) return;
     setIsGeneratingCopy(true);
     try {
-      const res = await fetch("/api/generate-post", {
+      const res = await fetch("/api/poc/video/generate-copies", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rubro, promo: topic, demoType: "rrss" }),
+        body: JSON.stringify({
+          idea: topic,
+          rubro: rubro,
+          businessName: activeProfile?.name || "",
+          networks: selectedNetworks.length > 0 ? selectedNetworks : ["tiktok", "instagram", "youtube"],
+          visualDirection: visualDirection || ""
+        }),
       });
       const data = await res.json();
-      if (data.text) {
-        setComposition((prev) => (prev ? { ...prev, copyText: data.text } : null));
+      if (data.copies) {
+        setNetworkCopies(data.copies);
+        if (data.copies.defaultCopy) {
+          setComposition((prev) => (prev ? { ...prev, copyText: data.copies.defaultCopy } : null));
+        }
       }
     } catch (err) {
-      console.error("Error al generar copy:", err);
+      console.error("Error al generar copys multi-red:", err);
     } finally {
       setIsGeneratingCopy(false);
     }
   };
 
   const handleImproveCopy = async () => {
-    if (!composition?.copyText) return;
-    setIsGeneratingCopy(true);
-    try {
-      const promptText = `Mejora y haz más persuasivo este copy para Instagram Reel / TikTok / Shorts: "${composition.copyText}". Añade llamados a la acción potentes y hashtags.`;
-      const res = await fetch("/api/generate-post", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rubro, promo: promptText, demoType: "rrss" }),
-      });
-      const data = await res.json();
-      if (data.text) {
-        setComposition((prev) => (prev ? { ...prev, copyText: data.text } : null));
-      }
-    } catch (err) {
-      console.error("Error al mejorar copy:", err);
-    } finally {
-      setIsGeneratingCopy(false);
-    }
+    handleGenerateCopy();
   };
 
   const handleUpdateSceneText = (sceneIndex: number, field: "title" | "subtitle", value: string) => {
@@ -202,53 +246,77 @@ export default function VideoPoCPage() {
     });
   };
 
-  const handleConfirmSchedule = async () => {
+    const handleConfirmSchedule = async () => {
     if (!composition || selectedNetworks.length === 0) return;
     setIsScheduling(true);
     setErrorMsg("");
 
     try {
       const user = auth.currentUser;
+      if (!user || !activeProfile?.id) throw new Error("Debes iniciar sesión para agendar.");
       const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}:00`);
 
-      if (user && activeProfile?.id) {
-        await addDoc(collection(db, "social_posts"), {
+      // 1. Renderizar el video con Remotion y subirlo a Firebase Storage
+      console.log("[PoC Video] Renderizando Reel con Remotion antes de agendar...");
+      const renderRes = await fetch("/api/poc/video/render", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          composition,
           userId: user.uid,
-          profileId: activeProfile.id,
-          businessId: activeProfile.id,
-          idea: composition.title,
-          text: composition.copyText || composition.title,
-          copy: composition.copyText || composition.title,
-          audioScript: composition.audioScript,
-          type: "Reel",
-          format: "Reel 9:16",
-          status: "confirmed", // Agendado
-          scheduledFor: scheduledDateTime,
-          networks: selectedNetworks,
-          scenes: composition.scenes,
-          imageUrl: composition.scenes[0]?.bgImageUrl || "",
-          createdAt: serverTimestamp(),
-        });
+          showWatermark: false
+        })
+      });
 
-        // Registrar portada/miniatura en la Biblioteca (generated_images)
-        if (composition.scenes[0]?.bgImageUrl) {
-          await addDoc(collection(db, "generated_images"), {
-            userId: user.uid,
-            profileId: activeProfile.id,
-            url: composition.scenes[0].bgImageUrl,
-            source: "ia",
-            type: "Reel",
-            prompt: composition.title,
-            createdAt: serverTimestamp(),
-          });
-        }
+      const renderData = await renderRes.json();
+      if (!renderRes.ok || !renderData.videoUrl) {
+        throw new Error(renderData.error || "No se pudo renderizar el video con Remotion.");
       }
 
-      setScheduleSuccess(`¡Reel agendado con éxito para el ${scheduledDate} a las ${scheduledTime} hrs!`);
+      const finalVideoUrl = renderData.videoUrl;
+      console.log("[PoC Video] Video renderizado exitosamente:", finalVideoUrl);
+
+      // 2. Guardar en Firestore con la URL del video MP4 final
+      await addDoc(collection(db, "social_posts"), {
+        userId: user.uid,
+        profileId: activeProfile.id,
+        businessId: activeProfile.id,
+        idea: composition.title,
+        text: composition.copyText || composition.title,
+        copy: composition.copyText || composition.title,
+        audioScript: composition.audioScript,
+        type: "Reel",
+        format: "Reel 9:16",
+        status: "confirmed", // Agendado
+        scheduledFor: scheduledDateTime,
+        networks: selectedNetworks,
+        scenes: composition.scenes,
+        showWatermark: false,
+        copiesByNetwork: networkCopies,
+        videoUrl: finalVideoUrl,
+        mediaUrl: finalVideoUrl,
+        imageUrl: composition.scenes[0]?.bgImageUrl || "",
+        createdAt: serverTimestamp(),
+      });
+
+      // Registrar portada/miniatura en la Biblioteca (generated_images)
+      if (composition.scenes[0]?.bgImageUrl) {
+        await addDoc(collection(db, "generated_images"), {
+          userId: user.uid,
+          profileId: activeProfile.id,
+          url: composition.scenes[0].bgImageUrl,
+          source: "ia",
+          type: "Reel",
+          prompt: composition.title,
+          createdAt: serverTimestamp(),
+        }).catch(console.warn);
+      }
+
+      setScheduleSuccess(`¡Reel renderizado y agendado con éxito para el ${scheduledDate} a las ${scheduledTime} hrs!`);
       setShowScheduleModal(false);
     } catch (err: any) {
       console.error("Error al agendar Reel:", err);
-      setErrorMsg("No se pudo programar el Reel en la base de datos: " + (err.message || ""));
+      setErrorMsg("No se pudo programar el Reel: " + (err.message || ""));
     } finally {
       setIsScheduling(false);
     }
@@ -263,6 +331,27 @@ export default function VideoPoCPage() {
       const user = auth.currentUser;
       if (!user || !activeProfile?.id) throw new Error("Debes iniciar sesión para publicar.");
 
+      // 1. Renderizar el video con Remotion y subirlo a Firebase Storage
+      console.log("[PoC Video] Renderizando Reel con Remotion antes de publicar...");
+      const renderRes = await fetch("/api/poc/video/render", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          composition,
+          userId: user.uid,
+          showWatermark: false
+        })
+      });
+
+      const renderData = await renderRes.json();
+      if (!renderRes.ok || !renderData.videoUrl) {
+        throw new Error(renderData.error || "No se pudo renderizar el video con Remotion.");
+      }
+
+      const finalVideoUrl = renderData.videoUrl;
+      console.log("[PoC Video] Video renderizado exitosamente:", finalVideoUrl);
+
+      // 2. Guardar en Firestore con la URL del video MP4 final
       const postRef = await addDoc(collection(db, "social_posts"), {
         userId: user.uid,
         profileId: activeProfile.id,
@@ -277,6 +366,10 @@ export default function VideoPoCPage() {
         scheduledFor: new Date(),
         networks: selectedNetworks,
         scenes: composition.scenes,
+        showWatermark: false,
+        copiesByNetwork: networkCopies,
+        videoUrl: finalVideoUrl,
+        mediaUrl: finalVideoUrl,
         imageUrl: composition.scenes[0]?.bgImageUrl || "",
         createdAt: serverTimestamp(),
       });
@@ -294,7 +387,7 @@ export default function VideoPoCPage() {
         }).catch(console.warn);
       }
 
-      // Disparar publicación inmediata
+      // 3. Disparar publicación inmediata usando el MP4 guardado en Storage
       const idToken = await user.getIdToken();
       const publishRes = await fetch("/api/publish-now", {
         method: "POST",
@@ -310,7 +403,7 @@ export default function VideoPoCPage() {
         throw new Error(errData.error || "Fallo en la publicación de video.");
       }
 
-      setScheduleSuccess("⚡ ¡Reel enviado a publicar inmediatamente con éxito!");
+      setScheduleSuccess("⚡ ¡Reel renderizado con Remotion y publicado con éxito!");
       setShowScheduleModal(false);
     } catch (err: any) {
       console.error("Error al publicar Reel ahora:", err);
@@ -377,6 +470,20 @@ export default function VideoPoCPage() {
                   onChange={(e) => setTopic(e.target.value)}
                   placeholder="Ej: 3 Estrategias para aumentar ventas en e-commerce"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+                  <span>¿Qué te gustaría ver en el video? <span className="text-slate-400 font-normal">(Dirección visual de escenas e imágenes)</span></span>
+                  <span className="text-[10px] text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full font-bold border border-indigo-100">✨ Guía Visual para Agentes</span>
+                </label>
+                <textarea
+                  rows={2}
+                  value={visualDirection}
+                  onChange={(e) => setVisualDirection(e.target.value)}
+                  placeholder="Ej: Un barista preparando café latte art con vapor suave, granos de café tostados de cerca, ambiente acogedor de cafetería moderna..."
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all resize-none"
                 />
               </div>
 
@@ -496,24 +603,13 @@ export default function VideoPoCPage() {
                       <div className="flex items-center gap-2">
                         {/* Botón Regenerar IA */}
                         <button
-                          onClick={() => {
-                            const newSeed = Math.floor(Math.random() * 1000000);
-                            const promptText = encodeURIComponent(scene.imagePrompt || `${rubro} ${scene.title} cinematic background`);
-                            const newBgUrl = `https://image.pollinations.ai/prompt/${promptText}?width=1080&height=1920&nologo=true&seed=${newSeed}`;
-                            
-                            setImageStatus((prev) => ({ ...prev, [idx]: "loading" }));
-                            setComposition((prev) => {
-                              if (!prev) return null;
-                              const newScenes = [...prev.scenes];
-                              newScenes[idx] = { ...newScenes[idx], bgImageUrl: newBgUrl };
-                              return { ...prev, scenes: newScenes };
-                            });
-                          }}
-                          className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-extrabold rounded-lg border border-indigo-200 transition-all flex items-center gap-1"
-                          title="Regenerar esta imagen con IA"
-                        >
-                          🔄 Regenerar IA
-                        </button>
+                            onClick={() => handleRegenerateSceneImage(idx, scene)}
+                            disabled={imageStatus[idx] === 'loading'}
+                            className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-extrabold rounded-lg border border-indigo-200 transition-all flex items-center gap-1 disabled:opacity-50"
+                            title="Regenerar esta imagen con Agente"
+                          >
+                            {imageStatus[idx] === 'loading' ? '⏳ Generando...' : '🖼️ Regenerar IA'}
+                          </button>
 
                         {/* Botón Subir Imagen Local */}
                         <label className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[10px] font-extrabold rounded-lg border border-emerald-200 transition-all cursor-pointer flex items-center gap-1">
@@ -617,24 +713,13 @@ export default function VideoPoCPage() {
 
                         <div className="flex items-center gap-2">
                           <button
-                            type="button"
-                            onClick={() => {
-                              const newSeed = Math.floor(Math.random() * 1000000);
-                              const promptText = encodeURIComponent(scene.imagePrompt || `${rubro} ${scene.title} cinematic background`);
-                              const newBgUrl = `https://image.pollinations.ai/prompt/${promptText}?width=1080&height=1920&nologo=true&seed=${newSeed}`;
-                              
-                              setImageStatus((prev) => ({ ...prev, [idx]: "loading" }));
-                              setComposition((prev) => {
-                                if (!prev) return null;
-                                const newScenes = [...prev.scenes];
-                                newScenes[idx] = { ...newScenes[idx], bgImageUrl: newBgUrl };
-                                return { ...prev, scenes: newScenes };
-                              });
-                            }}
-                            className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-extrabold rounded-lg border border-indigo-200 transition-all flex items-center gap-1"
-                          >
-                            🔄 Regenerar IA
-                          </button>
+                              type="button"
+                              onClick={() => handleRegenerateSceneImage(idx, scene)}
+                              disabled={imageStatus[idx] === 'loading'}
+                              className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-extrabold rounded-lg border border-indigo-200 transition-all flex items-center gap-1 disabled:opacity-50"
+                            >
+                              {imageStatus[idx] === 'loading' ? '⏳ Generando...' : '🖼️ Regenerar IA'}
+                            </button>
 
                           <label className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[10px] font-extrabold rounded-lg border border-emerald-200 transition-all cursor-pointer flex items-center gap-1">
                             📁 Subir Foto
@@ -679,40 +764,123 @@ export default function VideoPoCPage() {
                 </p>
               </div>
 
-              {/* EDICIÓN Y GENERACIÓN DE COPY CON IA */}
-              <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                    <span>📝 Copy / Caption del Reel</span>
-                  </h3>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={handleGenerateCopy}
-                      disabled={isGeneratingCopy}
-                      className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-extrabold text-[11px] rounded-xl transition-all border border-indigo-200 flex items-center gap-1 disabled:opacity-50"
-                    >
-                      {isGeneratingCopy ? "⏳ Generando..." : "✨ Generar Copy IA"}
-                    </button>
-                    <button
-                      onClick={handleImproveCopy}
-                      disabled={isGeneratingCopy || !composition.copyText}
-                      className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 font-extrabold text-[11px] rounded-xl transition-all border border-amber-200 flex items-center gap-1 disabled:opacity-50"
-                    >
-                      {isGeneratingCopy ? "⏳ Mejorando..." : "🪄 Mejorar con IA"}
-                    </button>
+              {/* EDICIÓN Y GENERACIÓN DE COPIES POR CADA RED SOCIAL */}
+              <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                  <div>
+                    <h3 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                      <span>📝 Copys Adaptados por Red Social</span>
+                      <span className="text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full font-bold border border-indigo-100">
+                        ✨ Calibrado por Algoritmo
+                      </span>
+                    </h3>
+                    <p className="text-[11px] text-slate-500 font-medium">
+                      Cada plataforma tiene su propia longitud ideal para que el texto nunca se corte en pantalla.
+                    </p>
                   </div>
+
+                  <button
+                    onClick={handleGenerateCopy}
+                    disabled={isGeneratingCopy}
+                    className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-[11px] rounded-xl transition-all shadow-sm flex items-center gap-1.5 self-start sm:self-auto disabled:opacity-50"
+                  >
+                    {isGeneratingCopy ? (
+                      <>
+                        <span className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                        <span>Adaptando Copys...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>✨ Regenerar Copys Multi-Red</span>
+                      </>
+                    )}
+                  </button>
                 </div>
 
-                <textarea
-                  value={composition.copyText || ""}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setComposition((prev) => (prev ? { ...prev, copyText: val } : null));
-                  }}
-                  placeholder="Escribe o genera el copy descriptivo del Reel..."
-                  rows={4}
-                  className="w-full p-3.5 rounded-xl border border-slate-300 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all leading-relaxed"
-                />
+                {/* SELECTOR DE PESTAÑAS DE REDES */}
+                <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                  {[
+                    { id: "tiktok", name: "TikTok", icon: "🎵", max: 140, tip: "Máx 140 chars. Gancho en 1ª línea para no cortarse en feed." },
+                    { id: "instagram", name: "Instagram", icon: "📸", max: 2200, tip: "Estructurado con emojis, valor, CTA a guardar y hashtags." },
+                    { id: "youtube", name: "YouTube Shorts", icon: "▶️", max: 100, tip: "Título SEO descriptivo + #Shorts para posicionar en búsquedas." },
+                    { id: "facebook", name: "Facebook", icon: "👥", max: 500, tip: "Tono conversacional y llamado a WhatsApp/mensaje." },
+                  ].map((net) => {
+                    const currentText = networkCopies[net.id] || (net.id === 'tiktok' ? (composition?.copyText || '').slice(0, 140) : composition?.copyText || '');
+                    const isSelected = selectedNetworks.includes(net.id);
+                    const isActive = activeNetworkTab === net.id;
+                    const charCount = currentText.length;
+
+                    return (
+                      <button
+                        key={net.id}
+                        type="button"
+                        onClick={() => setActiveNetworkTab(net.id)}
+                        className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all border shrink-0 ${
+                          isActive
+                            ? "bg-slate-900 text-white border-slate-900 shadow-sm"
+                            : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                        }`}
+                      >
+                        <span>{net.icon}</span>
+                        <span>{net.name}</span>
+                        {isSelected && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" title="Red conectada y seleccionada" />
+                        )}
+                        <span className={`text-[10px] ml-1 px-1.5 py-0.2 rounded ${
+                          charCount > net.max && net.id === 'tiktok'
+                            ? "bg-rose-500 text-white font-black"
+                            : isActive
+                            ? "bg-slate-800 text-slate-300"
+                            : "bg-slate-200 text-slate-600"
+                        }`}>
+                          {charCount}/{net.max}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* ÁREA DE EDICIÓN DE LA RED ACTIVA */}
+                {(() => {
+                  const netConfig: Record<string, { name: string; icon: string; max: number; tip: string; color: string }> = {
+                    tiktok: { name: "TikTok", icon: "🎵", max: 140, tip: "🎯 Optimizado para TikTok: Los primeros 80 caracteres son visibles de inmediato en el feed móvil sin que el usuario tenga que presionar 'más'.", color: "text-rose-600 bg-rose-50 border-rose-100" },
+                    instagram: { name: "Instagram Reels", icon: "📸", max: 2200, tip: "🎯 Optimizado para Instagram: Estructura clara con gancho inicial, emojis, llamada a la acción y hashtags de nicho.", color: "text-fuchsia-600 bg-fuchsia-50 border-fuchsia-100" },
+                    youtube: { name: "YouTube Shorts", icon: "▶️", max: 100, tip: "🎯 Optimizado para Shorts: Título directo para el algoritmo de YouTube con etiqueta #Shorts obligatoria.", color: "text-red-600 bg-red-50 border-red-100" },
+                    facebook: { name: "Facebook", icon: "👥", max: 500, tip: "🎯 Optimizado para Facebook: Tono amigable y cercano con botón o llamado directo a WhatsApp.", color: "text-blue-600 bg-blue-50 border-blue-100" },
+                  };
+
+                  const currentCfg = netConfig[activeNetworkTab] || netConfig.tiktok;
+                  const currentVal = networkCopies[activeNetworkTab] ?? (activeNetworkTab === 'tiktok' ? (composition?.copyText || '').slice(0, 140) : composition?.copyText || '');
+
+                  return (
+                    <div className="space-y-2">
+                      <div className={`p-2.5 rounded-xl border text-[11px] font-bold flex items-center justify-between gap-2 ${currentCfg.color}`}>
+                        <span>{currentCfg.tip}</span>
+                        <span className="font-mono font-extrabold text-[10px] shrink-0">
+                          {currentVal.length} / {currentCfg.max} caracteres
+                        </span>
+                      </div>
+
+                      <textarea
+                        value={currentVal}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setNetworkCopies((prev) => ({
+                            ...prev,
+                            [activeNetworkTab]: val
+                          }));
+                          // Si es la red principal, sincronizar con copyText
+                          if (activeNetworkTab === 'instagram' || activeNetworkTab === 'tiktok') {
+                            setComposition((prev) => (prev ? { ...prev, copyText: val } : null));
+                          }
+                        }}
+                        rows={activeNetworkTab === 'tiktok' ? 3 : 5}
+                        placeholder={`Escribe o edita el copy específico para ${currentCfg.name}...`}
+                        className="w-full p-3.5 rounded-xl border border-slate-300 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all leading-relaxed"
+                      />
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* BOTÓN PROGRAMAR PUBLICACIÓN */}

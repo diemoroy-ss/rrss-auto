@@ -2,13 +2,29 @@ import admin from 'firebase-admin';
 
 if (!admin.apps.length) {
   try {
-    const serviceAccountString = process.env.FIREBASE_SERVICE_ACCOUNT;
+    let serviceAccountString = process.env.FIREBASE_SERVICE_ACCOUNT;
     
     if (serviceAccountString) {
-      const serviceAccount = JSON.parse(serviceAccountString);
+      serviceAccountString = serviceAccountString.trim();
+      if ((serviceAccountString.startsWith("'") && serviceAccountString.endsWith("'")) ||
+          (serviceAccountString.startsWith('"') && serviceAccountString.endsWith('"'))) {
+        serviceAccountString = serviceAccountString.slice(1, -1).trim();
+      }
+      let serviceAccount: any;
+      try {
+        serviceAccount = JSON.parse(serviceAccountString);
+      } catch (parseErr) {
+        try {
+          const decoded = Buffer.from(serviceAccountString, 'base64').toString('utf8');
+          serviceAccount = JSON.parse(decoded);
+        } catch {
+          throw parseErr;
+        }
+      }
+
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
-        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'rrss-santisoft.firebasestorage.app',
       });
     } else {
       console.warn("No FIREBASE_SERVICE_ACCOUNT variable found. Admin SDK will fail if no default credentials exist.");

@@ -1,3 +1,4 @@
+import { generateImageWithAgent } from "./agents/agent-image";
 import { generateFreeText } from "./gemini-free";
 
 export interface VideoScene {
@@ -20,12 +21,20 @@ export interface VideoComposition {
   scenes: VideoScene[];
   audioScript: string;
   copyText: string;
+  copiesByNetwork?: {
+    tiktok?: string;
+    instagram?: string;
+    youtube?: string;
+    facebook?: string;
+    linkedin?: string;
+  };
 }
 
 export interface VideoPoCInputParams {
   topic: string;
   rubro?: string;
   style?: "cyberpunk" | "minimalista" | "corporativo" | "vibrante";
+  visualDirection?: string;
 }
 
 /**
@@ -33,7 +42,11 @@ export interface VideoPoCInputParams {
  * Incluye generación de imágenes dinámicas para el fondo con efecto cinematográfico.
  */
 export async function generateVideoPoCComposition(params: VideoPoCInputParams): Promise<VideoComposition> {
-  const { topic, rubro = "General", style = "vibrante" } = params;
+  const { topic, rubro = "General", style = "vibrante", visualDirection = "" } = params;
+
+  const visualInstruction = visualDirection && visualDirection.trim() 
+    ? `\n- **Dirección Visual / Elementos solicitados por el cliente**: "${visualDirection.trim()}". (Es REQUISITO FUNDAMENTAL que los prompts de imagen de las 3 escenas representen con precisión estos elementos visuales y que los subtítulos y el guión de voz mantengan estrecha relación y coherencia con lo que se muestra en pantalla).`
+    : '';
 
   const systemInstruction = `Eres un Director de Arte y Productor de Video especializado en Reels, TikToks y YouTube Shorts virales de alto impacto.
 Tu tarea es tomar una idea/tema y estructurar un video vertical 9:16 de exactamente 3 escenas (duración total 12-15 segundos).
@@ -45,15 +58,21 @@ Debes devolver UNICAMENTE un objeto JSON válido con el esquema indicado.`;
 
 - **Tema / Idea**: "${topic}"
 - **Rubro**: "${rubro}"
-- **Estilo Visual**: "${style}"
+- **Estilo Visual**: "${style}"${visualInstruction}
 
 Responde ÚNICAMENTE con un JSON con la siguiente estructura exacta:
 {
   "title": "${topic}",
   "rubro": "${rubro}",
   "totalDuration": 12,
-  "audioScript": "Guion corto de voz en off continuo para leer en 12 segundos.",
-  "copyText": "Copy persuasivo para el post de Instagram/TikTok con hashtags.",
+  "audioScript": "Guion corto de voz en off de 20 a 25 palabras exactas en tono enérgico y fluido (máximo 10-12 segundos). Debe tener una frase de cierre clara.",
+  "copyText": "Copy persuasivo general para el post.",
+  "copiesByNetwork": {
+    "tiktok": "Texto ultra-corto de MÁXIMO 140 caracteres con 2 hashtags (gancho rápido en 1ª línea + CTA)",
+    "instagram": "Copy estructurado para Instagram Reels con gancho, emojis, CTA a guardar y 5 hashtags",
+    "youtube": "Título SEO | Descripción concisa con palabras clave y #Shorts",
+    "facebook": "Copy amigable con invitación a enviar mensaje o WhatsApp"
+  },
   "scenes": [
     {
       "id": "scene_1",
@@ -96,17 +115,28 @@ Responde ÚNICAMENTE con un JSON con la siguiente estructura exacta:
     const cleanedText = rawJson.trim().replace(/^```json\s*/i, "").replace(/^```\s*/, "").replace(/\s*```$/, "");
     const parsed: VideoComposition = JSON.parse(cleanedText);
 
-    // Inyectar URLs de imágenes dinámicas basadas en los prompts generados por la IA
+    // Inyectar URLs de imágenes dinámicas usando agent-image (n8n -> Pollinations)
     if (parsed.scenes && Array.isArray(parsed.scenes)) {
-      parsed.scenes = parsed.scenes.map((scene, idx) => {
-        const seed = Math.floor(Math.random() * 100000) + idx * 42;
-        const promptText = encodeURIComponent(scene.imagePrompt || `${rubro} ${topic} cinematic background`);
-        const bgImageUrl = `https://image.pollinations.ai/prompt/${promptText}?width=1080&height=1920&nologo=true&seed=${seed}`;
-        return {
-          ...scene,
-          bgImageUrl
-        };
+      const promises = parsed.scenes.map(async (scene, idx) => {
+        try {
+          const promptText = scene.imagePrompt || `${rubro} ${topic} cinematic background`;
+          const bgImageUrl = await generateImageWithAgent({
+            idea: promptText,
+            rubro,
+            aspectRatio: '9:16',
+            bannerStyle: 'clean'
+          });
+          return { ...scene, bgImageUrl };
+        } catch (err) {
+          const seed = Math.floor(Math.random() * 100000) + idx * 42;
+          const promptFallback = encodeURIComponent(scene.imagePrompt || `${rubro} ${topic} cinematic background`);
+          return {
+            ...scene,
+            bgImageUrl: `https://image.pollinations.ai/prompt/${promptFallback}?width=1080&height=1920&nologo=true&seed=${seed}`
+          };
+        }
       });
+      parsed.scenes = await Promise.all(promises);
     }
 
     return parsed;
@@ -157,3 +187,4 @@ Responde ÚNICAMENTE con un JSON con la siguiente estructura exacta:
     };
   }
 }
+

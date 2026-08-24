@@ -5,10 +5,23 @@ export interface PremiumVideoAgentParams {
   idea: string;
   rubro?: string;
   businessDescription?: string;
+  userId?: string;
+  logoUrl?: string;
+  businessName?: string;
+  showWatermark?: boolean;
 }
 
 export async function generatePremiumVideoWithAgent(params: PremiumVideoAgentParams): Promise<string> {
-  const { postId, idea, rubro = 'General', businessDescription = '' } = params;
+  const { 
+    postId, 
+    idea, 
+    rubro = 'General', 
+    businessDescription = '', 
+    userId = 'system', 
+    logoUrl = '', 
+    businessName = '', 
+    showWatermark = false 
+  } = params;
 
   console.log(`[AgentVideoPremium] Iniciando generación para post: ${postId}`);
 
@@ -18,7 +31,8 @@ Tu trabajo es tomar la idea base del usuario y convertirla en un prompt descript
 Debes detallar la iluminación, el movimiento de cámara, la acción principal y la atmósfera pensando en un encuadre vertical.
 El video no tendrá texto, debe ser puro impacto visual para el rubro: ${rubro}.
 Descripción del negocio: ${businessDescription}.
-No devuelvas NADA MÁS que el prompt en inglés. Ni saludos ni comillas.`;
+No devuelvas NADA MÁS que el prompt en inglés. Ni saludos ni comillas.
+IMPORTANTE: Finaliza SIEMPRE tu prompt con el texto exacto --ar 9:16`;
 
   let optimizedPrompt = '';
   try {
@@ -40,12 +54,19 @@ No devuelvas NADA MÁS que el prompt en inglés. Ni saludos ni comillas.`;
   try {
     const startRes = await fetch(startWebhookUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({
         postId,
-        prompt: optimizedPrompt,
+        prompt: `Vertical 9:16 portrait video, 1080x1920 mobile framing, ${optimizedPrompt} --ar 9:16 --portrait`,
         rubro,
-        aspectRatio: '9:16'
+        aspectRatio: '9:16',
+        ratio: '9:16',
+        orientation: 'portrait',
+        dimension: '1080x1920',
+        voice: 'female',
+        accent: 'latino'
       })
     });
 
@@ -79,8 +100,35 @@ No devuelvas NADA MÁS que el prompt en inglés. Ni saludos ni comillas.`;
         const statusData = await statusRes.json();
         
         if (statusData.status === 'done' && statusData.videoUrl) {
-          console.log(`[AgentVideoPremium] ✅ Video premium completado. URL: ${statusData.videoUrl}`);
-          return statusData.videoUrl;
+          const rawVideoUrl = statusData.videoUrl;
+          console.log(`[AgentVideoPremium] ✅ Video premium crudo recibido de n8n: ${rawVideoUrl}`);
+          console.log(`[AgentVideoPremium] Generando guión, subtítulos Alex Hormozi y locución para componer con Remotion...`);
+          
+          try {
+            const { generateVideoPoCComposition } = await import('../video-poc-service');
+            const composition = await generateVideoPoCComposition({
+              topic: idea,
+              rubro,
+              style: 'vibrante'
+            });
+
+            const { renderAndUploadReel } = await import('../video-renderer');
+            const finalCompositedUrl = await renderAndUploadReel({
+              id: postId,
+              bgVideoUrl: rawVideoUrl,
+              scenes: composition.scenes,
+              audioScript: composition.audioScript,
+              showWatermark: showWatermark,
+              logoUrl: logoUrl,
+              businessName: businessName
+            }, userId, postId);
+
+            console.log(`[AgentVideoPremium] 🚀 Video Premium con subtítulos Hormozi y locución finalizado: ${finalCompositedUrl}`);
+            return finalCompositedUrl;
+          } catch (remotionErr: any) {
+            console.warn('[AgentVideoPremium] Fallo al componer con Remotion, usando video n8n directo:', remotionErr.message);
+            return rawVideoUrl;
+          }
         } else if (statusData.status === 'error') {
           throw new Error('n8n reportó un error durante la generación del video.');
         }

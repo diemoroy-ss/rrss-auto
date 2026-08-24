@@ -42,7 +42,8 @@ export async function generateReelWithAgent(params: ReelAgentParams): Promise<{ 
         idea: sceneIdea,
         rubro,
         businessDescription,
-        aspectRatio: '9:16'
+        aspectRatio: '9:16',
+        bannerStyle: 'clean'
       });
       scene.bgImageUrl = bgImageUrl;
     } catch (err) {

@@ -251,6 +251,8 @@ function ConfigContent() {
   const [logoUrl, setLogoUrl] = useState("");
   const [logoPrompt, setLogoPrompt] = useState("");
   const [alwaysIncludeLogo, setAlwaysIncludeLogo] = useState(false);
+  const [promotions, setPromotions] = useState("");
+  const [bannerStyle, setBannerStyle] = useState<'banner' | 'clean'>("banner");
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isAnalyzingLogo, setIsAnalyzingLogo] = useState(false);
 
@@ -276,6 +278,8 @@ function ConfigContent() {
 
       if (activeProfile.rubro !== rubro) setRubro(activeProfile.rubro || "");
       if (activeProfile.businessDescription !== businessDescription) setBusinessDescription(activeProfile.businessDescription || "");
+      if (activeProfile.promotions !== promotions) setPromotions(activeProfile.promotions || "");
+      if (activeProfile.bannerStyle && activeProfile.bannerStyle !== bannerStyle) setBannerStyle(activeProfile.bannerStyle);
       
       if (activeProfile.includeWebsiteInCopy !== undefined && activeProfile.includeWebsiteInCopy !== includeWebsiteInCopy) setIncludeWebsiteInCopy(activeProfile.includeWebsiteInCopy);
       if (activeProfile.includeEmailInCopy !== undefined && activeProfile.includeEmailInCopy !== includeEmailInCopy) setIncludeEmailInCopy(activeProfile.includeEmailInCopy);
@@ -442,7 +446,9 @@ function ConfigContent() {
                 linkedinUrl,
                 email,
                 phone,
-                alwaysIncludeLogo
+                alwaysIncludeLogo,
+                promotions,
+                bannerStyle
 
              } : p
           );
@@ -864,7 +870,56 @@ function ConfigContent() {
 
           <div className="mb-8">
               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">📝 Descripción del Negocio <span className="text-rose-500">*</span></label>
-              <textarea value={businessDescription} onChange={e => setBusinessDescription(e.target.value)} placeholder="Describe qué hace tu negocio, qué problemas resuelve, cuál es tu público objetivo y el tono de tu marca. Esto ayudará a la IA a redactar copys e imágenes perfectas para ti." required rows={4} className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700 resize-none"></textarea>
+              <textarea value={businessDescription} onChange={e => setBusinessDescription(e.target.value)} placeholder="Describe qué hace tu negocio, qué problemas resuelve, cuál es tu público objetivo y el tono de tu marca. Esto ayudará a nuestros agentes a redactar copys e imágenes perfectas para ti." required rows={4} className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700 resize-none"></textarea>
+          </div>
+
+          {/* NIVEL 1: PROMOCIONES Y SERVICIOS ESTRELLA DEL LOCAL */}
+          <div className="mb-8 p-6 bg-gradient-to-br from-amber-500/5 via-indigo-500/5 to-purple-500/5 rounded-3xl border-2 border-amber-400/30">
+              <div className="flex items-center gap-3 mb-3">
+                 <span className="text-2xl">🏷️</span>
+                 <div>
+                    <h4 className="text-sm font-black text-slate-900 tracking-tight">Promociones, Ofertas y Servicios Estrella de tu Local (Nivel 1)</h4>
+                    <p className="text-xs font-medium text-slate-500">Nuestros agentes usarán estas ofertas para diseñar los titulares y badges de tus carteles automáticos.</p>
+                 </div>
+              </div>
+              <textarea 
+                value={promotions} 
+                onChange={e => setPromotions(e.target.value)} 
+                placeholder="Ejemplo:&#10;• Jueves 2x1 en hamburguesas dobles smash con papas&#10;• Combo Burger + Bebida a $8.990&#10;• 20% de descuento en tu primera visita pidiendo por WhatsApp&#10;• De lunes a miércoles corte + barba a $12.000" 
+                rows={4} 
+                className="w-full bg-white border-2 border-amber-200/60 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500/60 outline-none text-sm font-bold transition-all text-slate-700 resize-none shadow-sm"
+              ></textarea>
+              <div className="flex items-center justify-between mt-3 text-[11px] text-slate-500 font-medium">
+                 <span>💡 <strong>Tip:</strong> Incluye días de la semana, precios, combos o regalos para incentivar la venta directa.</span>
+              </div>
+
+              {/* Selector de Estilo de Publicación */}
+              <div className="mt-5 pt-5 border-t border-amber-200/40">
+                 <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">🎨 Formato Visual de tus Publicaciones:</label>
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <label 
+                      onClick={() => setBannerStyle('banner')}
+                      className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-3 ${bannerStyle === 'banner' ? 'bg-white border-amber-500 shadow-md shadow-amber-500/10' : 'bg-white/60 border-slate-200/70 hover:bg-white'}`}
+                    >
+                       <input type="radio" name="bannerStyle" checked={bannerStyle === 'banner'} onChange={() => setBannerStyle('banner')} className="mt-1 accent-amber-600" />
+                       <div>
+                          <p className="text-xs font-black text-slate-900">🏷️ Cartel Publicitario Comercial (Recomendado)</p>
+                          <p className="text-[11px] text-slate-500 mt-0.5">Estampa titulares llamativos, badges de oferta y tu logo sobre la foto para vender más rápido.</p>
+                       </div>
+                    </label>
+
+                    <label 
+                      onClick={() => setBannerStyle('clean')}
+                      className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-3 ${bannerStyle === 'clean' ? 'bg-white border-amber-500 shadow-md shadow-amber-500/10' : 'bg-white/60 border-slate-200/70 hover:bg-white'}`}
+                    >
+                       <input type="radio" name="bannerStyle" checked={bannerStyle === 'clean'} onChange={() => setBannerStyle('clean')} className="mt-1 accent-amber-600" />
+                       <div>
+                          <p className="text-xs font-black text-slate-900">🖼️ Solo Fotografía Limpia</p>
+                          <p className="text-[11px] text-slate-500 mt-0.5">Genera únicamente la foto realista del producto o servicio sin textos encima.</p>
+                       </div>
+                    </label>
+                 </div>
+              </div>
           </div>
 
           <div className="grid md:grid-cols-2 gap-6 mb-8">
@@ -982,7 +1037,12 @@ function ConfigContent() {
                                  <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.86-.74-3.94-1.74-.22-.2-.41-.43-.61-.65v5.13c.04 2.11-.6 4.31-2.12 5.85-1.59 1.62-3.95 2.45-6.19 2.14-2.61-.31-4.99-2.22-5.74-4.79-.88-2.85-.02-6.22 2.19-8.15 1.72-1.53 4.12-2.11 6.36-1.57v4.18c-1.34-.37-2.89-.08-3.94.83-1.04.9-1.54 2.37-1.28 3.73.28 1.43 1.57 2.53 3.01 2.62 1.45.09 2.92-.85 3.39-2.22.25-.66.29-1.39.27-2.09V0z"/>
                               </svg>
                            </span>
-                           <h5 className="font-black text-slate-900">TikTok</h5>
+                           <div className="flex items-center justify-between flex-1">
+                               <h5 className="font-black text-slate-900">TikTok</h5>
+                               {!ttStatus && !isAdmin && (
+                                   <span className="text-[9px] font-black uppercase tracking-wider bg-slate-200 text-slate-600 px-2 py-0.5 rounded-md">Próximamente</span>
+                               )}
+                           </div>
                        </div>
                        <p className="text-xs text-slate-500 font-medium mb-4">Publica tus Reels y videos automáticamente en tu perfil de TikTok.</p>
                    </div>
@@ -1021,9 +1081,15 @@ function ConfigContent() {
                            </div>
                        </div>
                    ) : (
-                       <button type="button" onClick={handleConnectTikTok} className="w-full bg-black hover:bg-slate-900 text-white font-bold py-2.5 rounded-xl shadow-md text-sm transition-colors mt-auto">
-                           Conectar con TikTok
-                       </button>
+                       isAdmin ? (
+                           <button type="button" onClick={handleConnectTikTok} className="w-full bg-black hover:bg-slate-900 text-white font-bold py-2.5 rounded-xl shadow-md text-sm transition-colors mt-auto">
+                               Conectar con TikTok
+                           </button>
+                       ) : (
+                           <button type="button" disabled className="w-full bg-slate-100 text-slate-400 font-bold py-2.5 rounded-xl text-sm mt-auto cursor-not-allowed border border-slate-200">
+                               Próximamente
+                           </button>
+                       )
                    )}
                 </div>
 

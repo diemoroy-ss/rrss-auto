@@ -233,11 +233,11 @@ export default function BibliotecaPage() {
           <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
             <span>🖼️ Biblioteca de Medios</span>
             <span className="text-xs px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 font-extrabold uppercase tracking-wider">
-              {images.length} / {limit === 9999 ? "Sin Límite" : limit} Guardados
+              {images.length} {images.length === 1 ? "Elemento Guardado" : "Elementos Guardados"}
             </span>
           </h1>
           <p className="text-slate-500 text-sm font-medium mt-1">
-            Gestiona tus imágenes generadas por IA, portadas de Reels y recursos subidos.
+            Gestiona tus imágenes, portadas de Reels y recursos multimedia.
           </p>
         </div>
 
@@ -248,15 +248,6 @@ export default function BibliotecaPage() {
           <span>✨ Generar o Subir Nuevo</span>
         </Link>
       </div>
-
-      {isOverLimit && (
-        <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-amber-800 text-xs font-bold flex items-center gap-3">
-          <span>⚠️</span>
-          <span>
-            Has superado el límite de almacenamiento de tu plan ({limit} elementos). Actualiza tu plan para guardar más recursos.
-          </span>
-        </div>
-      )}
 
       {error && (
         <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl text-rose-800 text-xs font-bold">
@@ -278,7 +269,7 @@ export default function BibliotecaPage() {
                   : "text-slate-500 hover:text-slate-800"
               }`}
             >
-              {s === "all" ? "Todos" : s === "ia" ? "🤖 IA" : s === "editor" ? "🎨 Editor" : "📥 Subidos"}
+              {s === "all" ? "Todos" : s === "ia" ? "✨ Agentes" : s === "editor" ? "🎨 Editor" : "📥 Subidos"}
             </button>
           ))}
         </div>

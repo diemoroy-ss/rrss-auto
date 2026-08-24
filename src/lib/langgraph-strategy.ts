@@ -6,6 +6,7 @@ export const StrategyAnnotation = Annotation.Root({
   businessType: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "General" }),
   goal: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "Ventas" }),
   expectations: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "" }),
+  promotions: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "" }),
   connectedPlatforms: Annotation<string[]>({ reducer: (a, b) => b ?? a, default: () => ["Instagram", "Facebook"] }),
   history: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "Sin historial." }),
   nicheContext: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "" }),
@@ -31,11 +32,11 @@ DATOS DEL CLIENTE:
 - Rubro: ${state.businessType}
 - Objetivo Principal: ${state.goal}
 - Expectativas Especiales: ${state.expectations}
-- Redes Disponibles: ${state.connectedPlatforms.join(", ")}
+${state.promotions ? `- Promociones y Ofertas Clave del Local: "${state.promotions}"\n` : ""}- Redes Disponibles: ${state.connectedPlatforms.join(", ")}
 
 PROPORCIONA:
 1. Análisis del público objetivo.
-2. 3 Pilares de contenido (ej: Educativo, Venta, Entretenimiento).
+2. 3 Pilares de contenido (ej: Educativo, Venta/Promociones, Entretenimiento).
 3. Tono de comunicación recomendado.
 4. Frecuencia de publicación sugerida.
 
@@ -66,7 +67,7 @@ Basándote en el siguiente análisis, genera un plan táctico de publicaciones.
 ANÁLISIS ESTRATÉGICO:
 ${state.analysis}
 
-${state.nicheContext ? `CONTEXTO DEL RADAR DE NICHO (Últimos 30 días):\n${state.nicheContext}\n\n` : ""}
+${state.promotions ? `PROMOCIONES Y OFERTAS CLAVE DEL NEGOCIO (Incluye estas promociones, precios o combos reales en los ganchos y copys comerciales):\n"${state.promotions}"\n\n` : ""}${state.nicheContext ? `CONTEXTO DEL RADAR DE NICHO (Últimos 30 días):\n${state.nicheContext}\n\n` : ""}
 
 HISTORIAL DE POSTS Y RENDIMIENTO (Analiza esto para replicar qué formatos/ideas tuvieron más likes/alcance, y descarta lo que no sirvió):
 ${state.history}
@@ -218,13 +219,15 @@ export async function runProfessionalStrategyWorkflow(
     connectedPlatforms: string[],
     history: string,
     nicheContext: string = "",
-    postsPerWeek: number = 5
+    postsPerWeek: number = 5,
+    promotions: string = ""
 ) {
   const app = createStrategyWorkflow();
   const initialState = {
     businessType,
     goal,
     expectations,
+    promotions,
     connectedPlatforms,
     history,
     nicheContext,

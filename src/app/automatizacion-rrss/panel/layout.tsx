@@ -68,6 +68,7 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
     { href: "/automatizacion-rrss/panel/admin/whatsapp", label: "WhatsApp", icon: "💬", exact: false },
     { href: "/automatizacion-rrss/panel/admin/estrategias", label: "Estrategias", icon: "🚀", exact: false },
     { href: "/automatizacion-rrss/panel/admin/workflows", label: "Workflows N8N", icon: "⚙️", exact: false },
+    { href: "/automatizacion-rrss/panel/admin/agentes", label: "Agentes", icon: "🤖", exact: false },
     { href: "/automatizacion-rrss/panel/admin/modelos-ia", label: "Modelos IA", icon: "🧠", exact: false },
     { href: "/automatizacion-rrss/panel/admin/monitoreo", label: "Monitoreo Posts", icon: "📡", exact: false },
     { href: "/automatizacion-rrss/panel/admin/logs", label: "Logs de Sistema", icon: "📝", exact: false },
