@@ -31,10 +31,13 @@ function MetaSelectionModal({ isOpen, onClose, onSelect, profileId }: any) {
   const [error, setError] = useState("");
   const [selectedPage, setSelectedPage] = useState<any>(null);
 
+  const [debugInfo, setDebugInfo] = useState<any>(null);
+
   useEffect(() => {
     if (isOpen) {
       setLoading(true);
       setError("");
+      setDebugInfo(null);
       // Fetch pages
       auth.currentUser?.getIdToken().then(token => {
         fetch(`/api/auth/meta/pages?profileId=${profileId}`, {
@@ -43,6 +46,7 @@ function MetaSelectionModal({ isOpen, onClose, onSelect, profileId }: any) {
         .then(res => res.json())
         .then(data => {
           if (data.error) throw new Error(data.error);
+          if (data._debug) setDebugInfo(data._debug);
           setPages(data.data || []);
         })
         .catch(err => setError(err.message))
@@ -64,7 +68,15 @@ function MetaSelectionModal({ isOpen, onClose, onSelect, profileId }: any) {
         ) : error ? (
           <div className="p-4 bg-rose-50 text-rose-600 rounded-xl font-bold text-sm">{error}</div>
         ) : pages.length === 0 ? (
-          <div className="p-4 bg-amber-50 text-amber-600 rounded-xl font-bold text-sm">No se encontraron páginas de Facebook. Asegúrate de tener permisos de administrador.</div>
+          <div className="space-y-3">
+            <div className="p-4 bg-amber-50 text-amber-600 rounded-xl font-bold text-sm">No se encontraron páginas de Facebook. Asegúrate de tener permisos de administrador.</div>
+            {debugInfo && (
+              <details className="text-xs bg-slate-50 border border-slate-200 rounded-xl p-3">
+                <summary className="font-bold text-slate-500 cursor-pointer">🔍 Debug Info (compartir con soporte)</summary>
+                <pre className="mt-2 text-slate-600 overflow-auto max-h-48 whitespace-pre-wrap">{JSON.stringify(debugInfo, null, 2)}</pre>
+              </details>
+            )}
+          </div>
         ) : (
           <div className="space-y-3 max-h-64 overflow-y-auto pr-2">
             {pages.map(p => (

@@ -91,6 +91,22 @@ export async function GET(req: Request) {
              return NextResponse.json({ error: data.error.message }, { status: 500 });
         }
 
+        // DIAGNÓSTICO TEMPORAL: incluir debug info en la respuesta cuando no hay páginas
+        if (allPages.length === 0) {
+            let debugInfo: any = {
+                me_accounts_raw: data,
+                biz_query_attempted: true,
+            };
+            try {
+                const permRes = await fetch(`https://graph.facebook.com/v19.0/me?fields=id,name&access_token=${userAccessToken}`);
+                debugInfo.me = await permRes.json();
+                const bizRes2 = await fetch(`https://graph.facebook.com/v19.0/me/businesses?fields=id,name&access_token=${userAccessToken}`);
+                debugInfo.businesses = await bizRes2.json();
+            } catch (e) {}
+            console.log("[Meta Pages] DEBUG SIN PÁGINAS:", JSON.stringify(debugInfo));
+            return NextResponse.json({ data: [], _debug: debugInfo });
+        }
+
         return NextResponse.json({ data: allPages });
 
     } catch (error: any) {
