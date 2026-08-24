@@ -8,6 +8,9 @@ import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useProfile } from "../../../../contexts/ProfileContext";
 import StatusModal from "../../../../components/StatusModal";
+import TabMarca from "./TabMarca";
+import TabContacto from "./TabContacto";
+import TabConexiones from "./TabConexiones";
 
 function getExpirationText(timestamp?: number) {
   if (!timestamp) return { text: "Vigencia Desconocida", color: "text-slate-500", bg: "bg-slate-100", isExpired: false, isUnknown: true };
@@ -195,6 +198,7 @@ function ConfigContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
+  const [activeTab, setActiveTab] = useState<'marca' | 'contacto' | 'conexiones'>('marca');
   const [user, setUser] = useState<any>(null);
   const [loadingInitial, setLoadingInitial] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -767,6 +771,12 @@ function ConfigContent() {
 
   if (loadingInitial) return <div className="animate-pulse space-y-4 max-w-2xl"><div className="h-10 bg-slate-200 rounded w-1/3"></div><div className="h-64 bg-slate-200 rounded"></div></div>;
 
+  const tabs = [
+    { id: 'marca' as const, label: 'Marca', icon: '🏢' },
+    { id: 'contacto' as const, label: 'Datos & Contacto', icon: '📋' },
+    { id: 'conexiones' as const, label: 'Conexiones', icon: '🔗' },
+  ];
+
   return (
     <div className="max-w-4xl mx-auto lg:mx-0 pb-20">
       <div className="mb-10">
@@ -776,7 +786,7 @@ function ConfigContent() {
 
       {errorMsg && <div className="mb-8 p-5 bg-rose-50 text-rose-600 rounded-[24px] font-black text-sm border border-rose-100 animate-in fade-in slide-in-from-top-2">⚠️ {errorMsg}</div>}
       {success && <div className="mb-8 p-5 bg-emerald-50 text-emerald-600 rounded-[24px] font-black text-sm border border-emerald-100 animate-in fade-in slide-in-from-top-2">✅ ¡Configuración guardada exitosamente!</div>}
-      
+
       {message && (
         <div className={`mb-8 p-5 rounded-[24px] font-black text-sm flex items-center gap-3 animate-in fade-in slide-in-from-top-2 ${
           message.type === 'error' ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'
@@ -786,471 +796,112 @@ function ConfigContent() {
         </div>
       )}
 
-      {/* Account Lock Banner: shown to non-business users who have locked accounts */}
       {!isBusiness && activeProfile?.accountLocks && Object.keys((activeProfile as any).accountLocks).length > 0 && (
         <div className="mb-8 p-5 bg-amber-50 border border-amber-200 rounded-[24px] animate-in fade-in slide-in-from-top-2">
           <div className="flex items-start gap-4">
             <span className="text-2xl mt-0.5">🔒</span>
             <div className="flex-1">
               <h4 className="font-black text-amber-800 text-sm mb-1">Cuentas vinculadas a este perfil</h4>
-              <p className="text-amber-700 text-xs font-medium leading-relaxed">
-                Tu plan actual permite <strong>una sola cuenta por red social</strong>. Las siguientes cuentas quedaron vinculadas porque ya publicaste con ellas:
-              </p>
+              <p className="text-amber-700 text-xs font-medium leading-relaxed">Tu plan actual permite <strong>una sola cuenta por red social</strong>. Las siguientes cuentas quedaron vinculadas porque ya publicaste con ellas:</p>
               <div className="flex flex-wrap gap-2 mt-3">
-                {(activeProfile as any).accountLocks?.facebook && (
-                  <span className="bg-blue-100 text-blue-700 text-[10px] font-black px-3 py-1 rounded-full">
-                    📘 Facebook: {activeProfile.facebookPageName || (activeProfile as any).accountLocks.facebook}
-                  </span>
-                )}
-                {(activeProfile as any).accountLocks?.instagram && (
-                  <span className="bg-pink-100 text-pink-700 text-[10px] font-black px-3 py-1 rounded-full">
-                    📸 Instagram: @{activeProfile.instagramUsername || (activeProfile as any).accountLocks.instagram}
-                  </span>
-                )}
-                {(activeProfile as any).accountLocks?.tiktok && (
-                  <span className="bg-slate-100 text-slate-700 text-[10px] font-black px-3 py-1 rounded-full">
-                    🎵 TikTok: {(activeProfile as any).accountLocks.tiktok}
-                  </span>
-                )}
+                {(activeProfile as any).accountLocks?.facebook && <span className="bg-blue-100 text-blue-700 text-[10px] font-black px-3 py-1 rounded-full">📘 Facebook: {activeProfile.facebookPageName || (activeProfile as any).accountLocks.facebook}</span>}
+                {(activeProfile as any).accountLocks?.instagram && <span className="bg-pink-100 text-pink-700 text-[10px] font-black px-3 py-1 rounded-full">📸 Instagram: @{activeProfile.instagramUsername || (activeProfile as any).accountLocks.instagram}</span>}
+                {(activeProfile as any).accountLocks?.tiktok && <span className="bg-slate-100 text-slate-700 text-[10px] font-black px-3 py-1 rounded-full">🎵 TikTok: {(activeProfile as any).accountLocks.tiktok}</span>}
               </div>
-              <p className="text-amber-700 text-xs font-medium mt-3">
-                ¿Necesitas gestionar <strong>múltiples negocios</strong>? Pasa al <strong className="text-amber-900">Plan Business</strong> y tendrás hasta 5 marcas independientes, cada una con sus propias redes sociales.
-              </p>
+              <p className="text-amber-700 text-xs font-medium mt-3">¿Necesitas gestionar <strong>múltiples negocios</strong>? Pasa al <strong className="text-amber-900">Plan Business</strong> y tendrás hasta 5 marcas independientes, cada una con sus propias redes sociales.</p>
             </div>
           </div>
         </div>
       )}
 
-      <form onSubmit={handleSaveData} className="space-y-10">
-        
-        {/* BUSINESS DATA */}
-        <div className="bg-white p-8 rounded-[32px] border-2 border-slate-100 shadow-xl shadow-slate-200/50 relative overflow-hidden group">
-          <div className="flex items-center gap-4 mb-8 pb-6 border-b border-slate-100">
-             <span className="w-12 h-12 bg-slate-100 text-slate-600 rounded-2xl flex items-center justify-center text-xl shadow-inner font-black">🏢</span>
-             <h3 className="text-xl font-black text-slate-900">Datos de la Cuenta: <span className="text-indigo-600">{activeProfile?.name || 'Principal'}</span></h3>
+      {/* TAB BAR */}
+      <div className="flex gap-2 mb-8 p-1.5 bg-slate-100 rounded-2xl">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-sm transition-all ${
+              activeTab === tab.id
+                ? 'bg-white text-slate-900 shadow-md shadow-slate-200'
+                : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
+            }`}
+          >
+            <span>{tab.icon}</span>
+            <span className="hidden sm:block">{tab.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {activeTab !== 'conexiones' ? (
+        <form onSubmit={handleSaveData} className="space-y-6">
+          {activeTab === 'marca' && (
+            <TabMarca
+              logoUrl={logoUrl}
+              isUploadingLogo={isUploadingLogo}
+              isAnalyzingLogo={isAnalyzingLogo}
+              alwaysIncludeLogo={alwaysIncludeLogo}
+              brandName={brandName}
+              rubro={rubro}
+              businessDescription={businessDescription}
+              activeProfileName={activeProfile?.name}
+              setAlwaysIncludeLogo={setAlwaysIncludeLogo}
+              setBrandName={setBrandName}
+              setRubro={setRubro}
+              setBusinessDescription={setBusinessDescription}
+              handleLogoUpload={handleLogoUpload}
+            />
+          )}
+          {activeTab === 'contacto' && (
+            <TabContacto
+              website={website}
+              includeWebsiteInCopy={includeWebsiteInCopy}
+              email={email}
+              includeEmailInCopy={includeEmailInCopy}
+              phone={phone}
+              includePhoneInCopy={includePhoneInCopy}
+              promotions={promotions}
+              bannerStyle={bannerStyle}
+              setWebsite={setWebsite}
+              setIncludeWebsiteInCopy={setIncludeWebsiteInCopy}
+              setEmail={setEmail}
+              setIncludeEmailInCopy={setIncludeEmailInCopy}
+              setPhone={setPhone}
+              setIncludePhoneInCopy={setIncludePhoneInCopy}
+              setPromotions={setPromotions}
+              setBannerStyle={setBannerStyle}
+            />
+          )}
+          <div className="sticky bottom-6 z-50 flex justify-end">
+            <button disabled={saving} type="submit" className="w-full md:w-auto bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-black text-lg py-5 px-14 rounded-[28px] transition-all shadow-2xl shadow-indigo-900/40 flex items-center justify-center gap-4 hover:-translate-y-1">
+              {saving ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : <><span>💾</span> Guardar Información</>}
+            </button>
           </div>
+        </form>
+      ) : (
+        <TabConexiones
+          activeProfile={activeProfile}
+          fbStatus={fbStatus}
+          ttStatus={ttStatus}
+          gbpStatus={gbpStatus}
+          isAdmin={isAdmin}
+          isBusiness={isBusiness}
+          handleConnectMeta={handleConnectMeta}
+          handleDisconnectFb={handleDisconnectFb}
+          handleConnectTikTok={handleConnectTikTok}
+          handleDisconnectTt={handleDisconnectTt}
+          handleConnectYouTube={handleConnectYouTube}
+          handleDisconnectYouTube={handleDisconnectYouTube}
+          handleConnectX={handleConnectX}
+          handleDisconnectX={handleDisconnectX}
+          handleConnectGBP={handleConnectGBP}
+          handleDisconnectGBP={handleDisconnectGBP}
+          setShowMetaModal={setShowMetaModal}
+        />
+      )}
 
-          <div className="mb-8">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Logo Corporativo (Máx 2MB)</label>
-              <div className="flex gap-4 items-start">
-                  <div className="w-24 h-24 bg-slate-50 rounded-2xl border-2 border-dashed border-indigo-200 flex items-center justify-center overflow-hidden shrink-0 relative hover:border-indigo-400 transition-colors">
-                      {logoUrl ? (
-                          <img src={logoUrl} alt="Logo" className="w-full h-full object-contain p-2" />
-                      ) : (
-                          <span className="text-3xl opacity-50">🖼️</span>
-                      )}
-                      {isUploadingLogo && <div className="absolute inset-0 bg-white/80 flex items-center justify-center"><div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div></div>}
-                  </div>
-                  <div className="flex-1">
-                      <p className="text-xs font-medium text-slate-500 mb-3">
-                        Sube tu logo oficial en formato PNG o JPG. Nuestros agentes lo estamparán automáticamente con nitidez original en las imágenes de tus posts cuando lo actives.
-                      </p>
-                      <label className="cursor-pointer bg-white border border-slate-200 text-slate-700 font-bold px-4 py-2 rounded-lg text-sm hover:bg-slate-50 transition-colors shadow-sm inline-block">
-                          {isUploadingLogo ? 'Subiendo...' : logoUrl ? 'Cambiar Logo' : 'Subir Logo'}
-                          <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} disabled={isUploadingLogo} />
-                      </label>
-                  </div>
-              </div>
-
-              {/* Checkbox de Inclusión Automática de Logo */}
-              {logoUrl && (
-                <div className="mt-5 p-4 bg-indigo-50 rounded-2xl border border-indigo-100">
-                  <label className="flex items-center gap-3 cursor-pointer group">
-                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${alwaysIncludeLogo ? 'bg-indigo-500 border-indigo-500' : 'bg-white border-slate-300 group-hover:border-indigo-400'}`}>
-                      {alwaysIncludeLogo && <span className="w-2 h-2 bg-white rounded-sm" />}
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-slate-700">Incluir siempre logo en posts creados</p>
-                      <p className="text-[10px] text-slate-500">Estampará automáticamente tu logo original en las imágenes generadas por IA.</p>
-                    </div>
-                    <input type="checkbox" className="hidden" checked={alwaysIncludeLogo} onChange={e => setAlwaysIncludeLogo(e.target.checked)} />
-                  </label>
-                </div>
-              )}
-          </div>
-
-
-          <div className="mb-8">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">🏷️ Nombre de la Marca / Negocio</label>
-              <input type="text" value={brandName} onChange={e => setBrandName(e.target.value)} placeholder="Ej: Mi Restaurante" className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700" />
-          </div>
-
-          <div className="mb-8">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">🏭 Rubro / Industria <span className="text-rose-500">*</span></label>
-              <input type="text" value={rubro} onChange={e => setRubro(e.target.value)} placeholder="Ej: Clínica Dental, Restaurante Vegano, Inmobiliaria..." required className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700" />
-          </div>
-
-          <div className="mb-8">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">📝 Descripción del Negocio <span className="text-rose-500">*</span></label>
-              <textarea value={businessDescription} onChange={e => setBusinessDescription(e.target.value)} placeholder="Describe qué hace tu negocio, qué problemas resuelve, cuál es tu público objetivo y el tono de tu marca. Esto ayudará a nuestros agentes a redactar copys e imágenes perfectas para ti." required rows={4} className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700 resize-none"></textarea>
-          </div>
-
-          {/* NIVEL 1: PROMOCIONES Y SERVICIOS ESTRELLA DEL LOCAL */}
-          <div className="mb-8 p-6 bg-gradient-to-br from-amber-500/5 via-indigo-500/5 to-purple-500/5 rounded-3xl border-2 border-amber-400/30">
-              <div className="flex items-center gap-3 mb-3">
-                 <span className="text-2xl">🏷️</span>
-                 <div>
-                    <h4 className="text-sm font-black text-slate-900 tracking-tight">Promociones, Ofertas y Servicios Estrella de tu Local (Nivel 1)</h4>
-                    <p className="text-xs font-medium text-slate-500">Nuestros agentes usarán estas ofertas para diseñar los titulares y badges de tus carteles automáticos.</p>
-                 </div>
-              </div>
-              <textarea 
-                value={promotions} 
-                onChange={e => setPromotions(e.target.value)} 
-                placeholder="Ejemplo:&#10;• Jueves 2x1 en hamburguesas dobles smash con papas&#10;• Combo Burger + Bebida a $8.990&#10;• 20% de descuento en tu primera visita pidiendo por WhatsApp&#10;• De lunes a miércoles corte + barba a $12.000" 
-                rows={4} 
-                className="w-full bg-white border-2 border-amber-200/60 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500/60 outline-none text-sm font-bold transition-all text-slate-700 resize-none shadow-sm"
-              ></textarea>
-              <div className="flex items-center justify-between mt-3 text-[11px] text-slate-500 font-medium">
-                 <span>💡 <strong>Tip:</strong> Incluye días de la semana, precios, combos o regalos para incentivar la venta directa.</span>
-              </div>
-
-              {/* Selector de Estilo de Publicación */}
-              <div className="mt-5 pt-5 border-t border-amber-200/40">
-                 <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">🎨 Formato Visual de tus Publicaciones:</label>
-                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <label 
-                      onClick={() => setBannerStyle('banner')}
-                      className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-3 ${bannerStyle === 'banner' ? 'bg-white border-amber-500 shadow-md shadow-amber-500/10' : 'bg-white/60 border-slate-200/70 hover:bg-white'}`}
-                    >
-                       <input type="radio" name="bannerStyle" checked={bannerStyle === 'banner'} onChange={() => setBannerStyle('banner')} className="mt-1 accent-amber-600" />
-                       <div>
-                          <p className="text-xs font-black text-slate-900">🏷️ Cartel Publicitario Comercial (Recomendado)</p>
-                          <p className="text-[11px] text-slate-500 mt-0.5">Estampa titulares llamativos, badges de oferta y tu logo sobre la foto para vender más rápido.</p>
-                       </div>
-                    </label>
-
-                    <label 
-                      onClick={() => setBannerStyle('clean')}
-                      className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-3 ${bannerStyle === 'clean' ? 'bg-white border-amber-500 shadow-md shadow-amber-500/10' : 'bg-white/60 border-slate-200/70 hover:bg-white'}`}
-                    >
-                       <input type="radio" name="bannerStyle" checked={bannerStyle === 'clean'} onChange={() => setBannerStyle('clean')} className="mt-1 accent-amber-600" />
-                       <div>
-                          <p className="text-xs font-black text-slate-900">🖼️ Solo Fotografía Limpia</p>
-                          <p className="text-[11px] text-slate-500 mt-0.5">Genera únicamente la foto realista del producto o servicio sin textos encima.</p>
-                       </div>
-                    </label>
-                 </div>
-              </div>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-6 mb-8">
-
-              <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">🌐 Sitio Web</label>
-                  <input type="text" value={website} onChange={e => setWebsite(e.target.value)} placeholder="mi-negocio.com o enlace" className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700" />
-                  <label className="flex items-center gap-2 mt-2 cursor-pointer group">
-                      <input type="checkbox" checked={includeWebsiteInCopy} onChange={e => setIncludeWebsiteInCopy(e.target.checked)} className="w-4 h-4 text-indigo-600 bg-slate-100 border-slate-300 rounded focus:ring-indigo-500 focus:ring-2" />
-                      <span className="text-[11px] font-bold text-slate-500 group-hover:text-slate-700 transition-colors">Incluir en publicaciones automáticas</span>
-                  </label>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                  <div>
-                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">📧 Correo Contacto</label>
-                      <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="hola@marca.cl" className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700" />
-                      <label className="flex items-center gap-2 mt-2 cursor-pointer group">
-                          <input type="checkbox" checked={includeEmailInCopy} onChange={e => setIncludeEmailInCopy(e.target.checked)} className="w-4 h-4 text-indigo-600 bg-slate-100 border-slate-300 rounded focus:ring-indigo-500 focus:ring-2" />
-                          <span className="text-[11px] font-bold text-slate-500 group-hover:text-slate-700 transition-colors">Incluir en posts</span>
-                      </label>
-                  </div>
-                  <div>
-                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">📞 Teléfono (WhatsApp)</label>
-                      <input type="text" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+56 9 ..." className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700" />
-                      <label className="flex items-center gap-2 mt-2 cursor-pointer group">
-                          <input type="checkbox" checked={includePhoneInCopy} onChange={e => setIncludePhoneInCopy(e.target.checked)} className="w-4 h-4 text-indigo-600 bg-slate-100 border-slate-300 rounded focus:ring-indigo-500 focus:ring-2" />
-                          <span className="text-[11px] font-bold text-slate-500 group-hover:text-slate-700 transition-colors">Incluir en posts</span>
-                      </label>
-                  </div>
-              </div>
-          </div>
-
-          {/* Redes Sociales - Botones Conectar */}
-          <div className="pt-6 border-t border-slate-100">
-             <h4 className="text-sm font-black text-slate-900 mb-4 uppercase tracking-widest">Conexiones a Redes Sociales</h4>
-             
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                {/* 1. Meta (FB & IG) */}
-                <div className="p-5 border-2 border-slate-100 rounded-2xl bg-slate-50 flex flex-col justify-between">
-                   <div>
-                       <div className="flex items-center justify-between mb-2">
-                           <div className="flex items-center gap-3">
-                               <span className="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center font-bold">
-                                  f
-                               </span>
-                               <h5 className="font-black text-slate-900">Meta (FB & IG)</h5>
-                           </div>
-                           <div className="relative">
-                              <button type="button" className="peer w-5 h-5 bg-slate-200 text-slate-500 hover:bg-amber-100 hover:text-amber-600 rounded-full flex items-center justify-center font-bold text-[10px] transition-colors cursor-help">?</button>
-                              <div className="absolute right-0 top-7 w-56 bg-slate-800 text-white p-3 rounded-xl text-[10px] leading-relaxed shadow-xl opacity-0 invisible peer-hover:opacity-100 peer-hover:visible transition-all z-50 pointer-events-none font-medium">
-                                  ⚠️ Por reglas oficiales de Meta, la automatización solo está permitida para Páginas de Empresa (Fanpages) y cuentas de Instagram Creador/Empresa. No funciona con perfiles personales.
-                                  <div className="absolute -top-1.5 right-1.5 w-3 h-3 bg-slate-800 rotate-45"></div>
-                              </div>
-                           </div>
-                       </div>
-                       <p className="text-xs text-slate-500 font-medium mb-4">Conecta tu cuenta para publicar automáticamente en Facebook e Instagram.</p>
-                   </div>
-                   
-                   {fbStatus ? (
-                       <div className="flex flex-col h-full justify-end">
-                           <div className="flex items-center justify-between mb-3">
-                               <div className="flex items-center gap-2">
-                                   <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                                   <span className="text-xs font-bold text-emerald-600">Conectado</span>
-                               </div>
-                               {(() => {
-                                   const expInfo = getExpirationText(activeProfile?.metaTokenExpiresAt);
-                                   if (!expInfo) return null;
-                                   return (
-                                       <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${expInfo.bg} ${expInfo.color}`}>
-                                           {expInfo.text}
-                                       </span>
-                                   );
-                               })()}
-                           </div>
-                           {/* Cuentas conectadas */}
-                           {(activeProfile?.facebookPageName || activeProfile?.instagramUsername) && (
-                               <div className="mb-3 p-3 bg-white border border-slate-100 rounded-xl space-y-1.5 shadow-sm text-left">
-                                   {activeProfile.facebookPageName && (
-                                       <div className="text-[11px] font-bold text-slate-700 flex items-center gap-2">
-                                           <span className="text-blue-500 shrink-0">👤</span>
-                                           <span className="text-slate-400 font-medium tracking-wide">Página:</span>
-                                           <span className="text-slate-700 font-bold truncate">{activeProfile.facebookPageName}</span>
-                                       </div>
-                                   )}
-                                   {activeProfile.instagramUsername && (
-                                       <div className="text-[11px] font-bold text-slate-700 flex items-center gap-2">
-                                           <span className="text-pink-500 shrink-0">📸</span>
-                                           <span className="text-slate-400 font-medium tracking-wide">Insta:</span>
-                                           <span className="text-slate-700 font-bold truncate">@{activeProfile.instagramUsername}</span>
-                                       </div>
-                                   )}
-                               </div>
-                           )}
-
-                           <div className="flex gap-2">
-                               <button type="button" onClick={() => setShowMetaModal(true)} className="flex-1 bg-white border-2 border-slate-200 hover:border-blue-500 text-slate-700 text-[10px] sm:text-xs font-bold py-2 rounded-xl transition-colors truncate">Cambiar</button>
-                               <button type="button" onClick={handleConnectMeta} className="flex-1 bg-blue-50 border-2 border-blue-100 hover:border-blue-300 text-blue-600 text-[10px] sm:text-xs font-bold py-2 rounded-xl transition-colors truncate">Actualizar</button>
-                               <button type="button" onClick={handleDisconnectFb} className="px-3 bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold rounded-xl text-xs transition-colors" title="Desconectar">X</button>
-                           </div>
-                       </div>
-                   ) : (
-                       <button type="button" onClick={handleConnectMeta} className="w-full bg-[#1877F2] hover:bg-[#166fe5] text-white font-bold py-2.5 rounded-xl shadow-md text-sm transition-colors mt-auto">
-                           Conectar con Meta
-                       </button>
-                   )}
-                </div>
-
-                {/* 2. TikTok */}
-                <div className="p-5 border-2 border-slate-100 rounded-2xl bg-slate-50 flex flex-col justify-between">
-                   <div>
-                       <div className="flex items-center gap-3 mb-2">
-                           <span className="w-8 h-8 bg-black text-white rounded-lg flex items-center justify-center">
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                                 <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.86-.74-3.94-1.74-.22-.2-.41-.43-.61-.65v5.13c.04 2.11-.6 4.31-2.12 5.85-1.59 1.62-3.95 2.45-6.19 2.14-2.61-.31-4.99-2.22-5.74-4.79-.88-2.85-.02-6.22 2.19-8.15 1.72-1.53 4.12-2.11 6.36-1.57v4.18c-1.34-.37-2.89-.08-3.94.83-1.04.9-1.54 2.37-1.28 3.73.28 1.43 1.57 2.53 3.01 2.62 1.45.09 2.92-.85 3.39-2.22.25-.66.29-1.39.27-2.09V0z"/>
-                              </svg>
-                           </span>
-                           <div className="flex items-center justify-between flex-1">
-                               <h5 className="font-black text-slate-900">TikTok</h5>
-                               {!ttStatus && !isAdmin && (
-                                   <span className="text-[9px] font-black uppercase tracking-wider bg-slate-200 text-slate-600 px-2 py-0.5 rounded-md">Próximamente</span>
-                               )}
-                           </div>
-                       </div>
-                       <p className="text-xs text-slate-500 font-medium mb-4">Publica tus Reels y videos automáticamente en tu perfil de TikTok.</p>
-                   </div>
-                   
-                   {ttStatus ? (
-                       <div className="flex flex-col h-full justify-end">
-                           <div className="flex items-center justify-between mb-3">
-                               <div className="flex items-center gap-2">
-                                   <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                                   <span className="text-xs font-bold text-emerald-600">Conectado</span>
-                               </div>
-                               {(() => {
-                                   const expInfo = getExpirationText(activeProfile?.tiktokTokenExpiresAt);
-                                   if (!expInfo) return null;
-                                   return (
-                                       <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${expInfo.bg} ${expInfo.color} whitespace-nowrap ml-2`}>
-                                           {expInfo.text}
-                                       </span>
-                                   );
-                               })()}
-                           </div>
-                           
-                           {activeProfile?.tiktokUsername && (
-                               <div className="mb-3 p-3 bg-white border border-slate-100 rounded-xl space-y-1.5 shadow-sm text-left">
-                                   <div className="text-[11px] font-bold text-slate-700 flex items-center gap-2">
-                                       <span className="text-black shrink-0">🎵</span>
-                                       <span className="text-slate-400 font-medium tracking-wide">Perfil:</span>
-                                       <span className="text-slate-700 font-bold truncate">{activeProfile.tiktokUsername}</span>
-                                   </div>
-                                </div>
-                           )}
-
-                           <div className="flex gap-2">
-                               <button type="button" onClick={handleConnectTikTok} className="flex-1 bg-white border-2 border-slate-200 hover:border-black text-slate-700 text-[10px] sm:text-xs font-bold py-2 rounded-xl transition-colors truncate">Actualizar</button>
-                               <button type="button" onClick={handleDisconnectTt} className="px-3 bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold rounded-xl text-xs transition-colors" title="Desconectar">X</button>
-                           </div>
-                       </div>
-                   ) : (
-                       isAdmin ? (
-                           <button type="button" onClick={handleConnectTikTok} className="w-full bg-black hover:bg-slate-900 text-white font-bold py-2.5 rounded-xl shadow-md text-sm transition-colors mt-auto">
-                               Conectar con TikTok
-                           </button>
-                       ) : (
-                           <button type="button" disabled className="w-full bg-slate-100 text-slate-400 font-bold py-2.5 rounded-xl text-sm mt-auto cursor-not-allowed border border-slate-200">
-                               Próximamente
-                           </button>
-                       )
-                   )}
-                </div>
-
-                {/* 3. YouTube Shorts */}
-                <div className="p-5 border-2 border-slate-100 rounded-2xl bg-slate-50 flex flex-col justify-between">
-                   <div>
-                       <div className="flex items-center gap-3 mb-2">
-                           <span className="w-8 h-8 bg-rose-600 text-white rounded-lg flex items-center justify-center font-bold text-xs">
-                              ▶
-                           </span>
-                           <h5 className="font-black text-slate-900">YouTube Shorts</h5>
-                       </div>
-                       <p className="text-xs text-slate-500 font-medium mb-4">Publica tus Shorts y Reels de video directamente en tu canal de YouTube.</p>
-                   </div>
-                   
-                   {Boolean(activeProfile?.accounts?.youtube?.connected || activeProfile?.youtubeConnected) ? (
-                       <div className="flex flex-col h-full justify-end">
-                           <div className="flex items-center justify-between mb-3">
-                               <div className="flex items-center gap-2">
-                                   <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                                   <span className="text-xs font-bold text-emerald-600">Conectado</span>
-                               </div>
-                           </div>
-                           
-                           {(activeProfile?.accounts?.youtube?.channelName || activeProfile?.youtubeChannelName) && (
-                               <div className="mb-3 p-3 bg-white border border-slate-100 rounded-xl space-y-1.5 shadow-sm text-left">
-                                   <div className="text-[11px] font-bold text-slate-700 flex items-center gap-2">
-                                       <span className="text-rose-600 shrink-0">📺</span>
-                                       <span className="text-slate-400 font-medium tracking-wide">Canal:</span>
-                                       <span className="text-slate-700 font-bold truncate">{activeProfile?.accounts?.youtube?.channelName || activeProfile?.youtubeChannelName}</span>
-                                   </div>
-                               </div>
-                           )}
-
-                           <div className="flex gap-2">
-                               <button type="button" onClick={handleConnectYouTube} className="flex-1 bg-white border-2 border-slate-200 hover:border-rose-500 text-slate-700 text-[10px] sm:text-xs font-bold py-2 rounded-xl transition-colors truncate">Actualizar</button>
-                               <button type="button" onClick={handleDisconnectYouTube} className="px-3 bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold rounded-xl text-xs transition-colors" title="Desconectar">X</button>
-                           </div>
-                       </div>
-                   ) : (
-                       <button type="button" onClick={handleConnectYouTube} className="w-full bg-[#FF0000] hover:bg-[#cc0000] text-white font-bold py-2.5 rounded-xl shadow-md text-sm transition-colors mt-auto">
-                           Conectar con YouTube
-                       </button>
-                   )}
-                </div>
-
-                {/* 4. X (Twitter) */}
-                <div className="p-5 border-2 border-slate-100 rounded-2xl bg-slate-50 flex flex-col justify-between">
-                   <div>
-                       <div className="flex items-center gap-3 mb-2">
-                           <span className="w-8 h-8 bg-black text-white rounded-lg flex items-center justify-center font-bold text-xs">
-                              𝕏
-                           </span>
-                           <h5 className="font-black text-slate-900">X (Twitter)</h5>
-                       </div>
-                       <p className="text-xs text-slate-500 font-medium mb-4">Publica hilos, tweets y videos automáticamente en tu perfil de X.</p>
-                   </div>
-                   
-                   {Boolean(activeProfile?.accounts?.x?.connected || activeProfile?.xConnected) ? (
-                       <div className="flex flex-col h-full justify-end">
-                           <div className="flex items-center justify-between mb-3">
-                               <div className="flex items-center gap-2">
-                                   <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                                   <span className="text-xs font-bold text-emerald-600">Conectado</span>
-                               </div>
-                           </div>
-                           
-                           {(activeProfile?.accounts?.x?.username || activeProfile?.xUsername) && (
-                               <div className="mb-3 p-3 bg-white border border-slate-100 rounded-xl space-y-1.5 shadow-sm text-left">
-                                   <div className="text-[11px] font-bold text-slate-700 flex items-center gap-2">
-                                       <span className="text-black shrink-0">𝕏</span>
-                                       <span className="text-slate-400 font-medium tracking-wide">Usuario:</span>
-                                       <span className="text-slate-700 font-bold truncate">{activeProfile?.accounts?.x?.username || activeProfile?.xUsername}</span>
-                                   </div>
-                               </div>
-                           )}
-
-                           <div className="flex gap-2">
-                               <button type="button" onClick={handleConnectX} className="flex-1 bg-white border-2 border-slate-200 hover:border-black text-slate-700 text-[10px] sm:text-xs font-bold py-2 rounded-xl transition-colors truncate">Actualizar</button>
-                               <button type="button" onClick={handleDisconnectX} className="px-3 bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold rounded-xl text-xs transition-colors" title="Desconectar">X</button>
-                           </div>
-                       </div>
-                   ) : (
-                       <button type="button" onClick={handleConnectX} className="w-full bg-black hover:bg-slate-900 text-white font-bold py-2.5 rounded-xl shadow-md text-sm transition-colors mt-auto">
-                           Conectar con X (Twitter)
-                       </button>
-                   )}
-                </div>
-
-                {/* 5. Google Business Profile */}
-                <div className="p-5 border-2 border-slate-100 rounded-2xl bg-slate-50 flex flex-col justify-between">
-                   <div>
-                       <div className="flex items-center gap-3 mb-2">
-                           <span className="w-8 h-8 bg-amber-100 text-amber-600 rounded-lg flex items-center justify-center font-bold">
-                              G
-                           </span>
-                           <h5 className="font-black text-slate-900 font-sans">Google Business Profile</h5>
-                       </div>
-                       <p className="text-xs text-slate-500 font-medium mb-4">Publica actualizaciones y fotos directamente en tu ficha de Google Maps.</p>
-                   </div>
-                   
-                   {gbpStatus ? (
-                       <div className="flex flex-col h-full justify-end">
-                           <div className="flex items-center justify-between mb-3">
-                               <div className="flex items-center gap-2">
-                                   <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                                   <span className="text-xs font-bold text-emerald-600">Conectado</span>
-                               </div>
-                           </div>
-                           {activeProfile?.googleBusinessName && (
-                               <div className="mb-3 p-3 bg-white border border-slate-100 rounded-xl space-y-1.5 shadow-sm text-left">
-                                   <div className="text-[11px] font-bold text-slate-700 flex items-center gap-2">
-                                       <span className="text-amber-500 shrink-0">📍</span>
-                                       <span className="text-slate-400 font-medium tracking-wide">Local:</span>
-                                       <span className="text-slate-700 font-bold truncate">{activeProfile.googleBusinessName}</span>
-                                   </div>
-                                </div>
-                           )}
-                           <div className="flex gap-2">
-                               <button type="button" onClick={handleConnectGBP} className="flex-1 bg-white border-2 border-slate-200 hover:border-amber-500 text-slate-700 text-[10px] sm:text-xs font-bold py-2 rounded-xl transition-colors truncate">Actualizar</button>
-                               <button type="button" onClick={handleDisconnectGBP} className="px-3 bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold rounded-xl text-xs transition-colors" title="Desconectar">X</button>
-                           </div>
-                       </div>
-                    ) : (
-                        isAdmin ? (
-                            <button type="button" onClick={handleConnectGBP} className="w-full bg-[#EA4335] hover:bg-[#d63022] text-white font-bold py-2.5 rounded-xl shadow-md text-sm transition-colors mt-auto">
-                                Conectar con Google
-                            </button>
-                        ) : (
-                            <button type="button" disabled className="w-full bg-slate-100 text-slate-400 font-bold py-2.5 rounded-xl text-sm mt-auto cursor-not-allowed border border-slate-200">
-                                Próximamente
-                            </button>
-                        )
-                    )}
-                </div>
-
-             </div>
-          </div>
-        </div>
-
-        <div className="sticky bottom-6 z-50 flex justify-end">
-           <button disabled={saving} type="submit" className="w-full md:w-auto bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-black text-lg py-5 px-14 rounded-[28px] transition-all shadow-2xl shadow-indigo-900/40 flex items-center justify-center gap-4 hover:-translate-y-1">
-             {saving ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : <><span>💾</span> Guardar Información</>}
-           </button>
-        </div>
-
-      </form>
-      <StatusModal 
-        {...modal} 
+      <StatusModal
+        {...modal}
         onCancel={() => setModal(prev => ({ ...prev, isOpen: false }))}
       />
       <MetaSelectionModal isOpen={showMetaModal} onClose={() => setShowMetaModal(false)} profileId={activeProfile?.id} onSelect={saveMetaSelection} />

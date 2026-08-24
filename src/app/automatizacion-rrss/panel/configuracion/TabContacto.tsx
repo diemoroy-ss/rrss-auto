@@ -1,0 +1,98 @@
+"use client";
+import React from "react";
+
+interface TabContactoProps {
+  website: string; includeWebsiteInCopy: boolean;
+  email: string; includeEmailInCopy: boolean;
+  phone: string; includePhoneInCopy: boolean;
+  promotions: string;
+  bannerStyle: 'banner' | 'clean';
+  setWebsite: (v: string) => void;
+  setIncludeWebsiteInCopy: (v: boolean) => void;
+  setEmail: (v: string) => void;
+  setIncludeEmailInCopy: (v: boolean) => void;
+  setPhone: (v: string) => void;
+  setIncludePhoneInCopy: (v: boolean) => void;
+  setPromotions: (v: string) => void;
+  setBannerStyle: (v: 'banner' | 'clean') => void;
+}
+
+export default function TabContacto({
+  website, includeWebsiteInCopy, email, includeEmailInCopy,
+  phone, includePhoneInCopy, promotions, bannerStyle,
+  setWebsite, setIncludeWebsiteInCopy, setEmail, setIncludeEmailInCopy,
+  setPhone, setIncludePhoneInCopy, setPromotions, setBannerStyle,
+}: TabContactoProps) {
+  return (
+    <div className="space-y-8">
+      <div className="bg-white p-8 rounded-[32px] border-2 border-slate-100 shadow-xl shadow-slate-200/50">
+        <div className="flex items-center gap-4 mb-8 pb-6 border-b border-slate-100">
+          <span className="w-12 h-12 bg-slate-100 text-slate-600 rounded-2xl flex items-center justify-center text-xl shadow-inner font-black">📋</span>
+          <h3 className="text-xl font-black text-slate-900">Datos de Contacto</h3>
+        </div>
+        <div className="grid md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">🌐 Sitio Web</label>
+            <input type="text" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="mi-negocio.com o enlace" className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700" />
+            <label className="flex items-center gap-2 mt-2 cursor-pointer group">
+              <input type="checkbox" checked={includeWebsiteInCopy} onChange={(e) => setIncludeWebsiteInCopy(e.target.checked)} className="w-4 h-4 text-indigo-600 bg-slate-100 border-slate-300 rounded focus:ring-indigo-500 focus:ring-2" />
+              <span className="text-[11px] font-bold text-slate-500 group-hover:text-slate-700 transition-colors">Incluir en publicaciones automáticas</span>
+            </label>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">📧 Correo Contacto</label>
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="hola@marca.cl" className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700" />
+              <label className="flex items-center gap-2 mt-2 cursor-pointer group">
+                <input type="checkbox" checked={includeEmailInCopy} onChange={(e) => setIncludeEmailInCopy(e.target.checked)} className="w-4 h-4 text-indigo-600 bg-slate-100 border-slate-300 rounded focus:ring-indigo-500 focus:ring-2" />
+                <span className="text-[11px] font-bold text-slate-500 group-hover:text-slate-700 transition-colors">Incluir en posts</span>
+              </label>
+            </div>
+            <div>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">📞 Teléfono (WhatsApp)</label>
+              <input type="text" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+56 9 ..." className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700" />
+              <label className="flex items-center gap-2 mt-2 cursor-pointer group">
+                <input type="checkbox" checked={includePhoneInCopy} onChange={(e) => setIncludePhoneInCopy(e.target.checked)} className="w-4 h-4 text-indigo-600 bg-slate-100 border-slate-300 rounded focus:ring-indigo-500 focus:ring-2" />
+                <span className="text-[11px] font-bold text-slate-500 group-hover:text-slate-700 transition-colors">Incluir en posts</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white p-8 rounded-[32px] border-2 border-slate-100 shadow-xl shadow-slate-200/50">
+        <div className="flex items-center gap-4 mb-8 pb-6 border-b border-slate-100">
+          <span className="w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center text-xl shadow-inner font-black">🏷️</span>
+          <div>
+            <h3 className="text-xl font-black text-slate-900">Promociones y Estilo Visual</h3>
+            <p className="text-xs text-slate-500 font-medium mt-0.5">Nuestros agentes usarán estas ofertas para diseñar los titulares y badges de tus carteles automáticos.</p>
+          </div>
+        </div>
+        <div className="mb-6">
+          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">🎯 Ofertas, Combos y Servicios Estrella</label>
+          <textarea value={promotions} onChange={(e) => setPromotions(e.target.value)} placeholder={"Ejemplo:\n• Jueves 2x1 en hamburguesas\n• Combo Burger + Bebida a $8.990\n• 20% descuento primera visita por WhatsApp"} rows={4} className="w-full bg-slate-50 border-2 border-amber-200/60 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500/60 outline-none text-sm font-bold transition-all text-slate-700 resize-none shadow-sm" />
+          <p className="text-[11px] text-slate-500 font-medium mt-2">💡 <strong>Tip:</strong> Incluye días de la semana, precios, combos o regalos para incentivar la venta directa.</p>
+        </div>
+        <div className="pt-6 border-t border-amber-200/40">
+          <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">🎨 Formato Visual de tus Publicaciones:</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label onClick={() => setBannerStyle('banner')} className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-3 ${bannerStyle === 'banner' ? 'bg-white border-amber-500 shadow-md shadow-amber-500/10' : 'bg-white/60 border-slate-200/70 hover:bg-white'}`}>
+              <input type="radio" name="bannerStyle" checked={bannerStyle === 'banner'} onChange={() => setBannerStyle('banner')} className="mt-1 accent-amber-600" />
+              <div>
+                <p className="text-xs font-black text-slate-900">🏷️ Cartel Publicitario Comercial (Recomendado)</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">Estampa titulares llamativos, badges de oferta y tu logo sobre la foto para vender más rápido.</p>
+              </div>
+            </label>
+            <label onClick={() => setBannerStyle('clean')} className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-3 ${bannerStyle === 'clean' ? 'bg-white border-amber-500 shadow-md shadow-amber-500/10' : 'bg-white/60 border-slate-200/70 hover:bg-white'}`}>
+              <input type="radio" name="bannerStyle" checked={bannerStyle === 'clean'} onChange={() => setBannerStyle('clean')} className="mt-1 accent-amber-600" />
+              <div>
+                <p className="text-xs font-black text-slate-900">🖼️ Solo Fotografía Limpia</p>
+                <p className="text-[11px] text-slate-500 mt-0.5">Genera únicamente la foto realista del producto o servicio sin textos encima.</p>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
