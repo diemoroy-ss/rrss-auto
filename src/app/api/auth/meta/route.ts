@@ -27,7 +27,7 @@ export async function GET(req: Request) {
         }
 
         const redirectUri = `${origin}/api/auth/meta/callback`;
-        const scopes = 'public_profile,email,pages_show_list,pages_read_engagement,pages_manage_posts,instagram_basic,instagram_content_publish';
+        const scopes = 'public_profile,email,pages_show_list,pages_read_engagement,pages_manage_posts,instagram_basic,instagram_content_publish,business_management';
         
         // Pass UID, profileId, and origin in state
         const state = encodeURIComponent(`${decodedToken.uid}|${profileId}|${origin}`);
