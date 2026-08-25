@@ -320,6 +320,51 @@ export default function RrssCreatePost() {
     }
   }, [networks, postType, socialRules]);
 
+  const appendContactInfo = (baseText: string): string => {
+    if (!baseText) return "";
+    let extra = "";
+    
+    const showWeb = activeProfile?.includeWebsiteInCopy !== false && activeProfile?.website;
+    const showPhone = activeProfile?.includePhoneInCopy !== false && activeProfile?.phone;
+    const showEmail = activeProfile?.includeEmailInCopy !== false && activeProfile?.email;
+
+    const parts: string[] = [];
+    if (showWeb) parts.push(`🌐 Web: ${activeProfile.website}`);
+    if (showPhone) parts.push(`📞 Teléfono: ${activeProfile.phone}`);
+    if (showEmail) parts.push(`✉️ Email: ${activeProfile.email}`);
+
+    const socialParts: string[] = [];
+    if (activeProfile?.instagramUsername) {
+      socialParts.push(`📸 Instagram: @${activeProfile.instagramUsername}`);
+    }
+    if (activeProfile?.facebookPageName) {
+      socialParts.push(`👥 Facebook: ${activeProfile.facebookPageName}`);
+    }
+    if (activeProfile?.tiktokUsername) {
+      socialParts.push(`🎵 TikTok: @${activeProfile.tiktokUsername}`);
+    }
+    if (activeProfile?.xUsername) {
+      socialParts.push(`🐦 X: @${activeProfile.xUsername}`);
+    }
+
+    if (parts.length > 0 || socialParts.length > 0) {
+      extra += "\n\n";
+      if (parts.length > 0) {
+        extra += parts.join("\n") + "\n";
+      }
+      if (socialParts.length > 0) {
+        extra += socialParts.join("\n") + "\n";
+      }
+    }
+
+    const lowerText = baseText.toLowerCase();
+    if (showWeb && activeProfile?.website && lowerText.includes(activeProfile.website.toLowerCase().trim())) {
+      return baseText;
+    }
+
+    return baseText.trim() + extra;
+  };
+
   // AI copywriting generator
   const handleImproveWithAI = async () => {
     const textToImprove = creationMode === 'ai' ? postText : manualCaption;
@@ -599,7 +644,8 @@ export default function RrssCreatePost() {
       // Soportar tanto { imageUrl } como { status: ok, img_url: "..." }
       const resolvedImageUrl: string = data.img_url || data.imageUrl || "";
       const resolvedImageUrls: string[] = data.img_urls || data.imageUrls || (resolvedImageUrl ? [resolvedImageUrl] : []);
-      const resolvedCopy: string = data.suggestedCopy || data.copy || "";
+      const resolvedCopyRaw: string = data.suggestedCopy || data.copy || "";
+      const resolvedCopy = appendContactInfo(resolvedCopyRaw);
 
       updateStep('generate', 'done');
       updateStep('done', 'done', '¡Diseño listo!');
@@ -1375,8 +1421,9 @@ export default function RrssCreatePost() {
         isOpen={showOptionsModal}
         options={aiOptions}
         onSelect={(opt) => {
-            if (creationMode === 'ai') setPostText(opt);
-            else setManualCaption(opt);
+            const optWithContact = appendContactInfo(opt);
+            if (creationMode === 'ai') setPostText(optWithContact);
+            else setManualCaption(optWithContact);
             setShowOptionsModal(false);
         }}
         onRedo={() => {
