@@ -103,9 +103,13 @@ export default function VideoPoCPage() {
     if (activeProfile?.id) {
       const fetchCatalogo = async () => {
         try {
+          const u = auth.currentUser;
+          if (!u) return;
+          const token = await u.getIdToken();
           const res = await fetch(`/api/catalogo?profileId=${activeProfile.id}`, {
             headers: {
-              "Cache-Control": "no-cache"
+              "Cache-Control": "no-cache",
+              "Authorization": `Bearer ${token}`
             }
           });
           if (res.ok) {
