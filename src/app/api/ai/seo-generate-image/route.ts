@@ -67,6 +67,7 @@ ${bananaRules}`;
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     prompt: cleanedPrompt,
+                    promptEnglish: cleanedPrompt,
                     idea: title,
                     type: 'Imagen',
                     postId

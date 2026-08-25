@@ -30,6 +30,7 @@ Responde ÚNICAMENTE con el prompt en inglés, sin explicaciones.`;
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          prompt: imgPrompt,
           promptEnglish: imgPrompt,
           businessType: rubro,
           type: demoType

@@ -94,6 +94,8 @@ export async function POST(req: Request) {
             case 'img-rrss-auto-test':
                 url = 'https://n8n.santisoft.cl/webhook-test/img-rrss-auto';
                 payload = {
+                    prompt: 'A delicious pizza on a wooden table',
+                    promptEnglish: 'A delicious pizza on a wooden table',
                     idea: 'Idea de prueba para preview',
                     businessType: 'Restaurante',
                     type: 'Post',

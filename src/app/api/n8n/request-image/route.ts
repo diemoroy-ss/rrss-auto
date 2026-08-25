@@ -38,7 +38,7 @@ export async function POST(req: Request) {
             const userData = userDoc.data() || {};
             const plan = userData.plan || 'free';
             
-            const limit = await getAiPlanLimitAdmin(plan, requiredType);
+            const limit = await getAiPlanLimitAdmin(plan, requiredType, userData.email);
             const usage = await getAiGenerationUsageAdmin(userId, requiredType);
             
             if (usage + requiredCount > limit) {

@@ -105,6 +105,7 @@ Genera el prompt narrativo en inglés (prosa, 120-180 palabras, fotografía real
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         prompt: optimizedPrompt,
+        promptEnglish: optimizedPrompt,
         rawIdea: idea,
         rubro: rubro,
         aspectRatio: aspectRatio,

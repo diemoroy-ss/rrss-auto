@@ -7,6 +7,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useProfile } from "../../../../contexts/ProfileContext";
+import { isUserAdmin } from "../../../../lib/quota";
 import StatusModal from "../../../../components/StatusModal";
 import VoiceMic from "../../../../components/VoiceMic";
 
@@ -184,7 +185,7 @@ export default function EstrategiaPage() {
   }, [activeProfile]);
 
   const handleGenerate = async () => {
-      if (userPlan === 'free' && user?.email !== 'diemoroy@gmail.com') return;
+      if (userPlan === 'free' && !isUserAdmin(user?.email)) return;
       if (!selectedGoal) {
           setError("Selecciona un objetivo para la estrategia.");
           return;
@@ -252,7 +253,7 @@ export default function EstrategiaPage() {
     if (userPlan === "business") limit = 150;
     if (userPlan === "agency") limit = 999999;
     
-    if (postsThisMonth + strategyResult.length > limit && user?.email !== 'diemoroy@gmail.com') {
+    if (postsThisMonth + strategyResult.length > limit && !isUserAdmin(user?.email)) {
        setError(`¡Límite Excedido! Tu plan permite ${limit} posts al mes. Ya tienes ${postsThisMonth} agendados y esta estrategia suma ${strategyResult.length}.`);
        return;
     }
@@ -357,7 +358,7 @@ export default function EstrategiaPage() {
       </div>
 
       <div className="bg-white p-6 md:p-8 rounded-[32px] border-2 border-slate-100 shadow-xl shadow-slate-200/50 relative overflow-hidden">
-          {userPlan === 'free' && user?.email !== 'diemoroy@gmail.com' && (
+          {userPlan === 'free' && !isUserAdmin(user?.email) && (
               <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex flex-col items-center justify-center p-8 text-center rounded-[32px]">
                   <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center text-4xl mb-6 shadow-2xl border-4 border-slate-700">🔒</div>
                   <h3 className="text-3xl font-black text-white mb-3">Función Premium</h3>
@@ -368,7 +369,7 @@ export default function EstrategiaPage() {
               </div>
           )}
 
-          <div className={`space-y-6 ${userPlan === 'free' && user?.email !== 'diemoroy@gmail.com' ? 'opacity-30 pointer-events-none blur-sm' : ''}`}>
+          <div className={`space-y-6 ${userPlan === 'free' && !isUserAdmin(user?.email) ? 'opacity-30 pointer-events-none blur-sm' : ''}`}>
              <div className="flex items-center justify-between">
                <h3 className="text-base font-black text-slate-900 tracking-tight">1. ¿Qué deseas lograr?</h3>
                {selectedGoal && (

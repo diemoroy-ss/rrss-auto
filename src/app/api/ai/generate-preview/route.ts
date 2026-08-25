@@ -312,11 +312,11 @@ export async function POST(req: NextRequest) {
         // 3. PAYLOAD FINAL AL WEBHOOK DE N8N
         // ═══════════════════════════════════════════════════════
         const n8nPayload: any = {
+            prompt: enrichedPrompts[0] || "",
+            promptEnglish: enrichedPrompts[0] || "",
             idea,
             imageExpectation: imageExpectation || "",
             userProvidedCopy: userProvidedCopy || "",
-            // Prompt principal como string plano
-            promptEnglish: enrichedPrompts[0] || "",
             videoPrompt: videoPrompt || "",
             audioUrl: audioUrl || "",
             voiceoverScript: voiceoverScript || "",
@@ -336,6 +336,7 @@ export async function POST(req: NextRequest) {
             const batchResults = await runInBatches(enrichedPrompts, 3, async (slidePrompt, slideIdx) => {
                 const slidePayload = {
                     ...n8nPayload,
+                    prompt: slidePrompt,
                     promptEnglish: slidePrompt,
                     slideIndex: slideIdx,
                     totalSlides: enrichedPrompts.length,
