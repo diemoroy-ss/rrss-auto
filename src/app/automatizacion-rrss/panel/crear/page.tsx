@@ -576,6 +576,11 @@ export default function RrssCreatePost() {
           profileId: activeProfile?.id || "",
           userProvidedCopy: postText,
           posterConfig,
+          catalogoItem: selectedCatalogoItem ? {
+            name: selectedCatalogoItem.name,
+            description: selectedCatalogoItem.description || "",
+            imageUrl: selectedCatalogoItem.imageUrl || null,
+          } : null,
         })
       });
       updateStep('send', 'done');

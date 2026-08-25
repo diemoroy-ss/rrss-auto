@@ -234,6 +234,7 @@ export async function POST(req: NextRequest) {
             userProvidedCopy,
             /** Configuración del cartel publicitario (opcional) */
             posterConfig,
+            catalogoItem,
         }: {
             idea?: string;
             imageExpectation?: string;
@@ -250,6 +251,7 @@ export async function POST(req: NextRequest) {
             profileId?: string;
             userProvidedCopy?: string;
             posterConfig?: PosterConfig | null;
+            catalogoItem?: { name: string; description: string; imageUrl: string | null } | null;
         } = body;
         
         let n8nUrl = process.env.NEXT_PUBLIC_N8N_PREVIEW_URL;
@@ -257,6 +259,7 @@ export async function POST(req: NextRequest) {
         if (!n8nUrl) {
             n8nUrl = 'https://n8n.santisoft.cl/webhook/img-rrss-auto';
         }
+
 
         let audioUrl = "";
 
@@ -311,10 +314,15 @@ export async function POST(req: NextRequest) {
         // ═══════════════════════════════════════════════════════
         // 3. PAYLOAD FINAL AL WEBHOOK DE N8N
         // ═══════════════════════════════════════════════════════
+        let enrichedIdea = idea || "";
+        if (catalogoItem && catalogoItem.name) {
+            enrichedIdea += `\n\nCONTEXTO DE PRODUCTO/SERVICIO (Basa el copy del post específicamente en esto): "${catalogoItem.name}" - ${catalogoItem.description}`;
+        }
+
         const n8nPayload: any = {
             prompt: enrichedPrompts[0] || "",
             promptEnglish: enrichedPrompts[0] || "",
-            idea,
+            idea: enrichedIdea,
             imageExpectation: imageExpectation || "",
             userProvidedCopy: userProvidedCopy || "",
             videoPrompt: videoPrompt || "",
