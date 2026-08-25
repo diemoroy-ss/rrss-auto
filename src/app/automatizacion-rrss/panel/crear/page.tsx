@@ -125,6 +125,10 @@ export default function RrssCreatePost() {
     forcedType: ""
   });
 
+  // ── Catálogo de productos/servicios ─────────────────────────────────────────
+  const [catalogoItems, setCatalogoItems] = useState<any[]>([]);
+  const [selectedCatalogoItem, setSelectedCatalogoItem] = useState<any | null>(null);
+
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async u => {
       setUser(u);
@@ -220,6 +224,39 @@ export default function RrssCreatePost() {
   const templateUrlParam = searchParams.get("templateUrl");
   const hideAIParam = searchParams.get("hideAI") === "true";
   const openEditorParam = searchParams.get("openEditor") === "true";
+  const catalogoIdParam = searchParams.get("catalogoId");
+  const catalogoNameParam = searchParams.get("catalogoName");
+
+  // Load catalog items for the active profile
+  useEffect(() => {
+    if (!user || !activeProfile?.id) return;
+    const load = async () => {
+      try {
+        const token = await user.getIdToken();
+        const res = await fetch(`/api/catalogo?profileId=${activeProfile.id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        const items = data.items || [];
+        setCatalogoItems(items);
+        // Auto-select if coming from catálogo page
+        if (catalogoIdParam) {
+          const found = items.find((i: any) => i.id === catalogoIdParam);
+          if (found) {
+            setSelectedCatalogoItem(found);
+            if (found.name && !idea) setIdea(found.name);
+          } else if (catalogoNameParam) {
+            // Item not in list yet (race) — create a minimal placeholder
+            setSelectedCatalogoItem({ id: catalogoIdParam, name: decodeURIComponent(catalogoNameParam) });
+            if (!idea) setIdea(decodeURIComponent(catalogoNameParam));
+          }
+        }
+      } catch (e) {
+        console.warn("[Crear] Error loading catalogo items:", e);
+      }
+    };
+    load();
+  }, [user, activeProfile?.id]);
 
   useEffect(() => {
     if (templateUrlParam) {
@@ -356,7 +393,12 @@ export default function RrssCreatePost() {
           businessType,
           type: postType,
           carouselCount,
-          regenerate: forceReplan
+          regenerate: forceReplan,
+          catalogoItem: selectedCatalogoItem ? {
+            name: selectedCatalogoItem.name,
+            description: selectedCatalogoItem.description || "",
+            imageUrl: selectedCatalogoItem.imageUrl || null,
+          } : null,
         })
       });
 
@@ -1072,6 +1114,41 @@ export default function RrssCreatePost() {
         <div className="grid lg:grid-cols-12 gap-8 items-start mb-10">
           {/* Columna Izquierda: Parámetros del post */}
           <div className="lg:col-span-6 space-y-6 w-full">
+
+            {/* ── Selector de Producto/Servicio del Catálogo ── */}
+            {catalogoItems.length > 0 && (
+              <div className="bg-white border-2 border-slate-100 rounded-2xl p-5 shadow-sm">
+                <label className="block text-xs font-black text-slate-600 uppercase tracking-wider mb-3">
+                  🛍️ Sobre un producto / servicio (opcional)
+                </label>
+                <select
+                  value={selectedCatalogoItem?.id || ""}
+                  onChange={(e) => {
+                    const found = catalogoItems.find((i: any) => i.id === e.target.value);
+                    setSelectedCatalogoItem(found || null);
+                    if (found && !idea) setIdea(found.name);
+                  }}
+                  className="w-full border-2 border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-sm font-semibold outline-none bg-white"
+                >
+                  <option value="">— Ninguno (post general) —</option>
+                  {catalogoItems.map((item: any) => (
+                    <option key={item.id} value={item.id}>
+                      {item.type === "producto" ? "📦" : "⚙️"} {item.name}{item.price ? ` · ${item.price}` : ""}
+                    </option>
+                  ))}
+                </select>
+                {selectedCatalogoItem?.imageUrl && (
+                  <div className="mt-3 flex items-center gap-3">
+                    <img src={selectedCatalogoItem.imageUrl} alt={selectedCatalogoItem.name} className="w-14 h-14 object-cover rounded-xl border border-slate-200" />
+                    <div>
+                      <p className="text-xs font-black text-slate-800">{selectedCatalogoItem.name}</p>
+                      <p className="text-[11px] text-slate-400 font-medium line-clamp-2">{selectedCatalogoItem.description}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             <PostConfigForm 
               idea={idea} setIdea={setIdea}
               imageExpectation={imageExpectation} setImageExpectation={setImageExpectation}

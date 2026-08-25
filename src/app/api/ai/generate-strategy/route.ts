@@ -4,7 +4,7 @@ import { adminDb } from '../../../../lib/firebase-admin';
 
 export async function POST(req: NextRequest) {
   try {
-    const { goal, goalName, businessType, userId, expectations, promotions, businessData, connectedPlatforms, nicheContext, postsPerWeek } = await req.json();
+    const { goal, goalName, businessType, userId, expectations, promotions, businessData, connectedPlatforms, nicheContext, postsPerWeek, catalogoItems } = await req.json();
 
     if (!goal) {
       return NextResponse.json({ error: "Goal is required" }, { status: 400 });
@@ -21,6 +21,17 @@ export async function POST(req: NextRequest) {
     
     // Fallback if none provided
     if (platforms.length === 0) platforms.push("Instagram", "Facebook");
+
+    // Build catalog context string to inject into strategy workflow
+    let catalogContext = "";
+    if (catalogoItems && catalogoItems.length > 0) {
+        const catalogList = catalogoItems
+            .map((item: any) => `- ${item.type === "producto" ? "Producto" : "Servicio"}: "${item.name}"${item.description ? ` — ${item.description}` : ""}${item.price ? ` (${item.price})` : ""}`)
+            .join("\n");
+        catalogContext = `\n\nCATÁLOGO DE PRODUCTOS/SERVICIOS DE ESTA MARCA (incluye publicaciones específicas sobre estos ítems en la estrategia):\n${catalogList}`;
+    }
+
+    const enrichedNicheContext = (nicheContext || "") + catalogContext;
 
     console.log(`[STRATEGY] Starting Professional LangGraph strategy for user ${userId}`);
 
@@ -62,7 +73,7 @@ export async function POST(req: NextRequest) {
         expectations || "",
         platforms,
         history,
-        nicheContext || "",
+        enrichedNicheContext,
         postsPerWeek || 5,
         promotions || ""
     );

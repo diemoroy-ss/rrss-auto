@@ -48,6 +48,7 @@ export default function EstrategiaPage() {
   const [businessData, setBusinessData] = useState<any>({});
   const [postsThisMonth, setPostsThisMonth] = useState(0);
   const [hasNetworks, setHasNetworks] = useState(false);
+  const [catalogoItems, setCatalogoItems] = useState<any[]>([]);
   const { activeProfile } = useProfile();
 
   const [modal, setModal] = useState<{
@@ -175,6 +176,18 @@ export default function EstrategiaPage() {
               console.warn("No se pudo cargar análisis previo del radar:", rErr);
           }
 
+          // Load catalog items for context
+          try {
+              const token = await u.getIdToken();
+              const catRes = await fetch(`/api/catalogo?profileId=${activeProfile?.id || 'default'}`, {
+                  headers: { Authorization: `Bearer ${token}` },
+              });
+              const catData = await catRes.json();
+              setCatalogoItems(catData.items || []);
+          } catch (cErr) {
+              console.warn("No se pudo cargar el catálogo:", cErr);
+          }
+
         } catch (e) {
           console.error("Error fetching data:", e);
         }
@@ -211,6 +224,12 @@ export default function EstrategiaPage() {
                  businessData,
                  userId: user?.uid,
                  profileId: activeProfile?.id || 'default',
+                 catalogoItems: catalogoItems.map((item: any) => ({
+                     name: item.name,
+                     description: item.description,
+                     type: item.type,
+                     price: item.price || null,
+                 })),
                   connectedPlatforms: {
                       facebook: !!activeProfile?.facebookToken_enc,
                       instagram: !!activeProfile?.instagramToken_enc,

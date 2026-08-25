@@ -92,6 +92,20 @@ export type BusinessProfile = {
   };
 };
 
+export type CatalogoItem = {
+  id: string;
+  name: string;
+  description: string;
+  type: 'producto' | 'servicio';
+  price?: string;
+  imageUrl?: string;
+  tags?: string[];
+  profileId: string;
+  active: boolean;
+  createdAt?: any;
+};
+
+
 type ProfileContextType = {
   activeProfile: BusinessProfile | null;
   profiles: BusinessProfile[];

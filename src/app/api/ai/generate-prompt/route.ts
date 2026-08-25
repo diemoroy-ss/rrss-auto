@@ -4,11 +4,16 @@ import { getFreeModel } from "../../../../lib/gemini-free";
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { idea, imageExpectation, businessType, type, carouselCount, regenerate } = body;
+        const { idea, imageExpectation, businessType, type, carouselCount, regenerate, catalogoItem } = body;
  
         if (!idea) {
             return NextResponse.json({ error: "La idea principal es requerida" }, { status: 400 });
         }
+
+        // Build product/service context string if catalogoItem is provided
+        const productContext = catalogoItem?.name
+            ? `\nFeatured product/service: "${catalogoItem.name}"${catalogoItem.description ? ` — ${catalogoItem.description}` : ""}. Incorporate this product/service as the visual and conceptual center of the image.`
+            : "";
  
         const bananaRules = `
 LA REGLA DE LOS 7 COMPONENTES (OBLIGATORIA PARA PROMPTS EN INGLÉS):
@@ -45,7 +50,7 @@ REGLAS ADICIONALES PARA CARRUSEL:
 
             promptContent = `Idea del Carrusel: ${idea}
 Rubro del Negocio: ${businessType || "General"}
-Expectativa Visual del Cliente: ${imageExpectation || "Estilo libre, profesional y moderno"}`;
+Expectativa Visual del Cliente: ${imageExpectation || "Estilo libre, profesional y moderno"}${productContext}`;
 
         } else if (type === 'Reel') {
             systemInstruction = `Eres un experto Director de Arte y Guionista de Redes Sociales.
@@ -64,7 +69,7 @@ REGLAS IMPORTANTES:
 
             promptContent = `Idea del Reel: ${idea}
 Rubro del Negocio: ${businessType || "General"}
-Expectativa Visual del Cliente: ${imageExpectation || "Estilo libre, profesional y moderno"}`;
+Expectativa Visual del Cliente: ${imageExpectation || "Estilo libre, profesional y moderno"}${productContext}`;
 
         } else {
             // Post / Historia (Single Image)
@@ -83,10 +88,10 @@ REGLAS IMPORTANTES:
 
             promptContent = `Idea del Post: ${idea}
 Rubro del Negocio: ${businessType || "General"}
-Expectativa Visual del Cliente: ${imageExpectation || "Estilo libre, profesional y moderno"}`;
+Expectativa Visual del Cliente: ${imageExpectation || "Estilo libre, profesional y moderno"}${productContext}`;
         }
 
-        console.log(`[GENERATE-PROMPT] Generating prompts for type: ${type} (regenerate: ${!!regenerate})`);
+        console.log(`[GENERATE-PROMPT] Generating prompts for type: ${type} (regenerate: ${!!regenerate})${catalogoItem ? ` | Product: ${catalogoItem.name}` : ""}`);
         
         if (regenerate) {
             systemInstruction += `\n\n¡IMPORTANTE!: Este es un reintento del usuario porque no le gustó la propuesta anterior. Por favor, genera un concepto/metáfora visual COMPLETAMENTE DIFERENTE al estándar, proponiendo un enfoque visual muy creativo, variando los elementos principales y la paleta de colores de forma innovadora.`;
