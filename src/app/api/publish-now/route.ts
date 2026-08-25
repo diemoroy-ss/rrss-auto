@@ -308,7 +308,7 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
 
     // --- AGENTE 3: GENERADOR DE COPY PERSUASIVO Y DATOS DE CONTACTO ---
     const rawCaption = post.copy || post.postText || post.text || post.idea || '';
-    const copyLooksLikeInstruction = (
+    const copyLooksLikeInstruction = post.isCopyFinalized ? false : (
         !post.copy ||
         post.copy === (post.text || '') ||
         post.copy === (post.postText || '') ||
@@ -331,7 +331,7 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
     let caption = rawCaption;
 
     // Asegurar copys optimizados e independientes por red social (especialmente TikTok <= 140 chars)
-    if (!post.copiesByNetwork || !post.copiesByNetwork.tiktok || post.copiesByNetwork.tiktok.length > 150 || copyLooksLikeInstruction) {
+    if (!post.isCopyFinalized && (!post.copiesByNetwork || !post.copiesByNetwork.tiktok || post.copiesByNetwork.tiktok.length > 150 || copyLooksLikeInstruction)) {
         try {
             infoLog += `Generando copys especializados por red social (TikTok, Instagram, YouTube)... `;
             const { generateMultiNetworkCopiesWithAgent } = await import('../../../lib/agents/agent-copy');

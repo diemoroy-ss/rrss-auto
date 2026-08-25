@@ -1017,6 +1017,7 @@ export default function RrssCreatePost() {
         idea: creationMode === 'ai' ? idea : "",
         imageExpectation: creationMode === 'ai' ? imageExpectation : "",
         postText: finalCaption,
+        isCopyFinalized: true, // Prevents publish-now from overwriting with generic AI copy
         postType,
         carouselCount: postType === 'Carrusel' ? carouselCount : 1,
         networks: Object.entries(networks).filter(([_, isActive]) => isActive).map(([net]) => net),
