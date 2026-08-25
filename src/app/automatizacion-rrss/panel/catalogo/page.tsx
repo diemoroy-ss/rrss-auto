@@ -305,7 +305,7 @@ export default function CatalogoPage() {
                   value={form.name} 
                   onChange={e => setForm({...form, name: e.target.value})}
                   placeholder="Ej: Consulta de Valoración"
-                  className="w-full border-2 border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-3 text-sm font-semibold outline-none transition-colors"
+                  className="w-full border-2 border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 placeholder-slate-400 outline-none transition-colors"
                 />
               </div>
 
@@ -316,7 +316,7 @@ export default function CatalogoPage() {
                   onChange={e => setForm({...form, description: e.target.value})}
                   rows={3}
                   placeholder="Describe brevemente este producto o servicio para que los agentes lo entiendan y lo promocionen correctamente."
-                  className="w-full border-2 border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-3 text-sm font-semibold outline-none transition-colors resize-none"
+                  className="w-full border-2 border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 placeholder-slate-400 outline-none transition-colors resize-none"
                 />
               </div>
 
@@ -326,7 +326,7 @@ export default function CatalogoPage() {
                   <select 
                     value={form.type} 
                     onChange={e => setForm({...form, type: e.target.value as 'producto'|'servicio'})}
-                    className="w-full border-2 border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-3 text-sm font-semibold outline-none bg-white"
+                    className="w-full border-2 border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 outline-none bg-white"
                   >
                     <option value="producto">Producto</option>
                     <option value="servicio">Servicio</option>
@@ -339,7 +339,7 @@ export default function CatalogoPage() {
                     value={form.price} 
                     onChange={e => setForm({...form, price: e.target.value})}
                     placeholder="Ej: $15.000 o Desde $10 USD"
-                    className="w-full border-2 border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-3 text-sm font-semibold outline-none transition-colors"
+                    className="w-full border-2 border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 placeholder-slate-400 outline-none transition-colors"
                   />
                 </div>
               </div>
