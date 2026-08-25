@@ -23,33 +23,13 @@ export async function generateReelWithAgent(params: ReelAgentParams): Promise<{ 
 
   console.log(`[AgentReel] Iniciando Agente de Video/Reel para post ${postId}...`);
 
-  // 1. Generar la estructura de composición (3 escenas 9:16)
+  // 1. Generar la estructura de composición con imágenes de fondo 9:16
   const topic = post.copy || post.idea || post.text || 'Post Promocional';
   const composition = await generateVideoPoCComposition({
     topic,
     rubro,
     style: 'vibrante'
   });
-
-  // 2. Para cada escena, usar el Agente de Imagen para obtener un fondo 9:16 coherente con el rubro
-  console.log(`[AgentReel] Generando fondos de imagen 9:16 para ${composition.scenes.length} escenas usando Agente 1...`);
-  for (let i = 0; i < composition.scenes.length; i++) {
-    const scene = composition.scenes[i];
-    const sceneIdea = `${scene.title} - ${scene.subtitle} (${topic})`;
-    
-    try {
-      const bgImageUrl = await generateImageWithAgent({
-        idea: sceneIdea,
-        rubro,
-        businessDescription,
-        aspectRatio: '9:16',
-        bannerStyle: 'clean'
-      });
-      scene.bgImageUrl = bgImageUrl;
-    } catch (err) {
-      console.warn(`[AgentReel] Error al generar imagen para escena ${i+1}, manteniendo fallback:`, err);
-    }
-  }
 
   // Actualizar el objeto post con la composición y guardar en Firestore
   post.scenes = composition.scenes;

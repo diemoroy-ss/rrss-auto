@@ -399,7 +399,8 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
                             const comp = await generateVideoPoCComposition({
                                 topic: post.idea || post.text || post.copy || 'Reel Destacado',
                                 rubro: targetProfile?.rubro || targetProfile?.businessType || 'General',
-                                style: 'vibrante'
+                                style: 'vibrante',
+                                skipImages: true
                             });
                             const { renderAndUploadReel } = await import('../../../lib/video-renderer');
                             finalReelUrl = await renderAndUploadReel({

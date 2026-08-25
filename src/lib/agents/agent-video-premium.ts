@@ -109,7 +109,8 @@ IMPORTANTE: Finaliza SIEMPRE tu prompt con el texto exacto --ar 9:16`;
             const composition = await generateVideoPoCComposition({
               topic: idea,
               rubro,
-              style: 'vibrante'
+              style: 'vibrante',
+              skipImages: true
             });
 
             const { renderAndUploadReel } = await import('../video-renderer');

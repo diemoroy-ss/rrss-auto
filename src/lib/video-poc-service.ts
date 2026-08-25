@@ -35,14 +35,15 @@ export interface VideoPoCInputParams {
   rubro?: string;
   style?: "cyberpunk" | "minimalista" | "corporativo" | "vibrante";
   visualDirection?: string;
+  skipImages?: boolean;
 }
 
 /**
  * Genera una composición estructurada de video en formato Reel 9:16 usando Gemini.
- * Incluye generación de imágenes dinámicas para el fondo con efecto cinematográfico.
+ * Incluye generación de imágenes dinámicas para el fondo con efecto cinematográfico (si no se especifica skipImages).
  */
 export async function generateVideoPoCComposition(params: VideoPoCInputParams): Promise<VideoComposition> {
-  const { topic, rubro = "General", style = "vibrante", visualDirection = "" } = params;
+  const { topic, rubro = "General", style = "vibrante", visualDirection = "", skipImages = false } = params;
 
   const visualInstruction = visualDirection && visualDirection.trim() 
     ? `\n- **Dirección Visual / Elementos solicitados por el cliente**: "${visualDirection.trim()}". (Es REQUISITO FUNDAMENTAL que los prompts de imagen de las 3 escenas representen con precisión estos elementos visuales y que los subtítulos y el guión de voz mantengan estrecha relación y coherencia con lo que se muestra en pantalla).`
@@ -115,8 +116,8 @@ Responde ÚNICAMENTE con un JSON con la siguiente estructura exacta:
     const cleanedText = rawJson.trim().replace(/^```json\s*/i, "").replace(/^```\s*/, "").replace(/\s*```$/, "");
     const parsed: VideoComposition = JSON.parse(cleanedText);
 
-    // Inyectar URLs de imágenes dinámicas usando agent-image (n8n -> Pollinations)
-    if (parsed.scenes && Array.isArray(parsed.scenes)) {
+    // Inyectar URLs de imágenes dinámicas usando agent-image (n8n -> Pollinations) SOLO si no se salta la generación (por ejemplo en Video Premium donde el fondo es video)
+    if (!skipImages && parsed.scenes && Array.isArray(parsed.scenes)) {
       const promises = parsed.scenes.map(async (scene, idx) => {
         try {
           const promptText = scene.imagePrompt || `${rubro} ${topic} cinematic background`;
