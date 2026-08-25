@@ -1,5 +1,5 @@
-﻿import { NextRequest, NextResponse } from "next/server";
-import { adminAuth, adminDb } from "../../../../lib/firebase-admin";
+import { NextRequest, NextResponse } from "next/server";
+import { adminAuth, adminDb } from "../../../lib/firebase-admin";
 
 async function getUid(req: NextRequest): Promise<string> {
   const authHeader = req.headers.get("Authorization") || "";
