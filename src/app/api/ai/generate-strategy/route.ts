@@ -24,11 +24,16 @@ export async function POST(req: NextRequest) {
 
     // Build catalog context string to inject into strategy workflow
     let catalogContext = "";
-    if (catalogoItems && catalogoItems.length > 0) {
+    if (catalogoItems && catalogoItems.length > 0 && catalogUsage !== "none") {
         const catalogList = catalogoItems
             .map((item: any) => `- ${item.type === "producto" ? "Producto" : "Servicio"}: "${item.name}"${item.description ? ` — ${item.description}` : ""}${item.price ? ` (${item.price})` : ""}`)
             .join("\n");
-        catalogContext = `\n\nCATÁLOGO DE PRODUCTOS/SERVICIOS DE ESTA MARCA (incluye publicaciones específicas sobre estos ítems en la estrategia):\n${catalogList}`;
+        
+        if (catalogUsage === "all") {
+            catalogContext = `\n\nCATÁLOGO DE PRODUCTOS/SERVICIOS (¡IMPORTANTE! BASA TODA LA ESTRATEGIA EXCLUSIVAMENTE EN ESTOS ÍTEMS, DEDICA CADA POST A UNO O VARIOS DE ELLOS):\n${catalogList}`;
+        } else {
+            catalogContext = `\n\nCATÁLOGO DE PRODUCTOS/SERVICIOS DE ESTA MARCA (incluye publicaciones específicas sobre estos ítems en la estrategia, mezclándolos con contenido general de valor):\n${catalogList}`;
+        }
     }
 
     const enrichedNicheContext = (nicheContext || "") + catalogContext;

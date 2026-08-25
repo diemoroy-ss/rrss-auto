@@ -49,6 +49,7 @@ export default function EstrategiaPage() {
   const [postsThisMonth, setPostsThisMonth] = useState(0);
   const [hasNetworks, setHasNetworks] = useState(false);
   const [catalogoItems, setCatalogoItems] = useState<any[]>([]);
+  const [catalogUsage, setCatalogUsage] = useState<'mixed' | 'all' | 'none'>('mixed');
   const { activeProfile } = useProfile();
 
   const [modal, setModal] = useState<{
@@ -224,6 +225,7 @@ export default function EstrategiaPage() {
                  businessData,
                  userId: user?.uid,
                  profileId: activeProfile?.id || 'default',
+                 catalogUsage,
                  catalogoItems: catalogoItems.map((item: any) => ({
                      name: item.name,
                      description: item.description,
@@ -513,6 +515,61 @@ export default function EstrategiaPage() {
                        />
                        <span className="text-xs font-bold text-sky-800">Conectar Radar</span>
                     </label>
+                </div>
+              )}
+
+              {/* INTEGRACIÓN DEL CATÁLOGO DE PRODUCTOS/SERVICIOS */}
+              {catalogoItems.length > 0 && (
+                <div className="p-6 bg-white rounded-3xl border-2 border-slate-100 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">🛍️</span>
+                      <div>
+                        <h3 className="text-sm font-black text-slate-900 tracking-tight">Catálogo de Productos y Servicios</h3>
+                        <p className="text-xs font-medium text-slate-500">
+                          Tienes {catalogoItems.length} {catalogoItems.length === 1 ? 'ítem' : 'ítems'} en tu catálogo. ¿Cómo quieres integrarlos en este plan?
+                        </p>
+                      </div>
+                    </div>
+                    <Link href="/automatizacion-rrss/panel/catalogo" className="text-xs font-bold text-indigo-600 hover:underline">
+                      Ver Catálogo
+                    </Link>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <label 
+                      onClick={() => setCatalogUsage('all')}
+                      className={`flex-1 flex flex-col p-3 rounded-xl border-2 cursor-pointer transition-all ${catalogUsage === 'all' ? 'bg-indigo-50 border-indigo-500' : 'bg-slate-50 border-slate-100 hover:border-indigo-200'}`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <input type="radio" checked={catalogUsage === 'all'} onChange={() => setCatalogUsage('all')} className="accent-indigo-600" />
+                        <span className="text-xs font-black text-slate-800">100% Catálogo</span>
+                      </div>
+                      <span className="text-[10px] text-slate-500 pl-5">Toda la estrategia se basará únicamente en tus productos o servicios.</span>
+                    </label>
+
+                    <label 
+                      onClick={() => setCatalogUsage('mixed')}
+                      className={`flex-1 flex flex-col p-3 rounded-xl border-2 cursor-pointer transition-all ${catalogUsage === 'mixed' ? 'bg-indigo-50 border-indigo-500' : 'bg-slate-50 border-slate-100 hover:border-indigo-200'}`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <input type="radio" checked={catalogUsage === 'mixed'} onChange={() => setCatalogUsage('mixed')} className="accent-indigo-600" />
+                        <span className="text-xs font-black text-slate-800">A medias (Recomendado)</span>
+                      </div>
+                      <span className="text-[10px] text-slate-500 pl-5">Mezcla tus productos/servicios con contenido general y de valor.</span>
+                    </label>
+
+                    <label 
+                      onClick={() => setCatalogUsage('none')}
+                      className={`flex-1 flex flex-col p-3 rounded-xl border-2 cursor-pointer transition-all ${catalogUsage === 'none' ? 'bg-indigo-50 border-indigo-500' : 'bg-slate-50 border-slate-100 hover:border-indigo-200'}`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <input type="radio" checked={catalogUsage === 'none'} onChange={() => setCatalogUsage('none')} className="accent-indigo-600" />
+                        <span className="text-xs font-black text-slate-800">No usar catálogo</span>
+                      </div>
+                      <span className="text-[10px] text-slate-500 pl-5">Planificación libre, enfocada en branding o contenido general.</span>
+                    </label>
+                  </div>
                 </div>
               )}
 
