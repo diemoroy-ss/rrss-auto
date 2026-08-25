@@ -50,7 +50,7 @@ export default function LoginGastronomico() {
     const userDoc = await getDoc(userDocRef);
     
     let resolvedRole = "user";
-    const adminEmails = ["admin@santisoft.cl", "diemoroy@gmail.com", "spalezcom@gmail.com"];
+    const adminEmails = ["admin@santisoft.cl", "diemoroy@gmail.com", "spalezcom@gmail.com", "santisoftai@gmail.com"];
     if (adminEmails.includes(user.email)) {
       resolvedRole = "admin";
     }

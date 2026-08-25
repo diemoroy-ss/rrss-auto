@@ -37,7 +37,7 @@ export default function ProfileMenu({ user, userDoc }: ProfileMenuProps) {
   };
 
   const initial = userDoc?.name ? userDoc.name.charAt(0).toUpperCase() : (user?.email ? user.email.charAt(0).toUpperCase() : "U");
-  const isAdmin = userDoc?.role === "admin" || user?.email === "admin@santisoft.cl" || user?.email === "diemoroy@gmail.com" || user?.email === "spalezcom@gmail.com";
+  const isAdmin = userDoc?.role === "admin" || user?.email === "admin@santisoft.cl" || user?.email === "diemoroy@gmail.com" || user?.email === "spalezcom@gmail.com" || user?.email === "santisoftai@gmail.com";
 
   return (
     <div className="relative" ref={menuRef}>
