@@ -308,7 +308,9 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
 
     // --- AGENTE 3: GENERADOR DE COPY PERSUASIVO Y DATOS DE CONTACTO ---
     const rawCaption = post.copy || post.postText || post.text || post.idea || '';
-    const copyLooksLikeInstruction = post.isCopyFinalized ? false : (
+    const isExplicitlyFinalized = post.isCopyFinalized || post.creationMode === 'ai' || post.creationMode === 'manual';
+    
+    const copyLooksLikeInstruction = isExplicitlyFinalized ? false : (
         !post.copy ||
         post.copy === (post.text || '') ||
         post.copy === (post.postText || '') ||
@@ -329,9 +331,23 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
     );
 
     let caption = rawCaption;
+    
+    // Si el usuario finalizó explícitamente el copy en el editor, forzamos que TODAS las redes usen exactamente ese texto,
+    // ignorando cualquier versión multi-red que se haya generado por error en el pasado.
+    if (isExplicitlyFinalized) {
+        post.copiesByNetwork = {
+            facebook: caption,
+            instagram: caption,
+            youtube: caption,
+            linkedin: caption,
+            x: caption,
+            tiktok: caption.length > 2200 ? caption.slice(0, 2197) + "..." : caption,
+            defaultCopy: caption
+        };
+    }
 
     // Asegurar copys optimizados e independientes por red social (especialmente TikTok <= 140 chars)
-    if (!post.isCopyFinalized && (!post.copiesByNetwork || !post.copiesByNetwork.tiktok || post.copiesByNetwork.tiktok.length > 150 || copyLooksLikeInstruction)) {
+    if (!isExplicitlyFinalized && (!post.copiesByNetwork || !post.copiesByNetwork.tiktok || post.copiesByNetwork.tiktok.length > 150 || copyLooksLikeInstruction)) {
         try {
             infoLog += `Generando copys especializados por red social (TikTok, Instagram, YouTube)... `;
             const { generateMultiNetworkCopiesWithAgent } = await import('../../../lib/agents/agent-copy');
