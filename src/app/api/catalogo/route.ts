@@ -20,9 +20,21 @@ export async function GET(req: NextRequest) {
     const snap = await catalogoRef(uid)
       .where("profileId", "==", profileId)
       .where("active", "==", true)
-      .orderBy("createdAt", "desc")
       .get();
-    const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    const items = snap.docs.map((d) => {
+      const data = d.data();
+      return {
+        id: d.id,
+        ...data,
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : data.createdAt,
+      };
+    });
+    // Ordenar en memoria por fecha de creación descendente
+    items.sort((a: any, b: any) => {
+      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return bTime - aTime;
+    });
     return NextResponse.json({ items });
   } catch (err: any) {
     console.error("[CATALOGO GET]", err);
