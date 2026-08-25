@@ -54,7 +54,7 @@ export const AI_TASKS: TaskModelDefinition[] = [
     description: "Análisis de intenciones de búsqueda, arquitectura de pilares de contenido y optimización para ChatGPT/Perplexity.",
     icon: "🌐",
     recommendedType: "quality",
-    defaultModel: "gemini-2.5-pro",
+    defaultModel: "gemini-3.5-pro",
   },
   {
     key: "seo_articles",
@@ -63,7 +63,7 @@ export const AI_TASKS: TaskModelDefinition[] = [
     description: "Redacción extensa de artículos completos, estructurados con H1, H2, H3, metadescripciones y enlaces.",
     icon: "📝",
     recommendedType: "quality",
-    defaultModel: "gemini-2.5-pro",
+    defaultModel: "gemini-3.5-pro",
   },
   {
     key: "video_script",
