@@ -36,6 +36,7 @@ export interface VideoPoCInputParams {
   style?: "cyberpunk" | "minimalista" | "corporativo" | "vibrante";
   visualDirection?: string;
   skipImages?: boolean;
+  catalogoItem?: { name: string; description: string; imageUrl?: string | null } | null;
 }
 
 /**
@@ -43,10 +44,14 @@ export interface VideoPoCInputParams {
  * Incluye generación de imágenes dinámicas para el fondo con efecto cinematográfico (si no se especifica skipImages).
  */
 export async function generateVideoPoCComposition(params: VideoPoCInputParams): Promise<VideoComposition> {
-  const { topic, rubro = "General", style = "vibrante", visualDirection = "", skipImages = false } = params;
+  const { topic, rubro = "General", style = "vibrante", visualDirection = "", skipImages = false, catalogoItem } = params;
 
   const visualInstruction = visualDirection && visualDirection.trim() 
     ? `\n- **Dirección Visual / Elementos solicitados por el cliente**: "${visualDirection.trim()}". (Es REQUISITO FUNDAMENTAL que los prompts de imagen de las 3 escenas representen con precisión estos elementos visuales y que los subtítulos y el guión de voz mantengan estrecha relación y coherencia con lo que se muestra en pantalla).`
+    : '';
+
+  const catalogoInstruction = catalogoItem 
+    ? `\n- **Producto/Servicio Base**: "${catalogoItem.name}". \n- **Descripción del Producto**: "${catalogoItem.description}". \n(El video DEBE girar en torno a este producto o servicio. Los subtítulos, el guion de voz en off, y los prompts de imágenes deben promocionar explícitamente y tener contexto sobre este ítem. Muestra el producto como el centro de la estrategia.)`
     : '';
 
   const systemInstruction = `Eres un Director de Arte y Productor de Video especializado en Reels, TikToks y YouTube Shorts virales de alto impacto.
@@ -59,7 +64,7 @@ Debes devolver UNICAMENTE un objeto JSON válido con el esquema indicado.`;
 
 - **Tema / Idea**: "${topic}"
 - **Rubro**: "${rubro}"
-- **Estilo Visual**: "${style}"${visualInstruction}
+- **Estilo Visual**: "${style}"${visualInstruction}${catalogoInstruction}
 
 Responde ÚNICAMENTE con un JSON con la siguiente estructura exacta:
 {
@@ -112,7 +117,13 @@ Responde ÚNICAMENTE con un JSON con la siguiente estructura exacta:
 }`;
 
   try {
-    const rawJson = await generateFreeText(prompt, systemInstruction, true);
+    const rawJson = await generateFreeText(
+      prompt, 
+      systemInstruction, 
+      true, 
+      catalogoItem?.imageUrl || undefined, 
+      "agent-video-poc"
+    );
     const cleanedText = rawJson.trim().replace(/^```json\s*/i, "").replace(/^```\s*/, "").replace(/\s*```$/, "");
     const parsed: VideoComposition = JSON.parse(cleanedText);
 

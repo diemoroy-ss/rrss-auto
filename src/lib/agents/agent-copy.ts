@@ -148,6 +148,7 @@ export interface MultiNetworkCopyParams {
   targetProfile?: any;
   networks?: string[];
   visualDirection?: string;
+  catalogoItem?: { name: string; description: string; imageUrl?: string | null } | null;
 }
 
 export interface NetworkCopiesResult {
@@ -168,14 +169,18 @@ export interface NetworkCopiesResult {
  * Facebook / LinkedIn: Adaptados a su audiencia.
  */
 export async function generateMultiNetworkCopiesWithAgent(params: MultiNetworkCopyParams): Promise<NetworkCopiesResult> {
-  const { idea, targetProfile, networks = ['tiktok', 'instagram', 'youtube'], visualDirection = '' } = params;
+  const { idea, targetProfile, networks = ['tiktok', 'instagram', 'youtube'], visualDirection = '', catalogoItem } = params;
 
   const rubro = targetProfile?.rubro || targetProfile?.businessType || 'General';
   const businessName = targetProfile?.businessName || targetProfile?.companyName || targetProfile?.name || '';
   const phone = targetProfile?.phone || '';
 
+  const catalogoInstruction = catalogoItem 
+    ? `\n\n**PRODUCTO/SERVICIO A PROMOCIONAR:**\n- Nombre: "${catalogoItem.name}"\n- Descripción: "${catalogoItem.description}"\n(EL COPY DEBE GIRAR EN TORNO A ESTE PRODUCTO DE MANERA NATURAL. USA SUS CARACTERÍSTICAS PARA HACERLO PERSUASIVO.)`
+    : '';
+
   const sysInstruction = `Eres un estratega de contenido y Copywriter Senior especializado en optimización por plataforma para redes sociales.
-Tu tarea es tomar una idea/tema de video y redactar el copy o caption perfecto ADAPTADO a cada red social solicitada:
+Tu tarea es tomar una idea/tema de video y redactar el copy o caption perfecto ADAPTADO a cada red social solicitada:${catalogoInstruction}
 
 1. **TIKTOK (CRÍTICO - REGLA ESTRICTA DE LONGITUD)**:
    - Longitud MÁXIMA TOTAL: 140 caracteres (para que entre completo sin cortarse en el feed móvil ni en la API de TikTok).
@@ -222,7 +227,13 @@ Redes objetivo: ${networks.join(', ')}
 Genera el JSON con los copys adaptados a cada plataforma:`;
 
   try {
-    const rawJson = await generateFreeText(userPrompt, sysInstruction, true);
+    const rawJson = await generateFreeText(
+      userPrompt, 
+      sysInstruction, 
+      true, 
+      catalogoItem?.imageUrl || undefined, 
+      "agent-multi-network-copy"
+    );
     const cleaned = rawJson.trim().replace(/^\`\`\`json\s*/i, '').replace(/^\`\`\`\s*/, '').replace(/\s*\`\`\`$/, '');
     const parsed = JSON.parse(cleaned);
     return {

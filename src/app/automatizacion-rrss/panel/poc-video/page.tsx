@@ -96,6 +96,31 @@ export default function VideoPoCPage() {
     }
   }, []);
 
+  const [catalogoItems, setCatalogoItems] = useState<any[]>([]);
+  const [selectedCatalogoItem, setSelectedCatalogoItem] = useState<{ id: string; name: string } | null>(null);
+
+  useEffect(() => {
+    if (activeProfile?.id) {
+      const fetchCatalogo = async () => {
+        try {
+          const res = await fetch(`/api/catalogo?profileId=${activeProfile.id}`, {
+            headers: {
+              "Cache-Control": "no-cache"
+            }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const items = data.items || [];
+            setCatalogoItems(items);
+          }
+        } catch (e) {
+          console.warn("[PoC Video] Error loading catalogo items:", e);
+        }
+      };
+      fetchCatalogo();
+    }
+  }, [activeProfile?.id]);
+
   const isValidToken = (t: any) => !!t && t !== "null" && t !== "undefined" && t !== "";
   const isDefault = activeProfile?.id === "default";
 
@@ -162,6 +187,10 @@ export default function VideoPoCPage() {
     setLoading(true);
 
     try {
+      const selectedData = selectedCatalogoItem 
+        ? catalogoItems.find(i => i.id === selectedCatalogoItem.id) 
+        : null;
+
       const res = await fetch("/api/poc/video", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -170,6 +199,11 @@ export default function VideoPoCPage() {
           rubro: rubro.trim() || "General",
           style,
           motionEffect,
+          catalogoItem: selectedData ? {
+            name: selectedData.name,
+            description: selectedData.description,
+            imageUrl: selectedData.imageUrl
+          } : null,
         }),
       });
 
@@ -201,6 +235,10 @@ export default function VideoPoCPage() {
     if (!topic.trim()) return;
     setIsGeneratingCopy(true);
     try {
+      const selectedData = selectedCatalogoItem 
+        ? catalogoItems.find(i => i.id === selectedCatalogoItem.id) 
+        : null;
+
       const res = await fetch("/api/poc/video/generate-copies", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -209,7 +247,12 @@ export default function VideoPoCPage() {
           rubro: rubro,
           businessName: activeProfile?.name || "",
           networks: selectedNetworks.length > 0 ? selectedNetworks : ["tiktok", "instagram", "youtube"],
-          visualDirection: visualDirection || ""
+          visualDirection: visualDirection || "",
+          catalogoItem: selectedData ? {
+            name: selectedData.name,
+            description: selectedData.description,
+            imageUrl: selectedData.imageUrl
+          } : null,
         }),
       });
       const data = await res.json();
@@ -472,6 +515,36 @@ export default function VideoPoCPage() {
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
                 />
               </div>
+
+              {catalogoItems.length > 0 && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+                    <span>Vincular con Producto/Servicio del Catálogo <span className="text-slate-400 font-normal">(Opcional)</span></span>
+                  </label>
+                  <select
+                    value={selectedCatalogoItem?.id || ""}
+                    onChange={(e) => {
+                      if (!e.target.value) {
+                        setSelectedCatalogoItem(null);
+                        return;
+                      }
+                      const found = catalogoItems.find((i: any) => i.id === e.target.value);
+                      if (found) {
+                        setSelectedCatalogoItem({ id: found.id, name: found.name });
+                        if (!topic) setTopic(found.name);
+                      }
+                    }}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all bg-white"
+                  >
+                    <option value="">-- No vincular a un producto específico --</option>
+                    {catalogoItems.map((item: any) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
