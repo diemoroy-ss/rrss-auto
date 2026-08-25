@@ -759,9 +759,19 @@ export default function RrssCreatePost() {
       const payload: any = {
         idea: idea.trim(),
         imageExpectation: imageExpectation.trim(),
-        postText: postText.trim(),
+        userProvidedCopy: postText.trim(),
         businessType,
-        postType,
+        type: postType,
+        carouselCount,
+        email: activeProfile?.email || "",
+        phone: activeProfile?.phone || "",
+        profileId: activeProfile?.id || "",
+        posterConfig,
+        catalogoItem: selectedCatalogoItem ? {
+            name: selectedCatalogoItem.name,
+            description: selectedCatalogoItem.description || "",
+            imageUrl: selectedCatalogoItem.imageUrl || null,
+        } : null,
       };
 
       if (index !== null && postType === 'Carrusel') {

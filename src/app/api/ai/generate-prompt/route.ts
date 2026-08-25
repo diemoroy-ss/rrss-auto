@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getFreeModel } from "../../../../lib/gemini-free";
+import { generateFreeText } from "../../../../lib/gemini-free";
 
 export async function POST(req: NextRequest) {
     try {
@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
 
         // Build product/service context string if catalogoItem is provided
         const productContext = catalogoItem?.name
-            ? `\nFeatured product/service: "${catalogoItem.name}"${catalogoItem.description ? ` — ${catalogoItem.description}` : ""}. Incorporate this product/service as the visual and conceptual center of the image.`
+            ? `\nFeatured product/service: "${catalogoItem.name}"${catalogoItem.description ? ` — ${catalogoItem.description}` : ""}.${catalogoItem.imageUrl ? " HE ADJUNTADO LA FOTO DE ESTE PRODUCTO/SERVICIO COMO IMAGEN DE REFERENCIA. Tu prompt DEBE incluir una descripción ultra-detallada de los elementos físicos, colores y textura de la imagen adjunta para que el generador DALL-E la recree con alta fidelidad." : " Incorporate this product/service as the visual and conceptual center of the image."}`
             : "";
  
         const bananaRules = `
@@ -97,10 +97,13 @@ Expectativa Visual del Cliente: ${imageExpectation || "Estilo libre, profesional
             systemInstruction += `\n\n¡IMPORTANTE!: Este es un reintento del usuario porque no le gustó la propuesta anterior. Por favor, genera un concepto/metáfora visual COMPLETAMENTE DIFERENTE al estándar, proponiendo un enfoque visual muy creativo, variando los elementos principales y la paleta de colores de forma innovadora.`;
         }
 
-        const model = getFreeModel(undefined, systemInstruction);
-        const result = await model.generateContent(promptContent);
-        const response = result.response;
-        const text = response.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "{}";
+        const text = await generateFreeText(
+            promptContent, 
+            systemInstruction, 
+            true, 
+            catalogoItem?.imageUrl, 
+            "generate_image_prompt"
+        );
 
         // Clean JSON formatting from Gemini response
         const cleanedText = text.replace(/```json/g, "").replace(/```/g, "").trim();
