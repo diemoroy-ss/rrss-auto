@@ -978,7 +978,11 @@ export default function VideoPoCPage() {
               <h2 className="text-xs font-black uppercase tracking-widest text-slate-400">
                 Previsualizador de Reel 9:16
               </h2>
-              <RemotionReelPlayer composition={composition} />
+              <RemotionReelPlayer 
+                composition={composition} 
+                companyName={activeProfile?.name || activeProfile?.businessName} 
+                companyLogoUrl={activeProfile?.logoUrl || activeProfile?.logo}
+              />
             </div>
           ) : (
             <div className="w-full bg-white rounded-3xl p-8 border border-slate-200 shadow-sm text-center space-y-4 my-auto">

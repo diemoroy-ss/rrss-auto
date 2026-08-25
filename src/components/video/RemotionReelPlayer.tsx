@@ -7,9 +7,11 @@ import { VideoComposition, VideoScene } from "../../lib/video-poc-service";
 interface RemotionReelPlayerProps {
   composition: VideoComposition;
   onSceneChange?: (sceneIndex: number) => void;
+  companyName?: string;
+  companyLogoUrl?: string;
 }
 
-export default function RemotionReelPlayer({ composition, onSceneChange }: RemotionReelPlayerProps) {
+export default function RemotionReelPlayer({ composition, onSceneChange, companyName, companyLogoUrl }: RemotionReelPlayerProps) {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [useVoiceSpeech, setUseVoiceSpeech] = useState<boolean>(true);
@@ -282,12 +284,17 @@ export default function RemotionReelPlayer({ composition, onSceneChange }: Remot
         {/* PATRÓN ABSTRACTO DE FONDO ANIMADO */}
         <div className="absolute inset-0 opacity-15 pointer-events-none bg-[radial-gradient(#rgba(255,255,255,0.15)_1px,transparent_1px)] [background-size:16px_16px]" />
 
-                {/* 1. TOP BAR - BRAND WATERMARK & SCENE TITLE (SAFE ZONE SUPERIOR) */}
+        {/* 1. TOP BAR - BRAND WATERMARK & SCENE TITLE (SAFE ZONE SUPERIOR) */}
         <div className="relative z-10 flex flex-col items-center gap-2 pt-6">
           {showWatermark && (
             <div className="bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
-              <LogoMark size={18} />
-              <span className="text-[10px] font-black tracking-wider text-slate-100 uppercase">SANTISOFT AI</span>
+              {companyLogoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={companyLogoUrl} alt={companyName || "Logo"} className="w-5 h-5 object-contain rounded-full bg-white/10" />
+              ) : (
+                <LogoMark size={18} />
+              )}
+              <span className="text-[10px] font-black tracking-wider text-slate-100 uppercase">{companyName || "SANTISOFT AI"}</span>
             </div>
           )}
           
