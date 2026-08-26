@@ -346,6 +346,40 @@ export default function PostConfigForm({
                 placeholder="Describe el estilo y elementos de la imagen que necesitas..."
                 className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl outline-none text-xs font-semibold text-slate-700 resize-none min-h-[90px] focus:border-indigo-400"
               />
+
+              {/* IMAGE STYLES SELECTOR */}
+              <div className="mt-3 bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+                <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                  🎨 Sugerencias de Estilo (Opcional)
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { label: "Exploded view", val: "Estilo vista despiezada con todas sus piezas flotando en orden." },
+                    { label: "Blueprint", val: "Estilo plano técnico clásico con líneas blancas sobre fondo azul oscuro." },
+                    { label: "Cross-section", val: "Estilo corte transversal anatómico mostrando el interior con precisión." },
+                    { label: "Isometric 3D", val: "Estilo isométrico 3D, render limpio tipo maqueta de videojuego." },
+                    { label: "Wireframe", val: "Estilo malla de alambre digital mostrando estructura 3D." },
+                    { label: "Low poly", val: "Estilo low poly con polígonos geométricos y minimalistas." },
+                    { label: "Papercraft", val: "Estilo papercraft, hecho a mano con recortes de papel superpuestos." },
+                    { label: "Double exposure", val: "Estilo doble exposición mezclando dos escenas distintas." },
+                    { label: "Claymation", val: "Estilo claymation modelado en arcilla o plastilina 3D realista." }
+                  ].map(style => (
+                    <button
+                      key={style.label}
+                      type="button"
+                      onClick={() => {
+                        if (!imageExpectation.includes(style.val)) {
+                          setImageExpectation(imageExpectation ? `${imageExpectation}, ${style.val}` : style.val);
+                        }
+                      }}
+                      className="text-[9px] font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 hover:bg-indigo-100 hover:text-indigo-700 transition-colors border border-slate-200 hover:border-indigo-200"
+                    >
+                      {style.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {posterConfig?.enabled && (
                 <p className="mt-2 text-[10px] font-semibold text-amber-600 bg-amber-50 p-2.5 rounded-lg border border-amber-200">
                   ⚠️ <b>Nota:</b> Como activaste el modo Cartel Publicitario, usa este campo solo para describir la <b>escena o el fondo de la imagen</b> (colores, objetos, estilo). El texto exacto que llevará la imagen lo defines en la configuración del cartel (arriba).
