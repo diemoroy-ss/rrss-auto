@@ -1095,7 +1095,7 @@ export default function BrochurePage() {
           <div className="cta-contacts">
             <div className="cta-contact">🌐 <a href="https://rrss.santisoft.cl">rrss.santisoft.cl</a></div>
             <div className="cta-contact">📧 <a href="mailto:contacto@santisoft.cl">contacto@santisoft.cl</a></div>
-            <div className="cta-contact">📱 <a href="https://wa.me/56983656443">+56 9 8365 6443</a></div>
+            <div className="cta-contact">📱 <a href="https://wa.me/56965909543">+56 9 6590 9543</a></div>
           </div>
         </div>
 
