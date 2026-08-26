@@ -41,7 +41,7 @@ export const HARDCODED_STYLES: PromptTemplate[] = [
     category: "Estilos Técnicos",
     prompt: "A highly detailed exploded view of [Objeto a despiezar:ej. un motor de automóvil], showing all individual components floating in perfect order, technical illustration style, precise spacing, 8k resolution, clean background.",
     previewUrl: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=500&q=80",
-    imageRequirement: "none",
+    imageRequirement: "optional",
   },
   {
     id: "style-blueprint",
@@ -50,7 +50,7 @@ export const HARDCODED_STYLES: PromptTemplate[] = [
     category: "Estilos Técnicos",
     prompt: "A classic architectural blueprint of [Estructura u objeto:ej. un cohete espacial], white and light blue technical lines on a dark navy blue background, precise measurements, drafting aesthetic, engineering schematic.",
     previewUrl: "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=500&q=80",
-    imageRequirement: "none",
+    imageRequirement: "optional",
   },
   {
     id: "style-anatomy",
@@ -59,7 +59,7 @@ export const HARDCODED_STYLES: PromptTemplate[] = [
     category: "Estilos Técnicos",
     prompt: "A detailed cross-section anatomy of [Objeto o sujeto:ej. un volcán en erupción], cut in half revealing the intricate inner layers and internal structures, educational textbook illustration, hyper-detailed.",
     previewUrl: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=500&q=80",
-    imageRequirement: "none",
+    imageRequirement: "optional",
   },
   {
     id: "style-isometric",
@@ -68,7 +68,7 @@ export const HARDCODED_STYLES: PromptTemplate[] = [
     category: "Diseño y 3D",
     prompt: "An isometric 3D render of [Escenario:ej. una pequeña cafetería acogedora], clean miniature diorama style, smooth lighting, tilt-shift effect, strategy game aesthetic, colorful, highly detailed.",
     previewUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&q=80",
-    imageRequirement: "none",
+    imageRequirement: "optional",
   },
   {
     id: "style-wireframe",
@@ -77,7 +77,7 @@ export const HARDCODED_STYLES: PromptTemplate[] = [
     category: "Diseño y 3D",
     prompt: "A glowing 3D digital wireframe of [Objeto:ej. un automóvil deportivo], made of geometric neon lines and points on a dark background, cyberpunk structure, cyber grid, tech aesthetic.",
     previewUrl: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=500&q=80",
-    imageRequirement: "none",
+    imageRequirement: "optional",
   },
   {
     id: "style-lowpoly",
@@ -86,7 +86,7 @@ export const HARDCODED_STYLES: PromptTemplate[] = [
     category: "Diseño y 3D",
     prompt: "A beautiful low poly 3D rendering of [Escenario o sujeto:ej. un paisaje de montañas al atardecer], constructed with simple geometric triangles and facets, minimalist flat shading, retro computer graphics style, pastel colors.",
     previewUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&q=80",
-    imageRequirement: "none",
+    imageRequirement: "optional",
   },
   {
     id: "style-papercraft",
@@ -95,7 +95,7 @@ export const HARDCODED_STYLES: PromptTemplate[] = [
     category: "Artísticos y Creativos",
     prompt: "A beautiful papercraft illustration of [Escenario o sujeto:ej. un bosque mágico con hadas], made entirely of layered and folded colorful paper cutouts, drop shadows, tactile texture, handmade origami aesthetic.",
     previewUrl: "https://images.unsplash.com/photo-1502691876148-a84978e59af8?w=500&q=80",
-    imageRequirement: "none",
+    imageRequirement: "optional",
   },
   {
     id: "style-doubleexp",
@@ -104,7 +104,7 @@ export const HARDCODED_STYLES: PromptTemplate[] = [
     category: "Artísticos y Creativos",
     prompt: "A cinematic double exposure photography combining the silhouette of [Sujeto principal:ej. un oso pardo] and a beautiful [Escena interior:ej. bosque nevado], seamlessly blended, surreal, artistic poster, dramatic lighting.",
     previewUrl: "https://images.unsplash.com/photo-1552337651-70ef24194098?w=500&q=80",
-    imageRequirement: "none",
+    imageRequirement: "optional",
   },
   {
     id: "style-claymation",
@@ -113,7 +113,7 @@ export const HARDCODED_STYLES: PromptTemplate[] = [
     category: "Artísticos y Creativos",
     prompt: "A cute claymation 3D render of [Sujeto:ej. un pingüino bebiendo café], made of modeled plasticine, visible fingerprints on the clay, stop-motion animation style, tactile realistic texture, studio lighting.",
     previewUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&q=80",
-    imageRequirement: "none",
+    imageRequirement: "optional",
   }
 ];
 
