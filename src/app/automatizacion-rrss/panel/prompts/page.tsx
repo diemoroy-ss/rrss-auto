@@ -820,13 +820,13 @@ export default function PromptsLibraryPage() {
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">Requisito de Imagen Base</label>
                 <div className="flex gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer text-sm">
+                  <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-600">
                     <input type="radio" checked={adminForm.imageRequirement === 'none'} onChange={() => setAdminForm({...adminForm, imageRequirement: 'none'})} /> Ninguno
                   </label>
-                  <label className="flex items-center gap-2 cursor-pointer text-sm">
+                  <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-600">
                     <input type="radio" checked={adminForm.imageRequirement === 'optional'} onChange={() => setAdminForm({...adminForm, imageRequirement: 'optional'})} /> Opcional
                   </label>
-                  <label className="flex items-center gap-2 cursor-pointer text-sm">
+                  <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-600">
                     <input type="radio" checked={adminForm.imageRequirement === 'required'} onChange={() => setAdminForm({...adminForm, imageRequirement: 'required'})} /> Requerido
                   </label>
                 </div>
