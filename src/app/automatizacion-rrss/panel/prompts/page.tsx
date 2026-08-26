@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { auth, storage, db } from "../../../../lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc, collection, getDocs, addDoc, deleteDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, collection, getDocs, addDoc, deleteDoc, updateDoc, setDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useProfile } from "../../../../contexts/ProfileContext";
 import { useRouter } from "next/navigation";
@@ -136,48 +136,7 @@ export default function PromptsLibraryPage() {
   const [isFreeEditMode, setIsFreeEditMode] = useState(false);
   const [parsedVariables, setParsedVariables] = useState<{raw: string, name: string, example: string}[]>([]);
   const [variableValues, setVariableValues] = useState<Record<string, string>>({});
-  const [translatedVariableValues, setTranslatedVariableValues] = useState<Record<string, string>>({});
-
-  // Auto-translate user variables
-  useEffect(() => {
-    if (!selectedPrompt) return;
-    const timer = setTimeout(async () => {
-      const needsTranslation = Object.keys(variableValues).filter(k => 
-        variableValues[k].trim() !== "" && variableValues[k] !== translatedVariableValues[k]
-      );
-      
-      if (needsTranslation.length > 0) {
-        const newTranslated = { ...translatedVariableValues };
-        for (const key of needsTranslation) {
-           try {
-              const res = await fetch("/api/ai/translate", {
-                 method: "POST", headers: { "Content-Type": "application/json" },
-                 body: JSON.stringify({ text: variableValues[key] })
-              });
-              if (res.ok) {
-                 const data = await res.json();
-                 newTranslated[key] = data.translation;
-              }
-           } catch(e) {}
-        }
-        setTranslatedVariableValues(newTranslated);
-        
-        // Update user preview with translated text
-        let newText = selectedPrompt.prompt;
-        parsedVariables.forEach(pv => {
-           const rawVal = variableValues[pv.raw];
-           const translatedVal = rawVal ? newTranslated[pv.raw] : undefined;
-           const valToUse = translatedVal || rawVal || pv.example;
-           if (valToUse) {
-             newText = newText.replaceAll(`[${pv.raw}]`, valToUse);
-           }
-        });
-        setEditedPromptText(newText);
-      }
-    }, 1200);
-    return () => clearTimeout(timer);
-  }, [variableValues, translatedVariableValues, selectedPrompt, parsedVariables]);
-
+  
   const [baseImageFile, setBaseImageFile] = useState<File | null>(null);
   const [baseImagePreview, setBaseImagePreview] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -206,35 +165,6 @@ export default function PromptsLibraryPage() {
     const parts = raw.split(':');
     return { raw, name: parts[0], example: parts[1] || `Valor para ${parts[0]}` };
   });
-
-  const [translatedAdminVariableValues, setTranslatedAdminVariableValues] = useState<Record<string, string>>({});
-
-  // Auto-translate admin variables
-  useEffect(() => {
-    const timer = setTimeout(async () => {
-      const needsTranslation = Object.keys(adminVariableValues).filter(k => 
-        adminVariableValues[k].trim() !== "" && adminVariableValues[k] !== translatedAdminVariableValues[k]
-      );
-      
-      if (needsTranslation.length > 0) {
-        const newTranslated = { ...translatedAdminVariableValues };
-        for (const key of needsTranslation) {
-           try {
-              const res = await fetch("/api/ai/translate", {
-                 method: "POST", headers: { "Content-Type": "application/json" },
-                 body: JSON.stringify({ text: adminVariableValues[key] })
-              });
-              if (res.ok) {
-                 const data = await res.json();
-                 newTranslated[key] = data.translation;
-              }
-           } catch(e) {}
-        }
-        setTranslatedAdminVariableValues(newTranslated);
-      }
-    }, 1200);
-    return () => clearTimeout(timer);
-  }, [adminVariableValues, translatedAdminVariableValues]);
 
   const [isFormattingPrompt, setIsFormattingPrompt] = useState(false);
 
@@ -429,10 +359,23 @@ export default function PromptsLibraryPage() {
         baseImageUrl = await getDownloadURL(storageRef);
       }
 
+      // Translate the edited text to English before sending to the model
+      let textToTranslate = editedPromptText;
+      try {
+        const transRes = await fetch("/api/ai/translate", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: textToTranslate })
+        });
+        if (transRes.ok) {
+          const data = await transRes.json();
+          textToTranslate = data.translation || textToTranslate;
+        }
+      } catch(e) {}
+
       // Midjourney/IA tools often expect the image URL directly inside the prompt text.
       const finalPromptText = baseImageUrl 
-        ? `${baseImageUrl} ${editedPromptText}` 
-        : editedPromptText;
+        ? `${baseImageUrl} ${textToTranslate}` 
+        : textToTranslate;
 
       const payload = {
         promptText: finalPromptText,
@@ -504,11 +447,21 @@ export default function PromptsLibraryPage() {
         // Reemplazar las variables con los valores de prueba antes de mandar a generar la imagen
         let previewPromptText = adminForm.prompt;
         adminParsedVariables.forEach(v => {
-          const rawTestValue = adminVariableValues[v.raw];
-          const translatedValue = rawTestValue ? translatedAdminVariableValues[v.raw] : undefined;
-          const testValue = translatedValue || rawTestValue || v.example;
+          const testValue = adminVariableValues[v.raw] || v.example;
           previewPromptText = previewPromptText.replaceAll(`[${v.raw}]`, testValue);
         });
+
+        // TRANSLATE TO ENGLISH AT GENERATION TIME
+        try {
+          const transRes = await fetch("/api/ai/translate", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text: previewPromptText })
+          });
+          if (transRes.ok) {
+            const data = await transRes.json();
+            previewPromptText = data.translation || previewPromptText;
+          }
+        } catch(e) {}
 
         if (uploadedBaseImageUrl) {
           previewPromptText = `${uploadedBaseImageUrl} ${previewPromptText}`;
@@ -732,17 +685,11 @@ export default function PromptsLibraryPage() {
                                 const newVals = { ...variableValues, [v.raw]: e.target.value };
                                 setVariableValues(newVals);
                                 
-                                // Limpiar la traducción para este campo ya que acaba de cambiar
-                                const newTranslated = { ...translatedVariableValues };
-                                delete newTranslated[v.raw];
-                                setTranslatedVariableValues(newTranslated);
-                                
                                 // Recompute the prompt
                                 let newText = selectedPrompt!.prompt;
                                 parsedVariables.forEach(pv => {
-                                  const rawVal = newVals[pv.raw];
-                                  const transVal = rawVal ? newTranslated[pv.raw] : undefined;
-                                  const valToUse = transVal || rawVal || pv.example;
+                                  // Si el usuario no ingresa valor, intentamos usar el ejemplo o lo dejamos intacto
+                                  const valToUse = newVals[pv.raw] || pv.example;
                                   if (valToUse) {
                                     newText = newText.replaceAll(`[${pv.raw}]`, valToUse);
                                   }
@@ -1012,12 +959,7 @@ export default function PromptsLibraryPage() {
                         <input 
                           type="text"
                           value={adminVariableValues[v.raw] || ""}
-                          onChange={(e) => {
-                            setAdminVariableValues({...adminVariableValues, [v.raw]: e.target.value});
-                            const newTrans = {...translatedAdminVariableValues};
-                            delete newTrans[v.raw];
-                            setTranslatedAdminVariableValues(newTrans);
-                          }}
+                          onChange={(e) => setAdminVariableValues({...adminVariableValues, [v.raw]: e.target.value})}
                           className="w-full bg-white border border-indigo-100 rounded-lg px-3 py-2 text-xs font-medium text-slate-700 focus:outline-none focus:border-indigo-400 shadow-sm"
                           placeholder={`Ej. ${v.example}`}
                         />
@@ -1033,9 +975,7 @@ export default function PromptsLibraryPage() {
                       {(() => {
                         let previewText = adminForm.prompt;
                         adminParsedVariables.forEach(v => {
-                          const rawTestValue = adminVariableValues[v.raw];
-                          const translatedValue = rawTestValue ? translatedAdminVariableValues[v.raw] : undefined;
-                          const valToUse = translatedValue || rawTestValue || v.example || `[${v.raw}]`;
+                          const valToUse = adminVariableValues[v.raw] || v.example || `[${v.raw}]`;
                           previewText = previewText.replaceAll(`[${v.raw}]`, valToUse);
                         });
                         return previewText;
