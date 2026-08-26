@@ -2,7 +2,7 @@ import { bundle } from '@remotion/bundler';
 import { renderMedia, selectComposition } from '@remotion/renderer';
 import path from 'path';
 import fs from 'fs';
-import { generateElevenLabsAudio } from './elevenlabs';
+import { generateElevenLabsAudioWithTimestamps, WordTimestamp } from './elevenlabs';
 import { adminStorage } from './firebase-admin';
 
 export async function renderAndUploadReel(post: any, userId: string, postId: string): Promise<string> {
@@ -10,12 +10,14 @@ export async function renderAndUploadReel(post: any, userId: string, postId: str
     
     // 1. Generar Audio (si tiene guión)
     let audioUrl = '';
+    let wordTimestamps: WordTimestamp[] = [];
     if (post.audioScript) {
         console.log(`[VideoRenderer] Generando locución de voz para el Reel...`);
         try {
-             const url = await generateElevenLabsAudio(post.audioScript, userId);
-             if (url) {
-                 audioUrl = url;
+             const result = await generateElevenLabsAudioWithTimestamps(post.audioScript, userId);
+             if (result.audioUrl) {
+                 audioUrl = result.audioUrl;
+                 wordTimestamps = result.wordTimestamps;
                  console.log(`[VideoRenderer] Pista de audio adjuntada a Remotion: ${audioUrl}`);
              }
         } catch (e) {
@@ -51,6 +53,7 @@ export async function renderAndUploadReel(post: any, userId: string, postId: str
         compositionId: postId,
         scenes: adjustedScenes,
         audioUrl: audioUrl,
+        wordTimestamps: wordTimestamps,
         bgVideoUrl: post.bgVideoUrl || '',
         logoUrl: post.logoUrl || '',
         businessName: post.businessName || '',

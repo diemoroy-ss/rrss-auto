@@ -8,7 +8,8 @@ export const ReelComposition: React.FC<ReelProps> = ({
   audioUrl = '', 
   showWatermark = false,
   logoUrl = '',
-  businessName = ''
+  businessName = '',
+  wordTimestamps = []
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -233,20 +234,90 @@ export const ReelComposition: React.FC<ReelProps> = ({
         padding: '0 48px',
         textAlign: 'center'
       }}>
-        <div style={{
-          fontSize: 48,
-          fontWeight: 900,
-          lineHeight: 1.25,
-          padding: '24px 32px',
-          backgroundColor: 'rgba(0,0,0,0.75)',
-          borderRadius: 32,
-          border: '1.5px solid rgba(255,255,255,0.2)',
-          backdropFilter: 'blur(12px)',
-          maxWidth: 980,
-          boxShadow: '0 16px 40px rgba(0,0,0,0.6)'
-        }}>
-          {renderHormoziText(activeScene?.subtitle || "Descubre cómo escalar tu negocio", activeScene?.highlightWords, activeScene?.accentColor || "#F59E0B")}
-        </div>
+        {wordTimestamps && wordTimestamps.length > 0 ? (
+          // Hormozi Style Subtitles
+          (() => {
+            const currentTimeSec = frame / fps;
+            const currentWordIdx = wordTimestamps.findIndex(
+              (w) => currentTimeSec >= w.start && currentTimeSec <= w.end
+            );
+            
+            // If no word is currently active, maybe show the closest upcoming one if it's within 0.1s, or previous
+            let displayIdx = currentWordIdx;
+            if (displayIdx === -1) {
+               displayIdx = wordTimestamps.findIndex(w => w.start > currentTimeSec);
+               if (displayIdx > 0 && wordTimestamps[displayIdx].start - currentTimeSec > 0.2) {
+                   displayIdx = displayIdx - 1; // show previous if gap is large
+               }
+            }
+            if (displayIdx === -1) displayIdx = wordTimestamps.length - 1;
+
+            const activeWord = wordTimestamps[displayIdx];
+            if (!activeWord) return null;
+
+            // Simple Hormozi logic: show a small window of words (e.g. up to 3 words)
+            const windowSize = 3;
+            const startIdx = Math.max(0, displayIdx - 1);
+            const endIdx = Math.min(wordTimestamps.length - 1, displayIdx + 1);
+            const windowWords = wordTimestamps.slice(startIdx, endIdx + 1);
+
+            return (
+              <div style={{
+                fontSize: 64,
+                fontWeight: 900,
+                lineHeight: 1.25,
+                padding: '24px 40px',
+                textTransform: 'uppercase',
+                display: 'flex',
+                gap: '16px',
+                flexWrap: 'wrap',
+                justifyContent: 'center',
+                textShadow: '0 8px 32px rgba(0,0,0,1)'
+              }}>
+                {windowWords.map((w, idx) => {
+                  const isActive = w === activeWord;
+                  const isHighlighted = isActive && (w.word.length > 4); // Highlight longer words for effect
+                  const color = isActive ? (isHighlighted ? '#FDE047' : '#FFFFFF') : '#94A3B8';
+                  const scale = isActive ? 1.15 : 0.9;
+                  const rotate = isActive && isHighlighted ? (idx % 2 === 0 ? '-2deg' : '2deg') : '0deg';
+                  
+                  return (
+                    <span
+                      key={idx}
+                      style={{
+                        color,
+                        transform: `scale(${scale}) rotate(${rotate})`,
+                        transition: 'all 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                        display: 'inline-block',
+                        textShadow: isActive 
+                          ? '0 0 24px rgba(253, 224, 71, 0.4), 0 8px 16px rgba(0,0,0,0.9)'
+                          : '0 4px 12px rgba(0,0,0,0.8)'
+                      }}
+                    >
+                      {w.word}
+                    </span>
+                  );
+                })}
+              </div>
+            );
+          })()
+        ) : (
+          // Fallback Clásico (Static scene subtitle)
+          <div style={{
+            fontSize: 48,
+            fontWeight: 900,
+            lineHeight: 1.25,
+            padding: '24px 32px',
+            backgroundColor: 'rgba(0,0,0,0.75)',
+            borderRadius: 32,
+            border: '1.5px solid rgba(255,255,255,0.2)',
+            backdropFilter: 'blur(12px)',
+            maxWidth: 980,
+            boxShadow: '0 16px 40px rgba(0,0,0,0.6)'
+          }}>
+            {renderHormoziText(activeScene?.subtitle || "Descubre cómo escalar tu negocio", activeScene?.highlightWords, activeScene?.accentColor || "#F59E0B")}
+          </div>
+        )}
       </div>
 
       {/* Barra de Progreso (Ubicada justo debajo del subtítulo en Safe Zone) */}

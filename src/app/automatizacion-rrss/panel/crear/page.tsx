@@ -1599,9 +1599,24 @@ export default function RrssCreatePost() {
 
                  {/* final video upload */}
                  <div className="bg-slate-50/50 border border-slate-200/80 rounded-3xl p-6 space-y-4 shadow-sm">
-                    <h4 className="text-xs font-black uppercase tracking-widest text-indigo-600">4. Sube tu Video de Reel Final</h4>
+                    <h4 className="text-xs font-black uppercase tracking-widest text-indigo-600">4. Finaliza tu Reel</h4>
+                    
+                    <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 text-xs font-medium text-indigo-800 space-y-2">
+                       <p><strong className="font-black">Opción A (Recomendada): Generación 100% Automática.</strong></p>
+                       <p>Si simplemente cierras este espacio y guardas el post, nuestro servidor conectará con la IA de video (vía webhook), generará la animación y estampará los subtítulos de Alex Hormozi automáticamente.</p>
+                    </div>
+
+                    <div className="relative pt-2">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-slate-200"></div>
+                      </div>
+                      <div className="relative flex justify-center">
+                        <span className="bg-slate-50/50 px-3 text-[10px] font-black uppercase text-slate-400">O bien</span>
+                      </div>
+                    </div>
+
                     <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                      Una vez que hayas creado tu video en Runway/Luma combinando la imagen de arriba con la locución de la derecha, súbelo aquí en formato MP4.
+                      <strong className="text-slate-700">Opción B (Manual):</strong> Si prefieres generar el video en Luma/Runway por tu cuenta combinando la imagen y la locución, súbelo aquí en formato MP4 y nosotros le sumaremos los subtítulos al publicarlo.
                     </p>
                     
                     <label className="flex flex-col items-center justify-center bg-white border-2 border-dashed border-slate-200 hover:bg-slate-50 hover:border-indigo-500/50 rounded-2xl cursor-pointer group hover:scale-[1.01] transition-all text-indigo-600 py-10 px-4 shadow-sm relative">

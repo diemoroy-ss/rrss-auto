@@ -21,6 +21,7 @@ export interface ReelProps {
   }[];
   bgVideoUrl?: string;
   audioUrl?: string;
+  wordTimestamps?: { word: string; start: number; end: number }[];
   totalDurationInFrames: number;
   showWatermark?: boolean;
   logoUrl?: string;

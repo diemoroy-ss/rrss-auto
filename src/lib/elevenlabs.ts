@@ -125,3 +125,84 @@ async function uploadAudioBufferToStorage(buffer: Buffer, userId: string): Promi
   await file.makePublic().catch(() => {});
   return `https://storage.googleapis.com/${bucket.name}/${filename}`;
 }
+
+export interface WordTimestamp {
+  word: string;
+  start: number;
+  end: number;
+}
+
+export async function generateElevenLabsAudioWithTimestamps(text: string, userId: string): Promise<{ audioUrl: string | null, wordTimestamps: WordTimestamp[] }> {
+  if (!text || !text.trim()) return { audioUrl: null, wordTimestamps: [] };
+
+  const cleanText = text.trim();
+  const apiKey = process.env.ELEVENLABS_API_KEY;
+  const voiceId = process.env.ELEVENLABS_VOICE_ID || "21m00Tcm4TlvDq8ikWAM";
+
+  if (apiKey && apiKey.startsWith("sk_")) {
+    try {
+      console.log(`[TTS] Intentando síntesis con ElevenLabs (with-timestamps) para usuario ${userId}...`);
+      const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/with-timestamps`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "xi-api-key": apiKey,
+        },
+        body: JSON.stringify({
+          text: cleanText,
+          model_id: "eleven_multilingual_v2",
+          voice_settings: {
+            stability: 0.5,
+            similarity_boost: 0.75,
+          },
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const buffer = Buffer.from(data.audio_base64, 'base64');
+        const publicUrl = await uploadAudioBufferToStorage(buffer, userId);
+        
+        const wordTimestamps: WordTimestamp[] = [];
+        if (data.alignment && data.alignment.characters) {
+            const chars = data.alignment.characters;
+            const startTimes = data.alignment.character_start_times_seconds;
+            const endTimes = data.alignment.character_end_times_seconds;
+            
+            let currentWord = "";
+            let currentStart = -1;
+            let currentEnd = -1;
+            
+            for (let i = 0; i < chars.length; i++) {
+                const char = chars[i];
+                const start = startTimes[i];
+                const end = endTimes[i];
+                
+                if (char.trim() === "" || char.match(/[.,!?¡¿]/)) {
+                    if (currentWord.length > 0) {
+                        wordTimestamps.push({ word: currentWord, start: currentStart, end: currentEnd });
+                        currentWord = "";
+                        currentStart = -1;
+                    }
+                } else {
+                    if (currentWord.length === 0) currentStart = start;
+                    currentWord += char;
+                    currentEnd = end;
+                }
+            }
+            if (currentWord.length > 0) {
+                wordTimestamps.push({ word: currentWord, start: currentStart, end: currentEnd });
+            }
+        }
+        console.log(`[TTS] Audio ElevenLabs con timestamps generado: ${publicUrl}`);
+        return { audioUrl: publicUrl, wordTimestamps };
+      }
+    } catch (e: any) {
+      console.warn(`[TTS] Fallo en ElevenLabs (${e.message}).`);
+    }
+  }
+
+  const fallbackUrl = await generateElevenLabsAudio(text, userId);
+  return { audioUrl: fallbackUrl, wordTimestamps: [] };
+}
