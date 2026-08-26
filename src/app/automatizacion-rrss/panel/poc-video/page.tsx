@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { auth, db } from "../../../../lib/firebase";
 import { collection, addDoc, serverTimestamp, doc, getDoc } from "firebase/firestore";
 import { useProfile } from "../../../../contexts/ProfileContext";
@@ -8,13 +9,16 @@ import Link from "next/link";
 import RemotionReelPlayer from "../../../../components/video/RemotionReelPlayer";
 import { VideoComposition } from "../../../../lib/video-poc-service";
 
-export default function VideoPoCPage() {
+
+function VideoPoCContent() {
   const { activeProfile } = useProfile();
   const prof = activeProfile as any;
+  const searchParams = useSearchParams();
+  const ideaParam = searchParams?.get("idea");
 
   const [userDoc, setUserDoc] = useState<any>(null);
 
-  const [topic, setTopic] = useState<string>("3 Consejos Clave para Triunfar en Gastronomía");
+  const [topic, setTopic] = useState<string>(ideaParam || "3 Consejos Clave para Triunfar en Gastronomía");
   const [rubro, setRubro] = useState<string>(prof?.rubro || prof?.niche || "Gastronomía & Restaurantes");
   const [visualDirection, setVisualDirection] = useState<string>("");
   const [style, setStyle] = useState<"vibrante" | "minimalista" | "cyberpunk" | "corporativo">("vibrante");
@@ -1168,5 +1172,13 @@ export default function VideoPoCPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function VideoPoCPage() {
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center">Cargando...</div>}>
+      <VideoPoCContent />
+    </Suspense>
   );
 }
