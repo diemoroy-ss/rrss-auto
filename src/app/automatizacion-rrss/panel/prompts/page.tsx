@@ -790,7 +790,7 @@ export default function PromptsLibraryPage() {
                     type="text" 
                     value={adminForm.title}
                     onChange={(e) => setAdminForm({...adminForm, title: e.target.value})}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 focus:outline-none focus:border-indigo-500"
                     placeholder="Ej. Fotorealismo Producto"
                   />
                 </div>
@@ -799,7 +799,7 @@ export default function PromptsLibraryPage() {
                   <select 
                     value={adminForm.category}
                     onChange={(e) => setAdminForm({...adminForm, category: e.target.value})}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 focus:outline-none focus:border-indigo-500"
                   >
                     {promptCategories.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
@@ -812,7 +812,7 @@ export default function PromptsLibraryPage() {
                   type="text" 
                   value={adminForm.description}
                   onChange={(e) => setAdminForm({...adminForm, description: e.target.value})}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 focus:outline-none focus:border-indigo-500"
                   placeholder="Ej. Ideal para destacar productos de e-commerce..."
                 />
               </div>
@@ -889,7 +889,7 @@ export default function PromptsLibraryPage() {
                           type="text"
                           value={adminVariableValues[v.raw] || ""}
                           onChange={(e) => setAdminVariableValues({...adminVariableValues, [v.raw]: e.target.value})}
-                          className="w-full bg-white border border-indigo-100 rounded-lg px-3 py-2 text-xs font-medium focus:outline-none focus:border-indigo-400 shadow-sm"
+                          className="w-full bg-white border border-indigo-100 rounded-lg px-3 py-2 text-xs font-medium text-slate-700 focus:outline-none focus:border-indigo-400 shadow-sm"
                           placeholder={`Ej. ${v.example}`}
                         />
                       </div>
