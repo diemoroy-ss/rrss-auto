@@ -226,11 +226,19 @@ export default function PromptsLibraryPage() {
     try {
       const snapshot = await getDocs(collection(db, "prompt_library"));
       const loaded: PromptTemplate[] = [];
+      const dbIds = new Set<string>();
+      
       snapshot.forEach(doc => {
         loaded.push({ id: doc.id, ...doc.data() } as PromptTemplate);
+        dbIds.add(doc.id);
       });
-      // Append hardcoded image styles
-      loaded.push(...HARDCODED_STYLES);
+      
+      // Añadir plantillas hardcodeadas solo si no fueron modificadas y guardadas en DB
+      HARDCODED_STYLES.forEach(style => {
+        if (!dbIds.has(style.id)) {
+          loaded.push(style);
+        }
+      });
       
       setPromptTemplates(loaded);
     } catch (e) {
@@ -459,7 +467,8 @@ export default function PromptsLibraryPage() {
       };
 
       if (editingPromptId) {
-        await updateDoc(doc(db, "prompt_library", editingPromptId), promptData);
+        // Usamos setDoc con merge por si estamos editando una plantilla hardcodeada por primera vez
+        await setDoc(doc(db, "prompt_library", editingPromptId), promptData, { merge: true });
         setPromptTemplates(prev => prev.map(p => p.id === editingPromptId ? { id: editingPromptId, ...promptData } : p));
         alert("¡Plantilla actualizada con éxito!");
       } else {
@@ -478,6 +487,7 @@ export default function PromptsLibraryPage() {
         prompt: "",
         imageRequirement: "optional",
         isCommercialPoster: false
+
       });
     } catch (err: any) {
       console.error(err);
@@ -895,6 +905,22 @@ export default function PromptsLibraryPage() {
                       </div>
                     ))}
                   </div>
+                  
+                  {/* REAL-TIME PREVIEW BLOCK */}
+                  <div className="mt-4 pt-4 border-t border-indigo-100">
+                    <label className="block text-xs font-bold text-indigo-700 mb-1.5">Vista Previa del Prompt Final:</label>
+                    <div className="text-xs text-indigo-900 bg-white p-3 rounded-lg border border-indigo-100 font-mono whitespace-pre-wrap">
+                      {(() => {
+                        let previewText = adminForm.prompt;
+                        adminParsedVariables.forEach(v => {
+                          const valToUse = adminVariableValues[v.raw] || v.example || `[${v.raw}]`;
+                          previewText = previewText.replaceAll(`[${v.raw}]`, valToUse);
+                        });
+                        return previewText;
+                      })()}
+                    </div>
+                  </div>
+
                   <p className="text-[10px] text-indigo-500 mt-3 font-medium">Estos valores solo se usarán una vez para crear la imagen de ejemplo de la tarjeta. No se guardarán en la plantilla.</p>
                 </div>
               )}
