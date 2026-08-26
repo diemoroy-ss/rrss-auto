@@ -157,6 +157,7 @@ export default function PromptsLibraryPage() {
     isCommercialPoster: false,
   });
   const [adminVariableValues, setAdminVariableValues] = useState<Record<string, string>>({});
+  const [adminBaseImageFile, setAdminBaseImageFile] = useState<File | null>(null);
   const [isAdminGenerating, setIsAdminGenerating] = useState(false);
   const [adminError, setAdminError] = useState("");
 
@@ -422,12 +423,24 @@ export default function PromptsLibraryPage() {
       let finalImageUrl = existingPreviewUrl;
 
       if (generateNewImage || !finalImageUrl) {
+        // Subir imagen base de prueba si existe
+        let uploadedBaseImageUrl = "";
+        if (adminBaseImageFile) {
+          const storageRef = ref(storage, `admin_prompts/${Date.now()}_${adminBaseImageFile.name}`);
+          await uploadBytes(storageRef, adminBaseImageFile);
+          uploadedBaseImageUrl = await getDownloadURL(storageRef);
+        }
+
         // Reemplazar las variables con los valores de prueba antes de mandar a generar la imagen
         let previewPromptText = adminForm.prompt;
         adminParsedVariables.forEach(v => {
           const testValue = adminVariableValues[v.raw] || v.example; // Fallback to the example if empty
           previewPromptText = previewPromptText.replaceAll(`[${v.raw}]`, testValue);
         });
+
+        if (uploadedBaseImageUrl) {
+          previewPromptText = `${uploadedBaseImageUrl} ${previewPromptText}`;
+        }
 
         // 1. Generar la imagen de Preview usando el webhook actual de generacion
         const payload = {
@@ -480,6 +493,7 @@ export default function PromptsLibraryPage() {
       setIsAdminModalOpen(false);
       setEditingPromptId(null);
       setExistingPreviewUrl(null);
+      setAdminBaseImageFile(null);
       setAdminForm({
         title: "",
         description: "",
@@ -886,15 +900,37 @@ export default function PromptsLibraryPage() {
                 />
               </div>
 
-              {adminParsedVariables.length > 0 && (
+              {(adminParsedVariables.length > 0 || adminForm.imageRequirement !== 'none') && (
                 <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4">
                   <h4 className="text-xs font-bold text-indigo-700 mb-3">
                     Valores de Prueba (Para generar el Preview)
                   </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {adminParsedVariables.map(v => (
-                      <div key={v.raw}>
-                        <label className="block text-[10px] font-bold text-indigo-600 mb-1">{v.name}</label>
+
+                  {adminForm.imageRequirement !== 'none' && (
+                    <div className="mb-4">
+                      <label className="block text-[10px] font-bold text-indigo-600 mb-1">
+                        Imagen Base {adminForm.imageRequirement === 'required' ? '(Requerida)' : '(Opcional)'}
+                      </label>
+                      <input 
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            setAdminBaseImageFile(e.target.files[0]);
+                          } else {
+                            setAdminBaseImageFile(null);
+                          }
+                        }}
+                        className="w-full text-xs text-slate-600 file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-bold file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200 cursor-pointer"
+                      />
+                    </div>
+                  )}
+
+                  {adminParsedVariables.length > 0 && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {adminParsedVariables.map(v => (
+                        <div key={v.raw}>
+                          <label className="block text-[10px] font-bold text-indigo-600 mb-1">{v.name}</label>
                         <input 
                           type="text"
                           value={adminVariableValues[v.raw] || ""}
@@ -905,6 +941,7 @@ export default function PromptsLibraryPage() {
                       </div>
                     ))}
                   </div>
+                  )}
                   
                   {/* REAL-TIME PREVIEW BLOCK */}
                   <div className="mt-4 pt-4 border-t border-indigo-100">
