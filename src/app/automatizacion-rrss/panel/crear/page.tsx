@@ -50,6 +50,7 @@ export default function RrssCreatePost() {
   const [manualCaption, setManualCaption] = useState("");
   const [idea, setIdea] = useState("");
   const [imageExpectation, setImageExpectation] = useState("");
+  const [imageStyle, setImageStyle] = useState("");
   /** Texto/copy explícito que el usuario escribe o genera con IA */
   const [postText, setPostText] = useState("");
   /** Configuración del cartel publicitario (opcional) */
@@ -405,7 +406,11 @@ export default function RrssCreatePost() {
   // ──────────────────────────────────────────────────────────────
   const handleGeneratePreview = async (forceReplan = false) => {
     const targetIdea = idea.trim() || postText.trim() || imageExpectation.trim();
-    const targetExpectation = imageExpectation.trim() || postText.trim() || idea.trim();
+    let targetExpectation = imageExpectation.trim();
+    if (imageStyle) {
+      targetExpectation = targetExpectation ? `${targetExpectation}, ${imageStyle}` : imageStyle;
+    }
+    targetExpectation = targetExpectation || postText.trim() || idea.trim();
     if (!targetIdea) return;
 
     const webhookUrl = process.env.NEXT_PUBLIC_N8N_PREVIEW_URL || 'https://n8n.santisoft.cl/webhook/img-rrss-auto';
@@ -1214,6 +1219,7 @@ export default function RrssCreatePost() {
             <PostConfigForm 
               idea={idea} setIdea={setIdea}
               imageExpectation={imageExpectation} setImageExpectation={setImageExpectation}
+              imageStyle={imageStyle} setImageStyle={setImageStyle}
               postText={postText} setPostText={setPostText}
               postType={postType} setPostType={setPostType}
               hideSubmit={true}
@@ -1259,6 +1265,7 @@ export default function RrssCreatePost() {
           <PostConfigForm 
             idea={idea} setIdea={setIdea}
             imageExpectation={imageExpectation} setImageExpectation={setImageExpectation}
+            imageStyle={imageStyle} setImageStyle={setImageStyle}
             postText={postText} setPostText={setPostText}
             postType={postType} setPostType={setPostType}
             hideSubmit={true}

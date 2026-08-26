@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useRef, useState, useEffect } from "react";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { db } from "../../lib/firebase";
 import VoiceMic from "../VoiceMic";
 import Link from "next/link";
 import { type PosterConfig } from "../../types/poster";
@@ -13,6 +15,8 @@ interface PostConfigFormProps {
   setIdea: (val: string) => void;
   imageExpectation: string;
   setImageExpectation: (val: string) => void;
+  imageStyle?: string;
+  setImageStyle?: (val: string) => void;
   postText: string;
   setPostText: (val: string) => void;
 
@@ -85,11 +89,25 @@ interface PostConfigFormProps {
 
   hideSubmit?: boolean;
   renderSection?: 'parameters' | 'content';
+  hideAI?: boolean;
 }
+
+const ALL_IMAGE_STYLES = [
+  { label: "Exploded view", val: "Estilo vista despiezada con todas sus piezas flotando en orden." },
+  { label: "Blueprint", val: "Estilo plano técnico clásico con líneas blancas sobre fondo azul oscuro." },
+  { label: "Cross-section", val: "Estilo corte transversal anatómico mostrando el interior con precisión." },
+  { label: "Isometric 3D", val: "Estilo isométrico 3D, render limpio tipo maqueta de videojuego." },
+  { label: "Wireframe", val: "Estilo malla de alambre digital mostrando estructura 3D." },
+  { label: "Low poly", val: "Estilo low poly con polígonos geométricos y minimalistas." },
+  { label: "Papercraft", val: "Estilo papercraft, hecho a mano con recortes de papel superpuestos." },
+  { label: "Double exposure", val: "Estilo doble exposición mezclando dos escenas distintas." },
+  { label: "Claymation", val: "Estilo claymation modelado en arcilla o plastilina 3D realista." }
+];
 
 export default function PostConfigForm({
   idea, setIdea,
   imageExpectation, setImageExpectation,
+  imageStyle, setImageStyle,
   postText, setPostText,
   creationMode, setCreationMode,
   manualFiles, setManualFiles,
@@ -123,10 +141,40 @@ export default function PostConfigForm({
   hideSubmit = false,
   renderSection,
   hideAI = false
-}: PostConfigFormProps & { hideAI?: boolean }) {
+}: PostConfigFormProps) {
 
   const maxChars = constraints.safeCharLimit;
   const isOverLimit = creationMode === 'ai' ? postText.length > maxChars : manualCaption.length > maxChars;
+
+  const [activeStyles, setActiveStyles] = useState<string[]>(ALL_IMAGE_STYLES.map(s => s.label));
+  const [isConfiguringStyles, setIsConfiguringStyles] = useState(false);
+
+  useEffect(() => {
+    if (renderSection !== 'content') return;
+    const fetchStyles = async () => {
+      try {
+        const d = await getDoc(doc(db, "settings", "image_styles"));
+        if (d.exists()) {
+          setActiveStyles(d.data().activeLabels || ALL_IMAGE_STYLES.map(s => s.label));
+        }
+      } catch (e) {
+        console.error("Error fetching active styles", e);
+      }
+    };
+    fetchStyles();
+  }, [renderSection]);
+
+  const handleToggleActiveStyle = async (label: string) => {
+    const newActive = activeStyles.includes(label)
+      ? activeStyles.filter(l => l !== label)
+      : [...activeStyles, label];
+    setActiveStyles(newActive);
+    try {
+      await setDoc(doc(db, "settings", "image_styles"), { activeLabels: newActive });
+    } catch (e) {
+      console.error("Error saving style visibility", e);
+    }
+  };
 
   // RENDER SECCIÓN 1: PARÁMETROS (COLUMNA IZQUIERDA)
   if (renderSection === 'parameters') {
@@ -348,35 +396,53 @@ export default function PostConfigForm({
               />
 
               {/* IMAGE STYLES SELECTOR */}
-              <div className="mt-3 bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
-                <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">
-                  🎨 Sugerencias de Estilo (Opcional)
-                </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {[
-                    { label: "Exploded view", val: "Estilo vista despiezada con todas sus piezas flotando en orden." },
-                    { label: "Blueprint", val: "Estilo plano técnico clásico con líneas blancas sobre fondo azul oscuro." },
-                    { label: "Cross-section", val: "Estilo corte transversal anatómico mostrando el interior con precisión." },
-                    { label: "Isometric 3D", val: "Estilo isométrico 3D, render limpio tipo maqueta de videojuego." },
-                    { label: "Wireframe", val: "Estilo malla de alambre digital mostrando estructura 3D." },
-                    { label: "Low poly", val: "Estilo low poly con polígonos geométricos y minimalistas." },
-                    { label: "Papercraft", val: "Estilo papercraft, hecho a mano con recortes de papel superpuestos." },
-                    { label: "Double exposure", val: "Estilo doble exposición mezclando dos escenas distintas." },
-                    { label: "Claymation", val: "Estilo claymation modelado en arcilla o plastilina 3D realista." }
-                  ].map(style => (
+              <div className="mt-3 bg-white p-3 rounded-xl border border-slate-100 shadow-sm relative">
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                    🎨 Sugerencias de Estilo (Opcional)
+                  </label>
+                  {isAdmin && (
                     <button
-                      key={style.label}
                       type="button"
-                      onClick={() => {
-                        if (!imageExpectation.includes(style.val)) {
-                          setImageExpectation(imageExpectation ? `${imageExpectation}, ${style.val}` : style.val);
-                        }
-                      }}
-                      className="text-[9px] font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 hover:bg-indigo-100 hover:text-indigo-700 transition-colors border border-slate-200 hover:border-indigo-200"
+                      onClick={() => setIsConfiguringStyles(!isConfiguringStyles)}
+                      className="text-[9px] font-bold text-slate-400 hover:text-indigo-600 transition-colors"
                     >
-                      {style.label}
+                      {isConfiguringStyles ? "✅ Finalizar" : "⚙️ Configurar"}
                     </button>
-                  ))}
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {ALL_IMAGE_STYLES.filter(s => isAdmin || activeStyles.includes(s.label)).map(style => {
+                    const isVisibleToUsers = activeStyles.includes(style.label);
+                    const isSelectedForPost = imageStyle === style.val;
+                    return (
+                      <button
+                        key={style.label}
+                        type="button"
+                        onClick={() => {
+                          if (isConfiguringStyles) {
+                            handleToggleActiveStyle(style.label);
+                          } else {
+                            // Toggle for the post: if already selected, deselect; otherwise, select.
+                            if (setImageStyle) {
+                              setImageStyle(isSelectedForPost ? "" : style.val);
+                            }
+                          }
+                        }}
+                        className={`text-[9px] font-bold px-2.5 py-1 rounded-full transition-colors border ${
+                          isConfiguringStyles
+                            ? (isVisibleToUsers
+                              ? "bg-green-100 text-green-700 border-green-200"
+                              : "bg-slate-100 text-slate-400 border-slate-200 line-through")
+                            : (isSelectedForPost
+                              ? "bg-indigo-600 text-white border-indigo-700 shadow-sm shadow-indigo-600/20"
+                              : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200")
+                        }`}
+                      >
+                        {style.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
