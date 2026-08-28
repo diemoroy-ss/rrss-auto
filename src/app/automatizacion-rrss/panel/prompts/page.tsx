@@ -30,7 +30,9 @@ export const promptCategories = [
   "Producto (E-commerce)",
   "Estilos Técnicos",
   "Diseño y 3D",
-  "Artísticos y Creativos"
+  "Artísticos y Creativos",
+  "Publicidad y Ads",
+  "Editorial y Revista",
 ];
 
 export const HARDCODED_STYLES: PromptTemplate[] = [
@@ -114,7 +116,81 @@ export const HARDCODED_STYLES: PromptTemplate[] = [
     prompt: "A cute claymation 3D render of [Sujeto:ej. un pingüino bebiendo café], made of modeled plasticine, visible fingerprints on the clay, stop-motion animation style, tactile realistic texture, studio lighting.",
     previewUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&q=80",
     imageRequirement: "optional",
-  }
+  },
+
+  // ─── PUBLICIDAD Y ADS ────────────────────────────────────────────────────
+  {
+    id: "style-meta-ads",
+    title: "Meta Ads / Creative Ad",
+    description: "Convierte tu producto o imagen en un creativo publicitario listo para Facebook o Instagram Ads. Fondo limpio, composición centrada y alta retención visual.",
+    category: "Publicidad y Ads",
+    prompt: "A professional high-conversion social media advertisement creative featuring [Producto o servicio:ej. una crema facial hidratante] as the hero product, clean white or pastel gradient background, bold compositional framing, studio product lighting, premium feel, Facebook and Instagram ad format, photorealistic render, no text.",
+    previewUrl: "https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=500&q=80",
+    imageRequirement: "required",
+    isCommercialPoster: true,
+  },
+  {
+    id: "style-ads-lifestyle",
+    title: "Ads Lifestyle (Producto en uso)",
+    description: "Muestra tu producto siendo usado en un contexto real y aspiracional, perfecto para anuncios de lifestyle en redes sociales.",
+    category: "Publicidad y Ads",
+    prompt: "A cinematic lifestyle advertising photo of [Producto:ej. unas zapatillas deportivas], being used by a person in a natural aspirational setting, golden hour lighting, shallow depth of field, editorial fashion photography, magazine quality, vibrant colors, authentic and candid mood.",
+    previewUrl: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&q=80",
+    imageRequirement: "required",
+    isCommercialPoster: true,
+  },
+  {
+    id: "style-ads-hero-shot",
+    title: "Hero Shot de Producto",
+    description: "Toma tu imagen de producto y la transforma en una foto tipo campaña de marca: fondo dramático, iluminación premium y composición de alta atención.",
+    category: "Publicidad y Ads",
+    prompt: "A dramatic high-end hero product shot of [Producto:ej. una botella de perfume de lujo], cinematic studio lighting with colored gels, dark moody background, fine mist or smoke effect, luxury brand campaign aesthetics, ultra-sharp focus, 8k commercial photography.",
+    previewUrl: "https://images.unsplash.com/photo-1585386959984-a4155224a1ad?w=500&q=80",
+    imageRequirement: "required",
+    isCommercialPoster: true,
+  },
+  {
+    id: "style-product-explosion",
+    title: "Product Explosion (Despiezado de Producto)",
+    description: "Desensambla visualmente tu producto mostrando todos sus componentes flotando ordenados alrededor. Perfecto para resaltar calidad de ingredientes o materiales.",
+    category: "Publicidad y Ads",
+    prompt: "A stunning exploded product view of [Producto:ej. una cápsula de suplemento vitamínico], all individual ingredients and components floating symmetrically around the hero product on a clean white background, premium cosmetic or supplement brand aesthetic, macro photography style, commercial ad quality, no text.",
+    previewUrl: "https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=500&q=80",
+    imageRequirement: "required",
+    isCommercialPoster: true,
+  },
+
+  // ─── EDITORIAL Y REVISTA ──────────────────────────────────────────────────
+  {
+    id: "style-magazine-cover",
+    title: "Magazine Cover (Portada de Revista)",
+    description: "Transforma tu foto en una portada de revista de alta gama. Composición editorial, iluminación de estudio y espacio reservado para título y subtítulos.",
+    category: "Editorial y Revista",
+    prompt: "A stunning [Tipo de revista:ej. Vogue] magazine cover featuring [Sujeto o producto:ej. una modelo en vestido rojo], professional editorial studio photography, dramatic high-contrast lighting, cover composition with negative space at the top for a masthead, premium fashion magazine aesthetic, glossy finish look, ultra-detailed.",
+    previewUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&q=80",
+    imageRequirement: "required",
+    isCommercialPoster: true,
+  },
+  {
+    id: "style-magazine-spread",
+    title: "Editorial Spread (Doble Página)",
+    description: "Crea una composición editorial de doble página tipo revista de moda o lifestyle, con espacio para texto y un visual impactante como protagonista.",
+    category: "Editorial y Revista",
+    prompt: "A full bleed editorial magazine double-page spread featuring [Tema o sujeto:ej. colección de ropa de invierno], cinematic wide composition, moody or vibrant color grading depending on the subject, high fashion editorial photography, luxury lifestyle aesthetic, professional retouching, space reserved on one side for copy text.",
+    previewUrl: "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=500&q=80",
+    imageRequirement: "required",
+    isCommercialPoster: true,
+  },
+  {
+    id: "style-brand-campaign",
+    title: "Brand Campaign (Campaña de Marca)",
+    description: "Genera un visual de campaña de marca completo: concepto, sujeto, mensaje visual y estética coherente de marca en una sola imagen.",
+    category: "Publicidad y Ads",
+    prompt: "A powerful [Marca o industria:ej. marca de ropa deportiva] brand campaign hero image featuring [Sujeto:ej. atleta corriendo en ciudad al amanecer], bold cinematic composition, brand color palette tones, inspirational mood, commercial campaign photography quality, wide-format billboard composition, dynamic motion blur, aspirational lifestyle.",
+    previewUrl: "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=500&q=80",
+    imageRequirement: "required",
+    isCommercialPoster: true,
+  },
 ];
 
 export default function PromptsLibraryPage() {
