@@ -546,6 +546,30 @@ export default function PromptsLibraryPage() {
     router.push(url);
   };
 
+  const handleSetAsCover = async () => {
+    if (!selectedPrompt || !generatedImage) return;
+    try {
+      const promptData = {
+        title: selectedPrompt.title,
+        description: selectedPrompt.description,
+        category: selectedPrompt.category,
+        prompt: selectedPrompt.prompt,
+        imageRequirement: selectedPrompt.imageRequirement,
+        isCommercialPoster: selectedPrompt.isCommercialPoster || false,
+        previewUrl: generatedImage
+      };
+      
+      await setDoc(doc(db, "prompt_library", selectedPrompt.id), promptData, { merge: true });
+      
+      setPromptTemplates(prev => prev.map(p => p.id === selectedPrompt.id ? { id: selectedPrompt.id, ...promptData } : p));
+      
+      alert("¡Imagen establecida como portada de este template exitosamente!");
+    } catch (e: any) {
+      console.error(e);
+      alert("Error al actualizar portada: " + e.message);
+    }
+  };
+
   // ════════════════════════════════════════════════════════
   // ADMIN FLOW
   // ════════════════════════════════════════════════════════
@@ -935,6 +959,15 @@ export default function PromptsLibraryPage() {
                     >
                       ✍️ Usar en Nuevo Post
                     </button>
+                    {isAdminUser && (
+                      <button 
+                        onClick={handleSetAsCover}
+                        className="bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-slate-800/30 transition-all active:scale-95"
+                        title="Actualizar la foto de ejemplo de esta plantilla"
+                      >
+                        🖼️ Guardar como Portada
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
