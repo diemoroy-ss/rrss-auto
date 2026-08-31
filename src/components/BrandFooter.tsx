@@ -30,16 +30,14 @@ export default function BrandFooter() {
           <div className="footer-ecosystem-badge rrss-badge-footer">
             <span className="rrss-dot-pulse"></span>
             <span>PARTE DEL ECOSISTEMA SANTISOFT</span>
-          </div>
-
-          {/* Iconos de Redes Sociales */}
+          </div>          {/* Iconos de Redes Sociales */}
           <div className="flex items-center gap-3 mt-4">
             <a
-              href="https://www.instagram.com/grupofugas/"
+              href="https://www.instagram.com/santisoftai/"
               target="_blank"
               rel="noopener noreferrer"
               className="w-8 h-8 rounded-lg bg-slate-800/80 hover:bg-gradient-to-tr hover:from-amber-500 hover:to-rose-500 text-slate-300 hover:text-white flex items-center justify-center transition-all shadow-sm group"
-              title="Instagram @grupofugas"
+              title="Instagram @santisoftai"
               aria-label="Instagram"
             >
               <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
@@ -48,11 +46,11 @@ export default function BrandFooter() {
             </a>
 
             <a
-              href="https://www.facebook.com/profile.php?id=61593467413820"
+              href="https://www.facebook.com/santisoft"
               target="_blank"
               rel="noopener noreferrer"
               className="w-8 h-8 rounded-lg bg-slate-800/80 hover:bg-blue-600 text-slate-300 hover:text-white flex items-center justify-center transition-all shadow-sm group"
-              title="Facebook Grupo Fugas"
+              title="Facebook Santisoft"
               aria-label="Facebook"
             >
               <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
@@ -61,11 +59,11 @@ export default function BrandFooter() {
             </a>
 
             <a
-              href="https://www.youtube.com/@GrupoFugascl"
+              href="https://www.youtube.com/@Santisoftai"
               target="_blank"
               rel="noopener noreferrer"
               className="w-8 h-8 rounded-lg bg-slate-800/80 hover:bg-rose-600 text-slate-300 hover:text-white flex items-center justify-center transition-all shadow-sm group"
-              title="YouTube @GrupoFugascl"
+              title="YouTube @Santisoftai"
               aria-label="YouTube"
             >
               <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
@@ -115,7 +113,7 @@ export default function BrandFooter() {
             <ul className="footer-link-list">
               <li>
                 <a
-                  href="https://www.instagram.com/grupofugas/"
+                  href="https://www.instagram.com/santisoftai/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="footer-external-link"
@@ -126,7 +124,7 @@ export default function BrandFooter() {
               </li>
               <li>
                 <a
-                  href="https://www.facebook.com/profile.php?id=61593467413820"
+                  href="https://www.facebook.com/santisoft"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="footer-external-link"
@@ -137,7 +135,7 @@ export default function BrandFooter() {
               </li>
               <li>
                 <a
-                  href="https://www.youtube.com/@GrupoFugascl"
+                  href="https://www.youtube.com/@Santisoftai"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="footer-external-link"
@@ -147,7 +145,7 @@ export default function BrandFooter() {
                 </a>
               </li>
             </ul>
-          </div>
+          </div>       </div>
 
           <div className="footer-col">
             <h4 className="footer-col-title">EXPLORAR</h4>
