@@ -784,6 +784,35 @@ function ConfigContent() {
     }
   };
 
+  const saveTikTokDefaults = async (settings: TikTokSettingsState) => {
+    if (!user || !activeProfile) return;
+    setSaving(true);
+    try {
+      const userDocRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userDocRef);
+      if (userSnap.exists()) {
+        const uData = userSnap.data();
+        if (activeProfile.id === 'default') {
+          await updateDoc(userDocRef, {
+            tiktokDefaults: settings
+          });
+        }
+        if (Array.isArray(uData.profiles)) {
+          const updatedProfiles = uData.profiles.map((p: any) =>
+            p.id === activeProfile.id ? { ...p, tiktokDefaults: settings } : p
+          );
+          await updateDoc(userDocRef, { profiles: updatedProfiles });
+        }
+        await loadProfiles();
+        showModal("success", "Preferencias Guardadas", "Se han actualizado las preferencias predeterminadas de TikTok Direct Post para esta marca.");
+      }
+    } catch (e: any) {
+      showModal("error", "Error", "No se pudieron guardar las preferencias de TikTok: " + e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleDisconnectFb = async () => {
     showModal("confirm", "Desconectar Facebook", "¿Estás seguro de que deseas desconectar Meta?", async () => {
         setModal(prev => ({ ...prev, isOpen: false }));

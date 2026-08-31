@@ -459,12 +459,13 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
                     infoLog += `Reel 9:16 con subtítulos Alex Hormozi y audio completado con éxito. `;
                 } catch (reelErr: any) {
                     console.error('[publishInBackground] Error componiendo Reel en Remotion:', reelErr);
-                    // Fallback de emergencia: Si Remotion falla y hay un video crudo, usarlo
-                    if (videoUrl || post.videoUrl || post.imageUrl) {
-                        videoUrl = videoUrl || post.videoUrl || post.imageUrl;
+                    // Fallback de emergencia: Solo si realmente hay un video crudo (MP4/WebM/MOV)
+                    const rawVid = post.videoUrl || (post.imageUrl && (post.imageUrl.includes('.mp4') || post.imageUrl.includes('.mov') || post.imageUrl.includes('.webm') || post.imageUrl.includes('video')) ? post.imageUrl : null);
+                    if (rawVid) {
+                        videoUrl = rawVid;
                         console.warn('[publishInBackground] Usando video crudo como fallback de emergencia.');
                     } else {
-                        throw new Error(`Fallo al componer Reel en Remotion: ${reelErr.message}`);
+                        throw new Error(`Fallo al generar el video del Reel: ${reelErr.message}. Para publicar un Reel se requiere un archivo de video MP4.`);
                     }
                 }
             } else {
@@ -556,6 +557,9 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
                        timestamp: new Date()
                     });
                 } else if (isReel) {
+                    if (!videoUrl) {
+                        throw new Error("Facebook requiere un archivo de video MP4 válido para publicar Reels.");
+                    }
                     const fbData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${pageId}/videos`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -581,6 +585,9 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
                        timestamp: new Date()
                     });
                 } else {
+                    if (!imageUrl) {
+                        throw new Error("Facebook requiere una imagen válida para publicar este post.");
+                    }
                     const fbData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${pageId}/photos`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
