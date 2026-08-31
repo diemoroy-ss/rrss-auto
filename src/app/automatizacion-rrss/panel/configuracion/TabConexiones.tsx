@@ -139,15 +139,6 @@ export default function TabConexiones({
           ) : isAdmin ? (
             <div className="flex flex-col gap-2 mt-auto">
               <button type="button" onClick={handleConnectTikTok} className="w-full bg-black hover:bg-slate-900 text-white font-bold py-2.5 rounded-xl shadow-md text-sm transition-colors">Conectar con TikTok</button>
-              {setShowTikTokModal && (
-                <button 
-                  type="button" 
-                  onClick={() => setShowTikTokModal(true)} 
-                  className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-xl text-xs transition-colors flex items-center justify-center gap-1"
-                >
-                  <span>⚙️</span> Preferencias por Defecto
-                </button>
-              )}
             </div>
           ) : (
             <button type="button" disabled className="w-full bg-slate-100 text-slate-400 font-bold py-2.5 rounded-xl text-sm mt-auto cursor-not-allowed border border-slate-200">Próximamente</button>

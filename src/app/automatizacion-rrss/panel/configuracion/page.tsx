@@ -211,20 +211,22 @@ function TikTokDefaultSettingsModal({ isOpen, onClose, initialSettings, onSave }
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="bg-slate-950 border border-slate-800 rounded-3xl p-6 max-w-xl w-full shadow-2xl space-y-6 my-8 animate-in fade-in zoom-in duration-200">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-          <div className="flex items-center gap-2.5">
-            <span className="text-2xl">🎵</span>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
+      <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 max-w-xl w-full shadow-2xl space-y-6 my-8 animate-in fade-in zoom-in duration-200">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-slate-900 flex items-center justify-center text-white shadow-sm">
+              <span className="text-xl">🎵</span>
+            </div>
             <div>
-              <h3 className="text-lg font-black text-white">Preferencias de TikTok Direct Post</h3>
-              <p className="text-xs text-slate-400 font-medium">Configura los valores predeterminados para todas tus publicaciones en TikTok.</p>
+              <h3 className="text-lg font-black text-slate-900">Preferencias de TikTok Direct Post</h3>
+              <p className="text-xs text-slate-500 font-medium">Configura los valores predeterminados para todas tus publicaciones en TikTok.</p>
             </div>
           </div>
           <button 
             type="button"
             onClick={onClose} 
-            className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center font-bold"
+            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center font-bold transition-colors"
           >
             ✕
           </button>
@@ -236,11 +238,11 @@ function TikTokDefaultSettingsModal({ isOpen, onClose, initialSettings, onSave }
           isDefaultConfig={true}
         />
 
-        <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
+        <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2.5 rounded-xl font-bold text-slate-400 hover:bg-slate-800 transition-colors text-xs"
+            className="px-5 py-2.5 rounded-xl font-bold text-slate-600 hover:bg-slate-100 transition-colors text-xs"
           >
             Cancelar
           </button>
@@ -256,9 +258,9 @@ function TikTokDefaultSettingsModal({ isOpen, onClose, initialSettings, onSave }
                 setSaving(false);
               }
             }}
-            className="px-6 py-2.5 rounded-xl font-bold text-slate-950 bg-cyan-400 hover:bg-cyan-300 disabled:opacity-50 transition-all text-xs flex items-center gap-2 shadow-lg shadow-cyan-500/20"
+            className="px-6 py-2.5 rounded-xl font-bold text-white bg-slate-900 hover:bg-black disabled:opacity-50 transition-all text-xs flex items-center gap-2 shadow-md"
           >
-            {saving ? <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" /> : "💾 Guardar Preferencias"}
+            {saving ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : "💾 Guardar Preferencias"}
           </button>
         </div>
       </div>
@@ -409,7 +411,9 @@ function ConfigContent() {
     }
     
     if (tiktokParam === 'success') {
-        setMessage({ type: 'success', text: "¡TikTok conectado correctamente!" });
+        setActiveTab('conexiones');
+        setShowTikTokModal(true);
+        setMessage({ type: 'success', text: "¡TikTok conectado correctamente! Ajusta tus preferencias predeterminadas." });
         shouldReplace = true;
     }
 

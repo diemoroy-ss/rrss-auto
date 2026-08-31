@@ -74,21 +74,21 @@ export default function TikTokPostSettings({
   ];
 
   return (
-    <div className="bg-slate-900 text-white rounded-3xl p-5 sm:p-6 border border-slate-800 shadow-xl space-y-6">
+    <div className="bg-white text-slate-800 rounded-2xl p-5 border border-slate-200 shadow-sm space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+      <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-black border border-slate-700 flex items-center justify-center text-white shadow-inner">
-            <FaTiktok className="text-base text-cyan-400" />
+          <div className="w-9 h-9 rounded-xl bg-slate-900 flex items-center justify-center text-white shadow-sm">
+            <FaTiktok className="text-base text-cyan-300" />
           </div>
           <div>
-            <h4 className="text-sm font-black tracking-wide text-white flex items-center gap-2">
+            <h4 className="text-sm font-black tracking-wide text-slate-900 flex items-center gap-2">
               Configuración de TikTok
-              <span className="text-[9px] bg-cyan-500/20 text-cyan-300 font-bold px-2 py-0.5 rounded-full border border-cyan-500/30">
+              <span className="text-[10px] bg-cyan-50 text-cyan-700 font-bold px-2 py-0.5 rounded-md border border-cyan-200">
                 Direct Post API
               </span>
             </h4>
-            <p className="text-[10px] text-slate-400 font-medium mt-0.5">
+            <p className="text-xs text-slate-500 font-medium mt-0.5">
               {isDefaultConfig
                 ? "Valores predeterminados aplicados a todas tus publicaciones en TikTok"
                 : "Ajustes de privacidad, interacción y divulgación para esta publicación"}
@@ -100,10 +100,10 @@ export default function TikTokPostSettings({
       {/* 1. Privacy Settings */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <label className="text-[11px] font-black text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+          <label className="text-[11px] font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
             <span>👁️</span> ¿Quién puede ver este video?
           </label>
-          <span className="text-[10px] font-bold text-slate-400">
+          <span className="text-[11px] font-bold text-slate-500">
             {privacyOptions.find((o) => o.id === settings.privacyLevel)?.label}
           </span>
         </div>
@@ -116,19 +116,19 @@ export default function TikTokPostSettings({
                 key={opt.id}
                 type="button"
                 onClick={() => updateSetting("privacyLevel", opt.id as any)}
-                className={`p-3 rounded-2xl border text-left transition-all flex items-start gap-3 ${
+                className={`p-3.5 rounded-xl border text-left transition-all flex items-start gap-3 ${
                   isSelected
-                    ? "bg-cyan-950/40 border-cyan-500 text-white shadow-md shadow-cyan-950/50"
-                    : "bg-slate-800/60 border-slate-700/60 text-slate-400 hover:border-slate-600 hover:text-slate-200"
+                    ? "bg-cyan-50/70 border-cyan-500 text-slate-900 shadow-sm ring-1 ring-cyan-500/20"
+                    : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                 }`}
               >
                 <span className="text-base mt-0.5">{opt.icon}</span>
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs font-bold text-white flex items-center justify-between">
+                  <div className="text-xs font-bold text-slate-900 flex items-center justify-between">
                     <span>{opt.label}</span>
-                    {isSelected && <FaCheckCircle className="text-cyan-400 text-xs shrink-0" />}
+                    {isSelected && <FaCheckCircle className="text-cyan-600 text-xs shrink-0" />}
                   </div>
-                  <p className="text-[10px] text-slate-400 leading-tight mt-0.5 line-clamp-2">
+                  <p className="text-[11px] text-slate-500 leading-tight mt-0.5">
                     {opt.desc}
                   </p>
                 </div>
@@ -139,8 +139,8 @@ export default function TikTokPostSettings({
       </div>
 
       {/* 2. Interaction Settings */}
-      <div className="space-y-3 pt-2 border-t border-slate-800">
-        <label className="text-[11px] font-black text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+      <div className="space-y-3 pt-3 border-t border-slate-100">
+        <label className="text-[11px] font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
           <span>💬</span> Permisos de Interacción
         </label>
 
@@ -149,23 +149,23 @@ export default function TikTokPostSettings({
           <button
             type="button"
             onClick={() => updateSetting("allowComment", !settings.allowComment)}
-            className={`p-3 rounded-2xl border flex items-center justify-between transition-all ${
+            className={`p-3 rounded-xl border flex items-center justify-between transition-all ${
               settings.allowComment
-                ? "bg-slate-800 border-cyan-500/60 text-white"
-                : "bg-slate-800/40 border-slate-700/50 text-slate-500"
+                ? "bg-white border-slate-300 text-slate-900 shadow-sm"
+                : "bg-slate-50 border-slate-200 text-slate-400"
             }`}
           >
             <div className="flex items-center gap-2 text-xs font-bold">
-              <FaComments className={settings.allowComment ? "text-cyan-400" : "text-slate-500"} />
+              <FaComments className={settings.allowComment ? "text-cyan-600" : "text-slate-400"} />
               <span>Comentarios</span>
             </div>
             <div
               className={`w-9 h-5 rounded-full p-0.5 transition-colors ${
-                settings.allowComment ? "bg-cyan-500" : "bg-slate-700"
+                settings.allowComment ? "bg-cyan-500" : "bg-slate-300"
               }`}
             >
               <div
-                className={`w-4 h-4 rounded-full bg-white transition-transform ${
+                className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
                   settings.allowComment ? "translate-x-4" : "translate-x-0"
                 }`}
               />
@@ -176,23 +176,23 @@ export default function TikTokPostSettings({
           <button
             type="button"
             onClick={() => updateSetting("allowDuet", !settings.allowDuet)}
-            className={`p-3 rounded-2xl border flex items-center justify-between transition-all ${
+            className={`p-3 rounded-xl border flex items-center justify-between transition-all ${
               settings.allowDuet
-                ? "bg-slate-800 border-cyan-500/60 text-white"
-                : "bg-slate-800/40 border-slate-700/50 text-slate-500"
+                ? "bg-white border-slate-300 text-slate-900 shadow-sm"
+                : "bg-slate-50 border-slate-200 text-slate-400"
             }`}
           >
             <div className="flex items-center gap-2 text-xs font-bold">
-              <FaUserPlus className={settings.allowDuet ? "text-cyan-400" : "text-slate-500"} />
+              <FaUserPlus className={settings.allowDuet ? "text-cyan-600" : "text-slate-400"} />
               <span>Dúos</span>
             </div>
             <div
               className={`w-9 h-5 rounded-full p-0.5 transition-colors ${
-                settings.allowDuet ? "bg-cyan-500" : "bg-slate-700"
+                settings.allowDuet ? "bg-cyan-500" : "bg-slate-300"
               }`}
             >
               <div
-                className={`w-4 h-4 rounded-full bg-white transition-transform ${
+                className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
                   settings.allowDuet ? "translate-x-4" : "translate-x-0"
                 }`}
               />
@@ -203,23 +203,23 @@ export default function TikTokPostSettings({
           <button
             type="button"
             onClick={() => updateSetting("allowStitch", !settings.allowStitch)}
-            className={`p-3 rounded-2xl border flex items-center justify-between transition-all ${
+            className={`p-3 rounded-xl border flex items-center justify-between transition-all ${
               settings.allowStitch
-                ? "bg-slate-800 border-cyan-500/60 text-white"
-                : "bg-slate-800/40 border-slate-700/50 text-slate-500"
+                ? "bg-white border-slate-300 text-slate-900 shadow-sm"
+                : "bg-slate-50 border-slate-200 text-slate-400"
             }`}
           >
             <div className="flex items-center gap-2 text-xs font-bold">
-              <FaCut className={settings.allowStitch ? "text-cyan-400" : "text-slate-500"} />
+              <FaCut className={settings.allowStitch ? "text-cyan-600" : "text-slate-400"} />
               <span>Pegar (Stitch)</span>
             </div>
             <div
               className={`w-9 h-5 rounded-full p-0.5 transition-colors ${
-                settings.allowStitch ? "bg-cyan-500" : "bg-slate-700"
+                settings.allowStitch ? "bg-cyan-500" : "bg-slate-300"
               }`}
             >
               <div
-                className={`w-4 h-4 rounded-full bg-white transition-transform ${
+                className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
                   settings.allowStitch ? "translate-x-4" : "translate-x-0"
                 }`}
               />
@@ -229,13 +229,13 @@ export default function TikTokPostSettings({
       </div>
 
       {/* 3. Content Disclosure Setting */}
-      <div className="space-y-3 pt-2 border-t border-slate-800">
+      <div className="space-y-3 pt-3 border-t border-slate-100">
         <div className="flex items-center justify-between">
           <div>
-            <label className="text-[11px] font-black text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+            <label className="text-[11px] font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
               <span>📢</span> Divulgación de Contenido (Content Disclosure)
             </label>
-            <p className="text-[10px] text-slate-400">
+            <p className="text-[11px] text-slate-500 mt-0.5">
               Declara si este video incluye contenido comercial o fue generado con agentes / IA.
             </p>
           </div>
@@ -243,11 +243,11 @@ export default function TikTokPostSettings({
             type="button"
             onClick={() => updateSetting("contentDisclosure", !settings.contentDisclosure)}
             className={`w-10 h-6 rounded-full p-0.5 transition-colors shrink-0 ${
-              settings.contentDisclosure ? "bg-cyan-500" : "bg-slate-700"
+              settings.contentDisclosure ? "bg-cyan-500" : "bg-slate-300"
             }`}
           >
             <div
-              className={`w-5 h-5 rounded-full bg-white transition-transform ${
+              className={`w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${
                 settings.contentDisclosure ? "translate-x-4" : "translate-x-0"
               }`}
             />
@@ -255,8 +255,8 @@ export default function TikTokPostSettings({
         </div>
 
         {settings.contentDisclosure && (
-          <div className="p-4 bg-slate-800/70 border border-slate-700 rounded-2xl space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+          <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+            <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider block mb-1">
               Selecciona las opciones que aplican a este video:
             </span>
 
@@ -266,14 +266,14 @@ export default function TikTokPostSettings({
                 type="checkbox"
                 checked={settings.yourBrand}
                 onChange={(e) => updateSetting("yourBrand", e.target.checked)}
-                className="mt-1 w-4 h-4 rounded text-cyan-500 bg-slate-700 border-slate-600 focus:ring-0 focus:ring-offset-0"
+                className="mt-0.5 w-4 h-4 rounded text-cyan-600 bg-white border-slate-300 focus:ring-cyan-500"
               />
               <div className="text-xs">
-                <span className="font-bold text-white flex items-center gap-1.5">
-                  <FaBriefcase className="text-amber-400 text-[11px]" />
+                <span className="font-bold text-slate-900 flex items-center gap-1.5">
+                  <FaBriefcase className="text-amber-500 text-[11px]" />
                   Tu propia marca o negocio
                 </span>
-                <p className="text-[10px] text-slate-400 leading-tight">
+                <p className="text-[11px] text-slate-500 leading-tight">
                   Estás promocionando tu propio producto, negocio o servicio.
                 </p>
               </div>
@@ -285,14 +285,14 @@ export default function TikTokPostSettings({
                 type="checkbox"
                 checked={settings.brandedContent}
                 onChange={(e) => updateSetting("brandedContent", e.target.checked)}
-                className="mt-1 w-4 h-4 rounded text-cyan-500 bg-slate-700 border-slate-600 focus:ring-0 focus:ring-offset-0"
+                className="mt-0.5 w-4 h-4 rounded text-cyan-600 bg-white border-slate-300 focus:ring-cyan-500"
               />
               <div className="text-xs">
-                <span className="font-bold text-white flex items-center gap-1.5">
-                  <FaHandshake className="text-emerald-400 text-[11px]" />
+                <span className="font-bold text-slate-900 flex items-center gap-1.5">
+                  <FaHandshake className="text-emerald-600 text-[11px]" />
                   Contenido patrocinado / Branded Content
                 </span>
-                <p className="text-[10px] text-slate-400 leading-tight">
+                <p className="text-[11px] text-slate-500 leading-tight">
                   Estás promocionando un tercero a cambio de pago u otra compensación.
                 </p>
               </div>
@@ -304,14 +304,14 @@ export default function TikTokPostSettings({
                 type="checkbox"
                 checked={settings.isAigc}
                 onChange={(e) => updateSetting("isAigc", e.target.checked)}
-                className="mt-1 w-4 h-4 rounded text-cyan-500 bg-slate-700 border-slate-600 focus:ring-0 focus:ring-offset-0"
+                className="mt-0.5 w-4 h-4 rounded text-cyan-600 bg-white border-slate-300 focus:ring-cyan-500"
               />
               <div className="text-xs">
-                <span className="font-bold text-white flex items-center gap-1.5">
-                  <FaRobot className="text-indigo-400 text-[11px]" />
+                <span className="font-bold text-slate-900 flex items-center gap-1.5">
+                  <FaRobot className="text-indigo-600 text-[11px]" />
                   Contenido generado por IA / Agentes
                 </span>
-                <p className="text-[10px] text-slate-400 leading-tight">
+                <p className="text-[11px] text-slate-500 leading-tight">
                   Añade una etiqueta de divulgación indicando que el contenido fue creado con asistencia de agentes de IA.
                 </p>
               </div>
