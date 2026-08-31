@@ -475,9 +475,12 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
                 infoLog += `Iniciando Agente 1 (Generación de Imagen con Claude-Banana & n8n/Pollinations)... `;
                 try {
                     const { generateImageWithAgent } = await import('../../../lib/agents/agent-image');
-                    const isStoryPost = post.type === 'Historia' || post.type === 'Story' || (post.type && post.type.toLowerCase().includes('stor'));
+                    const imagePromptIdea = post.imageDirection 
+                        ? `${post.imageDirection}${post.visualStyle ? ` en estilo visual ${post.visualStyle}` : ''}. Contexto del post: ${post.idea || caption}`
+                        : (post.idea || caption || 'Fotografía promocional profesional');
+
                     const generatedImageUrl = await generateImageWithAgent({
-                        idea: post.idea || caption || 'Fotografía promocional profesional',
+                        idea: imagePromptIdea,
                         rubro: targetProfile?.rubro || 'General',
                         businessName: targetProfile?.name || '',
                         businessDescription: targetProfile?.businessDescription || '',
