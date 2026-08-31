@@ -262,6 +262,7 @@ function VideoPoCContent() {
           idea: topic,
           rubro: rubro,
           businessName: activeProfile?.name || "",
+          targetProfile: activeProfile,
           networks: selectedNetworks.length > 0 ? selectedNetworks : ["tiktok", "instagram", "youtube"],
           visualDirection: visualDirection || "",
           catalogoItem: selectedData ? {

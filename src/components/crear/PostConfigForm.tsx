@@ -46,12 +46,24 @@ interface PostConfigFormProps {
   setDate: (val: string) => void;
   time: string;
   setTime: (val: string) => void;
-  networks: { facebook: boolean; instagram: boolean; linkedin?: boolean; tiktok: boolean; googleBusiness: boolean; youtube?: boolean; x?: boolean };
-  setNetworks: React.Dispatch<React.SetStateAction<{ facebook: boolean; instagram: boolean; linkedin?: boolean; tiktok: boolean; googleBusiness: boolean; youtube?: boolean; x?: boolean }>>;
-
-  // TikTok Direct Post configuration
+  networks: {
+    facebook: boolean;
+    instagram: boolean;
+    linkedin: boolean;
+    tiktok: boolean;
+    googleBusiness: boolean;
+    youtube: boolean;
+    x: boolean;
+  };
+  setNetworks: (val: any) => void;
   tiktokSettings?: TikTokSettingsState;
   setTiktokSettings?: (val: TikTokSettingsState) => void;
+
+  // Website Link Attachment
+  attachWebsiteLink?: boolean;
+  setAttachWebsiteLink?: (val: boolean) => void;
+  websiteUrl?: string;
+  setWebsiteUrl?: (val: string) => void;
 
   // Poster configuration (For references/logo defaults)
   posterConfig?: PosterConfig;
@@ -128,7 +140,12 @@ export default function PostConfigForm({
   date, setDate,
   time, setTime,
   networks, setNetworks,
-  tiktokSettings, setTiktokSettings,
+  tiktokSettings,
+  setTiktokSettings,
+  attachWebsiteLink = false,
+  setAttachWebsiteLink,
+  websiteUrl = "",
+  setWebsiteUrl,
   hasFb, hasIg, hasLi, hasTt, hasGbp, hasYt, hasX,
   posterConfig,
   needsConnection,
@@ -373,6 +390,58 @@ export default function PostConfigForm({
              </div>
           </div>
         )}
+
+        {/* ENLACE A LA WEB */}
+        <div className="pt-3 border-t border-slate-100 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <div>
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] flex items-center gap-1.5">
+                <span>🌐</span> Enlace Web de la Publicación
+              </label>
+              <p className="text-[10px] text-slate-400 font-medium">
+                {attachWebsiteLink ? "Adjuntando enlace directo a tu web" : "Sin enlace web adjunto"}
+              </p>
+            </div>
+            {setAttachWebsiteLink && (
+              <button
+                type="button"
+                onClick={() => setAttachWebsiteLink(!attachWebsiteLink)}
+                className={`w-9 h-5 rounded-full p-0.5 transition-colors shrink-0 ${
+                  attachWebsiteLink ? "bg-indigo-600" : "bg-slate-300"
+                }`}
+                title={attachWebsiteLink ? "Desactivar enlace" : "Activar enlace"}
+              >
+                <div
+                  className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
+                    attachWebsiteLink ? "translate-x-4" : "translate-x-0"
+                  }`}
+                />
+              </button>
+            )}
+          </div>
+
+          {attachWebsiteLink && (
+            <div className="space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
+              <input
+                type="text"
+                value={websiteUrl || ""}
+                onChange={(e) => setWebsiteUrl?.(e.target.value)}
+                placeholder="https://tu-sitio-web.com"
+                className="w-full bg-slate-50 border border-slate-200 px-3.5 py-2.5 rounded-xl outline-none text-xs font-bold text-slate-700 focus:border-indigo-500 focus:bg-white transition-all shadow-inner"
+              />
+              <div className="flex flex-col gap-1 text-[10px] text-slate-500">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+                  <span><strong>Facebook:</strong> Enlace cliqueable directo en el post</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-500 shrink-0" />
+                  <span><strong>Instagram:</strong> Llamada a la acción al enlace de tu perfil (Bio)</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* TIKTOK DIRECT POST SETTINGS */}
         {networks.tiktok && tiktokSettings && setTiktokSettings && (

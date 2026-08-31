@@ -32,11 +32,16 @@ export default function TabContacto({
         </div>
         <div className="grid md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">🌐 Sitio Web</label>
-            <input type="text" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="mi-negocio.com o enlace" className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700" />
-            <label className="flex items-center gap-2 mt-2 cursor-pointer group">
-              <input type="checkbox" checked={includeWebsiteInCopy} onChange={(e) => setIncludeWebsiteInCopy(e.target.checked)} className="w-4 h-4 text-indigo-600 bg-slate-100 border-slate-300 rounded focus:ring-indigo-500 focus:ring-2" />
-              <span className="text-[11px] font-bold text-slate-500 group-hover:text-slate-700 transition-colors">Incluir en publicaciones automáticas</span>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">🌐 Sitio Web o Enlace de Acceso</label>
+            <input type="text" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://tu-sitio-web.com" className="w-full bg-slate-50 border-2 border-slate-100 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/50 outline-none text-sm font-bold transition-all text-slate-700" />
+            <label className="flex items-start gap-3 mt-3 cursor-pointer group p-3.5 bg-indigo-50/70 hover:bg-indigo-50 rounded-2xl border border-indigo-100 transition-all">
+              <input type="checkbox" checked={includeWebsiteInCopy} onChange={(e) => setIncludeWebsiteInCopy(e.target.checked)} className="mt-0.5 w-4 h-4 text-indigo-600 bg-white border-slate-300 rounded focus:ring-indigo-500 focus:ring-2" />
+              <div>
+                <span className="text-xs font-bold text-slate-800 block">Adjuntar enlace web por defecto en cada nuevo post</span>
+                <p className="text-[11px] text-slate-500 leading-tight mt-0.5">
+                  En <strong>Facebook</strong> se inserta como enlace directo cliqueable y en <strong>Instagram</strong> como llamada al link en bio. Podrás activar/desactivar o cambiar la URL para cada post individualmente.
+                </p>
+              </div>
             </label>
           </div>
           <div className="grid grid-cols-2 gap-4">

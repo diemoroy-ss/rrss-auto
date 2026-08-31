@@ -132,6 +132,10 @@ export default function RrssCreatePost() {
   const [catalogoItems, setCatalogoItems] = useState<any[]>([]);
   const [selectedCatalogoItem, setSelectedCatalogoItem] = useState<any | null>(null);
 
+  // Website Link Attachment
+  const [attachWebsiteLink, setAttachWebsiteLink] = useState(true);
+  const [websiteUrl, setWebsiteUrl] = useState("");
+
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async u => {
       setUser(u);
@@ -165,6 +169,10 @@ export default function RrssCreatePost() {
             setBusinessType(activeProfile?.rubro || (isDefault ? data.rubro : "") || "");
             setUserLogo(activeProfile?.logoUrl || (isDefault ? data.logoUrl : "") || "");
             setIncludeLogo(activeProfile?.alwaysIncludeLogo === true);
+
+            const defaultWeb = activeProfile?.website || (isDefault ? data.website : "") || "";
+            setWebsiteUrl(defaultWeb);
+            setAttachWebsiteLink(activeProfile?.includeWebsiteInCopy !== false && Boolean(defaultWeb));
             
             if (activeProfile?.tiktokDefaults) {
               setTiktokSettings(activeProfile.tiktokDefaults);
@@ -1037,8 +1045,10 @@ export default function RrssCreatePost() {
         creationMode,
         idea: creationMode === 'ai' ? idea : "",
         imageExpectation: creationMode === 'ai' ? imageExpectation : "",
-        postText: appendContactInfo(finalCaption),
+        postText: appendContactInfo(finalCaption, { ...activeProfile, website: websiteUrl, includeWebsiteInCopy: attachWebsiteLink }),
         isCopyFinalized: true, // Prevents publish-now from overwriting with generic AI copy
+        attachWebsiteLink,
+        websiteUrl: attachWebsiteLink ? (websiteUrl.trim() || activeProfile?.website || "") : "",
         postType,
         carouselCount: postType === 'Carrusel' ? carouselCount : 1,
         networks: Object.entries(networks).filter(([_, isActive]) => isActive).map(([net]) => net),
@@ -1254,6 +1264,8 @@ export default function RrssCreatePost() {
               time={time} setTime={setTime}
               networks={networks} setNetworks={setNetworks}
               tiktokSettings={tiktokSettings} setTiktokSettings={setTiktokSettings}
+              attachWebsiteLink={attachWebsiteLink} setAttachWebsiteLink={setAttachWebsiteLink}
+              websiteUrl={websiteUrl} setWebsiteUrl={setWebsiteUrl}
               hasFb={hasFb} hasIg={hasIg} hasLi={hasLi} hasTt={hasTt} hasGbp={hasGbp} hasYt={hasYt} hasX={hasX}
               needsConnection={needsConnection}
               handleImproveWithAI={handleImproveWithAI}
@@ -1301,6 +1313,8 @@ export default function RrssCreatePost() {
             time={time} setTime={setTime}
             networks={networks} setNetworks={setNetworks}
             tiktokSettings={tiktokSettings} setTiktokSettings={setTiktokSettings}
+            attachWebsiteLink={attachWebsiteLink} setAttachWebsiteLink={setAttachWebsiteLink}
+            websiteUrl={websiteUrl} setWebsiteUrl={setWebsiteUrl}
             hasFb={hasFb} hasIg={hasIg} hasLi={hasLi} hasTt={hasTt} hasGbp={hasGbp} hasYt={hasYt} hasX={hasX}
             needsConnection={needsConnection}
             handleImproveWithAI={handleImproveWithAI}
