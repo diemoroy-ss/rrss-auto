@@ -30,7 +30,9 @@ export default function BrandFooter() {
           <div className="footer-ecosystem-badge rrss-badge-footer">
             <span className="rrss-dot-pulse"></span>
             <span>PARTE DEL ECOSISTEMA SANTISOFT</span>
-          </div>          {/* Iconos de Redes Sociales */}
+          </div>
+
+          {/* Iconos de Redes Sociales */}
           <div className="flex items-center gap-3 mt-4">
             <a
               href="https://www.instagram.com/santisoftai/"
@@ -145,7 +147,7 @@ export default function BrandFooter() {
                 </a>
               </li>
             </ul>
-          </div>       </div>
+          </div>
 
           <div className="footer-col">
             <h4 className="footer-col-title">EXPLORAR</h4>
