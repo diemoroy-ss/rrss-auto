@@ -8,6 +8,7 @@ import { useProfile } from "../../../../contexts/ProfileContext";
 import Link from "next/link";
 import RemotionReelPlayer from "../../../../components/video/RemotionReelPlayer";
 import { VideoComposition } from "../../../../lib/video-poc-service";
+import TikTokPostSettings, { TikTokSettingsState, DEFAULT_TIKTOK_SETTINGS } from "../../../../components/crear/TikTokPostSettings";
 
 
 function VideoPoCContent() {
@@ -86,6 +87,7 @@ function VideoPoCContent() {
   const [isScheduling, setIsScheduling] = useState<boolean>(false);
   const [isPublishingNow, setIsPublishingNow] = useState<boolean>(false);
   const [scheduleSuccess, setScheduleSuccess] = useState<string>("");
+  const [tiktokSettings, setTiktokSettings] = useState<TikTokSettingsState>(DEFAULT_TIKTOK_SETTINGS);
 
   const [isGeneratingCopy, setIsGeneratingCopy] = useState<boolean>(false);
 
@@ -142,7 +144,13 @@ function VideoPoCContent() {
     if (hasTt) connected.push("tiktok");
     if (hasYt) connected.push("youtube");
     setSelectedNetworks(connected);
-  }, [hasIg, hasTt, hasYt]);
+
+    if (activeProfile?.tiktokDefaults) {
+      setTiktokSettings(activeProfile.tiktokDefaults);
+    } else if (userDoc?.tiktokDefaults && isDefault) {
+      setTiktokSettings(userDoc.tiktokDefaults);
+    }
+  }, [hasIg, hasTt, hasYt, activeProfile?.tiktokDefaults, userDoc?.tiktokDefaults, isDefault]);
 
   // Precargar imágenes de las escenas cuando la composición cambia
   useEffect(() => {
@@ -347,6 +355,15 @@ function VideoPoCContent() {
         videoUrl: finalVideoUrl,
         mediaUrl: finalVideoUrl,
         imageUrl: composition.scenes[0]?.bgImageUrl || "",
+        // TikTok Direct Post settings
+        tiktokPrivacyLevel: tiktokSettings.privacyLevel,
+        tiktokAllowComment: tiktokSettings.allowComment,
+        tiktokAllowDuet: tiktokSettings.allowDuet,
+        tiktokAllowStitch: tiktokSettings.allowStitch,
+        tiktokContentDisclosure: tiktokSettings.contentDisclosure,
+        tiktokYourBrand: tiktokSettings.yourBrand,
+        tiktokBrandedContent: tiktokSettings.brandedContent,
+        tiktokIsAigc: tiktokSettings.isAigc,
         createdAt: serverTimestamp(),
       });
 
@@ -422,6 +439,15 @@ function VideoPoCContent() {
         videoUrl: finalVideoUrl,
         mediaUrl: finalVideoUrl,
         imageUrl: composition.scenes[0]?.bgImageUrl || "",
+        // TikTok Direct Post settings
+        tiktokPrivacyLevel: tiktokSettings.privacyLevel,
+        tiktokAllowComment: tiktokSettings.allowComment,
+        tiktokAllowDuet: tiktokSettings.allowDuet,
+        tiktokAllowStitch: tiktokSettings.allowStitch,
+        tiktokContentDisclosure: tiktokSettings.contentDisclosure,
+        tiktokYourBrand: tiktokSettings.yourBrand,
+        tiktokBrandedContent: tiktokSettings.brandedContent,
+        tiktokIsAigc: tiktokSettings.isAigc,
         createdAt: serverTimestamp(),
       });
 
@@ -1119,6 +1145,17 @@ function VideoPoCContent() {
                   </div>
                 )}
               </div>
+
+              {/* TikTok Direct Post settings (if TikTok selected) */}
+              {selectedNetworks.includes("tiktok") && (
+                <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                  <TikTokPostSettings
+                    settings={tiktokSettings}
+                    onChange={setTiktokSettings}
+                    isDefaultConfig={false}
+                  />
+                </div>
+              )}
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100">

@@ -11,6 +11,7 @@ import StatusModal from "../../../../components/StatusModal";
 import TabMarca from "./TabMarca";
 import TabContacto from "./TabContacto";
 import TabConexiones from "./TabConexiones";
+import TikTokPostSettings, { TikTokSettingsState, DEFAULT_TIKTOK_SETTINGS } from "../../../../components/crear/TikTokPostSettings";
 
 function getExpirationText(timestamp?: number) {
   if (!timestamp) return { text: "Vigencia Desconocida", color: "text-slate-500", bg: "bg-slate-100", isExpired: false, isUnknown: true };
@@ -192,6 +193,79 @@ function LinkedInSelectionModal({ isOpen, onClose, onSelect, profileId }: any) {
   );
 }
 
+function TikTokDefaultSettingsModal({ isOpen, onClose, initialSettings, onSave }: {
+  isOpen: boolean;
+  onClose: () => void;
+  initialSettings: TikTokSettingsState;
+  onSave: (settings: TikTokSettingsState) => Promise<void>;
+}) {
+  const [settings, setSettings] = useState<TikTokSettingsState>(initialSettings);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setSettings(initialSettings);
+    }
+  }, [isOpen, initialSettings]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
+      <div className="bg-slate-950 border border-slate-800 rounded-3xl p-6 max-w-xl w-full shadow-2xl space-y-6 my-8 animate-in fade-in zoom-in duration-200">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div className="flex items-center gap-2.5">
+            <span className="text-2xl">🎵</span>
+            <div>
+              <h3 className="text-lg font-black text-white">Preferencias de TikTok Direct Post</h3>
+              <p className="text-xs text-slate-400 font-medium">Configura los valores predeterminados para todas tus publicaciones en TikTok.</p>
+            </div>
+          </div>
+          <button 
+            type="button"
+            onClick={onClose} 
+            className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center font-bold"
+          >
+            ✕
+          </button>
+        </div>
+
+        <TikTokPostSettings
+          settings={settings}
+          onChange={setSettings}
+          isDefaultConfig={true}
+        />
+
+        <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-5 py-2.5 rounded-xl font-bold text-slate-400 hover:bg-slate-800 transition-colors text-xs"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            disabled={saving}
+            onClick={async () => {
+              setSaving(true);
+              try {
+                await onSave(settings);
+                onClose();
+              } finally {
+                setSaving(false);
+              }
+            }}
+            className="px-6 py-2.5 rounded-xl font-bold text-slate-950 bg-cyan-400 hover:bg-cyan-300 disabled:opacity-50 transition-all text-xs flex items-center gap-2 shadow-lg shadow-cyan-500/20"
+          >
+            {saving ? <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" /> : "💾 Guardar Preferencias"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 function ConfigContent() {
   const { activeProfile, loadProfiles, isBusiness, planConfig } = useProfile();
@@ -205,6 +279,7 @@ function ConfigContent() {
   const [success, setSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [message, setMessage] = useState<{type: 'success' | 'error' | 'info', text: string} | null>(null);
+  const [showTikTokModal, setShowTikTokModal] = useState(false);
 
   const [modal, setModal] = useState<{
     isOpen: boolean;
@@ -897,6 +972,7 @@ function ConfigContent() {
           handleConnectGBP={handleConnectGBP}
           handleDisconnectGBP={handleDisconnectGBP}
           setShowMetaModal={setShowMetaModal}
+          setShowTikTokModal={setShowTikTokModal}
         />
       )}
 
@@ -906,6 +982,12 @@ function ConfigContent() {
       />
       <MetaSelectionModal isOpen={showMetaModal} onClose={() => setShowMetaModal(false)} profileId={activeProfile?.id} onSelect={saveMetaSelection} />
       <LinkedInSelectionModal isOpen={showLinkedInModal} onClose={() => setShowLinkedInModal(false)} profileId={activeProfile?.id} onSelect={saveLinkedInSelection} />
+      <TikTokDefaultSettingsModal 
+        isOpen={showTikTokModal} 
+        onClose={() => setShowTikTokModal(false)} 
+        initialSettings={activeProfile?.tiktokDefaults || DEFAULT_TIKTOK_SETTINGS} 
+        onSave={saveTikTokDefaults} 
+      />
     </div>
   );
 }

@@ -31,6 +31,7 @@ interface TabConexionesProps {
   handleConnectGBP: () => void;
   handleDisconnectGBP: () => void;
   setShowMetaModal: (v: boolean) => void;
+  setShowTikTokModal?: (v: boolean) => void;
 }
 
 export default function TabConexiones({
@@ -41,6 +42,7 @@ export default function TabConexiones({
   handleConnectX, handleDisconnectX,
   handleConnectGBP, handleDisconnectGBP,
   setShowMetaModal,
+  setShowTikTokModal,
 }: TabConexionesProps) {
   return (
     <div className="bg-white p-8 rounded-[32px] border-2 border-slate-100 shadow-xl shadow-slate-200/50">
@@ -118,13 +120,35 @@ export default function TabConexiones({
                 {(() => { const e = getExpirationText(activeProfile?.tiktokTokenExpiresAt); return <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${e.bg} ${e.color} whitespace-nowrap ml-2`}>{e.text}</span>; })()}
               </div>
               {activeProfile?.tiktokUsername && <div className="mb-3 p-3 bg-white border border-slate-100 rounded-xl shadow-sm"><div className="text-[11px] font-bold text-slate-700 flex items-center gap-2"><span>🎵</span><span className="text-slate-400">Perfil:</span><span className="truncate">{activeProfile.tiktokUsername}</span></div></div>}
-              <div className="flex gap-2">
-                <button type="button" onClick={handleConnectTikTok} className="flex-1 bg-white border-2 border-slate-200 hover:border-black text-slate-700 text-xs font-bold py-2 rounded-xl transition-colors">Actualizar</button>
-                <button type="button" onClick={handleDisconnectTt} className="px-3 bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold rounded-xl text-xs transition-colors">X</button>
+              <div className="flex flex-col gap-2">
+                {setShowTikTokModal && (
+                  <button 
+                    type="button" 
+                    onClick={() => setShowTikTokModal(true)} 
+                    className="w-full bg-slate-900 hover:bg-black text-white text-[11px] font-bold py-2 px-3 rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-sm shadow-slate-900/10"
+                  >
+                    <span>⚙️</span> Preferencias Direct Post
+                  </button>
+                )}
+                <div className="flex gap-2">
+                  <button type="button" onClick={handleConnectTikTok} className="flex-1 bg-white border-2 border-slate-200 hover:border-black text-slate-700 text-xs font-bold py-2 rounded-xl transition-colors">Actualizar</button>
+                  <button type="button" onClick={handleDisconnectTt} className="px-3 bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold rounded-xl text-xs transition-colors">X</button>
+                </div>
               </div>
             </div>
           ) : isAdmin ? (
-            <button type="button" onClick={handleConnectTikTok} className="w-full bg-black hover:bg-slate-900 text-white font-bold py-2.5 rounded-xl shadow-md text-sm transition-colors mt-auto">Conectar con TikTok</button>
+            <div className="flex flex-col gap-2 mt-auto">
+              <button type="button" onClick={handleConnectTikTok} className="w-full bg-black hover:bg-slate-900 text-white font-bold py-2.5 rounded-xl shadow-md text-sm transition-colors">Conectar con TikTok</button>
+              {setShowTikTokModal && (
+                <button 
+                  type="button" 
+                  onClick={() => setShowTikTokModal(true)} 
+                  className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-xl text-xs transition-colors flex items-center justify-center gap-1"
+                >
+                  <span>⚙️</span> Preferencias por Defecto
+                </button>
+              )}
+            </div>
           ) : (
             <button type="button" disabled className="w-full bg-slate-100 text-slate-400 font-bold py-2.5 rounded-xl text-sm mt-auto cursor-not-allowed border border-slate-200">Próximamente</button>
           )}

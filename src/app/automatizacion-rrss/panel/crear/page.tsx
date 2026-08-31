@@ -20,6 +20,7 @@ import AIOptionsModal from "../../../../components/crear/AIOptionsModal";
 import PosterSection from "../../../../components/crear/PosterSection";
 import GeneratingModal, { type GeneratingStep } from "../../../../components/crear/GeneratingModal";
 import { FaFacebookF, FaInstagram, FaLinkedinIn, FaTiktok, FaGoogle, FaYoutube, FaTwitter } from "react-icons/fa";
+import TikTokPostSettings, { TikTokSettingsState, DEFAULT_TIKTOK_SETTINGS } from "../../../../components/crear/TikTokPostSettings";
 
 export interface UserTemplate { id: string; url: string; type?: 'image' | 'video'; createdAt: Date; }
 
@@ -63,6 +64,7 @@ export default function RrssCreatePost() {
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [networks, setNetworks] = useState({ facebook: true, instagram: true, linkedin: false, tiktok: true, googleBusiness: true, youtube: true, x: true });
+  const [tiktokSettings, setTiktokSettings] = useState<TikTokSettingsState>(DEFAULT_TIKTOK_SETTINGS);
 
   // Wizard state
   const [previewSlides, setPreviewSlides] = useState<CarouselSlide[]>([]);
@@ -163,6 +165,12 @@ export default function RrssCreatePost() {
             setBusinessType(activeProfile?.rubro || (isDefault ? data.rubro : "") || "");
             setUserLogo(activeProfile?.logoUrl || (isDefault ? data.logoUrl : "") || "");
             setIncludeLogo(activeProfile?.alwaysIncludeLogo === true);
+            
+            if (activeProfile?.tiktokDefaults) {
+              setTiktokSettings(activeProfile.tiktokDefaults);
+            } else if (data.tiktokDefaults && isDefault) {
+              setTiktokSettings(data.tiktokDefaults);
+            }
             
             setNetworks({ facebook: fbOK, instagram: igOK, linkedin: false, tiktok: ttOK, googleBusiness: gbpOK, youtube: ytOK, x: xOK });
             
@@ -1042,6 +1050,15 @@ export default function RrssCreatePost() {
         // Si hay cartel
         posterConfig: posterConfig.enabled ? posterConfig : null,
         includeLogo: includeLogo,
+        // TikTok Direct Post settings
+        tiktokPrivacyLevel: tiktokSettings.privacyLevel,
+        tiktokAllowComment: tiktokSettings.allowComment,
+        tiktokAllowDuet: tiktokSettings.allowDuet,
+        tiktokAllowStitch: tiktokSettings.allowStitch,
+        tiktokContentDisclosure: tiktokSettings.contentDisclosure,
+        tiktokYourBrand: tiktokSettings.yourBrand,
+        tiktokBrandedContent: tiktokSettings.brandedContent,
+        tiktokIsAigc: tiktokSettings.isAigc,
       };
 
       const newPostRef = await addDoc(collection(db, "social_posts"), postPayload);
@@ -1236,6 +1253,7 @@ export default function RrssCreatePost() {
               date={date} setDate={setDate}
               time={time} setTime={setTime}
               networks={networks} setNetworks={setNetworks}
+              tiktokSettings={tiktokSettings} setTiktokSettings={setTiktokSettings}
               hasFb={hasFb} hasIg={hasIg} hasLi={hasLi} hasTt={hasTt} hasGbp={hasGbp} hasYt={hasYt} hasX={hasX}
               needsConnection={needsConnection}
               handleImproveWithAI={handleImproveWithAI}
@@ -1282,6 +1300,7 @@ export default function RrssCreatePost() {
             date={date} setDate={setDate}
             time={time} setTime={setTime}
             networks={networks} setNetworks={setNetworks}
+            tiktokSettings={tiktokSettings} setTiktokSettings={setTiktokSettings}
             hasFb={hasFb} hasIg={hasIg} hasLi={hasLi} hasTt={hasTt} hasGbp={hasGbp} hasYt={hasYt} hasX={hasX}
             needsConnection={needsConnection}
             handleImproveWithAI={handleImproveWithAI}
@@ -1939,6 +1958,17 @@ export default function RrssCreatePost() {
                     )}
                  </div>
               </div>
+
+              {/* TikTok Settings (if TikTok is selected) */}
+              {networks.tiktok && (
+                <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                  <TikTokPostSettings
+                    settings={tiktokSettings}
+                    onChange={setTiktokSettings}
+                    isDefaultConfig={false}
+                  />
+                </div>
+              )}
 
               {/* Copy */}
               <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 shadow-inner relative flex flex-col">

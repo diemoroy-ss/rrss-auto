@@ -1,4 +1,4 @@
-﻿export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import { adminDb } from '../../../lib/firebase-admin';
@@ -147,10 +147,14 @@ export async function GET(req: Request) {
                 imageUrl: postData.imageUrl || '',
                 videoUrl: postData.videoUrl || postData.imageUrl || '',
                 // TikTok-specific compliance fields (Direct Post API requirements)
-                tiktok_privacy_level: 'PUBLIC_TO_EVERYONE',
-                tiktok_disable_duet: false,
-                tiktok_disable_comment: false,
-                tiktok_disable_stitch: false,
+                tiktok_privacy_level: postData.tiktokPrivacyLevel || 'PUBLIC_TO_EVERYONE',
+                tiktok_disable_duet: postData.tiktokAllowDuet !== undefined ? !postData.tiktokAllowDuet : false,
+                tiktok_disable_comment: postData.tiktokAllowComment !== undefined ? !postData.tiktokAllowComment : false,
+                tiktok_disable_stitch: postData.tiktokAllowStitch !== undefined ? !postData.tiktokAllowStitch : false,
+                tiktok_content_disclosure: postData.tiktokContentDisclosure || false,
+                tiktok_your_brand: postData.tiktokYourBrand || false,
+                tiktok_branded_content: postData.tiktokBrandedContent || false,
+                tiktok_is_aigc: postData.tiktokIsAigc || false,
                 credentials
             });
             

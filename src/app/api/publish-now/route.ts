@@ -938,6 +938,27 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
                 
                 console.log(`[TikTok Publish] Video downloaded. Size: ${videoSize} bytes`);
 
+                const privacyLevel = post.tiktokPrivacyLevel || "PUBLIC_TO_EVERYONE";
+                const disableComment = post.tiktokAllowComment !== undefined ? !post.tiktokAllowComment : false;
+                const disableDuet = post.tiktokAllowDuet !== undefined ? !post.tiktokAllowDuet : false;
+                const disableStitch = post.tiktokAllowStitch !== undefined ? !post.tiktokAllowStitch : false;
+
+                const postInfo: any = {
+                    title: (post.copiesByNetwork?.tiktok || post.tiktokCopy || caption).slice(0, 150).trim() || 'Publicación',
+                    privacy_level: privacyLevel,
+                    disable_comment: disableComment,
+                    disable_duet: disableDuet,
+                    disable_stitch: disableStitch
+                };
+
+                if (post.tiktokContentDisclosure) {
+                    if (post.tiktokYourBrand) postInfo.brand_organic_toggle = true;
+                    if (post.tiktokBrandedContent) postInfo.brand_content_toggle = true;
+                }
+                if (post.tiktokIsAigc) {
+                    postInfo.is_aigc = true;
+                }
+
                 let initRes = await fetch("https://open.tiktokapis.com/v2/post/publish/video/init/", {
                     method: 'POST',
                     headers: {
@@ -945,13 +966,7 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        post_info: {
-                            title: (post.copiesByNetwork?.tiktok || post.tiktokCopy || caption).slice(0, 150).trim() || 'Publicación',
-                            privacy_level: "PUBLIC_TO_EVERYONE",
-                            disable_comment: false,
-                            disable_duet: false,
-                            disable_stitch: false
-                        },
+                        post_info: postInfo,
                         source_info: {
                             source: "FILE_UPLOAD",
                             video_size: videoSize,
@@ -974,6 +989,7 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
 
                 if (isGuidelinesError) {
                     console.warn('[TikTok Publish] Detected Sandbox mode or private account requirement. Retrying with SELF_ONLY privacy level...');
+                    const sandboxPostInfo = { ...postInfo, privacy_level: "SELF_ONLY" };
                     initRes = await fetch("https://open.tiktokapis.com/v2/post/publish/video/init/", {
                         method: 'POST',
                         headers: {
@@ -981,13 +997,7 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({
-                            post_info: {
-                                title: caption.slice(0, 150) || 'Publicación',
-                                privacy_level: "SELF_ONLY",
-                                disable_comment: false,
-                                disable_duet: false,
-                                disable_stitch: false
-                            },
+                            post_info: sandboxPostInfo,
                             source_info: {
                                 source: "FILE_UPLOAD",
                                 video_size: videoSize,

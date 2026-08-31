@@ -8,6 +8,7 @@ import Link from "next/link";
 import { type PosterConfig } from "../../types/poster";
 import { UserTemplate } from "../../app/automatizacion-rrss/panel/crear/page";
 import { FaFacebookF, FaInstagram, FaLinkedinIn, FaTiktok, FaGoogle, FaYoutube, FaTwitter } from "react-icons/fa";
+import TikTokPostSettings, { TikTokSettingsState } from "./TikTokPostSettings";
 
 interface PostConfigFormProps {
   // AI states
@@ -47,6 +48,10 @@ interface PostConfigFormProps {
   setTime: (val: string) => void;
   networks: { facebook: boolean; instagram: boolean; linkedin?: boolean; tiktok: boolean; googleBusiness: boolean; youtube?: boolean; x?: boolean };
   setNetworks: React.Dispatch<React.SetStateAction<{ facebook: boolean; instagram: boolean; linkedin?: boolean; tiktok: boolean; googleBusiness: boolean; youtube?: boolean; x?: boolean }>>;
+
+  // TikTok Direct Post configuration
+  tiktokSettings?: TikTokSettingsState;
+  setTiktokSettings?: (val: TikTokSettingsState) => void;
 
   // Poster configuration (For references/logo defaults)
   posterConfig?: PosterConfig;
@@ -123,6 +128,7 @@ export default function PostConfigForm({
   date, setDate,
   time, setTime,
   networks, setNetworks,
+  tiktokSettings, setTiktokSettings,
   hasFb, hasIg, hasLi, hasTt, hasGbp, hasYt, hasX,
   posterConfig,
   needsConnection,
@@ -365,6 +371,17 @@ export default function PostConfigForm({
                 />
                 <span className="text-xs font-black text-indigo-700">{carouselCount}</span>
              </div>
+          </div>
+        )}
+
+        {/* TIKTOK DIRECT POST SETTINGS */}
+        {networks.tiktok && tiktokSettings && setTiktokSettings && (
+          <div className="animate-in fade-in slide-in-from-top-2 duration-300 pt-2">
+            <TikTokPostSettings
+              settings={tiktokSettings}
+              onChange={setTiktokSettings}
+              isDefaultConfig={false}
+            />
           </div>
         )}
       </div>
