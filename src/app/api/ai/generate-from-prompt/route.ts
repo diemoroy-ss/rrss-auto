@@ -1,4 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { analyzeAndAnchorProductPrompt } from "../../../../lib/agents/agent-product-vision";
+
+export const runtime = "nodejs";
+export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
     try {
@@ -12,21 +16,41 @@ export async function POST(req: NextRequest) {
             businessType,
             isCommercialPoster
         } = body;
+
+        let enrichedPrompt = promptText || "";
+        let productAnalysis = null;
+
+        // Si se envió una imagen base, nuestro Agente Revisor de Producto inspecciona y fusiona el prompt
+        if (baseImageUrl && typeof baseImageUrl === "string" && baseImageUrl.startsWith("http")) {
+            console.log(`[GENERATE-FROM-PROMPT] Invoking Agent Visual Product Reviewer on base image:`, baseImageUrl);
+            const agentResult = await analyzeAndAnchorProductPrompt(
+                baseImageUrl,
+                promptText || "",
+                businessType
+            );
+            enrichedPrompt = agentResult.enrichedPrompt;
+            productAnalysis = agentResult.analysis;
+        }
         
         // Define the webhook URL explicitly requested for this feature (Production mode)
         const n8nUrl = 'https://n8n.santisoft.cl/webhook/img-prompts';
 
         const n8nPayload = {
-            promptText: promptText || "",
+            promptText: enrichedPrompt,
             baseImageUrl: baseImageUrl || "",
             templateId: templateId || "",
             email,
             profileId,
             businessType,
-            isCommercialPoster: isCommercialPoster || false
+            isCommercialPoster: isCommercialPoster || false,
+            productAnalysis: productAnalysis || null
         };
 
-        console.log(`[GENERATE-FROM-PROMPT] Sending to n8n:`, n8nPayload);
+        console.log(`[GENERATE-FROM-PROMPT] Sending enriched payload to n8n:`, {
+            productDetected: productAnalysis?.productType || "N/A",
+            promptLength: enrichedPrompt.length,
+            hasBaseImage: !!baseImageUrl
+        });
 
         const response = await fetch(n8nUrl, {
             method: 'POST',
@@ -42,7 +66,10 @@ export async function POST(req: NextRequest) {
         }
 
         const data = await response.json();
-        return NextResponse.json(data);
+        return NextResponse.json({
+            ...data,
+            productAnalysis
+        });
 
     } catch (err: any) {
         console.error("[GENERATE-FROM-PROMPT API Error]:", err);

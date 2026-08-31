@@ -385,6 +385,14 @@ export default function RrssCreatePost() {
            businessType,
            postType,
            posterConfig,
+           businessData: {
+             phone: activeProfile?.phone,
+             whatsapp: activeProfile?.whatsapp || activeProfile?.phone,
+             email: activeProfile?.email,
+             website: activeProfile?.website,
+             address: activeProfile?.address,
+             businessName: activeProfile?.name || activeProfile?.businessName
+           },
            maxWords: postType === 'Historia' ? 30 : 150
         })
       });
@@ -1021,7 +1029,7 @@ export default function RrssCreatePost() {
         creationMode,
         idea: creationMode === 'ai' ? idea : "",
         imageExpectation: creationMode === 'ai' ? imageExpectation : "",
-        postText: finalCaption,
+        postText: appendContactInfo(finalCaption),
         isCopyFinalized: true, // Prevents publish-now from overwriting with generic AI copy
         postType,
         carouselCount: postType === 'Carrusel' ? carouselCount : 1,

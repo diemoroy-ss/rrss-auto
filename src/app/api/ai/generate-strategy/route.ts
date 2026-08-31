@@ -4,7 +4,22 @@ import { adminDb } from '../../../../lib/firebase-admin';
 
 export async function POST(req: NextRequest) {
   try {
-    const { goal, goalName, businessType, userId, expectations, promotions, businessData, connectedPlatforms, nicheContext, postsPerWeek, catalogoItems } = await req.json();
+    const { 
+      goal, 
+      goalName, 
+      businessType, 
+      userId, 
+      expectations, 
+      promotions, 
+      businessData, 
+      connectedPlatforms, 
+      nicheContext, 
+      postsPerWeek, 
+      catalogoItems, 
+      catalogUsage,
+      selectedPromptStyles,
+      usePromptStyles
+    } = await req.json();
 
     if (!goal) {
       return NextResponse.json({ error: "Goal is required" }, { status: 400 });
@@ -71,6 +86,16 @@ export async function POST(req: NextRequest) {
     } catch (e: any) {
         console.warn("[STRATEGY] Error fetching user history:", e.message);
     }
+
+    const promptStylesToPass = (usePromptStyles !== false && Array.isArray(selectedPromptStyles))
+        ? selectedPromptStyles.map((s: any) => ({
+            id: s.id,
+            title: s.title,
+            category: s.category,
+            description: s.description,
+            previewUrl: s.previewUrl || ""
+        }))
+        : [];
     
     const result = await runProfessionalStrategyWorkflow(
         businessType || "General",
@@ -80,7 +105,9 @@ export async function POST(req: NextRequest) {
         history,
         enrichedNicheContext,
         postsPerWeek || 5,
-        promotions || ""
+        promotions || "",
+        promptStylesToPass,
+        businessData || {}
     );
 
     console.log("[STRATEGY] LangGraph Strategy generated successfully.");

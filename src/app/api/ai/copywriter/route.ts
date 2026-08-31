@@ -11,6 +11,7 @@ export async function POST(req: NextRequest) {
       businessType,
       postType,
       posterConfig,
+      businessData,
       maxWords = 150
     }: {
       prompt?: string;
@@ -18,6 +19,14 @@ export async function POST(req: NextRequest) {
       businessType?: string;
       postType?: string;
       posterConfig?: PosterConfig | null;
+      businessData?: {
+        phone?: string;
+        whatsapp?: string;
+        email?: string;
+        website?: string;
+        address?: string;
+        businessName?: string;
+      } | null;
       maxWords?: number;
     } = body;
 
@@ -36,21 +45,37 @@ export async function POST(req: NextRequest) {
       `.trim();
     }
 
+    // Construir contexto de datos de contacto de la empresa
+    let contactContext = "";
+    if (businessData) {
+      const parts: string[] = [];
+      if (businessData.businessName) parts.push(`- Nombre Empresa: ${businessData.businessName}`);
+      const wa = businessData.whatsapp || businessData.phone;
+      if (wa) parts.push(`- WhatsApp / Teléfono: ${wa}`);
+      if (businessData.website) parts.push(`- Web: ${businessData.website}`);
+      if (businessData.email) parts.push(`- Email: ${businessData.email}`);
+      if (businessData.address) parts.push(`- Ubicación: ${businessData.address}`);
+      if (parts.length > 0) {
+        contactContext = `\n[Datos de Contacto de la Empresa (OBLIGATORIO incluir en el cierre o llamado a la acción de cada opción)]:\n${parts.join('\n')}`;
+      }
+    }
+
     const systemInstruction = `Eres un redactor creativo, copywriter profesional de marketing digital y community manager experto. 
 Tu tarea es redactar propuestas de copy para redes sociales persuasivas, atractivas y que conecten con el público.
 Retorna siempre la respuesta en formato JSON estructurado con el siguiente formato exacto:
 {
   "options": [
-    "Opción de copy 1 con emojis y hashtags pertinentes",
-    "Opción de copy 2 con emojis y hashtags pertinentes",
-    "Opción de copy 3 con emojis y hashtags pertinentes"
+    "Opción de copy 1 con emojis, datos de contacto y hashtags pertinentes",
+    "Opción de copy 2 con emojis, datos de contacto y hashtags pertinentes",
+    "Opción de copy 3 con emojis, datos de contacto y hashtags pertinentes"
   ]
 }
 
 REGLAS DE HUMANIZER (CRÍTICAS):
 - PROHIBIDO usar palabras cliché de IA como: "Adéntrate", "Descubre", "Desata", "En resumen", "En conclusión", "Eleva tu", "Revoluciona", "El maravilloso mundo de".
 - Escribe con un tono 100% conversacional, humano y auténtico, como si le hablaras a un cliente cara a cara.
-- Usa oraciones variadas (algunas cortas, otras un poco más largas), ritmo dinámico y saltos de línea estratégicos.`;
+- Usa oraciones variadas (algunas cortas, otras un poco más largas), ritmo dinámico y saltos de línea estratégicos.
+- REGLA DE CONTACTO: Siempre que se proporcionen datos de contacto de la empresa (WhatsApp, sitio web o teléfono), deben estar integrados de forma natural en el llamado a la acción al final del texto.`;
 
     const userPrompt = `
 Genera 3 opciones profesionales de copy para una publicación en redes sociales, aplicando distintos frameworks de copywriting en cada una.
@@ -66,11 +91,13 @@ Genera 3 opciones profesionales de copy para una publicación en redes sociales,
 - Idea / Concepto: ${idea || ""}
 - Texto base del usuario (si escribió algo): "${prompt || ""}"
 ${posterContext ? `\n[Detalles a integrar sobre el Cartel Publicitario]:\n${posterContext}` : ""}
+${contactContext}
 
 [Restricciones]
 - Tono: Profesional, empático, natural, adaptado a la audiencia de Latinoamérica.
 - Longitud máxima de palabras por opción: ${maxWords} palabras.
 - Debe incluir emojis pertinentes de forma natural (sin exagerar).
+- Debe incluir siempre los datos de contacto de la empresa en el cierre.
 - Debe incluir de 3 a 5 hashtags relevantes al final de cada opción.
 - Retorna ÚNICAMENTE el JSON estructurado solicitado. No agregues introducciones ni explicaciones.
     `.trim();

@@ -7,9 +7,11 @@ export const StrategyAnnotation = Annotation.Root({
   goal: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "Ventas" }),
   expectations: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "" }),
   promotions: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "" }),
+  businessData: Annotation<any>({ reducer: (a, b) => b ?? a, default: () => ({}) }),
   connectedPlatforms: Annotation<string[]>({ reducer: (a, b) => b ?? a, default: () => ["Instagram", "Facebook"] }),
   history: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "Sin historial." }),
   nicheContext: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "" }),
+  promptStyles: Annotation<any[]>({ reducer: (a, b) => b ?? a, default: () => [] }),
   postsPerWeek: Annotation<number>({ reducer: (a, b) => b ?? a, default: () => 5 }),
   analysis: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "" }),
   rawStrategy: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "" }),
@@ -58,8 +60,33 @@ REGLAS Y MENTALIDAD DE BH-SKILLS PARA CRECIMIENTO ORGÁNICO:
 2. Los temas deben ser ESPECÍFICOS, no genéricos. Resuelve dolores reales.
 3. El Hook debe ser un "Scroll-Stopper" (ej. "El error que comete el 90% al hacer X").
 4. Cero frases de IA ("en el vertiginoso mundo", "descubre", "sumérgete").
-5. Los CTA (Call to Action) deben ser únicos y claros (ej. "Guarda este post", "Comenta X para info").
-6. IMPORTANTE: NUNCA menciones que eres una IA o Inteligencia Artificial. Refiérete a ti mismo y a tus acciones como "nuestros agentes" o "nuestro equipo de agentes especializados". Tampoco hables de "lo que se puede hacer con IA".`;
+5. Los CTA (Call to Action) deben ser únicos y claros (ej. "Escríbenos al WhatsApp", "Visita el enlace en bio").
+6. IMPORTANTE: NUNCA menciones que eres una IA o Inteligencia Artificial. Refiérete a ti mismo y a tus acciones como "nuestros agentes" o "nuestro equipo de agentes especializados". Tampoco hables de "lo que se puede hacer con IA".
+7. REGLA OBLIGATORIA DE CONTACTO: Siempre incluye de forma clara los datos de contacto de la empresa en el cierre o CTA del post (WhatsApp, Sitio Web, Correo o Ubicación).`;
+
+  const stylesContext = state.promptStyles && state.promptStyles.length > 0
+    ? `\nESTILOS VISUALES DE PROMPTS IA SELECCIONADOS POR EL USUARIO PARA INSPIRAR O BASAR LAS IMÁGENES:
+${state.promptStyles.map((s: any) => `- ID: "${s.id}" | Título: "${s.title}" | Categoría: "${s.category}" | Estilo: "${s.description}" | Preview: "${s.previewUrl || ''}"`).join('\n')}
+
+INSTRUCCIÓN OBLIGATORIA DE ESTILOS VISUALES:
+Distribuye y asigna inteligentemente entre los posts de la estrategia aquellos estilos visuales de Prompts IA de la lista anterior que mejor encajen con la idea de cada post.
+Por cada post, incluye:
+- "visualStyle": "Título del estilo asignado de la lista (ej: ${state.promptStyles[0]?.title || 'Meta Ads'})",
+- "promptTemplateId": "ID exacto del estilo asignado (ej: ${state.promptStyles[0]?.id || 'style-meta-ads'})",
+- "previewUrl": "URL de la imagen de previsualización del estilo asignado",
+- "imageDirection": "Instrucción visual clara de cómo adaptar este estilo a este post específico"\n\n`
+    : "";
+
+  const contactLines: string[] = [];
+  if (state.businessData?.businessName) contactLines.push(`- Nombre Empresa / Marca: ${state.businessData.businessName}`);
+  if (state.businessData?.whatsapp || state.businessData?.phone) contactLines.push(`- WhatsApp / Teléfono de Contacto: ${state.businessData.whatsapp || state.businessData.phone}`);
+  if (state.businessData?.website) contactLines.push(`- Sitio Web: ${state.businessData.website}`);
+  if (state.businessData?.email) contactLines.push(`- Correo Electrónico: ${state.businessData.email}`);
+  if (state.businessData?.address) contactLines.push(`- Dirección / Ubicación: ${state.businessData.address}`);
+
+  const contactContext = contactLines.length > 0
+    ? `\nDATOS DE CONTACTO OFICIALES DE LA EMPRESA (OBLIGATORIO: Integra estos canales en el contenido o CTA de los posts):\n${contactLines.join('\n')}\n\n`
+    : "";
 
   const prompt = `Eres un Social Media Planner experto, entrenado con los mejores frameworks de crecimiento (BH Skills). 
 Basándote en el siguiente análisis, genera un plan táctico de publicaciones.
@@ -67,7 +94,7 @@ Basándote en el siguiente análisis, genera un plan táctico de publicaciones.
 ANÁLISIS ESTRATÉGICO:
 ${state.analysis}
 
-${state.promotions ? `PROMOCIONES Y OFERTAS CLAVE DEL NEGOCIO (Incluye estas promociones, precios o combos reales en los ganchos y copys comerciales):\n"${state.promotions}"\n\n` : ""}${state.nicheContext ? `CONTEXTO DEL RADAR DE NICHO (Últimos 30 días):\n${state.nicheContext}\n\n` : ""}
+${contactContext}${state.promotions ? `PROMOCIONES Y OFERTAS CLAVE DEL NEGOCIO (Incluye estas promociones, precios o combos reales en los ganchos y copys comerciales):\n"${state.promotions}"\n\n` : ""}${state.nicheContext ? `CONTEXTO DEL RADAR DE NICHO (Últimos 30 días):\n${state.nicheContext}\n\n` : ""}${stylesContext}
 
 HISTORIAL DE POSTS Y RENDIMIENTO (Analiza esto para replicar qué formatos/ideas tuvieron más likes/alcance, y descarta lo que no sirvió):
 ${state.history}
@@ -88,7 +115,7 @@ DEBES GENERAR UNA ESTRUCTURA DE JSON válida que contenga un arreglo 'strategy' 
   "format": "Formato exacto",
   "hook": "Gancho corto y potente",
   "content": "Resumen del contenido a grabar/diseñar",
-  "cta": "Llamado a la acción"
+  "cta": "Llamado a la acción (incluyendo canal de contacto)"${state.promptStyles && state.promptStyles.length > 0 ? `,\n  "visualStyle": "Nombre del estilo de Prompts IA asignado",\n  "promptTemplateId": "ID del estilo asignado",\n  "previewUrl": "URL de preview del estilo",\n  "imageDirection": "Idea de la imagen adaptada"` : ""}
 }
 
 GENERA EXACTAMENTE ${state.postsPerWeek} PUBLICACIONES DISTRIBUIDAS EN LOS PRÓXIMOS 7 DÍAS (weekNumber: 1, dayOffset: de 0 a 6).
@@ -113,6 +140,7 @@ REGLAS A VALIDAR:
 2. Si aparece 'TikTok' en el contexto, asegúrate de que sus formatos sean 'Reel'.
 3. Los 'dayOffset' deben ser números coherentes (0 a 14).
 4. El texto de 'hook' y 'cta' debe ser profesional y persuasivo.
+5. Conserva los campos visuales si están presentes: 'visualStyle', 'promptTemplateId', 'previewUrl', 'imageDirection'.
 
 DEVUELVE ÚNICAMENTE EL OBJETO JSON LIMPIO. SIN MARKDOWN.`;
 
@@ -220,7 +248,9 @@ export async function runProfessionalStrategyWorkflow(
     history: string,
     nicheContext: string = "",
     postsPerWeek: number = 5,
-    promotions: string = ""
+    promotions: string = "",
+    promptStyles: any[] = [],
+    businessData: any = {}
 ) {
   const app = createStrategyWorkflow();
   const initialState = {
@@ -228,9 +258,11 @@ export async function runProfessionalStrategyWorkflow(
     goal,
     expectations,
     promotions,
+    businessData,
     connectedPlatforms,
     history,
     nicheContext,
+    promptStyles,
     postsPerWeek,
     analysis: "",
     rawStrategy: "",

@@ -1,247 +1,23 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { auth, storage, db } from "../../../../lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, collection, getDocs, addDoc, deleteDoc, updateDoc, setDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useProfile } from "../../../../contexts/ProfileContext";
 import { useRouter } from "next/navigation";
+import StatusModal from "../../../../components/StatusModal";
 
-export type ImageRequirement = 'none' | 'optional' | 'required';
+import { 
+  type ImageRequirement, 
+  type PromptTemplate, 
+  promptCategories, 
+  HARDCODED_STYLES 
+} from "../../../../lib/prompt-templates";
 
-export interface PromptTemplate {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  prompt: string;
-  previewUrl: string;
-  imageRequirement: ImageRequirement;
-  isCommercialPoster?: boolean;
-}
-
-export const promptCategories = [
-  "Fotorealismo",
-  "Ilustración 3D",
-  "Minimalista",
-  "Arte Conceptual",
-  "Cyberpunk",
-  "Producto (E-commerce)",
-  "Estilos Técnicos",
-  "Diseño y 3D",
-  "Artísticos y Creativos",
-  "Publicidad y Ads",
-  "Editorial y Revista",
-];
-
-export const HARDCODED_STYLES: PromptTemplate[] = [
-  {
-    id: "style-exploded",
-    title: "Exploded View (Vista despiezada)",
-    description: "Muestra un objeto desarmado con todas sus piezas flotando en orden para ver cómo se conectan por dentro.",
-    category: "Estilos Técnicos",
-    prompt: "A highly detailed exploded view of [Objeto a despiezar:ej. un motor de automóvil], showing all individual components floating in perfect order, technical illustration style, precise spacing, 8k resolution, clean background.",
-    previewUrl: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=500&q=80",
-    imageRequirement: "optional",
-  },
-  {
-    id: "style-blueprint",
-    title: "Blueprint (Plano técnico)",
-    description: "Dibuja esquemas con líneas blancas o celestes sobre un fondo azul oscuro, estilo arquitectura o ingeniería.",
-    category: "Estilos Técnicos",
-    prompt: "A classic architectural blueprint of [Estructura u objeto:ej. un cohete espacial], white and light blue technical lines on a dark navy blue background, precise measurements, drafting aesthetic, engineering schematic.",
-    previewUrl: "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=500&q=80",
-    imageRequirement: "optional",
-  },
-  {
-    id: "style-anatomy",
-    title: "Cross-section (Corte transversal)",
-    description: "Corta un objeto a la mitad para mostrar sus capas y su interior con precisión.",
-    category: "Estilos Técnicos",
-    prompt: "A detailed cross-section anatomy of [Objeto o sujeto:ej. un volcán en erupción], cut in half revealing the intricate inner layers and internal structures, educational textbook illustration, hyper-detailed.",
-    previewUrl: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=500&q=80",
-    imageRequirement: "optional",
-  },
-  {
-    id: "style-isometric",
-    title: "Isometric 3D",
-    description: "Presenta escenarios en un ángulo de 3/4, aspecto limpio tipo maqueta o videojuego de estrategia.",
-    category: "Diseño y 3D",
-    prompt: "An isometric 3D render of [Escenario:ej. una pequeña cafetería acogedora], clean miniature diorama style, smooth lighting, tilt-shift effect, strategy game aesthetic, colorful, highly detailed.",
-    previewUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&q=80",
-    imageRequirement: "optional",
-  },
-  {
-    id: "style-wireframe",
-    title: "Wireframe (Malla de alambre)",
-    description: "Forma figuras usando solo líneas y puntos geométricos. Muestra la estructura digital básica.",
-    category: "Diseño y 3D",
-    prompt: "A glowing 3D digital wireframe of [Objeto:ej. un automóvil deportivo], made of geometric neon lines and points on a dark background, cyberpunk structure, cyber grid, tech aesthetic.",
-    previewUrl: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=500&q=80",
-    imageRequirement: "optional",
-  },
-  {
-    id: "style-lowpoly",
-    title: "Low Poly",
-    description: "Construye la imagen con pocos triángulos y figuras geométricas simples. Aspecto retro o minimalista.",
-    category: "Diseño y 3D",
-    prompt: "A beautiful low poly 3D rendering of [Escenario o sujeto:ej. un paisaje de montañas al atardecer], constructed with simple geometric triangles and facets, minimalist flat shading, retro computer graphics style, pastel colors.",
-    previewUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&q=80",
-    imageRequirement: "optional",
-  },
-  {
-    id: "style-papercraft",
-    title: "Papercraft (Arte en papel)",
-    description: "Hace que todo parezca hecho a mano con recortes de papel de colores doblados y superpuestos.",
-    category: "Artísticos y Creativos",
-    prompt: "A beautiful papercraft illustration of [Escenario o sujeto:ej. un bosque mágico con hadas], made entirely of layered and folded colorful paper cutouts, drop shadows, tactile texture, handmade origami aesthetic.",
-    previewUrl: "https://images.unsplash.com/photo-1502691876148-a84978e59af8?w=500&q=80",
-    imageRequirement: "optional",
-  },
-  {
-    id: "style-doubleexp",
-    title: "Double Exposure",
-    description: "Mezcla dos fotos en una sola figura, por ejemplo, una silueta que por dentro muestra un paisaje.",
-    category: "Artísticos y Creativos",
-    prompt: "A cinematic double exposure photography combining the silhouette of [Sujeto principal:ej. un oso pardo] and a beautiful [Escena interior:ej. bosque nevado], seamlessly blended, surreal, artistic poster, dramatic lighting.",
-    previewUrl: "https://images.unsplash.com/photo-1552337651-70ef24194098?w=500&q=80",
-    imageRequirement: "optional",
-  },
-  {
-    id: "style-claymation",
-    title: "Claymation (Arcilla)",
-    description: "Personajes y objetos modelados con plastilina o arcilla, estilo stop-motion.",
-    category: "Artísticos y Creativos",
-    prompt: "A cute claymation 3D render of [Sujeto:ej. un pingüino bebiendo café], made of modeled plasticine, visible fingerprints on the clay, stop-motion animation style, tactile realistic texture, studio lighting.",
-    previewUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&q=80",
-    imageRequirement: "optional",
-  },
-
-  // ─── PUBLICIDAD Y ADS ────────────────────────────────────────────────────
-  {
-    id: "style-meta-ads",
-    title: "Meta Ads / Creative Ad",
-    description: "Convierte tu producto o imagen en un creativo publicitario listo para Facebook o Instagram Ads. Fondo limpio, composición centrada y alta retención visual.",
-    category: "Publicidad y Ads",
-    prompt: "A professional high-conversion social media advertisement creative featuring [Producto o servicio:ej. una crema facial hidratante] as the hero product, clean white or pastel gradient background, bold compositional framing, studio product lighting, premium feel, Facebook and Instagram ad format, photorealistic render, no text.",
-    previewUrl: "https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=500&q=80",
-    imageRequirement: "required",
-    isCommercialPoster: true,
-  },
-  {
-    id: "style-ads-lifestyle",
-    title: "Ads Lifestyle (Producto en uso)",
-    description: "Muestra tu producto siendo usado en un contexto real y aspiracional, perfecto para anuncios de lifestyle en redes sociales.",
-    category: "Publicidad y Ads",
-    prompt: "A cinematic lifestyle advertising photo of [Producto:ej. unas zapatillas deportivas], being used by a person in a natural aspirational setting, golden hour lighting, shallow depth of field, editorial fashion photography, magazine quality, vibrant colors, authentic and candid mood.",
-    previewUrl: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&q=80",
-    imageRequirement: "required",
-    isCommercialPoster: true,
-  },
-  {
-    id: "style-ads-hero-shot",
-    title: "Hero Shot de Producto",
-    description: "Toma tu imagen de producto y la transforma en una foto tipo campaña de marca: fondo dramático, iluminación premium y composición de alta atención.",
-    category: "Publicidad y Ads",
-    prompt: "A dramatic high-end hero product shot of [Producto:ej. una botella de perfume de lujo], cinematic studio lighting with colored gels, dark moody background, fine mist or smoke effect, luxury brand campaign aesthetics, ultra-sharp focus, 8k commercial photography.",
-    previewUrl: "https://images.unsplash.com/photo-1585386959984-a4155224a1ad?w=500&q=80",
-    imageRequirement: "required",
-    isCommercialPoster: true,
-  },
-  {
-    id: "style-product-explosion",
-    title: "Product Explosion (Despiezado de Producto)",
-    description: "Desensambla visualmente tu producto mostrando todos sus componentes flotando ordenados alrededor. Perfecto para resaltar calidad de ingredientes o materiales.",
-    category: "Publicidad y Ads",
-    prompt: "A stunning exploded product view of [Producto:ej. una cápsula de suplemento vitamínico], all individual ingredients and components floating symmetrically around the hero product on a clean white background, premium cosmetic or supplement brand aesthetic, macro photography style, commercial ad quality, no text.",
-    previewUrl: "https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=500&q=80",
-    imageRequirement: "required",
-    isCommercialPoster: true,
-  },
-
-  // ─── EDITORIAL Y REVISTA ──────────────────────────────────────────────────
-  {
-    id: "style-magazine-cover",
-    title: "Magazine Cover (Portada de Revista)",
-    description: "Transforma tu foto en una portada de revista de alta gama. Composición editorial, iluminación de estudio y espacio reservado para título y subtítulos.",
-    category: "Editorial y Revista",
-    prompt: "A stunning [Tipo de revista:ej. Vogue] magazine cover featuring [Sujeto o producto:ej. una modelo en vestido rojo], professional editorial studio photography, dramatic high-contrast lighting, cover composition with negative space at the top for a masthead, premium fashion magazine aesthetic, glossy finish look, ultra-detailed.",
-    previewUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&q=80",
-    imageRequirement: "required",
-    isCommercialPoster: true,
-  },
-  {
-    id: "style-magazine-spread",
-    title: "Editorial Spread (Doble Página)",
-    description: "Crea una composición editorial de doble página tipo revista de moda o lifestyle, con espacio para texto y un visual impactante como protagonista.",
-    category: "Editorial y Revista",
-    prompt: "A full bleed editorial magazine double-page spread featuring [Tema o sujeto:ej. colección de ropa de invierno], cinematic wide composition, moody or vibrant color grading depending on the subject, high fashion editorial photography, luxury lifestyle aesthetic, professional retouching, space reserved on one side for copy text.",
-    previewUrl: "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=500&q=80",
-    imageRequirement: "required",
-    isCommercialPoster: true,
-  },
-  {
-    id: "style-brand-campaign",
-    title: "Brand Campaign (Campaña de Marca)",
-    description: "Genera un visual de campaña de marca completo: concepto, sujeto, mensaje visual y estética coherente de marca en una sola imagen.",
-    category: "Publicidad y Ads",
-    prompt: "A powerful [Marca o industria:ej. marca de ropa deportiva] brand campaign hero image featuring [Sujeto:ej. atleta corriendo en ciudad al amanecer], bold cinematic composition, brand color palette tones, inspirational mood, commercial campaign photography quality, wide-format billboard composition, dynamic motion blur, aspirational lifestyle.",
-    previewUrl: "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=500&q=80",
-    imageRequirement: "required",
-    isCommercialPoster: true,
-  },
-  {
-    id: "style-everyday-real",
-    title: "Toma Real y Cotidiana (UGC)",
-    description: "Coloca tu producto en un entorno real, natural y casual, como si fuera una foto tomada por un cliente con su teléfono.",
-    category: "Fotorealismo",
-    prompt: "A highly realistic casual lifestyle photo of [Producto:ej. una lata de bebida], placed on a [Superficie:ej. mesa de madera rústica] in a [Entorno:ej. terraza soleada], next to [Acompañamiento:ej. un tazón con mangos frescos], natural daylight, candid everyday shot, authentic UGC style, shot on iPhone 14 Pro, photorealistic.",
-    previewUrl: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&q=80",
-    imageRequirement: "required",
-    isCommercialPoster: true,
-  },
-  {
-    id: "style-pro-studio-splash",
-    title: "Sesión Profesional de Estudio",
-    description: "Transforma una foto simple en una fotografía comercial de alta gama con iluminación dramática, condensación y elementos de fondo.",
-    category: "Fotorealismo",
-    prompt: "A high-end professional commercial studio photography of [Producto:ej. una lata de bebida], covered in fresh condensation water drops, resting on a wet dark surface, dramatic rim lighting, vibrant [Color de luz de fondo:ej. azul oscuro y dorado] background, premium advertising aesthetics, 8k resolution, macro lens.",
-    previewUrl: "https://images.unsplash.com/photo-1585386959984-a4155224a1ad?w=500&q=80",
-    imageRequirement: "required",
-    isCommercialPoster: true,
-  },
-  {
-    id: "style-newspaper-frontpage",
-    title: "Portada de Periódico",
-    description: "Integra tu producto como la noticia principal en la portada de un periódico impreso.",
-    category: "Editorial y Revista",
-    prompt: "A photorealistic mockup of a folded daily newspaper lying on a table, the main front page article features a large prominent photo of [Producto:ej. una lata de bebida energética], traditional newspaper layout with columns of text and headlines, morning news aesthetic, natural soft window lighting, highly detailed.",
-    previewUrl: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=500&q=80",
-    imageRequirement: "required",
-    isCommercialPoster: true,
-  },
-  {
-    id: "style-dynamic-ad-splash",
-    title: "Arte Dinámico (Redes Sociales)",
-    description: "Un diseño explosivo e impactante con salpicaduras y elementos volando, ideal para anuncios llamativos. Sin texto para agregarlo después.",
-    category: "Publicidad y Ads",
-    prompt: "An explosive and dynamic commercial product shot of [Producto:ej. una lata de bebida energética], surrounded by flying [Elementos voladores:ej. trozos de mango y hojas de menta], spectacular liquid splashes, vibrant high-contrast colors, dramatic studio lighting, extreme action freeze-frame, hyper-detailed 3D render style, clean background for typography, no text.",
-    previewUrl: "https://images.unsplash.com/photo-1556881286-fc6915169721?w=500&q=80",
-    imageRequirement: "required",
-    isCommercialPoster: true,
-  },
-  {
-    id: "style-3d-billboard",
-    title: "Valla Publicitaria 3D (Times Square)",
-    description: "Simula una espectacular valla publicitaria anamórfica 3D en una calle muy transitada estilo Times Square o Tokio.",
-    category: "Publicidad y Ads",
-    prompt: "An ultra-realistic nighttime photography of a giant anamorphic 3D digital billboard on a modern skyscraper building in a busy city like Times Square, the billboard displays a stunning glowing 3D render of [Producto:ej. una lata de bebida], the product appears to be popping out of the screen, neon lights, rainy street reflections, crowds of people walking below, cinematic cyberpunk city vibe, highly detailed.",
-    previewUrl: "https://images.unsplash.com/photo-1555921015-5532091f6026?w=500&q=80",
-    imageRequirement: "required",
-    isCommercialPoster: true,
-  }
-];
+export type { ImageRequirement, PromptTemplate };
+export { promptCategories, HARDCODED_STYLES };
 
 export default function PromptsLibraryPage() {
   const router = useRouter();
@@ -250,13 +26,51 @@ export default function PromptsLibraryPage() {
   const { activeProfile } = useProfile();
   
   const [activeCategory, setActiveCategory] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [promptTemplates, setPromptTemplates] = useState<PromptTemplate[]>([]);
   const [loadingPrompts, setLoadingPrompts] = useState(true);
+
+  // Status Modal State (Reemplazo moderno de alerts y confirms)
+  const [statusModal, setStatusModal] = useState<{
+    isOpen: boolean;
+    type: "success" | "error" | "info" | "confirm";
+    title: string;
+    message: string;
+    confirmText?: string;
+    cancelText?: string;
+    onConfirm?: (() => void) | null;
+    onCancel?: (() => void) | null;
+  }>({
+    isOpen: false,
+    type: "info",
+    title: "",
+    message: "",
+    confirmText: "Aceptar",
+    cancelText: "Cancelar",
+    onConfirm: null,
+    onCancel: null,
+  });
+
+  const showStatus = (type: "success" | "error" | "info" | "confirm", title: string, message: string, onConfirm?: () => void) => {
+    setStatusModal({
+      isOpen: true,
+      type,
+      title,
+      message,
+      confirmText: "Aceptar",
+      cancelText: "Cancelar",
+      onConfirm: onConfirm || (() => setStatusModal(prev => ({ ...prev, isOpen: false }))),
+      onCancel: () => setStatusModal(prev => ({ ...prev, isOpen: false })),
+    });
+  };
 
   // Client Modal
   const [selectedPrompt, setSelectedPrompt] = useState<PromptTemplate | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editedPromptText, setEditedPromptText] = useState("");
+  
+  // Image Preview Lightbox Modal
+  const [previewLightbox, setPreviewLightbox] = useState<{ url: string; title: string; category: string; prompt: PromptTemplate } | null>(null);
   
   // Guided Mode State
   const [isFreeEditMode, setIsFreeEditMode] = useState(false);
@@ -355,14 +169,23 @@ export default function PromptsLibraryPage() {
       const loaded: PromptTemplate[] = [];
       const dbIds = new Set<string>();
       
-      snapshot.forEach(doc => {
-        loaded.push({ id: doc.id, ...doc.data() } as PromptTemplate);
-        dbIds.add(doc.id);
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        dbIds.add(docSnap.id);
+        const hasValidTitle = typeof data.title === "string" && data.title.trim().length > 0;
+        const hasValidPrompt = typeof data.prompt === "string" && data.prompt.trim().length > 0;
+        
+        if (!data.isDeleted && hasValidTitle && hasValidPrompt) {
+          loaded.push({ id: docSnap.id, ...data } as PromptTemplate);
+        } else if (!hasValidTitle || !hasValidPrompt) {
+          // Documento corrupto o en blanco: limpiar de Firestore permanentemente
+          deleteDoc(doc(db, "prompt_library", docSnap.id)).catch(() => {});
+        }
       });
       
-      // Añadir plantillas hardcodeadas solo si no fueron modificadas y guardadas en DB
+      // Añadir plantillas hardcodeadas solo si no fueron modificadas ni eliminadas
       HARDCODED_STYLES.forEach(style => {
-        if (!dbIds.has(style.id)) {
+        if (!dbIds.has(style.id) && style.title && style.title.trim() && style.prompt && style.prompt.trim()) {
           loaded.push(style);
         }
       });
@@ -375,9 +198,25 @@ export default function PromptsLibraryPage() {
     }
   };
 
-  const filteredPrompts = activeCategory === "all" 
-    ? promptTemplates 
-    : promptTemplates.filter(p => p.category === activeCategory);
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: promptTemplates.length };
+    promptCategories.forEach(cat => {
+      counts[cat] = promptTemplates.filter(p => p.category === cat).length;
+    });
+    return counts;
+  }, [promptTemplates]);
+
+  const filteredPrompts = useMemo(() => {
+    return promptTemplates.filter(p => {
+      const matchesCategory = activeCategory === "all" || p.category === activeCategory;
+      const q = searchQuery.toLowerCase().trim();
+      const matchesSearch = !q || 
+        p.title.toLowerCase().includes(q) || 
+        p.description.toLowerCase().includes(q) ||
+        p.category.toLowerCase().includes(q);
+      return matchesCategory && matchesSearch;
+    });
+  }, [promptTemplates, activeCategory, searchQuery]);
 
   // ════════════════════════════════════════════════════════
   // CLIENT FLOW
@@ -433,14 +272,27 @@ export default function PromptsLibraryPage() {
     reader.readAsDataURL(file);
   };
 
-  const handleDeletePrompt = async (id: string) => {
-    if (!confirm("¿Seguro que quieres eliminar esta plantilla?")) return;
-    try {
-      await deleteDoc(doc(db, "prompt_library", id));
-      setPromptTemplates(prev => prev.filter(p => p.id !== id));
-    } catch (e) {
-      console.error("Error deleting", e);
-    }
+  const handleDeletePrompt = (id: string) => {
+    setStatusModal({
+      isOpen: true,
+      type: "confirm",
+      title: "¿Eliminar Plantilla?",
+      message: "¿Estás seguro de que deseas eliminar esta plantilla de la biblioteca de prompts? Esta acción no se puede deshacer.",
+      confirmText: "Sí, Eliminar",
+      cancelText: "Cancelar",
+      onConfirm: async () => {
+        try {
+          // Marcar como eliminado en Firestore para que ninguna plantilla hardcodeada reaparezca
+          await setDoc(doc(db, "prompt_library", id), { isDeleted: true }, { merge: true });
+          setPromptTemplates(prev => prev.filter(p => p.id !== id));
+          showStatus("success", "Plantilla Eliminada", "La plantilla ha sido eliminada exitosamente.");
+        } catch (e: any) {
+          console.error("Error deleting", e);
+          showStatus("error", "Error al eliminar", "No se pudo eliminar la plantilla: " + (e.message || "Error desconocido"));
+        }
+      },
+      onCancel: () => setStatusModal(prev => ({ ...prev, isOpen: false })),
+    });
   };
 
   const handleEditPrompt = (prompt: PromptTemplate) => {
@@ -563,10 +415,10 @@ export default function PromptsLibraryPage() {
       
       setPromptTemplates(prev => prev.map(p => p.id === selectedPrompt.id ? { id: selectedPrompt.id, ...promptData } : p));
       
-      alert("¡Imagen establecida como portada de este template exitosamente!");
+      showStatus("success", "Portada Actualizada", "¡Imagen establecida como portada de este template exitosamente!");
     } catch (e: any) {
       console.error(e);
-      alert("Error al actualizar portada: " + e.message);
+      showStatus("error", "Error al actualizar portada", e.message || "Ocurrió un error inesperado.");
     }
   };
 
@@ -588,8 +440,8 @@ export default function PromptsLibraryPage() {
       if (generateNewImage || !finalImageUrl) {
         // Subir imagen base de prueba si existe
         let uploadedBaseImageUrl = "";
-        if (adminBaseImageFile) {
-          const storageRef = ref(storage, `admin_prompts/${Date.now()}_${adminBaseImageFile.name}`);
+        if (adminBaseImageFile && user) {
+          const storageRef = ref(storage, `users/${user.uid}/admin_prompts/${Date.now()}_${adminBaseImageFile.name}`);
           await uploadBytes(storageRef, adminBaseImageFile);
           uploadedBaseImageUrl = await getDownloadURL(storageRef);
         }
@@ -620,10 +472,12 @@ export default function PromptsLibraryPage() {
         // 1. Generar la imagen de Preview usando el webhook actual de generacion
         const payload = {
           promptText: previewPromptText,
+          baseImageUrl: uploadedBaseImageUrl,
+          templateId: editingPromptId || "",
           email: user?.email,
           profileId: "admin_seed",
-          businessType: "Generación de Plantillas",
-          isCommercialPoster: adminForm.isCommercialPoster
+          businessType: userDoc?.rubro || "Generación de Plantillas",
+          isCommercialPoster: adminForm.isCommercialPoster || false
         };
 
         const res = await fetch("/api/ai/generate-from-prompt", {
@@ -658,11 +512,11 @@ export default function PromptsLibraryPage() {
         // Usamos setDoc con merge por si estamos editando una plantilla hardcodeada por primera vez
         await setDoc(doc(db, "prompt_library", editingPromptId), promptData, { merge: true });
         setPromptTemplates(prev => prev.map(p => p.id === editingPromptId ? { id: editingPromptId, ...promptData } : p));
-        alert("¡Plantilla actualizada con éxito!");
+        showStatus("success", "Plantilla Actualizada", "¡Plantilla actualizada con éxito en la biblioteca!");
       } else {
         const docRef = await addDoc(collection(db, "prompt_library"), promptData);
         setPromptTemplates([{ id: docRef.id, ...promptData }, ...promptTemplates]);
-        alert("¡Plantilla guardada con éxito!");
+        showStatus("success", "Plantilla Guardada", "¡Plantilla guardada con éxito en la biblioteca de prompts!");
       }
       
       setIsAdminModalOpen(false);
@@ -707,23 +561,74 @@ export default function PromptsLibraryPage() {
         )}
       </div>
 
-      {/* Categories */}
-      <div className="flex overflow-x-auto hide-scrollbar space-x-2 mb-8 bg-slate-200/50 p-1.5 rounded-2xl max-w-full">
-        <button
-          onClick={() => setActiveCategory("all")}
-          className={`shrink-0 px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${activeCategory === "all" ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-        >
-          Todos los Estilos
-        </button>
-        {promptCategories.map(cat => (
+      {/* Search Bar & Category Chips */}
+      <div className="space-y-4 mb-8">
+        {/* Barra de búsqueda y contador */}
+        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+          <div className="relative flex-1 max-w-md">
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Buscar por título, estilo o descripción..."
+              className="w-full pl-10 pr-8 py-2.5 bg-white border border-slate-200 rounded-2xl text-xs sm:text-sm font-medium text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 shadow-sm"
+            />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold"
+                title="Limpiar búsqueda"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+          
+          <div className="text-xs font-bold text-slate-500 self-end sm:self-center">
+            {filteredPrompts.length} {filteredPrompts.length === 1 ? 'plantilla encontrada' : 'plantillas encontradas'}
+          </div>
+        </div>
+
+        {/* Categorías en Chips Multi-línea (flex-wrap 100% visibles) */}
+        <div className="flex flex-wrap gap-2 pt-1">
           <button
-            key={cat}
-            onClick={() => setActiveCategory(cat)}
-            className={`shrink-0 px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${activeCategory === cat ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            onClick={() => setActiveCategory("all")}
+            className={`px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${
+              activeCategory === "all"
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 ring-2 ring-indigo-500/20'
+                : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200/80 shadow-sm'
+            }`}
           >
-            {cat}
+            <span>Todos los Estilos</span>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${activeCategory === "all" ? 'bg-indigo-700 text-white' : 'bg-slate-100 text-slate-500'}`}>
+              {categoryCounts.all || 0}
+            </span>
           </button>
-        ))}
+
+          {promptCategories.map(cat => {
+            const count = categoryCounts[cat] || 0;
+            const isSelected = activeCategory === cat;
+            return (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={`px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${
+                  isSelected
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 ring-2 ring-indigo-500/20'
+                    : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200/80 shadow-sm'
+                }`}
+              >
+                <span>{cat}</span>
+                {count > 0 && (
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${isSelected ? 'bg-indigo-700 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Prompts Grid */}
@@ -739,54 +644,76 @@ export default function PromptsLibraryPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredPrompts.map(prompt => (
             <div key={prompt.id} className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-lg transition-all hover:border-indigo-200 flex flex-col group">
-              <div className="relative h-64 w-full overflow-hidden bg-slate-900 flex items-center justify-center">
-                <img src={prompt.previewUrl} alt={prompt.title} className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-500" />
-                <div className="absolute top-3 left-3 flex gap-2">
-                  <span className="bg-white/90 backdrop-blur text-indigo-800 text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg shadow-sm">
-                    {prompt.category}
-                  </span>
+              {/* Imagen limpia de preview - Abre Lightbox Modal al hacer clic */}
+              <div 
+                onClick={() => setPreviewLightbox({ url: prompt.previewUrl, title: prompt.title, category: prompt.category, prompt })}
+                className="relative h-60 w-full overflow-hidden bg-slate-950 flex items-center justify-center cursor-zoom-in group/img"
+                title="Clic para ampliar imagen"
+              >
+                <img 
+                  src={prompt.previewUrl} 
+                  alt={prompt.title} 
+                  className="max-w-full max-h-full object-contain group-hover/img:scale-105 transition-transform duration-500" 
+                />
+                <div className="absolute bottom-2.5 right-2.5 bg-black/60 backdrop-blur text-white text-[10px] font-bold px-2 py-1 rounded-md opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center gap-1">
+                  🔍 Ampliar
                 </div>
-                <div className="absolute top-3 right-3 flex gap-2">
-                  {prompt.imageRequirement === 'required' && (
-                    <span className="bg-amber-100/90 backdrop-blur text-amber-800 text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg shadow-sm border border-amber-200" title="Requiere subir imagen base">
-                      📷 Requiere Base
+              </div>
+
+              {/* Contenido y badges organizados debajo de la imagen */}
+              <div className="p-5 flex-1 flex flex-col">
+                {/* Barra de etiquetas y acciones */}
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="bg-indigo-50 border border-indigo-100 text-indigo-700 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg">
+                      {prompt.category}
                     </span>
-                  )}
-                  {prompt.imageRequirement === 'optional' && (
-                    <span className="bg-blue-100/90 backdrop-blur text-blue-800 text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg shadow-sm border border-blue-200" title="Permite subir imagen base opcional">
-                      🖼️ Soporta Img2Img
-                    </span>
-                  )}
+                    {prompt.imageRequirement === 'required' && (
+                      <span className="bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-1" title="Requiere subir imagen base">
+                        📷 Requiere Base
+                      </span>
+                    )}
+                    {prompt.imageRequirement === 'optional' && (
+                      <span className="bg-blue-50 border border-blue-200 text-blue-800 text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-1" title="Permite subir imagen base opcional">
+                        🖼️ Img2Img
+                      </span>
+                    )}
+                    {prompt.isCommercialPoster && (
+                      <span className="bg-purple-50 border border-purple-200 text-purple-800 text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-1" title="Cartel publicitario">
+                        🏷️ Cartel
+                      </span>
+                    )}
+                  </div>
+
                   {isAdminUser && (
-                    <>
+                    <div className="flex items-center gap-1.5 shrink-0">
                       <button 
                         onClick={(e) => { e.stopPropagation(); handleEditPrompt(prompt); }}
-                        className="bg-indigo-500/90 hover:bg-indigo-600 text-white backdrop-blur p-1.5 rounded-lg shadow-sm transition-colors text-xs flex items-center justify-center"
+                        className="p-1.5 bg-slate-50 hover:bg-indigo-50 text-slate-600 hover:text-indigo-600 border border-slate-200 hover:border-indigo-300 rounded-lg transition-all text-xs flex items-center justify-center shadow-sm"
                         title="Editar Plantilla"
                       >
                         ✏️
                       </button>
                       <button 
                         onClick={(e) => { e.stopPropagation(); handleDeletePrompt(prompt.id); }}
-                        className="bg-red-500/90 hover:bg-red-600 text-white backdrop-blur p-1.5 rounded-lg shadow-sm transition-colors text-xs flex items-center justify-center"
+                        className="p-1.5 bg-slate-50 hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-200 hover:border-rose-300 rounded-lg transition-all text-xs flex items-center justify-center shadow-sm"
                         title="Eliminar Plantilla"
                       >
                         🗑️
                       </button>
-                    </>
+                    </div>
                   )}
                 </div>
-              </div>
-              <div className="p-5 flex-1 flex flex-col">
-                <h3 className="text-lg font-black text-slate-900 mb-2">{prompt.title}</h3>
-                <p className="text-xs text-slate-500 mb-4 line-clamp-2 font-medium">{prompt.description}</p>
+
+                <h3 className="text-base font-black text-slate-900 mb-1.5 group-hover:text-indigo-600 transition-colors line-clamp-1">{prompt.title}</h3>
+                <p className="text-xs text-slate-500 mb-4 line-clamp-2 font-medium leading-relaxed">{prompt.description}</p>
                 
-                <div className="mt-auto">
+                <div className="mt-auto pt-2">
                   <button 
                     onClick={() => openPromptModal(prompt)}
-                    className="w-full bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 font-bold py-2.5 rounded-xl transition-colors"
+                    className="w-full bg-slate-900 hover:bg-indigo-600 text-white font-bold py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 text-xs"
                   >
-                    Usar Plantilla
+                    <span>✨</span> Usar Plantilla
                   </button>
                 </div>
               </div>
@@ -1209,6 +1136,88 @@ export default function PromptsLibraryPage() {
           </div>
         </div>
       )}
+
+      {/* MODAL DE PREVISUALIZACIÓN DE IMAGEN (LIGHTBOX) */}
+      {previewLightbox && (
+        <div 
+          className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-in fade-in duration-200"
+          onClick={() => setPreviewLightbox(null)}
+        >
+          <div 
+            className="relative max-w-4xl w-full bg-slate-900 rounded-3xl p-4 md:p-6 shadow-2xl border border-slate-700 flex flex-col items-center overflow-hidden animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="w-full flex items-center justify-between pb-3 mb-2 border-b border-slate-800 px-2">
+              <div className="flex items-center gap-3">
+                <span className="bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-lg">
+                  {previewLightbox.category}
+                </span>
+                <h3 className="text-sm md:text-base font-bold text-white line-clamp-1">{previewLightbox.title}</h3>
+              </div>
+              <button 
+                onClick={() => setPreviewLightbox(null)}
+                className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition-colors text-sm font-bold"
+                title="Cerrar"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Imagen Grande */}
+            <div className="p-2 flex items-center justify-center max-h-[65vh] w-full overflow-hidden">
+              <img 
+                src={previewLightbox.url} 
+                alt={previewLightbox.title} 
+                className="max-h-[60vh] max-w-full object-contain rounded-2xl shadow-xl"
+              />
+            </div>
+
+            {/* Footer con Acciones */}
+            <div className="w-full pt-4 mt-2 border-t border-slate-800 flex items-center justify-between px-2 gap-4">
+              <span className="text-xs text-slate-400 hidden sm:inline">Vista previa en alta resolución</span>
+              <div className="flex items-center gap-2 ml-auto">
+                <button
+                  onClick={() => setPreviewLightbox(null)}
+                  className="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs py-2.5 px-4 rounded-xl transition-all"
+                >
+                  Cerrar
+                </button>
+                <button
+                  onClick={() => {
+                    const p = previewLightbox.prompt;
+                    setPreviewLightbox(null);
+                    openPromptModal(p);
+                  }}
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-2.5 px-5 rounded-xl transition-all shadow-md flex items-center gap-2"
+                >
+                  <span>✨</span> Usar esta Plantilla
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* STATUS MODAL MODERNO */}
+      <StatusModal
+        isOpen={statusModal.isOpen}
+        type={statusModal.type}
+        title={statusModal.title}
+        message={statusModal.message}
+        confirmText={statusModal.confirmText}
+        cancelText={statusModal.cancelText}
+        onConfirm={() => {
+          if (statusModal.onConfirm) statusModal.onConfirm();
+          if (statusModal.type !== "confirm") {
+            setStatusModal(prev => ({ ...prev, isOpen: false }));
+          }
+        }}
+        onCancel={() => {
+          if (statusModal.onCancel) statusModal.onCancel();
+          setStatusModal(prev => ({ ...prev, isOpen: false }));
+        }}
+      />
 
     </div>
   );

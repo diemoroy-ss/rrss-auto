@@ -23,10 +23,12 @@ export async function generateCopyWithAgent(params: CopyAgentParams): Promise<st
   const includeEmail = targetProfile?.includeEmailInCopy !== false;
   const includePhone = targetProfile?.includePhoneInCopy !== false;
 
+  const phoneVal = targetProfile?.whatsapp || targetProfile?.phone;
   const contactArr: string[] = [];
-  if (includeWeb && targetProfile?.website) contactArr.push(`🌐 Visita: ${targetProfile.website}`);
-  if (includeEmail && targetProfile?.email) contactArr.push(`📧 Escríbenos: ${targetProfile.email}`);
-  if (includePhone && targetProfile?.phone) contactArr.push(`📞 WhatsApp: ${targetProfile.phone}`);
+  if (includePhone && phoneVal) contactArr.push(`📲 WhatsApp: ${phoneVal}`);
+  if (includeWeb && targetProfile?.website) contactArr.push(`🌐 Web: ${targetProfile.website}`);
+  if (includeEmail && targetProfile?.email) contactArr.push(`📧 Email: ${targetProfile.email}`);
+  if (targetProfile?.address) contactArr.push(`📍 Ubicación: ${targetProfile.address}`);
 
   let contactInfoBlock = '';
   if (contactArr.length > 0) {
@@ -173,14 +175,25 @@ export async function generateMultiNetworkCopiesWithAgent(params: MultiNetworkCo
 
   const rubro = targetProfile?.rubro || targetProfile?.businessType || 'General';
   const businessName = targetProfile?.businessName || targetProfile?.companyName || targetProfile?.name || '';
-  const phone = targetProfile?.phone || '';
+  const phone = targetProfile?.whatsapp || targetProfile?.phone || '';
+  const website = targetProfile?.website || '';
+  const email = targetProfile?.email || '';
+
+  const contactList: string[] = [];
+  if (phone) contactList.push(`📲 WhatsApp: ${phone}`);
+  if (website) contactList.push(`🌐 Web: ${website}`);
+  if (email) contactList.push(`📧 Email: ${email}`);
+
+  const contactInstruction = contactList.length > 0
+    ? `\n\n**DATOS DE CONTACTO DE LA EMPRESA (OBLIGATORIO incluir en el cierre de Instagram, Facebook y LinkedIn):**\n${contactList.join('\n')}`
+    : '';
 
   const catalogoInstruction = catalogoItem 
     ? `\n\n**PRODUCTO/SERVICIO A PROMOCIONAR:**\n- Nombre: "${catalogoItem.name}"\n- Descripción: "${catalogoItem.description}"\n(EL COPY DEBE GIRAR EN TORNO A ESTE PRODUCTO DE MANERA NATURAL. USA SUS CARACTERÍSTICAS PARA HACERLO PERSUASIVO.)`
     : '';
 
   const sysInstruction = `Eres un estratega de contenido y Copywriter Senior especializado en optimización por plataforma para redes sociales.
-Tu tarea es tomar una idea/tema de video y redactar el copy o caption perfecto ADAPTADO a cada red social solicitada:${catalogoInstruction}
+Tu tarea es tomar una idea/tema de video y redactar el copy o caption perfecto ADAPTADO a cada red social solicitada:${catalogoInstruction}${contactInstruction}
 
 1. **TIKTOK (CRÍTICO - REGLA ESTRICTA DE LONGITUD)**:
    - Longitud MÁXIMA TOTAL: 140 caracteres (para que entre completo sin cortarse en el feed móvil ni en la API de TikTok).
@@ -190,7 +203,7 @@ Tu tarea es tomar una idea/tema de video y redactar el copy o caption perfecto A
 2. **INSTAGRAM (REELS / FEED)**:
    - Gancho magnético de 1 línea.
    - Desarrollo conciso de 2-3 oraciones con emojis limpios.
-   - Llamado a la acción (CTA) invitando a guardar o comentar.
+   - Llamado a la acción (CTA) con datos de contacto de la empresa.
    - 4-6 hashtags estratégicos de nicho.
 
 3. **YOUTUBE SHORTS**:
@@ -199,10 +212,10 @@ Tu tarea es tomar una idea/tema de video y redactar el copy o caption perfecto A
 
 4. **FACEBOOK**:
    - Tono conversacional y cercano.
-   - Llamado a la acción directo con contacto/WhatsApp (${phone ? `WhatsApp: ${phone}` : 'mensaje directo'}).
+   - Llamado a la acción directo con contacto/WhatsApp (${phone ? `WhatsApp: ${phone}` : (website || 'mensaje directo')}).
 
 5. **LINKEDIN**:
-   - Enfoque profesional, métricas y automatización operativa.
+   - Enfoque profesional, métricas y llamado a la acción con sitio web/contacto.
 
 REGLAS DE HUMANIZACIÓN:
 - Tono 100% natural, directo ("tú a tú") y sin muletillas de IA como "En el vertiginoso mundo", "Descubre cómo", "Desbloquea".
@@ -211,9 +224,9 @@ REGLAS DE HUMANIZACIÓN:
 Responde ÚNICAMENTE con un JSON válido con la siguiente estructura:
 {
   "tiktok": "Texto ultra-corto de máx 140 caracteres con 2 hashtags",
-  "instagram": "Texto estructurado para Instagram con emojis y hashtags",
+  "instagram": "Texto estructurado para Instagram con emojis, datos de contacto y hashtags",
   "youtube": "Título SEO | Descripción breve con #Shorts",
-  "facebook": "Texto amigable para Facebook con CTA",
+  "facebook": "Texto amigable para Facebook con CTA y datos de contacto",
   "linkedin": "Texto profesional para LinkedIn",
   "defaultCopy": "Texto general"
 }`;

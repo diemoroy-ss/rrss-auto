@@ -10,6 +10,9 @@ import { useProfile } from "../../../../contexts/ProfileContext";
 import { isUserAdmin } from "../../../../lib/quota";
 import StatusModal from "../../../../components/StatusModal";
 import VoiceMic from "../../../../components/VoiceMic";
+import PromptStyleSelector from "../../../../components/strategy/PromptStyleSelector";
+import { PromptTemplate } from "../../../../lib/prompt-templates";
+import { appendContactInfo } from "../../../../lib/contact-helper";
 
 interface StrategyGoal {
   id: string;
@@ -26,6 +29,10 @@ interface StrategyPost {
   hook: string;
   content: string;
   cta: string;
+  visualStyle?: string;
+  promptTemplateId?: string;
+  previewUrl?: string;
+  imageDirection?: string;
 }
 
 export default function EstrategiaPage() {
@@ -45,11 +52,45 @@ export default function EstrategiaPage() {
   const [customPromotions, setCustomPromotions] = useState("");
   const [radarAnalysis, setRadarAnalysis] = useState<any>(null);
   const [useRadarContext, setUseRadarContext] = useState<boolean>(true);
+  const [usePromptStyles, setUsePromptStyles] = useState<boolean>(false);
+  const [selectedPromptStyles, setSelectedPromptStyles] = useState<PromptTemplate[]>([]);
   const [businessData, setBusinessData] = useState<any>({});
   const [postsThisMonth, setPostsThisMonth] = useState(0);
   const [hasNetworks, setHasNetworks] = useState(false);
   const [catalogoItems, setCatalogoItems] = useState<any[]>([]);
   const [catalogUsage, setCatalogUsage] = useState<'mixed' | 'all' | 'none'>('mixed');
+  
+  // Fecha y hora de inicio de la planificación
+  const [startDate, setStartDate] = useState<string>(() => {
+    const d = new Date();
+    if (d.getHours() >= 18) d.setDate(d.getDate() + 1);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  });
+  const [startTime, setStartTime] = useState<string>("10:00");
+
+  const computePostDate = (startD: string, startT: string, dayOffset: number, suggestedTime?: string) => {
+    const [y, m, d] = (startD || new Date().toISOString().split('T')[0]).split('-').map(Number);
+    const targetDate = new Date(y, m - 1, d);
+    targetDate.setDate(targetDate.getDate() + (dayOffset || 0));
+
+    let timeStr = (dayOffset === 0 && startT) ? startT : (suggestedTime || startT || "10:00");
+    if (timeStr && timeStr.includes(':')) {
+      const [h, min] = timeStr.split(':').map(Number);
+      targetDate.setHours(h || 10, min || 0, 0, 0);
+    } else {
+      targetDate.setHours(10, 0, 0, 0);
+    }
+
+    const now = new Date();
+    if (targetDate.getTime() <= now.getTime()) {
+      targetDate.setTime(now.getTime() + 30 * 60 * 1000);
+    }
+    return targetDate;
+  };
+
   const { activeProfile } = useProfile();
 
   const [modal, setModal] = useState<{
@@ -90,13 +131,19 @@ export default function EstrategiaPage() {
               const isDefault = activeProfile?.id === 'default';
               setBusinessType(activeProfile?.rubro || (isDefault ? data.rubro : "") || "");
               
+              const prof = activeProfile as any;
               setBusinessData({
-                  website: activeProfile?.website || (isDefault ? data.website : "") || "",
-                  facebookUrl: activeProfile?.facebookUrl || (isDefault ? data.facebookUrl : "") || "",
-                  instagramUrl: activeProfile?.instagramUrl || (isDefault ? data.instagramUrl : "") || "",
-                  tiktokUrl: activeProfile?.tiktokUrl || (isDefault ? data.tiktokUrl : "") || "",
-                  twitterUrl: activeProfile?.twitterUrl || (isDefault ? data.twitterUrl : "") || "",
-                  linkedinUrl: activeProfile?.linkedinUrl || (isDefault ? data.linkedinUrl : "") || "",
+                  businessName: prof?.name || prof?.businessName || (isDefault ? data.businessName || data.name : "") || "",
+                  website: prof?.website || (isDefault ? data.website : "") || "",
+                  phone: prof?.phone || (isDefault ? data.phone : "") || "",
+                  whatsapp: prof?.whatsapp || prof?.phone || (isDefault ? data.whatsapp || data.phone : "") || "",
+                  email: prof?.email || (isDefault ? data.email : "") || "",
+                  address: prof?.address || (isDefault ? data.address : "") || "",
+                  facebookUrl: prof?.facebookUrl || (isDefault ? data.facebookUrl : "") || "",
+                  instagramUrl: prof?.instagramUrl || (isDefault ? data.instagramUrl : "") || "",
+                  tiktokUrl: prof?.tiktokUrl || (isDefault ? data.tiktokUrl : "") || "",
+                  twitterUrl: prof?.twitterUrl || (isDefault ? data.twitterUrl : "") || "",
+                  linkedinUrl: prof?.linkedinUrl || (isDefault ? data.linkedinUrl : "") || "",
               });
               
               const fbOK = !!activeProfile?.facebookToken_enc || (isDefault && !!data.facebookToken_enc);
@@ -232,12 +279,14 @@ export default function EstrategiaPage() {
                      type: item.type,
                      price: item.price || null,
                  })),
-                  connectedPlatforms: {
-                      facebook: !!activeProfile?.facebookToken_enc,
-                      instagram: !!activeProfile?.instagramToken_enc,
-                      tiktok: !!activeProfile?.tiktokToken_enc,
-                      linkedin: !!activeProfile?.linkedinUserToken_enc || !!activeProfile?.linkedinToken_enc
-                  }
+                 usePromptStyles,
+                 selectedPromptStyles: usePromptStyles ? selectedPromptStyles : [],
+                 connectedPlatforms: {
+                     facebook: !!activeProfile?.facebookToken_enc,
+                     instagram: !!activeProfile?.instagramToken_enc,
+                     tiktok: !!activeProfile?.tiktokToken_enc,
+                     linkedin: !!activeProfile?.linkedinUserToken_enc || !!activeProfile?.linkedinToken_enc
+                 }
              })
          });
          if (!res.ok) {
@@ -312,37 +361,31 @@ export default function EstrategiaPage() {
         }
 
         const postsRef = collection(db, "social_posts");
-        for (const post of strategyResult) {
-            const scheduledDate = new Date();
-            scheduledDate.setDate(scheduledDate.getDate() + post.dayOffset);
-            
-            // Try to parse suggested time HH:MM, fallback to 12:00
-            try {
-                if (post.suggestedTime && post.suggestedTime.includes(':')) {
-                    const [hours, minutes] = post.suggestedTime.split(':');
-                    scheduledDate.setHours(parseInt(hours, 10) || 12, parseInt(minutes, 10) || 0, 0, 0);
-                } else {
-                    scheduledDate.setHours(12, 0, 0, 0);
-                }
-            } catch (e) {
-                scheduledDate.setHours(12, 0, 0, 0);
-            }
+        for (const post of (strategyResult || [])) {
+            const scheduledDate = computePostDate(startDate, startTime, post.dayOffset, post.suggestedTime);
 
             // Determine format for database mapping
             const fmt = post.format?.toLowerCase() || "";
             const postType = fmt.includes('reel') || fmt.includes('video') ? 'Reel' : (fmt.includes('historia') || fmt.includes('story') ? 'Story' : 'Post');
 
+            const postBaseText = `${post.content}\n\n${post.cta}`;
+            const finalTextWithContact = appendContactInfo(postBaseText, activeProfile);
+
             const newPostRef = await addDoc(postsRef, {
                 userId: user.uid,
                 profileId: activeProfile?.id || 'default',
-                text: `${post.content}\n\n${post.cta}`,
+                text: finalTextWithContact,
                 idea: post.hook,
                 type: postType,
-                status: 'pending',
+                status: 'confirmed', // DIRECTAMENTE AGENDADO Y CONFIRMADO
                 scheduledFor: scheduledDate,
                 createdAt: new Date(),
                 networks: ['instagram', 'facebook'], // Default
-                generatedBy: 'ai_strategy'
+                generatedBy: 'ai_strategy',
+                visualStyle: post.visualStyle || null,
+                promptTemplateId: post.promptTemplateId || null,
+                previewUrl: post.previewUrl || null,
+                imageDirection: post.imageDirection || null
             });
 
             try {
@@ -356,7 +399,9 @@ export default function EstrategiaPage() {
                 console.error("Warning: Could not schedule GCP task", scheduleErr);
             }
         }
-        router.push("/automatizacion-rrss/panel");
+        showModal("success", "¡Planificación Agendada!", "Tus publicaciones han quedado inmediatamente agendadas y confirmadas en tu calendario de redes sociales.", () => {
+            router.push("/automatizacion-rrss/panel");
+        });
     } catch(err) {
         console.error("Error accepting plan:", err);
         setError("Error al guardar la planificación en tu calendario.");
@@ -573,8 +618,61 @@ export default function EstrategiaPage() {
                 </div>
               )}
 
+              {/* INTEGRACIÓN DE ESTILOS VISUALES DE PROMPTS IA */}
+              <PromptStyleSelector
+                enabled={usePromptStyles}
+                onToggleEnabled={setUsePromptStyles}
+                selectedStyles={selectedPromptStyles}
+                onChangeSelectedStyles={setSelectedPromptStyles}
+              />
+
+              {/* FECHA Y HORA DE INICIO DE LA PLANIFICACIÓN */}
+              <div className="p-6 bg-gradient-to-br from-indigo-50/70 via-purple-50/50 to-white rounded-3xl border-2 border-indigo-100/80 shadow-xs space-y-4">
+                  <div className="flex items-center gap-3">
+                      <span className="text-2xl">📅</span>
+                      <div>
+                          <h3 className="text-sm font-black text-slate-900 tracking-tight">Fecha y Hora de Inicio del Plan</h3>
+                          <p className="text-xs font-medium text-slate-500">Define a partir de qué día y hora comenzará a publicarse esta estrategia.</p>
+                      </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                          <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">
+                            Fecha de Inicio (Primer Post)
+                          </label>
+                          <input 
+                            type="date"
+                            value={startDate}
+                            min={new Date().toISOString().split('T')[0]}
+                            onChange={e => setStartDate(e.target.value)}
+                            className="w-full bg-white border-2 border-slate-200 px-4 py-3 rounded-2xl font-bold text-slate-800 outline-none focus:border-indigo-500 transition-all text-sm shadow-xs"
+                          />
+                      </div>
+
+                      <div>
+                          <label className="block text-xs font-black text-slate-700 uppercase tracking-wider mb-1.5">
+                            Hora Preferida
+                          </label>
+                          <input 
+                            type="time"
+                            value={startTime}
+                            onChange={e => setStartTime(e.target.value)}
+                            className="w-full bg-white border-2 border-slate-200 px-4 py-3 rounded-2xl font-bold text-slate-800 outline-none focus:border-indigo-500 transition-all text-sm shadow-xs"
+                          />
+                      </div>
+                  </div>
+
+                  <div className="p-3 bg-indigo-50/80 rounded-2xl border border-indigo-100 flex items-center gap-2.5 text-xs text-indigo-900 font-semibold">
+                      <span>💡</span>
+                      <span>
+                        El primer contenido se programará para el <strong className="text-indigo-950 font-black">{new Date(startDate + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</strong> a las <strong className="text-indigo-950 font-black">{startTime} hrs</strong>, distribuyendo las siguientes publicaciones de forma progresiva.
+                      </span>
+                  </div>
+              </div>
+
               <div>
-                  <h3 className="text-sm font-black text-slate-900 tracking-tight mb-3">3. ¿Tienes alguna expectativa especial? <span className="text-slate-400 font-medium">(Opcional)</span></h3>
+                  <h3 className="text-sm font-black text-slate-900 tracking-tight mb-3">Expectativas u Objetivos Especiales <span className="text-slate-400 font-medium">(Opcional)</span></h3>
                   <div className="relative">
                       <textarea 
                          value={expectations}
@@ -632,7 +730,7 @@ export default function EstrategiaPage() {
                     disabled={accepting}
                     className="bg-indigo-600 hover:bg-indigo-500 text-white font-black py-4 px-8 rounded-2xl transition-all shadow-lg hover:shadow-indigo-500/30 flex items-center gap-3 hover:-translate-y-1 group disabled:opacity-50 disabled:pointer-events-none"
                  >
-                     {accepting ? <><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> Guardando...</> : <><span>✅</span> Aceptar Planificación</>}
+                     {accepting ? <><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> Guardando y Agendando...</> : <><span>✅</span> Aceptar y Agendar Planificación</>}
                  </button>
               </div>
 
@@ -646,24 +744,46 @@ export default function EstrategiaPage() {
                           
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                               {strategyResult.filter(p => p.weekNumber === week).map((post, index) => {
-                                  const dDate = new Date();
-                                  dDate.setDate(dDate.getDate() + post.dayOffset);
-                                  const dateStr = dDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' });
+                                  const postDate = computePostDate(startDate, startTime, post.dayOffset, post.suggestedTime);
+                                  const dateStr = postDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' });
+                                  const timeStr = postDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) + ' hrs';
                                   const formatColor = post.format.toLowerCase().includes('reel') ? 'bg-pink-50 text-pink-600 border border-pink-100' : post.format.toLowerCase().includes('historia') ? 'bg-amber-50 text-amber-600 border border-amber-100' : 'bg-blue-50 text-blue-600 border border-blue-100';
 
                                   return (
                                      <div key={index} className="bg-slate-50 border-2 border-slate-100/60 rounded-3xl p-6 hover:bg-white hover:border-indigo-100 transition-all group relative overflow-hidden flex flex-col h-full shadow-sm hover:shadow-md">
                                          <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full blur-3xl -mr-10 -mt-10 group-hover:bg-indigo-50/50 transition-colors"></div>
-                                         <div className="flex items-center justify-between mb-6 relative z-10">
+                                         <div className="flex items-center justify-between mb-4 relative z-10">
                                             <div className="flex flex-col">
                                                 <span className="text-slate-800 font-black capitalize text-lg tracking-tight">{dateStr}</span>
                                                 <span className="text-slate-500 font-bold tracking-widest uppercase text-[10px] flex items-center gap-2">
                                                     <svg className="w-3 h-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                                    {post.suggestedTime}
+                                                    {timeStr}
                                                 </span>
                                             </div>
                                             <span className={`${formatColor} font-black text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-xl`}>{post.format}</span>
                                          </div>
+
+                                         {/* Style badge if assigned */}
+                                         {post.visualStyle && (
+                                            <div className="flex items-center gap-2.5 p-2.5 rounded-2xl bg-indigo-50/80 border border-indigo-100/90 mb-4 relative z-10">
+                                              {post.previewUrl ? (
+                                                <img 
+                                                  src={post.previewUrl} 
+                                                  alt={post.visualStyle} 
+                                                  className="w-10 h-10 rounded-xl object-cover border border-indigo-200/80 shadow-xs shrink-0" 
+                                                />
+                                              ) : (
+                                                <span className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center text-base shrink-0">🎨</span>
+                                              )}
+                                              <div className="min-w-0 flex-1">
+                                                <div className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">Estilo Visual Prompt IA</div>
+                                                <div className="text-xs font-black text-indigo-950 truncate">{post.visualStyle}</div>
+                                                {post.imageDirection && (
+                                                  <div className="text-[10px] text-slate-500 font-medium line-clamp-1 mt-0.5">{post.imageDirection}</div>
+                                                )}
+                                              </div>
+                                            </div>
+                                         )}
                                          
                                          <div className="flex-1 space-y-4 relative z-10">
                                             <div>

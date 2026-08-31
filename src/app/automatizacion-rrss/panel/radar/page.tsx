@@ -6,7 +6,10 @@ import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, collection, addDoc, query, where, getDocs, orderBy } from "firebase/firestore";
 import { useProfile } from "../../../../contexts/ProfileContext";
 import { useRouter } from "next/navigation";
-import { RadarAnalysisResult, TrendItem, AudienceQuestion, HookItem, ContentIdea } from "../../../../lib/niche-radar";
+import PromptStyleSelector from "../../../../components/strategy/PromptStyleSelector";
+import { PromptTemplate } from "../../../../lib/prompt-templates";
+import { appendContactInfo } from "../../../../lib/contact-helper";
+import StatusModal from "../../../../components/StatusModal";
 
 export default function NicheRadarPage() {
   const router = useRouter();
@@ -24,6 +27,21 @@ export default function NicheRadarPage() {
   const [copiedHookId, setCopiedHookId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string>("");
 
+  // Status Modal State (Reemplazo moderno de alerts)
+  const [statusModal, setStatusModal] = useState<{
+    isOpen: boolean;
+    type: "success" | "error" | "info" | "confirm";
+    title: string;
+    message: string;
+    onConfirm?: (() => void) | null;
+  }>({
+    isOpen: false,
+    type: "info",
+    title: "",
+    message: "",
+    onConfirm: null,
+  });
+
   // Plan and Limits
   const [userPlan, setUserPlan] = useState<string>("free");
   const [systemPlans, setSystemPlans] = useState<any>({});
@@ -33,6 +51,17 @@ export default function NicheRadarPage() {
   // Strategy State
   const [strategyGoal, setStrategyGoal] = useState<string>("");
   const [strategyExpectations, setStrategyExpectations] = useState<string>("");
+  const [usePromptStyles, setUsePromptStyles] = useState<boolean>(false);
+  const [selectedPromptStyles, setSelectedPromptStyles] = useState<PromptTemplate[]>([]);
+  const [startDate, setStartDate] = useState<string>(() => {
+    const d = new Date();
+    if (d.getHours() >= 18) d.setDate(d.getDate() + 1);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  });
+  const [startTime, setStartTime] = useState<string>("10:00");
   const [generatingStrategy, setGeneratingStrategy] = useState<boolean>(false);
   const [strategyResult, setStrategyResult] = useState<any[] | null>(null);
   const [acceptingStrategy, setAcceptingStrategy] = useState<boolean>(false);
@@ -59,27 +88,30 @@ export default function NicheRadarPage() {
     return isNaN(d.getTime()) ? "" : d.toLocaleDateString();
   };
 
-  const resolveStrategyDates = (strategy: any[], existingDates: number[]) => {
+  const resolveStrategyDates = (strategy: any[], existingDates: number[], startD: string, startT: string) => {
     const allocated: number[] = [...existingDates];
     const now = Date.now();
 
+    const [y, m, d] = (startD || new Date().toISOString().split('T')[0]).split('-').map(Number);
+
     return strategy.map((post, idx) => {
-      let targetDate = new Date();
-      const dayOffset = typeof post.dayOffset === 'number' ? post.dayOffset : (idx + 1);
+      let targetDate = new Date(y, m - 1, d);
+      const dayOffset = typeof post.dayOffset === 'number' ? post.dayOffset : idx;
       targetDate.setDate(targetDate.getDate() + dayOffset);
 
-      let hour = 12;
+      let timeStr = (dayOffset === 0 && startT) ? startT : (post.suggestedTime || startT || "10:00");
+      let hour = 10;
       let minute = 0;
-      if (post.suggestedTime && post.suggestedTime.includes(':')) {
-        const [h, m] = post.suggestedTime.split(':');
-        hour = parseInt(h, 10) || 12;
-        minute = parseInt(m, 10) || 0;
+      if (timeStr && timeStr.includes(':')) {
+        const [h, min] = timeStr.split(':');
+        hour = parseInt(h, 10) || 10;
+        minute = parseInt(min, 10) || 0;
       }
       targetDate.setHours(hour, minute, 0, 0);
 
-      // Si la fecha calculada ya pasó o está muy cerca de este momento (menos de 45 mins)
-      if (targetDate.getTime() < now + 45 * 60 * 1000) {
-        targetDate.setTime(now + 2 * 60 * 60 * 1000);
+      // Si la fecha calculada ya pasó o está muy cerca de este momento (menos de 30 mins)
+      if (targetDate.getTime() < now + 30 * 60 * 1000) {
+        targetDate.setTime(now + 45 * 60 * 1000);
       }
 
       // Evitar colisión con posts existentes o previos (mínimo 2 horas de diferencia)
@@ -334,7 +366,14 @@ export default function NicheRadarPage() {
           businessType: prof?.rubro || "General",
           userId: user.uid,
           expectations: strategyExpectations,
-          businessData: { website: prof?.website },
+          businessData: {
+              businessName: prof?.name || prof?.businessName || "Mi Negocio",
+              website: prof?.website || "",
+              phone: prof?.phone || "",
+              whatsapp: prof?.whatsapp || prof?.phone || "",
+              email: prof?.email || "",
+              address: prof?.address || ""
+          },
           connectedPlatforms: {
               facebook: !!prof?.facebookToken_enc,
               instagram: !!prof?.instagramToken_enc,
@@ -342,7 +381,9 @@ export default function NicheRadarPage() {
               linkedin: !!prof?.linkedinUserToken_enc
           },
           nicheContext: analysis?.summary || "",
-          postsPerWeek
+          postsPerWeek,
+          usePromptStyles,
+          selectedPromptStyles: usePromptStyles ? selectedPromptStyles : []
         })
       });
 
@@ -368,7 +409,7 @@ export default function NicheRadarPage() {
         console.warn("No se pudieron consultar posts previos para evitar solapamientos:", qErr);
       }
 
-      const resolved = resolveStrategyDates(data.strategy || [], upcomingTimestamps);
+      const resolved = resolveStrategyDates(data.strategy || [], upcomingTimestamps, startDate, startTime);
       setStrategyResult(resolved);
     } catch (err: any) {
       setErrorMsg("Error al generar la estrategia.");
@@ -388,21 +429,45 @@ export default function NicheRadarPage() {
           const fmt = post.format?.toLowerCase() || "";
           const postType = fmt.includes('reel') || fmt.includes('video') ? 'Reel' : (fmt.includes('historia') || fmt.includes('story') ? 'Story' : 'Post');
 
-          await addDoc(postsRef, {
+          const postBaseText = `${post.content}\n\n${post.cta}`;
+          const finalTextWithContact = appendContactInfo(postBaseText, activeProfile);
+
+          const newPostRef = await addDoc(postsRef, {
               userId: user.uid,
               profileId: activeProfile?.id || 'default',
-              text: `${post.content}\n\n${post.cta}`,
+              text: finalTextWithContact,
               idea: post.hook,
               type: postType,
-              status: 'pending',
+              status: 'confirmed', // DIRECTAMENTE CONFIRMADO Y AGENDADO
               scheduledFor: scheduledDate,
               createdAt: new Date(),
               networks: ['instagram', 'facebook'],
               generatedBy: 'ai_strategy_radar',
-              includeLogo: includeLogoInStrategy
+              includeLogo: includeLogoInStrategy,
+              visualStyle: post.visualStyle || null,
+              promptTemplateId: post.promptTemplateId || null,
+              previewUrl: post.previewUrl || null,
+              imageDirection: post.imageDirection || null
           });
+
+          try {
+              const idToken = await auth.currentUser?.getIdToken();
+              await fetch('/api/tasks/schedule', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+                  body: JSON.stringify({ postId: newPostRef.id, scheduledFor: scheduledDate.toISOString() })
+              });
+          } catch (scheduleErr) {
+              console.error("Warning: Could not schedule GCP task from radar", scheduleErr);
+          }
       }
-      router.push("/automatizacion-rrss/panel");
+      setStatusModal({
+          isOpen: true,
+          type: "success",
+          title: "¡Planificación Agendada!",
+          message: "Tus publicaciones han quedado inmediatamente agendadas y confirmadas en tu calendario de redes sociales.",
+          onConfirm: () => router.push("/automatizacion-rrss/panel")
+      });
     } catch (e) {
       setErrorMsg("Error al guardar planificación.");
       setAcceptingStrategy(false);
@@ -438,64 +503,51 @@ export default function NicheRadarPage() {
         <div className="absolute -right-10 -bottom-10 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="relative z-10 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-xs font-bold uppercase tracking-wider">
-              <span>📡 Radar de Nicho</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[10px] text-emerald-300 font-extrabold">Últimos 30 Días</span>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-full text-xs font-black tracking-wider uppercase">
+                  Radar de Nicho & Tendencias
+                </span>
+                <span className="px-2.5 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full text-[10px] font-bold">
+                  Últimos 30 días
+                </span>
+              </div>
+              <h1 className="text-2xl md:text-4xl font-black mt-2 tracking-tight">
+                Espía de Tendencias e Insights
+              </h1>
+              <p className="text-slate-300 text-xs md:text-sm max-w-2xl mt-1 font-medium leading-relaxed">
+                Descubre qué preguntas se hace tu cliente ideal, qué temas están en tendencia y obtén ganchos de alta retención para dominar tu sector.
+              </p>
             </div>
-            {activeProfile && (
-              <div className="bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/15 text-xs font-semibold flex items-center gap-2">
-                <span>🏪</span>
-                <span className="text-slate-200">{activeProfile.name || (activeProfile as any).businessName || "Mi Negocio"}</span>
-                {activeProfile.rubro && (
-                  <span className="bg-indigo-600/60 text-white px-2 py-0.5 rounded-md text-[10px] uppercase font-bold">
-                    {activeProfile.rubro}
-                  </span>
-                )}
+
+            {historicalAnalyses.length > 0 && (
+              <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-white/10 text-xs font-bold">
+                <span>📚 Historial:</span>
+                <select
+                  onChange={(e) => {
+                    const selected = historicalAnalyses.find(h => h.id === e.target.value);
+                    if (selected) setAnalysis(selected);
+                  }}
+                  value={analysis?.id || ""}
+                  className="bg-transparent text-white font-bold outline-none cursor-pointer text-xs"
+                >
+                  {historicalAnalyses.map(h => (
+                    <option key={h.id} value={h.id} className="bg-slate-900 text-white">
+                      {h.niche} ({new Date(h.updatedAt).toLocaleDateString()})
+                    </option>
+                  ))}
+                </select>
               </div>
             )}
           </div>
-
-          <h1 className="text-2xl md:text-4xl font-black tracking-tight text-white">
-            Inteligencia de Mercado & Tendencias
-          </h1>
-          <p className="text-slate-300 text-sm md:text-base max-w-3xl leading-relaxed">
-            Descubre los temas de conversación, dudas frecuentes y ganchos magnéticos que están funcionando en tu industria durante los últimos 30 días para crear contenido viral y relevante.
-          </p>
         </div>
       </div>
 
-      {/* FORM DE BÚSQUEDA Y PARÁMETROS */}
-      <div className="bg-white rounded-2xl p-5 md:p-6 shadow-sm border border-slate-200/80 space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <h2 className="text-sm font-black uppercase tracking-wider text-slate-500 flex items-center gap-2">
-              <span>⚙️ Configurar Nicho de Investigación</span>
-            </h2>
-            
-            {historicalAnalyses.length > 0 && (
-                <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-slate-500">Cargar Anterior:</span>
-                    <select 
-                        className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 outline-none focus:border-indigo-500 transition-colors"
-                        onChange={(e) => {
-                            const selected = historicalAnalyses.find(h => h.id === e.target.value);
-                            if (selected) {
-                                setAnalysis(selected);
-                                setNicheInput(selected.niche || "");
-                                setAudienceInput(selected.targetAudience || "");
-                            }
-                        }}
-                        value={analysis?.id || ""}
-                    >
-                        {historicalAnalyses.map((h: any) => (
-                            <option key={h.id} value={h.id}>
-                                {h.niche || "Análisis"} {formatRadarDate(h.createdAt) ? `- ${formatRadarDate(h.createdAt)}` : ''}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-            )}
-        </div>
+      {/* FORMULARIO DE BÚSQUEDA / CONFIGURACIÓN */}
+      <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200 shadow-sm space-y-4">
+        <h2 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
+          <span>🎯</span> Configuración del Radar
+        </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
@@ -601,201 +653,195 @@ export default function NicheRadarPage() {
           </div>
 
           {/* NAVEGACIÓN PESTAÑAS */}
-          <div className="flex items-center gap-2 border-b border-slate-200 overflow-x-auto pb-1">
+          <div className="flex items-center gap-2 border-b border-slate-200 pb-3 overflow-x-auto">
             <button
               onClick={() => setActiveTab("ideas")}
-              className={`px-4 py-2.5 text-xs font-extrabold rounded-t-xl transition-all flex items-center gap-2 border-b-2 whitespace-nowrap ${
+              className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 whitespace-nowrap ${
                 activeTab === "ideas"
-                  ? "border-indigo-600 text-indigo-600 bg-indigo-50/50"
-                  : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20"
+                  : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
               }`}
             >
-              <span>💡 Ideas de Contenido</span>
-              <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 text-[10px] rounded-full font-black">
-                {analysis.contentIdeas?.length || 0}
-              </span>
+              <span>💡</span>
+              <span>Ideas de Contenido ({analysis.ideas?.length || 0})</span>
             </button>
 
             <button
               onClick={() => setActiveTab("trends")}
-              className={`px-4 py-2.5 text-xs font-extrabold rounded-t-xl transition-all flex items-center gap-2 border-b-2 whitespace-nowrap ${
+              className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 whitespace-nowrap ${
                 activeTab === "trends"
-                  ? "border-indigo-600 text-indigo-600 bg-indigo-50/50"
-                  : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20"
+                  : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
               }`}
             >
-              <span>📈 Tendencias Candentes</span>
-              <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] rounded-full font-black">
-                {analysis.trends?.length || 0}
-              </span>
+              <span>📈</span>
+              <span>Tendencias Reales ({analysis.trends?.length || 0})</span>
             </button>
 
             <button
               onClick={() => setActiveTab("questions")}
-              className={`px-4 py-2.5 text-xs font-extrabold rounded-t-xl transition-all flex items-center gap-2 border-b-2 whitespace-nowrap ${
+              className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 whitespace-nowrap ${
                 activeTab === "questions"
-                  ? "border-indigo-600 text-indigo-600 bg-indigo-50/50"
-                  : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20"
+                  : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
               }`}
             >
-              <span>❓ Preguntas de la Audiencia</span>
-              <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] rounded-full font-black">
-                {analysis.audienceQuestions?.length || 0}
-              </span>
+              <span>❓</span>
+              <span>Preguntas Frecuentes ({analysis.audienceQuestions?.length || 0})</span>
             </button>
 
             <button
               onClick={() => setActiveTab("hooks")}
-              className={`px-4 py-2.5 text-xs font-extrabold rounded-t-xl transition-all flex items-center gap-2 border-b-2 whitespace-nowrap ${
+              className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all flex items-center gap-2 whitespace-nowrap ${
                 activeTab === "hooks"
-                  ? "border-indigo-600 text-indigo-600 bg-indigo-50/50"
-                  : "border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20"
+                  : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
               }`}
             >
-              <span>🎣 Ganchos Magnéticos</span>
-              <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-[10px] rounded-full font-black">
-                {analysis.hooks?.length || 0}
-              </span>
+              <span>🪝</span>
+              <span>Ganchos Virales ({analysis.highRetentionHooks?.length || 0})</span>
             </button>
           </div>
 
           {/* TAB 1: IDEAS DE CONTENIDO */}
           {activeTab === "ideas" && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              {analysis.contentIdeas?.map((idea) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-in fade-in duration-300">
+              {analysis.ideas?.map((idea) => (
                 <div
                   key={idea.id}
-                  className="bg-white rounded-2xl p-5 border border-slate-200 hover:border-indigo-300 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4 group"
+                  className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4"
                 >
-                  <div className="space-y-3">
+                  <div className="space-y-2.5">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="px-2.5 py-1 bg-indigo-50 border border-indigo-200/60 text-indigo-700 text-[10px] font-black uppercase rounded-lg">
-                        {idea.format}
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-100">
+                        {idea.angle}
                       </span>
-                      <span className="text-[10px] font-extrabold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">
-                        🎯 {idea.targetGoal}
+                      <span className="text-[11px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200">
+                        {idea.suggestedFormat}
                       </span>
                     </div>
 
-                    <h3 className="font-extrabold text-base text-slate-900 group-hover:text-indigo-600 transition-colors leading-snug">
+                    <h3 className="font-extrabold text-sm text-slate-900 leading-snug">
                       {idea.title}
                     </h3>
 
+                    <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                      {idea.description}
+                    </p>
+
                     {idea.draftHook && (
-                      <div className="bg-slate-50 border-l-2 border-indigo-500 p-2.5 rounded-r-xl">
-                        <p className="text-[11px] font-extrabold text-indigo-900 mb-0.5">Gancho Inicial:</p>
-                        <p className="text-xs italic text-slate-700 font-medium font-mono">
+                      <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 space-y-1">
+                        <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest block">
+                          Gancho Sugerido:
+                        </span>
+                        <p className="text-xs font-bold text-slate-800 italic">
                           "{idea.draftHook}"
                         </p>
-                      </div>
-                    )}
-
-                    {idea.outline && idea.outline.length > 0 && (
-                      <div className="space-y-1">
-                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Estructura del Post:</p>
-                        <ul className="space-y-1">
-                          {idea.outline.map((step, idx) => (
-                            <li key={idx} className="text-xs text-slate-600 font-medium flex items-start gap-1.5">
-                              <span className="text-indigo-500 font-bold">•</span>
-                              <span>{step}</span>
-                            </li>
-                          ))}
-                        </ul>
                       </div>
                     )}
                   </div>
 
                   <button
                     onClick={() => handleCreatePostFromIdea(idea)}
-                    className="w-full py-2.5 bg-indigo-50 hover:bg-indigo-600 text-indigo-600 hover:text-white text-xs font-extrabold rounded-xl transition-all border border-indigo-200 hover:border-indigo-600 flex items-center justify-center gap-2 group-hover:shadow-md"
+                    className="w-full py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-xl transition-all border border-indigo-200/60 flex items-center justify-center gap-2"
                   >
-                    <span>✍️ Crear Post con este Tema</span>
+                    <span>⚡ Desarrollar este Post</span>
                   </button>
                 </div>
               ))}
             </div>
           )}
 
-          {/* TAB 2: TENDENCIAS CANDENTES */}
+          {/* TAB 2: TENDENCIAS */}
           {activeTab === "trends" && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in duration-300">
               {analysis.trends?.map((trend) => (
                 <div
                   key={trend.id}
                   className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-3"
                 >
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
+                        Fuente: {trend.source}
+                      </span>
+                      <h3 className="font-extrabold text-sm text-slate-900">{trend.topic}</h3>
+                    </div>
                     <span
-                      className={`px-2.5 py-1 text-[10px] font-black uppercase rounded-lg border ${
-                        trend.popularity === "Alta"
-                          ? "bg-rose-50 border-rose-200 text-rose-700"
-                          : trend.popularity === "En Crecimiento"
-                          ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-                          : "bg-amber-50 border-amber-200 text-amber-700"
+                      className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full ${
+                        trend.velocity === "high"
+                          ? "bg-rose-50 text-rose-600 border border-rose-200"
+                          : trend.velocity === "medium"
+                          ? "bg-amber-50 text-amber-600 border border-amber-200"
+                          : "bg-slate-100 text-slate-600"
                       }`}
                     >
-                      Popularidad {trend.popularity}
-                    </span>
-                    <span className="text-[10px] font-bold text-slate-400">
-                      🎬 {trend.suggestedFormat}
+                      {trend.velocity === "high" ? "🔥 Muy Alta" : trend.velocity === "medium" ? "⚡ Media" : "Emergente"}
                     </span>
                   </div>
 
-                  <h3 className="font-extrabold text-base text-slate-900">{trend.title}</h3>
                   <p className="text-xs text-slate-600 font-medium leading-relaxed">
                     {trend.description}
                   </p>
 
-                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                    <p className="text-[11px] font-bold text-slate-500 mb-0.5">¿Por qué funciona?</p>
-                    <p className="text-xs text-slate-700 font-medium">{trend.whyItWorks}</p>
+                  <div className="p-3 bg-indigo-50/50 rounded-xl border border-indigo-100/80 space-y-1">
+                    <span className="text-[10px] font-black text-indigo-700 uppercase tracking-wider block">
+                      💡 Oportunidad para tu Negocio:
+                    </span>
+                    <p className="text-xs font-semibold text-indigo-950">
+                      {trend.opportunity}
+                    </p>
                   </div>
                 </div>
               ))}
             </div>
           )}
 
-          {/* TAB 3: PREGUNTAS DE LA AUDIENCIA */}
+          {/* TAB 3: PREGUNTAS FRECUENTES */}
           {activeTab === "questions" && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in duration-300">
               {analysis.audienceQuestions?.map((q) => (
                 <div
                   key={q.id}
-                  className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-3"
+                  className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-3 flex flex-col justify-between"
                 >
-                  <div className="flex items-center gap-2 text-indigo-600">
-                    <span className="text-lg">❓</span>
-                    <h3 className="font-extrabold text-sm text-slate-900 leading-snug">{q.question}</h3>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold uppercase text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
+                        {q.source}
+                      </span>
+                      <span className="text-[10px] font-extrabold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">
+                        {q.suggestedAngle}
+                      </span>
+                    </div>
+
+                    <h3 className="font-extrabold text-sm text-slate-900 leading-snug">
+                      "{q.question}"
+                    </h3>
                   </div>
 
-                  <div className="space-y-2">
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Contexto de la duda:</p>
-                      <p className="text-xs text-slate-700 font-medium">{q.context}</p>
-                    </div>
-
-                    <div className="bg-emerald-50/60 border border-emerald-200/80 p-3 rounded-xl">
-                      <p className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider">Oportunidad de Contenido:</p>
-                      <p className="text-xs text-emerald-900 font-semibold">{q.contentOpportunity}</p>
-                    </div>
+                  <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-xs font-medium text-slate-600">
+                    💡 <strong className="text-slate-800">Idea de Respuesta:</strong> Conviértelo en un Reel o Carrusel respondiendo este dolor con una solución directa.
                   </div>
                 </div>
               ))}
             </div>
           )}
 
-          {/* TAB 4: GANCHOS MAGNÉTICOS */}
+          {/* TAB 4: GANCHOS VIRALES */}
           {activeTab === "hooks" && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              {analysis.hooks?.map((hook) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in duration-300">
+              {analysis.highRetentionHooks?.map((hook) => (
                 <div
                   key={hook.id}
-                  className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between space-y-3"
+                  className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-3 flex flex-col justify-between"
                 >
                   <div className="space-y-2">
-                    <span className="px-2.5 py-0.5 bg-purple-50 border border-purple-200 text-purple-700 text-[10px] font-black uppercase rounded-md">
-                      {hook.category}
-                    </span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100">
+                        Fórmula: {hook.framework}
+                      </span>
+                    </div>
 
                     <p className="text-sm font-bold text-slate-800 italic bg-slate-50 p-3 rounded-xl border border-slate-100 font-mono">
                       "{hook.hookText}"
@@ -822,6 +868,7 @@ export default function NicheRadarPage() {
               ))}
             </div>
           )}
+
           {/* ESTRATEGIA GENERATOR */}
           <div id="generador-estrategia" className="bg-white rounded-2xl p-6 md:p-8 border border-slate-200 shadow-sm mt-8 space-y-6">
               <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
@@ -856,6 +903,59 @@ export default function NicheRadarPage() {
                      className="w-full bg-slate-50 border-2 border-slate-100 px-4 py-3 rounded-[20px] font-medium text-slate-700 outline-none focus:border-indigo-500 transition-colors resize-none text-sm"
                      rows={2}
                   />
+              </div>
+
+              {/* INTEGRACIÓN DE ESTILOS VISUALES DE PROMPTS IA */}
+              <PromptStyleSelector
+                enabled={usePromptStyles}
+                onToggleEnabled={setUsePromptStyles}
+                selectedStyles={selectedPromptStyles}
+                onChangeSelectedStyles={setSelectedPromptStyles}
+              />
+
+              {/* FECHA Y HORA DE INICIO DE LA PLANIFICACIÓN */}
+              <div className="p-5 bg-gradient-to-br from-indigo-50/70 via-purple-50/50 to-white rounded-2xl border border-indigo-100 space-y-3">
+                  <div className="flex items-center gap-2.5">
+                      <span className="text-xl">📅</span>
+                      <div>
+                          <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider">Fecha y Hora de Inicio</h4>
+                          <p className="text-[11px] font-medium text-slate-500">¿A partir de qué fecha y hora deseas que comience a publicarse este calendario?</p>
+                      </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                            Fecha de Inicio (Primer Post)
+                          </label>
+                          <input 
+                            type="date"
+                            value={startDate}
+                            min={new Date().toISOString().split('T')[0]}
+                            onChange={e => setStartDate(e.target.value)}
+                            className="w-full bg-white border border-slate-200 px-3.5 py-2.5 rounded-xl font-bold text-slate-800 outline-none focus:border-indigo-500 transition-all text-xs"
+                          />
+                      </div>
+
+                      <div>
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                            Hora Preferida
+                          </label>
+                          <input 
+                            type="time"
+                            value={startTime}
+                            onChange={e => setStartTime(e.target.value)}
+                            className="w-full bg-white border border-slate-200 px-3.5 py-2.5 rounded-xl font-bold text-slate-800 outline-none focus:border-indigo-500 transition-all text-xs"
+                          />
+                      </div>
+                  </div>
+
+                  <div className="p-2.5 bg-indigo-50/80 rounded-xl border border-indigo-100 text-[11px] text-indigo-900 font-semibold flex items-center gap-2">
+                      <span>💡</span>
+                      <span>
+                        Primer post programado para el <strong className="text-indigo-950 font-black">{new Date(startDate + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</strong> a las <strong className="text-indigo-950 font-black">{startTime} hrs</strong>.
+                      </span>
+                  </div>
               </div>
 
               {/* CONTROL DE LOGO DE MARCA */}
@@ -917,6 +1017,29 @@ export default function NicheRadarPage() {
                                        </span>
                                        <span className="bg-white border border-slate-200 text-slate-700 font-bold px-2 py-0.5 rounded-full">{post.format}</span>
                                    </div>
+
+                                   {/* Style badge if assigned */}
+                                   {post.visualStyle && (
+                                      <div className="flex items-center gap-2 p-2 rounded-xl bg-indigo-50/90 border border-indigo-100">
+                                        {post.previewUrl ? (
+                                          <img 
+                                            src={post.previewUrl} 
+                                            alt={post.visualStyle} 
+                                            className="w-9 h-9 rounded-lg object-cover border border-indigo-200 shadow-xs shrink-0" 
+                                          />
+                                        ) : (
+                                          <span className="w-9 h-9 rounded-lg bg-indigo-100 flex items-center justify-center text-sm shrink-0">🎨</span>
+                                        )}
+                                        <div className="min-w-0 flex-1">
+                                          <div className="text-[9px] font-bold text-indigo-500 uppercase tracking-wider">Estilo Prompt IA</div>
+                                          <div className="text-xs font-black text-indigo-950 truncate">{post.visualStyle}</div>
+                                          {post.imageDirection && (
+                                            <div className="text-[10px] text-slate-500 font-medium line-clamp-1 mt-0.5">{post.imageDirection}</div>
+                                          )}
+                                        </div>
+                                      </div>
+                                   )}
+
                                    <p className="font-black text-sm text-slate-800">"{post.hook}"</p>
                                    <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed">{post.content}</p>
                                </div>
@@ -1035,6 +1158,17 @@ export default function NicheRadarPage() {
            </div>
         </div>
       )}
+      {/* STATUS MODAL MODERNO */}
+      <StatusModal
+        isOpen={statusModal.isOpen}
+        type={statusModal.type}
+        title={statusModal.title}
+        message={statusModal.message}
+        onConfirm={() => {
+          if (statusModal.onConfirm) statusModal.onConfirm();
+          setStatusModal(prev => ({ ...prev, isOpen: false }));
+        }}
+      />
 
     </div>
   );
