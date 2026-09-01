@@ -2,15 +2,17 @@
 
 import React, { useRef, useState, useEffect } from "react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { db } from "../../lib/firebase";
+import { db, auth } from "../../lib/firebase";
+import { useProfile } from "../../contexts/ProfileContext";
 import VoiceMic from "../VoiceMic";
 import Link from "next/link";
 import { type PosterConfig } from "../../types/poster";
 import { UserTemplate } from "../../app/automatizacion-rrss/panel/crear/page";
 import { FaFacebookF, FaInstagram, FaLinkedinIn, FaTiktok, FaGoogle, FaYoutube, FaTwitter } from "react-icons/fa";
 import TikTokPostSettings, { TikTokSettingsState } from "./TikTokPostSettings";
-import { PromptTemplate } from "../../lib/prompt-templates";
+import { PromptTemplate, HARDCODED_STYLES } from "../../lib/prompt-templates";
 import PromptStylePickerModal from "./PromptStylePickerModal";
+import PreferredStylesModal, { StyleOption } from "./PreferredStylesModal";
 
 interface PostConfigFormProps {
   // AI states
@@ -161,6 +163,27 @@ const ALL_IMAGE_STYLES = [
   }
 ];
 
+const ALL_CATALOG_STYLES: StyleOption[] = [
+  ...ALL_IMAGE_STYLES.map((s, idx) => ({
+    id: `quick-${idx}`,
+    label: s.label,
+    val: s.val,
+    previewUrl: s.previewUrl,
+    category: "Estilos Rápidos",
+    description: s.val,
+  })),
+  ...HARDCODED_STYLES.filter(
+    (h) => !ALL_IMAGE_STYLES.some((s) => s.label.toLowerCase() === h.title.toLowerCase())
+  ).map((h) => ({
+    id: h.id,
+    label: h.title,
+    val: h.prompt,
+    previewUrl: h.previewUrl,
+    category: h.category,
+    description: h.description,
+  })),
+];
+
 export default function PostConfigForm({
   idea, setIdea,
   imageExpectation, setImageExpectation,
@@ -210,36 +233,78 @@ export default function PostConfigForm({
   const maxChars = constraints.safeCharLimit;
   const isOverLimit = creationMode === 'ai' ? postText.length > maxChars : manualCaption.length > maxChars;
 
-  const [activeStyles, setActiveStyles] = useState<string[]>(ALL_IMAGE_STYLES.map(s => s.label));
-  const [isConfiguringStyles, setIsConfiguringStyles] = useState(false);
+  const { activeProfile } = useProfile();
+  const [preferredStyles, setPreferredStyles] = useState<string[]>(ALL_IMAGE_STYLES.map(s => s.label));
+  const [showPreferredModal, setShowPreferredModal] = useState(false);
+  const [savingPreferences, setSavingPreferences] = useState(false);
   const [showPromptPicker, setShowPromptPicker] = useState(false);
 
   useEffect(() => {
     if (renderSection !== 'content') return;
-    const fetchStyles = async () => {
-      try {
-        const d = await getDoc(doc(db, "settings", "image_styles"));
-        if (d.exists()) {
-          setActiveStyles(d.data().activeLabels || ALL_IMAGE_STYLES.map(s => s.label));
-        }
-      } catch (e) {
-        console.error("Error fetching active styles", e);
-      }
-    };
-    fetchStyles();
-  }, [renderSection]);
+    const uid = auth.currentUser?.uid;
+    const profileId = activeProfile?.id || "default";
 
-  const handleToggleActiveStyle = async (label: string) => {
-    const newActive = activeStyles.includes(label)
-      ? activeStyles.filter(l => l !== label)
-      : [...activeStyles, label];
-    setActiveStyles(newActive);
+    // 1. Cargar de localStorage
     try {
-      await setDoc(doc(db, "settings", "image_styles"), { activeLabels: newActive });
-    } catch (e) {
-      console.error("Error saving style visibility", e);
+      const cached = localStorage.getItem(`preferred_styles_${profileId}`);
+      if (cached) {
+        setPreferredStyles(JSON.parse(cached));
+      }
+    } catch (_) {}
+
+    // 2. Cargar de Firestore
+    if (uid) {
+      getDoc(doc(db, "users", uid, "preferences", `styles_${profileId}`)).then((snap) => {
+        if (snap.exists() && Array.isArray(snap.data().styles)) {
+          setPreferredStyles(snap.data().styles);
+          try {
+            localStorage.setItem(`preferred_styles_${profileId}`, JSON.stringify(snap.data().styles));
+          } catch (_) {}
+        }
+      }).catch(err => console.warn("Error loading preferred styles:", err));
+    }
+  }, [renderSection, activeProfile?.id]);
+
+  const handleTogglePreferredStyle = (styleLabel: string) => {
+    const nextStyles = preferredStyles.includes(styleLabel)
+      ? preferredStyles.filter(s => s !== styleLabel)
+      : [...preferredStyles, styleLabel];
+    savePreferredStyles(nextStyles);
+  };
+
+  const handleSelectAllStyles = () => {
+    const allLabels = ALL_CATALOG_STYLES.map(s => s.label);
+    savePreferredStyles(allLabels);
+  };
+
+  const handleDeselectAllStyles = () => {
+    savePreferredStyles([]);
+  };
+
+  const savePreferredStyles = async (newStyles: string[]) => {
+    setPreferredStyles(newStyles);
+    const uid = auth.currentUser?.uid;
+    const profileId = activeProfile?.id || "default";
+    try {
+      localStorage.setItem(`preferred_styles_${profileId}`, JSON.stringify(newStyles));
+    } catch (_) {}
+
+    if (uid) {
+      setSavingPreferences(true);
+      try {
+        await setDoc(doc(db, "users", uid, "preferences", `styles_${profileId}`), {
+          styles: newStyles,
+          updatedAt: new Date(),
+        }, { merge: true });
+      } catch (err) {
+        console.error("Error saving preferred styles:", err);
+      } finally {
+        setSavingPreferences(false);
+      }
     }
   };
+
+  const activeDisplayStyles = ALL_CATALOG_STYLES.filter(s => preferredStyles.includes(s.label));
 
   // RENDER SECCIÓN 1: PARÁMETROS (COLUMNA IZQUIERDA)
   if (renderSection === 'parameters') {
@@ -526,74 +591,76 @@ export default function PostConfigForm({
               {/* IMAGE STYLES SELECTOR */}
               <div className="mt-3 bg-white p-3 rounded-xl border border-slate-100 shadow-sm relative">
                 <div className="flex justify-between items-center mb-2">
-                  <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                    🎨 Sugerencias de Estilo (Opcional)
+                  <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1">
+                    <span>🎨</span> Mis Estilos Frecuentes ({activeDisplayStyles.length})
                   </label>
-                  {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => setShowPreferredModal(true)}
+                    className="text-[9px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded-md transition-colors flex items-center gap-1 border border-indigo-200/50"
+                  >
+                    ⚙️ Personalizar mis estilos
+                  </button>
+                </div>
+
+                {activeDisplayStyles.length === 0 ? (
+                  <div className="py-3 px-3 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-center">
+                    <p className="text-[10px] text-slate-500 font-medium">No has marcado ningún estilo frecuente.</p>
                     <button
                       type="button"
-                      onClick={() => setIsConfiguringStyles(!isConfiguringStyles)}
-                      className="text-[9px] font-bold text-slate-400 hover:text-indigo-600 transition-colors"
+                      onClick={() => setShowPreferredModal(true)}
+                      className="text-[10px] text-indigo-600 font-bold hover:underline mt-0.5 inline-block"
                     >
-                      {isConfiguringStyles ? "✅ Finalizar" : "⚙️ Configurar"}
+                      Haz clic aquí para seleccionar los estilos que más usas →
                     </button>
-                  )}
-                </div>
-                <div className="flex flex-wrap gap-1.5 pt-1">
-                  {ALL_IMAGE_STYLES.filter(s => isAdmin || activeStyles.includes(s.label)).map(style => {
-                    const isVisibleToUsers = activeStyles.includes(style.label);
-                    const isSelectedForPost = imageStyle === style.val;
-                    return (
-                      <div key={style.label} className="relative group/stylepill">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (isConfiguringStyles) {
-                              handleToggleActiveStyle(style.label);
-                            } else {
-                              // Toggle for the post: if already selected, deselect; otherwise, select.
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-1.5 pt-0.5">
+                    {activeDisplayStyles.map((style) => {
+                      const isSelectedForPost = imageStyle === style.val;
+                      return (
+                        <div key={style.id || style.label} className="relative group/stylepill">
+                          <button
+                            type="button"
+                            onClick={() => {
                               if (setImageStyle) {
                                 setImageStyle(isSelectedForPost ? "" : style.val);
                               }
-                            }
-                          }}
-                          className={`text-[9px] font-bold px-2.5 py-1 rounded-full transition-colors border flex items-center gap-1 ${
-                            isConfiguringStyles
-                              ? (isVisibleToUsers
-                                ? "bg-green-100 text-green-700 border-green-200"
-                                : "bg-slate-100 text-slate-400 border-slate-200 line-through")
-                              : (isSelectedForPost
+                            }}
+                            className={`text-[9px] font-bold px-2.5 py-1 rounded-full transition-colors border flex items-center gap-1 ${
+                              isSelectedForPost
                                 ? "bg-indigo-600 text-white border-indigo-700 shadow-sm shadow-indigo-600/20"
-                                : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200")
-                          }`}
-                        >
-                          {style.label}
-                        </button>
+                                : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200"
+                            }`}
+                          >
+                            {style.label}
+                          </button>
 
-                        {/* Hover Preview Thumbnail (Tamaño pequeño) */}
-                        {style.previewUrl && !isConfiguringStyles && (
-                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/stylepill:flex flex-col items-center pointer-events-none z-40 animate-in fade-in zoom-in-95 duration-150">
-                            <div className="bg-slate-900/95 text-white p-1.5 rounded-xl shadow-xl border border-slate-700/60 backdrop-blur-md flex flex-col items-center w-28">
-                              <div className="w-24 h-16 rounded-lg overflow-hidden bg-slate-800 relative">
-                                <img
-                                  src={style.previewUrl}
-                                  alt={style.label}
-                                  className="w-full h-full object-cover"
-                                  loading="lazy"
-                                />
+                          {/* Hover Preview Thumbnail (Tamaño pequeño) */}
+                          {style.previewUrl && (
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/stylepill:flex flex-col items-center pointer-events-none z-40 animate-in fade-in zoom-in-95 duration-150">
+                              <div className="bg-slate-900/95 text-white p-1.5 rounded-xl shadow-xl border border-slate-700/60 backdrop-blur-md flex flex-col items-center w-28">
+                                <div className="w-24 h-16 rounded-lg overflow-hidden bg-slate-800 relative">
+                                  <img
+                                    src={style.previewUrl}
+                                    alt={style.label}
+                                    className="w-full h-full object-cover"
+                                    loading="lazy"
+                                  />
+                                </div>
+                                <span className="text-[9px] font-bold text-slate-200 mt-1 text-center truncate w-full px-1">
+                                  {style.label}
+                                </span>
                               </div>
-                              <span className="text-[9px] font-bold text-slate-200 mt-1 text-center truncate w-full px-1">
-                                {style.label}
-                              </span>
+                              {/* Arrow indicator */}
+                              <div className="w-2 h-2 bg-slate-900 rotate-45 -mt-1 border-r border-b border-slate-700/60"></div>
                             </div>
-                            {/* Arrow indicator */}
-                            <div className="w-2 h-2 bg-slate-900 rotate-45 -mt-1 border-r border-b border-slate-700/60"></div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* SELECTOR DE ESTILO MAESTRO DE PROMPTS IA */}
@@ -867,6 +934,18 @@ export default function PostConfigForm({
           onSelectTemplate={(template) => {
             setSelectedPromptTemplate?.(template);
           }}
+        />
+
+        {/* Modal para Personalizar Estilos Frecuentes con Checkboxes */}
+        <PreferredStylesModal
+          isOpen={showPreferredModal}
+          onClose={() => setShowPreferredModal(false)}
+          availableStyles={ALL_CATALOG_STYLES}
+          selectedStyles={preferredStyles}
+          onToggleStyle={handleTogglePreferredStyle}
+          onSelectAll={handleSelectAllStyles}
+          onDeselectAll={handleDeselectAllStyles}
+          saving={savingPreferences}
         />
       </div>
     );
