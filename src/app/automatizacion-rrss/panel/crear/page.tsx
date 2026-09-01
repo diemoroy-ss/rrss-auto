@@ -21,6 +21,7 @@ import PosterSection from "../../../../components/crear/PosterSection";
 import GeneratingModal, { type GeneratingStep } from "../../../../components/crear/GeneratingModal";
 import { FaFacebookF, FaInstagram, FaLinkedinIn, FaTiktok, FaGoogle, FaYoutube, FaTwitter } from "react-icons/fa";
 import TikTokPostSettings, { TikTokSettingsState, DEFAULT_TIKTOK_SETTINGS } from "../../../../components/crear/TikTokPostSettings";
+import { PromptTemplate, HARDCODED_STYLES } from "../../../../lib/prompt-templates";
 
 export interface UserTemplate { id: string; url: string; type?: 'image' | 'video'; createdAt: Date; }
 
@@ -52,6 +53,7 @@ export default function RrssCreatePost() {
   const [idea, setIdea] = useState("");
   const [imageExpectation, setImageExpectation] = useState("");
   const [imageStyle, setImageStyle] = useState("");
+  const [selectedPromptTemplate, setSelectedPromptTemplate] = useState<PromptTemplate | null>(null);
   /** Texto/copy explícito que el usuario escribe o genera con IA */
   const [postText, setPostText] = useState("");
   /** Configuración del cartel publicitario (opcional) */
@@ -243,6 +245,22 @@ export default function RrssCreatePost() {
   const openEditorParam = searchParams.get("openEditor") === "true";
   const catalogoIdParam = searchParams.get("catalogoId");
   const catalogoNameParam = searchParams.get("catalogoName");
+  const promptIdParam = searchParams.get("promptId") || searchParams.get("templatePromptId") || searchParams.get("styleId");
+
+  useEffect(() => {
+    if (promptIdParam) {
+      const foundHardcoded = HARDCODED_STYLES.find(s => s.id === promptIdParam);
+      if (foundHardcoded) {
+        setSelectedPromptTemplate(foundHardcoded);
+      } else {
+        getDoc(doc(db, "prompt_library", promptIdParam)).then(snap => {
+          if (snap.exists()) {
+            setSelectedPromptTemplate({ id: snap.id, ...snap.data() } as PromptTemplate);
+          }
+        }).catch(err => console.warn("Error loading style template by ID:", err));
+      }
+    }
+  }, [promptIdParam]);
 
   // Load catalog items for the active profile
   useEffect(() => {
@@ -468,6 +486,13 @@ export default function RrssCreatePost() {
           type: postType,
           carouselCount,
           regenerate: forceReplan,
+          selectedPromptTemplate: selectedPromptTemplate ? {
+            id: selectedPromptTemplate.id,
+            title: selectedPromptTemplate.title,
+            prompt: selectedPromptTemplate.prompt,
+            category: selectedPromptTemplate.category,
+            isCommercialPoster: selectedPromptTemplate.isCommercialPoster || false,
+          } : null,
           catalogoItem: selectedCatalogoItem ? {
             name: selectedCatalogoItem.name,
             description: selectedCatalogoItem.description || "",
@@ -1060,6 +1085,10 @@ export default function RrssCreatePost() {
         // Si hay cartel
         posterConfig: posterConfig.enabled ? posterConfig : null,
         includeLogo: includeLogo,
+        // Estilo Maestro de Prompts IA
+        visualStyle: selectedPromptTemplate?.title || null,
+        promptTemplateId: selectedPromptTemplate?.id || null,
+        previewUrl: selectedPromptTemplate?.previewUrl || null,
         // TikTok Direct Post settings
         tiktokPrivacyLevel: tiktokSettings.privacyLevel,
         tiktokAllowComment: tiktokSettings.allowComment,
@@ -1255,6 +1284,8 @@ export default function RrssCreatePost() {
               idea={idea} setIdea={setIdea}
               imageExpectation={imageExpectation} setImageExpectation={setImageExpectation}
               imageStyle={imageStyle} setImageStyle={setImageStyle}
+              selectedPromptTemplate={selectedPromptTemplate}
+              setSelectedPromptTemplate={setSelectedPromptTemplate}
               postText={postText} setPostText={setPostText}
               postType={postType} setPostType={setPostType}
               hideSubmit={true}
@@ -1304,6 +1335,8 @@ export default function RrssCreatePost() {
             idea={idea} setIdea={setIdea}
             imageExpectation={imageExpectation} setImageExpectation={setImageExpectation}
             imageStyle={imageStyle} setImageStyle={setImageStyle}
+            selectedPromptTemplate={selectedPromptTemplate}
+            setSelectedPromptTemplate={setSelectedPromptTemplate}
             postText={postText} setPostText={setPostText}
             postType={postType} setPostType={setPostType}
             hideSubmit={true}

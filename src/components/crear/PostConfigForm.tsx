@@ -7,8 +7,9 @@ import VoiceMic from "../VoiceMic";
 import Link from "next/link";
 import { type PosterConfig } from "../../types/poster";
 import { UserTemplate } from "../../app/automatizacion-rrss/panel/crear/page";
-import { FaFacebookF, FaInstagram, FaLinkedinIn, FaTiktok, FaGoogle, FaYoutube, FaTwitter } from "react-icons/fa";
 import TikTokPostSettings, { TikTokSettingsState } from "./TikTokPostSettings";
+import { PromptTemplate } from "../../lib/prompt-templates";
+import PromptStylePickerModal from "./PromptStylePickerModal";
 
 interface PostConfigFormProps {
   // AI states
@@ -18,6 +19,8 @@ interface PostConfigFormProps {
   setImageExpectation: (val: string) => void;
   imageStyle?: string;
   setImageStyle?: (val: string) => void;
+  selectedPromptTemplate?: PromptTemplate | null;
+  setSelectedPromptTemplate?: (val: PromptTemplate | null) => void;
   postText: string;
   setPostText: (val: string) => void;
 
@@ -125,6 +128,7 @@ export default function PostConfigForm({
   idea, setIdea,
   imageExpectation, setImageExpectation,
   imageStyle, setImageStyle,
+  selectedPromptTemplate, setSelectedPromptTemplate,
   postText, setPostText,
   creationMode, setCreationMode,
   manualFiles, setManualFiles,
@@ -171,6 +175,7 @@ export default function PostConfigForm({
 
   const [activeStyles, setActiveStyles] = useState<string[]>(ALL_IMAGE_STYLES.map(s => s.label));
   const [isConfiguringStyles, setIsConfiguringStyles] = useState(false);
+  const [showPromptPicker, setShowPromptPicker] = useState(false);
 
   useEffect(() => {
     if (renderSection !== 'content') return;
@@ -532,6 +537,71 @@ export default function PostConfigForm({
                 </div>
               </div>
 
+              {/* SELECTOR DE ESTILO MAESTRO DE PROMPTS IA */}
+              <div className="mt-3 bg-gradient-to-r from-indigo-50/80 via-purple-50/60 to-pink-50/40 p-3.5 rounded-2xl border border-indigo-150 shadow-xs">
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm">✨</span>
+                    <label className="text-[10px] font-black text-indigo-950 uppercase tracking-wider">
+                      Estilo Maestro de Prompts IA
+                    </label>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowPromptPicker(true)}
+                    className="text-[10px] font-bold text-indigo-600 hover:text-indigo-850 bg-white hover:bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-200 transition-all shadow-xs flex items-center gap-1"
+                  >
+                    {selectedPromptTemplate ? "Cambiar estilo" : "Explorar biblioteca →"}
+                  </button>
+                </div>
+
+                {selectedPromptTemplate ? (
+                  <div className="flex items-center gap-3 bg-white p-2.5 rounded-xl border border-indigo-200 shadow-xs">
+                    <img
+                      src={selectedPromptTemplate.previewUrl}
+                      alt={selectedPromptTemplate.title}
+                      className="w-12 h-12 rounded-lg object-cover border border-slate-100 shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 uppercase">
+                          {selectedPromptTemplate.category}
+                        </span>
+                        {selectedPromptTemplate.isCommercialPoster && (
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 uppercase">
+                            Cartel Comercial
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs font-black text-slate-800 truncate mt-0.5">
+                        {selectedPromptTemplate.title}
+                      </p>
+                      <p className="text-[10px] text-slate-500 line-clamp-1">
+                        {selectedPromptTemplate.description}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPromptTemplate?.(null)}
+                      className="text-slate-400 hover:text-red-500 p-1.5 transition-colors font-bold text-xs"
+                      title="Quitar estilo"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
+                    Aplica una dirección artística probada (Explosión, 3D, Minimalista, Food Poster, etc.) a tu {postType === 'Reel' ? 'portada y animación de video' : postType === 'Carrusel' ? 'carrusel de imágenes' : 'imagen'}.
+                  </p>
+                )}
+
+                {postType === 'Reel' && selectedPromptTemplate && (
+                  <p className="mt-2 text-[10px] font-semibold text-purple-700 bg-purple-100/70 p-2 rounded-lg border border-purple-200">
+                    🎬 <b>Modo Video:</b> Este estilo se aplicará tanto a la foto de portada como a las directrices de animación e iluminación del video.
+                  </p>
+                )}
+              </div>
+
               {posterConfig?.enabled && (
                 <p className="mt-2 text-[10px] font-semibold text-amber-600 bg-amber-50 p-2.5 rounded-lg border border-amber-200">
                   ⚠️ <b>Nota:</b> Como activaste el modo Cartel Publicitario, usa este campo solo para describir la <b>escena o el fondo de la imagen</b> (colores, objetos, estilo). El texto exacto que llevará la imagen lo defines en la configuración del cartel (arriba).
@@ -729,6 +799,16 @@ export default function PostConfigForm({
             </div>
           </div>
         )}
+
+        {/* Modal Selector de Estilos de Prompts IA */}
+        <PromptStylePickerModal
+          isOpen={showPromptPicker}
+          onClose={() => setShowPromptPicker(false)}
+          selectedTemplate={selectedPromptTemplate || null}
+          onSelectTemplate={(template) => {
+            setSelectedPromptTemplate?.(template);
+          }}
+        />
       </div>
     );
   }

@@ -4,7 +4,7 @@ import { generateFreeText } from "../../../../lib/gemini-free";
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { idea, imageExpectation, businessType, type, carouselCount, regenerate, catalogoItem } = body;
+        const { idea, imageExpectation, businessType, type, carouselCount, regenerate, catalogoItem, selectedPromptTemplate } = body;
  
         if (!idea) {
             return NextResponse.json({ error: "La idea principal es requerida" }, { status: 400 });
@@ -13,6 +13,11 @@ export async function POST(req: NextRequest) {
         // Build product/service context string if catalogoItem is provided
         const productContext = catalogoItem?.name
             ? `\nFeatured product/service: "${catalogoItem.name}"${catalogoItem.description ? ` — ${catalogoItem.description}` : ""}.${catalogoItem.imageUrl ? " HE ADJUNTADO LA FOTO DE ESTE PRODUCTO/SERVICIO COMO IMAGEN DE REFERENCIA. Tu prompt DEBE incluir una descripción ultra-detallada de los elementos físicos, colores y textura de la imagen adjunta para que el generador DALL-E la recree con alta fidelidad." : " Incorporate this product/service as the visual and conceptual center of the image."}`
+            : "";
+
+        // Build style template context if selectedPromptTemplate is provided
+        const styleTemplateContext = selectedPromptTemplate?.prompt
+            ? `\nESTILO VISUAL MAESTRO SELECCIONADO (OBLIGATORIO: Adapta y fusiona esta dirección artística de Prompts IA con la idea del cliente):\n- Nombre del Estilo: "${selectedPromptTemplate.title}" (Categoría: ${selectedPromptTemplate.category})\n- Fórmula/Directriz Maestra del Estilo: "${selectedPromptTemplate.prompt}"\nTu propuesta DEBE seguir estrictamente esta composición, iluminación, balance cromático y estética visual adaptada al contenido del cliente.`
             : "";
  
         const bananaRules = `
@@ -50,7 +55,7 @@ REGLAS ADICIONALES PARA CARRUSEL:
 
             promptContent = `Idea del Carrusel: ${idea}
 Rubro del Negocio: ${businessType || "General"}
-Expectativa Visual del Cliente: ${imageExpectation || "Estilo libre, profesional y moderno"}${productContext}`;
+Expectativa Visual del Cliente: ${imageExpectation || "Estilo libre, profesional y moderno"}${productContext}${styleTemplateContext}`;
 
         } else if (type === 'Reel') {
             systemInstruction = `Eres un experto Director de Arte y Guionista de Redes Sociales.
@@ -58,7 +63,7 @@ Tu tarea es analizar la idea del post y retornar un objeto JSON con la estructur
 {
   "prompt_english": "Prompt altamente detallado en INGLÉS para la imagen inicial usando la REGLA DE LOS 7 COMPONENTES. Formato vertical (9:16).",
   "prompt_spanish": "Una descripción clara y concisa en ESPAÑOL de lo que se verá en la imagen de portada para que el cliente la entienda.",
-  "video_prompt": "Un prompt de animación en INGLÉS para un generador de Image-to-Video (como Runway o Luma). Describe el movimiento de la cámara, luces y efectos cinemáticos, partiendo desde la imagen inicial generada.",
+  "video_prompt": "Un prompt de animación en INGLÉS para un generador de Image-to-Video (como Runway, Luma o Kling). Describe el movimiento de la cámara, luces, dinámica y efectos cinemáticos, heredando el mismo estilo visual maestro y atmósfera de la imagen inicial.",
   "voiceover_script": "Un guion de locución corto y persuasivo en ESPAÑOL de exactamente 15 a 20 palabras (ideal para un Reel de 8-10 segundos)."
 }
 
@@ -69,7 +74,7 @@ REGLAS IMPORTANTES:
 
             promptContent = `Idea del Reel: ${idea}
 Rubro del Negocio: ${businessType || "General"}
-Expectativa Visual del Cliente: ${imageExpectation || "Estilo libre, profesional y moderno"}${productContext}`;
+Expectativa Visual del Cliente: ${imageExpectation || "Estilo libre, profesional y moderno"}${productContext}${styleTemplateContext}`;
 
         } else {
             // Post / Historia (Single Image)
@@ -88,7 +93,7 @@ REGLAS IMPORTANTES:
 
             promptContent = `Idea del Post: ${idea}
 Rubro del Negocio: ${businessType || "General"}
-Expectativa Visual del Cliente: ${imageExpectation || "Estilo libre, profesional y moderno"}${productContext}`;
+Expectativa Visual del Cliente: ${imageExpectation || "Estilo libre, profesional y moderno"}${productContext}${styleTemplateContext}`;
         }
 
         console.log(`[GENERATE-PROMPT] Generating prompts for type: ${type} (regenerate: ${!!regenerate})${catalogoItem ? ` | Product: ${catalogoItem.name}` : ""}`);
