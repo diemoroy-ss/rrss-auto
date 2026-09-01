@@ -1,22 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
-
-export interface StyleOption {
-  id: string;
-  label: string;
-  val: string;
-  previewUrl: string;
-  category?: string;
-  description?: string;
-}
+import { PromptTemplate } from "../../lib/prompt-templates";
 
 interface PreferredStylesModalProps {
   isOpen: boolean;
   onClose: () => void;
-  availableStyles: StyleOption[];
-  selectedStyles: string[];
-  onToggleStyle: (styleLabel: string) => void;
+  availableStyles: PromptTemplate[];
+  selectedStyles: string[]; // List of template IDs
+  onToggleStyle: (styleId: string) => void;
   onSelectAll: () => void;
   onDeselectAll: () => void;
   saving?: boolean;
@@ -33,14 +25,20 @@ export default function PreferredStylesModal({
   saving = false,
 }: PreferredStylesModalProps) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
   if (!isOpen) return null;
 
+  const categories = ["all", ...Array.from(new Set(availableStyles.map(s => s.category).filter(Boolean)))];
+
   const filteredStyles = availableStyles.filter((style) => {
+    const matchesCategory = selectedCategory === "all" || style.category === selectedCategory;
+    if (!matchesCategory) return false;
+
     if (!searchTerm.trim()) return true;
     const term = searchTerm.toLowerCase();
     return (
-      style.label.toLowerCase().includes(term) ||
+      style.title.toLowerCase().includes(term) ||
       (style.category && style.category.toLowerCase().includes(term)) ||
       (style.description && style.description.toLowerCase().includes(term))
     );
@@ -48,7 +46,7 @@ export default function PreferredStylesModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-3xl max-h-[88vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
         {/* Header */}
         <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
           <div>
@@ -59,7 +57,7 @@ export default function PreferredStylesModal({
               </h3>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              Marca con un check los estilos que más utilizas para que aparezcan como accesos directos al crear publicaciones.
+              Marca con un check los estilos de la biblioteca de Prompts IA que deseas tener a mano al crear posts.
             </p>
           </div>
           <button
@@ -71,25 +69,39 @@ export default function PreferredStylesModal({
           </button>
         </div>
 
-        {/* Action bar / Search & Select All */}
+        {/* Action bar / Search, Category Filter & Select All */}
         <div className="p-4 border-b border-slate-100 bg-white flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="relative w-full sm:w-72">
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar estilo..."
-              className="w-full bg-slate-50 border border-slate-200 pl-3.5 pr-8 py-2 rounded-xl text-xs font-semibold text-slate-700 outline-none focus:border-indigo-500 focus:bg-white transition-all shadow-inner"
-            />
-            {searchTerm && (
-              <button
-                type="button"
-                onClick={() => setSearchTerm("")}
-                className="absolute right-2.5 top-2 text-xs text-slate-400 hover:text-slate-600 font-bold"
-              >
-                ✕
-              </button>
-            )}
+          <div className="flex items-center gap-2 w-full sm:w-auto flex-1">
+            <div className="relative flex-1 sm:max-w-xs">
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Buscar estilo..."
+                className="w-full bg-slate-50 border border-slate-200 pl-3.5 pr-8 py-2 rounded-xl text-xs font-semibold text-slate-700 outline-none focus:border-indigo-500 focus:bg-white transition-all shadow-inner"
+              />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm("")}
+                  className="absolute right-2.5 top-2 text-xs text-slate-400 hover:text-slate-600 font-bold"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="bg-slate-50 border border-slate-200 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 outline-none focus:border-indigo-500 cursor-pointer"
+            >
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat === "all" ? "Todas las categorías" : cat}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
@@ -114,10 +126,10 @@ export default function PreferredStylesModal({
         <div className="p-6 overflow-y-auto flex-1 bg-slate-50/40">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
             {filteredStyles.map((style) => {
-              const isChecked = selectedStyles.includes(style.label);
+              const isChecked = selectedStyles.includes(style.id);
               return (
                 <label
-                  key={style.id || style.label}
+                  key={style.id}
                   className={`group relative flex items-center gap-3 p-3 rounded-2xl border transition-all cursor-pointer select-none bg-white ${
                     isChecked
                       ? "border-indigo-500 bg-indigo-50/40 shadow-xs ring-1 ring-indigo-400"
@@ -128,15 +140,15 @@ export default function PreferredStylesModal({
                   <input
                     type="checkbox"
                     checked={isChecked}
-                    onChange={() => onToggleStyle(style.label)}
+                    onChange={() => onToggleStyle(style.id)}
                     className="w-4 h-4 rounded text-indigo-600 accent-indigo-600 focus:ring-indigo-500 shrink-0 cursor-pointer"
                   />
 
-                  {/* Thumbnail Image */}
-                  <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 shrink-0 relative border border-slate-200/80">
+                  {/* Thumbnail Image (Exact image from prompt library) */}
+                  <div className="w-14 h-14 rounded-xl overflow-hidden bg-slate-100 shrink-0 relative border border-slate-200/80">
                     <img
                       src={style.previewUrl}
-                      alt={style.label}
+                      alt={style.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                       loading="lazy"
                     />
@@ -146,13 +158,18 @@ export default function PreferredStylesModal({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1">
                       <span className="text-xs font-black text-slate-800 truncate block">
-                        {style.label}
+                        {style.title}
                       </span>
                     </div>
                     {style.category && (
-                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mt-0.5 truncate">
                         {style.category}
                       </span>
+                    )}
+                    {style.description && (
+                      <p className="text-[10px] text-slate-500 line-clamp-1 mt-0.5">
+                        {style.description}
+                      </p>
                     )}
                   </div>
                 </label>
@@ -164,7 +181,7 @@ export default function PreferredStylesModal({
         {/* Footer */}
         <div className="p-4 border-t border-slate-100 flex items-center justify-between bg-white">
           <span className="text-xs font-bold text-slate-600">
-            {selectedStyles.length} estilo{selectedStyles.length === 1 ? "" : "s"} seleccionado{selectedStyles.length === 1 ? "" : "s"} para tu panel
+            {selectedStyles.length} estilo{selectedStyles.length === 1 ? "" : "s"} seleccionado{selectedStyles.length === 1 ? "" : "s"} para tu panel de creación
           </span>
           <button
             type="button"

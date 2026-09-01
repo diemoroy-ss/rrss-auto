@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useState, useEffect } from "react";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, collection, getDocs } from "firebase/firestore";
 import { db, auth } from "../../lib/firebase";
 import { useProfile } from "../../contexts/ProfileContext";
 import VoiceMic from "../VoiceMic";
@@ -115,73 +115,16 @@ interface PostConfigFormProps {
   hideAI?: boolean;
 }
 
-const ALL_IMAGE_STYLES = [
-  { 
-    label: "Exploded view", 
-    val: "Estilo vista despiezada con todas sus piezas flotando en orden.",
-    previewUrl: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=500&q=80"
-  },
-  { 
-    label: "Blueprint", 
-    val: "Estilo plano técnico clásico con líneas blancas sobre fondo azul oscuro.",
-    previewUrl: "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=500&q=80"
-  },
-  { 
-    label: "Cross-section", 
-    val: "Estilo corte transversal anatómico mostrando el interior con precisión.",
-    previewUrl: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=500&q=80"
-  },
-  { 
-    label: "Isometric 3D", 
-    val: "Estilo isométrico 3D, render limpio tipo maqueta de videojuego.",
-    previewUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&q=80"
-  },
-  { 
-    label: "Wireframe", 
-    val: "Estilo malla de alambre digital mostrando estructura 3D.",
-    previewUrl: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=500&q=80"
-  },
-  { 
-    label: "Low poly", 
-    val: "Estilo low poly con polígonos geométricos y minimalistas.",
-    previewUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&q=80"
-  },
-  { 
-    label: "Papercraft", 
-    val: "Estilo papercraft, hecho a mano con recortes de papel superpuestos.",
-    previewUrl: "https://images.unsplash.com/photo-1502691876148-a84978e59af8?w=500&q=80"
-  },
-  { 
-    label: "Double exposure", 
-    val: "Estilo doble exposición mezclando dos escenas distintas.",
-    previewUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&q=80"
-  },
-  { 
-    label: "Claymation", 
-    val: "Estilo claymation modelado en arcilla o plastilina 3D realista.",
-    previewUrl: "https://images.unsplash.com/photo-1563089145-599997674d42?w=500&q=80"
-  }
-];
-
-const ALL_CATALOG_STYLES: StyleOption[] = [
-  ...ALL_IMAGE_STYLES.map((s, idx) => ({
-    id: `quick-${idx}`,
-    label: s.label,
-    val: s.val,
-    previewUrl: s.previewUrl,
-    category: "Estilos Rápidos",
-    description: s.val,
-  })),
-  ...HARDCODED_STYLES.filter(
-    (h) => !ALL_IMAGE_STYLES.some((s) => s.label.toLowerCase() === h.title.toLowerCase())
-  ).map((h) => ({
-    id: h.id,
-    label: h.title,
-    val: h.prompt,
-    previewUrl: h.previewUrl,
-    category: h.category,
-    description: h.description,
-  })),
+const DEFAULT_PREFERRED_STYLE_IDS = [
+  "style-exploded",
+  "style-blueprint",
+  "style-anatomy",
+  "style-isometric",
+  "style-wireframe",
+  "style-lowpoly",
+  "style-papercraft",
+  "style-claymation",
+  "style-meta-ads",
 ];
 
 export default function PostConfigForm({
@@ -234,66 +177,107 @@ export default function PostConfigForm({
   const isOverLimit = creationMode === 'ai' ? postText.length > maxChars : manualCaption.length > maxChars;
 
   const { activeProfile } = useProfile();
-  const [preferredStyles, setPreferredStyles] = useState<string[]>(ALL_IMAGE_STYLES.map(s => s.label));
+  const [availableTemplates, setAvailableTemplates] = useState<PromptTemplate[]>(HARDCODED_STYLES);
+  const [preferredStyleIds, setPreferredStyleIds] = useState<string[]>(DEFAULT_PREFERRED_STYLE_IDS);
   const [showPreferredModal, setShowPreferredModal] = useState(false);
   const [savingPreferences, setSavingPreferences] = useState(false);
   const [showPromptPicker, setShowPromptPicker] = useState(false);
 
+  // Cargar todas las plantillas directamente desde Firestore (prompt_library)
+  useEffect(() => {
+    let isMounted = true;
+    async function loadTemplates() {
+      try {
+        const snap = await getDocs(collection(db, "prompt_library"));
+        const loaded: PromptTemplate[] = [];
+        const dbIds = new Set<string>();
+
+        snap.forEach((docSnap) => {
+          const data = docSnap.data();
+          dbIds.add(docSnap.id);
+          const hasValidTitle = typeof data.title === "string" && data.title.trim().length > 0;
+          const hasValidPrompt = typeof data.prompt === "string" && data.prompt.trim().length > 0;
+          if (!data.isDeleted && hasValidTitle && hasValidPrompt) {
+            loaded.push({ id: docSnap.id, ...data } as PromptTemplate);
+          }
+        });
+
+        HARDCODED_STYLES.forEach((style) => {
+          if (!dbIds.has(style.id) && style.title && style.title.trim() && style.prompt && style.prompt.trim()) {
+            loaded.push(style);
+          }
+        });
+
+        if (isMounted) {
+          setAvailableTemplates(loaded);
+        }
+      } catch (err) {
+        console.warn("Error cargando plantillas de prompt_library:", err);
+      }
+    }
+
+    loadTemplates();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Cargar IDs de estilos favoritos del usuario / perfil
   useEffect(() => {
     if (renderSection !== 'content') return;
     const uid = auth.currentUser?.uid;
     const profileId = activeProfile?.id || "default";
 
-    // 1. Cargar de localStorage
+    // 1. LocalStorage
     try {
-      const cached = localStorage.getItem(`preferred_styles_${profileId}`);
+      const cached = localStorage.getItem(`preferred_style_ids_${profileId}`);
       if (cached) {
-        setPreferredStyles(JSON.parse(cached));
+        setPreferredStyleIds(JSON.parse(cached));
       }
     } catch (_) {}
 
-    // 2. Cargar de Firestore
+    // 2. Firestore
     if (uid) {
       getDoc(doc(db, "users", uid, "preferences", `styles_${profileId}`)).then((snap) => {
-        if (snap.exists() && Array.isArray(snap.data().styles)) {
-          setPreferredStyles(snap.data().styles);
+        if (snap.exists() && Array.isArray(snap.data().styleIds)) {
+          setPreferredStyleIds(snap.data().styleIds);
           try {
-            localStorage.setItem(`preferred_styles_${profileId}`, JSON.stringify(snap.data().styles));
+            localStorage.setItem(`preferred_style_ids_${profileId}`, JSON.stringify(snap.data().styleIds));
           } catch (_) {}
         }
       }).catch(err => console.warn("Error loading preferred styles:", err));
     }
   }, [renderSection, activeProfile?.id]);
 
-  const handleTogglePreferredStyle = (styleLabel: string) => {
-    const nextStyles = preferredStyles.includes(styleLabel)
-      ? preferredStyles.filter(s => s !== styleLabel)
-      : [...preferredStyles, styleLabel];
-    savePreferredStyles(nextStyles);
+  const handleTogglePreferredStyle = (styleId: string) => {
+    const nextIds = preferredStyleIds.includes(styleId)
+      ? preferredStyleIds.filter(id => id !== styleId)
+      : [...preferredStyleIds, styleId];
+    savePreferredStyles(nextIds);
   };
 
   const handleSelectAllStyles = () => {
-    const allLabels = ALL_CATALOG_STYLES.map(s => s.label);
-    savePreferredStyles(allLabels);
+    const allIds = availableTemplates.map(t => t.id);
+    savePreferredStyles(allIds);
   };
 
   const handleDeselectAllStyles = () => {
     savePreferredStyles([]);
   };
 
-  const savePreferredStyles = async (newStyles: string[]) => {
-    setPreferredStyles(newStyles);
+  const savePreferredStyles = async (newIds: string[]) => {
+    setPreferredStyleIds(newIds);
     const uid = auth.currentUser?.uid;
     const profileId = activeProfile?.id || "default";
     try {
-      localStorage.setItem(`preferred_styles_${profileId}`, JSON.stringify(newStyles));
+      localStorage.setItem(`preferred_style_ids_${profileId}`, JSON.stringify(newIds));
     } catch (_) {}
 
     if (uid) {
       setSavingPreferences(true);
       try {
         await setDoc(doc(db, "users", uid, "preferences", `styles_${profileId}`), {
-          styles: newStyles,
+          styleIds: newIds,
           updatedAt: new Date(),
         }, { merge: true });
       } catch (err) {
@@ -304,7 +288,7 @@ export default function PostConfigForm({
     }
   };
 
-  const activeDisplayStyles = ALL_CATALOG_STYLES.filter(s => preferredStyles.includes(s.label));
+  const activeDisplayTemplates = availableTemplates.filter(t => preferredStyleIds.includes(t.id));
 
   // RENDER SECCIÓN 1: PARÁMETROS (COLUMNA IZQUIERDA)
   if (renderSection === 'parameters') {
@@ -592,7 +576,7 @@ export default function PostConfigForm({
               <div className="mt-3 bg-white p-3 rounded-xl border border-slate-100 shadow-sm relative">
                 <div className="flex justify-between items-center mb-2">
                   <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1">
-                    <span>🎨</span> Mis Estilos Frecuentes ({activeDisplayStyles.length})
+                    <span>🎨</span> Mis Estilos Frecuentes ({activeDisplayTemplates.length})
                   </label>
                   <button
                     type="button"
@@ -603,7 +587,7 @@ export default function PostConfigForm({
                   </button>
                 </div>
 
-                {activeDisplayStyles.length === 0 ? (
+                {activeDisplayTemplates.length === 0 ? (
                   <div className="py-3 px-3 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-center">
                     <p className="text-[10px] text-slate-500 font-medium">No has marcado ningún estilo frecuente.</p>
                     <button
@@ -616,15 +600,19 @@ export default function PostConfigForm({
                   </div>
                 ) : (
                   <div className="flex flex-wrap gap-1.5 pt-0.5">
-                    {activeDisplayStyles.map((style) => {
-                      const isSelectedForPost = imageStyle === style.val;
+                    {activeDisplayTemplates.map((template) => {
+                      const isSelectedForPost = selectedPromptTemplate?.id === template.id || imageStyle === template.prompt;
                       return (
-                        <div key={style.id || style.label} className="relative group/stylepill">
+                        <div key={template.id} className="relative group/stylepill">
                           <button
                             type="button"
                             onClick={() => {
-                              if (setImageStyle) {
-                                setImageStyle(isSelectedForPost ? "" : style.val);
+                              if (isSelectedForPost) {
+                                setSelectedPromptTemplate?.(null);
+                                if (setImageStyle) setImageStyle("");
+                              } else {
+                                setSelectedPromptTemplate?.(template);
+                                if (setImageStyle) setImageStyle(template.prompt);
                               }
                             }}
                             className={`text-[9px] font-bold px-2.5 py-1 rounded-full transition-colors border flex items-center gap-1 ${
@@ -633,23 +621,23 @@ export default function PostConfigForm({
                                 : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200"
                             }`}
                           >
-                            {style.label}
+                            {template.title}
                           </button>
 
-                          {/* Hover Preview Thumbnail (Tamaño pequeño) */}
-                          {style.previewUrl && (
+                          {/* Hover Preview Thumbnail (Tamaño pequeño - Imagen EXACTA de Prompts IA) */}
+                          {template.previewUrl && (
                             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/stylepill:flex flex-col items-center pointer-events-none z-40 animate-in fade-in zoom-in-95 duration-150">
                               <div className="bg-slate-900/95 text-white p-1.5 rounded-xl shadow-xl border border-slate-700/60 backdrop-blur-md flex flex-col items-center w-28">
                                 <div className="w-24 h-16 rounded-lg overflow-hidden bg-slate-800 relative">
                                   <img
-                                    src={style.previewUrl}
-                                    alt={style.label}
+                                    src={template.previewUrl}
+                                    alt={template.title}
                                     className="w-full h-full object-cover"
                                     loading="lazy"
                                   />
                                 </div>
                                 <span className="text-[9px] font-bold text-slate-200 mt-1 text-center truncate w-full px-1">
-                                  {style.label}
+                                  {template.title}
                                 </span>
                               </div>
                               {/* Arrow indicator */}
@@ -940,8 +928,8 @@ export default function PostConfigForm({
         <PreferredStylesModal
           isOpen={showPreferredModal}
           onClose={() => setShowPreferredModal(false)}
-          availableStyles={ALL_CATALOG_STYLES}
-          selectedStyles={preferredStyles}
+          availableStyles={availableTemplates}
+          selectedStyles={preferredStyleIds}
           onToggleStyle={handleTogglePreferredStyle}
           onSelectAll={handleSelectAllStyles}
           onDeselectAll={handleDeselectAllStyles}
