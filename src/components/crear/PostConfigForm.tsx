@@ -114,15 +114,51 @@ interface PostConfigFormProps {
 }
 
 const ALL_IMAGE_STYLES = [
-  { label: "Exploded view", val: "Estilo vista despiezada con todas sus piezas flotando en orden." },
-  { label: "Blueprint", val: "Estilo plano técnico clásico con líneas blancas sobre fondo azul oscuro." },
-  { label: "Cross-section", val: "Estilo corte transversal anatómico mostrando el interior con precisión." },
-  { label: "Isometric 3D", val: "Estilo isométrico 3D, render limpio tipo maqueta de videojuego." },
-  { label: "Wireframe", val: "Estilo malla de alambre digital mostrando estructura 3D." },
-  { label: "Low poly", val: "Estilo low poly con polígonos geométricos y minimalistas." },
-  { label: "Papercraft", val: "Estilo papercraft, hecho a mano con recortes de papel superpuestos." },
-  { label: "Double exposure", val: "Estilo doble exposición mezclando dos escenas distintas." },
-  { label: "Claymation", val: "Estilo claymation modelado en arcilla o plastilina 3D realista." }
+  { 
+    label: "Exploded view", 
+    val: "Estilo vista despiezada con todas sus piezas flotando en orden.",
+    previewUrl: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=500&q=80"
+  },
+  { 
+    label: "Blueprint", 
+    val: "Estilo plano técnico clásico con líneas blancas sobre fondo azul oscuro.",
+    previewUrl: "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=500&q=80"
+  },
+  { 
+    label: "Cross-section", 
+    val: "Estilo corte transversal anatómico mostrando el interior con precisión.",
+    previewUrl: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=500&q=80"
+  },
+  { 
+    label: "Isometric 3D", 
+    val: "Estilo isométrico 3D, render limpio tipo maqueta de videojuego.",
+    previewUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&q=80"
+  },
+  { 
+    label: "Wireframe", 
+    val: "Estilo malla de alambre digital mostrando estructura 3D.",
+    previewUrl: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=500&q=80"
+  },
+  { 
+    label: "Low poly", 
+    val: "Estilo low poly con polígonos geométricos y minimalistas.",
+    previewUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&q=80"
+  },
+  { 
+    label: "Papercraft", 
+    val: "Estilo papercraft, hecho a mano con recortes de papel superpuestos.",
+    previewUrl: "https://images.unsplash.com/photo-1502691876148-a84978e59af8?w=500&q=80"
+  },
+  { 
+    label: "Double exposure", 
+    val: "Estilo doble exposición mezclando dos escenas distintas.",
+    previewUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&q=80"
+  },
+  { 
+    label: "Claymation", 
+    val: "Estilo claymation modelado en arcilla o plastilina 3D realista.",
+    previewUrl: "https://images.unsplash.com/photo-1563089145-599997674d42?w=500&q=80"
+  }
 ];
 
 export default function PostConfigForm({
@@ -503,36 +539,58 @@ export default function PostConfigForm({
                     </button>
                   )}
                 </div>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-1.5 pt-1">
                   {ALL_IMAGE_STYLES.filter(s => isAdmin || activeStyles.includes(s.label)).map(style => {
                     const isVisibleToUsers = activeStyles.includes(style.label);
                     const isSelectedForPost = imageStyle === style.val;
                     return (
-                      <button
-                        key={style.label}
-                        type="button"
-                        onClick={() => {
-                          if (isConfiguringStyles) {
-                            handleToggleActiveStyle(style.label);
-                          } else {
-                            // Toggle for the post: if already selected, deselect; otherwise, select.
-                            if (setImageStyle) {
-                              setImageStyle(isSelectedForPost ? "" : style.val);
+                      <div key={style.label} className="relative group/stylepill">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (isConfiguringStyles) {
+                              handleToggleActiveStyle(style.label);
+                            } else {
+                              // Toggle for the post: if already selected, deselect; otherwise, select.
+                              if (setImageStyle) {
+                                setImageStyle(isSelectedForPost ? "" : style.val);
+                              }
                             }
-                          }
-                        }}
-                        className={`text-[9px] font-bold px-2.5 py-1 rounded-full transition-colors border ${
-                          isConfiguringStyles
-                            ? (isVisibleToUsers
-                              ? "bg-green-100 text-green-700 border-green-200"
-                              : "bg-slate-100 text-slate-400 border-slate-200 line-through")
-                            : (isSelectedForPost
-                              ? "bg-indigo-600 text-white border-indigo-700 shadow-sm shadow-indigo-600/20"
-                              : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200")
-                        }`}
-                      >
-                        {style.label}
-                      </button>
+                          }}
+                          className={`text-[9px] font-bold px-2.5 py-1 rounded-full transition-colors border flex items-center gap-1 ${
+                            isConfiguringStyles
+                              ? (isVisibleToUsers
+                                ? "bg-green-100 text-green-700 border-green-200"
+                                : "bg-slate-100 text-slate-400 border-slate-200 line-through")
+                              : (isSelectedForPost
+                                ? "bg-indigo-600 text-white border-indigo-700 shadow-sm shadow-indigo-600/20"
+                                : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200")
+                          }`}
+                        >
+                          {style.label}
+                        </button>
+
+                        {/* Hover Preview Thumbnail (Tamaño pequeño) */}
+                        {style.previewUrl && !isConfiguringStyles && (
+                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover/stylepill:flex flex-col items-center pointer-events-none z-40 animate-in fade-in zoom-in-95 duration-150">
+                            <div className="bg-slate-900/95 text-white p-1.5 rounded-xl shadow-xl border border-slate-700/60 backdrop-blur-md flex flex-col items-center w-28">
+                              <div className="w-24 h-16 rounded-lg overflow-hidden bg-slate-800 relative">
+                                <img
+                                  src={style.previewUrl}
+                                  alt={style.label}
+                                  className="w-full h-full object-cover"
+                                  loading="lazy"
+                                />
+                              </div>
+                              <span className="text-[9px] font-bold text-slate-200 mt-1 text-center truncate w-full px-1">
+                                {style.label}
+                              </span>
+                            </div>
+                            {/* Arrow indicator */}
+                            <div className="w-2 h-2 bg-slate-900 rotate-45 -mt-1 border-r border-b border-slate-700/60"></div>
+                          </div>
+                        )}
+                      </div>
                     );
                   })}
                 </div>
