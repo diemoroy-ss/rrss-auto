@@ -7,6 +7,7 @@ import VoiceMic from "../VoiceMic";
 import Link from "next/link";
 import { type PosterConfig } from "../../types/poster";
 import { UserTemplate } from "../../app/automatizacion-rrss/panel/crear/page";
+import { FaFacebookF, FaInstagram, FaLinkedinIn, FaTiktok, FaGoogle, FaYoutube, FaTwitter } from "react-icons/fa";
 import TikTokPostSettings, { TikTokSettingsState } from "./TikTokPostSettings";
 import { PromptTemplate } from "../../lib/prompt-templates";
 import PromptStylePickerModal from "./PromptStylePickerModal";
