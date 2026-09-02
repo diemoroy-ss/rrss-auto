@@ -86,7 +86,7 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
       items: [
         { href: "/automatizacion-rrss/panel/radar", label: "Radar de Nicho", icon: "📡", exact: false },
         { href: "/automatizacion-rrss/panel/estrategia", label: "Estrategia", icon: "🚀", exact: false },
-        ...(isAdminUser || userDoc?.hasSeoAutopilot ? [{ href: "/automatizacion-rrss/panel/blog", label: "SEO / GEO", icon: "🌐", exact: false }] : []),
+        { href: "/automatizacion-rrss/panel/blog", label: "SEO / GEO", icon: "🌐", exact: false },
         { href: "/automatizacion-rrss/panel/prompts", label: "Comandos de Agentes", icon: "✨", exact: false },
       ]
     },
