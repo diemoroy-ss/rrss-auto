@@ -46,20 +46,8 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
     setMobileNavOpen(false);
   }, [pathname]);
 
-  const baseLinks = [
-    { href: "/automatizacion-rrss/panel", label: "Próximos Posts", icon: "📅", exact: true },
-    { href: "/automatizacion-rrss/panel/publicados", label: "Posts Publicados", icon: "✅", exact: true },
-    { href: "/automatizacion-rrss/panel/metricas", label: "Estadísticas", icon: "📊", exact: false },
-    { href: "/automatizacion-rrss/panel/crear", label: "Nuevo Post", icon: "✍️", exact: false },
-    { href: "/automatizacion-rrss/panel/poc-video", label: "Video", icon: "🎬", exact: false },
-    { href: "/automatizacion-rrss/panel/biblioteca", label: "Biblioteca", icon: "🖼️", exact: false },
-    { href: "/automatizacion-rrss/panel/prompts", label: "Prompts IA", icon: "✨", exact: false },
-    { href: "/automatizacion-rrss/panel/radar", label: "Radar de Nicho", icon: "📡", exact: false },
-    { href: "/automatizacion-rrss/panel/estrategia", label: "Estrategia", icon: "🚀", exact: false },
-    { href: "/automatizacion-rrss/panel/catalogo", label: "Productos / Servicios", icon: "🛍️", exact: false },
-    { href: "/automatizacion-rrss/panel/ads", label: "Meta Ads", icon: "🎯", exact: true },
-    { href: "/automatizacion-rrss/panel/configuracion", label: "Configuración de Marca", icon: "🏪", exact: false },
-  ];
+  const userEmail = (user?.email || "").toLowerCase();
+  const isAdminUser = ["diemoroy@gmail.com", "spalezcom@gmail.com", "santisoftai@gmail.com"].includes(userEmail) || userDoc?.role === "admin";
 
   const adminLinks = [
     { href: "/automatizacion-rrss/panel/admin", label: "Usuarios", icon: "👥", exact: true },
@@ -76,16 +64,46 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
     { href: "/automatizacion-rrss/panel/admin/analitica", label: "Analítica", icon: "📈", exact: false },
   ];
 
-  const links = [...baseLinks];
-  const userEmail = (user?.email || "").toLowerCase();
-  const isAdminUser = ["diemoroy@gmail.com", "spalezcom@gmail.com", "santisoftai@gmail.com"].includes(userEmail) || userDoc?.role === "admin";
+  const navSections = [
+    {
+      title: "PUBLICACIONES",
+      items: [
+        { href: "/automatizacion-rrss/panel", label: "Próximos Posts", icon: "📅", exact: true },
+        { href: "/automatizacion-rrss/panel/publicados", label: "Posts Publicados", icon: "✅", exact: true },
+        { href: "/automatizacion-rrss/panel/metricas", label: "Estadísticas", icon: "📊", exact: false },
+      ]
+    },
+    {
+      title: "CREACIÓN",
+      items: [
+        { href: "/automatizacion-rrss/panel/crear", label: "Nuevo Post", icon: "✍️", exact: false },
+        { href: "/automatizacion-rrss/panel/poc-video", label: "Generar Video", icon: "🎬", exact: false },
+        ...(isAdminUser ? [{ href: "/automatizacion-rrss/panel/ads", label: "Meta Ads", icon: "🎯", exact: true }] : []),
+      ]
+    },
+    {
+      title: "ESTRATEGIA",
+      items: [
+        { href: "/automatizacion-rrss/panel/radar", label: "Radar de Nicho", icon: "📡", exact: false },
+        { href: "/automatizacion-rrss/panel/estrategia", label: "Estrategia", icon: "🚀", exact: false },
+        ...(isAdminUser || userDoc?.hasSeoAutopilot ? [{ href: "/automatizacion-rrss/panel/blog", label: "SEO / GEO", icon: "🌐", exact: false }] : []),
+        { href: "/automatizacion-rrss/panel/prompts", label: "Comandos de Agentes", icon: "✨", exact: false },
+      ]
+    },
+    {
+      title: "RECURSOS Y MARCA",
+      items: [
+        { href: "/automatizacion-rrss/panel/catalogo", label: "Productos / Servicios", icon: "🛍️", exact: false },
+        { href: "/automatizacion-rrss/panel/biblioteca", label: "Biblioteca", icon: "🖼️", exact: false },
+        { href: "/automatizacion-rrss/panel/configuracion", label: "Configuración de Marca", icon: "🏪", exact: false },
+      ]
+    }
+  ];
 
-  if (isAdminUser || userDoc?.hasSeoAutopilot) {
-    links.splice(5, 0, { href: "/automatizacion-rrss/panel/blog", label: "Seo / Geo", icon: "🌐", exact: false });
-  }
+  const allLinks = navSections.flatMap(s => s.items);
 
   const isAdminRoute = pathname.includes("/automatizacion-rrss/panel/admin");
-  const activeLinks = isAdminRoute ? adminLinks : links;
+  const activeLinks = isAdminRoute ? adminLinks : allLinks;
   const currentLink = activeLinks.find(l => l.exact ? pathname === l.href : pathname.startsWith(l.href));
 
   if (loading) {
@@ -156,20 +174,25 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
               </Link>
               <p className="text-slate-600 text-[9px] mt-1.5 font-black uppercase tracking-[0.2em]">Automatización IA</p>
             </div>
-            <nav className="flex-1 py-4 px-3 space-y-1">
-              {links.map(link => {
-                const isActive = link.exact ? pathname === link.href : pathname.startsWith(link.href);
-                return (
-                  <Link key={link.href} href={link.href} prefetch={false}
-                    className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all font-bold text-xs ${isActive ? 'active-nav-item' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
-                  >
-                    <span className={`text-base transition-transform ${isActive ? 'scale-110' : 'opacity-60'}`}>{link.icon}</span>
-                    {link.label}
-                  </Link>
-                );
-              })}
+            <nav className="flex-1 py-4 px-3 space-y-4 overflow-y-auto">
+              {navSections.map(section => (
+                <div key={section.title} className="space-y-1">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 px-3 mb-1.5">{section.title}</p>
+                  {section.items.map(link => {
+                    const isActive = link.exact ? pathname === link.href : pathname.startsWith(link.href);
+                    return (
+                      <Link key={link.href} href={link.href} prefetch={false}
+                        className={`flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all font-bold text-xs ${isActive ? 'active-nav-item' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                      >
+                        <span className={`text-base transition-transform ${isActive ? 'scale-110' : 'opacity-60'}`}>{link.icon}</span>
+                        {link.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              ))}
               {isAdminUser && (
-                <div className="pt-3 border-t border-slate-800">
+                <div className="pt-2 border-t border-slate-800">
                   <Link href="/automatizacion-rrss/panel/admin"
                     className="flex items-center justify-between px-3 py-2.5 rounded-xl transition-all font-bold text-xs bg-indigo-950/50 text-indigo-400 hover:bg-indigo-900/50 hover:text-white border border-indigo-800/30"
                   >
@@ -256,25 +279,51 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
             {/* Dropdown navigation drawer */}
             {mobileNavOpen && (
               <div className={`shadow-2xl border-b ${isAdminRoute ? 'bg-slate-950 border-indigo-900/30' : 'bg-slate-900 border-slate-800'}`}>
-                <div className="px-3 py-3 flex flex-col gap-1">
-                  {activeLinks.map(link => {
-                    const isActive = link.exact ? pathname === link.href : pathname.startsWith(link.href);
-                    return (
-                      <Link
-                        key={link.href}
-                        href={link.href}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm transition-all ${
-                          isActive
-                            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
-                            : 'text-slate-400 hover:text-white hover:bg-white/5'
-                        }`}
-                      >
-                        <span className="text-lg">{link.icon}</span>
-                        <span className="flex-1">{link.label}</span>
-                        {isActive && <span className="w-1.5 h-1.5 rounded-full bg-white/70 flex-shrink-0" />}
-                      </Link>
-                    );
-                  })}
+                <div className="px-3 py-3 flex flex-col gap-3">
+                  {isAdminRoute ? (
+                    adminLinks.map(link => {
+                      const isActive = link.exact ? pathname === link.href : pathname.startsWith(link.href);
+                      return (
+                        <Link
+                          key={link.href}
+                          href={link.href}
+                          className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-bold text-sm transition-all ${
+                            isActive
+                              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
+                              : 'text-slate-400 hover:text-white hover:bg-white/5'
+                          }`}
+                        >
+                          <span className="text-lg">{link.icon}</span>
+                          <span className="flex-1">{link.label}</span>
+                          {isActive && <span className="w-1.5 h-1.5 rounded-full bg-white/70 flex-shrink-0" />}
+                        </Link>
+                      );
+                    })
+                  ) : (
+                    navSections.map(section => (
+                      <div key={section.title} className="flex flex-col gap-1">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 px-3">{section.title}</p>
+                        {section.items.map(link => {
+                          const isActive = link.exact ? pathname === link.href : pathname.startsWith(link.href);
+                          return (
+                            <Link
+                              key={link.href}
+                              href={link.href}
+                              className={`flex items-center gap-3 px-4 py-2 rounded-xl font-bold text-sm transition-all ${
+                                isActive
+                                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
+                                  : 'text-slate-400 hover:text-white hover:bg-white/5'
+                              }`}
+                            >
+                              <span className="text-lg">{link.icon}</span>
+                              <span className="flex-1">{link.label}</span>
+                              {isActive && <span className="w-1.5 h-1.5 rounded-full bg-white/70 flex-shrink-0" />}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    ))
+                  )}
 
                   {!isAdminRoute && isAdminUser && (
                     <Link
