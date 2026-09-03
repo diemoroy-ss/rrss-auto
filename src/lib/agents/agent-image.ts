@@ -96,9 +96,9 @@ Genera el prompt narrativo en inglés (prosa, 120-180 palabras, fotografía real
   try {
     console.log(`[AgentImage] Intentando generar imagen vía n8n webhook (${n8nWebhookUrl})...`);
     
-    // Timeout de 15 segundos para n8n
+    // Timeout de 90 segundos para dar tiempo suficiente a la generación de Gemini/Nano Banana en n8n
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const timeoutId = setTimeout(() => controller.abort(), 90000);
 
     const n8nRes = await fetch(n8nWebhookUrl, {
       method: 'POST',
@@ -120,11 +120,14 @@ Genera el prompt narrativo en inglés (prosa, 120-180 palabras, fotografía real
     clearTimeout(timeoutId);
 
     if (n8nRes.ok) {
-      const data = await n8nRes.json();
-      const n8nImageUrl = data.img_url || data.imageUrl || data.url || data.output || data.image;
+      const rawData = await n8nRes.json();
+      const data = Array.isArray(rawData) ? rawData[0] : rawData;
+      const n8nImageUrl = data?.img_url || data?.imageUrl || data?.url || data?.output || data?.image || data?.outputUrl || (typeof rawData === 'string' && rawData.startsWith('http') ? rawData : null);
       if (n8nImageUrl && typeof n8nImageUrl === 'string' && n8nImageUrl.startsWith('http')) {
         console.log(`[AgentImage] ✅ Imagen generada con éxito por n8n:`, n8nImageUrl);
         rawGeneratedUrl = n8nImageUrl;
+      } else {
+        console.warn(`[AgentImage] ⚠️ n8n respondió 200 pero no trajo una URL válida:`, rawData);
       }
     } else {
       console.warn(`[AgentImage] ⚠️ n8n respondió con status: ${n8nRes.status}`);
