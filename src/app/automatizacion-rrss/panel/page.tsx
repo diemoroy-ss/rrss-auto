@@ -99,7 +99,7 @@ interface SocialPost {
   publishInfo?: string;
 }
 
-function DashboardCarouselViewer({ urls }: { urls: string[] }) {
+function DashboardCarouselViewer({ urls, isStory }: { urls: string[]; isStory?: boolean }) {
   const [index, setIndex] = useState(0);
   
   if (!urls || urls.length === 0) return null;
@@ -112,12 +112,12 @@ function DashboardCarouselViewer({ urls }: { urls: string[] }) {
                   currentUrl?.toLowerCase().includes('quicktime');
 
   return (
-    <div className={`rounded-2xl overflow-hidden shadow-sm relative group bg-black flex-shrink-0 border border-slate-200 flex items-center justify-center ${isVideo ? 'aspect-[9/16] max-h-[60vh] max-w-[320px] mx-auto' : 'aspect-video bg-white'}`}>
+    <div className={`rounded-2xl overflow-hidden shadow-sm relative group bg-slate-950 flex-shrink-0 border border-slate-800 flex items-center justify-center w-full ${isVideo || isStory ? 'aspect-[9/16] max-h-[70vh] max-w-[340px] mx-auto' : 'aspect-square max-h-[60vh] max-w-[480px] mx-auto'}`}>
       {isVideo ? (
-        <video src={currentUrl} autoPlay loop muted playsInline controls className="w-full h-full object-cover" />
+        <video src={currentUrl} autoPlay loop muted playsInline controls className="w-full h-full object-contain" />
       ) : (
         /* eslint-disable-next-line @next/next/no-img-element */
-        <img src={currentUrl} alt={`Ref ${index+1}`} className="w-full h-full object-cover transition-transform group-hover:scale-[1.02] duration-500" />
+        <img src={currentUrl} alt={`Ref ${index+1}`} className="w-full h-full object-contain transition-transform group-hover:scale-[1.01] duration-300" />
       )}
       
       {urls.length > 1 && (
@@ -1579,7 +1579,7 @@ export default function RrssDashboard() {
             </div>
 
             {/* Scrollable Content Area */}
-            <div className="flex-1 overflow-y-auto p-6 sm:p-10 pt-4 pb-32 hide-scrollbar">
+            <div className="flex-1 overflow-y-auto p-6 sm:p-10 pt-4 pb-52 hide-scrollbar">
                 <div className="space-y-6">
                    {selectedPost.publishError && (
                      <div className="bg-rose-50 border-2 border-rose-200 rounded-[24px] p-6 text-rose-800 animate-in slide-in-from-top-2 fade-in">
@@ -1625,6 +1625,11 @@ export default function RrssDashboard() {
                      <span className={`text-[10px] uppercase font-black tracking-widest px-4 py-2 rounded-xl border ${selectedPost.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-200' : selectedPost.status === 'confirmed' ? 'bg-indigo-50 text-indigo-600 border-indigo-200' : selectedPost.status === 'publishing' ? 'bg-blue-50 text-blue-600 border-blue-200 shadow-sm animate-pulse' : selectedPost.status === 'published' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>
                         Estado: {selectedPost.status === 'pending' ? 'Borrador' : selectedPost.status === 'confirmed' ? 'Confirmado' : selectedPost.status === 'publishing' ? 'Publicando...' : selectedPost.status === 'published' ? 'Publicado' : selectedPost.status}
                      </span>
+                     {selectedPost.visualStyle && (
+                       <span className="text-[10px] uppercase font-black tracking-widest px-3.5 py-2 rounded-xl border bg-indigo-50 text-indigo-700 border-indigo-200 flex items-center gap-1.5 shadow-sm">
+                         <span>🎨</span> Estilo: {selectedPost.visualStyle}
+                       </span>
+                     )}
                    </div>
 
                    {selectedPost.type === 'Carrusel' && (
@@ -1739,7 +1744,10 @@ export default function RrssDashboard() {
                                <RemotionReelPlayer composition={{ title: selectedPost.idea || selectedPost.title || 'Reel Animado', rubro: activeProfile?.rubro || 'General', totalDuration: selectedPost.scenes.reduce((acc, s) => acc + (s.duration || 4), 0), audioScript: selectedPost.audioScript || '', copyText: selectedPost.copy || selectedPost.text || '', scenes: selectedPost.scenes }} />
                              </div>
                            ) : (
-                             <DashboardCarouselViewer urls={selectedPost.imageUrls && selectedPost.imageUrls.length > 0 ? selectedPost.imageUrls : [selectedPost.imageUrl]} />
+                             <DashboardCarouselViewer 
+                                urls={selectedPost.imageUrls && selectedPost.imageUrls.length > 0 ? selectedPost.imageUrls : [selectedPost.imageUrl]} 
+                                isStory={selectedPost.type === 'Historia' || selectedPost.type === 'Story'}
+                             />
                            )}
                          </div>
                        </div>
