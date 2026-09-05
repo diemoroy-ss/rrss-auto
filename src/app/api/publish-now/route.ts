@@ -498,6 +498,7 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
                         includeLogo: post.includeLogo === true || (post.includeLogo !== false && targetProfile?.alwaysIncludeLogo === true),
                         promptTemplateId: post.promptTemplateId || undefined,
                         visualStyle: post.visualStyle || undefined,
+                        brandVisualIdentity: targetProfile?.visualIdentity || undefined,
                     });
                     imageUrl = generatedImageUrl;
                     post.imageUrl = generatedImageUrl;

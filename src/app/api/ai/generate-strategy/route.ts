@@ -9,6 +9,7 @@ export async function POST(req: NextRequest) {
       goalName, 
       businessType, 
       userId, 
+      profileId,
       expectations, 
       promotions, 
       businessData, 
@@ -87,7 +88,7 @@ export async function POST(req: NextRequest) {
         console.warn("[STRATEGY] Error fetching user history:", e.message);
     }
 
-    const promptStylesToPass = (usePromptStyles !== false && Array.isArray(selectedPromptStyles))
+    let promptStylesToPass = (usePromptStyles !== false && Array.isArray(selectedPromptStyles) && selectedPromptStyles.length > 0)
         ? selectedPromptStyles.map((s: any) => ({
             id: s.id,
             title: s.title,
@@ -96,6 +97,34 @@ export async function POST(req: NextRequest) {
             previewUrl: s.previewUrl || ""
         }))
         : [];
+
+    // Si el usuario no seleccionó estilos manualmente en el generador, pero su perfil tiene un ADN de Identidad Visual configurado
+    if (promptStylesToPass.length === 0 && userId) {
+        try {
+            const userDoc = await adminDb.collection("users").doc(userId).get();
+            const uData = userDoc.data() || {};
+            const profiles = uData.profiles || [];
+            const prof = profiles.find((p: any) => p.id === profileId) || profiles[0];
+            const vIdentity = prof?.visualIdentity;
+            if (vIdentity?.styleMix && vIdentity.styleMix.length > 0) {
+                const { HARDCODED_STYLES } = await import('../../../../lib/prompt-templates');
+                promptStylesToPass = vIdentity.styleMix.map((sm: any) => {
+                    const t = HARDCODED_STYLES.find(item => item.id === sm.styleId);
+                    return t ? {
+                        id: t.id,
+                        title: t.title,
+                        category: t.category,
+                        description: t.description,
+                        previewUrl: t.previewUrl || "",
+                        weight: sm.weight
+                    } : null;
+                }).filter(Boolean);
+                console.log(`[STRATEGY] Usando ${promptStylesToPass.length} estilos del ADN visual del perfil`);
+            }
+        } catch (vErr) {
+            console.warn("[STRATEGY] Error reading visualIdentity for styles:", vErr);
+        }
+    }
     
     const result = await runProfessionalStrategyWorkflow(
         businessType || "General",

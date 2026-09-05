@@ -1,5 +1,5 @@
 import { generateFreeText } from "../gemini-free";
-import { HARDCODED_STYLES, ImageGenBehavior } from "../prompt-templates";
+import { HARDCODED_STYLES, ImageGenBehavior, BrandVisualIdentity, buildVisualIdentityContext, pickStyleFromMix } from "../prompt-templates";
 
 export interface ImageAgentParams {
   idea: string;
@@ -18,6 +18,8 @@ export interface ImageAgentParams {
   promptTemplateId?: string;
   /** Nombre del estilo visual (para inyectar en el prompt si no hay template) */
   visualStyle?: string;
+  /** ADN de Identidad Visual del cliente */
+  brandVisualIdentity?: BrandVisualIdentity;
 }
 
 /**
@@ -28,7 +30,8 @@ function buildSystemInstruction(
   behavior: ImageGenBehavior | undefined,
   styleKeywords: string | undefined,
   isVerticalStory: boolean,
-  rubro: string
+  rubro: string,
+  brandVisualIdentity?: BrandVisualIdentity
 ): string {
   const verticalRule = isVerticalStory
     ? 'FORMATO OBLIGATORIO: Vertical 9:16 (Instagram Story). Encuadre vertical dinámico de alto impacto con sujeto principal en el tercio medio/inferior y composición cinematográfica limpia.'
@@ -37,6 +40,8 @@ function buildSystemInstruction(
   const styleBlock = styleKeywords
     ? `\nESTILO VISUAL OBLIGATORIO (aplicar a TODO el prompt):\n${styleKeywords}\n`
     : '';
+
+  const visualIdentityBlock = buildVisualIdentityContext(brandVisualIdentity);
 
   switch (behavior) {
     // ──────────────────────────────────────────────────────────────────────
@@ -48,7 +53,7 @@ Tu objetivo es tomar la idea de un post y el rubro del cliente y generar UN ÚNI
 
 REGLA DE ORO: El prompt debe evocar el estilo de arte o ilustración especificado. NO es fotografía realista. Es arte digital, ilustración 3D, o render artístico.
 ${verticalRule}
-${styleBlock}
+${styleBlock}${visualIdentityBlock}
 Estructura del prompt:
 1. Estilo visual (30%): Describe el estilo artístico específico con términos técnicos precisos en inglés.
 2. Sujeto central (25%): El objeto, escena o personaje relacionado con el rubro (${rubro}).
@@ -72,7 +77,7 @@ Tu objetivo es tomar la idea de un post y el rubro del cliente y generar UN ÚNI
 
 REGLA DE ORO: El prompt debe evocar una fotografía o render comercial de producto. El PRODUCTO es el héroe absoluto. NO se requieren personas. El ambiente complementa y realza el producto.
 ${verticalRule}
-${styleBlock}
+${styleBlock}${visualIdentityBlock}
 Estructura obligatoria de 7 componentes:
 1. Product Hero (30%): Describe el producto central relacionado con el rubro (${rubro}), sus características visuales, materiales, colores y acabados.
 2. Style & Aesthetic (20%): Fotografía comercial de alta gama, iluminación de estudio profesional, o render CGI comercial según el estilo.
@@ -98,7 +103,7 @@ Tu objetivo es tomar la idea de un post y el rubro del cliente y generar UN ÚNI
 
 REGLA DE ORO: El prompt debe evocar fotografía editorial o de lifestyle aspiracional, de calidad de revista o campaña de marca. Puede incluir personas o productos como sujeto principal según el rubro.
 ${verticalRule}
-${styleBlock}
+${styleBlock}${visualIdentityBlock}
 Estructura obligatoria:
 1. Subject (25%): Persona (edad, rasgos, expresión, atuendo) O producto en contexto aspiracional — relacionado con el rubro (${rubro}).
 2. Style & Aesthetic (20%): Fotografía editorial, campaña de marca, lifestyle, moda — estilo de revista o campaña publicitaria premium.
@@ -122,7 +127,7 @@ Tu objetivo es tomar la idea de un post y el rubro del cliente y generar UN ÚNI
 
 REGLA DE ORO: El prompt debe evocar una ilustración técnica, diagrama de ingeniería o visualización científica. Precisa, limpia, informativa.
 ${verticalRule}
-${styleBlock}
+${styleBlock}${visualIdentityBlock}
 Estructura:
 1. Technical Style (30%): El tipo de ilustración técnica específico (blueprint, exploded view, cross-section, schematic).
 2. Subject (30%): El objeto o sistema a ilustrar, relacionado con el rubro (${rubro}).
@@ -143,7 +148,7 @@ Tu objetivo es tomar la idea de un post y el rubro del cliente y generar UN ÚNI
 
 REGLA DE ORO: El prompt debe evocar una composición visual espectacular, cinematográfica y visualmente impactante. Puede ser surrealista, futurista, o dramáticamente artística.
 ${verticalRule}
-${styleBlock}
+${styleBlock}${visualIdentityBlock}
 Estructura:
 1. Visual Concept (30%): El efecto o concepto visual central (portal, explosión, billboard 3D, ambiente surreal), relacionado con el rubro (${rubro}).
 2. Subject (25%): El producto, persona o escena que es el héroe visual dentro del concepto.
@@ -166,7 +171,7 @@ Tu objetivo es tomar la idea de un post y el rubro del cliente y generar UN ÚNI
 
 REGLA DE ORO: El prompt DEBE evocar UNA FOTOGRAFÍA REAL tomada con cámara profesional. Nunca ilustración, render 3D ni animación.
 ${verticalRule}
-${styleBlock ? styleBlock : `\nSUJETO: Adapta el sujeto principal al rubro (${rubro}). Si el rubro vende productos físicos, el sujeto puede ser el producto en un entorno real. Si es un servicio profesional, puede ser una persona en acción relacionada con ese servicio. NO asumas siempre que debe haber una persona — adáptalo al tipo de negocio.\n`}
+${styleBlock ? styleBlock : `\nSUJETO: Adapta el sujeto principal al rubro (${rubro}). Si el rubro vende productos físicos, el sujeto puede ser el producto en un entorno real. Si es un servicio profesional, puede ser una persona en acción relacionada con ese servicio. NO asumas siempre que debe haber una persona — adáptalo al tipo de negocio.\n`}${visualIdentityBlock}
 Estructura obligatoria de 7 componentes:
 1. Subject (25%): Describe el sujeto principal relacionado con el rubro (${rubro}): puede ser una persona real (con rasgos específicos) o un producto/ambiente, según lo que sea más natural para este negocio.
 2. Style & Aesthetic (20%): "shot on Sony A7IV with 85mm f/1.4 lens" o "Canon EOS R5, 50mm prime lens" — fotografía documental/comercial, tonos naturales.
@@ -182,6 +187,7 @@ REGLAS CRÍTICAS:
 - Texto plano en prosa continua, SIN listas.
 - Comienza con la descripción del sujeto principal.
 - Evita: "cartoon", "anime", "digital art", "3D render", "CGI".`;
+
   }
 }
 
@@ -206,6 +212,7 @@ export async function generateImageWithAgent(params: ImageAgentParams): Promise<
     customOffer = '',
     promptTemplateId,
     visualStyle,
+    brandVisualIdentity,
   } = params;
 
   let width = 1080;
@@ -218,19 +225,20 @@ export async function generateImageWithAgent(params: ImageAgentParams): Promise<
     height = 1080;
   }
 
-  // 1. Resolver el template de estilo visual si existe
+  // 1. Resolver el template de estilo visual si existe o desde el ADN de la marca
+  const effectiveTemplateId = promptTemplateId || pickStyleFromMix(brandVisualIdentity);
   const isVerticalStory = aspectRatio === '9:16';
   let selectedBehavior: ImageGenBehavior | undefined;
   let selectedKeywords: string | undefined;
 
-  if (promptTemplateId) {
-    const template = HARDCODED_STYLES.find(t => t.id === promptTemplateId);
+  if (effectiveTemplateId) {
+    const template = HARDCODED_STYLES.find(t => t.id === effectiveTemplateId);
     if (template) {
       selectedBehavior = template.imageGenBehavior;
       selectedKeywords = template.styleKeywords;
       console.log(`[AgentImage] Estilo visual resuelto: "${template.title}" (behavior: ${selectedBehavior})`);
     } else {
-      console.warn(`[AgentImage] Template "${promptTemplateId}" no encontrado en HARDCODED_STYLES, usando photo-real como fallback.`);
+      console.warn(`[AgentImage] Template "${effectiveTemplateId}" no encontrado en HARDCODED_STYLES, usando photo-real como fallback.`);
     }
   } else if (visualStyle) {
     // Fallback: buscar por nombre si no hay ID
@@ -242,8 +250,8 @@ export async function generateImageWithAgent(params: ImageAgentParams): Promise<
     }
   }
 
-  // 2. Diseñar el Prompt usando la técnica Claude-Banana con el estilo correcto
-  const sysInstruction = buildSystemInstruction(selectedBehavior, selectedKeywords, isVerticalStory, rubro);
+  // 2. Diseñar el Prompt usando la técnica Claude-Banana con el estilo y ADN visual
+  const sysInstruction = buildSystemInstruction(selectedBehavior, selectedKeywords, isVerticalStory, rubro, brandVisualIdentity);
 
   const promptInput = `Negocio / Rubro: ${rubro}
 Descripción del Negocio: ${businessDescription}

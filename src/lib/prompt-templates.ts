@@ -16,6 +16,117 @@ export interface PromptTemplate {
   styleKeywords?: string;
 }
 
+export interface StyleMix {
+  styleId: string;
+  weight: number;
+}
+
+export interface BrandVisualIdentity {
+  styleMix: StyleMix[];
+  lockStyle: boolean;
+  primaryColor?: string;
+  secondaryColor?: string;
+  accentColor?: string;
+  colorDescription?: string;
+  toneAdjectives?: string[];
+  recurringElements?: string;
+  subjectType?: 'person' | 'product' | 'mixed' | 'abstract';
+  audienceDescription?: string;
+  websiteUrl?: string;
+  extractedFrom?: 'manual' | 'website' | 'logo' | 'mixed';
+  setupAt?: string;
+}
+
+export const SUBJECT_TYPE_OPTIONS = [
+  { value: 'product' as const, label: 'Producto', description: 'El producto es siempre el héroe. Sin personas obligatorias.', emoji: '📦' },
+  { value: 'person' as const, label: 'Persona', description: 'Personas reales usando o relacionadas con tu marca.', emoji: '🧑' },
+  { value: 'mixed' as const, label: 'Mixto', description: 'Combina personas y productos según el contexto del post.', emoji: '✨' },
+  { value: 'abstract' as const, label: 'Abstracto / Arte', description: 'Composiciones artísticas, ilustraciones o conceptuales.', emoji: '🎨' },
+];
+
+export function buildVisualIdentityContext(identity: BrandVisualIdentity | null | undefined): string {
+  if (!identity) return '';
+  const lines: string[] = [];
+
+  const colorParts: string[] = [];
+  if (identity.colorDescription) colorParts.push(identity.colorDescription);
+  if (identity.primaryColor) colorParts.push(`primary ${identity.primaryColor}`);
+  if (identity.secondaryColor) colorParts.push(`secondary ${identity.secondaryColor}`);
+  if (identity.accentColor) colorParts.push(`accent ${identity.accentColor}`);
+  if (colorParts.length > 0) lines.push(`Color palette: ${colorParts.join(', ')}.`);
+
+  if (identity.toneAdjectives && identity.toneAdjectives.length > 0) {
+    lines.push(`Visual mood: ${identity.toneAdjectives.join(', ')}.`);
+  }
+
+  if (identity.recurringElements && identity.recurringElements.trim()) {
+    lines.push(`Recurring visual elements: ${identity.recurringElements.trim()}.`);
+  }
+
+  if (identity.subjectType) {
+    const desc: Record<string, string> = {
+      product: 'product as absolute visual hero — no mandatory person required',
+      person: 'real person as main subject, naturally interacting with the brand',
+      mixed: 'mix of products and people depending on context',
+      abstract: 'abstract or artistic composition — maximum creative freedom',
+    };
+    lines.push(`Subject preference: ${desc[identity.subjectType]}.`);
+  }
+
+  if (identity.audienceDescription && identity.audienceDescription.trim()) {
+    lines.push(`Visual target: ${identity.audienceDescription.trim()}.`);
+  }
+
+  if (lines.length === 0) return '';
+  return `\n\nBRAND VISUAL IDENTITY (MANDATORY — apply consistently to every visual element):\n${lines.join('\n')}`;
+}
+
+export function pickStyleFromMix(identity: BrandVisualIdentity | null | undefined): string | undefined {
+  if (!identity || !identity.styleMix || identity.styleMix.length === 0) return undefined;
+  if (identity.lockStyle || identity.styleMix.length === 1) return identity.styleMix[0].styleId;
+
+  const totalWeight = identity.styleMix.reduce((sum, s) => sum + s.weight, 0);
+  if (totalWeight === 0) return identity.styleMix[0].styleId;
+
+  let random = Math.random() * totalWeight;
+  for (const style of identity.styleMix) {
+    random -= style.weight;
+    if (random <= 0) return style.styleId;
+  }
+  return identity.styleMix[0].styleId;
+}
+
+export function distributeStylesForPosts(
+  identity: BrandVisualIdentity | null | undefined,
+  count: number
+): (string | undefined)[] {
+  if (!identity || !identity.styleMix || identity.styleMix.length === 0) return Array(count).fill(undefined);
+  if (identity.lockStyle || identity.styleMix.length === 1) return Array(count).fill(identity.styleMix[0].styleId);
+
+  const totalWeight = identity.styleMix.reduce((sum, s) => sum + s.weight, 0);
+  if (totalWeight === 0) return Array(count).fill(identity.styleMix[0].styleId);
+
+  const counts = identity.styleMix.map(style => ({
+    styleId: style.styleId,
+    allocated: Math.round((style.weight / totalWeight) * count),
+  }));
+
+  const allocatedTotal = counts.reduce((sum, c) => sum + c.allocated, 0);
+  if (allocatedTotal !== count) counts[0].allocated += count - allocatedTotal;
+
+  const result: string[] = [];
+  for (const { styleId, allocated } of counts) {
+    for (let i = 0; i < allocated; i++) result.push(styleId);
+  }
+
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+
+  return result;
+}
+
 export const promptCategories = [
   "Fotorealismo",
   "Ilustración 3D",

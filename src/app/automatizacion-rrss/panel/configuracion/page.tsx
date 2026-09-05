@@ -11,6 +11,8 @@ import StatusModal from "../../../../components/StatusModal";
 import TabMarca from "./TabMarca";
 import TabContacto from "./TabContacto";
 import TabConexiones from "./TabConexiones";
+import TabIdentidadVisual from "./TabIdentidadVisual";
+import { BrandVisualIdentity } from "../../../../lib/prompt-templates";
 import TikTokPostSettings, { TikTokSettingsState, DEFAULT_TIKTOK_SETTINGS } from "../../../../components/crear/TikTokPostSettings";
 
 function getExpirationText(timestamp?: number) {
@@ -274,7 +276,7 @@ function ConfigContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
-  const [activeTab, setActiveTab] = useState<'marca' | 'contacto' | 'conexiones'>('marca');
+  const [activeTab, setActiveTab] = useState<'marca' | 'identidad-visual' | 'contacto' | 'conexiones'>('marca');
   const [user, setUser] = useState<any>(null);
   const [loadingInitial, setLoadingInitial] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -349,6 +351,17 @@ function ConfigContent() {
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isAnalyzingLogo, setIsAnalyzingLogo] = useState(false);
 
+  // Brand Visual Identity State
+  const [visualIdentity, setVisualIdentity] = useState<BrandVisualIdentity>({
+    styleMix: [{ styleId: 'style-everyday-real', weight: 70 }, { styleId: 'style-ads-hero-shot', weight: 30 }],
+    lockStyle: false,
+    primaryColor: '#4F46E5',
+    secondaryColor: '#F8FAFC',
+    accentColor: '#1E1B4B',
+    subjectType: 'product',
+    toneAdjectives: ['profesional', 'moderno'],
+  });
+
   useEffect(() => {
     setUser(auth.currentUser);
     setLoadingInitial(false);
@@ -387,6 +400,7 @@ function ConfigContent() {
       if (activeProfile.logoUrl !== logoUrl) setLogoUrl(activeProfile.logoUrl || "");
       if (activeProfile.logoPrompt !== logoPrompt) setLogoPrompt(activeProfile.logoPrompt || "");
       if (activeProfile.alwaysIncludeLogo !== undefined && activeProfile.alwaysIncludeLogo !== alwaysIncludeLogo) setAlwaysIncludeLogo(activeProfile.alwaysIncludeLogo);
+      if (activeProfile.visualIdentity) setVisualIdentity(activeProfile.visualIdentity);
     }
   }, [activeProfile]); // Only depend on activeProfile for data syncing
 
@@ -543,8 +557,8 @@ function ConfigContent() {
                 phone,
                 alwaysIncludeLogo,
                 promotions,
-                bannerStyle
-
+                bannerStyle,
+                visualIdentity
              } : p
           );
           await updateDoc(userDocRef, { profiles: updatedProfiles });
@@ -554,6 +568,42 @@ function ConfigContent() {
       setSuccess(true);
       setTimeout(() => setSuccess(false), 5000);
 
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveVisualIdentity = async () => {
+    if (!user || !activeProfile) return;
+    setSaving(true);
+    setSuccess(false);
+    setErrorMsg("");
+    try {
+      const userDocRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userDocRef);
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        const updatedProfiles = (data.profiles || []).map((p: any) =>
+          p.id === activeProfile.id
+            ? {
+                ...p,
+                visualIdentity: {
+                  ...visualIdentity,
+                  websiteUrl: visualIdentity.websiteUrl || website || "",
+                  setupAt: new Date().toISOString(),
+                },
+                ...(visualIdentity.websiteUrl && !website ? { website: visualIdentity.websiteUrl } : {}),
+              }
+            : p
+        );
+        await updateDoc(userDocRef, { profiles: updatedProfiles });
+        await loadProfiles();
+      }
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 5000);
+    } catch (err: any) {
+      console.error("Error guardando identidad visual:", err);
+      setErrorMsg("Error al guardar la Identidad Visual.");
     } finally {
       setSaving(false);
     }
@@ -881,6 +931,7 @@ function ConfigContent() {
 
   const tabs = [
     { id: 'marca' as const, label: 'Marca', icon: '🏢' },
+    { id: 'identidad-visual' as const, label: 'Identidad Visual', icon: '🎨' },
     { id: 'contacto' as const, label: 'Datos & Contacto', icon: '📋' },
     { id: 'conexiones' as const, label: 'Conexiones', icon: '🔗' },
   ];
@@ -941,7 +992,18 @@ function ConfigContent() {
         ))}
       </div>
 
-      {activeTab !== 'conexiones' ? (
+      {activeTab === 'identidad-visual' ? (
+        <TabIdentidadVisual
+          visualIdentity={visualIdentity}
+          setVisualIdentity={setVisualIdentity}
+          logoUrl={logoUrl}
+          rubro={rubro}
+          brandName={brandName}
+          businessDescription={businessDescription}
+          onSave={handleSaveVisualIdentity}
+          saving={saving}
+        />
+      ) : activeTab !== 'conexiones' ? (
         <form onSubmit={handleSaveData} className="space-y-6">
           {activeTab === 'marca' && (
             <TabMarca
