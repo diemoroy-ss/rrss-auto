@@ -4,6 +4,7 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { getVertexModel } from "../../../../lib/vertexai";
 import { getAiGenerationUsageAdmin, getAiPlanLimitAdmin, logAiGenerationAdmin } from "../../../../lib/quota-admin";
 import { adminDb } from "../../../../lib/firebase-admin";
+import { HARDCODED_STYLES } from "../../../../lib/prompt-templates";
 
 export async function POST(req: Request) {
     try {
@@ -26,7 +27,21 @@ export async function POST(req: Request) {
         }
 
         const postData = postSnap.data();
-        const { idea, type, carouselCount, userId, profileId } = postData;
+        const { idea, type, carouselCount, userId, profileId, promptTemplateId, visualStyle } = postData;
+
+        // --- VISUAL STYLE CONTEXT ---
+        let visualStyleContext = "";
+        if (promptTemplateId) {
+            const template = HARDCODED_STYLES.find(t => t.id === promptTemplateId);
+            if (template?.styleKeywords) {
+                visualStyleContext = `\n\nESTILO VISUAL OBLIGATORIO: Todas las imágenes deben seguir este estilo: ${template.styleKeywords}. Adapta los prompts para reflejar consistentemente este estilo visual.`;
+            }
+        } else if (visualStyle) {
+            const template = HARDCODED_STYLES.find(t => t.title === visualStyle || t.id === visualStyle);
+            if (template?.styleKeywords) {
+                visualStyleContext = `\n\nESTILO VISUAL OBLIGATORIO: Todas las imágenes deben seguir este estilo: ${template.styleKeywords}. Adapta los prompts para reflejar consistentemente este estilo visual.`;
+            }
+        }
 
         // --- AI QUOTA ENFORCEMENT & BRAND CONTEXT ---
         let requiredType: 'image' | 'video' = type === 'Reel' ? 'video' : 'image';
@@ -72,13 +87,7 @@ export async function POST(req: Request) {
         // 1. Logic for prompts using Vertex AI
         if (type === 'Carrusel') {
             const actualCount = Math.min(carouselCount || 3, 3);
-            const systemInstruction = `Eres un experto Director de Arte. Tu misión es generar una lista estructurada en JSON puro que contenga EXACTAMENTE ${actualCount} instrucciones descriptivas detalladas para un generador de imágenes de Inteligencia Artificial (Midjourney/DALL-E) en INGLÉS. Las imágenes conformarán un carrusel coherente secuencial.
-
-INSTRUCCIONES CLAVE:
-1. NO escribas otra cosa más que un Array JSON ("["..." , "..."]").
-2. Escribe cada prompt en INGLÉS técnico y descriptivo enfocado en colores, iluminación y composición.
-3. Asegura coherencia de Estilo Visual entre las imágenes.
-4. NADA de comillas inversas markdown, solo el arreglo puro.${brandContext}`;
+            const systemInstruction = `Eres un experto Director de Arte. Tu misión es generar una lista estructurada en JSON puro que contenga EXACTAMENTE ${actualCount} instrucciones descriptivas detalladas para un generador de imágenes de Inteligencia Artificial (Midjourney/DALL-E) en INGLÉS. Las imágenes conformarán un carrusel coherente secuencial.\r\n\r\nINSTRUCCIONES CLAVE:\r\n1. NO escribas otra cosa más que un Array JSON ("[\"...\" , \"...\"]").\r\n2. Escribe cada prompt en INGLÉS técnico y descriptivo enfocado en colores, iluminación y composición.\r\n3. Asegura coherencia de Estilo Visual entre las imágenes.\r\n4. NADA de comillas inversas markdown, solo el arreglo puro.${brandContext}${visualStyleContext}`;
 
             const model = await getVertexModel(undefined, systemInstruction);
             const result = await model.generateContent(`Genera descripciones para: ${idea}`);
@@ -96,13 +105,7 @@ INSTRUCCIONES CLAVE:
                 console.error("Error parsing carousel JSON:", text);
             }
         } else if (type === 'Reel') {
-            const systemInstruction = `Eres un experto Director de Fotografía. Tu misión es generar un ÚNICO prompt descriptivo en INGLÉS para un generador de Video por Inteligencia Artificial (RunwayML/Luma/Sora) que creará un Reel de 8 segundos.
-
-INSTRUCCIONES CLAVE:
-1. NO escribas introducciones ni comillas. Escribe SOLO el prompt técnico en inglés.
-2. Especifica movimientos de cámara dinámicos pertinentes a RRSS.
-3. Asegura impacto visual en formato vertical.
-4. IMPORTANTE: Agrega al final del prompt EXACTAMENTE el texto "--ar 9:16" para asegurar el formato vertical para Reels/Shorts.${brandContext}`;
+            const systemInstruction = `Eres un experto Director de Fotografía. Tu misión es generar un ÚNICO prompt descriptivo en INGLÉS para un generador de Video por Inteligencia Artificial (RunwayML/Luma/Sora) que creará un Reel de 8 segundos.\r\n\r\nINSTRUCCIONES CLAVE:\r\n1. NO escribas introducciones ni comillas. Escribe SOLO el prompt técnico en inglés.\r\n2. Especifica movimientos de cámara dinámicos pertinentes a RRSS.\r\n3. Asegura impacto visual en formato vertical.\r\n4. IMPORTANTE: Agrega al final del prompt EXACTAMENTE el texto "--ar 9:16" para asegurar el formato vertical para Reels/Shorts.${brandContext}${visualStyleContext}`;
 
             const model = await getVertexModel(undefined, systemInstruction);
             const result = await model.generateContent(`Prompt de video para: ${idea}`);

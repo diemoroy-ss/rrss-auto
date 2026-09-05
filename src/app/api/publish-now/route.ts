@@ -496,6 +496,8 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
                         logoUrl: targetProfile?.logoUrl || '',
                         userId: creds.uid,
                         includeLogo: post.includeLogo === true || (post.includeLogo !== false && targetProfile?.alwaysIncludeLogo === true),
+                        promptTemplateId: post.promptTemplateId || undefined,
+                        visualStyle: post.visualStyle || undefined,
                     });
                     imageUrl = generatedImageUrl;
                     post.imageUrl = generatedImageUrl;

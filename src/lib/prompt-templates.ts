@@ -1,4 +1,5 @@
 export type ImageRequirement = 'none' | 'optional' | 'required';
+export type ImageGenBehavior = 'photo-real' | 'illustration-3d' | 'product' | 'editorial' | 'technical' | 'abstract';
 
 export interface PromptTemplate {
   id: string;
@@ -9,6 +10,10 @@ export interface PromptTemplate {
   previewUrl: string;
   imageRequirement: ImageRequirement;
   isCommercialPoster?: boolean;
+  /** How Claude-Banana should approach image generation for this style */
+  imageGenBehavior?: ImageGenBehavior;
+  /** English style keywords injected into the image prompt */
+  styleKeywords?: string;
 }
 
 export const promptCategories = [
@@ -34,6 +39,8 @@ export const HARDCODED_STYLES: PromptTemplate[] = [
     prompt: "A highly detailed exploded view of [Objeto a despiezar:ej. un motor de automóvil], showing all individual components floating in perfect order, technical illustration style, precise spacing, 8k resolution, clean background.",
     previewUrl: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=500&q=80",
     imageRequirement: "optional",
+    imageGenBehavior: "technical",
+    styleKeywords: "highly detailed exploded view technical illustration, all individual components floating in precise order, clean white background, engineering schematic aesthetic, labeled parts, precise spacing",
   },
   {
     id: "style-blueprint",
@@ -43,6 +50,8 @@ export const HARDCODED_STYLES: PromptTemplate[] = [
     prompt: "A classic architectural blueprint of [Estructura u objeto:ej. un cohete espacial], white and light blue technical lines on a dark navy blue background, precise measurements, drafting aesthetic, engineering schematic.",
     previewUrl: "https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=500&q=80",
     imageRequirement: "optional",
+    imageGenBehavior: "technical",
+    styleKeywords: "classic blueprint architectural drawing, white and light blue technical lines on dark navy blue background, precise measurements annotations, drafting table aesthetic, engineering schematic style",
   },
   {
     id: "style-anatomy",
@@ -52,6 +61,8 @@ export const HARDCODED_STYLES: PromptTemplate[] = [
     prompt: "A detailed cross-section anatomy of [Objeto o sujeto:ej. un volcán en erupción], cut in half revealing the intricate inner layers and internal structures, educational textbook illustration, hyper-detailed.",
     previewUrl: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=500&q=80",
     imageRequirement: "optional",
+    imageGenBehavior: "technical",
+    styleKeywords: "detailed cross-section cut revealing inner layers and internal structure, educational textbook illustration style, labeled internal anatomy, hyper-detailed scientific diagram",
   },
   {
     id: "style-isometric",
@@ -61,6 +72,8 @@ export const HARDCODED_STYLES: PromptTemplate[] = [
     prompt: "An isometric 3D render of [Escenario:ej. una pequeña cafetería acogedora], clean miniature diorama style, smooth lighting, tilt-shift effect, strategy game aesthetic, colorful, highly detailed.",
     previewUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&q=80",
     imageRequirement: "optional",
+    imageGenBehavior: "illustration-3d",
+    styleKeywords: "isometric 3D render, clean miniature diorama style, smooth soft studio lighting, tilt-shift effect, strategy game aesthetic, colorful and detailed, 45-degree isometric camera angle",
   },
   {
     id: "style-wireframe",
@@ -70,6 +83,8 @@ export const HARDCODED_STYLES: PromptTemplate[] = [
     prompt: "A glowing 3D digital wireframe of [Objeto:ej. un automóvil deportivo], made of geometric neon lines and points on a dark background, cyberpunk structure, cyber grid, tech aesthetic.",
     previewUrl: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=500&q=80",
     imageRequirement: "optional",
+    imageGenBehavior: "illustration-3d",
+    styleKeywords: "glowing 3D digital wireframe, geometric neon lines and vertex points, dark background, cyberpunk tech aesthetic, cyber grid, neon glow edges",
   },
   {
     id: "style-lowpoly",
@@ -79,6 +94,8 @@ export const HARDCODED_STYLES: PromptTemplate[] = [
     prompt: "A beautiful low poly 3D rendering of [Escenario o sujeto:ej. un paisaje de montañas al atardecer], constructed with simple geometric triangles and facets, minimalist flat shading, retro computer graphics style, pastel colors.",
     previewUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&q=80",
     imageRequirement: "optional",
+    imageGenBehavior: "illustration-3d",
+    styleKeywords: "low poly 3D art style, geometric triangular facets, flat shading, minimalist retro computer graphics, polygonal shapes, pastel color palette",
   },
   {
     id: "style-papercraft",
@@ -88,6 +105,8 @@ export const HARDCODED_STYLES: PromptTemplate[] = [
     prompt: "A beautiful papercraft illustration of [Escenario o sujeto:ej. un bosque mágico con hadas], made entirely of layered and folded colorful paper cutouts, drop shadows, tactile texture, handmade origami aesthetic.",
     previewUrl: "https://images.unsplash.com/photo-1502691876148-a84978e59af8?w=500&q=80",
     imageRequirement: "optional",
+    imageGenBehavior: "illustration-3d",
+    styleKeywords: "papercraft illustration style, layered and folded colorful paper cutouts, visible drop shadows between paper layers, tactile handmade texture, origami aesthetic, paper diorama",
   },
   {
     id: "style-claymation",
@@ -97,6 +116,8 @@ export const HARDCODED_STYLES: PromptTemplate[] = [
     prompt: "A cute claymation 3D render of [Sujeto:ej. un pingüino bebiendo café], made of modeled plasticine, visible fingerprints on the clay, stop-motion animation style, tactile realistic texture, studio lighting.",
     previewUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&q=80",
     imageRequirement: "optional",
+    imageGenBehavior: "illustration-3d",
+    styleKeywords: "claymation plasticine style, modeled clay texture with visible fingerprints, stop-motion animation aesthetic, colorful handmade clay characters, studio lighting on clay surface",
   },
 
   // ─── PUBLICIDAD Y ADS ────────────────────────────────────────────────────
@@ -149,6 +170,8 @@ El resultado debe parecer una fotografía profesional del producto original desp
     previewUrl: "https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=500&q=80",
     imageRequirement: "required",
     isCommercialPoster: true,
+    imageGenBehavior: "product",
+    styleKeywords: "premium commercial studio product photography, clean minimalist background, professional advertising quality, product as the absolute hero, sharp details, realistic lighting and shadows",
   },
   {
     id: "style-floating-product",
@@ -191,6 +214,8 @@ Everything that was not explicitly requested to change must remain unchanged fro
     previewUrl: "https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=500&q=80",
     imageRequirement: "required",
     isCommercialPoster: true,
+    imageGenBehavior: "product",
+    styleKeywords: "premium commercial product floating in mid-air, dramatic studio lighting, realistic soft shadows beneath the product, clean luxury background, high-end advertising photograph, product as visual hero",
   },
   {
     id: "style-highspeed-splash",
@@ -254,6 +279,10 @@ The splash is a supporting visual effect.`,
     previewUrl: "https://images.unsplash.com/photo-1556881286-fc6915169721?w=500&q=80",
     imageRequirement: "required",
     isCommercialPoster: true,
+        imageGenBehavior: "product",
+    styleKeywords: "dynamic high-speed liquid splash surrounding product, realistic frozen droplets, organic splash shapes, specular highlights, clean studio advertising lighting, product unchanged and clearly visible",
+  imageGenBehavior: "product",
+    styleKeywords: "dynamic high-speed liquid splash surrounding product frozen mid-air, realistic droplets specular highlights, organic splash shapes, clean studio advertising lighting, product intact and clearly visible at center",
   },
   {
     id: "style-portal-dimensional",
@@ -355,6 +384,8 @@ The PORTAL is only a visual environment/effect designed to enhance and frame the
     previewUrl: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=500&q=80",
     imageRequirement: "required",
     isCommercialPoster: true,
+      imageGenBehavior: "abstract",
+    styleKeywords: "sophisticated dimensional portal surrounding the product, futuristic glowing gateway effect, volumetric lighting, dimensional depth layers, cinematic spatial separation, product as absolute hero in center",
   },
   {
     id: "style-controlled-explosion",
@@ -450,6 +481,8 @@ The EXPLOSION is only a surrounding visual effect.`,
     previewUrl: "https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=500&q=80",
     imageRequirement: "required",
     isCommercialPoster: true,
+      imageGenBehavior: "abstract",
+    styleKeywords: "controlled cinematic explosion surrounding the product, dynamic particles fragments and dust frozen mid-air, volumetric energy burst, product intact and clearly visible at center, dramatic cinematic lighting",
   },
   {
     id: "style-cinematic-smoke",
@@ -546,6 +579,8 @@ The SMOKE is only an environmental visual effect.`,
     previewUrl: "https://images.unsplash.com/photo-1585386959984-a4155224a1ad?w=500&q=80",
     imageRequirement: "required",
     isCommercialPoster: true,
+      imageGenBehavior: "product",
+    styleKeywords: "elegant cinematic volumetric smoke surrounding the product, organic fluid smoke shapes, multiple density levels, soft atmospheric depth, premium studio lighting interacting with smoke, product clearly visible",
   },
   {
     id: "style-underwater-scene",
@@ -654,6 +689,8 @@ The UNDERWATER ENVIRONMENT is only a visual setting designed to enhance the prod
     previewUrl: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=500&q=80",
     imageRequirement: "required",
     isCommercialPoster: true,
+      imageGenBehavior: "abstract",
+    styleKeywords: "premium commercial underwater environment, realistic caustic light patterns, volumetric light rays through water, floating micro-bubbles, immersive depth, product unchanged and clearly visible underwater",
   },
   {
     id: "style-360-turntable-view",
@@ -788,6 +825,8 @@ The 360° rotation is the presentation method, not a product redesign.`,
     previewUrl: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&q=80",
     imageRequirement: "required",
     isCommercialPoster: true,
+      imageGenBehavior: "product",
+    styleKeywords: "professional 360-degree turntable product visualization, multiple consistent viewing angles, seamless studio background, uniform professional lighting, product as sole visual subject, e-commerce premium presentation",
   },
   {
     id: "style-ads-lifestyle",
@@ -798,6 +837,8 @@ The 360° rotation is the presentation method, not a product redesign.`,
     previewUrl: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&q=80",
     imageRequirement: "required",
     isCommercialPoster: true,
+    imageGenBehavior: "editorial",
+    styleKeywords: "cinematic lifestyle advertising photography, product in natural aspirational use context, golden hour lighting, shallow depth of field, editorial magazine quality, authentic candid mood",
   },
   {
     id: "style-ads-hero-shot",
@@ -808,6 +849,8 @@ The 360° rotation is the presentation method, not a product redesign.`,
     previewUrl: "https://images.unsplash.com/photo-1585386959984-a4155224a1ad?w=500&q=80",
     imageRequirement: "required",
     isCommercialPoster: true,
+    imageGenBehavior: "product",
+    styleKeywords: "dramatic hero product shot, cinematic studio lighting with colored gels, dark moody background, fine mist atmosphere, luxury brand campaign aesthetics, ultra-sharp product focus",
   },
   {
     id: "style-product-explosion",
@@ -818,6 +861,8 @@ The 360° rotation is the presentation method, not a product redesign.`,
     previewUrl: "https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=500&q=80",
     imageRequirement: "required",
     isCommercialPoster: true,
+    imageGenBehavior: "product",
+    styleKeywords: "exploded product view, individual ingredients and components floating symmetrically around hero product, clean white background, premium brand aesthetic, macro commercial photography, no text overlay",
   },
 
   // ─── EDITORIAL Y REVISTA ──────────────────────────────────────────────────
@@ -830,6 +875,8 @@ The 360° rotation is the presentation method, not a product redesign.`,
     previewUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&q=80",
     imageRequirement: "required",
     isCommercialPoster: true,
+    imageGenBehavior: "editorial",
+    styleKeywords: "premium fashion magazine cover composition, professional editorial studio photography, dramatic high-contrast lighting, negative space at top for masthead, glossy magazine aesthetic",
   },
   {
     id: "style-magazine-spread",
@@ -840,6 +887,8 @@ The 360° rotation is the presentation method, not a product redesign.`,
     previewUrl: "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=500&q=80",
     imageRequirement: "required",
     isCommercialPoster: true,
+    imageGenBehavior: "editorial",
+    styleKeywords: "full bleed editorial magazine double-page spread, cinematic wide composition, high fashion editorial photography, luxury lifestyle aesthetic, space reserved for copy text",
   },
   {
     id: "style-brand-campaign",
@@ -850,6 +899,8 @@ The 360° rotation is the presentation method, not a product redesign.`,
     previewUrl: "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=500&q=80",
     imageRequirement: "required",
     isCommercialPoster: true,
+    imageGenBehavior: "editorial",
+    styleKeywords: "brand campaign hero image, bold cinematic composition, aspirational lifestyle mood, commercial campaign photography quality, wide billboard format, dynamic motion, inspirational atmosphere",
   },
   {
     id: "style-everyday-real",
@@ -860,6 +911,8 @@ The 360° rotation is the presentation method, not a product redesign.`,
     previewUrl: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&q=80",
     imageRequirement: "required",
     isCommercialPoster: true,
+    imageGenBehavior: "product",
+    styleKeywords: "authentic UGC style casual lifestyle product photo, natural daylight, candid everyday environment, real surfaces and settings, shot on smartphone aesthetic, unposed natural composition",
   },
   {
     id: "style-pro-studio-splash",
@@ -870,6 +923,8 @@ The 360° rotation is the presentation method, not a product redesign.`,
     previewUrl: "https://images.unsplash.com/photo-1585386959984-a4155224a1ad?w=500&q=80",
     imageRequirement: "required",
     isCommercialPoster: true,
+    imageGenBehavior: "product",
+    styleKeywords: "high-end professional commercial studio photography, dramatic rim lighting, fresh condensation water drops on product, premium advertising aesthetics, macro lens detail, studio backdrop",
   },
   {
     id: "style-newspaper-frontpage",
@@ -880,6 +935,8 @@ The 360° rotation is the presentation method, not a product redesign.`,
     previewUrl: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=500&q=80",
     imageRequirement: "required",
     isCommercialPoster: true,
+    imageGenBehavior: "editorial",
+    styleKeywords: "photorealistic newspaper front page mockup, traditional print newspaper layout, prominent featured product photo, morning news aesthetic, natural window lighting, editorial composition",
   },
   {
     id: "style-dynamic-ad-splash",
@@ -890,6 +947,8 @@ The 360° rotation is the presentation method, not a product redesign.`,
     previewUrl: "https://images.unsplash.com/photo-1556881286-fc6915169721?w=500&q=80",
     imageRequirement: "required",
     isCommercialPoster: true,
+    imageGenBehavior: "product",
+    styleKeywords: "explosive dynamic commercial product shot, flying ingredients and elements surrounding the product, spectacular liquid splashes frozen in mid-air, vibrant high-contrast colors, action freeze-frame, no text overlay",
   },
   {
     id: "style-3d-billboard",
@@ -900,6 +959,8 @@ The 360° rotation is the presentation method, not a product redesign.`,
     previewUrl: "https://images.unsplash.com/photo-1555921015-5532091f6026?w=500&q=80",
     imageRequirement: "required",
     isCommercialPoster: true,
+    imageGenBehavior: "abstract",
+    styleKeywords: "giant anamorphic 3D digital billboard on a city skyscraper, product popping out of the billboard screen, Times Square style nighttime cityscape, neon lights, rainy reflections, crowds below, cinematic cyberpunk atmosphere",
   },
   {
     id: "style-food-ad-minimalist",
@@ -910,5 +971,8 @@ The 360° rotation is the presentation method, not a product redesign.`,
     previewUrl: "https://images.unsplash.com/photo-1517256064527-09c73fc73e38?w=500&q=80",
     imageRequirement: "required",
     isCommercialPoster: true,
+    imageGenBehavior: "product",
+    styleKeywords: "modern minimalist food advertising aesthetics, Swiss-style composition, food hero floating presentation, premium restaurant campaign, realistic glossy food textures, mouth-watering commercial food photography, soft studio lighting",
   }
 ];
+
