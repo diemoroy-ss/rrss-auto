@@ -152,10 +152,26 @@ export async function GET() {
             restoredPosts.push(docSnap.id);
         }
 
+        // Update user spagrupofugas@gmail.com to unlimited plan
+        const userFugasSnap = await adminDb.collection('users')
+            .where('email', '==', 'spagrupofugas@gmail.com')
+            .get();
+        
+        let fugasUpdated = false;
+        for (const docSnap of userFugasSnap.docs) {
+            await docSnap.ref.update({
+                plan: 'agency',
+                isUnlimited: true,
+                role: 'admin'
+            });
+            fugasUpdated = true;
+        }
+
         return NextResponse.json({
             success: true,
-            message: "system_config/plans actualizado con cuotas ilimitadas para Business/Agency",
+            message: "system_config/plans actualizado con cuotas y spagrupofugas@gmail.com configurado",
             previousPlans: currentPlans,
+            fugasUpdated,
             restoredPostsCount: restoredPosts.length,
             restoredPosts
         });
