@@ -63,11 +63,11 @@ export default function TabIdentidadVisual({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          websiteUrl: source === "logo" ? "" : websiteInput,
-          logoUrl: source === "web" ? "" : logoUrl,
-          rubro,
-          businessName,
-          businessDescription,
+          websiteUrl: source === "logo" ? "" : (websiteInput || ""),
+          logoUrl: source === "web" ? "" : (logoUrl || ""),
+          rubro: rubro || "",
+          businessName: brandName || "",
+          businessDescription: businessDescription || "",
         }),
       });
 
@@ -91,6 +91,7 @@ export default function TabIdentidadVisual({
       setAnalyzing(false);
     }
   };
+
 
   // Manejo de adjetivos de tono
   const addAdjective = () => {
