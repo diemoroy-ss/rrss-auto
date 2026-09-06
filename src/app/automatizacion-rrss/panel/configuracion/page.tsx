@@ -64,61 +64,78 @@ function MetaSelectionModal({ isOpen, onClose, onSelect, profileId }: any) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-3xl p-8 max-w-lg w-full shadow-2xl relative">
-        <h3 className="text-2xl font-black text-slate-900 mb-2">Selecciona tu Página</h3>
-        <p className="text-slate-500 mb-6 text-sm">Elige qué Página de Facebook y Cuenta de Instagram conectar.</p>
+    <div 
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative max-h-[92dvh] flex flex-col my-auto animate-in fade-in zoom-in-95 duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between pb-2">
+          <h3 className="text-xl sm:text-2xl font-black text-slate-900">Selecciona tu Página</h3>
+          <button 
+            type="button" 
+            onClick={onClose} 
+            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center font-bold transition-colors shrink-0"
+          >
+            ✕
+          </button>
+        </div>
+        <p className="text-slate-500 mb-6 text-xs sm:text-sm">Elige qué Página de Facebook y Cuenta de Instagram conectar.</p>
         
-        {loading ? (
-          <div className="py-10 flex justify-center"><div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div></div>
-        ) : error ? (
-          <div className="p-4 bg-rose-50 text-rose-600 rounded-xl font-bold text-sm">{error}</div>
-        ) : pages.length === 0 ? (
-          <div className="space-y-3">
-            <div className="p-4 bg-amber-50 text-amber-600 rounded-xl font-bold text-sm">No se encontraron páginas de Facebook. Asegúrate de tener permisos de administrador.</div>
-            {debugInfo && (
-              <details className="text-xs bg-slate-50 border border-slate-200 rounded-xl p-3">
-                <summary className="font-bold text-slate-500 cursor-pointer">🔍 Debug Info (compartir con soporte)</summary>
-                <pre className="mt-2 text-slate-600 overflow-auto max-h-48 whitespace-pre-wrap">{JSON.stringify(debugInfo, null, 2)}</pre>
-              </details>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-3 max-h-64 overflow-y-auto pr-2">
-            {pages.map(p => (
-              <label key={p.id} className={`flex items-center gap-4 p-4 border-2 rounded-2xl cursor-pointer transition-colors ${selectedPage?.id === p.id ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 hover:border-indigo-200 hover:bg-slate-50'}`}>
-                <input type="radio" name="meta_page" checked={selectedPage?.id === p.id} onChange={() => setSelectedPage(p)} className="hidden" />
-                {p.picture?.data?.url ? (
-                  <img src={p.picture.data.url} alt={p.name} className="w-10 h-10 rounded-full flex-shrink-0 object-cover border border-slate-100" />
-                ) : p.instagram_business_account?.profile_picture_url ? (
-                  <img src={p.instagram_business_account.profile_picture_url} alt={p.name} className="w-10 h-10 rounded-full flex-shrink-0 object-cover border border-slate-100" />
-                ) : (
-                  <div className="w-10 h-10 bg-slate-200 rounded-full flex-shrink-0 flex items-center justify-center font-bold text-slate-500">{p.name.charAt(0)}</div>
-                )}
-                <div className="flex-1 space-y-1.5">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[10px] font-black text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-0.5 rounded-md uppercase tracking-wider">Facebook Page</span>
-                    <span className="font-extrabold text-slate-900 text-sm leading-tight">{p.name}</span>
-                  </div>
-                  {p.instagram_business_account ? (
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[10px] font-black text-pink-600 bg-pink-50 border border-pink-100 px-2.5 py-0.5 rounded-md uppercase tracking-wider">Instagram Business</span>
-                      <span className="text-xs text-slate-600 font-bold">@{p.instagram_business_account.username}</span>
-                    </div>
+        <div className="overflow-y-auto flex-1 pr-1 custom-scrollbar">
+          {loading ? (
+            <div className="py-10 flex justify-center"><div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div></div>
+          ) : error ? (
+            <div className="p-4 bg-rose-50 text-rose-600 rounded-xl font-bold text-sm">{error}</div>
+          ) : pages.length === 0 ? (
+            <div className="space-y-3">
+              <div className="p-4 bg-amber-50 text-amber-600 rounded-xl font-bold text-sm">No se encontraron páginas de Facebook. Asegúrate de tener permisos de administrador.</div>
+              {debugInfo && (
+                <details className="text-xs bg-slate-50 border border-slate-200 rounded-xl p-3">
+                  <summary className="font-bold text-slate-500 cursor-pointer">🔍 Debug Info (compartir con soporte)</summary>
+                  <pre className="mt-2 text-slate-600 overflow-auto max-h-48 whitespace-pre-wrap">{JSON.stringify(debugInfo, null, 2)}</pre>
+                </details>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {pages.map(p => (
+                <label key={p.id} className={`flex items-center gap-4 p-4 border-2 rounded-2xl cursor-pointer transition-colors ${selectedPage?.id === p.id ? 'border-indigo-600 bg-indigo-50' : 'border-slate-100 hover:border-indigo-200 hover:bg-slate-50'}`}>
+                  <input type="radio" name="meta_page" checked={selectedPage?.id === p.id} onChange={() => setSelectedPage(p)} className="hidden" />
+                  {p.picture?.data?.url ? (
+                    <img src={p.picture.data.url} alt={p.name} className="w-10 h-10 rounded-full flex-shrink-0 object-cover border border-slate-100" />
+                  ) : p.instagram_business_account?.profile_picture_url ? (
+                    <img src={p.instagram_business_account.profile_picture_url} alt={p.name} className="w-10 h-10 rounded-full flex-shrink-0 object-cover border border-slate-100" />
                   ) : (
-                    <div className="text-[10px] font-black text-amber-600 bg-amber-50 border border-amber-100 px-2.5 py-0.5 rounded-md uppercase tracking-wider">
-                      ⚠️ Sin Instagram Vinculado
-                    </div>
+                    <div className="w-10 h-10 bg-slate-200 rounded-full flex-shrink-0 flex items-center justify-center font-bold text-slate-500">{p.name.charAt(0)}</div>
                   )}
-                </div>
-              </label>
-            ))}
-          </div>
-        )}
+                  <div className="flex-1 space-y-1.5">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] font-black text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-0.5 rounded-md uppercase tracking-wider">Facebook Page</span>
+                      <span className="font-extrabold text-slate-900 text-sm leading-tight">{p.name}</span>
+                    </div>
+                    {p.instagram_business_account ? (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[10px] font-black text-pink-600 bg-pink-50 border border-pink-100 px-2.5 py-0.5 rounded-md uppercase tracking-wider">Instagram Business</span>
+                        <span className="text-xs text-slate-600 font-bold">@{p.instagram_business_account.username}</span>
+                      </div>
+                    ) : (
+                      <div className="text-[10px] font-black text-amber-600 bg-amber-50 border border-amber-100 px-2.5 py-0.5 rounded-md uppercase tracking-wider">
+                        ⚠️ Sin Instagram Vinculado
+                      </div>
+                    )}
+                  </div>
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
 
-        <div className="mt-8 flex justify-end gap-3">
-          <button onClick={onClose} className="px-5 py-2.5 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition-colors">Cancelar</button>
-          <button onClick={() => onSelect(selectedPage)} disabled={!selectedPage} className="px-5 py-2.5 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 transition-colors">Guardar Conexión</button>
+        <div className="mt-6 pt-4 border-t border-slate-100 flex justify-end gap-3 shrink-0">
+          <button onClick={onClose} className="px-4 sm:px-5 py-2.5 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition-colors text-xs sm:text-sm">Cancelar</button>
+          <button onClick={() => onSelect(selectedPage)} disabled={!selectedPage} className="px-4 sm:px-5 py-2.5 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 transition-colors text-xs sm:text-sm">Guardar Conexión</button>
         </div>
       </div>
     </div>
@@ -153,42 +170,59 @@ function LinkedInSelectionModal({ isOpen, onClose, onSelect, profileId }: any) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-3xl p-8 max-w-lg w-full shadow-2xl relative">
-        <h3 className="text-2xl font-black text-slate-900 mb-2">Selecciona tu Perfil de LinkedIn</h3>
-        <p className="text-slate-500 mb-6 text-sm">Elige dónde deseas publicar tus posts automáticamente.</p>
+    <div 
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative max-h-[92dvh] flex flex-col my-auto animate-in fade-in zoom-in-95 duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between pb-2">
+          <h3 className="text-xl sm:text-2xl font-black text-slate-900">Selecciona tu Perfil de LinkedIn</h3>
+          <button 
+            type="button" 
+            onClick={onClose} 
+            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center font-bold transition-colors shrink-0"
+          >
+            ✕
+          </button>
+        </div>
+        <p className="text-slate-500 mb-6 text-xs sm:text-sm">Elige dónde deseas publicar tus posts automáticamente.</p>
         
-        {loading ? (
-          <div className="py-10 flex justify-center"><div className="w-8 h-8 border-4 border-[#0077b5] border-t-transparent rounded-full animate-spin"></div></div>
-        ) : error ? (
-          <div className="p-4 bg-rose-50 text-rose-600 rounded-xl font-bold text-sm">{error}</div>
-        ) : (
-          <div className="space-y-3 max-h-64 overflow-y-auto pr-2">
-            <label className={`flex items-center gap-4 p-4 border-2 rounded-2xl cursor-pointer transition-colors ${selectedPage === null ? 'border-[#0077b5] bg-sky-50' : 'border-slate-100 hover:border-sky-100 hover:bg-slate-50'}`}>
-              <input type="radio" name="li_page" checked={selectedPage === null} onChange={() => setSelectedPage(null)} className="hidden" />
-              <div className="w-10 h-10 bg-[#0077b5] text-white rounded-full flex-shrink-0 flex items-center justify-center font-bold">👤</div>
-              <div className="flex-1">
-                <p className="font-bold text-slate-900">Perfil Personal</p>
-                <p className="text-xs text-slate-500 font-medium">Publicar como tú mismo.</p>
-              </div>
-            </label>
-
-            {pages.map(p => (
-              <label key={p.id} className={`flex items-center gap-4 p-4 border-2 rounded-2xl cursor-pointer transition-colors ${selectedPage?.id === p.id ? 'border-[#0077b5] bg-sky-50' : 'border-slate-100 hover:border-sky-100 hover:bg-slate-50'}`}>
-                <input type="radio" name="li_page" checked={selectedPage?.id === p.id} onChange={() => setSelectedPage(p)} className="hidden" />
-                <div className="w-10 h-10 bg-slate-200 rounded-full flex-shrink-0 flex items-center justify-center font-bold text-slate-500">🏢</div>
+        <div className="overflow-y-auto flex-1 pr-1 custom-scrollbar">
+          {loading ? (
+            <div className="py-10 flex justify-center"><div className="w-8 h-8 border-4 border-[#0077b5] border-t-transparent rounded-full animate-spin"></div></div>
+          ) : error ? (
+            <div className="p-4 bg-rose-50 text-rose-600 rounded-xl font-bold text-sm">{error}</div>
+          ) : (
+            <div className="space-y-3">
+              <label className={`flex items-center gap-4 p-4 border-2 rounded-2xl cursor-pointer transition-colors ${selectedPage === null ? 'border-[#0077b5] bg-sky-50' : 'border-slate-100 hover:border-sky-100 hover:bg-slate-50'}`}>
+                <input type="radio" name="li_page" checked={selectedPage === null} onChange={() => setSelectedPage(null)} className="hidden" />
+                <div className="w-10 h-10 bg-[#0077b5] text-white rounded-full flex-shrink-0 flex items-center justify-center font-bold">👤</div>
                 <div className="flex-1">
-                  <p className="font-bold text-slate-900">{p.name}</p>
-                  <p className="text-xs text-[#0077b5] font-medium">Página de Empresa</p>
+                  <p className="font-bold text-slate-900 text-sm sm:text-base">Perfil Personal</p>
+                  <p className="text-xs text-slate-500 font-medium">Publicar como tú mismo.</p>
                 </div>
               </label>
-            ))}
-          </div>
-        )}
 
-        <div className="mt-8 flex justify-end gap-3">
-          <button onClick={onClose} className="px-5 py-2.5 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition-colors">Cancelar</button>
-          <button onClick={() => onSelect(selectedPage)} className="px-5 py-2.5 rounded-xl font-bold text-white bg-[#0077b5] hover:bg-[#005582] transition-colors">Guardar Conexión</button>
+              {pages.map(p => (
+                <label key={p.id} className={`flex items-center gap-4 p-4 border-2 rounded-2xl cursor-pointer transition-colors ${selectedPage?.id === p.id ? 'border-[#0077b5] bg-sky-50' : 'border-slate-100 hover:border-sky-100 hover:bg-slate-50'}`}>
+                  <input type="radio" name="li_page" checked={selectedPage?.id === p.id} onChange={() => setSelectedPage(p)} className="hidden" />
+                  <div className="w-10 h-10 bg-slate-200 rounded-full flex-shrink-0 flex items-center justify-center font-bold text-slate-500">🏢</div>
+                  <div className="flex-1">
+                    <p className="font-bold text-slate-900 text-sm sm:text-base">{p.name}</p>
+                    <p className="text-xs text-slate-500 font-medium">Página de Empresa</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="mt-6 pt-4 border-t border-slate-100 flex justify-end gap-3 shrink-0">
+          <button onClick={onClose} className="px-4 sm:px-5 py-2.5 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition-colors text-xs sm:text-sm">Cancelar</button>
+          <button onClick={() => onSelect(selectedPage)} className="px-4 sm:px-5 py-2.5 rounded-xl font-bold text-white bg-[#0077b5] hover:bg-[#005582] transition-colors text-xs sm:text-sm">Guardar Conexión</button>
         </div>
       </div>
     </div>
@@ -213,38 +247,52 @@ function TikTokDefaultSettingsModal({ isOpen, onClose, initialSettings, onSave }
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 max-w-xl w-full shadow-2xl space-y-6 my-8 animate-in fade-in zoom-in duration-200">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-slate-900 flex items-center justify-center text-white shadow-sm">
+    <div 
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-white border border-slate-200 rounded-3xl max-w-xl w-full shadow-2xl flex flex-col max-h-[92dvh] my-auto animate-in fade-in zoom-in-95 duration-200 overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header Fijo */}
+        <div className="flex items-center justify-between border-b border-slate-100 p-4 sm:p-5 bg-white shrink-0 sticky top-0 z-10">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-2xl bg-slate-900 flex items-center justify-center text-white shadow-sm shrink-0">
               <span className="text-xl">🎵</span>
             </div>
-            <div>
-              <h3 className="text-lg font-black text-slate-900">Preferencias de TikTok Direct Post</h3>
-              <p className="text-xs text-slate-500 font-medium">Configura los valores predeterminados para todas tus publicaciones en TikTok.</p>
+            <div className="min-w-0">
+              <h3 className="text-sm sm:text-base font-black text-slate-900 truncate">Preferencias de TikTok Direct Post</h3>
+              <p className="text-[11px] text-slate-500 font-medium truncate">Configura valores predeterminados de publicación.</p>
             </div>
           </div>
           <button 
             type="button"
             onClick={onClose} 
-            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center font-bold transition-colors"
+            aria-label="Cerrar modal"
+            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center font-bold transition-colors shrink-0 ml-2"
           >
             ✕
           </button>
         </div>
 
-        <TikTokPostSettings
-          settings={settings}
-          onChange={setSettings}
-          isDefaultConfig={true}
-        />
+        {/* Contenido Scrolleable */}
+        <div className="p-4 sm:p-6 overflow-y-auto flex-1 custom-scrollbar">
+          <TikTokPostSettings
+            settings={settings}
+            onChange={setSettings}
+            isDefaultConfig={true}
+            hideHeader={true}
+            borderless={true}
+          />
+        </div>
 
-        <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
+        {/* Footer Fijo */}
+        <div className="flex items-center justify-end gap-3 p-4 sm:p-5 border-t border-slate-100 bg-slate-50/90 backdrop-blur-sm shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2.5 rounded-xl font-bold text-slate-600 hover:bg-slate-100 transition-colors text-xs"
+            className="px-4 sm:px-5 py-2.5 rounded-xl font-bold text-slate-600 hover:bg-slate-200 transition-colors text-xs"
           >
             Cancelar
           </button>
@@ -260,7 +308,7 @@ function TikTokDefaultSettingsModal({ isOpen, onClose, initialSettings, onSave }
                 setSaving(false);
               }
             }}
-            className="px-6 py-2.5 rounded-xl font-bold text-white bg-slate-900 hover:bg-black disabled:opacity-50 transition-all text-xs flex items-center gap-2 shadow-md"
+            className="px-5 sm:px-6 py-2.5 rounded-xl font-bold text-white bg-slate-900 hover:bg-black disabled:opacity-50 transition-all text-xs flex items-center gap-2 shadow-md"
           >
             {saving ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : "💾 Guardar Preferencias"}
           </button>

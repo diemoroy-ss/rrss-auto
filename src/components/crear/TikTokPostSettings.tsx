@@ -29,12 +29,16 @@ interface TikTokPostSettingsProps {
   settings: TikTokSettingsState;
   onChange: (newSettings: TikTokSettingsState) => void;
   isDefaultConfig?: boolean;
+  hideHeader?: boolean;
+  borderless?: boolean;
 }
 
 export default function TikTokPostSettings({
   settings,
   onChange,
   isDefaultConfig = false,
+  hideHeader = false,
+  borderless = false,
 }: TikTokPostSettingsProps) {
   const updateSetting = <K extends keyof TikTokSettingsState>(
     key: K,
@@ -74,28 +78,30 @@ export default function TikTokPostSettings({
   ];
 
   return (
-    <div className="bg-white text-slate-800 rounded-2xl p-5 border border-slate-200 shadow-sm space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-slate-900 flex items-center justify-center text-white shadow-sm">
-            <FaTiktok className="text-base text-cyan-300" />
-          </div>
-          <div>
-            <h4 className="text-sm font-black tracking-wide text-slate-900 flex items-center gap-2">
-              Configuración de TikTok
-              <span className="text-[10px] bg-cyan-50 text-cyan-700 font-bold px-2 py-0.5 rounded-md border border-cyan-200">
-                Direct Post API
-              </span>
-            </h4>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">
-              {isDefaultConfig
-                ? "Valores predeterminados aplicados a todas tus publicaciones en TikTok"
-                : "Ajustes de privacidad, interacción y divulgación para esta publicación"}
-            </p>
+    <div className={`bg-white text-slate-800 space-y-5 ${borderless ? 'p-0' : 'rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm'}`}>
+      {/* Header (Optional) */}
+      {!hideHeader && (
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-slate-900 flex items-center justify-center text-white shadow-sm shrink-0">
+              <FaTiktok className="text-base text-cyan-300" />
+            </div>
+            <div>
+              <h4 className="text-sm font-black tracking-wide text-slate-900 flex items-center gap-2">
+                Configuración de TikTok
+                <span className="text-[10px] bg-cyan-50 text-cyan-700 font-bold px-2 py-0.5 rounded-md border border-cyan-200">
+                  Direct Post API
+                </span>
+              </h4>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">
+                {isDefaultConfig
+                  ? "Valores predeterminados aplicados a todas tus publicaciones en TikTok"
+                  : "Ajustes de privacidad, interacción y divulgación para esta publicación"}
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* 1. Privacy Settings */}
       <div className="space-y-3">
