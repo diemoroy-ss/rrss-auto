@@ -72,6 +72,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const safeBusinessName = (businessName || '').trim();
+    const safeRubro = (rubro || '').trim();
+    const safeDescription = (businessDescription || '').trim();
+
     // 2. Preparar el prompt para que nuestros agentes analicen y definan el ADN visual
     const availableStyles = HARDCODED_STYLES.map((s) => ({
       id: s.id,
@@ -84,9 +88,9 @@ export async function POST(req: NextRequest) {
 Tu misión es analizar la información disponible de una marca y extraer/proponer su IDENTIDAD VISUAL única (ADN visual) para generar imágenes y videos alineados con su estética.
 
 INFORMACIÓN DISPONIBLE DE LA MARCA:
-- Nombre: ${businessName || 'No especificado'}
-- Rubro: ${rubro || 'General'}
-- Descripción: ${businessDescription || 'No especificada'}
+- Nombre: ${safeBusinessName || 'No especificado'}
+- Rubro: ${safeRubro || 'General'}
+- Descripción: ${safeDescription || 'No especificada'}
 ${websiteUrl ? `- Sitio Web: ${websiteUrl}\n- Resumen extraído de la web:\n${webContentSnippet || 'No se pudo leer contenido directo, analiza el dominio/marca'}\n- Colores detectados en la web: ${extractedColorsFromWeb.join(', ') || 'ninguno'}` : ''}
 ${logoUrl ? `- URL del Logo Corporativo: ${logoUrl}` : ''}
 
@@ -120,8 +124,34 @@ Devuelve ÚNICAMENTE un JSON con la siguiente estructura exacta (SIN backticks m
       logoUrl || undefined
     );
 
-    const cleaned = rawResult.replace(/```json/g, '').replace(/```/g, '').trim();
-    const parsed = JSON.parse(cleaned);
+    let parsed: any = {};
+    try {
+      const cleaned = rawResult.replace(/```json/g, '').replace(/```/g, '').trim();
+      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        parsed = JSON.parse(jsonMatch[0]);
+      } else {
+        parsed = JSON.parse(cleaned);
+      }
+    } catch (parseErr) {
+      console.warn('[extract-identity] Error parseando JSON de Gemini, usando defaults inteligentes:', rawResult);
+      parsed = {
+        primaryColor: extractedColorsFromWeb[0] || '#4F46E5',
+        secondaryColor: extractedColorsFromWeb[1] || '#F8FAFC',
+        accentColor: extractedColorsFromWeb[2] || '#1E1B4B',
+        colorDescription: 'clean modern tones with brand accent',
+        toneAdjectives: ['profesional', 'moderno', 'innovador'],
+        recurringElements: 'clean surfaces, natural lighting, professional environment',
+        subjectType: 'product',
+        audienceDescription: 'profesionales y empresas',
+        styleMix: [
+          { styleId: 'style-everyday-real', weight: 70 },
+          { styleId: 'style-ads-hero-shot', weight: 30 }
+        ],
+        lockStyle: false,
+        summaryReason: 'Estilo corporativo y profesional adaptado a la presencia digital de tu marca.'
+      };
+    }
 
     return NextResponse.json({
       success: true,
@@ -135,8 +165,9 @@ Devuelve ÚNICAMENTE un JSON con la siguiente estructura exacta (SIN backticks m
   } catch (error: any) {
     console.error('[extract-identity] Error general:', error);
     return NextResponse.json(
-      { error: error.message || 'Error al analizar la identidad visual' },
+      { error: error?.message || 'Error al analizar la identidad visual' },
       { status: 500 }
     );
   }
 }
+
