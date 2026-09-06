@@ -13,6 +13,8 @@ export const StrategyAnnotation = Annotation.Root({
   nicheContext: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "" }),
   promptStyles: Annotation<any[]>({ reducer: (a, b) => b ?? a, default: () => [] }),
   postsPerWeek: Annotation<number>({ reducer: (a, b) => b ?? a, default: () => 5 }),
+  planId: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "pro" }),
+  maxVideos: Annotation<number>({ reducer: (a, b) => b ?? a, default: () => 2 }),
   analysis: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "" }),
   rawStrategy: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "" }),
   strategy: Annotation<any[]>({ reducer: (a, b) => b ?? a, default: () => [] }),
@@ -25,7 +27,7 @@ export type StrategyState = typeof StrategyAnnotation.State;
 
 // 2. Nodo 1: Análisis Estratégico
 async function analysisNode(state: StrategyState): Promise<Partial<StrategyState>> {
-  console.log(`[LangGraph Strategy] analysisNode - Analizando para: ${state.businessType}`);
+  console.log(`[LangGraph Strategy] analysisNode - Analizando para: ${state.businessType} (Plan: ${state.planId})`);
   
   const prompt = `Eres un Director de Estrategia Digital Senior. 
 Tu tarea es analizar los siguientes datos de un cliente y proponer los pilares de contenido para una estrategia de 7 a 14 días.
@@ -50,7 +52,7 @@ Sé profesional y estratégico. NUNCA menciones que eres una IA o Inteligencia A
 
 // 3. Nodo 2: Generación de Plan de Contenidos
 async function planningNode(state: StrategyState): Promise<Partial<StrategyState>> {
-  console.log(`[LangGraph Strategy] planningNode - Generando plan táctico...`);
+  console.log(`[LangGraph Strategy] planningNode - Generando plan táctico para plan ${state.planId} (máx videos: ${state.maxVideos})...`);
 
   // BH Skills rules adaptation
   const mixDeContenido = "40% Educativo / 30% Entretenimiento o Conexión / 20% Autoridad (Detrás de cámaras) / 10% Venta Directa";
@@ -64,15 +66,28 @@ REGLAS Y MENTALIDAD DE BH-SKILLS PARA CRECIMIENTO ORGÁNICO:
 6. IMPORTANTE: NUNCA menciones que eres una IA o Inteligencia Artificial. Refiérete a ti mismo y a tus acciones como "nuestros agentes" o "nuestro equipo de agentes especializados". Tampoco hables de "lo que se puede hacer con IA".
 7. REGLA OBLIGATORIA DE CONTACTO: Siempre incluye de forma clara los datos de contacto de la empresa en el cierre o CTA del post (WhatsApp, Sitio Web, Correo o Ubicación).`;
 
+  let videoConstraintRule = "";
+  if (state.maxVideos <= 0) {
+    videoConstraintRule = `
+RESTRICCIÓN OBLIGATORIA DE FORMATO (PLAN ${state.planId.toUpperCase()}):
+- ESTÁ ESTRICTAMENTE PROHIBIDO generar publicaciones en formato 'Reel' o 'Video'.
+- Todos los formatos DEBEN ser 'Post Fijo', 'Carrusel' o 'Historia' con imágenes fotográficas. CERO videos.`;
+  } else {
+    videoConstraintRule = `
+RESTRICCIÓN OBLIGATORIA DE FORMATO (PLAN ${state.planId.toUpperCase()}):
+- Máximo ${state.maxVideos} publicaciones pueden tener formato 'Reel' o 'Video'.
+- Las restantes publicaciones deben ser 'Post Fijo', 'Carrusel' o 'Historia' basados en imágenes.`;
+  }
+
   const stylesContext = state.promptStyles && state.promptStyles.length > 0
-    ? `\nESTILOS VISUALES DE PROMPTS IA SELECCIONADOS POR EL USUARIO PARA INSPIRAR O BASAR LAS IMÁGENES:
+    ? `\nESTILOS VISUALES DE PROMPTS SELECCIONADOS PARA BASAR LAS IMÁGENES:
 ${state.promptStyles.map((s: any) => `- ID: "${s.id}" | Título: "${s.title}" | Categoría: "${s.category}" | Estilo: "${s.description}" | Preview: "${s.previewUrl || ''}"`).join('\n')}
 
 INSTRUCCIÓN OBLIGATORIA DE ESTILOS VISUALES:
-Distribuye y asigna inteligentemente entre los posts de la estrategia aquellos estilos visuales de Prompts IA de la lista anterior que mejor encajen con la idea de cada post.
+Distribuye y asigna inteligentemente entre los posts de la estrategia aquellos estilos visuales que mejor encajen con la idea de cada post.
 Por cada post, incluye:
-- "visualStyle": "Título del estilo asignado de la lista (ej: ${state.promptStyles[0]?.title || 'Meta Ads'})",
-- "promptTemplateId": "ID exacto del estilo asignado (ej: ${state.promptStyles[0]?.id || 'style-meta-ads'})",
+- "visualStyle": "Título del estilo asignado de la lista",
+- "promptTemplateId": "ID exacto del estilo asignado",
 - "previewUrl": "URL de la imagen de previsualización del estilo asignado",
 - "imageDirection": "Instrucción visual clara de cómo adaptar este estilo a este post específico"\n\n`
     : "";
@@ -102,23 +117,24 @@ ${state.history}
 ${state.feedback ? `\n¡ATENCIÓN! El Agente Revisor rechazó tu última estrategia por el siguiente motivo:\n"${state.feedback}"\nCORRIGE Y MEJORA ESTA VERSIÓN PARA QUE SEA APROBADA.\n` : ""}
 
 ${rules}
+${videoConstraintRule}
 
 REGLAS DE NEGOCIO:
-- Si la plataforma incluye 'TikTok', el formato DEBE ser 'Reel' o 'Video'.
-- Formatos permitidos: Reel, Carrusel, Historia, Post Fijo.
+- Si la plataforma incluye 'TikTok' y el plan lo permite, el formato puede ser 'Reel' o 'Video'. Si el plan tiene 0 videos, enfócate en otras plataformas o formatos de foto/carrusel.
+- Formatos permitidos: ${state.maxVideos > 0 ? "Reel, Carrusel, Historia, Post Fijo" : "Carrusel, Historia, Post Fijo"}.
 
 DEBES GENERAR UNA ESTRUCTURA DE JSON válida que contenga un arreglo 'strategy' con exactamente este formato por cada publicación:
 {
   "weekNumber": 1, 
   "dayOffset": 0, // 0 = hoy, 1 = mañana... hasta 6
   "suggestedTime": "HH:MM",
-  "format": "Formato exacto",
+  "format": "Formato exacto (${state.maxVideos > 0 ? 'Reel, Carrusel, Post Fijo o Historia' : 'Post Fijo, Carrusel o Historia'})",
   "hook": "Gancho corto y potente",
   "content": "Resumen del contenido a grabar/diseñar",
-  "cta": "Llamado a la acción (incluyendo canal de contacto)"${state.promptStyles && state.promptStyles.length > 0 ? `,\n  "visualStyle": "Nombre del estilo de Prompts IA asignado",\n  "promptTemplateId": "ID del estilo asignado",\n  "previewUrl": "URL de preview del estilo",\n  "imageDirection": "Idea de la imagen adaptada"` : ""}
+  "cta": "Llamado a la acción (incluyendo canal de contacto)"${state.promptStyles && state.promptStyles.length > 0 ? `,\n  "visualStyle": "Nombre del estilo asignado",\n  "promptTemplateId": "ID del estilo asignado",\n  "previewUrl": "URL de preview del estilo",\n  "imageDirection": "Idea de la imagen adaptada"` : ""}
 }
 
-GENERA EXACTAMENTE ${state.postsPerWeek} PUBLICACIONES DISTRIBUIDAS EN LOS PRÓXIMOS 7 DÍAS (weekNumber: 1, dayOffset: de 0 a 6).
+GENERA EXACTAMENTE ${state.postsPerWeek} PUBLICACIONES DISTRIBUIDAS EN LOS PRÓXIMOS DÍAS.
 DEVUELVE ÚNICAMENTE EL JSON.`;
 
   const rawStrategy = await generateFreeText(prompt);
@@ -137,7 +153,7 @@ ${state.rawStrategy}
 
 REGLAS A VALIDAR:
 1. El formato debe ser un objeto JSON con una propiedad "strategy" que sea un arreglo de objetos.
-2. Si aparece 'TikTok' en el contexto, asegúrate de que sus formatos sean 'Reel'.
+2. Si el plan es Free o máx videos es 0, NINGUNA publicación debe tener formato 'Reel' o 'Video'. Cámbialo a 'Post Fijo' o 'Carrusel'.
 3. Los 'dayOffset' deben ser números coherentes (0 a 14).
 4. El texto de 'hook' y 'cta' debe ser profesional y persuasivo.
 5. Conserva los campos visuales si están presentes: 'visualStyle', 'promptTemplateId', 'previewUrl', 'imageDirection'.
@@ -146,7 +162,7 @@ DEVUELVE ÚNICAMENTE EL OBJETO JSON LIMPIO. SIN MARKDOWN.`;
 
   const cleanJsonText = await generateFreeText(prompt);
   
-  let strategy = [];
+  let strategy: any[] = [];
   try {
       const clean = cleanJsonText.replace(/```json/g, '').replace(/```/g, '').trim();
       const obj = JSON.parse(clean);
@@ -159,6 +175,27 @@ DEVUELVE ÚNICAMENTE EL OBJETO JSON LIMPIO. SIN MARKDOWN.`;
         const objRaw = JSON.parse(cleanRaw);
         strategy = objRaw.strategy || [];
       } catch (e2) {}
+  }
+
+  // Post-procesamiento estricto de seguridad de límites de video
+  if (state.maxVideos <= 0) {
+    strategy = strategy.map(item => {
+      if (item.format === 'Reel' || item.format === 'Video') {
+        return { ...item, format: 'Post Fijo' };
+      }
+      return item;
+    });
+  } else {
+    let videoCount = 0;
+    strategy = strategy.map(item => {
+      if (item.format === 'Reel' || item.format === 'Video') {
+        videoCount++;
+        if (videoCount > state.maxVideos) {
+          return { ...item, format: 'Post Fijo' };
+        }
+      }
+      return item;
+    });
   }
 
   return { strategy };
@@ -250,7 +287,9 @@ export async function runProfessionalStrategyWorkflow(
     postsPerWeek: number = 5,
     promotions: string = "",
     promptStyles: any[] = [],
-    businessData: any = {}
+    businessData: any = {},
+    planId: string = "pro",
+    maxVideos: number = 2
 ) {
   const app = createStrategyWorkflow();
   const initialState = {
@@ -264,6 +303,8 @@ export async function runProfessionalStrategyWorkflow(
     nicheContext,
     promptStyles,
     postsPerWeek,
+    planId,
+    maxVideos,
     analysis: "",
     rawStrategy: "",
     strategy: [],

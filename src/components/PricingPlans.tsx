@@ -94,7 +94,7 @@ export default function PricingPlans() {
                     </div>
                     <div className="plan-cycle">
                       {plan.price === 0 ? "10 días de prueba" : 
-                       (plan.id === 'business' ? "CLP / mes · hasta 3 cuentas" :
+                       (plan.id === 'business' ? "CLP / mes · hasta 2 cuentas" :
                         (plan.id === 'agency' ? "CLP / mes · hasta 10 cuentas" : 
                          (billingCycle === 'anual' ? "FACTURADO AL AÑO" : "CLP · IVA INCLUIDO")))}
                     </div>
@@ -128,7 +128,7 @@ export default function PricingPlans() {
                     </div>
                     <div className="plan-cycle">
                       {plan.price === 0 ? "10 días de prueba" : 
-                       (plan.id === 'business' ? "CLP / mes · hasta 3 cuentas" :
+                       (plan.id === 'business' ? "CLP / mes · hasta 2 cuentas" :
                         (plan.id === 'agency' ? "CLP / mes · hasta 10 cuentas" : 
                          (billingCycle === 'anual' ? "FACTURADO AL AÑO" : "CLP · IVA INCLUIDO")))}
                     </div>

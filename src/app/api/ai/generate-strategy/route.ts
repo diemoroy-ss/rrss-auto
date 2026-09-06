@@ -98,32 +98,58 @@ export async function POST(req: NextRequest) {
         }))
         : [];
 
+    let userPlan = "pro";
     // Si el usuario no seleccionó estilos manualmente en el generador, pero su perfil tiene un ADN de Identidad Visual configurado
-    if (promptStylesToPass.length === 0 && userId) {
+    if (userId) {
         try {
             const userDoc = await adminDb.collection("users").doc(userId).get();
             const uData = userDoc.data() || {};
-            const profiles = uData.profiles || [];
-            const prof = profiles.find((p: any) => p.id === profileId) || profiles[0];
-            const vIdentity = prof?.visualIdentity;
-            if (vIdentity?.styleMix && vIdentity.styleMix.length > 0) {
-                const { HARDCODED_STYLES } = await import('../../../../lib/prompt-templates');
-                promptStylesToPass = vIdentity.styleMix.map((sm: any) => {
-                    const t = HARDCODED_STYLES.find(item => item.id === sm.styleId);
-                    return t ? {
-                        id: t.id,
-                        title: t.title,
-                        category: t.category,
-                        description: t.description,
-                        previewUrl: t.previewUrl || "",
-                        weight: sm.weight
-                    } : null;
-                }).filter(Boolean);
-                console.log(`[STRATEGY] Usando ${promptStylesToPass.length} estilos del ADN visual del perfil`);
+            userPlan = (uData.plan || "free").toLowerCase();
+
+            if (promptStylesToPass.length === 0) {
+                const profiles = uData.profiles || [];
+                const prof = profiles.find((p: any) => p.id === profileId) || profiles[0];
+                const vIdentity = prof?.visualIdentity;
+                if (vIdentity?.styleMix && vIdentity.styleMix.length > 0) {
+                    const { HARDCODED_STYLES } = await import('../../../../lib/prompt-templates');
+                    promptStylesToPass = vIdentity.styleMix.map((sm: any) => {
+                        const t = HARDCODED_STYLES.find(item => item.id === sm.styleId);
+                        return t ? {
+                            id: t.id,
+                            title: t.title,
+                            category: t.category,
+                            description: t.description,
+                            previewUrl: t.previewUrl || "",
+                            weight: sm.weight
+                        } : null;
+                    }).filter(Boolean);
+                    console.log(`[STRATEGY] Usando ${promptStylesToPass.length} estilos del ADN visual del perfil`);
+                }
             }
         } catch (vErr) {
-            console.warn("[STRATEGY] Error reading visualIdentity for styles:", vErr);
+            console.warn("[STRATEGY] Error reading user doc / visualIdentity:", vErr);
         }
+    }
+
+    // Calcular límites de publicaciones y videos según el plan
+    let effectivePosts = postsPerWeek || 5;
+    let maxVideos = 2;
+
+    if (userPlan === 'free') {
+        effectivePosts = 3; // 3 posts totales del período de prueba
+        maxVideos = 0;      // 0 videos
+    } else if (userPlan === 'starter') {
+        effectivePosts = Math.min(postsPerWeek || 3, 3); // 3 posts por semana (~12/mes)
+        maxVideos = 1;      // Máx 1 video por semana (~3/mes)
+    } else if (userPlan === 'pro') {
+        effectivePosts = Math.min(postsPerWeek || 5, 5); // 5 posts por semana (~20/mes)
+        maxVideos = 2;      // Máx 2 videos por semana (~8/mes)
+    } else if (userPlan === 'business') {
+        effectivePosts = Math.min(postsPerWeek || 15, 15); // ~15 posts por semana (~60/mes)
+        maxVideos = 4;      // Máx 4 videos por semana (~16/mes)
+    } else if (userPlan === 'agency') {
+        effectivePosts = Math.min(postsPerWeek || 50, 50); // ~50 posts por semana (~200/mes)
+        maxVideos = 10;     // Máx 10 videos por semana (~40/mes)
     }
     
     const result = await runProfessionalStrategyWorkflow(
@@ -133,13 +159,15 @@ export async function POST(req: NextRequest) {
         platforms,
         history,
         enrichedNicheContext,
-        postsPerWeek || 5,
+        effectivePosts,
         promotions || "",
         promptStylesToPass,
-        businessData || {}
+        businessData || {},
+        userPlan,
+        maxVideos
     );
 
-    console.log("[STRATEGY] LangGraph Strategy generated successfully.");
+    console.log(`[STRATEGY] LangGraph Strategy generated successfully for plan ${userPlan} (posts: ${effectivePosts}, maxVideos: ${maxVideos}).`);
     return NextResponse.json({ 
         strategy: result.strategy,
         analysis: result.analysis 

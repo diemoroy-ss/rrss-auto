@@ -37,15 +37,15 @@ export function isAdminAdmin(email?: string): boolean {
 export async function getPlanLimitAdmin(plan: string, email?: string): Promise<number> {
     if (isAdminAdmin(email)) return 999999;
     const planId = (plan || 'free').toLowerCase();
-    if (planId === 'business' || planId === 'agency' || planId === 'unlimited') return 999999;
+    if (planId === 'unlimited') return 999999;
     if (!adminDb) {
-        return 4; // fallback
+        return 3; // fallback
     }
     try {
         const plansDoc = await adminDb.collection("system_config").doc("plans").get();
         if (plansDoc.exists) {
             const config = plansDoc.data() as any;
-            return config[planId]?.postsLimit ?? 4;
+            return config[planId]?.postsLimit ?? (config['free']?.postsLimit || 3);
         }
     } catch (e) {
         console.error("Error fetching plans config in admin:", e);
@@ -53,12 +53,12 @@ export async function getPlanLimitAdmin(plan: string, email?: string): Promise<n
     
     // Fallback to hardcoded values if Firestore fails
     const fallbacks: Record<string, number> = {
-        free:     3,      // 3 posts totales (prueba)
-        starter:  12,     // 3 posts/semana
-        pro:      20,     // 5 posts/semana
-        elite:    20,     // alias legacy → pro
-        business: 999999, // Business sin límites
-        agency:   999999  // Agency ilimitado
+        free:     3,   // 3 posts totales (prueba de 10 días)
+        starter:  12,  // 12 posts/mes
+        pro:      20,  // 20 posts/mes
+        elite:    20,  // alias legacy → pro
+        business: 60,  // 60 posts/mes (30/cuenta)
+        agency:   200  // 200 posts/mes (20/cuenta)
     };
     return fallbacks[planId] ?? 3;
 }
@@ -66,31 +66,31 @@ export async function getPlanLimitAdmin(plan: string, email?: string): Promise<n
 export async function getAiPlanLimitAdmin(plan: string, type: 'image' | 'video' | 'blog', email?: string): Promise<number> {
     if (isAdminAdmin(email)) return 999999;
     const planId = (plan || 'free').toLowerCase();
-    if (planId === 'business' || planId === 'agency' || planId === 'unlimited') return 999999;
-    if (!adminDb) return type === 'image' ? 5 : 0;
+    if (planId === 'unlimited') return 999999;
+    if (!adminDb) return type === 'image' ? 8 : 0;
     try {
         const plansDoc = await adminDb.collection("system_config").doc("plans").get();
         if (plansDoc.exists) {
             const config = plansDoc.data() as any;
-            if (type === 'image') return config[planId]?.aiImagesLimit ?? 5;
+            if (type === 'image') return config[planId]?.aiImagesLimit ?? 8;
             if (type === 'video') return config[planId]?.aiVideosLimit ?? 0;
             if (type === 'blog') return config[planId]?.seoBlogsLimit ?? 0;
         }
     } catch (e) {
         console.error("Error fetching AI plans config in admin:", e);
     }
-    // image: imágenes IA generadas con posts
-    // video: videos PREMIUM (con voz+guión LangGraph) — Free/Starter = 0
-    // blog: artículos SEO/GEO — solo Pro y Business
+    // image: imágenes con nuestros agentes
+    // video: videos (Reels/TikTok/Shorts)
+    // blog: artículos SEO/GEO
     const fallbacks: Record<string, { image: number, video: number, blog: number }> = {
-        free:     { image: 5,      video: 0,      blog: 0      },
-        starter:  { image: 20,     video: 0,      blog: 0      },
-        pro:      { image: 50,     video: 8,      blog: 4      },
-        elite:    { image: 50,     video: 8,      blog: 4      }, // alias legacy → pro
-        business: { image: 999999, video: 999999, blog: 999999 },
-        agency:   { image: 999999, video: 999999, blog: 999999 }, // ilimitado
+        free:     { image: 8,   video: 0,  blog: 0  },
+        starter:  { image: 30,  video: 3,  blog: 0  },
+        pro:      { image: 80,  video: 8,  blog: 4  },
+        elite:    { image: 80,  video: 8,  blog: 4  }, // alias legacy → pro
+        business: { image: 150, video: 16, blog: 12 },
+        agency:   { image: 400, video: 40, blog: 25 },
     };
-    return fallbacks[planId]?.[type] ?? (type === 'image' ? 5 : 0);
+    return fallbacks[planId]?.[type] ?? (type === 'image' ? 8 : 0);
 }
 
 export async function getAiGenerationUsageAdmin(userId: string, type: 'image' | 'video' | 'blog'): Promise<number> {
