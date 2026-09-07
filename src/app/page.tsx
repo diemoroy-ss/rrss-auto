@@ -63,7 +63,7 @@ export default function Home() {
               <span className="pillar-tag">SEÑAL A · 98.6 FM</span>
               <h3>Redes Sociales 360°</h3>
               <ul className="pillar-list">
-                <li><span className="mark">›</span><span>Generación de <strong>contenido persuasivo</strong> con IA, adaptado a tu marca.</span></li>
+                <li><span className="mark">›</span><span>Generación de <strong>contenido persuasivo</strong> con nuestros agentes, adaptado a tu marca.</span></li>
                 <li><span className="mark">›</span><span><strong>Radar de Nicho 📡:</strong> Inteligencia de mercado para descubrir tendencias, dudas y temas virales en tu industria.</span></li>
                 <li><span className="mark">›</span><span><strong>Calendario estratégico</strong> que automatiza todo un mes en minutos.</span></li>
                 <li><span className="mark">›</span><span>Publicación automática directa en <strong>Meta (Facebook, Instagram)</strong>, <strong>TikTok</strong>, <strong>YouTube Shorts</strong> y <strong>X (Twitter)</strong>.</span></li>
@@ -75,7 +75,7 @@ export default function Home() {
               <h3>SEO &amp; GEO con Blog</h3>
               <ul className="pillar-list">
                 <li><span className="mark">›</span><span><strong>Generative Engine Optimization (GEO):</strong> apareces citado en respuestas de ChatGPT y Perplexity, no solo en Google.</span></li>
-                <li><span className="mark">›</span><span>Generación de <strong>artículos completos</strong> y estructurados con IA experta.</span></li>
+                <li><span className="mark">›</span><span>Generación de <strong>artículos completos</strong> y estructurados con nuestros agentes especializados.</span></li>
                 <li><span className="mark">›</span><span>Publicación automática y sin código en tu <strong>CMS</strong> (WordPress, Shopify, Webflow).</span></li>
               </ul>
               <span className="pillar-note">Promesa: tráfico orgánico + visibilidad en motores IA</span>
@@ -89,7 +89,7 @@ export default function Home() {
         <div className="wrap">
           <div className="section-head center" data-reveal>
             <span className="eyebrow">El futuro del posicionamiento</span>
-            <h2>No basta con salir en Google.<br />Hay que salir en la <em>IA.</em></h2>
+            <h2>No basta con salir en Google.<br />Hay que salir en los <em>motores generativos.</em></h2>
           </div>
           <p style={{ maxWidth: '620px', margin: '-28px auto 40px', textAlign: 'center', color: 'var(--ink-dim)', fontSize: '15px', lineHeight: '1.65' }} data-reveal>
             Cada vez más personas piden recomendaciones directo a ChatGPT, Perplexity o Google AI Overviews, en vez de hacer una búsqueda tradicional. Si tu negocio no está optimizado para esos motores, simplemente no existe para esa búsqueda.
@@ -106,7 +106,7 @@ export default function Home() {
               <p>Estructuramos y publicamos tu contenido para que los motores de IA generativa te citen y recomienden como fuente confiable en sus respuestas.</p>
             </div>
           </div>
-          <p className="geo-closing" data-reveal>"Tu blog, escrito y publicado por IA, trabajando para que la IA te encuentre a ti."</p>
+          <p className="geo-closing" data-reveal>&quot;Tu blog, redactado y publicado por nuestros agentes, trabajando para que los motores generativos te encuentren a ti.&quot;</p>
         </div>
       </section>
 
@@ -143,8 +143,65 @@ export default function Home() {
         </div>
       </section>
 
+      {/* 7. Comparativa de Costos */}
+      <section id="comparativa">
+        <div className="wrap">
+          <div className="section-head center" data-reveal>
+            <span className="eyebrow">El argumento real</span>
+            <h2>No compites con <em>herramientas.</em><br />Compites con contratar <span className="em-p">personas.</span></h2>
+          </div>
+          <p className="cost-comparison-sub" data-reveal>
+            ¿Cuánto te cuesta tener a alguien que escriba, diseñe, edite videos y gestione tus redes todos los días en Chile?
+          </p>
+          <div className="cost-comparison-grid" data-reveal>
+            <div className="cost-card traditional">
+              <div className="cost-card-header">
+                <span className="cost-card-label">EQUIPO TRADICIONAL EN CHILE</span>
+                <span className="cost-card-badge bad">❌ Opción costosa</span>
+              </div>
+              <ul className="cost-breakdown-list">
+                <li><span className="cost-role">Community Manager</span><span className="cost-amount">~$450.000</span></li>
+                <li><span className="cost-role">Diseñador Gráfico</span><span className="cost-amount">~$400.000</span></li>
+                <li><span className="cost-role">Redactor de Contenidos &amp; SEO</span><span className="cost-amount">~$350.000</span></li>
+                <li><span className="cost-role">Editor de Video</span><span className="cost-amount">~$300.000</span></li>
+              </ul>
+              <div className="cost-total-row">
+                <span>Total mensual estimado</span>
+                <span className="cost-total-amount bad">$1.200.000 – $1.500.000</span>
+              </div>
+              <p className="cost-card-note">Sin contar vacaciones, finiquitos, herramientas de diseño ni licencias de software adicionales.</p>
+            </div>
+
+            <div className="cost-card santisoft">
+              <div className="cost-card-header">
+                <span className="cost-card-label">SANTISOFT — PLAN PRO</span>
+                <span className="cost-card-badge good">✓ Opción inteligente</span>
+              </div>
+              <ul className="cost-breakdown-list">
+                <li><span className="cost-role">80 publicaciones en redes al mes</span><span className="cost-check">✓</span></li>
+                <li><span className="cost-role">12 videos con locución y guión</span><span className="cost-check">✓</span></li>
+                <li><span className="cost-role">80 imágenes generadas a tu estilo</span><span className="cost-check">✓</span></li>
+                <li><span className="cost-role">8 artículos de Blog SEO/GEO al mes</span><span className="cost-check">✓</span></li>
+                <li><span className="cost-role">Radar de Nicho + Meta Ads integrado</span><span className="cost-check">✓</span></li>
+                <li><span className="cost-role">Publicación automática en Meta, TikTok, YouTube</span><span className="cost-check">✓</span></li>
+              </ul>
+              <div className="cost-total-row highlight">
+                <span>Total mensual</span>
+                <span className="cost-total-amount good">$84.990</span>
+              </div>
+              <p className="cost-card-note highlight-note">Más del 90% de ahorro. Sin contratar, sin reuniones, sin esperar.</p>
+            </div>
+          </div>
+
+          <p className="cost-cta-note" data-reveal>
+            Tu contenido del mes completo, listo en 15 minutos. Nuestros agentes investigan tu nicho, crean las piezas y publican solos.
+          </p>
+        </div>
+      </section>
+
       {/* 8. Planes */}
       <section id="planes">
+
         <div className="wrap">
           <div className="section-head center" data-reveal>
             <span className="eyebrow">Planes</span>
@@ -160,7 +217,7 @@ export default function Home() {
           <div className="section-head center" data-reveal>
             <span className="eyebrow">Contacto</span>
             <h2>¿Tienes dudas? <em>Hablemos.</em></h2>
-            <p className="mt-4 text-slate-500 font-sans max-w-lg mx-auto">Déjanos tus datos y te contactaremos a la brevedad para ayudarte a potenciar tu negocio.</p>
+            <p className="mt-4 font-sans max-w-lg mx-auto" style={{ color: 'var(--ink-dim)', fontSize: '15px', lineHeight: '1.6' }}>Déjanos tus datos y te contactaremos a la brevedad para ayudarte a potenciar tu negocio.</p>
           </div>
           
           <div className="panel p-8 md:p-10" data-reveal>
@@ -168,10 +225,10 @@ export default function Home() {
           </div>
 
           {/* Social Links Banner */}
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-2xl bg-white/5 border border-slate-700/40 backdrop-blur-sm shadow-sm" data-reveal>
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-2xl shadow-sm" style={{ background: 'var(--panel-2)', border: '1px solid var(--line-strong)' }} data-reveal>
             <div className="text-center sm:text-left">
-              <h4 className="text-sm font-bold text-white font-sans">Síguenos en nuestras redes sociales</h4>
-              <p className="text-xs text-slate-400 font-sans mt-0.5">Conoce nuestras últimas novedades, consejos y casos de éxito</p>
+              <h4 className="text-sm font-bold font-sans" style={{ color: 'var(--ink)' }}>Síguenos en nuestras redes sociales</h4>
+              <p className="text-xs font-sans mt-0.5" style={{ color: 'var(--ink-dim)' }}>Conoce nuestras últimas novedades, consejos y casos de éxito</p>
             </div>
             <div className="flex items-center gap-3 shrink-0 flex-wrap justify-center">
               <a

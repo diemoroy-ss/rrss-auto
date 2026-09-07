@@ -20,7 +20,7 @@ export default function HeroSection() {
   const [loadingDemo, setLoadingDemo] = useState(false);
   const [demoOutput, setDemoOutput] = useState("");
   const [demoType, setDemoType] = useState<'rrss' | 'blog'>('rrss');
-  const [demoButtonText, setDemoButtonText] = useState("→ Generar con IA");
+  const [demoButtonText, setDemoButtonText] = useState("→ Generar muestra en vivo");
   const [typedOutput, setTypedOutput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [showAdvancedModal, setShowAdvancedModal] = useState(false);
@@ -112,7 +112,7 @@ export default function HeroSection() {
       setShowAdvancedModal(false);
     } finally {
       setLoadingDemo(false);
-      setDemoButtonText("→ Generar con IA");
+      setDemoButtonText("→ Generar muestra en vivo");
     }
   };
 
@@ -124,7 +124,7 @@ export default function HeroSection() {
           <div className="hero-head lg:w-1/2 lg:text-left text-center m-0 max-w-none flex flex-col items-center lg:items-start z-10 relative">
             <span className="eyebrow">Redes 360° <span className="freq">·</span> Blog Automático <span className="freq">·</span> SEO &amp; GEO</span>
             <h1 className="lg:text-left text-center leading-tight mt-5">Que te <em>vean.</em><br />Que te <span className="em-p">citen.</span></h1>
-            <p className="sub lg:text-left text-center lg:mx-0 mx-auto mt-6">Tu marca, al aire 24/7: automatizamos tus redes y tu blog con IA, publicamos en Facebook, Instagram y TikTok, y creamos el contenido que te posiciona en Google y en las respuestas de ChatGPT, Perplexity y otros motores de IA — mientras tú trabajas en tu negocio.</p>
+            <p className="sub lg:text-left text-center lg:mx-0 mx-auto mt-6">Tu marca activa 24/7 sin contratar un equipo costoso: nuestros agentes investigan tu nicho, diseñan las piezas, redactan los copys y publican en Facebook, Instagram, TikTok y el blog de tu sitio — mientras tú trabajas en lo que importa.</p>
             <div className="hero-ctas flex flex-col sm:flex-row justify-center lg:justify-start gap-4 mt-8 w-full">
               <a href="#planes" className="btn btn-primary w-full sm:w-auto justify-center text-center">Explorar Planes</a>
               <Link href="/login" className="btn btn-ghost w-full sm:w-auto justify-center text-center">Acceso Cliente</Link>

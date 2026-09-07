@@ -22,18 +22,23 @@ type PlanConfig = {
   features: string[];
 };
 
-const PLAN_ORDER = ["free", "starter", "pro", "business", "agency"];
+const PLAN_ORDER = ["free", "starter", "growth", "pro", "business"];
+
+const WA_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "56965909543";
+const WA_MSG = encodeURIComponent("¡Hola Santisoft! Quiero saber más sobre un plan personalizado para mi agencia o negocio de mayor volumen.");
 
 export default function PricingPlans() {
   const [plans, setPlans] = useState<Record<string, PlanConfig>>({});
   const [loadingPlans, setLoadingPlans] = useState(true);
   const [billingCycle, setBillingCycle] = useState<'mensual' | 'anual'>('mensual');
-  const plansContainerRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const scrollPlans = (dir: 'left' | 'right') => {
-    if (plansContainerRef.current) {
-      const scrollAmount = 360;
-      plansContainerRef.current.scrollBy({ left: dir === 'left' ? -scrollAmount : scrollAmount, behavior: 'smooth' });
+    if (scrollRef.current) {
+      const card = scrollRef.current.querySelector('.plan') as HTMLElement | null;
+      const gap = 20;
+      const amount = card ? card.offsetWidth + gap : 360;
+      scrollRef.current.scrollBy({ left: dir === 'left' ? -amount : amount, behavior: 'smooth' });
     }
   };
 
@@ -53,99 +58,108 @@ export default function PricingPlans() {
     fetchPlans();
   }, []);
 
+  const getCycleLabel = (plan: PlanConfig) => {
+    if (plan.price === 0) return "10 días de prueba · sin tarjeta";
+    if (plan.id === 'business') return "CLP / mes · hasta 3 cuentas";
+    return billingCycle === 'anual' ? "FACTURADO AL AÑO · IVA INCLUIDO" : "CLP / mes · IVA INCLUIDO";
+  };
+
   return (
     <>
+      {/* Toggle mensual / anual */}
       <div className="toggle-row" data-reveal>
-        <span className={`toggle-label ${billingCycle === 'mensual' ? 'active' : ''}`} id="labelM">Mensual</span>
+        <span className={`toggle-label ${billingCycle === 'mensual' ? 'active' : ''}`}>Mensual</span>
         <div
           className={`toggle-sw ${billingCycle === 'anual' ? 'on' : ''}`}
-          id="cycleToggle"
           onClick={() => setBillingCycle(prev => prev === 'mensual' ? 'anual' : 'mensual')}
-        ></div>
-        <span className={`toggle-label ${billingCycle === 'anual' ? 'active' : ''}`} id="labelA">
+        />
+        <span className={`toggle-label ${billingCycle === 'anual' ? 'active' : ''}`}>
           Anual <span className="save-badge">-10%</span>
         </span>
       </div>
-      <div className="plans-wrapper" data-reveal>
-        <div className="plans">
+
+      {/* Slider de planes */}
+      <div className="plans-slider-outer" data-reveal>
+        <button
+          className="plans-nav-btn left"
+          onClick={() => scrollPlans('left')}
+          aria-label="Ver planes anteriores"
+        >
+          ←
+        </button>
+
         {loadingPlans ? (
-          <div className="col-span-full flex justify-center py-12 w-full">
-            <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto"></div>
+          <div className="plans-loading">
+            <div className="plans-spinner" />
           </div>
         ) : (
-          <div className="plans-marquee">
-            <div className="plans-track">
-              {PLAN_ORDER.map((id, index) => {
-                const plan = plans[id];
-                if (!plan) return null;
+          <div className="plans-scroll" ref={scrollRef}>
+            {PLAN_ORDER.map((id) => {
+              const plan = plans[id];
+              if (!plan) return null;
 
-                const priceToShow = billingCycle === 'anual'
-                  ? (plan.annualPrice > 0 ? plan.annualPrice : (plan.price === 0 ? 0 : Math.round((plan.price * 12) * 0.90)))
-                  : plan.price;
+              const priceToShow = billingCycle === 'anual'
+                ? (plan.annualPrice > 0 ? plan.annualPrice : (plan.price === 0 ? 0 : Math.round((plan.price * 12) * 0.90)))
+                : plan.price;
 
-                const priceLabel = priceToShow === 0 ? "$0" : `$${priceToShow.toLocaleString('es-CL')}`;
+              const priceLabel = priceToShow === 0 ? "$0" : `$${priceToShow.toLocaleString('es-CL')}`;
 
-                return (
-                  <div key={`${id}-track1`} className={`plan ${plan.isPopular ? 'feat' : ''}`}>
-                    <span className="plan-name">{plan.name}</span>
-                    <div className="plan-price">
-                      {priceLabel}
-                      {plan.price > 0 && <span>/mes</span>}
-                    </div>
-                    <div className="plan-cycle">
-                      {plan.price === 0 ? "10 días de prueba" : 
-                       (plan.id === 'business' ? "CLP / mes · hasta 2 cuentas" :
-                        (plan.id === 'agency' ? "CLP / mes · hasta 10 cuentas" : 
-                         (billingCycle === 'anual' ? "FACTURADO AL AÑO" : "CLP · IVA INCLUIDO")))}
-                    </div>
-                    <ul className="plan-list">
-                      {plan.features.map((f, i) => <li key={i}>{f}</li>)}
-                    </ul>
-                    <Link href={`/registro?plan=${id}&billing=${billingCycle}`} className={`btn ${plan.isPopular ? 'btn-primary' : 'btn-ghost'}`}>
-                      {plan.ctaText || "¡Lo quiero 🚀!"}
-                    </Link>
+              return (
+                <div key={id} className={`plan ${plan.isPopular ? 'feat' : ''}`}>
+                  <span className="plan-name">{plan.name}</span>
+                  <div className="plan-price">
+                    {priceLabel}
+                    {plan.price > 0 && <span>/mes</span>}
                   </div>
-                );
-              })}
-            </div>
-            <div className="plans-track">
-              {PLAN_ORDER.map((id, index) => {
-                const plan = plans[id];
-                if (!plan) return null;
-
-                const priceToShow = billingCycle === 'anual'
-                  ? (plan.annualPrice > 0 ? plan.annualPrice : (plan.price === 0 ? 0 : Math.round((plan.price * 12) * 0.90)))
-                  : plan.price;
-
-                const priceLabel = priceToShow === 0 ? "$0" : `$${priceToShow.toLocaleString('es-CL')}`;
-
-                return (
-                  <div key={`${id}-track2`} className={`plan ${plan.isPopular ? 'feat' : ''}`}>
-                    <span className="plan-name">{plan.name}</span>
-                    <div className="plan-price">
-                      {priceLabel}
-                      {plan.price > 0 && <span>/mes</span>}
-                    </div>
-                    <div className="plan-cycle">
-                      {plan.price === 0 ? "10 días de prueba" : 
-                       (plan.id === 'business' ? "CLP / mes · hasta 2 cuentas" :
-                        (plan.id === 'agency' ? "CLP / mes · hasta 10 cuentas" : 
-                         (billingCycle === 'anual' ? "FACTURADO AL AÑO" : "CLP · IVA INCLUIDO")))}
-                    </div>
-                    <ul className="plan-list">
-                      {plan.features.map((f, i) => <li key={i}>{f}</li>)}
-                    </ul>
-                    <Link href={`/registro?plan=${id}&billing=${billingCycle}`} className={`btn ${plan.isPopular ? 'btn-primary' : 'btn-ghost'}`}>
-                      {plan.ctaText || "¡Lo quiero 🚀!"}
-                    </Link>
-                  </div>
-                );
-              })}
-            </div>
+                  <div className="plan-cycle">{getCycleLabel(plan)}</div>
+                  <ul className="plan-list">
+                    {plan.features.map((f, i) => <li key={i}>{f}</li>)}
+                  </ul>
+                  <Link
+                    href={`/registro?plan=${id}&billing=${billingCycle}`}
+                    className={`btn ${plan.isPopular ? 'btn-primary' : 'btn-outline'}`}
+                  >
+                    {plan.ctaText || "¡Lo quiero 🚀!"}
+                  </Link>
+                </div>
+              );
+            })}
           </div>
         )}
+
+        <button
+          className="plans-nav-btn right"
+          onClick={() => scrollPlans('right')}
+          aria-label="Ver más planes"
+        >
+          →
+        </button>
+      </div>
+
+      {/* Bloque Plan a la Medida / Agencias */}
+      <div className="custom-plan-banner" data-reveal>
+        <div className="custom-plan-content">
+          <span className="custom-plan-icon">🏢</span>
+          <div className="custom-plan-text">
+            <strong>¿Manejas más de 3 marcas, tienes una agencia o necesitas volumen a tu medida?</strong>
+            <p>Armamos un plan personalizado para ti. Sin complicaciones, directo al grano.</p>
+          </div>
+        </div>
+        <div className="custom-plan-actions">
+          <a
+            href={`https://wa.me/${WA_NUMBER}?text=${WA_MSG}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-primary"
+          >
+            Hablemos por WhatsApp
+          </a>
+          <a href="#contacto" className="btn btn-outline">
+            Formulario de contacto
+          </a>
         </div>
       </div>
     </>
   );
 }
+
