@@ -37,8 +37,14 @@ function RegistroContent() {
         // Verificar si ya tiene datos en DB
         const userDoc = await getDoc(doc(db, "users", u.uid));
         if (userDoc.exists()) {
-          // Ya está registrado en la BD, redirigir directo a MP o App
-          await handlePostRegistration(u.uid, u.email || "", plan, billing === "anual");
+          const userData = userDoc.data();
+          if (userData.onboardingCompleted) {
+            // Ya está registrado y completó onboarding, redirigir directo a MP o App
+            await handlePostRegistration(u.uid, u.email || "", plan, billing === "anual");
+          } else {
+            // No ha completado onboarding
+            router.push(`/onboarding?plan=${encodeURIComponent(plan)}&billing=${encodeURIComponent(billing)}`);
+          }
         }
       }
       setAuthChecked(true);
@@ -107,7 +113,8 @@ function RegistroContent() {
         registeredApps: ["automatizacion"]
       }, { merge: true });
 
-      await handlePostRegistration(uid, userEmail, plan, billing === "anual");
+      // Redirigir al wizard de onboarding para configurar la marca
+      router.push(`/onboarding?plan=${encodeURIComponent(plan)}&billing=${encodeURIComponent(billing)}`);
 
     } catch (err: any) {
       console.error(err);
