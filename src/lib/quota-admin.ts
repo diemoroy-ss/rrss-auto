@@ -53,14 +53,15 @@ export async function getPlanLimitAdmin(plan: string, email?: string): Promise<n
     
     // Fallback to hardcoded values if Firestore fails
     const fallbacks: Record<string, number> = {
-        free:     3,   // 3 posts totales (prueba de 10 días)
-        starter:  12,  // 12 posts/mes
-        pro:      20,  // 20 posts/mes
-        elite:    20,  // alias legacy → pro
-        business: 60,  // 60 posts/mes (30/cuenta)
-        agency:   200  // 200 posts/mes (20/cuenta)
+        free:     5,   // 5 posts totales (prueba de 10 días)
+        starter:  20,  // 20 posts/mes
+        growth:   40,  // 40 posts/mes
+        pro:      80,  // 80 posts/mes
+        elite:    80,  // alias legacy → pro
+        business: 200, // 200 posts/mes
+        agency:   999  // 999 posts/mes (ilimitado)
     };
-    return fallbacks[planId] ?? 3;
+    return fallbacks[planId] ?? 5;
 }
 
 export async function getAiPlanLimitAdmin(plan: string, type: 'image' | 'video' | 'blog', email?: string): Promise<number> {
@@ -84,11 +85,12 @@ export async function getAiPlanLimitAdmin(plan: string, type: 'image' | 'video' 
     // blog: artículos SEO/GEO
     const fallbacks: Record<string, { image: number, video: number, blog: number }> = {
         free:     { image: 8,   video: 0,  blog: 0  },
-        starter:  { image: 30,  video: 3,  blog: 0  },
-        pro:      { image: 80,  video: 8,  blog: 4  },
-        elite:    { image: 80,  video: 8,  blog: 4  }, // alias legacy → pro
-        business: { image: 150, video: 16, blog: 12 },
-        agency:   { image: 400, video: 40, blog: 25 },
+        starter:  { image: 20,  video: 2,  blog: 0  },
+        growth:   { image: 40,  video: 6,  blog: 2  },
+        pro:      { image: 80,  video: 12, blog: 8  },
+        elite:    { image: 80,  video: 12, blog: 8  }, // alias legacy → pro
+        business: { image: 200, video: 30, blog: 20 },
+        agency:   { image: 999, video: 80, blog: 50 },
     };
     return fallbacks[planId]?.[type] ?? (type === 'image' ? 8 : 0);
 }

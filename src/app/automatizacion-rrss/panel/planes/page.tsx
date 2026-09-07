@@ -35,7 +35,7 @@ export default function PlanesPage() {
         const plansDoc = await getDoc(doc(db, "system_config", "plans"));
         if (plansDoc.exists()) {
           const data = plansDoc.data();
-          const PLAN_ORDER = ['free', 'starter', 'pro', 'business', 'agency'];
+          const PLAN_ORDER = ['free', 'starter', 'growth', 'pro', 'business', 'agency'];
           const allPlanKeys = Array.from(new Set([...PLAN_ORDER, ...Object.keys(data)]));
           
           const formattedPlanes = allPlanKeys.map(id => {
