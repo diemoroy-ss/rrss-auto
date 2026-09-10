@@ -415,7 +415,7 @@ function ConfigContent() {
     setLoadingInitial(false);
   }, []);
 
-  const isAdmin = user?.email === "admin@santisoft.cl" || user?.email === "diemoroy@gmail.com" || user?.email === "spalezcom@gmail.com" || user?.email === "santisoftai@gmail.com";
+  const isAdmin = user?.email === "admin@santisoft.cl" || user?.email === "diemoroy@gmail.com" || user?.email === "spalezcom@gmail.com" || user?.email === "santisoftai@gmail.com" || user?.email === "spagrupofugas@gmail.com";
 
   // Use a separate effect for initial data loading from activeProfile to avoid loops
   useEffect(() => {

@@ -57,29 +57,7 @@ function RegistroContent() {
       router.push("/automatizacion-rrss/panel");
       return;
     }
-
-    try {
-      const res = await fetch("/api/payments/mercadopago", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          planId: selectedPlan,
-          userId: uid,
-          userEmail: userEmail,
-          isAnnual: isAnnual
-        })
-      });
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        setError(data.error || "Error al conectar con la pasarela de pago.");
-        setLoading(false);
-      }
-    } catch (e: any) {
-      setError(e.message || "Error de red al procesar el pago.");
-      setLoading(false);
-    }
+    router.push(`/confirmar-plan?plan=${encodeURIComponent(selectedPlan)}&billing=${isAnnual ? "anual" : "mensual"}`);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

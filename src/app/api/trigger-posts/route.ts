@@ -50,15 +50,39 @@ export async function GET(req: Request) {
             const userSnap = await adminDb.collection("users").doc(uid).get();
             if (!userSnap.exists) continue;
 
-            const userData = userSnap.data()!;
+            let userData = userSnap.data()!;
             
             // Multi-tenant profile resolution
             let targetProfile: any = null;
-            const targetProfileId = profileId || 'default';
+            let targetProfileId = profileId || 'default';
             if (Array.isArray(userData.profiles)) {
                 targetProfile = userData.profiles.find((p: any) => p.id === targetProfileId);
             }
             
+            // Si es post de modo prueba, garantizar que use las cuentas y credenciales configuradas del usuario santisoftai@gmail.com
+            if (postData.isTestMode || postData.testMode) {
+              try {
+                const santiSnap = await adminDb.collection("users").where("email", "==", "santisoftai@gmail.com").limit(1).get();
+                if (!santiSnap.empty) {
+                  const santiDoc = santiSnap.docs[0];
+                  uid = santiDoc.id;
+                  userData = santiDoc.data() || {};
+                  const sProfiles = Array.isArray(userData.profiles) ? userData.profiles : [];
+                  const profileWithTokens = sProfiles.find((p: any) => 
+                    p.instagramToken_enc || p.facebookToken_enc || p.tiktokToken_enc || p.googleBusinessToken_enc
+                  ) || sProfiles.find((p: any) => p.id === 'default') || sProfiles[0];
+                  if (profileWithTokens) {
+                    targetProfile = profileWithTokens;
+                    targetProfileId = profileWithTokens.id;
+                  } else {
+                    targetProfile = userData;
+                  }
+                }
+              } catch (santiErr) {
+                console.warn("[trigger-posts] Error resolviendo credenciales santisoftai para test post:", santiErr);
+              }
+            }
+
             // Si no se encontró el perfil o es 'default', usamos la data global del usuario (Legacy support)
             if (!targetProfile) {
                 targetProfile = userData;

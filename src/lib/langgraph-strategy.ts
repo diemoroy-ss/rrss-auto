@@ -36,7 +36,7 @@ DATOS DEL CLIENTE:
 - Rubro: ${state.businessType}
 - Objetivo Principal: ${state.goal}
 - Expectativas Especiales: ${state.expectations}
-${state.promotions ? `- Promociones y Ofertas Clave del Local: "${state.promotions}"\n` : ""}- Redes Disponibles: ${state.connectedPlatforms.join(", ")}
+${(state.businessData?.businessDescription || state.businessData?.description) ? `- Descripción del Negocio: "${state.businessData.businessDescription || state.businessData.description}"\n` : ""}${state.promotions ? `- Promociones y Ofertas Clave del Local: "${state.promotions}"\n` : ""}- Redes Disponibles: ${state.connectedPlatforms.join(", ")}
 
 PROPORCIONA:
 1. Análisis del público objetivo.
@@ -94,6 +94,7 @@ Por cada post, incluye:
 
   const contactLines: string[] = [];
   if (state.businessData?.businessName) contactLines.push(`- Nombre Empresa / Marca: ${state.businessData.businessName}`);
+  if (state.businessData?.businessDescription || state.businessData?.description) contactLines.push(`- Descripción del Negocio: ${state.businessData.businessDescription || state.businessData.description}`);
   if (state.businessData?.whatsapp || state.businessData?.phone) contactLines.push(`- WhatsApp / Teléfono de Contacto: ${state.businessData.whatsapp || state.businessData.phone}`);
   if (state.businessData?.website) contactLines.push(`- Sitio Web: ${state.businessData.website}`);
   if (state.businessData?.email) contactLines.push(`- Correo Electrónico: ${state.businessData.email}`);

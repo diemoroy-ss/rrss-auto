@@ -133,7 +133,7 @@ export default function HeroSection() {
               <span className="badge on"><span className="dot"></span>Meta (FB / IG)</span>
               <span className="badge on"><span className="dot"></span>TikTok</span>
               <span className="badge on"><span className="dot"></span>CMS/Blog</span>
-              <span className="badge"><span className="dot"></span>Google Biz — Soon</span>
+              <span className="badge on"><span className="dot"></span>Google Business</span>
               <span className="badge"><span className="dot"></span>LinkedIn — Soon</span>
             </div>
           </div>

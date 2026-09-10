@@ -87,16 +87,31 @@ interface SocialPost {
   idea: string;
   text?: string;
   copy?: string;
+  postText?: string;
+  title?: string;
   type?: string;
   scheduledFor: any; // Firestore timestamp
   networks: string[]; // ['facebook', 'instagram']
-  status: 'pending' | 'confirmed' | 'published' | 'error';
+  status: 'pending' | 'confirmed' | 'published' | 'error' | 'publishing';
   imageUrl?: string;
   imageUrls?: string[];
+  baseImageUrl?: string;
+  visualStyle?: string;
+  promptTemplateId?: string;
+  previewUrl?: string;
+  imageDirection?: string;
+  imageSource?: string;
   carouselCount?: number;
   isGeneratingImage?: boolean; // UI State para regeneración
   publishError?: string;
   publishInfo?: string;
+  videoUrl?: string;
+  scenes?: any[];
+  audioScript?: string;
+  publishedIn?: string[];
+  isTestMode?: boolean;
+  testMode?: boolean;
+  testAccountUser?: string;
 }
 
 function DashboardCarouselViewer({ urls, isStory }: { urls: string[]; isStory?: boolean }) {
@@ -183,6 +198,8 @@ export default function RrssDashboard() {
   const [confirmModalState, setConfirmModalState] = useState<{ isOpen: boolean; title: string; desc: string; confirmText: string; cancelText: string; isDanger: boolean; onConfirm: () => void; secondaryAction?: { text: string, onClick: () => void } } | null>(null);
   const [storyFormatWarning, setStoryFormatWarning] = useState<{ isOpen: boolean; post: SocialPost; imageUrl: string; } | null>(null);
   const [isRegeneratingStoryMedia, setIsRegeneratingStoryMedia] = useState(false);
+  const [isUploadingBaseImage, setIsUploadingBaseImage] = useState(false);
+  const [isGeneratingStyledImage, setIsGeneratingStyledImage] = useState(false);
 
   const requestConfirmation = (title: string, desc: string, onConfirm: () => void, isDanger: boolean = false, secondaryAction?: { text: string, onClick: () => void }) => {
     setConfirmModalState({
@@ -364,6 +381,103 @@ export default function RrssDashboard() {
     } catch (e) {
       console.error(e);
       setPosts(prev => prev.map(p => p.id === postId ? { ...p, isGeneratingImage: false } : p));
+    }
+  };
+
+  const handleUploadBaseImage = async (postId: string, file: File) => {
+    if (!user || !file) return;
+    setIsUploadingBaseImage(true);
+    try {
+      const token = await user.getIdToken();
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("postId", postId);
+
+      const res = await fetch("/api/posts/upload-base-image", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "No se pudo subir la imagen base.");
+      }
+
+      const newBaseUrl = data.baseImageUrl;
+      setPosts(prev => prev.map(p => p.id === postId ? { ...p, baseImageUrl: newBaseUrl } : p));
+      if (selectedPost && selectedPost.id === postId) {
+        setSelectedPost({ ...selectedPost, baseImageUrl: newBaseUrl });
+      }
+      setMessage({ type: "success", text: "Imagen base cargada correctamente." });
+    } catch (err: any) {
+      console.error("Error al subir imagen base:", err);
+      setMessage({ type: "error", text: err.message || "Error al subir la imagen base." });
+    } finally {
+      setIsUploadingBaseImage(false);
+    }
+  };
+
+  const handleRemoveBaseImage = async (postId: string) => {
+    try {
+      await updateDoc(doc(db, "social_posts", postId), { baseImageUrl: null });
+      setPosts(prev => prev.map(p => p.id === postId ? { ...p, baseImageUrl: undefined } : p));
+      if (selectedPost && selectedPost.id === postId) {
+        setSelectedPost({ ...selectedPost, baseImageUrl: undefined });
+      }
+      setMessage({ type: "info", text: "Imagen base eliminada del post." });
+    } catch (err: any) {
+      console.error(err);
+    }
+  };
+
+  const handleGenerateStyledImage = async (postId: string) => {
+    if (!user) return;
+    setIsGeneratingStyledImage(true);
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch("/api/posts/generate-styled-image", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ postId })
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "No se pudo generar la imagen con estilo visual.");
+      }
+
+      const newImageUrl = data.imageUrl;
+      const newBaseImage = data.baseImageUrl;
+      setPosts(prev => prev.map(p => p.id === postId ? { 
+        ...p, 
+        imageUrl: newImageUrl, 
+        imageUrls: [newImageUrl],
+        baseImageUrl: newBaseImage || p.baseImageUrl,
+        imageSource: data.imageSource
+      } : p));
+
+      if (selectedPost && selectedPost.id === postId) {
+        setSelectedPost({ 
+          ...selectedPost, 
+          imageUrl: newImageUrl, 
+          imageUrls: [newImageUrl],
+          baseImageUrl: newBaseImage || selectedPost.baseImageUrl,
+          imageSource: data.imageSource
+        });
+      }
+
+      setMessage({ type: "success", text: `¡Diseño generado con éxito! ${data.sourceDescription || ""}` });
+    } catch (err: any) {
+      console.error("Error al generar imagen con estilo:", err);
+      setMessage({ type: "error", text: err.message || "Error al generar la imagen con estilo." });
+    } finally {
+      setIsGeneratingStyledImage(false);
     }
   };
 
@@ -665,9 +779,14 @@ export default function RrssDashboard() {
     const postToUpdate = [...posts, ...blogPosts].find(p => p.id === postId);
     const hasError = postToUpdate?.status === 'error' || !!postToUpdate?.publishError || selectedPost?.status === 'error' || !!selectedPost?.publishError;
 
+    const isTestPost = postToUpdate?.isTestMode || postToUpdate?.testMode || selectedPost?.isTestMode || selectedPost?.testMode;
+    const targetNetworksStr = (postToUpdate?.networks || selectedPost?.networks || []).join(', ');
+
     requestConfirmation(
-      "¿Publicar Ahora?", 
-      "Esta publicación se enviará de inmediato a tus redes sociales configuradas. ¿Deseas continuar?", 
+      isTestPost ? "¿Publicar Ahora (Modo Prueba)?" : "¿Publicar Ahora?", 
+      isTestPost 
+        ? `Esta publicación de prueba se enviará de inmediato a las cuentas configuradas de santisoftai@gmail.com (${targetNetworksStr || 'redes configuradas'}). ¿Deseas continuar?`
+        : "Esta publicación se enviará de inmediato a tus redes sociales configuradas. ¿Deseas continuar?", 
       async () => {
         setPublishingPostId(postId);
         setConfirmModalState(null);
@@ -1625,11 +1744,16 @@ export default function RrssDashboard() {
                      <span className={`text-[10px] uppercase font-black tracking-widest px-4 py-2 rounded-xl border ${selectedPost.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-200' : selectedPost.status === 'confirmed' ? 'bg-indigo-50 text-indigo-600 border-indigo-200' : selectedPost.status === 'publishing' ? 'bg-blue-50 text-blue-600 border-blue-200 shadow-sm animate-pulse' : selectedPost.status === 'published' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-slate-50 text-slate-600 border-slate-200'}`}>
                         Estado: {selectedPost.status === 'pending' ? 'Borrador' : selectedPost.status === 'confirmed' ? 'Confirmado' : selectedPost.status === 'publishing' ? 'Publicando...' : selectedPost.status === 'published' ? 'Publicado' : selectedPost.status}
                      </span>
-                     {selectedPost.visualStyle && (
-                       <span className="text-[10px] uppercase font-black tracking-widest px-3.5 py-2 rounded-xl border bg-indigo-50 text-indigo-700 border-indigo-200 flex items-center gap-1.5 shadow-sm">
-                         <span>🎨</span> Estilo: {selectedPost.visualStyle}
-                       </span>
-                     )}
+                      {selectedPost.visualStyle && (
+                        <span className="text-[10px] uppercase font-black tracking-widest px-3.5 py-2 rounded-xl border bg-indigo-50 text-indigo-700 border-indigo-200 flex items-center gap-1.5 shadow-sm">
+                          <span>🎨</span> Estilo: {selectedPost.visualStyle}
+                        </span>
+                      )}
+                      {(selectedPost.isTestMode || selectedPost.testMode) && (
+                        <span className="text-[10px] uppercase font-black tracking-widest px-3.5 py-2 rounded-xl border bg-amber-50 text-amber-800 border-amber-300 flex items-center gap-1.5 shadow-sm">
+                          <span>🧪</span> Modo Prueba (santisoftai@gmail.com)
+                        </span>
+                      )}
                    </div>
 
                    {selectedPost.type === 'Carrusel' && (
@@ -1670,11 +1794,136 @@ export default function RrssDashboard() {
                    )}
 
                    <div>
-                     <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-3 ml-2">Copy / Pie de Foto para Redes</h3>
-                     <div className="bg-indigo-50/30 p-6 rounded-[28px] border-2 border-indigo-100 text-slate-800 font-medium whitespace-pre-wrap text-[15px] leading-relaxed relative shadow-inner">
-                       {selectedPost.postText || selectedPost.copy ? (selectedPost.postText || selectedPost.copy) : <span className="text-slate-400 italic">El copy se generará automáticamente con la imagen.</span>}
-                     </div>
-                   </div>
+                      <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-3 ml-2">Copy / Pie de Foto para Redes</h3>
+                      <div className="bg-indigo-50/30 p-6 rounded-[28px] border-2 border-indigo-100 text-slate-800 font-medium whitespace-pre-wrap text-[15px] leading-relaxed relative shadow-inner">
+                        {selectedPost.postText || selectedPost.copy ? (selectedPost.postText || selectedPost.copy) : <span className="text-slate-400 italic">El copy se generará automáticamente con la imagen.</span>}
+                      </div>
+                    </div>
+
+                    {/* TARJETA DE ESTILO VISUAL E IMAGEN BASE */}
+                    <div className="bg-gradient-to-br from-indigo-50/70 via-purple-50/50 to-white p-6 rounded-[28px] border-2 border-indigo-100 shadow-sm space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-2.5">
+                          <span className="text-2xl">🎨</span>
+                          <div>
+                            <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                              Estilo Visual e Imagen Base
+                            </h4>
+                            <p className="text-[11px] font-medium text-slate-500">
+                              Personaliza la imagen del post usando una imagen base o el catálogo de tu negocio.
+                            </p>
+                          </div>
+                        </div>
+
+                        {selectedPost.visualStyle && (
+                          <span className="text-[10px] uppercase font-black tracking-widest px-3 py-1.5 rounded-xl border bg-white text-indigo-700 border-indigo-200 flex items-center gap-1.5 shadow-2xs w-fit">
+                            <span>✨</span> {selectedPost.visualStyle}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* ZONA DE CARGA DE IMAGEN BASE */}
+                      <div className="bg-white rounded-2xl p-4 border border-indigo-100/80 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                            <span>📷</span> Imagen Base de Referencia
+                          </span>
+                          {selectedPost.baseImageUrl ? (
+                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 rounded-md">
+                              ✓ Imagen Base Activa
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">
+                              Sin imagen base subida
+                            </span>
+                          )}
+                        </div>
+
+                        {selectedPost.baseImageUrl ? (
+                          <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                            <img
+                              src={selectedPost.baseImageUrl}
+                              alt="Imagen base"
+                              className="w-16 h-16 rounded-xl object-cover border border-slate-300 shadow-2xs shrink-0"
+                            />
+                            <div className="flex-1 min-w-0 space-y-1">
+                              <p className="text-xs font-black text-slate-800 truncate">
+                                Imagen base para estilo visual
+                              </p>
+                              <p className="text-[11px] text-slate-500 line-clamp-1">
+                                Nuestros agentes preservarán este producto y aplicarán el estilo visual elegido.
+                              </p>
+                              <div className="flex items-center gap-2 pt-1">
+                                <label className="text-[10px] font-black uppercase text-indigo-600 hover:text-indigo-700 bg-white hover:bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-lg cursor-pointer transition-all shadow-2xs">
+                                  Cambiar foto
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    disabled={isUploadingBaseImage}
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) handleUploadBaseImage(selectedPost.id, file);
+                                    }}
+                                  />
+                                </label>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveBaseImage(selectedPost.id)}
+                                  className="text-[10px] font-black uppercase text-rose-500 hover:text-rose-700 bg-white hover:bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-lg transition-all"
+                                >
+                                  Quitar
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between gap-3 p-3 bg-slate-50 rounded-xl border border-dashed border-slate-300">
+                              <div className="text-xs text-slate-600 font-medium">
+                                <span className="font-bold text-slate-800">Sube una foto real de tu producto</span> para aplicar el estilo sobre ella.
+                              </div>
+                              <label className={`text-xs font-black px-4 py-2 bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-xl cursor-pointer transition-all shrink-0 shadow-2xs flex items-center gap-1.5 ${isUploadingBaseImage ? 'opacity-50 pointer-events-none' : ''}`}>
+                                <span>{isUploadingBaseImage ? 'Subiendo...' : '📤 Subir Foto Base'}</span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  disabled={isUploadingBaseImage}
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) handleUploadBaseImage(selectedPost.id, file);
+                                  }}
+                                />
+                              </label>
+                            </div>
+
+                            <p className="text-[11px] text-slate-500 leading-relaxed bg-indigo-50/50 p-2.5 rounded-xl border border-indigo-100/60">
+                              💡 <strong>Jerarquía Inteligente:</strong> Si no subes una imagen base, nuestros agentes buscarán primero una foto de tus productos o servicios en tu catálogo. Si no tienes fotos cargadas en el catálogo, generarán una pieza desde cero usando la descripción de tu negocio.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* BOTÓN DE GENERACIÓN CON ESTILO VISUAL */}
+                      <button
+                        type="button"
+                        onClick={() => handleGenerateStyledImage(selectedPost.id)}
+                        disabled={isGeneratingStyledImage || isUploadingBaseImage}
+                        className="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 disabled:opacity-50 text-white text-xs font-black uppercase tracking-wider rounded-2xl shadow-md transition-all flex items-center justify-center gap-2"
+                      >
+                        {isGeneratingStyledImage ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white animate-spin rounded-full" />
+                            <span>Creando imagen con estilo visual...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>🎨 Generar Imagen con Estilo Visual</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
 
                    {selectedPost.isGeneratingImage ? (
                        <div className="rounded-[28px] p-8 bg-indigo-50 border border-indigo-100 flex flex-col items-center justify-center animate-pulse">

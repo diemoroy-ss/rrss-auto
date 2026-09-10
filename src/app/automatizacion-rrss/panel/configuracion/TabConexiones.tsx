@@ -108,7 +108,6 @@ export default function TabConexiones({
               </span>
               <div className="flex items-center justify-between flex-1">
                 <h5 className="font-black text-slate-900">TikTok</h5>
-                {!ttStatus && !isAdmin && <span className="text-[9px] font-black uppercase tracking-wider bg-slate-200 text-slate-600 px-2 py-0.5 rounded-md">Próximamente</span>}
               </div>
             </div>
             <p className="text-xs text-slate-500 font-medium mb-4">Publica tus Reels y videos automáticamente en tu perfil de TikTok.</p>
@@ -136,12 +135,10 @@ export default function TabConexiones({
                 </div>
               </div>
             </div>
-          ) : isAdmin ? (
+          ) : (
             <div className="flex flex-col gap-2 mt-auto">
               <button type="button" onClick={handleConnectTikTok} className="w-full bg-black hover:bg-slate-900 text-white font-bold py-2.5 rounded-xl shadow-md text-sm transition-colors">Conectar con TikTok</button>
             </div>
-          ) : (
-            <button type="button" disabled className="w-full bg-slate-100 text-slate-400 font-bold py-2.5 rounded-xl text-sm mt-auto cursor-not-allowed border border-slate-200">Próximamente</button>
           )}
         </div>
 
@@ -209,10 +206,8 @@ export default function TabConexiones({
                 <button type="button" onClick={handleDisconnectGBP} className="px-3 bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold rounded-xl text-xs transition-colors">X</button>
               </div>
             </div>
-          ) : isAdmin ? (
-            <button type="button" onClick={handleConnectGBP} className="w-full bg-[#EA4335] hover:bg-[#d63022] text-white font-bold py-2.5 rounded-xl shadow-md text-sm transition-colors mt-auto">Conectar con Google</button>
           ) : (
-            <button type="button" disabled className="w-full bg-slate-100 text-slate-400 font-bold py-2.5 rounded-xl text-sm mt-auto cursor-not-allowed border border-slate-200">Próximamente</button>
+            <button type="button" onClick={handleConnectGBP} className="w-full bg-[#EA4335] hover:bg-[#d63022] text-white font-bold py-2.5 rounded-xl shadow-md text-sm transition-colors mt-auto">Conectar con Google</button>
           )}
         </div>
       </div>

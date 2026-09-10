@@ -1,11 +1,13 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { auth, db } from "../../../../lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 
 export default function PlanesPage() {
+  const router = useRouter();
   const [userPlan, setUserPlan] = useState("free");
   const [planes, setPlanes] = useState<any[]>([]);
   const [isAnnual, setIsAnnual] = useState(false);
@@ -71,45 +73,7 @@ export default function PlanesPage() {
 
   const handleSubscribe = async (planId: string) => {
     if (planId === "free") return;
-    
-    setLoading(true);
-    try {
-        const user = auth.currentUser;
-        if (!user) {
-            setMessage({ type: 'error', text: "Debes iniciar sesión para elegir un plan." });
-            setLoading(false);
-            return;
-        }
-
-        const res = await fetch("/api/payments/mercadopago", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                planId,
-                userId: user.uid,
-                userEmail: user.email,
-                isAnnual,
-                annualBillingType
-            })
-        });
-
-        const data = await res.json();
-        
-        if (data.url) {
-            window.location.href = data.url;
-        } else {
-            console.error("No url returned:", data);
-            setMessage({ type: 'error', text: data.error || "Hubo un problema al crear el link de pago." });
-        }
-
-    } catch (e) {
-        console.error(e);
-        setMessage({ type: 'error', text: "Error de conexión al iniciar el pago." });
-    } finally {
-        setLoading(false);
-    }
+    router.push(`/confirmar-plan?plan=${encodeURIComponent(planId)}&billing=${isAnnual ? 'anual' : 'mensual'}&from=panel`);
   };
 
   return (

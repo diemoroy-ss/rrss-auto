@@ -116,7 +116,7 @@ export default function PricingPlans() {
                     {plan.features.map((f, i) => <li key={i}>{f}</li>)}
                   </ul>
                   <Link
-                    href={`/registro?plan=${id}&billing=${billingCycle}`}
+                    href={id === "free" ? `/registro?plan=free` : `/confirmar-plan?plan=${id}&billing=${billingCycle}`}
                     className={`btn ${plan.isPopular ? 'btn-primary' : 'btn-outline'}`}
                   >
                     {plan.ctaText || "¡Lo quiero 🚀!"}

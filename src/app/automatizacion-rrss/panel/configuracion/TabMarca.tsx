@@ -57,7 +57,7 @@ export default function TabMarca({
               </div>
               <div>
                 <p className="text-sm font-bold text-slate-700">Incluir siempre logo en posts creados</p>
-                <p className="text-[10px] text-slate-500">Estampará automáticamente tu logo original en las imágenes generadas por IA.</p>
+                <p className="text-[10px] text-slate-500">Estampará automáticamente tu logo original en las imágenes generadas por nuestros agentes.</p>
               </div>
               <input type="checkbox" className="hidden" checked={alwaysIncludeLogo} onChange={(e) => setAlwaysIncludeLogo(e.target.checked)} />
             </label>

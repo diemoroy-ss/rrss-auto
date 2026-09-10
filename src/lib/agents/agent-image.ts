@@ -18,6 +18,8 @@ export interface ImageAgentParams {
   promptTemplateId?: string;
   /** Nombre del estilo visual (para inyectar en el prompt si no hay template) */
   visualStyle?: string;
+  /** URL de imagen base previa / subida por el usuario para anclar estilo fotográfico */
+  baseImageUrl?: string;
   /** ADN de Identidad Visual del cliente */
   brandVisualIdentity?: BrandVisualIdentity;
 }
@@ -212,6 +214,7 @@ export async function generateImageWithAgent(params: ImageAgentParams): Promise<
     customOffer = '',
     promptTemplateId,
     visualStyle,
+    baseImageUrl,
     brandVisualIdentity,
   } = params;
 
@@ -271,6 +274,21 @@ Genera el prompt narrativo en inglés (prosa, según las instrucciones del siste
 
   console.log(`[AgentImage] Prompt Claude-Banana generado (${aspectRatio}):`, optimizedPrompt);
 
+  // Si se envió una imagen base previa o subida, inspeccionar y anclar con visión computacional
+  if (baseImageUrl && typeof baseImageUrl === 'string' && baseImageUrl.startsWith('http')) {
+    try {
+      console.log(`[AgentImage] 🔍 Inspeccionando imagen base con Agente Revisor de Producto:`, baseImageUrl);
+      const { analyzeAndAnchorProductPrompt } = await import('./agent-product-vision');
+      const visionResult = await analyzeAndAnchorProductPrompt(baseImageUrl, optimizedPrompt || idea, rubro);
+      if (visionResult?.enrichedPrompt) {
+        optimizedPrompt = visionResult.enrichedPrompt;
+        console.log(`[AgentImage] 🎯 Prompt anclado con éxito a producto de imagen base.`);
+      }
+    } catch (visionErr: any) {
+      console.warn(`[AgentImage] Error inspeccionando imagen base, continuando con prompt estándar:`, visionErr);
+    }
+  }
+
   let rawGeneratedUrl = '';
 
   // 2. Intento Primario: Webhook de n8n
@@ -293,6 +311,7 @@ Genera el prompt narrativo en inglés (prosa, según las instrucciones del siste
         aspectRatio: aspectRatio,
         includeLogo: includeLogo,
         logoPrompt: logoPrompt,
+        baseImageUrl: baseImageUrl || undefined,
         width: width,
         height: height
       }),

@@ -66,9 +66,9 @@ export default function Home() {
                 <li><span className="mark">›</span><span>Generación de <strong>contenido persuasivo</strong> con nuestros agentes, adaptado a tu marca.</span></li>
                 <li><span className="mark">›</span><span><strong>Radar de Nicho 📡:</strong> Inteligencia de mercado para descubrir tendencias, dudas y temas virales en tu industria.</span></li>
                 <li><span className="mark">›</span><span><strong>Calendario estratégico</strong> que automatiza todo un mes en minutos.</span></li>
-                <li><span className="mark">›</span><span>Publicación automática directa en <strong>Meta (Facebook, Instagram)</strong>, <strong>TikTok</strong>, <strong>YouTube Shorts</strong> y <strong>X (Twitter)</strong>.</span></li>
+                <li><span className="mark">›</span><span>Publicación automática directa en <strong>Meta (Facebook, Instagram)</strong>, <strong>TikTok</strong>, <strong>Google Business</strong>, <strong>YouTube Shorts</strong> y <strong>X (Twitter)</strong>.</span></li>
               </ul>
-              <span className="pillar-note">Próximamente: Google Business &amp; LinkedIn</span>
+              <span className="pillar-note">Próximamente: LinkedIn</span>
             </div>
             <div className="pillar b">
               <span className="pillar-tag">SEÑAL B · 404 TERM</span>

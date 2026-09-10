@@ -687,22 +687,7 @@ function OnboardingContent() {
       if (!plan || plan === "free") {
         router.push("/automatizacion-rrss/panel");
       } else {
-        const res = await fetch("/api/payments/mercadopago", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            planId: plan,
-            userId: user.uid,
-            userEmail: user.email,
-            isAnnual: billing === "anual",
-          }),
-        });
-        const payData = await res.json();
-        if (payData.url) {
-          window.location.href = payData.url;
-        } else {
-          router.push("/automatizacion-rrss/panel");
-        }
+        router.push(`/confirmar-plan?plan=${encodeURIComponent(plan)}&billing=${encodeURIComponent(billing)}`);
       }
     } catch (err) {
       console.error("[Onboarding] Save error:", err);

@@ -69,13 +69,38 @@ export async function POST(req: Request) {
         const userSnap = await adminDb.collection("users").doc(uid).get();
         if (!userSnap.exists) return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
 
-        const userData = userSnap.data()!;
+        let userData = userSnap.data()!;
         let targetProfile: any = null;
-        const targetProfileId = profileId || 'default';
+        let targetProfileId = profileId || 'default';
         if (Array.isArray(userData.profiles)) {
             targetProfile = userData.profiles.find((p: any) => p.id === targetProfileId);
         }
         if (!targetProfile) targetProfile = userData;
+
+        // Si es post de modo prueba, garantizar que use las cuentas y credenciales configuradas del usuario santisoftai@gmail.com
+        let effectiveUid = uid;
+        if (post.isTestMode || post.testMode) {
+          try {
+            const santiSnap = await adminDb.collection("users").where("email", "==", "santisoftai@gmail.com").limit(1).get();
+            if (!santiSnap.empty) {
+              const santiDoc = santiSnap.docs[0];
+              effectiveUid = santiDoc.id;
+              userData = santiDoc.data() || {};
+              const sProfiles = Array.isArray(userData.profiles) ? userData.profiles : [];
+              const profileWithTokens = sProfiles.find((p: any) => 
+                p.instagramToken_enc || p.facebookToken_enc || p.tiktokToken_enc || p.googleBusinessToken_enc
+              ) || sProfiles.find((p: any) => p.id === 'default') || sProfiles[0];
+              if (profileWithTokens) {
+                targetProfile = profileWithTokens;
+                targetProfileId = profileWithTokens.id;
+              } else {
+                targetProfile = userData;
+              }
+            }
+          } catch (santiErr) {
+            console.warn("[publish-now] Error resolviendo credenciales santisoftai para test post:", santiErr);
+          }
+        }
 
         // Fallback: check businesses subcollection if targetProfile doesn't have youtube/x tokens
         if ((post.networks?.includes('youtube') || post.networks?.includes('x')) && !targetProfile.youtubeToken_enc && !targetProfile.xToken_enc && !targetProfile.accounts?.youtube && !targetProfile.accounts?.x) {
@@ -274,7 +299,7 @@ export async function POST(req: Request) {
             plainYtRefreshToken,
             plainXToken,
             plainXRefreshToken,
-            uid, profileId
+            uid: effectiveUid, profileId: targetProfileId
         }).catch(err => {
             console.error(`[CRITICAL] Background publish process failed for post ${postId}:`, err);
         });

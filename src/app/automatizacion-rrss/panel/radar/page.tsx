@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { auth, db } from "../../../../lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, collection, addDoc, query, where, getDocs, orderBy } from "firebase/firestore";
@@ -72,6 +72,77 @@ export default function NicheRadarPage() {
   // History State
   const [historicalAnalyses, setHistoricalAnalyses] = useState<any[]>([]);
   const [includeLogoInStrategy, setIncludeLogoInStrategy] = useState<boolean>(true);
+
+  // Test Mode State (Exclusivo santisoftai@gmail.com)
+  const isSantisoftAdmin = user?.email === "santisoftai@gmail.com";
+  const [userData, setUserData] = useState<any>(null);
+  const [isTestMode, setIsTestMode] = useState<boolean>(false);
+  const [testRubro, setTestRubro] = useState<string>("");
+  const [testBusinessDescription, setTestBusinessDescription] = useState<string>("");
+  const [testGoalDescription, setTestGoalDescription] = useState<string>("");
+  const [testSelectedNetworks, setTestSelectedNetworks] = useState<string[]>([
+    "instagram",
+    "facebook",
+    "tiktok",
+    "googleBusiness"
+  ]);
+  const [testProducts, setTestProducts] = useState<Array<{
+    id: string;
+    name: string;
+    type: "producto" | "servicio";
+    description: string;
+    price?: string;
+  }>>([]);
+  const [newProductName, setNewProductName] = useState<string>("");
+  const [newProductType, setNewProductType] = useState<"producto" | "servicio">("producto");
+  const [newProductDesc, setNewProductDesc] = useState<string>("");
+  const [newProductPrice, setNewProductPrice] = useState<string>("");
+  const [previewPostModal, setPreviewPostModal] = useState<any | null>(null);
+
+  // Resolver perfil de santisoftai@gmail.com que contiene los tokens sociales conectados
+  const santisoftProfile = useMemo(() => {
+    if (!isSantisoftAdmin || !userData) return null;
+    const profiles = Array.isArray(userData.profiles) ? userData.profiles : [];
+    return (
+      profiles.find(
+        (p: any) =>
+          p.instagramToken_enc ||
+          p.facebookToken_enc ||
+          p.tiktokToken_enc ||
+          p.googleBusinessToken_enc
+      ) ||
+      profiles.find((p: any) => p.id === "default") ||
+      profiles[0] ||
+      null
+    );
+  }, [isSantisoftAdmin, userData]);
+
+  // Cuentas sociales disponibles configuradas en santisoftai@gmail.com
+  const availableSantisoftAccounts = useMemo(() => {
+    const p = santisoftProfile || {};
+    const u = userData || {};
+    return {
+      instagram: !!(p.instagramToken_enc || u.instagramToken_enc),
+      facebook: !!(p.facebookToken_enc || u.facebookToken_enc),
+      tiktok: !!(p.tiktokToken_enc || u.tiktokToken_enc),
+      googleBusiness: !!(p.googleBusinessToken_enc || u.googleBusinessToken_enc),
+      linkedin: !!(p.linkedinUserToken_enc || p.linkedinToken_enc || u.linkedinUserToken_enc),
+      youtube: !!(p.youtubeToken_enc || p.accounts?.youtube),
+      x: !!(p.xToken_enc || p.accounts?.x)
+    };
+  }, [santisoftProfile, userData]);
+
+  // Sincronizar selección inicial de redes con las realmente vinculadas
+  useEffect(() => {
+    if (isSantisoftAdmin && userData) {
+      const activeKeys = Object.entries(availableSantisoftAccounts)
+        .filter(([_, hasToken]) => hasToken)
+        .map(([key]) => key);
+      if (activeKeys.length > 0) {
+        setTestSelectedNetworks(activeKeys);
+      }
+    }
+  }, [isSantisoftAdmin, userData, availableSantisoftAccounts]);
 
   const formatRadarDate = (createdAt: any) => {
     if (!createdAt) return "";
@@ -177,7 +248,9 @@ export default function NicheRadarPage() {
           // Fetch user plan and stats
           const userDoc = await getDoc(doc(db, "users", u.uid));
           if (userDoc.exists()) {
-             setUserPlan(userDoc.data().plan || "free");
+             const uData = userDoc.data();
+             setUserData(uData);
+             setUserPlan(uData.plan || "free");
              
              const firstDayOfMonth = new Date();
              firstDayOfMonth.setDate(1);
@@ -334,10 +407,59 @@ export default function NicheRadarPage() {
       });
     } catch (err: any) {
       console.error("Error al ejecutar radar:", err);
-      setErrorMsg(err.message || "Error al conectar con la IA.");
+      setErrorMsg(err.message || "Error al conectar con nuestros agentes.");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAddTestProduct = () => {
+    if (!newProductName.trim()) return;
+    const item = {
+      id: `test-${Date.now()}`,
+      name: newProductName.trim(),
+      type: newProductType,
+      description: newProductDesc.trim(),
+      price: newProductPrice.trim() || undefined
+    };
+    setTestProducts(prev => [...prev, item]);
+    setNewProductName("");
+    setNewProductDesc("");
+    setNewProductPrice("");
+  };
+
+  const handleRemoveTestProduct = (id: string) => {
+    setTestProducts(prev => prev.filter(p => p.id !== id));
+  };
+
+  const handleLoadExampleTestProducts = () => {
+    setTestRubro("Cafetería de Especialidad & Pastelería");
+    setTestBusinessDescription("Cafetería boutique que tuesta sus propios granos de origen y ofrece pastelería artesanal horneada cada mañana, con ambiente pet friendly y opciones veganas.");
+    setTestGoalDescription("Aumentar visitas los fines de semana y vender packs de café en grano para regalo");
+    setStrategyGoal("ventas");
+    setTestProducts([
+      {
+        id: "ex-1",
+        name: "Café de Especialidad Etiopía Yirgacheffe 250g",
+        type: "producto",
+        description: "Granos 100% arábica con notas florales y cítricas, tostado medio artesanal.",
+        price: "$12.990 CLP"
+      },
+      {
+        id: "ex-2",
+        name: "Brunch para Dos Fines de Semana",
+        type: "servicio",
+        description: "2 cafés de especialidad a elección, tostadas con palta y huevo pochado, y 2 croissants artesanales.",
+        price: "$19.990 CLP"
+      },
+      {
+        id: "ex-3",
+        name: "Cinnamon Roll Glaseado Artesanal",
+        type: "producto",
+        description: "Roll de canela recién horneado con glaseado cremoso de queso crema y nueces pecanas.",
+        price: "$3.500 CLP"
+      }
+    ]);
   };
 
   const handleGenerateStrategy = async () => {
@@ -345,6 +467,12 @@ export default function NicheRadarPage() {
       setErrorMsg("Selecciona una meta para tu estrategia.");
       return;
     }
+
+    if (isSantisoftAdmin && isTestMode && !testRubro.trim()) {
+      setErrorMsg("Por favor, ingresa el rubro de prueba para continuar.");
+      return;
+    }
+
     setGeneratingStrategy(true);
     setStrategyResult(null);
 
@@ -354,36 +482,58 @@ export default function NicheRadarPage() {
     if (userPlan === 'business') postsPerWeek = 20;
     if (userPlan === 'agency') postsPerWeek = 50;
 
+    const isRunningTestMode = isSantisoftAdmin && isTestMode;
+    const prof = activeProfile as any;
+    const effectiveBusinessType = isRunningTestMode ? testRubro.trim() : (prof?.rubro || "General");
+    const effectiveExpectations = isRunningTestMode 
+      ? [testGoalDescription ? `Lo que se busca: ${testGoalDescription}` : "", strategyExpectations].filter(Boolean).join(". ")
+      : strategyExpectations;
+    const effectiveBusinessData = isRunningTestMode 
+      ? {
+          businessName: "Negocio de Prueba",
+          businessDescription: testBusinessDescription.trim() || `Negocio del rubro ${testRubro}`,
+          website: "https://ejemplo.com",
+          phone: "+56912345678",
+          whatsapp: "+56912345678",
+          email: "contacto@ejemplo.com",
+          address: "Santiago, Chile"
+        }
+      : {
+          businessName: prof?.name || prof?.businessName || "Mi Negocio",
+          businessDescription: prof?.businessDescription || "",
+          website: prof?.website || "",
+          phone: prof?.phone || "",
+          whatsapp: prof?.whatsapp || prof?.phone || "",
+          email: prof?.email || "",
+          address: prof?.address || ""
+        };
+
     try {
       const token = await user.getIdToken();
-      const prof = activeProfile as any;
       const res = await fetch("/api/ai/generate-strategy", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify({
           goal: strategyGoal,
           goalName: goals.find(g => g.id === strategyGoal)?.title,
-          businessType: prof?.rubro || "General",
+          businessType: effectiveBusinessType,
           userId: user.uid,
-          expectations: strategyExpectations,
-          businessData: {
-              businessName: prof?.name || prof?.businessName || "Mi Negocio",
-              website: prof?.website || "",
-              phone: prof?.phone || "",
-              whatsapp: prof?.whatsapp || prof?.phone || "",
-              email: prof?.email || "",
-              address: prof?.address || ""
-          },
+          expectations: effectiveExpectations,
+          businessData: effectiveBusinessData,
           connectedPlatforms: {
-              facebook: !!prof?.facebookToken_enc,
-              instagram: !!prof?.instagramToken_enc,
-              tiktok: !!prof?.tiktokToken_enc,
-              linkedin: !!prof?.linkedinUserToken_enc
+              facebook: isRunningTestMode ? testSelectedNetworks.includes('facebook') : !!prof?.facebookToken_enc,
+              instagram: isRunningTestMode ? testSelectedNetworks.includes('instagram') : !!prof?.instagramToken_enc,
+              tiktok: isRunningTestMode ? testSelectedNetworks.includes('tiktok') : !!prof?.tiktokToken_enc,
+              linkedin: isRunningTestMode ? testSelectedNetworks.includes('linkedin') : !!prof?.linkedinUserToken_enc
           },
-          nicheContext: analysis?.summary || "",
-          postsPerWeek,
+          nicheContext: isRunningTestMode
+            ? `${analysis?.summary ? analysis.summary + " " : ""}Contexto de prueba: ${testBusinessDescription}`
+            : (analysis?.summary || ""),
+          postsPerWeek: isRunningTestMode ? 5 : postsPerWeek,
           usePromptStyles,
-          selectedPromptStyles: usePromptStyles ? selectedPromptStyles : []
+          selectedPromptStyles: usePromptStyles ? selectedPromptStyles : [],
+          catalogoItems: isRunningTestMode ? testProducts : undefined,
+          catalogUsage: isRunningTestMode && testProducts.length > 0 ? "all" : undefined
         })
       });
 
@@ -423,6 +573,14 @@ export default function NicheRadarPage() {
     setAcceptingStrategy(true);
     try {
       const postsRef = collection(db, "social_posts");
+      const isRunningTestMode = isSantisoftAdmin && isTestMode;
+      const targetProfileId = isRunningTestMode
+        ? (santisoftProfile?.id || 'default')
+        : (activeProfile?.id || 'default');
+      const targetNetworks = isRunningTestMode
+        ? (testSelectedNetworks.length > 0 ? testSelectedNetworks : ['instagram', 'facebook'])
+        : ['instagram', 'facebook'];
+
       for (const post of strategyResult) {
           const scheduledDate = post.computedScheduledDate ? new Date(post.computedScheduledDate) : new Date();
 
@@ -430,19 +588,22 @@ export default function NicheRadarPage() {
           const postType = fmt.includes('reel') || fmt.includes('video') ? 'Reel' : (fmt.includes('historia') || fmt.includes('story') ? 'Story' : 'Post');
 
           const postBaseText = `${post.content}\n\n${post.cta}`;
-          const finalTextWithContact = appendContactInfo(postBaseText, activeProfile);
+          const finalTextWithContact = appendContactInfo(postBaseText, isRunningTestMode ? null : activeProfile);
 
           const newPostRef = await addDoc(postsRef, {
               userId: user.uid,
-              profileId: activeProfile?.id || 'default',
+              profileId: targetProfileId,
               text: finalTextWithContact,
               idea: post.hook,
               type: postType,
               status: 'confirmed', // DIRECTAMENTE CONFIRMADO Y AGENDADO
               scheduledFor: scheduledDate,
               createdAt: new Date(),
-              networks: ['instagram', 'facebook'],
-              generatedBy: 'ai_strategy_radar',
+              networks: targetNetworks,
+              generatedBy: isRunningTestMode ? 'ai_strategy_radar_test' : 'ai_strategy_radar',
+              isTestMode: isRunningTestMode,
+              testMode: isRunningTestMode,
+              testAccountUser: isRunningTestMode ? 'santisoftai@gmail.com' : null,
               includeLogo: includeLogoInStrategy,
               visualStyle: post.visualStyle || null,
               promptTemplateId: post.promptTemplateId || null,
@@ -615,7 +776,7 @@ export default function NicheRadarPage() {
             {loading ? (
               <>
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                <span>Analizando Mercado con IA...</span>
+                <span>Analizando Mercado con nuestros agentes...</span>
               </>
             ) : (
               <>
@@ -871,6 +1032,339 @@ export default function NicheRadarPage() {
 
           {/* ESTRATEGIA GENERATOR */}
           <div id="generador-estrategia" className="bg-white rounded-2xl p-6 md:p-8 border border-slate-200 shadow-sm mt-8 space-y-6">
+              
+              {/* MODO PRUEBA / SIMULADOR - EXCLUSIVO santisoftai@gmail.com */}
+              {isSantisoftAdmin && (
+                <div className="p-6 bg-gradient-to-br from-amber-500/10 via-indigo-500/10 to-purple-500/10 rounded-3xl border-2 border-amber-300/80 shadow-md space-y-5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <span className="text-3xl">🧪</span>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-black uppercase tracking-widest bg-amber-500 text-white px-2.5 py-0.5 rounded-md">
+                            Exclusivo Admin
+                          </span>
+                          <h3 className="text-base font-black text-slate-900">
+                            Modo Prueba & Simulador de Estrategia
+                          </h3>
+                        </div>
+                        <p className="text-xs text-slate-600 font-medium mt-0.5">
+                          Prueba rubros, descripciones de negocio y productos/servicios para simular cómo van quedando los posts antes de publicar.
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsTestMode(!isTestMode)}
+                      className={`px-5 py-2.5 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-2 shadow-sm ${
+                        isTestMode
+                          ? 'bg-amber-500 hover:bg-amber-600 text-white ring-4 ring-amber-300/50'
+                          : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-300'
+                      }`}
+                    >
+                      <span>{isTestMode ? '✓ Modo Prueba ACTIVADO' : '⚪ Activar Modo Prueba'}</span>
+                    </button>
+                  </div>
+
+                  {isTestMode && (
+                    <div className="pt-4 border-t border-amber-200/60 space-y-5 animate-in fade-in duration-300">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-amber-950 flex items-center gap-1.5">
+                          <span>⚙️</span> Parámetros del Negocio de Prueba:
+                        </span>
+                        <button
+                          type="button"
+                          onClick={handleLoadExampleTestProducts}
+                          className="text-[11px] font-bold text-indigo-700 hover:text-indigo-800 bg-white hover:bg-indigo-50 border border-indigo-200 px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 shadow-2xs"
+                        >
+                          <span>⚡</span> Cargar Datos de Ejemplo (Cafetería & Pastelería)
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-black text-slate-800 mb-1.5">
+                            Rubro / Industria de Prueba <span className="text-rose-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={testRubro}
+                            onChange={(e) => setTestRubro(e.target.value)}
+                            placeholder="Ej: Clínica Dental, Pastelería Artesanal, Gimnasio Boutique"
+                            className="w-full bg-white border border-amber-300/80 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-indigo-600 transition-all shadow-inner"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-black text-slate-800 mb-1.5">
+                            Lo que se busca (Objetivo de la Estrategia) <span className="text-rose-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={testGoalDescription}
+                            onChange={(e) => setTestGoalDescription(e.target.value)}
+                            placeholder="Ej: Aumentar visitas los fines de semana y vender packs de café"
+                            className="w-full bg-white border border-amber-300/80 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-indigo-600 transition-all shadow-inner"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-black text-slate-800 mb-1.5">
+                          Descripción del Negocio de Prueba <span className="text-rose-500">*</span>
+                        </label>
+                        <textarea
+                          value={testBusinessDescription}
+                          onChange={(e) => setTestBusinessDescription(e.target.value)}
+                          placeholder="Describe qué hace el negocio, su propuesta única de valor, su cliente ideal y qué lo diferencia..."
+                          rows={3}
+                          className="w-full bg-white border border-amber-300/80 px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-800 outline-none focus:border-indigo-600 transition-all shadow-inner resize-none"
+                        />
+                      </div>
+
+                      {/* CUENTAS DE PUBLICACIÓN VINCULADAS A santisoftai@gmail.com */}
+                      <div className="bg-white/90 backdrop-blur-xs rounded-2xl p-4 md:p-5 border border-amber-200/80 space-y-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg">📢</span>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                                  Cuentas de publicación (santisoftai@gmail.com)
+                                </h4>
+                                <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-md">
+                                  ✓ Cuentas Activas
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-slate-500 font-medium">
+                                Los posts de prueba se publicarán utilizando las cuentas configuradas con tu usuario.
+                              </p>
+                            </div>
+                          </div>
+
+                          {santisoftProfile && (
+                            <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-2.5 py-1 rounded-xl w-fit">
+                              Perfil: {santisoftProfile.name || santisoftProfile.businessName || "Santisoft AI"}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+                          {/* Instagram */}
+                          <label className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
+                            testSelectedNetworks.includes('instagram')
+                              ? 'bg-gradient-to-r from-pink-50 to-purple-50 border-purple-300 text-purple-950 font-bold shadow-2xs'
+                              : 'bg-slate-50 border-slate-200 text-slate-400 opacity-60'
+                          }`}>
+                            <input
+                              type="checkbox"
+                              checked={testSelectedNetworks.includes('instagram')}
+                              onChange={(e) => {
+                                if (e.target.checked) setTestSelectedNetworks(prev => [...prev, 'instagram']);
+                                else setTestSelectedNetworks(prev => prev.filter(n => n !== 'instagram'));
+                              }}
+                              className="rounded text-purple-600 focus:ring-purple-500"
+                            />
+                            <div className="flex items-center gap-1.5 text-xs">
+                              <span>📸</span>
+                              <span>Instagram</span>
+                              {availableSantisoftAccounts.instagram && (
+                                <span className="text-[9px] bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded font-black">OK</span>
+                              )}
+                            </div>
+                          </label>
+
+                          {/* Facebook */}
+                          <label className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
+                            testSelectedNetworks.includes('facebook')
+                              ? 'bg-blue-50 border-blue-300 text-blue-950 font-bold shadow-2xs'
+                              : 'bg-slate-50 border-slate-200 text-slate-400 opacity-60'
+                          }`}>
+                            <input
+                              type="checkbox"
+                              checked={testSelectedNetworks.includes('facebook')}
+                              onChange={(e) => {
+                                if (e.target.checked) setTestSelectedNetworks(prev => [...prev, 'facebook']);
+                                else setTestSelectedNetworks(prev => prev.filter(n => n !== 'facebook'));
+                              }}
+                              className="rounded text-blue-600 focus:ring-blue-500"
+                            />
+                            <div className="flex items-center gap-1.5 text-xs">
+                              <span>📘</span>
+                              <span>Facebook</span>
+                              {availableSantisoftAccounts.facebook && (
+                                <span className="text-[9px] bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded font-black">OK</span>
+                              )}
+                            </div>
+                          </label>
+
+                          {/* TikTok */}
+                          <label className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
+                            testSelectedNetworks.includes('tiktok')
+                              ? 'bg-slate-900 text-white border-slate-800 font-bold shadow-2xs'
+                              : 'bg-slate-50 border-slate-200 text-slate-400 opacity-60'
+                          }`}>
+                            <input
+                              type="checkbox"
+                              checked={testSelectedNetworks.includes('tiktok')}
+                              onChange={(e) => {
+                                if (e.target.checked) setTestSelectedNetworks(prev => [...prev, 'tiktok']);
+                                else setTestSelectedNetworks(prev => prev.filter(n => n !== 'tiktok'));
+                              }}
+                              className="rounded text-slate-900 focus:ring-slate-900"
+                            />
+                            <div className="flex items-center gap-1.5 text-xs">
+                              <span>🎵</span>
+                              <span>TikTok</span>
+                              {availableSantisoftAccounts.tiktok && (
+                                <span className="text-[9px] bg-emerald-500 text-white px-1.5 py-0.2 rounded font-black">OK</span>
+                              )}
+                            </div>
+                          </label>
+
+                          {/* Google Business */}
+                          <label className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
+                            testSelectedNetworks.includes('googleBusiness')
+                              ? 'bg-amber-50 border-amber-300 text-amber-950 font-bold shadow-2xs'
+                              : 'bg-slate-50 border-slate-200 text-slate-400 opacity-60'
+                          }`}>
+                            <input
+                              type="checkbox"
+                              checked={testSelectedNetworks.includes('googleBusiness')}
+                              onChange={(e) => {
+                                if (e.target.checked) setTestSelectedNetworks(prev => [...prev, 'googleBusiness']);
+                                else setTestSelectedNetworks(prev => prev.filter(n => n !== 'googleBusiness'));
+                              }}
+                              className="rounded text-amber-600 focus:ring-amber-500"
+                            />
+                            <div className="flex items-center gap-1.5 text-xs">
+                              <span>📍</span>
+                              <span>Google Business</span>
+                              {availableSantisoftAccounts.googleBusiness && (
+                                <span className="text-[9px] bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded font-black">OK</span>
+                              )}
+                            </div>
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* PRODUCTOS Y SERVICIOS DE PRUEBA */}
+                      <div className="bg-white/80 backdrop-blur-xs rounded-2xl p-4 md:p-5 border border-amber-200/80 space-y-4">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg">📦</span>
+                            <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                              Productos y Servicios de Prueba ({testProducts.length})
+                            </h4>
+                          </div>
+                          <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-md">
+                            Nuestros agentes los incluirán en los posts
+                          </span>
+                        </div>
+
+                        {/* Formulario para agregar nuevo producto/servicio */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5">
+                          <div>
+                            <input
+                              type="text"
+                              value={newProductName}
+                              onChange={(e) => setNewProductName(e.target.value)}
+                              placeholder="Nombre del ítem..."
+                              className="w-full bg-white border border-slate-200 px-3 py-2 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-indigo-500 transition-all"
+                            />
+                          </div>
+                          <div>
+                            <select
+                              value={newProductType}
+                              onChange={(e) => setNewProductType(e.target.value as any)}
+                              className="w-full bg-white border border-slate-200 px-3 py-2 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-indigo-500 transition-all"
+                            >
+                              <option value="producto">Producto</option>
+                              <option value="servicio">Servicio</option>
+                            </select>
+                          </div>
+                          <div>
+                            <input
+                              type="text"
+                              value={newProductDesc}
+                              onChange={(e) => setNewProductDesc(e.target.value)}
+                              placeholder="Descripción o detalle..."
+                              className="w-full bg-white border border-slate-200 px-3 py-2 rounded-xl text-xs font-medium text-slate-800 outline-none focus:border-indigo-500 transition-all"
+                            />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={newProductPrice}
+                              onChange={(e) => setNewProductPrice(e.target.value)}
+                              placeholder="Precio (ej: $15.000)"
+                              className="w-full bg-white border border-slate-200 px-3 py-2 rounded-xl text-xs font-medium text-slate-800 outline-none focus:border-indigo-500 transition-all"
+                            />
+                            <button
+                              type="button"
+                              onClick={handleAddTestProduct}
+                              disabled={!newProductName.trim()}
+                              className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white text-xs font-black px-3.5 py-2 rounded-xl transition-all shrink-0"
+                            >
+                              + Añadir
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Listado de items de prueba agregados */}
+                        {testProducts.length > 0 ? (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-2">
+                            {testProducts.map((p) => (
+                              <div
+                                key={p.id}
+                                className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-start justify-between gap-2 shadow-2xs"
+                              >
+                                <div className="space-y-1 min-w-0">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="text-xs">
+                                      {p.type === "producto" ? "📦" : "🛠️"}
+                                    </span>
+                                    <span className="text-xs font-black text-slate-900 truncate">
+                                      {p.name}
+                                    </span>
+                                    <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                      {p.type}
+                                    </span>
+                                  </div>
+                                  {p.description && (
+                                    <p className="text-[11px] text-slate-600 font-medium line-clamp-2">
+                                      {p.description}
+                                    </p>
+                                  )}
+                                  {p.price && (
+                                    <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60 inline-block">
+                                      {p.price}
+                                    </span>
+                                  )}
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveTestProduct(p.id)}
+                                  className="text-slate-400 hover:text-rose-600 p-1 transition-colors shrink-0"
+                                  title="Eliminar ítem"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="p-3 bg-amber-50/60 rounded-xl border border-dashed border-amber-200 text-center text-xs text-amber-800 font-medium">
+                            No has agregado productos o servicios de prueba aún. Puedes agregar uno arriba o pulsar "Cargar Datos de Ejemplo".
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
                 <span>🤖</span> Planificación Estratégica Automática
               </h2>
@@ -1040,9 +1534,17 @@ export default function NicheRadarPage() {
                                       </div>
                                    )}
 
-                                   <p className="font-black text-sm text-slate-800">"{post.hook}"</p>
-                                   <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed">{post.content}</p>
-                               </div>
+                                    <p className="font-black text-sm text-slate-800">"{post.hook}"</p>
+                                    <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed">{post.content}</p>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => setPreviewPostModal(post)}
+                                      className="w-full py-2 bg-white hover:bg-indigo-50 text-indigo-700 text-xs font-bold rounded-xl transition-all border border-indigo-200/80 flex items-center justify-center gap-1.5 shadow-2xs"
+                                    >
+                                      <span>👁️</span> Previsualizar Post Completo
+                                    </button>
+                                </div>
                              );
                           })}
                       </div>
@@ -1070,7 +1572,7 @@ export default function NicheRadarPage() {
               Inicia tu primer análisis de tendencias
             </h3>
             <p className="text-slate-500 text-xs md:text-sm max-w-md mx-auto font-medium leading-relaxed">
-              Haz clic en el botón a continuación para que la IA investigue las conversaciones, preguntas frecuentes y patrones virales de tu nicho en los últimos 30 días.
+              Haz clic en el botón a continuación para que nuestros agentes investiguen las conversaciones, preguntas frecuentes y patrones virales de tu nicho en los últimos 30 días.
             </p>
           </div>
 
@@ -1158,6 +1660,96 @@ export default function NicheRadarPage() {
            </div>
         </div>
       )}
+      {/* MODAL DE PREVISUALIZACIÓN DE POST DE LA ESTRATEGIA */}
+      {previewPostModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-[32px] p-6 md:p-8 max-w-xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto space-y-5">
+            <button 
+              onClick={() => setPreviewPostModal(null)}
+              className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 transition-colors font-black text-lg"
+            >
+              ✕
+            </button>
+
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">📱</span>
+              <div>
+                <h3 className="text-base font-black text-slate-900">Previsualización del Post</h3>
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                  Generado por nuestros agentes especializados
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="bg-indigo-50 border border-indigo-200 text-indigo-700 font-black text-xs px-3 py-1 rounded-xl flex items-center gap-1.5">
+                <span>📅</span>
+                {previewPostModal.computedScheduledDate
+                  ? new Date(previewPostModal.computedScheduledDate).toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' }) + ' - ' + new Date(previewPostModal.computedScheduledDate).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) + ' hrs'
+                  : `Día ${previewPostModal.dayOffset} a las ${previewPostModal.suggestedTime}`}
+              </span>
+              <span className="bg-slate-100 border border-slate-200 text-slate-700 font-extrabold text-xs px-3 py-1 rounded-xl">
+                Formato: {previewPostModal.format}
+              </span>
+            </div>
+
+            {/* Visual Style Info */}
+            {previewPostModal.visualStyle && (
+              <div className="p-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl border border-indigo-100 flex items-center gap-3">
+                {previewPostModal.previewUrl ? (
+                  <img
+                    src={previewPostModal.previewUrl}
+                    alt={previewPostModal.visualStyle}
+                    className="w-12 h-12 rounded-xl object-cover border border-indigo-200 shadow-xs shrink-0"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center text-xl shrink-0">🎨</div>
+                )}
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-indigo-600 block">Estilo Visual Asignado</span>
+                  <p className="text-xs font-black text-indigo-950">{previewPostModal.visualStyle}</p>
+                  {previewPostModal.imageDirection && (
+                    <p className="text-[11px] text-slate-600 font-medium mt-0.5">{previewPostModal.imageDirection}</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Hook */}
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-1">
+              <span className="text-[10px] font-black uppercase tracking-wider text-indigo-500 block">Gancho (Hook)</span>
+              <p className="text-sm font-black text-slate-900 leading-snug">"{previewPostModal.hook}"</p>
+            </div>
+
+            {/* Contenido / Copy */}
+            <div className="space-y-1.5">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 block">Cuerpo del Contenido / Copy</span>
+              <div className="p-4 bg-slate-50/70 rounded-2xl border border-slate-200 text-xs font-medium text-slate-700 whitespace-pre-wrap leading-relaxed">
+                {previewPostModal.content}
+              </div>
+            </div>
+
+            {/* CTA */}
+            {previewPostModal.cta && (
+              <div className="p-3.5 bg-emerald-50/80 rounded-2xl border border-emerald-200/80 space-y-1">
+                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 block">Llamado a la Acción (CTA)</span>
+                <p className="text-xs font-bold text-emerald-950">{previewPostModal.cta}</p>
+              </div>
+            )}
+
+            <div className="flex justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => setPreviewPostModal(null)}
+                className="bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs px-6 py-2.5 rounded-xl transition-all shadow-sm"
+              >
+                Cerrar Previsualización
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* STATUS MODAL MODERNO */}
       <StatusModal
         isOpen={statusModal.isOpen}
