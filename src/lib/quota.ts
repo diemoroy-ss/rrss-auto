@@ -69,7 +69,7 @@ export async function getQuotaUsage(userId: string, profileId: string = 'default
     return used;
 }
 
-const ADMIN_EMAILS = ['diemoroy@gmail.com', 'admin@santisoft.cl', 'spalezcom@gmail.com', 'santisoftai@gmail.com', 'spagrupofugas@gmail.com'];
+const ADMIN_EMAILS = ['diemoroy@gmail.com', 'admin@santisoft.cl', 'spalezcom@gmail.com', 'santisoftai@gmail.com'];
 
 export function isUserAdmin(email?: string): boolean {
     if (!email) return false;

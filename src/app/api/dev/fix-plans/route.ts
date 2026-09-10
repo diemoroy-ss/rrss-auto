@@ -177,7 +177,7 @@ export async function GET() {
             restoredPosts.push(docSnap.id);
         }
 
-        // Update user spagrupofugas@gmail.com to unlimited plan
+        // Update user spagrupofugas@gmail.com to pro plan
         const userFugasSnap = await adminDb.collection('users')
             .where('email', '==', 'spagrupofugas@gmail.com')
             .get();
@@ -185,9 +185,9 @@ export async function GET() {
         let fugasUpdated = false;
         for (const docSnap of userFugasSnap.docs) {
             await docSnap.ref.update({
-                plan: 'agency',
-                isUnlimited: true,
-                role: 'admin'
+                plan: 'pro',
+                role: 'user',
+                isUnlimited: false
             });
             fugasUpdated = true;
         }
