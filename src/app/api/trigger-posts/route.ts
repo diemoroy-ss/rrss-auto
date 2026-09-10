@@ -42,8 +42,8 @@ export async function GET(req: Request) {
         for (const postDoc of allDocs) {
             const postData = postDoc.data();
             const postId = postDoc.id;
-            const uid = postData.userId;
-            const profileId = postData.profileId;
+            let uid = postData.userId;
+            let profileId = postData.profileId;
 
             if (!uid) continue;
 
