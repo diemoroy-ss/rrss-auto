@@ -4,7 +4,7 @@ import { generateNicheRadarAnalysis } from '../../../../lib/niche-radar';
 import { getQuotaUsage, getPlanLimit, getVideoPlanLimit } from '../../../../lib/quota';
 import { enqueuePostTask } from '../../../../lib/gcp-tasks';
 import { getFreeModel } from '../../../../lib/gemini-free';
-import { getNextScheduleSlotServer } from '../../../../lib/schedule-continuity';
+import { getNextScheduleSlotServer } from '../../../../lib/schedule-continuity-server';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
