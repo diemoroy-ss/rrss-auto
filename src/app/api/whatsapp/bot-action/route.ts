@@ -249,15 +249,29 @@ export async function POST(req: Request) {
       // OPCIÓN 1: Ver próximos posts agendados
       // ----------------------------------------------------
       case '1': {
-        const postsSnap = await adminDb
-          .collection('social_posts')
-          .where('userId', '==', userId)
-          .limit(30)
-          .get();
+        const [confirmedSnap, pendingSnap] = await Promise.all([
+          adminDb
+            .collection('social_posts')
+            .where('userId', '==', userId)
+            .where('status', '==', 'confirmed')
+            .get(),
+          adminDb
+            .collection('social_posts')
+            .where('userId', '==', userId)
+            .where('status', '==', 'pending')
+            .get(),
+        ]);
 
-        const upcomingPosts = postsSnap.docs
+        const allDocs = [...confirmedSnap.docs, ...pendingSnap.docs];
+        const nowThreshold = Date.now() - 3 * 60 * 60 * 1000; // Considera posts de hoy y futuros
+
+        const upcomingPosts = allDocs
           .map((d) => ({ id: d.id, ...d.data() } as any))
-          .filter((p) => (p.status === 'confirmed' || p.status === 'pending') && (!p.profileId || p.profileId === profileId))
+          .filter((p) => {
+            const matchesProfile = !p.profileId || p.profileId === profileId;
+            const schedTime = p.scheduledFor?.toDate ? p.scheduledFor.toDate().getTime() : new Date(p.scheduledFor || 0).getTime();
+            return matchesProfile && schedTime >= nowThreshold;
+          })
           .sort((a, b) => {
             const timeA = a.scheduledFor?.toDate ? a.scheduledFor.toDate().getTime() : new Date(a.scheduledFor || 0).getTime();
             const timeB = b.scheduledFor?.toDate ? b.scheduledFor.toDate().getTime() : new Date(b.scheduledFor || 0).getTime();
@@ -269,7 +283,7 @@ export async function POST(req: Request) {
           replyText =
             `📅 *Próximos Posts de ${businessName}:*\n\n` +
             `No tienes publicaciones agendadas actualmente.\n\n` +
-            `👉 *Escribe 4* para que nuestros agentes creen una nueva idea o planificación para ti.` +
+            `👉 *Escribe 4* para que nuestros agentes creen una nueva idea o *5* para planificar 2 semanas.` +
             multiAccountFooter;
         } else {
           let list = '';
@@ -286,7 +300,7 @@ export async function POST(req: Request) {
           replyText =
             `📅 *Próximas publicaciones para ${businessName}:*\n\n` +
             list +
-            `_Escribe *6* si deseas confirmar los borradores pendientes, o *0* para volver al menú._` +
+            `_Escribe *6* si deseas confirmar borradores pendientes, o *0* para volver al menú._` +
             multiAccountFooter;
         }
         break;
@@ -299,18 +313,18 @@ export async function POST(req: Request) {
         const postsSnap = await adminDb
           .collection('social_posts')
           .where('userId', '==', userId)
-          .limit(30)
+          .where('status', '==', 'published')
           .get();
 
         const publishedPosts = postsSnap.docs
           .map((d) => ({ id: d.id, ...d.data() } as any))
-          .filter((p) => p.status === 'published' && (!p.profileId || p.profileId === profileId))
+          .filter((p) => !p.profileId || p.profileId === profileId)
           .sort((a, b) => {
-            const timeA = a.publishedAt?.toDate ? a.publishedAt.toDate().getTime() : (a.scheduledFor?.toDate ? a.scheduledFor.toDate().getTime() : 0);
-            const timeB = b.publishedAt?.toDate ? b.publishedAt.toDate().getTime() : (b.scheduledFor?.toDate ? b.scheduledFor.toDate().getTime() : 0);
+            const timeA = a.publishedAt?.toDate ? a.publishedAt.toDate().getTime() : (a.scheduledFor?.toDate ? a.scheduledFor.toDate().getTime() : (a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0));
+            const timeB = b.publishedAt?.toDate ? b.publishedAt.toDate().getTime() : (b.scheduledFor?.toDate ? b.scheduledFor.toDate().getTime() : (b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0));
             return timeB - timeA;
           })
-          .slice(0, 4);
+          .slice(0, 5);
 
         if (publishedPosts.length === 0) {
           replyText =
