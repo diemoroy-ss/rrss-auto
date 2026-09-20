@@ -10,6 +10,7 @@ import ContactForm from '../components/ContactForm';
 import BrandHeader from '../components/BrandHeader';
 import BrandFooter from '../components/BrandFooter';
 import TestimonialsSection from '../components/TestimonialsSection';
+import WhatsAppBotSection from '../components/WhatsAppBotSection';
 
 export default function Home() {
 
@@ -56,34 +57,48 @@ export default function Home() {
       <section id="ecosistema">
         <div className="wrap">
           <div className="section-head" data-reveal>
-            <span className="eyebrow">Ecosistema integral</span>
-            <h2>Un flujo invisible, para <em>Redes</em> y <span className="em-p">SEO.</span></h2>
+            <span className="eyebrow">Ecosistema integral · 3 Canales</span>
+            <h2>Un flujo continuo para <em>Redes</em>, <span className="em-p">SEO</span> y <span className="em-w">WhatsApp.</span></h2>
           </div>
-          <div className="pillars" data-reveal>
+          <div className="pillars three-col" data-reveal>
             <div className="pillar a">
               <span className="pillar-tag">SEÑAL A · 98.6 FM</span>
               <h3>Redes Sociales 360°</h3>
               <ul className="pillar-list">
                 <li><span className="mark">›</span><span>Generación de <strong>contenido persuasivo</strong> con nuestros agentes, adaptado a tu marca.</span></li>
-                <li><span className="mark">›</span><span><strong>Radar de Nicho 📡:</strong> Inteligencia de mercado para descubrir tendencias, dudas y temas virales en tu industria.</span></li>
-                <li><span className="mark">›</span><span><strong>Calendario estratégico</strong> que automatiza todo un mes en minutos.</span></li>
-                <li><span className="mark">›</span><span>Publicación automática directa en <strong>Meta (Facebook, Instagram)</strong>, <strong>TikTok</strong>, <strong>Google Business</strong>, <strong>YouTube Shorts</strong> y <strong>X (Twitter)</strong>.</span></li>
+                <li><span className="mark">›</span><span><strong>Radar de Nicho 📡:</strong> Detección de tendencias, dudas y temas con alta tracción en tu rubro.</span></li>
+                <li><span className="mark">›</span><span><strong>Calendario estratégico</strong> que deja todo un mes programado en minutos.</span></li>
+                <li><span className="mark">›</span><span>Publicación automática directa en <strong>Meta (Facebook, Instagram)</strong>, <strong>TikTok</strong>, <strong>Google Business</strong>, <strong>YouTube Shorts</strong> y <strong>X</strong>.</span></li>
               </ul>
-              <span className="pillar-note">Próximamente: LinkedIn</span>
+              <span className="pillar-note">Autopublicación directa y sincronizada</span>
             </div>
             <div className="pillar b">
               <span className="pillar-tag">SEÑAL B · 404 TERM</span>
               <h3>SEO &amp; GEO con Blog</h3>
               <ul className="pillar-list">
-                <li><span className="mark">›</span><span><strong>Generative Engine Optimization (GEO):</strong> apareces citado en respuestas de ChatGPT y Perplexity, no solo en Google.</span></li>
-                <li><span className="mark">›</span><span>Generación de <strong>artículos completos</strong> y estructurados con nuestros agentes especializados.</span></li>
-                <li><span className="mark">›</span><span>Publicación automática y sin código en tu <strong>CMS</strong> (WordPress, Shopify, Webflow).</span></li>
+                <li><span className="mark">›</span><span><strong>Generative Engine Optimization (GEO):</strong> Tu marca recomendada en respuestas de motores generativos y búsquedas conversacionales.</span></li>
+                <li><span className="mark">›</span><span>Generación de <strong>artículos completos</strong> y estructurados por nuestros redactores especializados.</span></li>
+                <li><span className="mark">›</span><span>Publicación automática y directa en tu <strong>CMS</strong> (WordPress, Shopify, Webflow).</span></li>
               </ul>
-              <span className="pillar-note">Promesa: tráfico orgánico + visibilidad en motores IA</span>
+              <span className="pillar-note">Tráfico orgánico + Posicionamiento futuro</span>
+            </div>
+            <div className="pillar c">
+              <span className="pillar-tag">SEÑAL C · WA BOT</span>
+              <h3>WhatsApp Command</h3>
+              <ul className="pillar-list">
+                <li><span className="mark">›</span><span><strong>Gestión sin paneles:</strong> Revisa posts programados, borradores y cuotas enviando solo un número.</span></li>
+                <li><span className="mark">›</span><span><strong>Aprobación con 1 mensaje:</strong> Autoriza el calendario de la semana respondiendo al bot.</span></li>
+                <li><span className="mark">›</span><span><strong>Generación al vuelo:</strong> Manda una idea urgente y nuestros agentes preparan el copy de inmediato.</span></li>
+                <li><span className="mark">›</span><span><strong>Selector multi-marca:</strong> Administra varias marcas desde el mismo número sin cambiar de cuenta.</span></li>
+              </ul>
+              <span className="pillar-note">Control total desde tu bolsillo</span>
             </div>
           </div>
         </div>
       </section>
+
+      {/* 5. Sección WhatsApp Bot Diferenciador */}
+      <WhatsAppBotSection />
 
       {/* 5. Sección ¿Qué es GEO? */}
       <section id="geo">
@@ -155,6 +170,7 @@ export default function Home() {
                 <li><span className="cost-role">8 artículos de Blog SEO/GEO al mes</span><span className="cost-check">✓</span></li>
                 <li><span className="cost-role">Radar de Nicho + Meta Ads integrado</span><span className="cost-check">✓</span></li>
                 <li><span className="cost-role">Publicación automática en Meta, TikTok, YouTube</span><span className="cost-check">✓</span></li>
+                <li><span className="cost-role">Control y aprobación por WhatsApp Bot</span><span className="cost-check">✓</span></li>
               </ul>
               <div className="cost-total-row highlight">
                 <span>Total mensual</span>
@@ -248,9 +264,14 @@ export default function Home() {
       {/* 9. CTA Final */}
       <div className="final-cta">
         <div className="radar"></div>
-        <div className="wrap">
-          <h2>¿Listo para recuperar <em>tu tiempo?</em></h2>
-          <Link href="/login" className="btn btn-primary">Empezar Ahora Gratis</Link>
+        <div className="wrap text-center">
+          <h2>¿Listo para que tu marketing <em>trabaje solo?</em></h2>
+          <p className="max-w-xl mx-auto mt-3 mb-6 text-slate-300 text-sm sm:text-base leading-relaxed">
+            Redes al día, artículos de blog indexando y control total desde WhatsApp. Empieza hoy con nuestra prueba gratuita.
+          </p>
+          <div className="flex justify-center">
+            <Link href="/login" className="btn btn-primary">Empezar Ahora Gratis</Link>
+          </div>
         </div>
       </div>
 

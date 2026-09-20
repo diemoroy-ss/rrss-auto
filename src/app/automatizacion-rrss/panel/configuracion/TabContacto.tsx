@@ -62,6 +62,42 @@ export default function TabContacto({
               </label>
             </div>
           </div>
+
+          {/* Tarjeta de Vinculación y Protección Anti-Baneo */}
+          <div className="mt-6 p-5 rounded-2xl bg-emerald-50/70 border-2 border-emerald-200">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3.5">
+                <div className="w-11 h-11 rounded-2xl bg-emerald-600 text-white flex items-center justify-center text-xl shrink-0 shadow-md shadow-emerald-600/20">
+                  📱
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-sm font-black text-slate-900">
+                      Asistente Oficial de WhatsApp
+                    </h4>
+                    <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-300">
+                      +56 9 6590 9543
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-600 font-medium mt-1 leading-relaxed">
+                    Gestiona, aprueba publicaciones y consulta el Radar de Nicho de esta marca directamente desde el chat.
+                  </p>
+                  <div className="mt-2 text-[11px] text-emerald-900 bg-emerald-100/60 p-2 rounded-xl border border-emerald-200/80">
+                    🛡️ <strong>Paso clave de seguridad:</strong> Guarda este número en tu agenda como <strong>&quot;Santisoft Agentes&quot;</strong>. Así WhatsApp lo reconocerá como contacto de confianza y podrás recibir alertas sin bloqueos ni retrasos.
+                  </div>
+                </div>
+              </div>
+              <a
+                href="https://wa.me/56965909543?text=Hola%20Santisoft!%20Quiero%20activar%20mi%20asistente%20para%20esta%20marca"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full sm:w-auto text-center px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-lg shadow-emerald-600/25 transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+              >
+                <span>💬</span>
+                <span>Guardar y Chatear</span>
+              </a>
+            </div>
+          </div>
         </div>
       </div>
 

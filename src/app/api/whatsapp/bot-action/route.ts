@@ -116,8 +116,9 @@ export async function POST(req: Request) {
         `No encontramos una cuenta de Santisoft asociada a este número de teléfono (*${phone}*).\n\n` +
         `Para vincular tu cuenta:\n` +
         `1. Ingresa a tu panel en https://rrss.santisoft.cl\n` +
-        `2. Ve a *Configuración / Perfil*\n` +
+        `2. Ve a *Configuración > Datos & Contacto*\n` +
         `3. Añade este número en tu teléfono de contacto y guarda los cambios.\n\n` +
+        `🛡️ _Recuerda guardar este número (+56 9 6590 9543) en tu agenda como *Santisoft Agentes* para que WhatsApp reconozca la cuenta como segura._\n\n` +
         `Una vez guardado, vuelve a escribirme para activar tu asistente. 🚀`;
 
       return NextResponse.json({
@@ -474,7 +475,8 @@ Sé directo, usa 1 o 2 emojis y sugiere 4 hashtags.`
           `5️⃣ *Ver cuota y estadísticas*\n` +
           `6️⃣ *Aprobar posts pendientes*\n` +
           switchOptionText +
-          `\n_Escribe el número de la opción que prefieras._` +
+          `\n_Escribe el número de la opción que prefieras._\n\n` +
+          `🛡️ _Tip de seguridad: Guarda este número (+56 9 6590 9543) como *Santisoft Agentes* en tus contactos para asegurar tus alertas y evitar bloqueos._` +
           multiAccountFooter;
         break;
       }

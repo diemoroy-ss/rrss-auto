@@ -122,14 +122,15 @@ export default function HeroSection() {
         <div className="radar"></div>
         <div className="wrap flex flex-col lg:flex-row items-center gap-12 lg:gap-8">
           <div className="hero-head lg:w-1/2 lg:text-left text-center m-0 max-w-none flex flex-col items-center lg:items-start z-10 relative">
-            <span className="eyebrow">Redes 360° <span className="freq">·</span> Blog Automático <span className="freq">·</span> SEO &amp; GEO</span>
+            <span className="eyebrow">Redes 360° <span className="freq">·</span> SEO &amp; GEO <span className="freq">·</span> WhatsApp Bot 🟢</span>
             <h1 className="lg:text-left text-center leading-tight mt-5">Que te <em>vean.</em><br />Que te <span className="em-p">citen.</span></h1>
-            <p className="sub lg:text-left text-center lg:mx-0 mx-auto mt-6">Tu marca activa 24/7 sin contratar un equipo costoso: nuestros agentes investigan tu nicho, diseñan las piezas, redactan los copys y publican en Facebook, Instagram, TikTok y el blog de tu sitio — mientras tú trabajas en lo que importa.</p>
+            <p className="sub lg:text-left text-center lg:mx-0 mx-auto mt-6">Tu marca activa 24/7 sin contratar un equipo costoso: nuestros agentes investigan tu nicho, diseñan las piezas, redactan los copys y publican solos en tus redes y blog. Y si quieres supervisar, pedir un post de emergencia o ver métricas, lo haces directo por <strong>WhatsApp</strong>.</p>
             <div className="hero-ctas flex flex-col sm:flex-row justify-center lg:justify-start gap-4 mt-8 w-full">
               <a href="#planes" className="btn btn-primary w-full sm:w-auto justify-center text-center">Explorar Planes</a>
               <Link href="/login" className="btn btn-ghost w-full sm:w-auto justify-center text-center">Acceso Cliente</Link>
             </div>
             <div className="badges flex flex-wrap justify-center lg:justify-start gap-2 w-full mt-10">
+              <span className="badge on !border-emerald-500/40 text-emerald-400 font-semibold"><span className="dot !bg-emerald-400 !shadow-[0_0_6px_#34d399]"></span>WhatsApp Bot</span>
               <span className="badge on"><span className="dot"></span>Meta (FB / IG)</span>
               <span className="badge on"><span className="dot"></span>TikTok</span>
               <span className="badge on"><span className="dot"></span>CMS/Blog</span>
@@ -191,10 +192,10 @@ export default function HeroSection() {
         <div className="wrap mt-20 z-10 relative">
           <div className="panel dark-screen" data-reveal>
             <div className="panel-topbar">
-              <span>CONSOLA DE TRANSMISIÓN — SANTISOFT AI</span>
-              <div className="freqs"><span>98.6 FM</span><span>404 TERM</span></div>
+              <span>CONSOLA DE TRANSMISIÓN — SANTISOFT AGENTES</span>
+              <div className="freqs"><span>98.6 FM</span><span>404 TERM</span><span>WA BOT</span></div>
             </div>
-            <div className="gauges">
+            <div className="gauges three-signals">
               <div className="gauge a">
                 <div className="gauge-head">
                   <span className="gauge-name">SEÑAL A — REDES</span>
@@ -202,7 +203,7 @@ export default function HeroSection() {
                 </div>
                 <div className="ring-row">
                   <div className="eq-visual"><span></span><span></span><span></span><span></span><span></span></div>
-                  <p className="gauge-desc"><b>Meta + TikTok</b>, siempre al aire, con el calendario armado para todo el mes.</p>
+                  <p className="gauge-desc"><b>Meta + TikTok</b>, siempre al aire con el calendario automatizado para todo el mes.</p>
                 </div>
               </div>
               <div className="gauge b">
@@ -212,7 +213,19 @@ export default function HeroSection() {
                 </div>
                 <div className="ring-row">
                   <div className="term-visual">&gt; crawling...<br />&gt; cite: true<br />&gt; rank: up<span className="cursor"></span></div>
-                  <p className="gauge-desc"><b>Blog en tu CMS</b> optimizado para Google y para que la IA te cite.</p>
+                  <p className="gauge-desc"><b>Blog en tu CMS</b> estructurado para Google y para que los motores te citen.</p>
+                </div>
+              </div>
+              <div className="gauge c">
+                <div className="gauge-head">
+                  <span className="gauge-name">SEÑAL C — WHATSAPP</span>
+                  <span className="gauge-status">EN LÍNEA</span>
+                </div>
+                <div className="ring-row">
+                  <div className="term-visual !border-emerald-500/40 !bg-emerald-950/20 !text-emerald-400">
+                    &gt; msg: &quot;6&quot;<br />&gt; posts: OK<br />&gt; ready<span className="cursor !bg-emerald-400"></span>
+                  </div>
+                  <p className="gauge-desc"><b>Comando móvil</b>: aprueba publicaciones, pide copys y revisa métricas desde el chat.</p>
                 </div>
               </div>
             </div>

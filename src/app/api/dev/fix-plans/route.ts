@@ -54,6 +54,7 @@ export async function GET() {
                     "2 videos para Reels / TikTok / Shorts al mes",
                     "20 imágenes con nuestros agentes al mes",
                     "Todas las redes sociales",
+                    "WhatsApp Bot: consulta de posts y estado",
                     "1 perfil de marca",
                     "Anual $249.900 (ahorras ~$50.000)"
                 ]
@@ -78,6 +79,7 @@ export async function GET() {
                     "6 videos con locución y guión al mes",
                     "40 imágenes con nuestros agentes al mes",
                     "2 artículos de Blog SEO/GEO al mes",
+                    "WhatsApp Bot: revisión y aprobación de posts",
                     "Todas las redes sociales",
                     "1 perfil de marca",
                     "Anual $399.900 (ahorras ~$80.000)"
@@ -103,8 +105,8 @@ export async function GET() {
                     "12 videos con locución y guión al mes",
                     "80 imágenes con nuestros agentes al mes",
                     "8 artículos de Blog SEO/GEO",
-                    "Meta Ads integrado",
-                    "Radar de Nicho",
+                    "WhatsApp Bot completo: aprueba, crea copys y ejecuta Radar",
+                    "Meta Ads integrado + Radar de Nicho",
                     "1 perfil de marca",
                     "Anual $849.900 (ahorras ~$170.000)"
                 ]
@@ -129,6 +131,7 @@ export async function GET() {
                     "30 videos con locución y guión al mes",
                     "200 imágenes con nuestros agentes al mes",
                     "20 artículos de Blog SEO/GEO",
+                    "WhatsApp Bot multi-marca (alterna cuentas desde el chat)",
                     "Hasta 3 marcas o cuentas independientes",
                     "Soporte prioritario por WhatsApp",
                     "Anual $1.499.900 (ahorras ~$300.000)"
@@ -154,6 +157,7 @@ export async function GET() {
                     "80 videos con locución y guión al mes",
                     "Imágenes ilimitadas con nuestros agentes",
                     "50 artículos de Blog SEO/GEO",
+                    "WhatsApp Bot completo para tus 15 clientes",
                     "Hasta 15 marcas o clientes independientes",
                     "Ejecutivo de cuenta dedicado",
                     "Anual $2.999.900 (ahorras ~$600.000)"

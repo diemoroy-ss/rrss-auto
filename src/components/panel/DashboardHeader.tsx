@@ -76,6 +76,18 @@ export default function DashboardHeader({
             </span>
           </div>
 
+          {/* Botón WhatsApp Bot */}
+          <a
+            href="https://wa.me/56965909543?text=Hola%20Santisoft!%20Quiero%20gestionar%20mi%20cuenta"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Abre el asistente de WhatsApp para gestionar tus posts"
+            className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-2 border-emerald-200 hover:border-emerald-300 font-black py-2.5 px-4 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 text-xs"
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>WhatsApp Bot</span>
+          </a>
+
           {/* Botón crear */}
           <Link
             id="tour-btn-new-post"
