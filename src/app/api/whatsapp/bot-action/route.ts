@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { adminDb } from '../../../../lib/firebase-admin';
 import { generateNicheRadarAnalysis } from '../../../../lib/niche-radar';
-import { getQuotaUsage, getPlanLimit, getVideoPlanLimit } from '../../../../lib/quota';
+import { getQuotaUsageAdmin, getPlanLimitAdmin, getAiPlanLimitAdmin } from '../../../../lib/quota-admin';
 import { enqueuePostTask } from '../../../../lib/gcp-tasks';
 import { getFreeModel, generateFreeText } from '../../../../lib/gemini-free';
 import { getNextScheduleSlotServer } from '../../../../lib/schedule-continuity-server';
@@ -790,9 +790,9 @@ Responde ÚNICAMENTE un objeto JSON válido con este formato:
       // ----------------------------------------------------
       case '7': {
         const [usedPosts, maxPosts, maxVideos] = await Promise.all([
-          getQuotaUsage(userId, profileId),
-          getPlanLimit(userPlan, email),
-          getVideoPlanLimit(userPlan, email),
+          getQuotaUsageAdmin(userId, profileId).catch(() => 0),
+          getPlanLimitAdmin(userPlan, email).catch(() => 20),
+          getAiPlanLimitAdmin(userPlan, 'video', email).catch(() => 2),
         ]);
 
         const percentage = maxPosts > 0 && maxPosts < 99999 ? Math.round((usedPosts / maxPosts) * 100) : 0;
@@ -875,7 +875,7 @@ Responde ÚNICAMENTE un objeto JSON válido con este formato:
         error: error.message || 'Error interno del servidor',
         replyText: 'Ocurrió un pequeño inconveniente al procesar tu solicitud. Por favor intenta nuevamente en unos momentos.',
       },
-      { status: 500 }
+      { status: 200 }
     );
   }
 }

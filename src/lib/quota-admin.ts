@@ -2,29 +2,36 @@ import { adminDb } from './firebase-admin';
 
 export async function getQuotaUsageAdmin(userId: string, profileId: string = 'default'): Promise<number> {
     if (!adminDb) {
-        throw new Error("Firebase Admin DB not initialized");
+        return 0;
     }
-    const firstDayOfMonth = new Date();
-    firstDayOfMonth.setDate(1);
-    firstDayOfMonth.setHours(0, 0, 0, 0);
+    try {
+        const firstDayOfMonth = new Date();
+        firstDayOfMonth.setDate(1);
+        firstDayOfMonth.setHours(0, 0, 0, 0);
 
-    const snap = await adminDb.collection("social_posts")
-        .where("userId", "==", userId)
-        .where("profileId", "==", profileId)
-        .get();
+        const snap = await adminDb.collection("social_posts")
+            .where("userId", "==", userId)
+            .get();
 
-    let used = 0;
-    snap.docs.forEach(d => {
-        const data = d.data();
-        // In firebase-admin, Timestamp fields have a .toDate() method
-        const dateObj = data.scheduledFor?.toDate ? data.scheduledFor.toDate() : (data.createdAt?.toDate ? data.createdAt.toDate() : new Date());
-        
-        if (dateObj >= firstDayOfMonth && ['published', 'processing', 'confirmed'].includes(data.status)) {
-            used += (data.networks?.length || 1);
-        }
-    });
+        let used = 0;
+        snap.docs.forEach(d => {
+            const data = d.data();
+            if (profileId && profileId !== 'default' && data.profileId && data.profileId !== profileId) {
+                return;
+            }
+            // In firebase-admin, Timestamp fields have a .toDate() method
+            const dateObj = data.scheduledFor?.toDate ? data.scheduledFor.toDate() : (data.createdAt?.toDate ? data.createdAt.toDate() : new Date());
+            
+            if (dateObj >= firstDayOfMonth && ['published', 'processing', 'confirmed'].includes(data.status)) {
+                used += (data.networks?.length || 1);
+            }
+        });
 
-    return used;
+        return used;
+    } catch (err) {
+        console.error("Error in getQuotaUsageAdmin:", err);
+        return 0;
+    }
 }
 
 const ADMIN_EMAILS = ['diemoroy@gmail.com', 'admin@santisoft.cl', 'spalezcom@gmail.com', 'santisoftai@gmail.com'];
