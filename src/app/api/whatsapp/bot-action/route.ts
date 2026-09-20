@@ -95,27 +95,34 @@ export async function POST(req: Request) {
         const postsSnap = await adminDb
           .collection('social_posts')
           .where('userId', '==', userId)
-          .where('status', 'in', ['confirmed', 'pending'])
-          .orderBy('scheduledFor', 'asc')
-          .limit(5)
+          .limit(25)
           .get();
 
-        if (postsSnap.empty) {
+        const upcomingPosts = postsSnap.docs
+          .map((d) => ({ id: d.id, ...d.data() } as any))
+          .filter((p) => p.status === 'confirmed' || p.status === 'pending')
+          .sort((a, b) => {
+            const timeA = a.scheduledFor?.toDate ? a.scheduledFor.toDate().getTime() : new Date(a.scheduledFor || 0).getTime();
+            const timeB = b.scheduledFor?.toDate ? b.scheduledFor.toDate().getTime() : new Date(b.scheduledFor || 0).getTime();
+            return timeA - timeB;
+          })
+          .slice(0, 5);
+
+        if (upcomingPosts.length === 0) {
           replyText =
             `📅 *Próximos Posts de ${businessName}:*\n\n` +
             `No tienes publicaciones agendadas actualmente.\n\n` +
             `👉 *Escribe 4* para que nuestros agentes creen una nueva idea o planificación para ti.`;
         } else {
           let list = '';
-          postsSnap.docs.forEach((doc, idx) => {
-            const p = doc.data();
+          upcomingPosts.forEach((p, idx) => {
             const dateObj = p.scheduledFor?.toDate ? p.scheduledFor.toDate() : new Date(p.scheduledFor);
             const dateFormatted = format(dateObj, "EEEE d 'de' MMMM, HH:mm", { locale: es });
             const typeEmoji = (p.type || '').toLowerCase().includes('reel') ? '🎬' : '🖼️';
             const statusTag = p.status === 'confirmed' ? '⏳ Agendado' : '⏸️ Borrador pendiente';
             list += `*${idx + 1}.* ${typeEmoji} *${p.type || 'Post'}* (${statusTag})\n` +
                     `📅 ${dateFormatted}\n` +
-                    `📝 "${(p.idea || p.copy || '').slice(0, 100)}..."\n\n`;
+                    `📝 "${(p.idea || p.copy || p.postText || '').slice(0, 100)}..."\n\n`;
           });
 
           replyText =
@@ -130,23 +137,30 @@ export async function POST(req: Request) {
       // OPCIÓN 2: Ver posts publicados
       // ----------------------------------------------------
       case '2': {
-        const publishedSnap = await adminDb
+        const postsSnap = await adminDb
           .collection('social_posts')
           .where('userId', '==', userId)
-          .where('status', '==', 'published')
-          .orderBy('publishedAt', 'desc')
-          .limit(4)
+          .limit(25)
           .get();
 
-        if (publishedSnap.empty) {
+        const publishedPosts = postsSnap.docs
+          .map((d) => ({ id: d.id, ...d.data() } as any))
+          .filter((p) => p.status === 'published')
+          .sort((a, b) => {
+            const timeA = a.publishedAt?.toDate ? a.publishedAt.toDate().getTime() : (a.scheduledFor?.toDate ? a.scheduledFor.toDate().getTime() : 0);
+            const timeB = b.publishedAt?.toDate ? b.publishedAt.toDate().getTime() : (b.scheduledFor?.toDate ? b.scheduledFor.toDate().getTime() : 0);
+            return timeB - timeA;
+          })
+          .slice(0, 4);
+
+        if (publishedPosts.length === 0) {
           replyText =
             `📭 *Historial de ${businessName}:*\n\n` +
             `Aún no hay publicaciones enviadas automáticamente desde Santisoft.\n\n` +
             `_Escribe *1* para revisar lo que está agendado o *0* para el menú._`;
         } else {
           let list = '';
-          publishedSnap.docs.forEach((doc, idx) => {
-            const p = doc.data();
+          publishedPosts.forEach((p, idx) => {
             const dateObj = p.publishedAt?.toDate ? p.publishedAt.toDate() : (p.scheduledFor?.toDate ? p.scheduledFor.toDate() : new Date());
             const dateFormatted = format(dateObj, "d 'de' MMM, HH:mm", { locale: es });
             list += `*${idx + 1}.* ✅ *Publicado el ${dateFormatted}*\n` +
