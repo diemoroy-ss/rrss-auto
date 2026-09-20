@@ -21,6 +21,63 @@ interface AccountOption {
   profileDoc: any;
 }
 
+const NETWORK_META: Record<string, { name: string; emoji: string }> = {
+  instagram: { name: 'Instagram', emoji: '📸' },
+  facebook: { name: 'Facebook', emoji: '🔵' },
+  linkedin: { name: 'LinkedIn', emoji: '💼' },
+  tiktok: { name: 'TikTok', emoji: '🎵' },
+  youtube: { name: 'YouTube', emoji: '▶️' },
+  x: { name: '𝕏', emoji: '𝕏' },
+};
+
+function formatNetworks(networks: string[]): string {
+  if (!networks || networks.length === 0) return 'Ninguna red';
+  return networks
+    .map((net) => {
+      const meta = NETWORK_META[net.toLowerCase()];
+      return meta ? `${meta.emoji} ${meta.name}` : net;
+    })
+    .join(', ');
+}
+
+function getConnectedNetworks(profileDoc: any, userDoc: any): string[] {
+  const p = profileDoc || {};
+  const u = userDoc || {};
+  const isDefault = !p.id || p.id === 'default';
+
+  const networks: string[] = [];
+
+  const fbOK = !!p.facebookToken_enc || (isDefault && !!u.facebookToken_enc);
+  const igOK = !!p.instagramToken_enc || (isDefault && !!u.instagramToken_enc);
+  const ttOK = !!p.tiktokToken_enc || (isDefault && !!u.tiktokToken_enc) || !!p.accounts?.tiktok;
+  const liOK = !!p.linkedinUserToken_enc || !!p.linkedinToken_enc || (isDefault && (!!u.linkedinUserToken_enc || !!u.linkedinToken_enc)) || !!p.accounts?.linkedin;
+  const ytOK = !!p.youtubeToken_enc || (isDefault && !!u.youtubeToken_enc) || !!p.accounts?.youtube;
+  const xOK = !!p.xToken_enc || (isDefault && !!u.xToken_enc) || !!p.accounts?.x;
+
+  if (igOK) networks.push('instagram');
+  if (fbOK) networks.push('facebook');
+  if (liOK) networks.push('linkedin');
+  if (ttOK) networks.push('tiktok');
+  if (ytOK) networks.push('youtube');
+  if (xOK) networks.push('x');
+
+  return networks.length > 0 ? networks : ['instagram', 'facebook'];
+}
+
+function extractNetworksFromPhrase(phrase: string): string[] {
+  const t = phrase.toLowerCase();
+  const detected: string[] = [];
+
+  if (/\b(instagram|ig|insta)\b/.test(t)) detected.push('instagram');
+  if (/\b(facebook|fb|face)\b/.test(t)) detected.push('facebook');
+  if (/\b(linkedin|li|linkdin)\b/.test(t)) detected.push('linkedin');
+  if (/\b(tiktok|tt|tik\s*tok)\b/.test(t)) detected.push('tiktok');
+  if (/\b(youtube|yt|you\s*tube)\b/.test(t)) detected.push('youtube');
+  if (/\b(x|twitter)\b/.test(t)) detected.push('x');
+
+  return Array.from(new Set(detected));
+}
+
 /**
  * Endpoint central para procesar acciones de WhatsApp provenientes de n8n / Evolution API.
  * Identifica si el teléfono pertenece a una o múltiples cuentas/perfiles.
@@ -226,6 +283,12 @@ export async function POST(req: Request) {
     if (action === '0' || !action) {
       if (/^6\b|aprobar|publicar ya|publicar ahora|ahora|cola/i.test(cleanInput)) {
         effectiveAction = '6';
+      } else if (
+        /^(solo\s+|sin\s+|quitar\s+|sacar\s+|agregar\s+|sumar\s+|incluir\s+|redes\b|cambiar\s+redes)/i.test(cleanInput) ||
+        /^(solo\s+(instagram|ig|facebook|fb|linkedin|tiktok|youtube|x))/i.test(cleanInput) ||
+        cleanInput === 'redes'
+      ) {
+        effectiveAction = 'redes';
       } else if (/^5\b|estrategia|semanas?|planificar|planificacion|calendario/i.test(cleanInput)) {
         effectiveAction = '5';
       } else if (/^4\b|crear post|nueva idea|crear/i.test(cleanInput)) {
@@ -293,9 +356,11 @@ export async function POST(req: Request) {
             const typeEmoji = (p.type || '').toLowerCase().includes('reel') ? '🎬' : '🖼️';
             const statusTag = p.status === 'confirmed' ? '⏳ Agendado' : '⏸️ Borrador pendiente';
             const styleLine = p.visualStyle ? `🎨 *Estilo visual:* ${p.visualStyle}\n` : '';
+            const networksLine = p.networks && p.networks.length > 0 ? `📱 *Redes:* ${formatNetworks(p.networks)}\n` : '';
             list += `*${idx + 1}.* ${typeEmoji} *${p.type || 'Post'}* (${statusTag})\n` +
                     `📅 ${dateFormatted}\n` +
                     styleLine +
+                    networksLine +
                     `📝 "${(p.idea || p.copy || p.postText || '').slice(0, 100)}..."\n\n`;
           });
 
@@ -340,8 +405,10 @@ export async function POST(req: Request) {
             const dateObj = p.publishedAt?.toDate ? p.publishedAt.toDate() : (p.scheduledFor?.toDate ? p.scheduledFor.toDate() : new Date());
             const dateFormatted = format(dateObj, "d 'de' MMM, HH:mm", { locale: es });
             const styleLine = p.visualStyle ? `🎨 *Estilo visual:* ${p.visualStyle}\n` : '';
+            const networksLine = p.networks && p.networks.length > 0 ? `📱 *Redes:* ${formatNetworks(p.networks)}\n` : '';
             list += `*${idx + 1}.* ✅ *Publicado el ${dateFormatted}*\n` +
                     styleLine +
+                    networksLine +
                     `📝 "${(p.idea || p.copy || p.postText || '').slice(0, 85)}..."\n\n`;
           });
 
@@ -445,6 +512,18 @@ Aplica obligatoriamente el principio humanize:
         const wantsNow = /ahora|hoy|ya|inmediat|urgente|ahorita/i.test(cleanInput);
         const continuity = await getNextScheduleSlotServer({ userId, profileId, targetHour: 18 });
 
+        // Detección de redes específicas solicitadas en el prompt o predeterminadas
+        let chosenNetworks: string[] | null = null;
+        if (userPrompt) {
+          const detected = extractNetworksFromPhrase(userPrompt);
+          if (detected.length > 0 && /\b(solo|para|en|redes|únicamente|unicamente)\b/i.test(userPrompt)) {
+            chosenNetworks = detected;
+          }
+        }
+        const targetNetworks = chosenNetworks && chosenNetworks.length > 0
+          ? chosenNetworks
+          : getConnectedNetworks(currentAccount.profileDoc, currentAccount.userDoc);
+
         let scheduledDate = new Date(Date.now() + 2 * 60 * 1000);
         let publishMode = 'now';
 
@@ -466,7 +545,7 @@ Aplica obligatoriamente el principio humanize:
           scheduledFor: scheduledDate,
           queueDate: continuity.nextAvailableDate,
           publishMode,
-          networks: ['instagram', 'facebook'],
+          networks: targetNetworks,
           status: 'pending',
           createdAt: new Date(),
           generatedBy: 'whatsapp_post',
@@ -484,14 +563,18 @@ Aplica obligatoriamente el principio humanize:
           updatedAt: new Date(),
         }, { merge: true });
 
+        const formattedNets = formatNetworks(targetNetworks);
+        const networksTip = `\n💡 _Para cambiar redes responde: "solo instagram", "agregar linkedin" o "sin facebook"._`;
+
         if (wantsNow) {
           replyText =
             `✨ *Propuesta creada por nuestros agentes para ${businessName}:*\n\n` +
             `${generatedCopy}\n\n` +
             `━━━━━━━━━━━━━━━\n` +
             `⚡ *Momento de publicación:* Publicación inmediata (AHORA)\n` +
-            `📱 *Redes:* Instagram y Facebook\n\n` +
+            `📱 *Redes asignadas:* ${formattedNets}\n\n` +
             `👉 *Responde 6* para aprobar y que nuestros agentes lo publiquen de inmediato.` +
+            networksTip +
             multiAccountFooter;
         } else if (continuity.hasFuturePosts) {
           const nextDateFormatted = format(continuity.nextAvailableDate, "EEEE d 'de' MMMM, HH:mm", { locale: es });
@@ -499,20 +582,22 @@ Aplica obligatoriamente el principio humanize:
             `✨ *Propuesta creada por nuestros agentes para ${businessName}:*\n\n` +
             `${generatedCopy}\n\n` +
             `━━━━━━━━━━━━━━━\n` +
-            `📱 *Redes:* Instagram y Facebook\n` +
+            `📱 *Redes asignadas:* ${formattedNets}\n` +
             `📅 *¿Cuándo prefieres que se publique?*\n` +
             `• Responde *6* para publicarlo *AHORA* de inmediato.\n` +
             `• Responde *6 COLA* para sumarlo a tu calendario agendado (*${nextDateFormatted} hrs*).` +
+            networksTip +
             multiAccountFooter;
         } else {
           replyText =
             `✨ *Propuesta creada por nuestros agentes para ${businessName}:*\n\n` +
             `${generatedCopy}\n\n` +
             `━━━━━━━━━━━━━━━\n` +
-            `📱 *Redes:* Instagram y Facebook\n` +
+            `📱 *Redes asignadas:* ${formattedNets}\n` +
             `📅 *¿Cuándo prefieres que se publique?*\n` +
             `• Responde *6* para agendarlo para *mañana a las 18:00 hrs*.\n` +
             `• Responde *6 AHORA* para publicarlo de inmediato.` +
+            networksTip +
             multiAccountFooter;
         }
         break;
@@ -543,6 +628,18 @@ Aplica obligatoriamente el principio humanize:
           ? new Date(continuity.nextAvailableDate)
           : new Date(Date.now() + 24 * 60 * 60 * 1000);
         baseDate.setHours(18, 0, 0, 0);
+
+        // Detección de redes específicas solicitadas en el topic o predeterminadas
+        let chosenStrategyNetworks: string[] | null = null;
+        if (userTopic) {
+          const detected = extractNetworksFromPhrase(userTopic);
+          if (detected.length > 0 && /\b(solo|para|en|redes|únicamente|unicamente)\b/i.test(userTopic)) {
+            chosenStrategyNetworks = detected;
+          }
+        }
+        const strategyNetworks = chosenStrategyNetworks && chosenStrategyNetworks.length > 0
+          ? chosenStrategyNetworks
+          : getConnectedNetworks(currentAccount.profileDoc, currentAccount.userDoc);
 
         const systemInstruction = `Eres un estratega senior de contenidos y copywriter para redes sociales de PyMEs en Chile y LATAM.
 Aplica obligatoriamente las reglas de humanización:
@@ -654,7 +751,7 @@ Responde ÚNICAMENTE un objeto JSON válido con este formato:
             scheduledFor: postDate,
             queueDate: postDate,
             publishMode: 'queue',
-            networks: ['instagram', 'facebook'],
+            networks: strategyNetworks,
             status: 'pending',
             generatedBy: strategyTag,
             createdAt: new Date(),
@@ -686,13 +783,147 @@ Responde ÚNICAMENTE un objeto JSON válido con este formato:
         replyText =
           `🗓️ *Estrategia de ${targetWeeks} semana${targetWeeks > 1 ? 's' : ''} para ${businessName}*\n` +
           `${continuityNote}\n\n` +
-          `Nuestros agentes estructuraron un calendario continuo de ${postCount} publicaciones estratégicas:\n\n` +
+          `Nuestros agentes estructuraron un calendario continuo de ${postCount} publicaciones estratégicas:\n` +
+          `📱 *Redes asignadas:* ${formatNetworks(strategyNetworks)}\n\n` +
           summaryList +
           `━━━━━━━━━━━━━━━\n` +
           `👉 *Responde 6* para aprobar toda la estrategia y que quede agendada en tu calendario.\n` +
+          `💡 _Para cambiar redes en estos posts, responde ej: "solo instagram", "agregar linkedin" o "sin facebook"._\n` +
           `👉 Puedes ver y editar cada texto completo en tu panel web:\n` +
           `https://rrss.santisoft.cl/automatizacion-rrss/panel\n\n` +
           `_Escribe *0* para volver al menú principal._` +
+          multiAccountFooter;
+        break;
+      }
+
+      // ----------------------------------------------------
+      // GESTIÓN DE REDES SOCIALES PARA POSTS PENDIENTES
+      // ----------------------------------------------------
+      case 'redes': {
+        // 1. Localizar posts pendientes en la sesión o Firestore
+        const sessionPostIds: string[] = Array.isArray(chatData?.lastPendingPostIds) && chatData.lastPendingPostIds.length > 0
+          ? chatData.lastPendingPostIds
+          : (chatData?.lastPendingPostId ? [chatData.lastPendingPostId] : []);
+
+        let pendingDocs: Array<{ id: string; ref: any; data: () => any }> = [];
+
+        if (sessionPostIds.length > 0) {
+          for (const pId of sessionPostIds) {
+            const pSnap = await adminDb.collection('social_posts').doc(pId).get();
+            if (pSnap.exists) {
+              const pData = pSnap.data();
+              if (pData?.status === 'pending') {
+                pendingDocs.push({
+                  id: pSnap.id,
+                  ref: pSnap.ref,
+                  data: () => pData,
+                });
+              }
+            }
+          }
+        }
+
+        if (pendingDocs.length === 0) {
+          const userIdsToSearch = Array.from(new Set([userId, ...matchedAccounts.map((a) => a.userId)]));
+          for (const uId of userIdsToSearch) {
+            const snap = await adminDb
+              .collection('social_posts')
+              .where('userId', '==', uId)
+              .where('status', '==', 'pending')
+              .get();
+
+            snap.docs.forEach((d) => {
+              const pData = d.data();
+              if (!pData.profileId || pData.profileId === profileId || userIdsToSearch.length === 1) {
+                pendingDocs.push({
+                  id: d.id,
+                  ref: d.ref,
+                  data: () => pData,
+                });
+              }
+            });
+          }
+        }
+
+        const connected = getConnectedNetworks(currentAccount.profileDoc, currentAccount.userDoc);
+
+        if (pendingDocs.length === 0) {
+          replyText =
+            `📱 *Gestión de Redes Sociales (${businessName})*\n\n` +
+            `Actualmente no tienes publicaciones pendientes de aprobación para modificar.\n\n` +
+            `🔗 *Tus redes configuradas en el panel son:*\n${formatNetworks(connected)}\n\n` +
+            `👉 *Escribe 4* para crear una nueva publicación (ej: _"4 Post sobre tips solo en instagram"_) o *1* para revisar tus publicaciones agendadas.` +
+            multiAccountFooter;
+          break;
+        }
+
+        // Post de referencia
+        const firstPost = pendingDocs[0].data();
+        let currentNetworks: string[] = Array.isArray(firstPost.networks) && firstPost.networks.length > 0
+          ? [...firstPost.networks]
+          : [...connected];
+
+        let targetNetworks: string[] = [];
+
+        const isSolo = /\b(solo|unicamente|solamente)\b/i.test(cleanInput);
+        const isAdd = /\b(agregar|sumar|incluir|anadir|añadir)\b/i.test(cleanInput);
+        const isRemove = /\b(quitar|sacar|sin|eliminar|remover)\b/i.test(cleanInput);
+        const mentioned = extractNetworksFromPhrase(cleanInput);
+
+        if (isSolo && mentioned.length > 0) {
+          targetNetworks = mentioned;
+        } else if (isAdd && mentioned.length > 0) {
+          targetNetworks = Array.from(new Set([...currentNetworks, ...mentioned]));
+        } else if (isRemove && mentioned.length > 0) {
+          targetNetworks = currentNetworks.filter((n) => !mentioned.includes(n));
+          if (targetNetworks.length === 0) {
+            replyText =
+              `⚠️ *Atención en ${businessName}:*\n\n` +
+              `No es posible dejar la publicación sin ninguna red social asignada.\n` +
+              `Debes mantener al menos una red activa (por ejemplo: Instagram o Facebook).\n\n` +
+              `📱 *Redes activas actuales:* ${formatNetworks(currentNetworks)}\n` +
+              `👉 Responde *6* para aprobar o indica otra red.` +
+              multiAccountFooter;
+            break;
+          }
+        } else if (mentioned.length > 0) {
+          targetNetworks = mentioned;
+        } else {
+          // El usuario solo puso "redes" o no especificó ninguna válida
+          replyText =
+            `📱 *Redes asignadas a tu publicación pendiente (${businessName}):*\n\n` +
+            `${formatNetworks(currentNetworks)}\n\n` +
+            `━━━━━━━━━━━━━━━\n` +
+            `💡 *¿Cómo deseas ajustarlas? Responde con:*\n` +
+            `• _"solo instagram"_ (deja únicamente Instagram)\n` +
+            `• _"agregar linkedin"_ (suma LinkedIn)\n` +
+            `• _"sin facebook"_ (quita Facebook)\n` +
+            `• _"redes ig, linkedin"_ (elige las redes exactas)\n\n` +
+            `👉 O responde *6* para aprobarlas tal como están (o *6 COLA* para agendar).` +
+            multiAccountFooter;
+          break;
+        }
+
+        // Actualizar en Firestore para todos los pendientes
+        for (const pDoc of pendingDocs) {
+          await pDoc.ref.update({
+            networks: targetNetworks,
+            updatedAt: new Date(),
+          });
+        }
+
+        const countText = pendingDocs.length > 1
+          ? `en tus *${pendingDocs.length} publicaciones pendientes*`
+          : `en tu *publicación pendiente*`;
+
+        replyText =
+          `✅ *Redes actualizadas con éxito (${businessName})*\n\n` +
+          `Nuestros agentes ajustaron las redes ${countText}.\n\n` +
+          `📱 *Publicará en:* ${formatNetworks(targetNetworks)}\n\n` +
+          `━━━━━━━━━━━━━━━\n` +
+          `👉 *Responde 6* para publicar de inmediato.\n` +
+          `👉 *Responde 6 COLA* para agendar en la fecha programada.\n` +
+          `💡 _Puedes seguir ajustando respondiendo ej: "agregar tiktok" o "sin facebook"._` +
           multiAccountFooter;
         break;
       }
@@ -796,11 +1027,12 @@ Responde ÚNICAMENTE un objeto JSON válido con este formato:
           const isImmediate = targetDate.getTime() <= Date.now() + 5 * 60 * 1000;
           const dateFormatted = format(targetDate, "EEEE d 'de' MMMM 'a las' HH:mm", { locale: es });
           const ideaSnippet = (p.idea || p.copy || p.postText || '').slice(0, 95);
+          const postNets = formatNetworks(p.networks || ['instagram', 'facebook']);
 
           if (isImmediate) {
             replyText =
               `🚀 *¡Publicación aprobada para salir AHORA en ${targetBusinessName}!* ⚡\n\n` +
-              `Nuestros agentes están despachando tu contenido a Instagram y Facebook en este mismo instante.\n\n` +
+              `Nuestros agentes están despachando tu contenido a ${postNets} en este mismo instante.\n\n` +
               `📝 *Contenido:* "${ideaSnippet}..."\n\n` +
               `_En breves momentos estará visible en tus redes. Escribe *1* para ver tu calendario o *2* para el historial._` +
               multiAccountFooter;
@@ -808,7 +1040,7 @@ Responde ÚNICAMENTE un objeto JSON válido con este formato:
             replyText =
               `🎉 *¡Publicación agendada con éxito para ${targetBusinessName}!* 📅\n\n` +
               `📅 *Fecha de publicación:* ${dateFormatted} hrs (continuación de tu calendario agendado).\n` +
-              `📱 *Redes vinculadas:* Instagram y Facebook\n` +
+              `📱 *Redes vinculadas:* ${postNets}\n` +
               `📝 *Contenido agendado:*\n"${ideaSnippet}..."\n\n` +
               `✅ Nuestros agentes la publicarán automáticamente en la fecha indicada. Ya puedes visualizarla en tu panel web:\n` +
               `https://rrss.santisoft.cl/automatizacion-rrss/panel` +
@@ -846,12 +1078,14 @@ Responde ÚNICAMENTE un objeto JSON válido con este formato:
           confirmedDates.sort((a, b) => a.getTime() - b.getTime());
           const firstDateStr = format(confirmedDates[0], "d 'de' MMMM", { locale: es });
           const lastDateStr = format(confirmedDates[confirmedDates.length - 1], "d 'de' MMMM", { locale: es });
+          const sampleNetworks = pendingDocs[0]?.data()?.networks || ['instagram', 'facebook'];
+          const strategyType = pendingDocs.length > 3 ? '2 semanas' : '1 semana';
 
           replyText =
-            `🎉 *¡Estrategia de 2 semanas agendada con éxito para ${targetBusinessName}!* 🗓️\n\n` +
+            `🎉 *¡Estrategia de ${strategyType} agendada con éxito para ${targetBusinessName}!* 🗓️\n\n` +
             `Se han confirmado *${pendingDocs.length} publicaciones* en tu calendario:\n` +
             `📅 *Período cubierto:* Del ${firstDateStr} al ${lastDateStr}\n` +
-            `📱 *Redes vinculadas:* Instagram y Facebook\n\n` +
+            `📱 *Redes vinculadas:* ${formatNetworks(sampleNetworks)}\n\n` +
             `Nuestros agentes se encargarán de despachar cada post en su fecha y hora asignada de forma totalmente automática. 🚀\n\n` +
             `✅ Puedes revisar o editar cada publicación en tu panel:\n` +
             `https://rrss.santisoft.cl/automatizacion-rrss/panel` +
