@@ -226,7 +226,7 @@ export async function POST(req: Request) {
     if (action === '0' || !action) {
       if (/^6\b|aprobar|publicar ya|publicar ahora|ahora|cola/i.test(cleanInput)) {
         effectiveAction = '6';
-      } else if (/^5\b|estrategia|semanas|planificar|planificacion|calendario 2/i.test(cleanInput)) {
+      } else if (/^5\b|estrategia|semanas?|planificar|planificacion|calendario/i.test(cleanInput)) {
         effectiveAction = '5';
       } else if (/^4\b|crear post|nueva idea|crear/i.test(cleanInput)) {
         effectiveAction = '4';
@@ -355,6 +355,7 @@ export async function POST(req: Request) {
       }
 
       // ----------------------------------------------------
+      // ----------------------------------------------------
       // OPCIÓN 3: Radar de Nicho y Tendencias
       // ----------------------------------------------------
       case '3': {
@@ -378,13 +379,31 @@ export async function POST(req: Request) {
           ideasText += `💡 *Idea ${i + 1} (${id.format || 'Reel'}):* "${id.title || id.hook}"\n`;
         });
 
+        // Guardar contexto del radar en la sesión para encadenar con opción 4 o 5
+        await chatDocRef.set({
+          lastRadarContext: {
+            rubro,
+            trends: topTrends.map((t: any) => t.topic || t.title),
+            ideas: topIdeas.map((id: any) => ({
+              title: id.title || id.hook,
+              format: id.format || 'Post',
+            })),
+          },
+          lastAction: '3',
+          updatedAt: new Date(),
+        }, { merge: true });
+
         replyText =
           `📡 *Radar de Nicho para ${rubro} (${businessName})*\n\n` +
           `🔥 *Tendencias detectadas por nuestros agentes:*\n` +
           trendsText +
           `\n🎯 *Propuestas para aprovechar hoy:*\n` +
           ideasText +
-          `\n👉 _Escribe *4* para convertir una de estas ideas en una publicación agendada._` +
+          `\n━━━━━━━━━━━━━━━\n` +
+          `🎯 *¿Cómo deseas aprovechar estas oportunidades?*\n` +
+          `• Responde *4* para crear un post puntual (o *4 1*, *4 2*, *4 3* para elegir una de las ideas).\n` +
+          `• Responde *5* para planificar una estrategia de 1 semana (3 posts agendados) inspirada en este radar.\n` +
+          `• O escribe *0* para volver al menú principal.` +
           multiAccountFooter;
         break;
       }
@@ -393,7 +412,17 @@ export async function POST(req: Request) {
       // OPCIÓN 4: Crear nuevo post puntual (Ahora vs Continuación)
       // ----------------------------------------------------
       case '4': {
-        const userPrompt = text.replace(/^4\s*/i, '').trim();
+        let userPrompt = text.replace(/^4\s*/i, '').trim();
+
+        // Si el usuario eligió una idea del radar ("4 1", "4 2", "4 3", o solo "1", "2")
+        const radarCtx = chatData?.lastRadarContext;
+        const matchNumber = userPrompt.match(/^[1-3]$/);
+        if (matchNumber && radarCtx?.ideas?.[parseInt(matchNumber[0], 10) - 1]) {
+          const selected = radarCtx.ideas[parseInt(matchNumber[0], 10) - 1];
+          userPrompt = selected.title;
+        } else if (!userPrompt && chatData?.lastAction === '3' && radarCtx?.ideas?.[0]) {
+          userPrompt = radarCtx.ideas[0].title;
+        }
 
         const model = getFreeModel(
           undefined,
@@ -451,6 +480,7 @@ Aplica obligatoriamente el principio humanize:
           lastPendingProfileId: profileId,
           lastPendingBusinessName: businessName,
           activeAccountIndex: activeIndex,
+          lastAction: '4',
           updatedAt: new Date(),
         }, { merge: true });
 
@@ -489,10 +519,23 @@ Aplica obligatoriamente el principio humanize:
       }
 
       // ----------------------------------------------------
-      // OPCIÓN 5: Planificar Estrategia (2 Semanas) 🗓️
+      // OPCIÓN 5: Planificar Estrategia (1 o 2 Semanas) 🗓️
       // ----------------------------------------------------
       case '5': {
         const userTopic = text.replace(/^5\s*/i, '').trim();
+
+        // Determinar si la estrategia es de 1 semana o 2 semanas
+        const isOneWeek =
+          cleanInput.includes('1') ||
+          cleanInput.includes('una') ||
+          cleanInput.includes('1 semana') ||
+          (cleanInput.includes('semana') && !cleanInput.includes('2')) ||
+          (chatData?.lastAction === '3' && !cleanInput.includes('2'));
+
+        const targetWeeks = isOneWeek ? 1 : 2;
+        const postCount = isOneWeek ? 3 : 5;
+        const dayOffsets = isOneWeek ? [0, 2, 4] : [0, 3, 6, 9, 12];
+        const strategyTag = isOneWeek ? 'whatsapp_strategy_1week' : 'whatsapp_strategy_2weeks';
 
         // 1. Obtener continuidad del calendario
         const continuity = await getNextScheduleSlotServer({ userId, profileId, targetHour: 18 });
@@ -508,15 +551,28 @@ Aplica obligatoriamente las reglas de humanización:
 - NUNCA uses los términos "IA" o "Inteligencia Artificial"; habla siempre de "nuestros agentes" o del equipo.
 - Cada copy debe estar listo para Instagram y Facebook, con 1 o 2 emojis naturales y 4 hashtags al final.`;
 
-        const promptText = `Diseña un plan editorial estratégico de 2 semanas (5 publicaciones) para el negocio "${businessName}" del rubro "${rubro}".
-${userTopic ? `Enfoque o tema especial pedido por el cliente: "${userTopic}".` : 'Enfoque: atracción de clientes, resolver dudas frecuentes, generar confianza con la comunidad y llamados a la acción claros.'}
+        // Contexto de radar si está disponible
+        const radarCtx = chatData?.lastRadarContext;
+        let contextAddition = '';
+        if (radarCtx?.trends?.length) {
+          contextAddition = `Inspirado en las siguientes tendencias del radar de nicho: ${radarCtx.trends.join(', ')}. Ideas detectadas: ${radarCtx.ideas?.map((i: any) => i.title).join(' | ')}.`;
+        }
 
-Los 5 posts deben seguir este orden de embudo:
-Post 1: Consejo o tip práctico del rubro que resuelva un dolor típico del cliente.
+        const promptText = `Diseña un plan editorial estratégico de ${targetWeeks} semana${targetWeeks > 1 ? 's' : ''} (${postCount} publicaciones) para el negocio "${businessName}" del rubro "${rubro}".
+${userTopic ? `Enfoque o tema especial pedido por el cliente: "${userTopic}".` : 'Enfoque: destacar el valor del negocio, responder dudas frecuentes de clientes, generar confianza y llamados claros a cotizar o contactar.'}
+${contextAddition}
+
+Distribución del contenido:
+${isOneWeek
+  ? `Post 1: Consejo práctico o tip del rubro que resuelva una duda típica.
+Post 2: Error común que comete la gente y cómo solucionarlo con ${businessName}.
+Post 3: Llamado directo a la acción o beneficio concreto para cotizar/agendar.`
+  : `Post 1: Consejo o tip práctico del rubro que resuelva un dolor típico del cliente.
 Post 2: Error común que la gente comete y cómo solucionarlo con ${businessName}.
 Post 3: Prueba social, caso de éxito o beneficio concreto contado con calidez.
 Post 4: Pregunta de debate o interacción que invite a comentar a la comunidad.
-Post 5: Oferta clara o llamado a cotizar/escribir por mensaje directo (DM o WhatsApp).
+Post 5: Oferta clara o llamado a cotizar/escribir por mensaje directo (DM o WhatsApp).`
+}
 
 Responde ÚNICAMENTE un objeto JSON válido con este formato:
 {
@@ -537,14 +593,14 @@ Responde ÚNICAMENTE un objeto JSON válido con este formato:
           const cleanJson = rawJson.replace(/```json\n?|\n?```/g, '').trim();
           const parsed = JSON.parse(cleanJson);
           if (Array.isArray(parsed.posts) && parsed.posts.length > 0) {
-            generatedPosts = parsed.posts.slice(0, 5);
+            generatedPosts = parsed.posts.slice(0, postCount);
           }
         } catch (err) {
-          console.warn('Error generando estrategia de 2 semanas con Gemini, aplicando fallback estructurado:', err);
+          console.warn('Error generando estrategia con Gemini, aplicando fallback estructurado:', err);
         }
 
         if (generatedPosts.length === 0) {
-          generatedPosts = [
+          const fallbackPool = [
             {
               theme: `Tip práctico de ${rubro}`,
               hook: `¿Sabías que este pequeño hábito puede cambiar tus resultados por completo?`,
@@ -576,15 +632,15 @@ Responde ÚNICAMENTE un objeto JSON válido con este formato:
               type: 'Post',
             },
           ];
+          generatedPosts = fallbackPool.slice(0, postCount);
         }
 
-        const dayOffsets = [0, 3, 6, 9, 12];
         const newPostIds: string[] = [];
         let summaryList = '';
 
         for (let i = 0; i < generatedPosts.length; i++) {
           const p = generatedPosts[i];
-          const postDate = new Date(baseDate.getTime() + (dayOffsets[i] || i * 3) * 24 * 60 * 60 * 1000);
+          const postDate = new Date(baseDate.getTime() + (dayOffsets[i] || i * 2) * 24 * 60 * 60 * 1000);
           postDate.setHours(18, 0, 0, 0);
 
           const postRef = await adminDb.collection('social_posts').add({
@@ -600,7 +656,7 @@ Responde ÚNICAMENTE un objeto JSON válido con este formato:
             publishMode: 'queue',
             networks: ['instagram', 'facebook'],
             status: 'pending',
-            generatedBy: 'whatsapp_strategy_2weeks',
+            generatedBy: strategyTag,
             createdAt: new Date(),
           });
 
@@ -619,6 +675,7 @@ Responde ÚNICAMENTE un objeto JSON válido con este formato:
           lastPendingProfileId: profileId,
           lastPendingBusinessName: businessName,
           activeAccountIndex: activeIndex,
+          lastAction: '5',
           updatedAt: new Date(),
         }, { merge: true });
 
@@ -627,9 +684,9 @@ Responde ÚNICAMENTE un objeto JSON válido con este formato:
           : `_(Inicia a partir de mañana)_`;
 
         replyText =
-          `🗓️ *Estrategia de 2 semanas para ${businessName}*\n` +
+          `🗓️ *Estrategia de ${targetWeeks} semana${targetWeeks > 1 ? 's' : ''} para ${businessName}*\n` +
           `${continuityNote}\n\n` +
-          `Nuestros agentes estructuraron un calendario continuo de 5 publicaciones estratégicas:\n\n` +
+          `Nuestros agentes estructuraron un calendario continuo de ${postCount} publicaciones estratégicas:\n\n` +
           summaryList +
           `━━━━━━━━━━━━━━━\n` +
           `👉 *Responde 6* para aprobar toda la estrategia y que quede agendada en tu calendario.\n` +
