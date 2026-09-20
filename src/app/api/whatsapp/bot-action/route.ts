@@ -3,7 +3,7 @@ import { adminDb } from '../../../../lib/firebase-admin';
 import { generateNicheRadarAnalysis } from '../../../../lib/niche-radar';
 import { getQuotaUsage, getPlanLimit, getVideoPlanLimit } from '../../../../lib/quota';
 import { enqueuePostTask } from '../../../../lib/gcp-tasks';
-import { getFreeModel } from '../../../../lib/gemini-free';
+import { getFreeModel, generateFreeText } from '../../../../lib/gemini-free';
 import { getNextScheduleSlotServer } from '../../../../lib/schedule-continuity-server';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -146,12 +146,13 @@ export async function POST(req: Request) {
     // MANEJO DE CAMBIO DE CUENTA EXPLÍCITO
     // ----------------------------------------------------
     const wantsToChangeAccount =
-      action === '7' ||
-      cleanInput === '7' ||
+      action === '8' ||
+      cleanInput === '8' ||
       cleanInput.includes('cambiar cuenta') ||
       cleanInput.includes('otra cuenta') ||
       cleanInput.includes('cambiar negocio') ||
-      cleanInput === 'cuentas';
+      cleanInput === 'cuentas' ||
+      cleanInput === 'cambiar';
 
     if (wantsToChangeAccount && hasMultipleAccounts) {
       let accountsList = '';
@@ -189,10 +190,11 @@ export async function POST(req: Request) {
           `1️⃣ Ver próximos posts\n` +
           `2️⃣ Ver posts publicados\n` +
           `3️⃣ Radar de nicho\n` +
-          `4️⃣ Crear nuevo post\n` +
-          `5️⃣ Ver cuota\n` +
-          `6️⃣ Aprobar pendientes\n\n` +
-          `_💡 Recuerda: Puedes escribir *7* o *CAMBIAR* en cualquier momento para volver a otra cuenta._`;
+          `4️⃣ Crear post puntual (AHORA o en cola)\n` +
+          `5️⃣ Planificar estrategia (2 semanas) 🗓️\n` +
+          `6️⃣ Aprobar pendientes\n` +
+          `7️⃣ Ver cuota y estadísticas\n\n` +
+          `_💡 Recuerda: Puedes escribir *8* o *CAMBIAR* en cualquier momento para volver a otra cuenta._`;
 
         return NextResponse.json({
           success: true,
@@ -207,9 +209,14 @@ export async function POST(req: Request) {
     const currentAccount = matchedAccounts[activeIndex];
     const { userId, profileId, businessName, rubro, userPlan, email } = currentAccount;
 
+    // Asegurar que activeAccountIndex esté guardado en sesión
+    if (chatData?.activeAccountIndex !== activeIndex) {
+      await chatDocRef.set({ activeAccountIndex: activeIndex }, { merge: true });
+    }
+
     // Nota que se agrega al final si tiene varias cuentas conectadas
     const multiAccountFooter = hasMultipleAccounts
-      ? `\n\n━━━━━━━━━━━━━━━\n🔄 _Gestionando: *${businessName}*. Tienes ${matchedAccounts.length} cuentas vinculadas. Escribe *7* o *CAMBIAR* para alternar._`
+      ? `\n\n━━━━━━━━━━━━━━━\n🔄 _Gestionando: *${businessName}*. Tienes ${matchedAccounts.length} cuentas vinculadas. Escribe *8* o *CAMBIAR* para alternar._`
       : '';
 
     let replyText = '';
@@ -219,6 +226,8 @@ export async function POST(req: Request) {
     if (action === '0' || !action) {
       if (/^6\b|aprobar|publicar ya|publicar ahora|ahora|cola/i.test(cleanInput)) {
         effectiveAction = '6';
+      } else if (/^5\b|estrategia|semanas|planificar|planificacion|calendario 2/i.test(cleanInput)) {
+        effectiveAction = '5';
       } else if (/^4\b|crear post|nueva idea|crear/i.test(cleanInput)) {
         effectiveAction = '4';
       } else if (/^1\b|proximos|agendados/i.test(cleanInput)) {
@@ -227,8 +236,10 @@ export async function POST(req: Request) {
         effectiveAction = '2';
       } else if (/^3\b|radar|tendencias/i.test(cleanInput)) {
         effectiveAction = '3';
-      } else if (/^5\b|cuota|plan|estadisticas/i.test(cleanInput)) {
-        effectiveAction = '5';
+      } else if (/^7\b|cuota|plan|estadisticas/i.test(cleanInput)) {
+        effectiveAction = '7';
+      } else if (/^8\b|cambiar cuenta|otra cuenta|cambiar negocio|cuentas|cambiar/i.test(cleanInput)) {
+        effectiveAction = '8';
       }
     }
 
@@ -361,17 +372,19 @@ export async function POST(req: Request) {
       }
 
       // ----------------------------------------------------
-      // OPCIÓN 4: Crear nuevo post o planificar (Ahora vs Continuación)
+      // OPCIÓN 4: Crear nuevo post puntual (Ahora vs Continuación)
       // ----------------------------------------------------
       case '4': {
         const userPrompt = text.replace(/^4\s*/i, '').trim();
 
         const model = getFreeModel(
           undefined,
-          `Eres un copywriter profesional de redes sociales para PyMEs.
-Crea un post promocional atractivo, cercano y en español de Chile/LATAM.
-NUNCA menciones que eres una IA o Inteligencia Artificial. Habla como "nuestros agentes".
-Sé directo, usa 1 o 2 emojis y sugiere 4 hashtags.`
+          `Eres un copywriter profesional de redes sociales para PyMEs en Chile y LATAM.
+Aplica obligatoriamente el principio humanize:
+- Habla de tú a tú, directo, con voz cálida y cercana.
+- CERO muletillas de IA (prohibido "en el vertiginoso mundo", "en conclusión", "desbloquea el potencial", "sumérgete en", etc.).
+- NUNCA menciones que eres una IA o Inteligencia Artificial. Habla como "nuestros agentes".
+- Sé directo, usa 1 o 2 emojis naturales y sugiere 4 hashtags al final.`
         );
 
         const promptText = userPrompt
@@ -395,9 +408,10 @@ Sé directo, usa 1 o 2 emojis y sugiere 4 hashtags.`
           publishMode = 'ask_or_now';
         }
 
-        await adminDb.collection('social_posts').add({
+        const newPostRef = await adminDb.collection('social_posts').add({
           userId,
           profileId,
+          businessName,
           idea: userPrompt || `Publicación destacada para ${businessName}`,
           postText: generatedCopy,
           copy: generatedCopy,
@@ -408,7 +422,19 @@ Sé directo, usa 1 o 2 emojis y sugiere 4 hashtags.`
           networks: ['instagram', 'facebook'],
           status: 'pending',
           createdAt: new Date(),
+          generatedBy: 'whatsapp_post',
         });
+
+        // Guardar el ID directamente en la sesión del chat para recuperarlo sin depender de índices de cuenta
+        await chatDocRef.set({
+          lastPendingPostId: newPostRef.id,
+          lastPendingPostIds: [newPostRef.id],
+          lastPendingUserId: userId,
+          lastPendingProfileId: profileId,
+          lastPendingBusinessName: businessName,
+          activeAccountIndex: activeIndex,
+          updatedAt: new Date(),
+        }, { merge: true });
 
         if (wantsNow) {
           replyText =
@@ -445,9 +471,324 @@ Sé directo, usa 1 o 2 emojis y sugiere 4 hashtags.`
       }
 
       // ----------------------------------------------------
-      // OPCIÓN 5: Ver Cuota y Estadísticas
+      // OPCIÓN 5: Planificar Estrategia (2 Semanas) 🗓️
       // ----------------------------------------------------
       case '5': {
+        const userTopic = text.replace(/^5\s*/i, '').trim();
+
+        // 1. Obtener continuidad del calendario
+        const continuity = await getNextScheduleSlotServer({ userId, profileId, targetHour: 18 });
+        const baseDate = continuity.hasFuturePosts
+          ? new Date(continuity.nextAvailableDate)
+          : new Date(Date.now() + 24 * 60 * 60 * 1000);
+        baseDate.setHours(18, 0, 0, 0);
+
+        const systemInstruction = `Eres un estratega senior de contenidos y copywriter para redes sociales de PyMEs en Chile y LATAM.
+Aplica obligatoriamente las reglas de humanización:
+- Tono directo ("tú a tú"), cercano, profesional y fresco.
+- CERO muletillas de IA (prohibido "en el vertiginoso mundo actual", "en conclusión", "desbloquea el potencial", "sumérgete en", etc.).
+- NUNCA uses los términos "IA" o "Inteligencia Artificial"; habla siempre de "nuestros agentes" o del equipo.
+- Cada copy debe estar listo para Instagram y Facebook, con 1 o 2 emojis naturales y 4 hashtags al final.`;
+
+        const promptText = `Diseña un plan editorial estratégico de 2 semanas (5 publicaciones) para el negocio "${businessName}" del rubro "${rubro}".
+${userTopic ? `Enfoque o tema especial pedido por el cliente: "${userTopic}".` : 'Enfoque: atracción de clientes, resolver dudas frecuentes, generar confianza con la comunidad y llamados a la acción claros.'}
+
+Los 5 posts deben seguir este orden de embudo:
+Post 1: Consejo o tip práctico del rubro que resuelva un dolor típico del cliente.
+Post 2: Error común que la gente comete y cómo solucionarlo con ${businessName}.
+Post 3: Prueba social, caso de éxito o beneficio concreto contado con calidez.
+Post 4: Pregunta de debate o interacción que invite a comentar a la comunidad.
+Post 5: Oferta clara o llamado a cotizar/escribir por mensaje directo (DM o WhatsApp).
+
+Responde ÚNICAMENTE un objeto JSON válido con este formato:
+{
+  "posts": [
+    {
+      "theme": "Título o tema (máx 6 palabras)",
+      "hook": "Gancho inicial llamativo (1 frase)",
+      "copy": "Texto completo del post listo para publicar, humanizado, con emojis y 4 hashtags al final.",
+      "type": "Post"
+    }
+  ]
+}`;
+
+        let generatedPosts: Array<{ theme: string; hook: string; copy: string; type?: string }> = [];
+
+        try {
+          const rawJson = await generateFreeText(promptText, systemInstruction, true, undefined, 'strategy_generation');
+          const cleanJson = rawJson.replace(/```json\n?|\n?```/g, '').trim();
+          const parsed = JSON.parse(cleanJson);
+          if (Array.isArray(parsed.posts) && parsed.posts.length > 0) {
+            generatedPosts = parsed.posts.slice(0, 5);
+          }
+        } catch (err) {
+          console.warn('Error generando estrategia de 2 semanas con Gemini, aplicando fallback estructurado:', err);
+        }
+
+        if (generatedPosts.length === 0) {
+          generatedPosts = [
+            {
+              theme: `Tip práctico de ${rubro}`,
+              hook: `¿Sabías que este pequeño hábito puede cambiar tus resultados por completo?`,
+              copy: `En ${businessName} creemos que los grandes cambios empiezan con decisiones simples. Un consejo que siempre damos a nuestros clientes: enfócate en la constancia antes que en la perfección.\n\n¿Qué hábito te ha servido más a ti? Déjanos un comentario. 👇\n\n#Tips #${rubro.replace(/\s+/g, '')} #Santisoft #${businessName.replace(/\s+/g, '')}`,
+              type: 'Post',
+            },
+            {
+              theme: `El error más común en ${rubro}`,
+              hook: `El 80% comete este error al empezar y termina perdiendo tiempo valioso.`,
+              copy: `Muchas veces queremos hacer todo a la vez y nos olvidamos de lo esencial. En ${businessName} te ayudamos a simplificar tus procesos para que te enfoques en lo que de verdad importa.\n\nEscríbenos por mensaje directo si quieres que te asesoremos. 📩\n\n#Soluciones #${rubro.replace(/\s+/g, '')} #PyME #Consejos`,
+              type: 'Post',
+            },
+            {
+              theme: `Beneficio clave`,
+              hook: `Así es cómo nuestros clientes ganan tranquilidad cada semana.`,
+              copy: `Contar con el respaldo de ${businessName} te permite delegar con confianza. Nos encargamos de que todo funcione como reloj suizo para que tú disfrutes de los resultados.\n\nRevisa más detalles en el enlace de nuestra bio. 🔗\n\n#Tranquilidad #Resultados #${businessName.replace(/\s+/g, '')} #Chile`,
+              type: 'Post',
+            },
+            {
+              theme: `Pregunta a la comunidad`,
+              hook: `Pregunta rápida: ¿Qué es lo primero que buscas en un servicio de este tipo?`,
+              copy: `Nos interesa mucho saber qué opinas. Para nosotros la experiencia de cada cliente es prioridad absoluta.\n\nResponde en un comentario: ¿Rapidez, cercanía o precio? Te leemos. 👀\n\n#Comunidad #Conversación #${rubro.replace(/\s+/g, '')} #Opinión`,
+              type: 'Post',
+            },
+            {
+              theme: `Llamado a la acción`,
+              hook: `¡Cotiza con nosotros esta semana y asegura tu atención personalizada!`,
+              copy: `¿Listo para dar el siguiente paso con ${businessName}? Nuestro equipo está preparado para ayudarte a alcanzar tus metas.\n\nHaz clic en el enlace de nuestro perfil o envíanos un WhatsApp directo. 📲\n\n#Cotizaciones #Oferta #${businessName.replace(/\s+/g, '')} #Servicios`,
+              type: 'Post',
+            },
+          ];
+        }
+
+        const dayOffsets = [0, 3, 6, 9, 12];
+        const newPostIds: string[] = [];
+        let summaryList = '';
+
+        for (let i = 0; i < generatedPosts.length; i++) {
+          const p = generatedPosts[i];
+          const postDate = new Date(baseDate.getTime() + (dayOffsets[i] || i * 3) * 24 * 60 * 60 * 1000);
+          postDate.setHours(18, 0, 0, 0);
+
+          const postRef = await adminDb.collection('social_posts').add({
+            userId,
+            profileId,
+            businessName,
+            idea: `${p.theme}: ${p.hook}`,
+            postText: p.copy,
+            copy: p.copy,
+            type: p.type || 'Post',
+            scheduledFor: postDate,
+            queueDate: postDate,
+            publishMode: 'queue',
+            networks: ['instagram', 'facebook'],
+            status: 'pending',
+            generatedBy: 'whatsapp_strategy_2weeks',
+            createdAt: new Date(),
+          });
+
+          newPostIds.push(postRef.id);
+
+          const dateStr = format(postDate, "EEEE d 'de' MMMM", { locale: es });
+          summaryList += `*${i + 1}.* 📅 *${dateStr} (18:00 hrs)*\n` +
+                         `📌 *${p.theme}*\n` +
+                         `📝 "${p.hook}"\n\n`;
+        }
+
+        await chatDocRef.set({
+          lastPendingPostIds: newPostIds,
+          lastPendingPostId: newPostIds[0],
+          lastPendingUserId: userId,
+          lastPendingProfileId: profileId,
+          lastPendingBusinessName: businessName,
+          activeAccountIndex: activeIndex,
+          updatedAt: new Date(),
+        }, { merge: true });
+
+        const continuityNote = continuity.hasFuturePosts
+          ? `_(Inicia a continuación de tu último post agendado)_`
+          : `_(Inicia a partir de mañana)_`;
+
+        replyText =
+          `🗓️ *Estrategia de 2 semanas para ${businessName}*\n` +
+          `${continuityNote}\n\n` +
+          `Nuestros agentes estructuraron un calendario continuo de 5 publicaciones estratégicas:\n\n` +
+          summaryList +
+          `━━━━━━━━━━━━━━━\n` +
+          `👉 *Responde 6* para aprobar toda la estrategia y que quede agendada en tu calendario.\n` +
+          `👉 Puedes ver y editar cada texto completo en tu panel web:\n` +
+          `https://rrss.santisoft.cl/automatizacion-rrss/panel\n\n` +
+          `_Escribe *0* para volver al menú principal._` +
+          multiAccountFooter;
+        break;
+      }
+
+      // ----------------------------------------------------
+      // OPCIÓN 6: Aprobar posts pendientes (Ahora vs Cola)
+      // ----------------------------------------------------
+      case '6': {
+        const wantsQueue = cleanInput.includes('cola') || cleanInput.includes('agendar') || cleanInput.includes('calendario');
+        const wantsNow = cleanInput.includes('ahora') || cleanInput.includes('ya') || cleanInput.includes('inmediat') || cleanInput === '6 ahora';
+
+        // 1. Prioridad: Buscar los IDs registrados directamente en la sesión del chat
+        const sessionPostIds: string[] = Array.isArray(chatData?.lastPendingPostIds) && chatData.lastPendingPostIds.length > 0
+          ? chatData.lastPendingPostIds
+          : (chatData?.lastPendingPostId ? [chatData.lastPendingPostId] : []);
+
+        let pendingDocs: Array<{ id: string; ref: any; data: () => any }> = [];
+
+        if (sessionPostIds.length > 0) {
+          for (const pId of sessionPostIds) {
+            const pSnap = await adminDb.collection('social_posts').doc(pId).get();
+            if (pSnap.exists) {
+              const pData = pSnap.data();
+              if (pData?.status === 'pending') {
+                pendingDocs.push({
+                  id: pSnap.id,
+                  ref: pSnap.ref,
+                  data: () => pData,
+                });
+              }
+            }
+          }
+        }
+
+        // 2. Fallback: Buscar en Firestore si no había IDs en sesión o ya no están pendientes
+        if (pendingDocs.length === 0) {
+          const userIdsToSearch = Array.from(new Set([userId, ...matchedAccounts.map((a) => a.userId)]));
+          for (const uId of userIdsToSearch) {
+            const snap = await adminDb
+              .collection('social_posts')
+              .where('userId', '==', uId)
+              .where('status', '==', 'pending')
+              .get();
+
+            snap.docs.forEach((d) => {
+              const pData = d.data();
+              if (!pData.profileId || pData.profileId === profileId || userIdsToSearch.length === 1) {
+                pendingDocs.push({
+                  id: d.id,
+                  ref: d.ref,
+                  data: () => pData,
+                });
+              }
+            });
+          }
+        }
+
+        if (pendingDocs.length === 0) {
+          replyText =
+            `👍 *Todo al día en ${businessName}:*\n\n` +
+            `No tienes publicaciones pendientes de aprobación en este momento.\n\n` +
+            `_Escribe *1* para revisar los posts que ya están agendados, *4* para crear uno nuevo o *5* para planificar 2 semanas._` +
+            multiAccountFooter;
+        } else if (pendingDocs.length === 1) {
+          // Aprobación de un único post puntual
+          const postDoc = pendingDocs[0];
+          const p = postDoc.data();
+          const targetBusinessName = p.businessName || chatData?.lastPendingBusinessName || businessName;
+          let targetDate: Date;
+
+          if (wantsQueue) {
+            if (p.queueDate) {
+              const rawQueue = p.queueDate.toDate ? p.queueDate.toDate() : new Date(p.queueDate);
+              targetDate = rawQueue.getTime() > Date.now() + 5 * 60 * 1000 ? rawQueue : new Date(Date.now() + 24 * 60 * 60 * 1000);
+            } else {
+              const cont = await getNextScheduleSlotServer({ userId: p.userId || userId, profileId: p.profileId || profileId, targetHour: 18 });
+              targetDate = cont.nextAvailableDate;
+            }
+          } else if (wantsNow || p.publishMode === 'now' || p.publishMode === 'ask_or_now') {
+            targetDate = new Date(Date.now() + 60 * 1000);
+          } else {
+            const rawSched = p.scheduledFor?.toDate ? p.scheduledFor.toDate() : new Date(p.scheduledFor || Date.now() + 60 * 1000);
+            targetDate = rawSched.getTime() > Date.now() + 5 * 60 * 1000 ? rawSched : new Date(Date.now() + 60 * 1000);
+          }
+
+          await enqueuePostTask(postDoc.id, targetDate);
+          await postDoc.ref.update({
+            status: 'confirmed',
+            scheduledFor: targetDate,
+            publishError: null,
+            confirmedAt: new Date(),
+            confirmedVia: 'whatsapp',
+          });
+
+          // Limpiar el post pendiente de la sesión
+          await chatDocRef.set({
+            lastPendingPostId: null,
+            lastPendingPostIds: [],
+          }, { merge: true });
+
+          const isImmediate = targetDate.getTime() <= Date.now() + 5 * 60 * 1000;
+          const dateFormatted = format(targetDate, "EEEE d 'de' MMMM 'a las' HH:mm", { locale: es });
+          const ideaSnippet = (p.idea || p.copy || p.postText || '').slice(0, 95);
+
+          if (isImmediate) {
+            replyText =
+              `🚀 *¡Publicación aprobada para salir AHORA en ${targetBusinessName}!* ⚡\n\n` +
+              `Nuestros agentes están despachando tu contenido a Instagram y Facebook en este mismo instante.\n\n` +
+              `📝 *Contenido:* "${ideaSnippet}..."\n\n` +
+              `_En breves momentos estará visible en tus redes. Escribe *1* para ver tu calendario o *2* para el historial._` +
+              multiAccountFooter;
+          } else {
+            replyText =
+              `🎉 *¡Publicación agendada con éxito para ${targetBusinessName}!* 📅\n\n` +
+              `📅 *Fecha de publicación:* ${dateFormatted} hrs (continuación de tu calendario agendado).\n` +
+              `📱 *Redes vinculadas:* Instagram y Facebook\n` +
+              `📝 *Contenido agendado:*\n"${ideaSnippet}..."\n\n` +
+              `✅ Nuestros agentes la publicarán automáticamente en la fecha indicada. Ya puedes visualizarla en tu panel web:\n` +
+              `https://rrss.santisoft.cl/automatizacion-rrss/panel` +
+              multiAccountFooter;
+          }
+        } else {
+          // Aprobación múltiple (estrategia de 2 semanas o lote)
+          const targetBusinessName = chatData?.lastPendingBusinessName || businessName;
+          const confirmedDates: Date[] = [];
+
+          for (const postDoc of pendingDocs) {
+            const p = postDoc.data();
+            let targetDate = p.scheduledFor?.toDate ? p.scheduledFor.toDate() : new Date(p.scheduledFor || Date.now() + 24 * 60 * 60 * 1000);
+            if (targetDate.getTime() <= Date.now() + 5 * 60 * 1000) {
+              targetDate = new Date(Date.now() + 24 * 60 * 60 * 1000);
+            }
+            confirmedDates.push(targetDate);
+
+            await enqueuePostTask(postDoc.id, targetDate);
+            await postDoc.ref.update({
+              status: 'confirmed',
+              scheduledFor: targetDate,
+              publishError: null,
+              confirmedAt: new Date(),
+              confirmedVia: 'whatsapp',
+            });
+          }
+
+          // Limpiar la lista de pendientes de la sesión
+          await chatDocRef.set({
+            lastPendingPostId: null,
+            lastPendingPostIds: [],
+          }, { merge: true });
+
+          confirmedDates.sort((a, b) => a.getTime() - b.getTime());
+          const firstDateStr = format(confirmedDates[0], "d 'de' MMMM", { locale: es });
+          const lastDateStr = format(confirmedDates[confirmedDates.length - 1], "d 'de' MMMM", { locale: es });
+
+          replyText =
+            `🎉 *¡Estrategia de 2 semanas agendada con éxito para ${targetBusinessName}!* 🗓️\n\n` +
+            `Se han confirmado *${pendingDocs.length} publicaciones* en tu calendario:\n` +
+            `📅 *Período cubierto:* Del ${firstDateStr} al ${lastDateStr}\n` +
+            `📱 *Redes vinculadas:* Instagram y Facebook\n\n` +
+            `Nuestros agentes se encargarán de despachar cada post en su fecha y hora asignada de forma totalmente automática. 🚀\n\n` +
+            `✅ Puedes revisar o editar cada publicación en tu panel:\n` +
+            `https://rrss.santisoft.cl/automatizacion-rrss/panel` +
+            multiAccountFooter;
+        }
+        break;
+      }
+
+      // ----------------------------------------------------
+      // OPCIÓN 7: Ver Cuota y Estadísticas
+      // ----------------------------------------------------
+      case '7': {
         const [usedPosts, maxPosts, maxVideos] = await Promise.all([
           getQuotaUsage(userId, profileId),
           getPlanLimit(userPlan, email),
@@ -469,87 +810,26 @@ Sé directo, usa 1 o 2 emojis y sugiere 4 hashtags.`
       }
 
       // ----------------------------------------------------
-      // OPCIÓN 6: Aprobar posts pendientes (Ahora vs Cola)
+      // OPCIÓN 8: Cambiar de cuenta (Fallback directo)
       // ----------------------------------------------------
-      case '6': {
-        const pendingSnap = await adminDb
-          .collection('social_posts')
-          .where('userId', '==', userId)
-          .where('status', '==', 'pending')
-          .get();
+      case '8': {
+        if (hasMultipleAccounts) {
+          let accountsList = '';
+          matchedAccounts.forEach((acc, idx) => {
+            const isCurrent = idx === activeIndex ? ' *(Actual)*' : '';
+            accountsList += `*${idx + 1}.* ${acc.businessName} (${acc.rubro}) - _${acc.email}_${isCurrent}\n`;
+          });
 
-        const pendingDocs = pendingSnap.docs.filter((d) => {
-          const data = d.data();
-          return !data.profileId || data.profileId === profileId;
-        });
-
-        if (pendingDocs.length === 0) {
           replyText =
-            `👍 *Todo al día en ${businessName}:*\n\n` +
-            `No tienes publicaciones pendientes de aprobación en este momento.\n\n` +
-            `_Escribe *1* para revisar los posts que ya están agendados o *4* para crear uno nuevo._` +
-            multiAccountFooter;
+            `🏢 *Cuentas disponibles asociadas a tu teléfono:*\n\n` +
+            accountsList +
+            `\n👉 Responde con *C1*, *C2*, *C3*... para seleccionar la cuenta que deseas gestionar.\n` +
+            `_Ejemplo: Escribe *C1* para elegir la primera opción._`;
         } else {
-          const wantsQueue = cleanInput.includes('cola') || cleanInput.includes('agendar') || cleanInput.includes('calendario');
-          const wantsNow = cleanInput.includes('ahora') || cleanInput.includes('ya') || cleanInput.includes('inmediat');
-
-          let approvedCount = 0;
-          let publishedNowCount = 0;
-          let queuedCount = 0;
-
-          for (const postDoc of pendingDocs) {
-            const p = postDoc.data();
-            let targetDate: Date;
-
-            if (wantsQueue) {
-              if (p.queueDate) {
-                targetDate = p.queueDate.toDate ? p.queueDate.toDate() : new Date(p.queueDate);
-              } else {
-                const cont = await getNextScheduleSlotServer({ userId, profileId, targetHour: 18 });
-                targetDate = cont.nextAvailableDate;
-              }
-              queuedCount++;
-            } else if (wantsNow || p.publishMode === 'now' || p.publishMode === 'ask_or_now') {
-              // Salir ahora de inmediato
-              targetDate = new Date(Date.now() + 60 * 1000);
-              publishedNowCount++;
-            } else {
-              targetDate = p.scheduledFor?.toDate ? p.scheduledFor.toDate() : new Date(p.scheduledFor || Date.now() + 60 * 1000);
-              if (targetDate.getTime() <= Date.now() + 5 * 60 * 1000) {
-                publishedNowCount++;
-              } else {
-                queuedCount++;
-              }
-            }
-
-            await enqueuePostTask(postDoc.id, targetDate);
-            await postDoc.ref.update({
-              status: 'confirmed',
-              scheduledFor: targetDate,
-              publishError: null,
-            });
-            approvedCount++;
-          }
-
-          if (publishedNowCount > 0 && queuedCount === 0) {
-            replyText =
-              `🚀 *¡Publicación aprobada para salir AHORA en ${businessName}!*\n\n` +
-              `Nuestros agentes están despachando tu contenido a Instagram y Facebook en este mismo instante.\n\n` +
-              `_Escribe *1* para revisar el estado o *2* para ver el historial._` +
-              multiAccountFooter;
-          } else if (queuedCount > 0 && publishedNowCount === 0) {
-            replyText =
-              `✅ *¡Excelente! Se han agendado ${queuedCount} publicaciones como continuación de tu calendario para ${businessName}.*\n\n` +
-              `Nuestros agentes se encargarán de publicarlas en sus fechas asignadas sin solapamientos. 📅\n\n` +
-              `_Escribe *1* para ver tu calendario agendado._` +
-              multiAccountFooter;
-          } else {
-            replyText =
-              `✅ *¡Listo! Se han procesado ${approvedCount} publicaciones para ${businessName}.*\n\n` +
-              `Nuestros agentes se encargarán de despacharlas según lo programado. 🚀\n\n` +
-              `_Escribe *1* para ver tu calendario agendado._` +
-              multiAccountFooter;
-          }
+          replyText =
+            `ℹ️ *Tu teléfono solo tiene vinculada la cuenta de ${businessName}.*\n\n` +
+            `Si necesitas añadir otra cuenta o negocio, puedes hacerlo desde tu panel web en *Configuración > Perfiles*.\n\n` +
+            `_Escribe *0* para volver al menú principal._`;
         }
         break;
       }
@@ -558,7 +838,7 @@ Sé directo, usa 1 o 2 emojis y sugiere 4 hashtags.`
       // OPCIÓN 0 / DEFAULT: Menú Principal
       // ----------------------------------------------------
       default: {
-        const switchOptionText = hasMultipleAccounts ? `7️⃣ *Cambiar de cuenta / negocio*\n` : '';
+        const switchOptionText = hasMultipleAccounts ? `8️⃣ *Cambiar de cuenta / negocio*\n` : '';
 
         replyText =
           `👋 *¡Hola ${pushName}! Te damos la bienvenida a Santisoft.*\n` +
@@ -567,9 +847,10 @@ Sé directo, usa 1 o 2 emojis y sugiere 4 hashtags.`
           `1️⃣ *Próximos posts agendados*\n` +
           `2️⃣ *Posts ya publicados (historial)*\n` +
           `3️⃣ *Radar de nicho y tendencias*\n` +
-          `4️⃣ *Crear nuevo post o idea*\n` +
-          `5️⃣ *Ver cuota y estadísticas*\n` +
+          `4️⃣ *Crear post puntual (AHORA o en cola)*\n` +
+          `5️⃣ *Planificar estrategia (2 semanas) 🗓️*\n` +
           `6️⃣ *Aprobar posts pendientes*\n` +
+          `7️⃣ *Ver cuota y estadísticas*\n` +
           switchOptionText +
           `\n_Escribe el número de la opción que prefieras._\n\n` +
           `🛡️ _Tip de seguridad: Guarda este número (+56 9 6590 9543) como *Santisoft Agentes* en tus contactos para asegurar tus alertas y evitar bloqueos._` +
