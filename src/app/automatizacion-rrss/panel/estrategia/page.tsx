@@ -13,6 +13,7 @@ import VoiceMic from "../../../../components/VoiceMic";
 import PromptStyleSelector from "../../../../components/strategy/PromptStyleSelector";
 import { PromptTemplate } from "../../../../lib/prompt-templates";
 import { appendContactInfo } from "../../../../lib/contact-helper";
+import { getScheduleContinuityFromList, ScheduleContinuityResult } from "../../../../lib/schedule-continuity";
 
 interface StrategyGoal {
   id: string;
@@ -70,10 +71,23 @@ export default function EstrategiaPage() {
     return `${y}-${m}-${day}`;
   });
   const [startTime, setStartTime] = useState<string>("10:00");
+  const [scheduleContinuityInfo, setScheduleContinuityInfo] = useState<ScheduleContinuityResult | null>(null);
 
   const computePostDate = (startD: string, startT: string, dayOffset: number, suggestedTime?: string) => {
     const [y, m, d] = (startD || new Date().toISOString().split('T')[0]).split('-').map(Number);
-    const targetDate = new Date(y, m - 1, d);
+    let baseDate = new Date(y, m - 1, d);
+
+    // Si existen posts futuros agendados y la fecha seleccionada cae antes o igual a la última agendada,
+    // garantizar que la estrategia continúe a partir del día siguiente al último agendado.
+    if (scheduleContinuityInfo?.hasFuturePosts && scheduleContinuityInfo.lastScheduledDate) {
+      if (baseDate.getTime() <= scheduleContinuityInfo.lastScheduledDate.getTime()) {
+        const nextDay = new Date(scheduleContinuityInfo.lastScheduledDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        baseDate = nextDay;
+      }
+    }
+
+    const targetDate = new Date(baseDate);
     targetDate.setDate(targetDate.getDate() + (dayOffset || 0));
 
     let timeStr = (dayOffset === 0 && startT) ? startT : (suggestedTime || startT || "10:00");
@@ -164,11 +178,17 @@ export default function EstrategiaPage() {
               );
               
               const querySnapshot = await getDocs(q);
-              const count = querySnapshot.docs.filter((doc: any) => {
-                  const d = doc.data();
-                  return d.createdAt && d.createdAt.toDate() >= firstDayOfMonth;
+              const allPosts = querySnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
+              const count = allPosts.filter((d: any) => {
+                  return d.createdAt && d.createdAt.toDate && d.createdAt.toDate() >= firstDayOfMonth;
               }).length;
               setPostsThisMonth(count);
+
+              const cont = getScheduleContinuityFromList(allPosts, activeProfile?.id, 10);
+              setScheduleContinuityInfo(cont);
+              if (cont.hasFuturePosts) {
+                  setStartDate(cont.nextDateString);
+              }
           }
           
           // Fetch goals from secure API instead of client-side Firestore
@@ -662,6 +682,16 @@ export default function EstrategiaPage() {
                           />
                       </div>
                   </div>
+
+                  {scheduleContinuityInfo?.hasFuturePosts && (
+                    <div className="p-4 bg-emerald-50/90 border border-emerald-200 rounded-2xl flex items-start gap-3">
+                      <span className="text-xl shrink-0">🗓️</span>
+                      <div className="text-xs text-emerald-900 leading-relaxed font-medium">
+                        <strong className="font-black text-emerald-950 block mb-0.5">Continuación Inteligente de Calendario</strong>
+                        Tienes publicaciones agendadas hasta el <strong>{scheduleContinuityInfo.lastScheduledDate?.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</strong>. Nuestros agentes han configurado el inicio de esta nueva estrategia para continuar el <strong>{new Date(startDate + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</strong> evitando cualquier solapamiento.
+                      </div>
+                    </div>
+                  )}
 
                   <div className="p-3 bg-indigo-50/80 rounded-2xl border border-indigo-100 flex items-center gap-2.5 text-xs text-indigo-900 font-semibold">
                       <span>💡</span>

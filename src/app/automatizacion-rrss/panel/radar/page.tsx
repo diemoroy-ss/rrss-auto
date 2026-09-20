@@ -10,6 +10,7 @@ import PromptStyleSelector from "../../../../components/strategy/PromptStyleSele
 import { PromptTemplate } from "../../../../lib/prompt-templates";
 import { appendContactInfo } from "../../../../lib/contact-helper";
 import StatusModal from "../../../../components/StatusModal";
+import { getScheduleContinuityFromList, parseScheduledDate, ScheduleContinuityResult } from "../../../../lib/schedule-continuity";
 
 export default function NicheRadarPage() {
   const router = useRouter();
@@ -65,6 +66,7 @@ export default function NicheRadarPage() {
   const [generatingStrategy, setGeneratingStrategy] = useState<boolean>(false);
   const [strategyResult, setStrategyResult] = useState<any[] | null>(null);
   const [acceptingStrategy, setAcceptingStrategy] = useState<boolean>(false);
+  const [scheduleContinuityInfo, setScheduleContinuityInfo] = useState<ScheduleContinuityResult | null>(null);
 
   // Modal State
   const [postModal, setPostModal] = useState<{isOpen: boolean, idea: ContentIdea | null}>({isOpen: false, idea: null});
@@ -164,9 +166,23 @@ export default function NicheRadarPage() {
     const now = Date.now();
 
     const [y, m, d] = (startD || new Date().toISOString().split('T')[0]).split('-').map(Number);
+    let baseDate = new Date(y, m - 1, d);
+
+    // Si existen posts futuros agendados y la fecha de inicio es anterior o igual al último post agendado,
+    // ajustamos la fecha base para que continúe al día siguiente del último agendado.
+    const futureExisting = existingDates.filter(ts => ts > now);
+    if (futureExisting.length > 0) {
+      const maxExistingTs = Math.max(...futureExisting);
+      const maxExistingDate = new Date(maxExistingTs);
+      if (baseDate.getTime() <= maxExistingDate.getTime()) {
+        const nextDay = new Date(maxExistingTs);
+        nextDay.setDate(nextDay.getDate() + 1);
+        baseDate = nextDay;
+      }
+    }
 
     return strategy.map((post, idx) => {
-      let targetDate = new Date(y, m - 1, d);
+      let targetDate = new Date(baseDate);
       const dayOffset = typeof post.dayOffset === 'number' ? post.dayOffset : idx;
       targetDate.setDate(targetDate.getDate() + dayOffset);
 
@@ -185,12 +201,12 @@ export default function NicheRadarPage() {
         targetDate.setTime(now + 45 * 60 * 1000);
       }
 
-      // Evitar colisión con posts existentes o previos (mínimo 2 horas de diferencia)
+      // Evitar colisión con posts existentes o previos (mínimo 3 horas de diferencia)
       let attempts = 0;
-      while (allocated.some(ts => Math.abs(ts - targetDate.getTime()) < 2 * 60 * 60 * 1000) && attempts < 25) {
+      while (allocated.some(ts => Math.abs(ts - targetDate.getTime()) < 3 * 60 * 60 * 1000) && attempts < 30) {
         attempts++;
         targetDate.setHours(targetDate.getHours() + 3);
-        if (targetDate.getHours() >= 22 || targetDate.getHours() < 9) {
+        if (targetDate.getHours() >= 21 || targetDate.getHours() < 9) {
           targetDate.setDate(targetDate.getDate() + 1);
           targetDate.setHours(11, 0, 0, 0);
         }
@@ -279,6 +295,26 @@ export default function NicheRadarPage() {
     });
     return () => unsub();
   }, []);
+
+  // Cargar continuidad de publicaciones agendadas para la marca activa
+  useEffect(() => {
+    async function checkScheduleContinuity() {
+      if (!user) return;
+      try {
+        const qPosts = query(collection(db, "social_posts"), where("userId", "==", user.uid));
+        const snapPosts = await getDocs(qPosts);
+        const postsList = snapPosts.docs.map(d => ({ id: d.id, ...d.data() }));
+        const cont = getScheduleContinuityFromList(postsList, activeProfile?.id, 10);
+        setScheduleContinuityInfo(cont);
+        if (cont.hasFuturePosts) {
+          setStartDate(cont.nextDateString);
+        }
+      } catch (e) {
+        console.warn("No se pudo cargar la continuidad de programación:", e);
+      }
+    }
+    checkScheduleContinuity();
+  }, [user, activeProfile?.id]);
 
   // Set default niche input when activeProfile changes
   useEffect(() => {
@@ -544,16 +580,16 @@ export default function NicheRadarPage() {
       try {
         const qPosts = query(
           collection(db, "social_posts"),
-          where("userId", "==", user.uid),
-          where("status", "in", ["pending", "confirmed"])
+          where("userId", "==", user.uid)
         );
         const snapPosts = await getDocs(qPosts);
-        snapPosts.forEach(d => {
-          const s = d.data()?.scheduledFor;
-          if (s?.toDate) upcomingTimestamps.push(s.toDate().getTime());
-          else if (s?._seconds) upcomingTimestamps.push(s._seconds * 1000);
-          else if (s?.seconds) upcomingTimestamps.push(s.seconds * 1000);
-          else if (s) upcomingTimestamps.push(new Date(s).getTime());
+        snapPosts.docs.forEach(d => {
+          const p = d.data();
+          if (activeProfile?.id && p.profileId && p.profileId !== activeProfile.id) return;
+          const status = p.status || '';
+          if (status !== 'confirmed' && status !== 'pending') return;
+          const dateObj = parseScheduledDate(p.scheduledFor);
+          if (dateObj) upcomingTimestamps.push(dateObj.getTime());
         });
       } catch (qErr) {
         console.warn("No se pudieron consultar posts previos para evitar solapamientos:", qErr);
@@ -1443,6 +1479,16 @@ export default function NicheRadarPage() {
                           />
                       </div>
                   </div>
+
+                  {scheduleContinuityInfo?.hasFuturePosts && (
+                    <div className="p-3.5 bg-emerald-50/90 border border-emerald-200 rounded-xl flex items-start gap-2.5">
+                      <span className="text-base shrink-0">🗓️</span>
+                      <div className="text-[11px] text-emerald-900 leading-relaxed font-medium">
+                        <strong className="font-bold text-emerald-950 block">Continuación Inteligente de Calendario</strong>
+                        Tienes publicaciones agendadas hasta el <strong>{scheduleContinuityInfo.lastScheduledDate?.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</strong>. Nuestros agentes han configurado el inicio de esta nueva estrategia para continuar inmediatamente el <strong>{new Date(startDate + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</strong> para evitar solapamientos.
+                      </div>
+                    </div>
+                  )}
 
                   <div className="p-2.5 bg-indigo-50/80 rounded-xl border border-indigo-100 text-[11px] text-indigo-900 font-semibold flex items-center gap-2">
                       <span>💡</span>

@@ -4,6 +4,7 @@ import { generateNicheRadarAnalysis } from '../../../../lib/niche-radar';
 import { getQuotaUsage, getPlanLimit, getVideoPlanLimit } from '../../../../lib/quota';
 import { enqueuePostTask } from '../../../../lib/gcp-tasks';
 import { getFreeModel } from '../../../../lib/gemini-free';
+import { getNextScheduleSlotServer } from '../../../../lib/schedule-continuity';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -213,8 +214,26 @@ export async function POST(req: Request) {
 
     let replyText = '';
 
+    // Detección inteligente de acción si viene como texto libre
+    let effectiveAction = action;
+    if (action === '0' || !action) {
+      if (/^6\b|aprobar|publicar ya|publicar ahora|ahora|cola/i.test(cleanInput)) {
+        effectiveAction = '6';
+      } else if (/^4\b|crear post|nueva idea|crear/i.test(cleanInput)) {
+        effectiveAction = '4';
+      } else if (/^1\b|proximos|agendados/i.test(cleanInput)) {
+        effectiveAction = '1';
+      } else if (/^2\b|publicados|historial/i.test(cleanInput)) {
+        effectiveAction = '2';
+      } else if (/^3\b|radar|tendencias/i.test(cleanInput)) {
+        effectiveAction = '3';
+      } else if (/^5\b|cuota|plan|estadisticas/i.test(cleanInput)) {
+        effectiveAction = '5';
+      }
+    }
+
     // 3. Ejecutar la acción
-    switch (action) {
+    switch (effectiveAction) {
       // ----------------------------------------------------
       // OPCIÓN 1: Ver próximos posts agendados
       // ----------------------------------------------------
@@ -342,7 +361,7 @@ export async function POST(req: Request) {
       }
 
       // ----------------------------------------------------
-      // OPCIÓN 4: Crear nuevo post o planificar
+      // OPCIÓN 4: Crear nuevo post o planificar (Ahora vs Continuación)
       // ----------------------------------------------------
       case '4': {
         const userPrompt = text.replace(/^4\s*/i, '').trim();
@@ -362,9 +381,19 @@ Sé directo, usa 1 o 2 emojis y sugiere 4 hashtags.`
         const result = await model.generateContent(promptText);
         const generatedCopy = result.response.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
 
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        tomorrow.setHours(18, 0, 0, 0);
+        // Detección de inmediatez solicitada por el usuario
+        const wantsNow = /ahora|hoy|ya|inmediat|urgente|ahorita/i.test(cleanInput);
+        const continuity = await getNextScheduleSlotServer({ userId, profileId, targetHour: 18 });
+
+        let scheduledDate = new Date(Date.now() + 2 * 60 * 1000);
+        let publishMode = 'now';
+
+        if (!wantsNow && !continuity.hasFuturePosts) {
+          scheduledDate = continuity.nextAvailableDate;
+          publishMode = 'tomorrow';
+        } else if (!wantsNow && continuity.hasFuturePosts) {
+          publishMode = 'ask_or_now';
+        }
 
         await adminDb.collection('social_posts').add({
           userId,
@@ -373,20 +402,45 @@ Sé directo, usa 1 o 2 emojis y sugiere 4 hashtags.`
           postText: generatedCopy,
           copy: generatedCopy,
           type: 'Post',
-          scheduledFor: tomorrow,
+          scheduledFor: scheduledDate,
+          queueDate: continuity.nextAvailableDate,
+          publishMode,
           networks: ['instagram', 'facebook'],
           status: 'pending',
           createdAt: new Date(),
         });
 
-        replyText =
-          `✨ *Propuesta creada por nuestros agentes para ${businessName}:*\n\n` +
-          `${generatedCopy}\n\n` +
-          `━━━━━━━━━━━━━━━\n` +
-          `📅 *Horario sugerido:* Mañana a las 18:00 hrs.\n` +
-          `📱 *Redes:* Instagram y Facebook\n\n` +
-          `👉 *Responde 6* para aprobar y agendar este post de inmediato en piloto automático.` +
-          multiAccountFooter;
+        if (wantsNow) {
+          replyText =
+            `✨ *Propuesta creada por nuestros agentes para ${businessName}:*\n\n` +
+            `${generatedCopy}\n\n` +
+            `━━━━━━━━━━━━━━━\n` +
+            `⚡ *Momento de publicación:* Publicación inmediata (AHORA)\n` +
+            `📱 *Redes:* Instagram y Facebook\n\n` +
+            `👉 *Responde 6* para aprobar y que nuestros agentes lo publiquen de inmediato.` +
+            multiAccountFooter;
+        } else if (continuity.hasFuturePosts) {
+          const nextDateFormatted = format(continuity.nextAvailableDate, "EEEE d 'de' MMMM, HH:mm", { locale: es });
+          replyText =
+            `✨ *Propuesta creada por nuestros agentes para ${businessName}:*\n\n` +
+            `${generatedCopy}\n\n` +
+            `━━━━━━━━━━━━━━━\n` +
+            `📱 *Redes:* Instagram y Facebook\n` +
+            `📅 *¿Cuándo prefieres que se publique?*\n` +
+            `• Responde *6* para publicarlo *AHORA* de inmediato.\n` +
+            `• Responde *6 COLA* para sumarlo a tu calendario agendado (*${nextDateFormatted} hrs*).` +
+            multiAccountFooter;
+        } else {
+          replyText =
+            `✨ *Propuesta creada por nuestros agentes para ${businessName}:*\n\n` +
+            `${generatedCopy}\n\n` +
+            `━━━━━━━━━━━━━━━\n` +
+            `📱 *Redes:* Instagram y Facebook\n` +
+            `📅 *¿Cuándo prefieres que se publique?*\n` +
+            `• Responde *6* para agendarlo para *mañana a las 18:00 hrs*.\n` +
+            `• Responde *6 AHORA* para publicarlo de inmediato.` +
+            multiAccountFooter;
+        }
         break;
       }
 
@@ -415,7 +469,7 @@ Sé directo, usa 1 o 2 emojis y sugiere 4 hashtags.`
       }
 
       // ----------------------------------------------------
-      // OPCIÓN 6: Aprobar posts pendientes
+      // OPCIÓN 6: Aprobar posts pendientes (Ahora vs Cola)
       // ----------------------------------------------------
       case '6': {
         const pendingSnap = await adminDb
@@ -436,24 +490,66 @@ Sé directo, usa 1 o 2 emojis y sugiere 4 hashtags.`
             `_Escribe *1* para revisar los posts que ya están agendados o *4* para crear uno nuevo._` +
             multiAccountFooter;
         } else {
+          const wantsQueue = cleanInput.includes('cola') || cleanInput.includes('agendar') || cleanInput.includes('calendario');
+          const wantsNow = cleanInput.includes('ahora') || cleanInput.includes('ya') || cleanInput.includes('inmediat');
+
           let approvedCount = 0;
+          let publishedNowCount = 0;
+          let queuedCount = 0;
+
           for (const postDoc of pendingDocs) {
             const p = postDoc.data();
-            const dateObj = p.scheduledFor?.toDate ? p.scheduledFor.toDate() : new Date(p.scheduledFor);
+            let targetDate: Date;
 
-            await enqueuePostTask(postDoc.id, dateObj);
+            if (wantsQueue) {
+              if (p.queueDate) {
+                targetDate = p.queueDate.toDate ? p.queueDate.toDate() : new Date(p.queueDate);
+              } else {
+                const cont = await getNextScheduleSlotServer({ userId, profileId, targetHour: 18 });
+                targetDate = cont.nextAvailableDate;
+              }
+              queuedCount++;
+            } else if (wantsNow || p.publishMode === 'now' || p.publishMode === 'ask_or_now') {
+              // Salir ahora de inmediato
+              targetDate = new Date(Date.now() + 60 * 1000);
+              publishedNowCount++;
+            } else {
+              targetDate = p.scheduledFor?.toDate ? p.scheduledFor.toDate() : new Date(p.scheduledFor || Date.now() + 60 * 1000);
+              if (targetDate.getTime() <= Date.now() + 5 * 60 * 1000) {
+                publishedNowCount++;
+              } else {
+                queuedCount++;
+              }
+            }
+
+            await enqueuePostTask(postDoc.id, targetDate);
             await postDoc.ref.update({
               status: 'confirmed',
+              scheduledFor: targetDate,
               publishError: null,
             });
             approvedCount++;
           }
 
-          replyText =
-            `✅ *¡Excelente! Se han aprobado ${approvedCount} publicaciones para ${businessName}.*\n\n` +
-            `Nuestros agentes se encargarán de publicarlas en la fecha y hora indicadas sin que tengas que hacer nada más. 🚀\n\n` +
-            `_Escribe *1* para ver tu calendario agendado._` +
-            multiAccountFooter;
+          if (publishedNowCount > 0 && queuedCount === 0) {
+            replyText =
+              `🚀 *¡Publicación aprobada para salir AHORA en ${businessName}!*\n\n` +
+              `Nuestros agentes están despachando tu contenido a Instagram y Facebook en este mismo instante.\n\n` +
+              `_Escribe *1* para revisar el estado o *2* para ver el historial._` +
+              multiAccountFooter;
+          } else if (queuedCount > 0 && publishedNowCount === 0) {
+            replyText =
+              `✅ *¡Excelente! Se han agendado ${queuedCount} publicaciones como continuación de tu calendario para ${businessName}.*\n\n` +
+              `Nuestros agentes se encargarán de publicarlas en sus fechas asignadas sin solapamientos. 📅\n\n` +
+              `_Escribe *1* para ver tu calendario agendado._` +
+              multiAccountFooter;
+          } else {
+            replyText =
+              `✅ *¡Listo! Se han procesado ${approvedCount} publicaciones para ${businessName}.*\n\n` +
+              `Nuestros agentes se encargarán de despacharlas según lo programado. 🚀\n\n` +
+              `_Escribe *1* para ver tu calendario agendado._` +
+              multiAccountFooter;
+          }
         }
         break;
       }
