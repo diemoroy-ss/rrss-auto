@@ -174,7 +174,7 @@ export default function Home() {
               </ul>
               <div className="cost-total-row highlight">
                 <span>Total mensual</span>
-                <span className="cost-total-amount good">$84.990</span>
+                <span className="cost-total-amount good">$89.990</span>
               </div>
               <p className="cost-card-note highlight-note">Más del 90% de ahorro. Sin contratar, sin reuniones, sin esperar.</p>
             </div>

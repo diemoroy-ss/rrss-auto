@@ -52,8 +52,8 @@ const DEFAULT_PLANS = {
         id: "growth",
         name: "Growth",
         tagline: "ACELERA TU PRESENCIA",
-        price: 39990,
-        annualPrice: 399900,
+        price: 44990,
+        annualPrice: 449900,
         postsLimit: 40,
         videosLimit: 6,
         aiImagesLimit: 40,
@@ -68,17 +68,18 @@ const DEFAULT_PLANS = {
             "6 videos con locución y guión al mes",
             "40 imágenes con nuestros agentes al mes",
             "2 artículos de Blog SEO/GEO al mes",
+            "WhatsApp Bot: revisión y aprobación de posts",
             "Todas las redes sociales",
             "1 perfil de marca",
-            "Anual $399.900 (ahorras ~$80.000)"
+            "Anual $449.900 (ahorras ~$90.000)"
         ]
     },
     pro: {
         id: "pro",
         name: "Pro",
         tagline: "EL MÁS ELEGIDO",
-        price: 84990,
-        annualPrice: 849900,
+        price: 89990,
+        annualPrice: 899900,
         postsLimit: 80,
         videosLimit: 12,
         aiImagesLimit: 80,
@@ -93,18 +94,18 @@ const DEFAULT_PLANS = {
             "12 videos con locución y guión al mes",
             "80 imágenes con nuestros agentes al mes",
             "8 artículos de Blog SEO/GEO",
-            "Meta Ads integrado",
-            "Radar de Nicho",
+            "WhatsApp Bot completo: aprueba, crea copys y ejecuta Radar",
+            "Meta Ads integrado + Radar de Nicho",
             "1 perfil de marca",
-            "Anual $849.900 (ahorras ~$170.000)"
+            "Anual $899.900 (ahorras ~$180.000)"
         ]
     },
     business: {
         id: "business",
         name: "Business",
         tagline: "HASTA 3 CUENTAS",
-        price: 149990,
-        annualPrice: 1499900,
+        price: 169990,
+        annualPrice: 1699900,
         postsLimit: 200,
         videosLimit: 30,
         aiImagesLimit: 200,
@@ -119,9 +120,10 @@ const DEFAULT_PLANS = {
             "30 videos con locución y guión al mes",
             "200 imágenes con nuestros agentes al mes",
             "20 artículos de Blog SEO/GEO",
+            "WhatsApp Bot multi-marca (alterna cuentas desde el chat)",
             "Hasta 3 marcas o cuentas independientes",
             "Soporte prioritario por WhatsApp",
-            "Anual $1.499.900 (ahorras ~$300.000)"
+            "Anual $1.699.900 (ahorras ~$340.000)"
         ]
     },
     agency: {
