@@ -9,6 +9,7 @@ import PricingPlans from '../components/PricingPlans';
 import ContactForm from '../components/ContactForm';
 import BrandHeader from '../components/BrandHeader';
 import BrandFooter from '../components/BrandFooter';
+import TestimonialsSection from '../components/TestimonialsSection';
 
 export default function Home() {
 
@@ -111,37 +112,7 @@ export default function Home() {
       </section>
 
       {/* 6. Testimonios */}
-      <section id="clientes">
-        <div className="wrap">
-          <div className="section-head center" data-reveal>
-            <span className="eyebrow">Clientes</span>
-            <h2>Resultados <em>reales,</em> negocios reales.</h2>
-          </div>
-          <div className="t-grid" data-reveal>
-            <div className="t-card">
-              <p className="t-quote">"Antes perdía 3 horas a la semana armando posts. Ahora Santisoft lo hace solo y mis publicaciones quedaron mucho más profesionales."</p>
-              <div className="t-who">
-                <div className="t-avatar">VR</div>
-                <div><div className="t-name">Valentina R.</div><div className="t-biz">CAFÉ &amp; PASTELERÍA</div></div>
-              </div>
-            </div>
-            <div className="t-card">
-              <p className="t-quote">"El módulo de Blog Automático es una locura. En dos meses mi página empezó a recibir tráfico orgánico y a aparecer en búsquedas sin pagar anuncios."</p>
-              <div className="t-who">
-                <div className="t-avatar">MT</div>
-                <div><div className="t-name">Marcelo T.</div><div className="t-biz">CONSULTORA DE MARKETING</div></div>
-              </div>
-            </div>
-            <div className="t-card">
-              <p className="t-quote">"No soy técnica para nada y lo configuré sola en menos de 20 minutos. Ahora publico todos los días sin pensar en ello."</p>
-              <div className="t-who">
-                <div className="t-avatar">AP</div>
-                <div><div className="t-name">Andrea P.</div><div className="t-biz">CLÍNICA VETERINARIA</div></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <TestimonialsSection />
 
       {/* 7. Comparativa de Costos */}
       <section id="comparativa">
