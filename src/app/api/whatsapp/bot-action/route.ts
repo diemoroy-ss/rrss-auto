@@ -292,8 +292,10 @@ export async function POST(req: Request) {
             const dateFormatted = format(dateObj, "EEEE d 'de' MMMM, HH:mm", { locale: es });
             const typeEmoji = (p.type || '').toLowerCase().includes('reel') ? '🎬' : '🖼️';
             const statusTag = p.status === 'confirmed' ? '⏳ Agendado' : '⏸️ Borrador pendiente';
+            const styleLine = p.visualStyle ? `🎨 *Estilo visual:* ${p.visualStyle}\n` : '';
             list += `*${idx + 1}.* ${typeEmoji} *${p.type || 'Post'}* (${statusTag})\n` +
                     `📅 ${dateFormatted}\n` +
+                    styleLine +
                     `📝 "${(p.idea || p.copy || p.postText || '').slice(0, 100)}..."\n\n`;
           });
 
@@ -337,7 +339,9 @@ export async function POST(req: Request) {
           publishedPosts.forEach((p, idx) => {
             const dateObj = p.publishedAt?.toDate ? p.publishedAt.toDate() : (p.scheduledFor?.toDate ? p.scheduledFor.toDate() : new Date());
             const dateFormatted = format(dateObj, "d 'de' MMM, HH:mm", { locale: es });
+            const styleLine = p.visualStyle ? `🎨 *Estilo visual:* ${p.visualStyle}\n` : '';
             list += `*${idx + 1}.* ✅ *Publicado el ${dateFormatted}*\n` +
+                    styleLine +
                     `📝 "${(p.idea || p.copy || p.postText || '').slice(0, 85)}..."\n\n`;
           });
 
