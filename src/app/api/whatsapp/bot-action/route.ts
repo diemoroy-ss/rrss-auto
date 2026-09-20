@@ -41,48 +41,71 @@ export async function POST(req: Request) {
     const cleanPhone = phone.replace(/\D/g, '');
     const cleanInput = (text || '').trim().toLowerCase();
 
-    // 1. Buscar TODAS las cuentas y perfiles que tengan este teléfono asociado
+    // 1. Buscar TODAS las marcas/perfiles que tengan este teléfono en "Datos & Contacto" (p.phone)
     const matchedAccounts: AccountOption[] = [];
     const usersSnap = await adminDb.collection('users').get();
 
+    // Primer barrido: buscar coincidencias directas en los Datos de Contacto de la Marca (profile.phone)
     for (const doc of usersSnap.docs) {
       const uData = doc.data();
-      const userPhone = (uData.phone || uData.whatsappPhone || '').replace(/\D/g, '');
-      const isUserPhoneMatch =
-        userPhone && (userPhone === cleanPhone || cleanPhone.endsWith(userPhone) || userPhone.endsWith(cleanPhone));
-
       const profiles = Array.isArray(uData.profiles) ? uData.profiles : [];
 
-      if (profiles.length > 0) {
-        profiles.forEach((p: any) => {
-          const pPhone = (p.phone || p.whatsappPhone || '').replace(/\D/g, '');
-          const isProfilePhoneMatch =
-            pPhone && (pPhone === cleanPhone || cleanPhone.endsWith(pPhone) || pPhone.endsWith(cleanPhone));
+      profiles.forEach((p: any) => {
+        const pPhone = (p.phone || p.whatsappPhone || '').replace(/\D/g, '');
+        const isProfilePhoneMatch =
+          pPhone && (pPhone === cleanPhone || cleanPhone.endsWith(pPhone) || pPhone.endsWith(cleanPhone));
 
-          if (isUserPhoneMatch || isProfilePhoneMatch) {
+        if (isProfilePhoneMatch) {
+          matchedAccounts.push({
+            userId: doc.id,
+            profileId: p.id || 'default',
+            businessName: p.name || uData.displayName || 'Mi Negocio',
+            rubro: p.rubro || uData.rubro || 'General',
+            email: uData.email || '',
+            userPlan: uData.plan || 'free',
+            userDoc: uData,
+            profileDoc: p,
+          });
+        }
+      });
+    }
+
+    // Segundo barrido (Fallback): si ninguna marca tiene el teléfono en Datos & Contacto, buscar en el usuario
+    if (matchedAccounts.length === 0) {
+      for (const doc of usersSnap.docs) {
+        const uData = doc.data();
+        const userPhone = (uData.phone || uData.whatsappPhone || '').replace(/\D/g, '');
+        const isUserPhoneMatch =
+          userPhone && (userPhone === cleanPhone || cleanPhone.endsWith(userPhone) || userPhone.endsWith(cleanPhone));
+
+        if (isUserPhoneMatch) {
+          const profiles = Array.isArray(uData.profiles) ? uData.profiles : [];
+          if (profiles.length > 0) {
+            profiles.forEach((p: any) => {
+              matchedAccounts.push({
+                userId: doc.id,
+                profileId: p.id || 'default',
+                businessName: p.name || uData.displayName || 'Mi Negocio',
+                rubro: p.rubro || uData.rubro || 'General',
+                email: uData.email || '',
+                userPlan: uData.plan || 'free',
+                userDoc: uData,
+                profileDoc: p,
+              });
+            });
+          } else {
             matchedAccounts.push({
               userId: doc.id,
-              profileId: p.id || 'default',
-              businessName: p.name || uData.displayName || 'Mi Negocio',
-              rubro: p.rubro || uData.rubro || 'General',
+              profileId: 'default',
+              businessName: uData.displayName || 'Mi Negocio',
+              rubro: uData.rubro || 'General',
               email: uData.email || '',
               userPlan: uData.plan || 'free',
               userDoc: uData,
-              profileDoc: p,
+              profileDoc: null,
             });
           }
-        });
-      } else if (isUserPhoneMatch) {
-        matchedAccounts.push({
-          userId: doc.id,
-          profileId: 'default',
-          businessName: uData.displayName || 'Mi Negocio',
-          rubro: uData.rubro || 'General',
-          email: uData.email || '',
-          userPlan: uData.plan || 'free',
-          userDoc: uData,
-          profileDoc: null,
-        });
+        }
       }
     }
 
