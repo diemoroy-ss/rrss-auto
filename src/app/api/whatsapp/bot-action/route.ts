@@ -40,7 +40,22 @@ function formatNetworks(networks: string[]): string {
     .join(', ');
 }
 
-function getConnectedNetworks(profileDoc: any, userDoc: any): string[] {
+function formatNetworksBulletList(networks: string[]): string {
+  if (!networks || networks.length === 0) return '• _(Ninguna red asociada)_';
+  return networks
+    .map((net) => {
+      const meta = NETWORK_META[net.toLowerCase()];
+      return `• ${meta ? `${meta.emoji} ${meta.name}` : net}`;
+    })
+    .join('\n');
+}
+
+/**
+ * Para posts de feed estándar: Instagram y Facebook son las redes predeterminadas.
+ * Si el negocio tiene LinkedIn y no Meta, se usa LinkedIn.
+ * Las demás (TikTok, YouTube, X) solo se activan si el usuario las agrega expresamente (+tiktok, +x, etc.).
+ */
+function getDefaultPostNetworks(profileDoc: any, userDoc: any): string[] {
   const p = profileDoc || {};
   const u = userDoc || {};
   const isDefault = !p.id || p.id === 'default';
@@ -49,23 +64,17 @@ function getConnectedNetworks(profileDoc: any, userDoc: any): string[] {
 
   const fbOK = !!p.facebookToken_enc || (isDefault && !!u.facebookToken_enc);
   const igOK = !!p.instagramToken_enc || (isDefault && !!u.instagramToken_enc);
-  const ttOK = !!p.tiktokToken_enc || (isDefault && !!u.tiktokToken_enc) || !!p.accounts?.tiktok;
   const liOK = !!p.linkedinUserToken_enc || !!p.linkedinToken_enc || (isDefault && (!!u.linkedinUserToken_enc || !!u.linkedinToken_enc)) || !!p.accounts?.linkedin;
-  const ytOK = !!p.youtubeToken_enc || (isDefault && !!u.youtubeToken_enc) || !!p.accounts?.youtube;
-  const xOK = !!p.xToken_enc || (isDefault && !!u.xToken_enc) || !!p.accounts?.x;
 
   if (igOK) networks.push('instagram');
   if (fbOK) networks.push('facebook');
-  if (liOK) networks.push('linkedin');
-  if (ttOK) networks.push('tiktok');
-  if (ytOK) networks.push('youtube');
-  if (xOK) networks.push('x');
+  if (networks.length === 0 && liOK) networks.push('linkedin');
 
   return networks.length > 0 ? networks : ['instagram', 'facebook'];
 }
 
 function extractNetworksFromPhrase(phrase: string): string[] {
-  const t = phrase.toLowerCase();
+  const t = phrase.toLowerCase().replace(/[\+\-]/g, ' ');
   const detected: string[] = [];
 
   if (/\b(instagram|ig|insta)\b/.test(t)) detected.push('instagram');
@@ -284,7 +293,7 @@ export async function POST(req: Request) {
       if (/^6\b|aprobar|publicar ya|publicar ahora|ahora|cola/i.test(cleanInput)) {
         effectiveAction = '6';
       } else if (
-        /^(solo\s+|sin\s+|quitar\s+|sacar\s+|agregar\s+|sumar\s+|incluir\s+|redes\b|cambiar\s+redes)/i.test(cleanInput) ||
+        /^(\+|\-|solo\s+|sin\s+|quitar\s+|sacar\s+|desasociar\s+|desvincular\s+|agregar\s+|sumar\s+|asociar\s+|incluir\s+|redes\b|cambiar\s+redes)/i.test(cleanInput) ||
         /^(solo\s+(instagram|ig|facebook|fb|linkedin|tiktok|youtube|x))/i.test(cleanInput) ||
         cleanInput === 'redes'
       ) {
@@ -522,7 +531,7 @@ Aplica obligatoriamente el principio humanize:
         }
         const targetNetworks = chosenNetworks && chosenNetworks.length > 0
           ? chosenNetworks
-          : getConnectedNetworks(currentAccount.profileDoc, currentAccount.userDoc);
+          : getDefaultPostNetworks(currentAccount.profileDoc, currentAccount.userDoc);
 
         let scheduledDate = new Date(Date.now() + 2 * 60 * 1000);
         let publishMode = 'now';
@@ -563,18 +572,24 @@ Aplica obligatoriamente el principio humanize:
           updatedAt: new Date(),
         }, { merge: true });
 
-        const formattedNets = formatNetworks(targetNetworks);
-        const networksTip = `\n💡 _Para cambiar redes responde: "solo instagram", "agregar linkedin" o "sin facebook"._`;
+        const networksBlock =
+          `📱 *Redes asociadas a este post:*\n` +
+          `${formatNetworksBulletList(targetNetworks)}\n\n`;
+
+        const networksHelp =
+          `⚙️ *¿Modificar redes de este post?*\n` +
+          `• Agregar otra: escribe *+linkedin* (o la red que desees)\n` +
+          `• Desasociar: escribe *-facebook* (o la que quieras quitar)`;
 
         if (wantsNow) {
           replyText =
             `✨ *Propuesta creada por nuestros agentes para ${businessName}:*\n\n` +
             `${generatedCopy}\n\n` +
             `━━━━━━━━━━━━━━━\n` +
-            `⚡ *Momento de publicación:* Publicación inmediata (AHORA)\n` +
-            `📱 *Redes asignadas:* ${formattedNets}\n\n` +
-            `👉 *Responde 6* para aprobar y que nuestros agentes lo publiquen de inmediato.` +
-            networksTip +
+            `⚡ *Momento de publicación:* Inmediato (AHORA)\n` +
+            networksBlock +
+            `👉 *Responde 6* para aprobar y publicar de inmediato.\n\n` +
+            networksHelp +
             multiAccountFooter;
         } else if (continuity.hasFuturePosts) {
           const nextDateFormatted = format(continuity.nextAvailableDate, "EEEE d 'de' MMMM, HH:mm", { locale: es });
@@ -582,22 +597,22 @@ Aplica obligatoriamente el principio humanize:
             `✨ *Propuesta creada por nuestros agentes para ${businessName}:*\n\n` +
             `${generatedCopy}\n\n` +
             `━━━━━━━━━━━━━━━\n` +
-            `📱 *Redes asignadas:* ${formattedNets}\n` +
+            networksBlock +
             `📅 *¿Cuándo prefieres que se publique?*\n` +
             `• Responde *6* para publicarlo *AHORA* de inmediato.\n` +
-            `• Responde *6 COLA* para sumarlo a tu calendario agendado (*${nextDateFormatted} hrs*).` +
-            networksTip +
+            `• Responde *6 COLA* para sumarlo a tu calendario agendado (*${nextDateFormatted} hrs*).\n\n` +
+            networksHelp +
             multiAccountFooter;
         } else {
           replyText =
             `✨ *Propuesta creada por nuestros agentes para ${businessName}:*\n\n` +
             `${generatedCopy}\n\n` +
             `━━━━━━━━━━━━━━━\n` +
-            `📱 *Redes asignadas:* ${formattedNets}\n` +
+            networksBlock +
             `📅 *¿Cuándo prefieres que se publique?*\n` +
             `• Responde *6* para agendarlo para *mañana a las 18:00 hrs*.\n` +
-            `• Responde *6 AHORA* para publicarlo de inmediato.` +
-            networksTip +
+            `• Responde *6 AHORA* para publicarlo de inmediato.\n\n` +
+            networksHelp +
             multiAccountFooter;
         }
         break;
@@ -639,7 +654,7 @@ Aplica obligatoriamente el principio humanize:
         }
         const strategyNetworks = chosenStrategyNetworks && chosenStrategyNetworks.length > 0
           ? chosenStrategyNetworks
-          : getConnectedNetworks(currentAccount.profileDoc, currentAccount.userDoc);
+          : getDefaultPostNetworks(currentAccount.profileDoc, currentAccount.userDoc);
 
         const systemInstruction = `Eres un estratega senior de contenidos y copywriter para redes sociales de PyMEs en Chile y LATAM.
 Aplica obligatoriamente las reglas de humanización:
@@ -783,12 +798,15 @@ Responde ÚNICAMENTE un objeto JSON válido con este formato:
         replyText =
           `🗓️ *Estrategia de ${targetWeeks} semana${targetWeeks > 1 ? 's' : ''} para ${businessName}*\n` +
           `${continuityNote}\n\n` +
-          `Nuestros agentes estructuraron un calendario continuo de ${postCount} publicaciones estratégicas:\n` +
-          `📱 *Redes asignadas:* ${formatNetworks(strategyNetworks)}\n\n` +
+          `Nuestros agentes estructuraron un calendario continuo de ${postCount} publicaciones estratégicas:\n\n` +
           summaryList +
           `━━━━━━━━━━━━━━━\n` +
-          `👉 *Responde 6* para aprobar toda la estrategia y que quede agendada en tu calendario.\n` +
-          `💡 _Para cambiar redes en estos posts, responde ej: "solo instagram", "agregar linkedin" o "sin facebook"._\n` +
+          `📱 *Redes asociadas a esta estrategia:*\n` +
+          `${formatNetworksBulletList(strategyNetworks)}\n\n` +
+          `👉 *Responde 6* para aprobar toda la estrategia y que quede agendada en tu calendario.\n\n` +
+          `⚙️ *¿Modificar redes?*\n` +
+          `• Agregar otra: escribe *+linkedin* (o la red que desees)\n` +
+          `• Desasociar: escribe *-facebook* (o la que quieras quitar)\n\n` +
           `👉 Puedes ver y editar cada texto completo en tu panel web:\n` +
           `https://rrss.santisoft.cl/automatizacion-rrss/panel\n\n` +
           `_Escribe *0* para volver al menú principal._` +
@@ -845,13 +863,13 @@ Responde ÚNICAMENTE un objeto JSON válido con este formato:
           }
         }
 
-        const connected = getConnectedNetworks(currentAccount.profileDoc, currentAccount.userDoc);
+        const defaultNetworks = getDefaultPostNetworks(currentAccount.profileDoc, currentAccount.userDoc);
 
         if (pendingDocs.length === 0) {
           replyText =
             `📱 *Gestión de Redes Sociales (${businessName})*\n\n` +
             `Actualmente no tienes publicaciones pendientes de aprobación para modificar.\n\n` +
-            `🔗 *Tus redes configuradas en el panel son:*\n${formatNetworks(connected)}\n\n` +
+            `🔗 *Tus redes predeterminadas son:*\n${formatNetworksBulletList(defaultNetworks)}\n\n` +
             `👉 *Escribe 4* para crear una nueva publicación (ej: _"4 Post sobre tips solo en instagram"_) o *1* para revisar tus publicaciones agendadas.` +
             multiAccountFooter;
           break;
@@ -861,13 +879,13 @@ Responde ÚNICAMENTE un objeto JSON válido con este formato:
         const firstPost = pendingDocs[0].data();
         let currentNetworks: string[] = Array.isArray(firstPost.networks) && firstPost.networks.length > 0
           ? [...firstPost.networks]
-          : [...connected];
+          : [...defaultNetworks];
 
         let targetNetworks: string[] = [];
 
         const isSolo = /\b(solo|unicamente|solamente)\b/i.test(cleanInput);
-        const isAdd = /\b(agregar|sumar|incluir|anadir|añadir)\b/i.test(cleanInput);
-        const isRemove = /\b(quitar|sacar|sin|eliminar|remover)\b/i.test(cleanInput);
+        const isAdd = cleanInput.startsWith('+') || /\b(agregar|sumar|asociar|incluir|anadir|añadir)\b/i.test(cleanInput);
+        const isRemove = cleanInput.startsWith('-') || /\b(desasociar|desvincular|quitar|sacar|sin|eliminar|remover)\b/i.test(cleanInput);
         const mentioned = extractNetworksFromPhrase(cleanInput);
 
         if (isSolo && mentioned.length > 0) {
@@ -879,10 +897,10 @@ Responde ÚNICAMENTE un objeto JSON válido con este formato:
           if (targetNetworks.length === 0) {
             replyText =
               `⚠️ *Atención en ${businessName}:*\n\n` +
-              `No es posible dejar la publicación sin ninguna red social asignada.\n` +
+              `El post no puede quedar sin ninguna red asignada.\n` +
               `Debes mantener al menos una red activa (por ejemplo: Instagram o Facebook).\n\n` +
-              `📱 *Redes activas actuales:* ${formatNetworks(currentNetworks)}\n` +
-              `👉 Responde *6* para aprobar o indica otra red.` +
+              `📱 *Redes activas actuales:*\n${formatNetworksBulletList(currentNetworks)}\n\n` +
+              `👉 Responde *6* para aprobar o indica qué red deseas mantener.` +
               multiAccountFooter;
             break;
           }
@@ -891,15 +909,13 @@ Responde ÚNICAMENTE un objeto JSON válido con este formato:
         } else {
           // El usuario solo puso "redes" o no especificó ninguna válida
           replyText =
-            `📱 *Redes asignadas a tu publicación pendiente (${businessName}):*\n\n` +
-            `${formatNetworks(currentNetworks)}\n\n` +
+            `📱 *Redes asociadas a este post (${businessName}):*\n\n` +
+            `${formatNetworksBulletList(currentNetworks)}\n\n` +
             `━━━━━━━━━━━━━━━\n` +
-            `💡 *¿Cómo deseas ajustarlas? Responde con:*\n` +
-            `• _"solo instagram"_ (deja únicamente Instagram)\n` +
-            `• _"agregar linkedin"_ (suma LinkedIn)\n` +
-            `• _"sin facebook"_ (quita Facebook)\n` +
-            `• _"redes ig, linkedin"_ (elige las redes exactas)\n\n` +
-            `👉 O responde *6* para aprobarlas tal como están (o *6 COLA* para agendar).` +
+            `⚙️ *¿Deseas modificar las redes de este post?*\n` +
+            `• Para agregar: escribe *+linkedin* (o la red que desees)\n` +
+            `• Para desasociar: escribe *-facebook* (o la que quieras quitar)\n\n` +
+            `👉 O responde *6* para publicar *AHORA* (o *6 COLA* para agendar).` +
             multiAccountFooter;
           break;
         }
@@ -914,16 +930,16 @@ Responde ÚNICAMENTE un objeto JSON válido con este formato:
 
         const countText = pendingDocs.length > 1
           ? `en tus *${pendingDocs.length} publicaciones pendientes*`
-          : `en tu *publicación pendiente*`;
+          : `para este post`;
 
         replyText =
-          `✅ *Redes actualizadas con éxito (${businessName})*\n\n` +
-          `Nuestros agentes ajustaron las redes ${countText}.\n\n` +
-          `📱 *Publicará en:* ${formatNetworks(targetNetworks)}\n\n` +
+          `✅ *Redes actualizadas con éxito ${countText} (${businessName}):*\n\n` +
+          `📱 *Redes asociadas:*\n` +
+          `${formatNetworksBulletList(targetNetworks)}\n\n` +
           `━━━━━━━━━━━━━━━\n` +
-          `👉 *Responde 6* para publicar de inmediato.\n` +
-          `👉 *Responde 6 COLA* para agendar en la fecha programada.\n` +
-          `💡 _Puedes seguir ajustando respondiendo ej: "agregar tiktok" o "sin facebook"._` +
+          `👉 *Responde 6* para publicar *AHORA* de inmediato.\n` +
+          `👉 *Responde 6 COLA* para agendar en la fecha programada.\n\n` +
+          `⚙️ _Puedes agregar (+red) o desasociar (-red) cuando desees._` +
           multiAccountFooter;
         break;
       }
