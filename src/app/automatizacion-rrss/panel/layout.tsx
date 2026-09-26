@@ -63,6 +63,7 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
     { href: "/automatizacion-rrss/panel/admin/monitoreo", label: "Monitoreo Posts", icon: "📡", exact: false },
     { href: "/automatizacion-rrss/panel/admin/logs", label: "Logs de Sistema", icon: "📝", exact: false },
     { href: "/automatizacion-rrss/panel/admin/analitica", label: "Analítica", icon: "📈", exact: false },
+    { href: "/automatizacion-rrss/panel/admin/docs", label: "Documentación", icon: "📚", exact: false },
   ];
 
   const navSections = [
