@@ -1,126 +1,354 @@
-# 🗺️ Mapa de Arquitectura y Resumen del Proyecto - Santisoft Automatización
+# 🚀 Santisoft Automatización — Mapa de Arquitectura y Resumen del Proyecto
 
-Este documento sirve como guía de contexto rápida para desarrolladores y asistentes de Inteligencia Artificial. Describe el propósito, la estructura de directorios, el modelo de datos y los flujos clave del software para facilitar el mantenimiento y desarrollo del proyecto.
+> **Actualizado:** 2026-09-26 | **Versión:** 2.0 | **Dominio:** https://rrss.santisoft.cl
 
----
-
-## 🚀 1. Descripción General del Proyecto
-**Santisoft Automatización** es una plataforma SaaS de automatización de marketing y redes sociales (Meta, LinkedIn, TikTok, Twitter). Utiliza Inteligencia Artificial (Google Gemini, Vertex AI) y orquestación de agentes con **LangGraph** para generar, estructurar, calendarizar y publicar contenido automáticamente en cuentas de clientes, además de sincronizar métricas y generar reportes ejecutivos.
+Este documento es la referencia rápida de contexto para el equipo de desarrollo y para los agentes que trabajan en este proyecto. Cubre stack, estructura de directorios, páginas, APIs, colecciones Firestore y flujos clave.
 
 ---
 
-## 🛠️ 2. Stack Tecnológico y Dependencias
-* **Frontend**: React 18 / Next.js 14 (App Router) en puerto `3003`.
-* **Estilos**: Tailwind CSS, PostCSS.
-* **Base de Datos y Autenticación**: Firebase Auth, Firestore y Firebase Admin SDK.
-* **Orquestación de IA (Agentic Workflows)**: LangChain, `@langchain/google-genai` y `@langchain/langgraph` (para flujos multi-agente persistentes).
-* **Proveedores de LLM**: Google Generative AI (Gemini SDK) y Google Cloud Vertex AI SDK.
-* **Locución de Audio**: ElevenLabs TTS API para sintetizar audios de voz en off (.mp3) guardados en Firebase Storage.
-* **Procesamiento de Tareas en Background**: Google Cloud Tasks (GCP Tasks) para calendarizar ejecuciones futuras de publicaciones.
-* **Pasarela de Pagos**: MercadoPago API (para gestión de suscripciones).
-* **Reportes y Visualización**: Recharts (gráficos interactivos), jsPDF, html2canvas y `@react-pdf/renderer` para exportación de reportes analíticos de redes sociales.
+## 🧭 1. Descripción General
+
+**Santisoft Automatización** es una plataforma SaaS de automatización de marketing en redes sociales (Meta, LinkedIn, TikTok, Twitter/X, YouTube). Usa agentes especializados (Gemini API + Vertex AI + LangGraph) para:
+
+- **Generar** contenido (copy, imágenes, videos) adaptado al rubro y audiencia de cada cliente
+- **Calendarizar y publicar** automáticamente en múltiples redes sociales
+- **Sincronizar métricas** de engagement y alcance
+- **Generar reportes** ejecutivos en PDF
+- **Prospectar** clientes nuevos con el Generador de Muestras (demos visuales personalizadas)
+- **Automatizar** flujos complejos via n8n + GCP Tasks
+
+> ⚠️ **Regla de comunicación:** En copys, posts y cualquier texto hacia el cliente NUNCA se dice "IA" o "Inteligencia Artificial". Siempre se usa "nuestros agentes" o "equipo de agentes especializados".
 
 ---
 
-## 🤖 2.1. Modelos de Inteligencia Artificial (Configuración)
+## ⚙️ 2. Stack Tecnológico
 
-La plataforma utiliza dos integraciones de Google para interactuar con modelos de lenguaje. A continuación se detalla qué modelo usa cada componente y dónde se configura:
+| Capa | Tecnología |
+|------|-----------|
+| Frontend | Next.js 14 App Router + React 18 + TypeScript |
+| Estilos | Tailwind CSS |
+| Auth & DB | Firebase Auth + Firestore + Firebase Storage |
+| Agentes IA | Gemini API (gemini-flash-lite) + Vertex AI (gemini-2.5-flash) + LangGraph |
+| Video | Remotion (programático) + n8n Webhook (image-to-video asíncrono) |
+| Audio | ElevenLabs TTS (voiceover .mp3) |
+| Tareas en BG | Google Cloud Tasks |
+| Pagos | MercadoPago API |
+| Automatización | n8n (generate-image, image-to-video webhooks) |
+| Reportes | Recharts + jsPDF + html2canvas + @react-pdf/renderer |
+| Tests | Vitest |
+
+---
+
+## 🤖 2.1. Modelos de IA
 
 ### A. Google Generative AI (Developer API)
-Es la integración principal, utilizada para los agentes de LangGraph, generación de contenido, estrategias de marketing, chat y prompts de video.
-* **Modelo Principal**: `gemini-3.1-flash-lite`
-* **Archivo de Configuración**: [gemini-free.ts](file:///C:/Users/diemo/Desktop/Apps/santisoft-automatizacion/src/lib/gemini-free.ts)
-  * Modifica la constante `FREE_MODEL_NAME` para cambiar el modelo por defecto.
-  * Modifica el arreglo `FALLBACK_MODELS` para ordenar la prioridad de modelos alternativos de respaldo (ej. si el principal falla o supera límites de cuota, el sistema intentará con los siguientes en la lista).
+- **Uso:** Agentes LangGraph, generación de contenido, estrategias, chat, prompts de video.
+- **Modelo principal:** `gemini-flash-lite` (configurable desde Firestore por taskKey)
+- **Config:** [`src/lib/gemini-free.ts`](src/lib/gemini-free.ts) → `FREE_MODEL_NAME`, `FALLBACK_MODELS`
 
 ### B. Google Cloud Vertex AI (Service Account)
-Se utiliza para tareas específicas de comunicación con n8n (`request-image` y `update-image`) para generar descripciones técnicas estructuradas de imágenes y copys a partir de ideas principales.
-* **Modelo Principal**: `gemini-2.5-flash`
-* **Archivo de Configuración**: [vertexai.ts](file:///C:/Users/diemo/Desktop/Apps/santisoft-automatizacion/src/lib/vertexai.ts)
-  * Modifica el parámetro por defecto `modelName = 'gemini-2.5-flash'` en la función `getVertexModel`.
+- **Uso:** Comunicación con n8n (request-image, update-image), descripción técnica de imágenes.
+- **Modelo principal:** `gemini-2.5-flash`
+- **Config:** [`src/lib/vertexai.ts`](src/lib/vertexai.ts) → `getVertexModel(modelName)`
 
 ---
+
 ## 📁 3. Estructura del Directorio
-El código está organizado modularmente bajo `src/`:
+
 ```
 src/
-├── app/                  # Rutas de Next.js App Router (Páginas y Endpoints de API)
-│   ├── api/              # Endpoints del Backend (Auth, IA, Pagos, Webhooks, Demo, etc.)
-│   ├── automatizacion-rrss/ # Vistas de la aplicación de automatización
-│   │   └── panel/        # Dashboard principal del cliente (Creación, Estrategias, Métricas)
-│   ├── login/            # Autenticación y enrutamiento (valida completitud de datos)
-│   ├── registro/         # Pantalla de Onboarding y Checkout para usuarios nuevos o planes de pago
-│   └── globals.css       # Estilos globales y variables CSS del sistema
-├── components/           # Componentes UI reutilizables
-│   ├── ads/              # Formularios y asistentes de anuncios publicitarios (AdsWizard)
-│   ├── crear/            # UI para edición y creación de posts (CanvasEditor, wizards)
-│   └── gastronomico/     # Diseños especializados
-├── contexts/             # Contextos globales de React (Auth, State)
-├── hooks/                # Hooks personalizados
-└── lib/                  # Lógica del Negocio e Integraciones Externas
+├── app/                          # Next.js App Router — Páginas y APIs
+│   ├── api/                      # Endpoints del backend
+│   │   ├── admin/                # APIs exclusivas del panel admin
+│   │   ├── ai/                   # Generación de contenido, copy, imagen, video
+│   │   ├── auth/                 # OAuth: Meta, TikTok, LinkedIn, Google, X, YouTube
+│   │   ├── payments/             # MercadoPago
+│   │   ├── n8n/                  # Webhooks internos de n8n
+│   │   ├── poc/video/            # Pipeline POC de generación de video
+│   │   ├── whatsapp/             # Bot WhatsApp
+│   │   └── ...                   # Otros: blog, catalogo, track, webchat, etc.
+│   ├── automatizacion-rrss/
+│   │   └── panel/                # Dashboard del usuario
+│   │       ├── admin/            # Panel administrativo (solo emails autorizados)
+│   │       │   ├── docs/         # ← Documentación interna (esta página)
+│   │       │   ├── muestras/     # Generador de Muestras para Prospectos
+│   │       │   ├── agentes/      # Monitor de agentes IA
+│   │       │   ├── modelos-ia/   # Config dinámica de modelos
+│   │       │   └── ...           # agenda, analitica, logs, pagos, planes, etc.
+│   │       ├── crear/            # Generador de contenido principal
+│   │       ├── estrategia/       # Estrategia de contenido con LangGraph
+│   │       ├── radar/            # Radar de nicho competitivo
+│   │       ├── metricas/         # Analytics de redes sociales
+│   │       ├── poc-video/        # Laboratorio image-to-video
+│   │       └── ...               # biblioteca, blog, catalogo, ads, planes, etc.
+│   ├── m/[id]/                   # Página pública de propuesta para prospectos
+│   ├── render/preview/           # Preview Butterfly Social
+│   ├── blog/                     # Blog SEO público
+│   ├── login/ registro/ onboarding/
+│   └── page.tsx                  # Landing page pública
+├── components/                   # Componentes React reutilizables
+│   ├── crear/                    # CanvasEditor, AIOptionsModal, CarouselWizard, etc.
+│   ├── panel/                    # PostCard, PostGrid, DashboardHeader, modals, etc.
+│   ├── ads/                      # AdsWizard
+│   ├── video/                    # RemotionReelPlayer
+│   └── ...                       # BrandHeader, BrandFooter, PricingPlans, etc.
+├── lib/                          # Lógica de negocio y agentes
+│   ├── agents/                   # agent-copy, agent-image, agent-reel, agent-video-premium, etc.
+│   ├── firebase.ts               # Firebase client SDK
+│   ├── firebase-admin.ts         # Firebase Admin SDK (server-side)
+│   ├── gemini-free.ts            # Gemini API con fallback chain
+│   ├── vertexai.ts               # Vertex AI SDK
+│   ├── image-compositor.ts       # Canvas client-side + Butterfly Social render
+│   ├── video-renderer.ts         # persistRemoteVideoToStorage (Storage)
+│   ├── prompt-templates.ts       # HARDCODED_STYLES, promptCategories
+│   ├── video-prompt-templates.ts # VIDEO_PROMPT_STYLES, buildImageToVideoPrompt
+│   ├── security.ts               # sanitizeInput(), rate limiting
+│   ├── quota.ts / quota-admin.ts # Gestión de cuotas por plan
+│   ├── langgraph-*.ts            # Agentes LangGraph multi-paso
+│   ├── bh-skills.ts              # Skills: reels, stories, guiones
+│   └── ...                       # schemas, socialRules, niche-radar, etc.
+└── remotion/                     # Composiciones de video programático con Remotion
 ```
 
 ---
 
-## 🏛️ 4. Estructura de Base de Datos (Firestore)
-El proyecto utiliza Firestore para almacenar datos relacionales estructurados en colecciones clave:
-1. `users`: Información del perfil de usuario y niveles de suscripción.
-2. `businesses`: Datos de los negocios creados por cada usuario (rubro, objetivos de venta, tono de voz).
-3. `posts`: Publicaciones generadas, agendadas, pendientes de revisión humana o publicadas con su metadata (plataforma, ID de tarea de GCP, URL del recurso publicado).
-4. `integrations`: Credenciales de acceso de las redes sociales conectadas (tokens de LinkedIn, accesos de Meta/WhatsApp, etc.) cifrados con criptografía de grado militar.
-5. `strategies`: Planes estratégicos de 14 días autogenerados para cada negocio.
+## 📄 4. Páginas de la Aplicación
+
+### Públicas
+| Ruta | Nombre | Descripción |
+|------|--------|-------------|
+| `/` | Landing Page | Marketing principal: propuesta de valor, planes, testimonios, chat bot |
+| `/login` | Login | Autenticación con Google OAuth |
+| `/registro` | Registro | Creación de cuenta |
+| `/onboarding` | Onboarding | Wizard de configuración inicial del negocio |
+| `/agendar` | Agendar Reunión | Formulario público para agendar con el equipo |
+| `/m/[id]` | Demo Pública Prospecto | Propuesta visual personalizada: imagen, video, copy |
+| `/render/preview` | Preview Butterfly Social | Render de diseños de posts para Butterfly Social |
+| `/brochure` | Brochure Corporativo | Descargable como PDF |
+| `/blog` | Blog | Listado de artículos SEO |
+| `/blog/[slug]` | Artículo de Blog | Artículo SEO individual con imagen generada |
+| `/confirmar-plan` | Confirmar Plan | Página de éxito post-pago |
+| `/privacidad` `/terminos` | Legales | Políticas ES + EN |
+
+### Panel de Usuario (`/automatizacion-rrss/panel/`)
+| Ruta | Nombre | Descripción |
+|------|--------|-------------|
+| `/panel` | Dashboard | Posts, métricas rápidas, accesos directos |
+| `/panel/crear` | Crear Contenido | Wizard multi-paso: copy + imagen + publicación |
+| `/panel/estrategia` | Estrategia | Generación de estrategia mensual con LangGraph |
+| `/panel/radar` | Radar de Nicho | Análisis competitivo y de tendencias |
+| `/panel/metricas` | Métricas | Analytics con Recharts, exportación PDF |
+| `/panel/prompts` | Biblioteca de Prompts | CRUD de prompts personalizados |
+| `/panel/biblioteca` | Biblioteca de Contenido | Galería de assets generados |
+| `/panel/publicados` | Posts Publicados | Historial de contenido publicado |
+| `/panel/catalogo` | Catálogo | Productos/servicios del cliente |
+| `/panel/blog` | Blog (Panel) | Gestión de artículos SEO |
+| `/panel/ads` | Meta Ads | Gestión de campañas con Meta Ads API |
+| `/panel/planes` | Planes | Suscripción y checkout MercadoPago |
+| `/panel/configuracion` | Configuración | OAuth redes sociales, ajustes de cuenta |
+| `/panel/mi-perfil` | Mi Perfil | Datos personales del usuario |
+| `/panel/poc-video` | POC Image-to-Video | Laboratorio de video: Remotion vs n8n |
+
+### Panel Administrativo (`/automatizacion-rrss/panel/admin/`)
+> Acceso restringido: `diemoroy@gmail.com`, `spalezcom@gmail.com`, `santisoftai@gmail.com` o role `admin` en Firestore.
+
+| Ruta | Nombre | Descripción |
+|------|--------|-------------|
+| `/admin` | Usuarios | Lista de usuarios, gestión de planes y estado |
+| `/admin/muestras` | Generador de Muestras | Demos personalizadas para prospectos |
+| `/admin/estrategias` | Estrategias | Supervisión global de estrategias |
+| `/admin/agenda` | Agenda | Gestión de reuniones con prospectos |
+| `/admin/agentes` | Agentes | Monitor y config de agentes IA |
+| `/admin/analitica` | Analítica Global | Métricas globales de la plataforma |
+| `/admin/logs` | Logs | Logs de eventos, webhooks y errores |
+| `/admin/modelos-ia` | Modelos IA | Config dinámica de modelos sin re-deploy |
+| `/admin/monitoreo` | Monitoreo | Salud del sistema: APIs, quota, n8n |
+| `/admin/pagos` | Pagos | Historial de pagos de todos los usuarios |
+| `/admin/planes` | Planes | Configuración de planes de suscripción |
+| `/admin/whatsapp` | WhatsApp Bot | Gestión del bot de WhatsApp |
+| `/admin/workflows` | Workflows n8n | Monitor de automatizaciones n8n |
+| `/admin/test-video` | Test Video | Diagnóstico del pipeline de video |
+| `/admin/docs` | Documentación Interna | Esta página — mapa completo de la app |
 
 ---
 
-## 🤖 5. Flujos de Inteligencia Artificial (LangGraph Workflows)
-El núcleo inteligente de la aplicación está orquestado por LangGraph en la capa `src/lib/`:
+## ⚡ 5. APIs Principales
 
-### A. Flujo de Redacción de Contenido (`langgraph-agent.ts`)
-Implementa un patrón de **Redactor -> Revisor/Editor -> Pulidor** estructurado en un grafo:
-1. **`generateDraft`**: Crea un borrador inicial alineado con el tema y los límites de la plataforma elegida (ej: 280 caracteres para Twitter, 3000 para LinkedIn).
-2. **`critiqueDraft`**: Un agente editor analiza la longitud, el gancho (hook) y hace sugerencias.
-3. **`refineDraft`**: Reescribe y produce **3 opciones finales** diferentes (corta, mediana y creativa).
-* **Persistencia y Human-in-the-loop**: Utiliza `MemorySaver` como checkpointer de memoria para persistir el estado entre llamadas de red mediante un `thread_id`. El flujo se pausa obligatoriamente en `interruptBefore: ["refineDraft"]` para esperar la aprobación o feedback directo del usuario antes de refinar.
+### IA & Generación
+| Endpoint | Método | Descripción |
+|----------|--------|-------------|
+| `/api/ai/generate-post` | POST | Post completo (copy + imagen) desde idea |
+| `/api/ai/generate-prompt` | POST | Prompt optimizado para imagen |
+| `/api/ai/copywriter` | POST | 3 variantes de copy (PAS, AIDA, HSO) |
+| `/api/ai/prospect-copy` | POST | Copy humanizado para demos de prospectos |
+| `/api/ai/image-to-video` | POST | Proxy a n8n para generación de video |
+| `/api/ai/retouch-prompt` | POST | Retoque de imagen con prompt descriptivo |
+| `/api/ai/generate-strategy` | POST | Estrategia mensual de contenido |
+| `/api/ai/analyze-metrics` | POST | Análisis de métricas con insights |
+| `/api/ai/seo-write-now` | POST | Artículo SEO completo |
+| `/api/ai/langgraph` | POST | Agente LangGraph multi-paso |
 
-### B. Generación de Estrategia de Marketing (`langgraph-strategy.ts`)
-Crea calendarios tácticos personalizados:
-1. **`analyze`**: Diseña pilares de contenido según el rubro y objetivos del negocio.
-2. **`plan`**: Traduce la estrategia a un plan táctico estructurado en formato JSON.
-3. **`validate`**: Limpia, valida e inyecta reglas de negocio (ej: si se conecta TikTok, el formato debe ajustarse a Reel).
+### n8n Webhooks Internos
+| Endpoint | Método | Descripción |
+|----------|--------|-------------|
+| `/api/n8n/request-image` | POST | Solicita imagen a n8n |
+| `/api/n8n/update-image` | POST | n8n notifica imagen lista |
+| `/api/n8n/send-report` | POST | Envía reporte via n8n |
+| `/api/n8n/decrypt` | POST | Descifra payload de n8n |
 
-### C. Generación de Prompts e Instrumentos de Video para Reels (Image-to-Video)
-Para la creación de Reels, el sistema no renderiza video localmente, sino que asiste al usuario:
-1. **Generación de Portada (n8n)**: Crea una imagen estática de alta calidad que sirve de portada o escena inicial.
-2. **Prompt de Animación (Gemini)**: Escribe el prompt descriptivo en inglés enfocado en animar dicha imagen de portada a través de IAs externas (Runway, Luma, Sora).
-3. **Locución Vocal (ElevenLabs)**: Escribe un script corto en español y sintetiza la locución en formato `.mp3` para descargar y montar en el video final.
+### Publicación
+| Endpoint | Método | Descripción |
+|----------|--------|-------------|
+| `/api/publish-now` | POST | Publica inmediatamente |
+| `/api/publish-story` | POST | Publica story en Instagram |
+| `/api/tasks/schedule` | POST | Programa publicación futura (GCP Tasks) |
+| `/api/cron/auto-publish` | POST | Cron de autopublicación |
 
----
-
-## 📡 6. Rutas del Backend (Endpoints de API)
-La plataforma interactúa a través de controladores en `src/app/api/`:
-* **`api/ai/` y `api/strategies/`**: Interfaces de ejecución de los grafos de LangGraph para redactar posts y modelar planes estratégicos.
-* **`api/payments/`**: Webhooks e integraciones de checkout con MercadoPago.
-* **`api/linkedin/` y `api/social-auth/`**: Flujos OAuth 2.0 para conectar redes sociales del cliente.
-* **`api/publish-now/`**: Trigger directo para disparar publicaciones asíncronas vía APIs externas.
-* **`api/tasks/` y `api/trigger-posts/`**: Agendamiento y llamadas desde Google Cloud Tasks para publicaciones programadas.
-* **`api/webhooks/` y `api/whatsapp/`**: Recepción de webhooks externos y automatización de chats de WhatsApp.
-
----
-
-## 🔒 7. Políticas de Seguridad y Criptografía (.cursorrules)
-* **Cifrado de Tokens**: Las credenciales y tokens OAuth guardados en Firestore deben estar cifrados con **AES-256-GCM** inyectando vectores de inicialización (`iv`) únicos y etiquetas de autenticación (`tag`) (`src/lib/encryption.ts`).
-* **Protección de API**: 
-  * Las rutas administrativas exigen validación de roles (`admin`).
-  * Los procesos automáticos de publicación y llamadas de cron exigen validación de cabecera Bearer contra `CRON_SECRET`.
-* **Sanitización de Prompts**: Todos los textos de usuario se sanitizan mediante `sanitizeInput` para anular ataques de Prompt Injection.
-* **Lazy Loading**: Recursos pesados del servidor (ej: `firebase-admin`, `@google-cloud/tasks`) se cargan dinámicamente mediante `await import(...)` para evitar inicializaciones masivas en el arranque.
+### Autenticación Social
+| Endpoint | Descripción |
+|----------|-------------|
+| `/api/auth/meta` + `/callback` + `/pages` | OAuth Meta (Facebook/Instagram) |
+| `/api/auth/tiktok` + `/callback` | OAuth TikTok |
+| `/api/auth/linkedin/pages` | OAuth LinkedIn |
+| `/api/social-auth/x/redirect` + `/callback` | OAuth Twitter/X |
+| `/api/social-auth/youtube/redirect` + `/callback` | OAuth YouTube |
 
 ---
 
-## 🎯 8. Flujo de Adquisición y Demostración (Landing Page)
-La plataforma cuenta con un robusto sistema de captación y onboarding en la aplicación pública:
-* **Demo Avanzada Interactiva**: A través del endpoint `/api/generate-demo-advanced/route.ts`, los visitantes pueden probar la generación de IA sin registrarse. El sistema genera un prompt con directivas de marca, obtiene la imagen generada, y ejecuta un **ciclo de validación interno (Critique Loop)** para garantizar que el texto resultante no supere 300 caracteres y sea directo. El resultado se muestra en un modal interactivo (con marca de agua vía CSS) y se envía al usuario vía email (Nodemailer).
-* **Onboarding y Checkout Unificado**: La entrada de todos los usuarios se centraliza en `/registro/page.tsx`.
-  * Planes de Pago: Recolecta datos, crea el usuario y lo envía silenciosamente a la pasarela de MercadoPago.
-  * Plan Gratuito: Crea el usuario y lo redirige a la app.
-* **Smart Login**: Si un cliente se loguea vía Google Auth sin haber completado los datos mínimos de su perfil (Teléfono, Empresa), el sistema bloquea su entrada al panel y lo fuerza a pasar por el formulario de `/registro` para garantizar la integridad de la base de datos de usuarios.
+## 🗄️ 6. Colecciones Firestore
+
+| Colección | Descripción |
+|-----------|-------------|
+| `users` | Usuarios: plan, role, redes OAuth, uso mensual |
+| `posts` | Posts generados: copy, imágenes, estado, programación |
+| `strategies` | Estrategias de contenido generadas |
+| `admin_prospect_demos` | Demos para prospectos: imagen, video, copy, link `/m/[id]` |
+| `preview_renders` | Renders Butterfly Social: textLayers, logoUrl, outputUrl |
+| `system_config` | Config global: planes, taskKey → modelo IA |
+| `ai_model_config` | Modelos IA configurables dinámicamente por taskKey |
+| `meetings` | Reuniones agendadas con prospectos |
+| `payments` | Historial de pagos y suscripciones |
+| `catalogo` | Productos/servicios del catálogo del cliente |
+| `blog_articles` | Artículos SEO generados |
+| `chat_history` | Historial del webchat del landing |
+| `whatsapp_conversations` | Conversaciones del bot WhatsApp |
+
+### Firebase Storage — Rutas
+```
+posts/{userId}/{postId}/image.{ext}
+posts/{userId}/{postId}/video.mp4
+muestras/{demoId}/imagen.png
+muestras/{demoId}/video.mp4
+renders/{renderId}/preview.png
+logos/{userId}/logo.{ext}
+blog/{articleId}/cover.png
+catalogo/{userId}/{productId}/image.{ext}
+audio/{userId}/{postId}/voiceover.mp3
+```
+
+---
+
+## 🔗 7. Webhooks n8n Externos
+
+| URL | Descripción |
+|-----|-------------|
+| `https://n8n.santisoft.cl/webhook/generate-image` | Genera imagen con Vertex AI + retoque. Llamado por `/api/n8n/request-image`. |
+| `https://n8n.santisoft.cl/webhook/image-to-video` | Genera video desde imagen con IA. Polling asíncrono. Llamado por `/api/ai/image-to-video`. |
+
+---
+
+## 🧩 8. Componentes Principales
+
+| Componente | Carpeta | Uso |
+|-----------|---------|-----|
+| `CanvasEditor` | crear/ | Editor canvas client-side para imágenes 1080×1080 |
+| `CarouselWizard` | crear/ | Wizard multi-slide para carruseles |
+| `AIOptionsModal` | crear/ | Modal de opciones de generación IA |
+| `PostConfigForm` | crear/ | Formulario de configuración del post |
+| `PromptStylePickerModal` | crear/ | Selector de estilo visual (HARDCODED_STYLES) |
+| `PostCard` | panel/ | Tarjeta de post en el feed |
+| `PostGrid` | panel/ | Grid de posts con filtros |
+| `DashboardHeader` | panel/ | Header del panel con info del usuario |
+| `BulkActionBar` | panel/ | Acciones en lote sobre posts seleccionados |
+| `DashboardCarouselViewer` | panel/ | Viewer de carruseles en el dashboard |
+| `PostDetailModal` | panel/modals/ | Detalle expandido de un post |
+| `UpgradeModal` | panel/modals/ | Modal de upgrade de plan |
+| `RemotionReelPlayer` | video/ | Player del video generado con Remotion |
+| `AdsWizard` | ads/ | Wizard de creación de campañas Meta Ads |
+| `PricingPlans` | / | Tabla de planes de suscripción |
+| `WebChatWidget` | / | Widget de chat en landing |
+| `DotCanvas` | / | Animación de fondo del landing |
+| `HeroSection` | / | Hero del landing con CTA |
+
+---
+
+## 🔄 9. Flujos Clave
+
+### Generación de Post (Happy Path)
+```
+Usuario → /panel/crear → PostConfigForm
+  → POST /api/ai/generate-prompt → Vertex AI
+  → POST /api/ai/generate-from-prompt → imagen generada
+  → Canvas client-side / Butterfly Social → imagen final
+  → POST /api/ai/copywriter → 3 variantes de copy
+  → Usuario selecciona + edita
+  → POST /api/publish-now → Meta/LinkedIn/TikTok API
+  → Firestore posts collection ✓
+```
+
+### Generador de Muestras para Prospectos
+```
+Admin → /panel/admin/muestras
+  → Upload logo + foto + rubro + oferta + plato/producto
+  → Canvas client-side → imagen 1080×1080 con watermark "Creado por Santisoft.cl"
+  → Butterfly Social → render alternativo con textLayers
+  → POST /api/ai/prospect-copy → copy humanizado adaptado al plato
+  → POST /api/ai/image-to-video → n8n webhook → polling asíncrono → video MP4
+  → Firebase Storage → urls persistentes
+  → Firestore admin_prospect_demos → link público /m/[id]
+  → WhatsApp con link compartible al prospecto ✓
+```
+
+### Image-to-Video (Asíncrono con Polling)
+```
+Cliente → POST /api/ai/image-to-video
+  → n8n webhook: https://n8n.santisoft.cl/webhook/image-to-video
+  → n8n genera video con IA (proceso ~30-120s)
+  → n8n sube a Storage / URL temporal
+  → Frontend polling cada 3s hasta status: "done"
+  → video disponible en UI ✓
+```
+
+### Publicación Programada
+```
+Usuario → selecciona fecha/hora → POST /api/tasks/schedule
+  → Google Cloud Tasks → job creado
+  → En la hora programada → POST /api/tasks/execute-post (GCP Tasks llama)
+  → Meta/LinkedIn/TikTok API → publicado
+  → Firestore post.status = "published" ✓
+```
+
+---
+
+## 🛡️ 10. Seguridad y Acceso
+
+- **Auth:** Firebase Auth (Google OAuth + email/password)
+- **Panel admin:** Verificación de email en lista ADMIN_EMAILS + role `admin` en Firestore
+- **APIs admin:** Bearer token verificado con Firebase Admin SDK
+- **Sanitización:** `sanitizeInput()` en todos los endpoints que reciben texto del usuario
+- **Rate limiting:** Quota por plan en `quota.ts` / `quota-admin.ts`
+- **Encryption:** `encryption.ts` para datos sensibles (tokens OAuth almacenados cifrados)
+
+---
+
+## 🎨 11. Watermarks y Marca
+
+En todas las imágenes del Generador de Muestras se incluye la marca Santisoft:
+- **Canvas client-side:** `drawSantisoftWatermark()` en `image-compositor.ts`
+- **Butterfly Social:** textLayer en Firestore con `text: "Creado por Santisoft.cl"`
+- **Página `/m/[id]`:** Badge `<div>` sobre la imagen
+- **Preview `/render/preview`:** Floating watermark badge
+
+---
+
+*Para la versión interactiva de este documento (con búsqueda y filtros), visita `/automatizacion-rrss/panel/admin/docs` en el panel admin.*

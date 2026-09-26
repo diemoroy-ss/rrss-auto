@@ -173,6 +173,9 @@ export default function AdminUsersPage() {
             <Link href="/automatizacion-rrss/panel/admin/logs" className="w-full sm:w-auto bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold py-4 px-8 rounded-[24px] border border-indigo-100 transition-all flex items-center gap-3">
                 <span>📡</span> Logs de Ejecución
             </Link>
+            <Link href="/automatizacion-rrss/panel/admin/docs" className="w-full sm:w-auto bg-violet-50 hover:bg-violet-100 text-violet-700 font-bold py-4 px-8 rounded-[24px] border border-violet-100 transition-all flex items-center gap-3">
+                <span>📚</span> Documentación
+            </Link>
             <div className="bg-white px-6 py-4 rounded-[24px] border-2 border-slate-100 shadow-sm flex items-center gap-4">
                 <span className="text-2xl">👥</span>
                 <div>
