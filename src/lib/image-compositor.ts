@@ -8,6 +8,7 @@ export interface CompositeOptions {
   logoSize?: number; // en px (80 a 200)
   logoTransparent?: boolean;
   offerText?: string;
+  dishOrProductName?: string;
   businessName?: string;
   userId?: string;
   /** Marca de agua que dice "Creado por Santisoft.cl" */
@@ -26,6 +27,7 @@ export async function createButterflyRender(options: CompositeOptions): Promise<
     logoSize = 100,
     logoTransparent = false,
     offerText,
+    dishOrProductName,
     userId = "admin",
     includeSantisoftWatermark = true,
   } = options;
@@ -41,12 +43,16 @@ export async function createButterflyRender(options: CompositeOptions): Promise<
 
   const coords = positionMap[logoPosition] || { x: 86, y: 14 };
 
+  const badgeText = offerText && dishOrProductName
+    ? `${dishOrProductName.trim()} · ${offerText.trim()}`
+    : (dishOrProductName?.trim() || offerText?.trim());
+
   const textLayers: any[] = [];
-  if (offerText && offerText.trim().length > 0) {
+  if (badgeText && badgeText.length > 0) {
     textLayers.push({
       x: 50,
       y: 90,
-      text: offerText.trim().toUpperCase(),
+      text: badgeText.toUpperCase(),
       color: "#ffffff",
       font: "Montserrat",
       size: 32,
@@ -179,32 +185,44 @@ export async function compositeImageClient(options: CompositeOptions): Promise<s
 
           ctx.drawImage(logoImg, drawX, drawY, drawW, drawH);
 
-          // 3. Dibujar badge de oferta si existe
-          drawOfferBadge(ctx, options.offerText, W, H);
+          const badgeText = options.offerText && options.dishOrProductName
+            ? `${options.dishOrProductName.trim()} · ${options.offerText.trim()}`
+            : (options.dishOrProductName?.trim() || options.offerText?.trim());
+
+          // 3. Dibujar badge de oferta o producto si existe
+          drawOfferBadge(ctx, badgeText, W, H);
 
           // 4. Dibujar marca de agua Santisoft.cl si está activa
           if (options.includeSantisoftWatermark !== false) {
-            drawSantisoftWatermark(ctx, W, H, Boolean(options.offerText));
+            drawSantisoftWatermark(ctx, W, H, Boolean(badgeText));
           }
 
           resolve(canvas.toDataURL("image/jpeg", 0.94));
         };
 
         logoImg.onerror = () => {
+          const badgeText = options.offerText && options.dishOrProductName
+            ? `${options.dishOrProductName.trim()} · ${options.offerText.trim()}`
+            : (options.dishOrProductName?.trim() || options.offerText?.trim());
+
           // Si el logo falla por CORS, continuar con la base, el texto y la marca de agua
-          drawOfferBadge(ctx, options.offerText, W, H);
+          drawOfferBadge(ctx, badgeText, W, H);
           if (options.includeSantisoftWatermark !== false) {
-            drawSantisoftWatermark(ctx, W, H, Boolean(options.offerText));
+            drawSantisoftWatermark(ctx, W, H, Boolean(badgeText));
           }
           resolve(canvas.toDataURL("image/jpeg", 0.94));
         };
 
         logoImg.src = options.logoUrl;
       } else {
+        const badgeText = options.offerText && options.dishOrProductName
+          ? `${options.dishOrProductName.trim()} · ${options.offerText.trim()}`
+          : (options.dishOrProductName?.trim() || options.offerText?.trim());
+
         // Sin logo: dibujar solo badge y marca de agua
-        drawOfferBadge(ctx, options.offerText, W, H);
+        drawOfferBadge(ctx, badgeText, W, H);
         if (options.includeSantisoftWatermark !== false) {
-          drawSantisoftWatermark(ctx, W, H, Boolean(options.offerText));
+          drawSantisoftWatermark(ctx, W, H, Boolean(badgeText));
         }
         resolve(canvas.toDataURL("image/jpeg", 0.94));
       }

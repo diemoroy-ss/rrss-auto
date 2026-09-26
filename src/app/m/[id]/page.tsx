@@ -6,7 +6,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { db } from "../../../lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
-import { FaWhatsapp, FaImage, FaVideo, FaShareAlt, FaCheck, FaArrowRight, FaShieldAlt, FaRocket, FaClock, FaStar } from "react-icons/fa";
+import { FaWhatsapp, FaImage, FaVideo, FaShareAlt, FaCheck, FaArrowRight, FaShieldAlt, FaRocket, FaClock, FaStar, FaCopy, FaPenNib } from "react-icons/fa";
 
 // Importación dinámica de RemotionReelPlayer para mantener la carga ultra-rápida en móviles
 const RemotionReelPlayer = dynamic(() => import("../../../components/video/RemotionReelPlayer"), {
@@ -26,6 +26,8 @@ interface DemoData {
   prospectPhone?: string;
   rubro?: string;
   offerText?: string;
+  dishOrProductName?: string;
+  generatedPostCaption?: string;
   generatedImageUrl?: string;
   generatedVideoUrl?: string;
   remotionComposition?: any;
@@ -44,6 +46,7 @@ export default function PublicProspectDemoPage({ params }: { params: Promise<{ i
   const [loading, setLoading] = useState(true);
   const [activeMediaTab, setActiveMediaTab] = useState<"imagen" | "video">("imagen");
   const [copiedLink, setCopiedLink] = useState(false);
+  const [copiedCaption, setCopiedCaption] = useState(false);
 
   useEffect(() => {
     async function fetchDemo() {
@@ -59,6 +62,8 @@ export default function PublicProspectDemoPage({ params }: { params: Promise<{ i
             prospectPhone: data.prospectPhone || "",
             rubro: data.rubro || "Comercial",
             offerText: data.offerText || "",
+            dishOrProductName: data.dishOrProductName || "",
+            generatedPostCaption: data.generatedPostCaption || data.postCaption || "",
             generatedImageUrl: data.generatedImageUrl || "",
             generatedVideoUrl: data.generatedVideoUrl || "",
             remotionComposition: data.remotionComposition || null,
@@ -89,6 +94,14 @@ export default function PublicProspectDemoPage({ params }: { params: Promise<{ i
       navigator.clipboard.writeText(shareUrl);
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 2500);
+    }
+  };
+
+  const handleCopyCaption = () => {
+    if (demo?.generatedPostCaption && typeof window !== "undefined") {
+      navigator.clipboard.writeText(demo.generatedPostCaption);
+      setCopiedCaption(true);
+      setTimeout(() => setCopiedCaption(false), 2500);
     }
   };
 
@@ -351,6 +364,61 @@ export default function PublicProspectDemoPage({ params }: { params: Promise<{ i
           )}
 
         </section>
+        
+        {/* PROPUESTA DE COPY PARA REDES SOCIALES (REDACTADO POR NUESTROS AGENTES) */}
+        {demo.generatedPostCaption && (
+          <section className="bg-slate-900/90 border border-indigo-900/40 rounded-3xl p-6 sm:p-8 shadow-xl space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center text-lg">
+                  <FaPenNib />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base sm:text-lg font-black text-white">
+                      Copy Sugerido para tus Redes
+                    </h3>
+                    {demo.dishOrProductName && (
+                      <span className="hidden sm:inline-block text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                        {demo.dishOrProductName}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-400">
+                    Redactado por nuestros agentes para conectar con tu audiencia y generar ventas directas
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleCopyCaption}
+                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold flex items-center gap-2 transition-all shadow-md shadow-indigo-600/30 active:scale-95"
+              >
+                {copiedCaption ? <FaCheck className="text-emerald-300" /> : <FaCopy />}
+                <span>{copiedCaption ? "¡Copy Copiado!" : "Copiar Texto"}</span>
+              </button>
+            </div>
+
+            {demo.dishOrProductName && (
+              <div className="sm:hidden inline-block text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                Plato / Producto: {demo.dishOrProductName}
+              </div>
+            )}
+
+            <div className="bg-slate-950/80 p-4 sm:p-5 rounded-2xl border border-slate-800/80 text-xs sm:text-sm text-slate-200 whitespace-pre-wrap leading-relaxed select-all font-sans">
+              {demo.generatedPostCaption}
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between text-[11px] text-slate-500 pt-1 gap-2">
+              <span className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                Formato listo para copiar y pegar en Instagram, Facebook o WhatsApp
+              </span>
+              <span className="text-indigo-400 font-bold">100% Personalizado por nuestros agentes</span>
+            </div>
+          </section>
+        )}
 
         {/* BENEFICIOS: CÓMO TRABAJAN NUESTROS AGENTES */}
         <section className="space-y-4">

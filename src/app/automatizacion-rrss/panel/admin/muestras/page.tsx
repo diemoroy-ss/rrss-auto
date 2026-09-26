@@ -55,6 +55,8 @@ interface ProspectDemo {
   prospectPhone: string;
   rubro: string;
   offerText: string;
+  dishOrProductName?: string;
+  generatedPostCaption?: string;
   baseImageUrl?: string;
   logoUrl?: string;
   logoPosition?: string;
@@ -119,7 +121,8 @@ export default function AdminMuestrasPage() {
   const [rubro, setRubro] = useState(COMMON_NICHES[0].label);
   const [offerText, setOfferText] = useState("");
 
-  // Paso 2: Assets del Prospecto
+  // Paso 2: Assets del Prospecto y Plato/Producto
+  const [dishOrProductName, setDishOrProductName] = useState<string>("");
   const [baseImageFile, setBaseImageFile] = useState<File | null>(null);
   const [baseImagePreview, setBaseImagePreview] = useState<string>("");
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -143,6 +146,11 @@ export default function AdminMuestrasPage() {
   const [createdDemoId, setCreatedDemoId] = useState<string>("");
   const [customWhatsappCopy, setCustomWhatsappCopy] = useState<string>("");
   const [copySuccess, setCopySuccess] = useState(false);
+
+  // Estado de Generación de Copy para Redes con Agentes
+  const [generatedPostCaption, setGeneratedPostCaption] = useState<string>("");
+  const [isGeneratingPostCaption, setIsGeneratingPostCaption] = useState<boolean>(false);
+  const [copiedPostCaption, setCopiedPostCaption] = useState<boolean>(false);
 
   // Estado de Generación de Video (Fase 3: Remotion vs Biblioteca de Prompts)
   const [videoModality, setVideoModality] = useState<"remotion" | "prompt_library">("remotion");
@@ -225,28 +233,35 @@ export default function AdminMuestrasPage() {
   // Sincronizar el prompt de video cuando cambia el estilo seleccionado o los datos del negocio
   useEffect(() => {
     if (selectedVideoTemplate) {
+      const offerOrDish = dishOrProductName.trim()
+        ? `${dishOrProductName.trim()}${offerText.trim() ? ` (${offerText.trim()})` : ""}`
+        : offerText.trim();
+
       const result = buildImageToVideoPrompt(selectedVideoTemplate, {
         businessName: prospectBusiness.trim(),
         rubro,
-        offerText: offerText.trim(),
+        offerText: offerOrDish,
       });
       setCustomVideoPrompt(result.promptEnglish);
       setCustomVideoSummary(result.promptSpanishSummary);
       setCameraNotes(result.cameraNotes);
     }
-  }, [selectedVideoTemplate, prospectBusiness, rubro, offerText]);
+  }, [selectedVideoTemplate, prospectBusiness, rubro, offerText, dishOrProductName]);
 
   // Actualizar mensaje de WhatsApp con el enlace de la demo
   useEffect(() => {
     const namePart = prospectName.trim() ? `¡Hola ${prospectName.trim()}!` : "¡Hola!";
     const businessPart = prospectBusiness.trim() ? ` para ${prospectBusiness.trim()}` : "";
-    const offerPart = offerText.trim() ? ` destacando "${offerText.trim()}"` : "";
+    const offerOrDish = dishOrProductName.trim()
+      ? ` su especialidad "${dishOrProductName.trim()}"${offerText.trim() ? ` y la promo "${offerText.trim()}"` : ""}`
+      : (offerText.trim() ? ` destacando "${offerText.trim()}"` : "");
+    const offerPart = offerOrDish ? ` destacando${offerOrDish}` : "";
 
     const demoLink = createdDemoId ? `${PUBLIC_APP_URL}/m/${createdDemoId}` : (generatedImageUrl || "[ENLACE_DE_MUESTRA]");
 
     const defaultMsg = `${namePart} 👋 Estuve revisando lo que hacen en tu marca y le pedí a nuestro equipo de agentes que diseñara esta propuesta visual y de video exclusiva${businessPart}${offerPart}:
 
-🚀 Puedes ver la muestra interactiva aquí:
+🚀 Puedes ver la muestra interactiva y el copy listo para publicar aquí:
 ${demoLink}
 
 Diseñamos este contenido con su identidad para que veas la calidad y el impacto que tendrían sus redes semana a semana sin quitarte tiempo.
@@ -254,7 +269,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
 ¿Qué te parece el estilo?`;
 
     setCustomWhatsappCopy(defaultMsg);
-  }, [prospectName, prospectBusiness, offerText, generatedImageUrl, createdDemoId]);
+  }, [prospectName, prospectBusiness, offerText, dishOrProductName, generatedImageUrl, createdDemoId]);
 
   // Filtro de plantillas de imagen
   const filteredTemplates = HARDCODED_STYLES.filter((template) => {
@@ -321,7 +336,8 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
           rawBaseUrl = selectedTemplate.previewUrl;
         } else {
           const fallbackSeed = Math.floor(Math.random() * 100000);
-          const promptQuery = encodeURIComponent(`${rubro} commercial photography high quality professional lighting ${offerText}`);
+          const dishPart = dishOrProductName.trim() ? `${dishOrProductName.trim()}, ` : "";
+          const promptQuery = encodeURIComponent(`${dishPart}${rubro} commercial photography high quality professional lighting ${offerText}`);
           rawBaseUrl = `https://image.pollinations.ai/prompt/${promptQuery}?width=1080&height=1080&nologo=true&seed=${fallbackSeed}`;
         }
       }
@@ -336,6 +352,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
           logoSize,
           logoTransparent,
           offerText: offerText.trim() || undefined,
+          dishOrProductName: dishOrProductName.trim() || undefined,
           businessName: prospectBusiness.trim(),
           includeSantisoftWatermark: true,
         });
@@ -355,6 +372,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
           logoSize,
           logoTransparent,
           offerText: offerText.trim() || undefined,
+          dishOrProductName: dishOrProductName.trim() || undefined,
           businessName: prospectBusiness.trim(),
           userId: currentUser?.uid || "admin",
           includeSantisoftWatermark: true,
@@ -370,13 +388,43 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
       setGeneratedImageUrl(finalImage);
       setActiveImageVersion("canvas");
 
-      // 6. Guardar en Firestore para historial y generar enlace público /m/[id]
+      // 6. Generar Copy para Redes con Agentes adaptado al Plato/Producto
+      let finalPostCaption = generatedPostCaption;
+      try {
+        setIsGeneratingPostCaption(true);
+        const copyRes = await fetch("/api/ai/prospect-copy", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            businessName: prospectBusiness.trim(),
+            rubro,
+            dishOrProductName: dishOrProductName.trim(),
+            offerText: offerText.trim(),
+            phone: `${countryCode}${prospectPhone.trim().replace(/^0+/, "")}`,
+          }),
+        });
+        if (copyRes.ok) {
+          const copyData = await copyRes.json();
+          if (copyData.copy) {
+            finalPostCaption = copyData.copy;
+            setGeneratedPostCaption(finalPostCaption);
+          }
+        }
+      } catch (copyErr) {
+        console.warn("Fallo generación de copy con agentes:", copyErr);
+      } finally {
+        setIsGeneratingPostCaption(false);
+      }
+
+      // 7. Guardar en Firestore para historial y generar enlace público /m/[id]
       const docRef = await addDoc(collection(db, "admin_prospect_demos"), {
         prospectName: prospectName.trim(),
         prospectBusiness: prospectBusiness.trim(),
         prospectPhone: `${countryCode}${prospectPhone.trim().replace(/^0+/, "")}`,
         rubro,
         offerText: offerText.trim(),
+        dishOrProductName: dishOrProductName.trim() || null,
+        generatedPostCaption: finalPostCaption || null,
         baseImageUrl: uploadedBaseImageUrl || rawBaseUrl || null,
         logoUrl: uploadedLogoUrl || null,
         logoPosition,
@@ -405,6 +453,53 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
     } finally {
       setIsGenerating(false);
       setIsUploadingAssets(false);
+    }
+  };
+
+  // Regenerar copy individualmente con nuestros agentes
+  const handleRegenerateCopy = async () => {
+    if (!prospectBusiness.trim()) {
+      alert("Por favor indica al menos el nombre del negocio para generar el copy.");
+      return;
+    }
+    setIsGeneratingPostCaption(true);
+    try {
+      const copyRes = await fetch("/api/ai/prospect-copy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          businessName: prospectBusiness.trim(),
+          rubro,
+          dishOrProductName: dishOrProductName.trim(),
+          offerText: offerText.trim(),
+          phone: `${countryCode}${prospectPhone.trim().replace(/^0+/, "")}`,
+        }),
+      });
+      if (copyRes.ok) {
+        const copyData = await copyRes.json();
+        if (copyData.copy) {
+          setGeneratedPostCaption(copyData.copy);
+          if (createdDemoId) {
+            await updateDoc(doc(db, "admin_prospect_demos", createdDemoId), {
+              generatedPostCaption: copyData.copy,
+              dishOrProductName: dishOrProductName.trim() || null,
+            });
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Error al regenerar copy con agentes:", err);
+      alert("Hubo un detalle al regenerar el copy. Revisa la consola.");
+    } finally {
+      setIsGeneratingPostCaption(false);
+    }
+  };
+
+  const handleCopyPostCaption = () => {
+    if (generatedPostCaption && typeof window !== "undefined") {
+      navigator.clipboard.writeText(generatedPostCaption);
+      setCopiedPostCaption(true);
+      setTimeout(() => setCopiedPostCaption(false), 2500);
     }
   };
 
@@ -932,6 +1027,26 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                     className="hidden"
                   />
                 </div>
+              </div>
+
+              {/* Nombre del Plato, Producto o Especialidad a Destacar */}
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <span>🍽️</span> Nombre del Plato, Producto o Especialidad a Destacar
+                  </label>
+                  <span className="text-[10px] text-indigo-500 dark:text-indigo-400 font-bold">Leído por nuestros agentes</span>
+                </div>
+                <input
+                  type="text"
+                  value={dishOrProductName}
+                  onChange={(e) => setDishOrProductName(e.target.value)}
+                  placeholder="Ej: Ramen Tonkotsu Especial, Hamburguesa Doble Trufa, Limpieza Facial Ultrasónica..."
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <p className="text-[11px] text-slate-500 leading-tight">
+                  Nuestros agentes leerán este producto tanto para orientar la imagen comercial como para redactar un copy persuasivo y listo para publicar en redes sociales.
+                </p>
               </div>
             </div>
 
@@ -1463,6 +1578,112 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
               )}
             </div>
 
+            {/* Visualizador de Copy para Redes Sociales (Redactado por Agentes) */}
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 text-sm">
+                    ✍️
+                  </span>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white leading-tight">
+                      Copy para Redes Sociales
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Redactado por nuestros agentes según el plato / producto
+                    </p>
+                  </div>
+                </div>
+
+                {generatedPostCaption && (
+                  <button
+                    type="button"
+                    onClick={handleRegenerateCopy}
+                    disabled={isGeneratingPostCaption}
+                    className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-bold flex items-center gap-1 disabled:opacity-50"
+                    title="Pedir otra variante a nuestros agentes"
+                  >
+                    <FaMagic className={isGeneratingPostCaption ? "animate-spin" : ""} />
+                    <span>{isGeneratingPostCaption ? "Generando..." : "Regenerar"}</span>
+                  </button>
+                )}
+              </div>
+
+              {dishOrProductName && (
+                <div className="flex items-center gap-1.5 text-xs">
+                  <span className="text-slate-500">Producto enfocado:</span>
+                  <span className="font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-2 py-0.5 rounded-lg border border-indigo-200 dark:border-indigo-800">
+                    {dishOrProductName}
+                  </span>
+                </div>
+              )}
+
+              {generatedPostCaption ? (
+                <div className="space-y-3">
+                  <textarea
+                    rows={8}
+                    value={generatedPostCaption}
+                    onChange={(e) => setGeneratedPostCaption(e.target.value)}
+                    placeholder="El copy redactado por nuestros agentes aparecerá aquí..."
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-3.5 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-sans leading-relaxed select-all"
+                  />
+
+                  <div className="flex items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      onClick={handleCopyPostCaption}
+                      className="flex-1 py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-md shadow-indigo-600/20 flex items-center justify-center gap-1.5"
+                    >
+                      {copiedPostCaption ? <FaCheck /> : <FaCopy />}
+                      <span>{copiedPostCaption ? "¡Copy Copiado!" : "Copiar Texto del Post"}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleRegenerateCopy}
+                      disabled={isGeneratingPostCaption}
+                      className="py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-100 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                      title="Generar nueva propuesta"
+                    >
+                      <FaMagic className={isGeneratingPostCaption ? "animate-spin" : ""} />
+                      <span>{isGeneratingPostCaption ? "Redactando..." : "Nueva Versión"}</span>
+                    </button>
+                  </div>
+
+                  <p className="text-[11px] text-slate-400">
+                    💡 Este copy también se incluye automáticamente en la página interactiva del prospecto (/m/[id]) para que lo pueda copiar directamente.
+                  </p>
+                </div>
+              ) : isGeneratingPostCaption ? (
+                <div className="p-8 rounded-2xl border border-indigo-200 dark:border-indigo-900/50 bg-indigo-50/50 dark:bg-indigo-950/20 flex flex-col items-center justify-center text-center space-y-2">
+                  <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Nuestros agentes están redactando el copy...
+                  </p>
+                  <p className="text-[11px] text-slate-400">
+                    Adaptando el gancho, beneficios y llamado a la acción al plato o producto seleccionado
+                  </p>
+                </div>
+              ) : (
+                <div className="p-6 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 text-center bg-slate-50/50 dark:bg-slate-800/30 space-y-2">
+                  <p className="text-xs font-bold text-slate-600 dark:text-slate-400">
+                    Aún no se ha redactado el copy
+                  </p>
+                  <p className="text-[11px] text-slate-400 max-w-[260px] mx-auto">
+                    Al presionar &quot;Preparar Muestra Visual&quot; o el botón inferior, nuestros agentes generarán el copy para redes sociales.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleRegenerateCopy}
+                    disabled={isGeneratingPostCaption || !prospectBusiness.trim()}
+                    className="mt-1 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-400 text-xs font-bold border border-indigo-200 dark:border-indigo-800 transition-colors disabled:opacity-50"
+                  >
+                    Redactar Copy Ahora
+                  </button>
+                </div>
+              )}
+            </div>
+
             {/* Visualizador de Video / Reel (Remotion Player o MP4) */}
             {(remotionComposition || externalVideoUrl) && (
               <div className="bg-slate-900 text-white p-6 rounded-3xl border border-slate-800 shadow-md space-y-4">
@@ -1595,6 +1816,11 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                           <span>📞 {demo.prospectPhone}</span>
                           <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] font-semibold">{demo.rubro}</span>
                         </div>
+                        {demo.dishOrProductName && (
+                          <div className="text-[11px] text-indigo-600 dark:text-indigo-400 font-semibold flex items-center gap-1 mt-0.5">
+                            <span>🍽️</span> {demo.dishOrProductName}
+                          </div>
+                        )}
                         {demo.offerText && (
                           <p className="text-xs text-slate-600 dark:text-slate-400 italic line-clamp-1 mt-1">
                             &quot;{demo.offerText}&quot;
