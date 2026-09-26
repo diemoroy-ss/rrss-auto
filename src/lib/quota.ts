@@ -4,6 +4,9 @@ import { db } from './firebase';
 interface PlanConfig {
     postsLimit: number;
     videosLimit: number;
+    aiImagesLimit?: number;
+    aiVideosLimit?: number;
+    seoBlogsLimit?: number;
 }
 
 interface SystemPlansConfig {
@@ -123,6 +126,21 @@ export async function getAiPlanLimit(plan: string, type: 'image' | 'video' | 'bl
     if (isUserAdmin(email)) return 999999;
     const planId = (plan || 'free').toLowerCase();
     if (planId === 'unlimited') return 999999;
+
+    try {
+        const config = await getPlansConfig();
+        const planConfig = config[planId] as any;
+        if (planConfig) {
+            if (type === 'image' && planConfig.aiImagesLimit !== undefined) return planConfig.aiImagesLimit;
+            if (type === 'video') {
+                if (planConfig.aiVideosLimit !== undefined) return planConfig.aiVideosLimit;
+                if (planConfig.videosLimit !== undefined) return planConfig.videosLimit;
+            }
+            if (type === 'blog' && planConfig.seoBlogsLimit !== undefined) return planConfig.seoBlogsLimit;
+        }
+    } catch (e) {
+        console.error("Error reading AI plan limit from DB config:", e);
+    }
 
     const fallbacks: Record<string, { image: number, video: number, blog: number }> = {
         free:     { image: 8,   video: 0,  blog: 0  },
