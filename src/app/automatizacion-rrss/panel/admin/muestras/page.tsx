@@ -156,6 +156,12 @@ export default function AdminMuestrasPage() {
   const [externalVideoUrl, setExternalVideoUrl] = useState<string>("");
   const [copiedVideoPrompt, setCopiedVideoPrompt] = useState(false);
 
+  // Estados de generación automática de video vía n8n
+  const [n8nVideoRenderMode, setN8nVideoRenderMode] = useState<"raw" | "remotion">("raw");
+  const [isGeneratingN8nVideo, setIsGeneratingN8nVideo] = useState(false);
+  const [n8nVideoError, setN8nVideoError] = useState<string>("");
+  const [n8nVideoProgress, setN8nVideoProgress] = useState<string>("");
+
   // Historial de Muestras
   const [historyDemos, setHistoryDemos] = useState<ProspectDemo[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -493,6 +499,61 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
       alert("¡Video enlazado con éxito a la propuesta del prospecto!");
     } catch (e) {
       console.error("Error al guardar video:", e);
+    }
+  };
+
+  // Generar video automático vía n8n (Image-to-Video)
+  const handleGenerateN8nVideo = async () => {
+    const targetImage = canvasImageUrl || generatedImageUrl || baseImagePreview;
+    if (!targetImage) {
+      alert("Primero genera la propuesta gráfica o carga una foto base del negocio.");
+      return;
+    }
+
+    setIsGeneratingN8nVideo(true);
+    setN8nVideoError("");
+    setN8nVideoProgress("Conectando con el webhook de n8n...");
+
+    try {
+      setN8nVideoProgress("Nuestros agentes están animando la imagen en n8n...");
+      const res = await fetch("/api/ai/image-to-video", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageUrl: targetImage,
+          prompt: customVideoPrompt || selectedVideoTemplate?.baseEnglishPrompt,
+          motionStyle: selectedVideoTemplate?.id || "cinematic_slow_push_in",
+          businessName: prospectBusiness || prospectName,
+          rubro,
+          renderMode: n8nVideoRenderMode,
+          logoUrl: logoPreview || "",
+          postId: createdDemoId || `demo_${Date.now()}`
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Fallo al generar video con n8n.");
+      }
+
+      if (data.videoUrl) {
+        setExternalVideoUrl(data.videoUrl);
+        if (createdDemoId) {
+          await updateDoc(doc(db, "admin_prospect_demos", createdDemoId), {
+            generatedVideoUrl: data.videoUrl,
+            videoStyleTitle: selectedVideoTemplate?.title || null,
+            videoPromptEnglish: customVideoPrompt || null,
+          });
+        }
+        setN8nVideoProgress("¡Video generado y enlazado con éxito a la propuesta!");
+      } else {
+        throw new Error("n8n no retornó una URL de video válida.");
+      }
+    } catch (e: any) {
+      console.error("Error en n8n video:", e);
+      setN8nVideoError(e.message || "Error al conectar con el webhook de n8n.");
+    } finally {
+      setIsGeneratingN8nVideo(false);
     }
   };
 
@@ -1161,10 +1222,90 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                     </div>
                   )}
 
-                  {/* Input para adjuntar video MP4 generado */}
+                  {/* GENERACIÓN AUTOMÁTICA VÍA N8N CON SWITCH */}
+                  <div className="pt-3 border-t border-slate-800 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                        <span>🚀</span> Generar Video Automático vía n8n (Image-to-Video)
+                      </span>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800">
+                        Modo B
+                      </span>
+                    </div>
+
+                    {/* Switch de Renderizado */}
+                    <div className="grid grid-cols-2 gap-2 bg-slate-950/90 p-1 rounded-xl border border-slate-800">
+                      <button
+                        type="button"
+                        onClick={() => setN8nVideoRenderMode("raw")}
+                        className={`p-2 rounded-lg text-left transition-all ${
+                          n8nVideoRenderMode === "raw"
+                            ? "bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 shadow font-black"
+                            : "text-slate-400 hover:text-slate-200"
+                        }`}
+                      >
+                        <div className="text-[11px] font-extrabold flex items-center gap-1">
+                          <span>⚡</span> Video Puro (n8n)
+                        </div>
+                        <p className={`text-[9px] ${n8nVideoRenderMode === "raw" ? "text-slate-900 font-bold" : "text-slate-500"}`}>
+                          Directo del motor cinematográfico.
+                        </p>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setN8nVideoRenderMode("remotion")}
+                        className={`p-2 rounded-lg text-left transition-all ${
+                          n8nVideoRenderMode === "remotion"
+                            ? "bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow font-black"
+                            : "text-slate-400 hover:text-slate-200"
+                        }`}
+                      >
+                        <div className="text-[11px] font-extrabold flex items-center gap-1">
+                          <span>✨</span> Remotion Premium
+                        </div>
+                        <p className={`text-[9px] ${n8nVideoRenderMode === "remotion" ? "text-indigo-100 font-bold" : "text-slate-500"}`}>
+                          Subtítulos Hormozi y logo montado.
+                        </p>
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleGenerateN8nVideo}
+                      disabled={isGeneratingN8nVideo || (!canvasImageUrl && !generatedImageUrl && !baseImagePreview)}
+                      className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 text-xs font-black flex items-center justify-center gap-2 shadow-lg transition-all disabled:opacity-50"
+                    >
+                      {isGeneratingN8nVideo ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></div>
+                          <span>{n8nVideoProgress || "Nuestros agentes están procesando el video..."}</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>🚀</span>
+                          <span>Generar Video de la Propuesta vía n8n</span>
+                        </>
+                      )}
+                    </button>
+
+                    {n8nVideoError && (
+                      <p className="text-[11px] text-rose-400 bg-rose-950/60 p-2 rounded-lg border border-rose-900/60">
+                        ⚠️ {n8nVideoError}
+                      </p>
+                    )}
+
+                    {n8nVideoProgress && !n8nVideoError && (
+                      <p className="text-[11px] text-emerald-400 bg-emerald-950/60 p-2 rounded-lg border border-emerald-900/60 font-semibold">
+                        ✅ {n8nVideoProgress}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Input alternativo para adjuntar video MP4 generado manualmente */}
                   <div className="pt-2 border-t border-slate-800 space-y-2">
-                    <label className="block text-xs font-bold text-slate-300">
-                      ¿Ya generaste el MP4 en Kling o Runway? Pega el enlace aquí:
+                    <label className="block text-[11px] font-bold text-slate-400">
+                      O pega manualmente el enlace de video MP4 si ya lo tienes:
                     </label>
                     <div className="flex gap-2">
                       <input
@@ -1177,9 +1318,9 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                       <button
                         type="button"
                         onClick={handleSaveExternalVideo}
-                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-colors"
+                        className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-colors"
                       >
-                        Enlazar Video
+                        Enlazar
                       </button>
                     </div>
                   </div>

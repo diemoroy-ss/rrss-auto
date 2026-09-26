@@ -15,7 +15,7 @@ import {
   buildImageToVideoPrompt,
   VideoPromptTemplate
 } from "../../../../lib/video-prompt-templates";
-import { FaCopy, FaCheck, FaMagic, FaFilm, FaCamera, FaPlay, FaLightbulb } from "react-icons/fa";
+import { FaCopy, FaCheck, FaMagic, FaFilm, FaCamera, FaPlay, FaLightbulb, FaWhatsapp, FaDownload, FaSpinner } from "react-icons/fa";
 
 
 function VideoPoCContent() {
@@ -83,6 +83,60 @@ function VideoPoCContent() {
     selectedPromptCategory === "Todas"
       ? VIDEO_PROMPT_STYLES
       : VIDEO_PROMPT_STYLES.filter((s) => s.category === selectedPromptCategory);
+
+  // Estados para Generación Asíncrona n8n (Image-to-Video)
+  const [baseVideoImageUrl, setBaseVideoImageUrl] = useState<string>(prof?.logoUrl || prof?.logo || "");
+  const [videoRenderMode, setVideoRenderMode] = useState<"raw" | "remotion">("raw");
+  const [isGeneratingN8nVideo, setIsGeneratingN8nVideo] = useState<boolean>(false);
+  const [n8nGeneratedVideoUrl, setN8nGeneratedVideoUrl] = useState<string>("");
+  const [n8nGenerationError, setN8nGenerationError] = useState<string>("");
+  const [n8nProgressText, setN8nProgressText] = useState<string>("");
+
+  const handleGenerateN8nVideo = async () => {
+    if (!baseVideoImageUrl || !baseVideoImageUrl.startsWith("http")) {
+      setN8nGenerationError("Por favor ingresa o carga una URL de imagen válida para animar.");
+      return;
+    }
+
+    setIsGeneratingN8nVideo(true);
+    setN8nGenerationError("");
+    setN8nGeneratedVideoUrl("");
+    setN8nProgressText("Conectando con el webhook de n8n...");
+
+    try {
+      const res = await fetch("/api/ai/image-to-video", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageUrl: baseVideoImageUrl,
+          prompt: compiledPrompt?.promptEnglish,
+          motionStyle: selectedPromptStyle?.id,
+          businessName: promptBusiness,
+          rubro: promptRubro,
+          renderMode: videoRenderMode,
+          logoUrl: activeProfile?.logoUrl || activeProfile?.logo || "",
+          postId: `poc_${Date.now()}`
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Fallo en la generación de video en n8n.");
+      }
+
+      if (data.videoUrl) {
+        setN8nGeneratedVideoUrl(data.videoUrl);
+        setN8nProgressText("¡Video generado con éxito!");
+      } else {
+        throw new Error("n8n no retornó una URL de video válida.");
+      }
+    } catch (err: any) {
+      console.error("Error al generar video en n8n:", err);
+      setN8nGenerationError(err.message || "Error al conectar con el webhook de n8n.");
+    } finally {
+      setIsGeneratingN8nVideo(false);
+    }
+  };
 
   const handleRegenerateSceneImage = async (idx: number, scene: any) => {
     setImageStatus((prev) => ({ ...prev, [idx]: "loading" }));
@@ -1303,9 +1357,191 @@ function VideoPoCContent() {
               </div>
             </div>
 
-            {/* COLUMNA DERECHA: PROMPT COMPILADO Y ACCIONES (5 COLUMNAS) */}
+            {/* COLUMNA DERECHA: GENERADOR N8N, PROMPT COMPILADO Y ACCIONES (5 COLUMNAS) */}
             <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-8">
               
+              {/* TARJETA DE ANIMACIÓN AUTOMÁTICA N8N CON SWITCH */}
+              <div className="bg-gradient-to-b from-slate-900 to-indigo-950 rounded-3xl p-6 text-white border border-indigo-700/50 shadow-2xl space-y-5">
+                <div className="flex items-center justify-between border-b border-indigo-800/60 pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">🚀</span>
+                    <div>
+                      <h4 className="text-xs font-mono font-bold text-amber-400 uppercase tracking-wider">
+                        Animación Image-to-Video
+                      </h4>
+                      <div className="text-xs font-black text-white">
+                        Generar Video Automático vía n8n
+                      </div>
+                    </div>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-extrabold border border-emerald-500/40">
+                    Modo B (Polling)
+                  </span>
+                </div>
+
+                {/* 1. Selector de Imagen Base */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-slate-200">
+                    1. URL de la Imagen Base a Animar <span className="text-rose-400">*</span>
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      value={baseVideoImageUrl}
+                      onChange={(e) => setBaseVideoImageUrl(e.target.value)}
+                      placeholder="https://.../imagen-del-negocio.jpg"
+                      className="flex-1 px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-400 font-mono"
+                    />
+                    {activeProfile?.logoUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setBaseVideoImageUrl(activeProfile.logoUrl)}
+                        className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-300 rounded-xl transition-all whitespace-nowrap"
+                        title="Usar logo de la marca"
+                      >
+                        Usar Logo
+                      </button>
+                    )}
+                  </div>
+
+                  {baseVideoImageUrl && (
+                    <div className="flex items-center gap-3 p-2 bg-slate-950/60 rounded-xl border border-slate-800">
+                      <div className="w-12 h-12 rounded-lg bg-slate-800 overflow-hidden shrink-0">
+                        <img
+                          src={baseVideoImageUrl}
+                          alt="Previsualización base"
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = "none";
+                          }}
+                        />
+                      </div>
+                      <span className="text-[11px] text-slate-300 truncate max-w-[240px]">
+                        {baseVideoImageUrl}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. SWITCH DE RENDERIZADO (Raw vs Remotion) */}
+                <div className="space-y-2 pt-2 border-t border-indigo-900/60">
+                  <label className="block text-xs font-bold text-slate-200">
+                    2. Modalidad de Renderizado (Switch):
+                  </label>
+                  
+                  <div className="grid grid-cols-2 gap-2 bg-slate-950/80 p-1.5 rounded-2xl border border-indigo-900/50">
+                    <button
+                      type="button"
+                      onClick={() => setVideoRenderMode("raw")}
+                      className={`p-2.5 rounded-xl text-left transition-all ${
+                        videoRenderMode === "raw"
+                          ? "bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 shadow-md font-black"
+                          : "text-slate-300 hover:bg-slate-900"
+                      }`}
+                    >
+                      <div className="text-xs font-extrabold flex items-center gap-1.5">
+                        <span>⚡</span>
+                        <span>Video Puro (n8n)</span>
+                      </div>
+                      <p className={`text-[10px] mt-0.5 leading-tight ${videoRenderMode === "raw" ? "text-slate-900 font-semibold" : "text-slate-400"}`}>
+                        Video tal cual sale del motor cinematográfico.
+                      </p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setVideoRenderMode("remotion")}
+                      className={`p-2.5 rounded-xl text-left transition-all ${
+                        videoRenderMode === "remotion"
+                          ? "bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-md font-black"
+                          : "text-slate-300 hover:bg-slate-900"
+                      }`}
+                    >
+                      <div className="text-xs font-extrabold flex items-center gap-1.5">
+                        <span>✨</span>
+                        <span>Remotion Premium</span>
+                      </div>
+                      <p className={`text-[10px] mt-0.5 leading-tight ${videoRenderMode === "remotion" ? "text-indigo-100 font-semibold" : "text-slate-400"}`}>
+                        Monta subtítulos Hormozi, locución y tu logo.
+                      </p>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3. Botón de Disparo a n8n */}
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={handleGenerateN8nVideo}
+                    disabled={isGeneratingN8nVideo || !baseVideoImageUrl}
+                    className="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black rounded-2xl text-xs shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  >
+                    {isGeneratingN8nVideo ? (
+                      <>
+                        <FaSpinner className="animate-spin text-sm" />
+                        <span>{n8nProgressText || "Nuestros agentes están procesando el video..."}</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>🚀</span>
+                        <span>Generar Video Animado vía n8n</span>
+                      </>
+                    )}
+                  </button>
+
+                  {n8nGenerationError && (
+                    <div className="mt-3 p-3 bg-rose-950/80 border border-rose-500/50 rounded-xl text-rose-300 text-xs font-semibold">
+                      ⚠️ {n8nGenerationError}
+                    </div>
+                  )}
+                </div>
+
+                {/* 4. Previsualización del Video Generado por n8n */}
+                {n8nGeneratedVideoUrl && (
+                  <div className="p-4 bg-slate-950 rounded-2xl border border-emerald-500/50 space-y-3 animate-in fade-in duration-300">
+                    <div className="flex items-center justify-between text-xs font-bold text-emerald-400">
+                      <span>✅ ¡Video Animado Listo!</span>
+                      <span className="text-[10px] font-mono uppercase bg-emerald-950/80 px-2 py-0.5 rounded-full border border-emerald-800">
+                        {videoRenderMode === "remotion" ? "Remotion Compuesto" : "Video Puro n8n"}
+                      </span>
+                    </div>
+
+                    <div className="rounded-xl overflow-hidden bg-black aspect-[9/16] max-h-[380px] flex items-center justify-center">
+                      <video
+                        src={n8nGeneratedVideoUrl}
+                        controls
+                        autoPlay
+                        loop
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <a
+                        href={n8nGeneratedVideoUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        download
+                        className="p-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
+                      >
+                        <FaDownload className="text-xs" />
+                        <span>Descargar MP4</span>
+                      </a>
+
+                      <a
+                        href={`https://wa.me/?text=${encodeURIComponent(`¡Mira el video que preparamos para tu negocio!: ${n8nGeneratedVideoUrl}`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-md shadow-emerald-600/30"
+                      >
+                        <FaWhatsapp className="text-sm" />
+                        <span>Por WhatsApp</span>
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* TARJETA DEL PROMPT COMPILADO */}
               <div className="bg-slate-950 rounded-3xl p-6 text-white border border-slate-800 shadow-2xl space-y-5">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-3">
