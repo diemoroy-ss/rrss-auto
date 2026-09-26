@@ -120,13 +120,36 @@ export async function POST(req: Request) {
             }
         }
 
+        // Helper para asegurar trazabilidad total: NINGUNA operación puede quedar 'sin estado' (PF-07)
+        const failPost = async (errorMessage: string, statusCode: number = 400) => {
+            try {
+                await postRef.update({
+                    status: 'error',
+                    publishError: errorMessage,
+                    lastAttemptAt: new Date()
+                });
+                await adminDb.collection("admin_logs").add({
+                    timestamp: new Date(),
+                    action: 'publish_post_precheck_failed',
+                    postId: postId,
+                    userId: uid,
+                    clientEmail: userData?.email || 'Desconocido',
+                    status: 'error',
+                    message: errorMessage
+                }).catch(() => {});
+            } catch (persistErr: any) {
+                console.error("[publish-now] Error al registrar estado de fallo en post:", persistErr.message);
+            }
+            return NextResponse.json({ error: errorMessage }, { status: statusCode });
+        };
+
         // --- QUOTA CHECK ---
         const usedQuota = await getQuotaUsageAdmin(uid, profileId || 'default');
         const limit = await getPlanLimitAdmin(userData.plan || 'free', userData.email);
         const postNetworkCount = post.networks?.length || 1;
         
         if (usedQuota + postNetworkCount > limit) {
-             return NextResponse.json({ error: "Límite de publicaciones del plan alcanzado. Mejora tu plan para seguir publicando." }, { status: 403 });
+             return await failPost("Límite de publicaciones del plan alcanzado. Mejora tu plan para seguir publicando.", 403);
         }
         // -------------------
 
@@ -140,12 +163,12 @@ export async function POST(req: Request) {
             const tagFb = targetProfile.tag_fb || userData.tag_fb;
             pageId = targetProfile.facebookPageId || userData.facebookPageId;
             if (!fbToken || !pageId) {
-                return NextResponse.json({ error: "Facebook: Cuenta no vinculada o configuración faltante." }, { status: 400 });
+                return await failPost("Facebook: Cuenta no vinculada o configuración faltante.", 400);
             }
             try {
                 plainFbToken = decrypt(fbToken, ivFb, tagFb);
             } catch (e: any) {
-                return NextResponse.json({ error: "Facebook: Error al desencriptar el token de acceso." }, { status: 500 });
+                return await failPost("Facebook: Error al desencriptar el token de acceso.", 500);
             }
         }
 
@@ -158,12 +181,12 @@ export async function POST(req: Request) {
             const tagIg = targetProfile.tag_ig || userData.tag_ig;
             igAccountId = targetProfile.instagramAccountId || userData.instagramAccountId;
             if (!igToken || !igAccountId) {
-                return NextResponse.json({ error: "Instagram: Cuenta no vinculada o configuración faltante." }, { status: 400 });
+                return await failPost("Instagram: Cuenta no vinculada o configuración faltante.", 400);
             }
             try {
                 plainIgToken = decrypt(igToken, ivIg, tagIg);
             } catch (e: any) {
-                return NextResponse.json({ error: "Instagram: Error al desencriptar el token de acceso." }, { status: 500 });
+                return await failPost("Instagram: Error al desencriptar el token de acceso.", 500);
             }
         }
 
@@ -177,12 +200,12 @@ export async function POST(req: Request) {
             const personUrn = targetProfile.linkedinPersonUrn || userData.linkedinPersonUrn;
             authorUrn = targetProfile.linkedinCompanyUrn || personUrn;
             if (!liToken || !authorUrn) {
-                return NextResponse.json({ error: "LinkedIn: Cuenta no vinculada o configuración faltante." }, { status: 400 });
+                return await failPost("LinkedIn: Cuenta no vinculada o configuración faltante.", 400);
             }
             try {
                 plainLiToken = decrypt(liToken, ivLi, tagLi);
             } catch (e: any) {
-                return NextResponse.json({ error: "LinkedIn: Error al desencriptar el token de acceso." }, { status: 500 });
+                return await failPost("LinkedIn: Error al desencriptar el token de acceso.", 500);
             }
         }
 
@@ -193,12 +216,12 @@ export async function POST(req: Request) {
             const ivTt = targetProfile.iv_tt || userData.iv_tt;
             const tagTt = targetProfile.tag_tt || userData.tag_tt;
             if (!ttToken) {
-                return NextResponse.json({ error: "TikTok: Cuenta no vinculada o configuración faltante." }, { status: 400 });
+                return await failPost("TikTok: Cuenta no vinculada o configuración faltante.", 400);
             }
             try {
                 plainTtToken = decrypt(ttToken, ivTt, tagTt);
             } catch (e: any) {
-                return NextResponse.json({ error: "TikTok: Error al desencriptar el token de acceso." }, { status: 500 });
+                return await failPost("TikTok: Error al desencriptar el token de acceso.", 500);
             }
         }
 
@@ -214,7 +237,7 @@ export async function POST(req: Request) {
             const tagGbRef = targetProfile.tag_gb_refresh || userData.tag_gb_refresh;
 
             if (!gbToken) {
-                return NextResponse.json({ error: "Google Business: Cuenta no vinculada o configuración faltante." }, { status: 400 });
+                return await failPost("Google Business: Cuenta no vinculada o configuración faltante.", 400);
             }
             try {
                 plainGbToken = decrypt(gbToken, ivGb, tagGb);
@@ -222,7 +245,7 @@ export async function POST(req: Request) {
                     plainGbRefreshToken = decrypt(gbRefreshToken, ivGbRef, tagGbRef);
                 }
             } catch (e: any) {
-                return NextResponse.json({ error: "Google Business: Error al desencriptar el token de acceso." }, { status: 500 });
+                return await failPost("Google Business: Error al desencriptar el token de acceso.", 500);
             }
         }
 
@@ -239,7 +262,7 @@ export async function POST(req: Request) {
             const tagYtRef = targetProfile.tag_yt_refresh || ytAccount.tag_refresh || ytAccount.refreshToken?.authTag || userData.tag_yt_refresh;
 
             if (!ytToken) {
-                return NextResponse.json({ error: "YouTube: Cuenta no vinculada. Por favor conecta tu canal en Configuración." }, { status: 400 });
+                return await failPost("YouTube: Cuenta no vinculada. Por favor conecta tu canal en Configuración.", 400);
             }
             try {
                 plainYtToken = decrypt(ytToken, ivYt, tagYt);
@@ -247,7 +270,7 @@ export async function POST(req: Request) {
                     plainYtRefreshToken = decrypt(ytRefreshToken, ivYtRef, tagYtRef);
                 }
             } catch (e: any) {
-                return NextResponse.json({ error: "YouTube: Error al desencriptar el token de acceso." }, { status: 500 });
+                return await failPost("YouTube: Error al desencriptar el token de acceso.", 500);
             }
         }
 
@@ -264,7 +287,7 @@ export async function POST(req: Request) {
             const tagXRef = targetProfile.tag_x_refresh || xAccount.tag_refresh || xAccount.refreshToken?.authTag || userData.tag_x_refresh;
 
             if (!xToken) {
-                return NextResponse.json({ error: "X (Twitter): Cuenta no vinculada. Por favor conecta tu cuenta de X en Configuración." }, { status: 400 });
+                return await failPost("X (Twitter): Cuenta no vinculada. Por favor conecta tu cuenta de X en Configuración.", 400);
             }
             try {
                 plainXToken = decrypt(xToken, ivX, tagX);
@@ -272,12 +295,12 @@ export async function POST(req: Request) {
                     plainXRefreshToken = decrypt(xRefreshToken, ivXRef, tagXRef);
                 }
             } catch (e: any) {
-                return NextResponse.json({ error: "X (Twitter): Error al desencriptar el token de acceso." }, { status: 500 });
+                return await failPost("X (Twitter): Error al desencriptar el token de acceso.", 500);
             }
         }
 
         if (!post.networks || post.networks.length === 0) {
-            return NextResponse.json({ error: "No se seleccionó ninguna red social para publicar." }, { status: 400 });
+            return await failPost("No se seleccionó ninguna red social para publicar.", 400);
         }
 
         // --- UPDATE STATUS TO PUBLISHING ---
@@ -619,12 +642,13 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
                     if (!imageUrl) {
                         throw new Error("Facebook requiere una imagen válida para publicar este post.");
                     }
+                    const fbCaption = post.copiesByNetwork?.facebook || post.facebookCopy || caption;
                     const fbData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${pageId}/photos`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             url: imageUrl,
-                            message: caption,
+                            message: fbCaption,
                             access_token: plainToken
                         })
                     });
@@ -633,7 +657,7 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
                        userId: creds.uid,
                        profileId: creds.profileId || 'default',
                        network: 'facebook',
-                       caption: caption,
+                       caption: fbCaption,
                        media_type: 'POST',
                        likes: 0,
                        comments: 0,

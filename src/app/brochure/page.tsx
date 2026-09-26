@@ -749,17 +749,17 @@ export default function BrochurePage() {
         {/* LA SOLUCIÓN */}
         <div className="section">
           <div className="section-label">La solución</div>
-          <div className="section-title">Una consola. <em>Señal continua.</em></div>
+          <div className="section-title">Una consola. <em>Presencia continua.</em></div>
           <div className="solutions" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginTop: '30px' }}>
             <div className="solution" style={{ border: '1.5px solid var(--border)', borderRadius: '14px', padding: '24px', background: 'var(--surface)' }}>
-              <div style={{ fontSize: '10px', fontWeight: 800, color: 'var(--brand)', letterSpacing: '0.1em', marginBottom: '8px' }}>SEÑAL A</div>
+              <div style={{ fontSize: '10px', fontWeight: 800, color: 'var(--brand)', letterSpacing: '0.1em', marginBottom: '8px' }}>CANAL 1</div>
               <h4 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '8px' }}>Redes Sociales 360°</h4>
-              <p style={{ fontSize: '14px', color: 'var(--ink-dim)', lineHeight: 1.5 }}>Textos, imágenes y video por IA en 6 redes, con Radar de Nicho y métricas en vivo.</p>
+              <p style={{ fontSize: '14px', color: 'var(--ink-dim)', lineHeight: 1.5 }}>Textos, imágenes y video con nuestros agentes en 6 redes, con Radar de Nicho y métricas en vivo.</p>
             </div>
             <div className="solution" style={{ border: '1.5px solid var(--border)', borderRadius: '14px', padding: '24px', background: 'var(--surface)' }}>
-              <div style={{ fontSize: '10px', fontWeight: 800, color: 'var(--brand)', letterSpacing: '0.1em', marginBottom: '8px' }}>SEÑAL B</div>
-              <h4 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '8px' }}>SEO & GEO</h4>
-              <p style={{ fontSize: '14px', color: 'var(--ink-dim)', lineHeight: 1.5 }}>Blog automático para Google y motores de IA (ChatGPT, Perplexity), más Meta Ads.</p>
+              <div style={{ fontSize: '10px', fontWeight: 800, color: 'var(--brand)', letterSpacing: '0.1em', marginBottom: '8px' }}>CANAL 2</div>
+              <h4 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '8px' }}>SEO &amp; GEO</h4>
+              <p style={{ fontSize: '14px', color: 'var(--ink-dim)', lineHeight: 1.5 }}>Blog automático para Google y motores generativos (ChatGPT, Perplexity), más Meta Ads.</p>
             </div>
           </div>
         </div>
@@ -1106,7 +1106,7 @@ export default function BrochurePage() {
             <span>SANTISOFT AI · CHILE 2026</span>
           </div>
           <div className="footer-right">
-            Cumplimiento Ley N° 21.719 · YouTube API Services · X API v2 · Meta Graph API<br />
+            Adecuación Ley N° 21.719 · YouTube API Services · X API v2 · Meta Graph API<br />
             Precios en CLP. IVA incluido. Sujeto a cambios sin previo aviso.
           </div>
         </div>

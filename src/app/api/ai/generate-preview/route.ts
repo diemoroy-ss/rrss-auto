@@ -252,7 +252,73 @@ export async function POST(req: NextRequest) {
             userProvidedCopy?: string;
             posterConfig?: PosterConfig | null;
             catalogoItem?: { name: string; description: string; imageUrl: string | null } | null;
+            userId?: string;
         } = body;
+
+        // ═══════════════════════════════════════════════════════
+        // CONTROL DE CUOTAS DE IMÁGENES Y VIDEOS (PF-09 / METERING)
+        // ═══════════════════════════════════════════════════════
+        let effectiveUserId = body.userId;
+        let effectiveUserEmail = email;
+        let effectiveUserPlan = userPlan || 'free';
+
+        const authHeader = req.headers.get("authorization");
+        if (authHeader && authHeader.startsWith("Bearer ")) {
+            try {
+                const { adminAuth } = await import("../../../../lib/firebase-admin");
+                if (adminAuth) {
+                    const token = authHeader.split("Bearer ")[1];
+                    const decoded = await adminAuth.verifyIdToken(token);
+                    if (decoded?.uid) {
+                        effectiveUserId = decoded.uid;
+                        if (decoded.email) effectiveUserEmail = decoded.email;
+                    }
+                }
+            } catch (authErr) {
+                console.warn("[generate-preview] Could not verify idToken:", authErr);
+            }
+        }
+
+        if (effectiveUserId) {
+            try {
+                const { adminDb } = await import("../../../../lib/firebase-admin");
+                if (adminDb) {
+                    const userSnap = await adminDb.collection("users").doc(effectiveUserId).get();
+                    if (userSnap.exists) {
+                        const uData = userSnap.data()!;
+                        effectiveUserPlan = uData.plan || effectiveUserPlan;
+                        if (uData.email) effectiveUserEmail = uData.email;
+                    }
+                }
+            } catch (e) {
+                console.warn("[generate-preview] Could not load user doc:", e);
+            }
+
+            // Validar cuotas contra Firestore
+            const { getAiGenerationUsageAdmin, getAiPlanLimitAdmin, isAdminAdmin } = await import("../../../../lib/quota-admin");
+            const isAdmin = isAdminAdmin(effectiveUserEmail);
+            if (!isAdmin) {
+                const requestedImages = type === 'Carrusel' ? (carouselCount || (promptsEnglish?.length || 3)) : 1;
+                const imagesUsed = await getAiGenerationUsageAdmin(effectiveUserId, 'image');
+                const imageLimit = await getAiPlanLimitAdmin(effectiveUserPlan, 'image', effectiveUserEmail);
+
+                if (imagesUsed + requestedImages > imageLimit) {
+                    return NextResponse.json({
+                        error: `Límite mensual de imágenes alcanzado (${imagesUsed}/${imageLimit}). Mejora tu plan para seguir generando imágenes con tus agentes.`
+                    }, { status: 403 });
+                }
+
+                if (type === 'Reel') {
+                    const videosUsed = await getAiGenerationUsageAdmin(effectiveUserId, 'video');
+                    const videoLimit = await getAiPlanLimitAdmin(effectiveUserPlan, 'video', effectiveUserEmail);
+                    if (videosUsed + 1 > videoLimit) {
+                        return NextResponse.json({
+                            error: `Límite mensual de videos/reels alcanzado (${videosUsed}/${videoLimit}). Mejora tu plan para crear más videos con tus agentes.`
+                        }, { status: 403 });
+                    }
+                }
+            }
+        }
         
         let n8nUrl = process.env.NEXT_PUBLIC_N8N_PREVIEW_URL;
 
@@ -372,6 +438,20 @@ export async function POST(req: NextRequest) {
             const validResults = batchResults.filter((r): r is { slideIndex: number; imageUrl: string } => r !== null && Boolean(r.imageUrl));
             const imageUrls = validResults.map(r => r.imageUrl);
 
+            if (imageUrls.length > 0 && effectiveUserId) {
+                try {
+                    const { logAiGenerationAdmin } = await import("../../../../lib/quota-admin");
+                    await logAiGenerationAdmin(effectiveUserId, profileId || 'default', 'image', {
+                        count: imageUrls.length,
+                        postType: 'Carrusel',
+                        carouselCount: imageUrls.length,
+                        prompt: enrichedPrompts[0]
+                    });
+                } catch (logErr) {
+                    console.error("[generate-preview] Error registrando consumo de carrusel:", logErr);
+                }
+            }
+
             return NextResponse.json({
                 success: true,
                 type: 'Carrusel',
@@ -396,6 +476,28 @@ export async function POST(req: NextRequest) {
         }
 
         const data = await response.json();
+
+        // Registrar consumo exitoso en Firestore para el cliente
+        if (effectiveUserId) {
+            try {
+                const { logAiGenerationAdmin } = await import("../../../../lib/quota-admin");
+                await logAiGenerationAdmin(effectiveUserId, profileId || 'default', 'image', {
+                    count: 1,
+                    postType: type || 'Post',
+                    prompt: enrichedPrompts[0]
+                });
+                if (type === 'Reel') {
+                    await logAiGenerationAdmin(effectiveUserId, profileId || 'default', 'video', {
+                        count: 1,
+                        postType: 'Reel',
+                        audioUrl
+                    });
+                }
+            } catch (logErr) {
+                console.error("[generate-preview] Error registrando consumo de imagen/video:", logErr);
+            }
+        }
+
         return NextResponse.json(data);
 
     } catch (err: any) {

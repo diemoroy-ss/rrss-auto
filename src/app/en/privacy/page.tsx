@@ -44,14 +44,14 @@ export default function Privacy() {
             <span className="eyebrow">Transparency and Security</span>
             <h2>Privacy <em>Policy.</em></h2>
             <p className="sub" style={{ margin: '12px 0 0 0' }}>
-              At Santisoft AI we take your privacy very seriously. This policy details the treatment of your data under the new standards of <strong>Law N° 21.719</strong> (which modernizes Law N° 19.628 of Chile), applicable starting December of this year.
+              At Santisoft AI we take your privacy very seriously. This policy details the treatment of your data in accordance with applicable legislation and in proactive alignment with the standards of <strong>Law N° 21.719</strong> (which modernizes Law N° 19.628 of Chile).
             </p>
           </div>
 
           <div className="panel" style={{ padding: '40px 30px', background: 'var(--panel)', border: '1px solid var(--line-strong)', borderRadius: '16px' }}>
             <div className="fmono" style={{ fontSize: '12px', color: 'var(--ink-faint)', marginBottom: '30px', display: 'flex', gap: '15px' }}>
               <span>LAST UPDATED: AUGUST 2026</span>
-              <span>VERSION: 2.1 (COMPLIANT WITH LAW N° 21.719)</span>
+              <span>VERSION: 2.2 (ALIGNED WITH LAW N° 21.719)</span>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '35px' }}>
@@ -162,7 +162,7 @@ export default function Privacy() {
         <div className="wrap">
           <div className="fmono">
             <span className="on-air"></span>
-            © 2026 SANTISOFT AI · COMPLYING WITH DATA LAW N° 21.719
+            © 2026 SANTISOFT AI · ALIGNED WITH DATA LAW N° 21.719
           </div>
           <div className="flinks">
             <Link href="/en/terms">Terms of Service</Link>

@@ -56,14 +56,21 @@ service cloud.firestore {
 
     // --- COLECCIÓN DE RENDERS DE PREVISUALIZACIÓN DE CANVAS ---
     match /preview_renders/{renderId} {
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow read, update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow read: if true;
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
     }
 
     // --- COLECCIÓN DE IMÁGENES GENERADAS EN BIBLIOTECA ---
     match /generated_images/{imageId} {
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       allow read, update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    // --- COLECCIÓN DE CONSUMO DE GENERACIONES (IMÁGENES / VIDEOS / BLOGS) ---
+    match /ai_generations/{generationId} {
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
     }
 
     // --- COLECCIÓN DE BIBLIOTECA DE PROMPTS ---
@@ -89,6 +96,14 @@ service cloud.firestore {
     // --- COLECCIÓN DE CONFIGURACIONES DEL SISTEMA (Ej: Límites de Planes) ---
     // Cualquiera puede leer la configuración del sistema, solo administradores editan.
     match /system_config/{configId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // --- COLECCIÓN DE MUESTRAS COMERCIALES (ADMIN PROSPECT DEMOS) ---
+    // Lectura pública para que el prospecto visualice la demo compartida.
+    // Solo administradores pueden crear, modificar o eliminar demos.
+    match /admin_prospect_demos/{demoId} {
       allow read: if true;
       allow write: if isAdmin();
     }

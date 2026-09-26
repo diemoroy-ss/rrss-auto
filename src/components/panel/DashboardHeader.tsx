@@ -7,6 +7,8 @@ interface DashboardHeaderProps {
   displayName: string | null;
   quotaUsed: number;
   planLimit: number;
+  imagesUsed?: number;
+  imageLimit?: number;
   videosUsed: number;
   videoLimit: number;
 }
@@ -20,6 +22,8 @@ export default function DashboardHeader({
   displayName,
   quotaUsed,
   planLimit,
+  imagesUsed = 0,
+  imageLimit = 8,
   videosUsed,
   videoLimit,
 }: DashboardHeaderProps) {
@@ -44,10 +48,10 @@ export default function DashboardHeader({
           Cuenta Activa: <span className="text-slate-900">{displayName || "Usuario"}</span>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          {/* Cuota imágenes */}
+          {/* Publicaciones del Mes */}
           <div className="bg-white border border-slate-200 rounded-xl px-4 py-2.5 flex items-center justify-between gap-4 shadow-sm">
             <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-              Cuota Imágenes
+              Publicaciones
             </span>
             <span
               className={`font-black text-sm ${
@@ -60,10 +64,26 @@ export default function DashboardHeader({
             </span>
           </div>
 
+          {/* Imágenes Generadas */}
+          <div className="bg-white border border-slate-200 rounded-xl px-4 py-2.5 flex items-center justify-between gap-4 shadow-sm">
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+              Imágenes IA
+            </span>
+            <span
+              className={`font-black text-sm ${
+                imagesUsed >= imageLimit && imageLimit < 99999
+                  ? "text-rose-600"
+                  : "text-indigo-600"
+              }`}
+            >
+              {imagesUsed} / {imageLimit >= 99999 ? "∞" : imageLimit}
+            </span>
+          </div>
+
           {/* Cuota reels */}
           <div className="bg-white border border-slate-200 rounded-xl px-4 py-2.5 flex items-center justify-between gap-4 shadow-sm">
             <span className="text-[10px] font-black uppercase tracking-widest text-pink-400">
-              Cuotas Reel
+              Reels / Videos
             </span>
             <span
               className={`font-black text-sm ${

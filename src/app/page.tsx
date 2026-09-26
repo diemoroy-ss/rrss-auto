@@ -44,7 +44,7 @@ export default function Home() {
       {/* 1. PromoBanner */}
       <div className="promo">
         <span className="on-air"></span>
-        PRUEBA GRATIS — <strong>10 DÍAS Y 3 POSTEOS GRATIS</strong> · SIN TARJETA DE CRÉDITO
+        PRUEBA GRATIS — <strong>10 DÍAS Y 5 PUBLICACIONES GRATIS</strong> · SIN TARJETA DE CRÉDITO
       </div>
 
       {/* 2. Brand Nav */}
@@ -62,7 +62,7 @@ export default function Home() {
           </div>
           <div className="pillars three-col" data-reveal>
             <div className="pillar a">
-              <span className="pillar-tag">SEÑAL A · 98.6 FM</span>
+              <span className="pillar-tag">CANAL 1 · REDES SOCIALES 360°</span>
               <h3>Redes Sociales 360°</h3>
               <ul className="pillar-list">
                 <li><span className="mark">›</span><span>Generación de <strong>contenido persuasivo</strong> con nuestros agentes, adaptado a tu marca.</span></li>
@@ -73,17 +73,17 @@ export default function Home() {
               <span className="pillar-note">Autopublicación directa y sincronizada</span>
             </div>
             <div className="pillar b">
-              <span className="pillar-tag">SEÑAL B · 404 TERM</span>
+              <span className="pillar-tag">CANAL 2 · SEO &amp; GEO CON BLOG</span>
               <h3>SEO &amp; GEO con Blog</h3>
               <ul className="pillar-list">
-                <li><span className="mark">›</span><span><strong>Generative Engine Optimization (GEO):</strong> Tu marca recomendada en respuestas de motores generativos y búsquedas conversacionales.</span></li>
+                <li><span className="mark">›</span><span><strong>Generative Engine Optimization (GEO):</strong> Tu marca recomendada en respuestas de motores generativos (ChatGPT, Perplexity, Gemini).</span></li>
                 <li><span className="mark">›</span><span>Generación de <strong>artículos completos</strong> y estructurados por nuestros redactores especializados.</span></li>
                 <li><span className="mark">›</span><span>Publicación automática y directa en tu <strong>CMS</strong> (WordPress, Shopify, Webflow).</span></li>
               </ul>
               <span className="pillar-note">Tráfico orgánico + Posicionamiento futuro</span>
             </div>
             <div className="pillar c">
-              <span className="pillar-tag">SEÑAL C · WA BOT</span>
+              <span className="pillar-tag">CANAL 3 · WHATSAPP BOT</span>
               <h3>WhatsApp Command</h3>
               <ul className="pillar-list">
                 <li><span className="mark">›</span><span><strong>Gestión sin paneles:</strong> Revisa posts programados, borradores y cuotas enviando solo un número.</span></li>
@@ -112,14 +112,14 @@ export default function Home() {
           </p>
           <div className="geo-compare" data-reveal>
             <div className="geo-card old">
-              <span className="k">CANAL ANÁLOGO</span>
+              <span className="k">BÚSQUEDA TRADICIONAL</span>
               <h4>SEO Tradicional</h4>
               <p>Optimizamos tu blog para que aparezcas en los resultados de búsqueda de Google, con keywords, estructura y contenido de calidad.</p>
             </div>
             <div className="geo-card new dark-screen">
-              <span className="k">CANAL DIGITAL</span>
+              <span className="k">BÚSQUEDA CONVERSACIONAL</span>
               <h4>GEO — Generative Engine Optimization</h4>
-              <p>Estructuramos y publicamos tu contenido para que los motores de IA generativa te citen y recomienden como fuente confiable en sus respuestas.</p>
+              <p>Estructuramos y publicamos tu contenido para que los motores conversacionales te reconozcan y te recomienden como fuente confiable en sus respuestas.</p>
             </div>
           </div>
           <p className="geo-closing" data-reveal>&quot;Tu blog, redactado y publicado por nuestros agentes, trabajando para que los motores generativos te encuentren a ti.&quot;</p>

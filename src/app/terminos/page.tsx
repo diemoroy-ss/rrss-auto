@@ -75,7 +75,7 @@ export default function Terminos() {
                   2. Protección de Datos y Ley N° 21.719 de Chile
                 </h3>
                 <p style={{ fontSize: '15px', color: 'var(--ink-dim)', lineHeight: '1.6' }}>
-                  El tratamiento de datos personales en Santisoft AI se rige estrictamente por los principios de licitud, proporcionalidad, finalidad y seguridad establecidos en la <strong>Ley N° 21.719 de Chile</strong>. Los usuarios conservan el control absoluto sobre sus datos y pueden solicitar el acceso, rectificación, supresión o portabilidad de su información en cualquier momento.
+                  El tratamiento de datos personales en Santisoft AI se rige estrictamente por los principios de licitud, proporcionalidad, finalidad y seguridad establecidos en la normativa legal vigente y en adecuación anticipada a los estándares de la <strong>Ley N° 21.719 de Chile</strong>. Los usuarios conservan el control absoluto sobre sus datos y pueden solicitar el acceso, rectificación, supresión o portabilidad de su información en cualquier momento escribiendo a legal@santisoft.cl.
                 </p>
               </section>
 
@@ -93,7 +93,7 @@ export default function Terminos() {
 
               <section style={{ borderTop: '1px solid var(--line)', paddingTop: '20px' }}>
                 <h3 style={{ fontSize: '20px', fontFamily: 'var(--disp)', marginBottom: '12px', fontWeight: 600 }}>
-                  3. Planes de Suscripción y Reembolsos
+                  4. Planes de Suscripción y Reembolsos
                 </h3>
                 <p style={{ fontSize: '15px', color: 'var(--ink-dim)', lineHeight: '1.6' }}>
                   Ofrecemos planes mensuales y anuales facturados por adelantado de forma automática a tu tarjeta de crédito o método de pago autorizado. Puedes cancelar tu suscripción en cualquier momento desde el panel de control. Al cancelar, mantendrás acceso hasta el final de tu ciclo de facturación en curso. Los montos ya cobrados no son reembolsables salvo en casos de fallos técnicos prolongados e irreparables imputables directamente a nuestra plataforma.
@@ -102,16 +102,16 @@ export default function Terminos() {
 
               <section style={{ borderTop: '1px solid var(--line)', paddingTop: '20px' }}>
                 <h3 style={{ fontSize: '20px', fontFamily: 'var(--disp)', marginBottom: '12px', fontWeight: 600 }}>
-                  4. Uso Exclusivo y Límites de la IA
+                  5. Alcance de Contenidos, Video y Generación de Agentes
                 </h3>
                 <p style={{ fontSize: '15px', color: 'var(--ink-dim)', lineHeight: '1.6' }}>
-                  El servicio de Inteligencia Artificial que potencia Santisoft AI genera sugerencias basadas en modelos de lenguaje avanzados. Aunque optimizamos las respuestas para maximizar conversiones y SEO, el cliente debe validar que el contenido cumple con la normativa de su negocio antes de publicarlo en piloto automático. No garantizamos resultados específicos de tráfico, clics o ventas comerciales derivadas directa o indirectamente del contenido generado.
+                  Nuestros agentes especializados asisten en la investigación, redacción persuasiva, diseño de imágenes y composición de videos para redes. En el ámbito audiovisual, cada entrega de video incluye guion estructurado, locución profesional con voces de alta fidelidad y composición de escenas/plantillas adaptadas para Reels, TikTok y Shorts según la cuota mensual del plan contratado. El cliente es responsable de validar que el contenido publicado cumpla con las normativas comerciales de su rubro antes de su difusión.
                 </p>
               </section>
 
               <section style={{ borderTop: '1px solid var(--line)', paddingTop: '20px' }}>
                 <h3 style={{ fontSize: '20px', fontFamily: 'var(--disp)', marginBottom: '12px', fontWeight: 600 }}>
-                  5. Disponibilidad y Suspensiones de Servicio
+                  6. Disponibilidad y Suspensiones de Servicio
                 </h3>
                 <p style={{ fontSize: '15px', color: 'var(--ink-dim)', lineHeight: '1.6' }}>
                   Santisoft AI se apoya en proveedores externos (como Google Cloud, APIs de Meta, TikTok, LinkedIn y Google Gemini). No nos responsabilizamos por interrupciones ocasionadas por caídas globales de estas APIs o mantenimientos imprevistos. Nos reservamos el derecho de suspender de forma inmediata cuentas de usuarios que utilicen nuestra plataforma para spam masivo, contenido de odio, o actividades ilegales que violen las políticas de comunidad de las redes sociales.

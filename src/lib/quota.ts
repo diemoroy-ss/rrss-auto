@@ -91,3 +91,47 @@ export async function getVideoPlanLimit(plan: string, email?: string): Promise<n
     const config = await getPlansConfig();
     return config[planId]?.videosLimit ?? (config['free']?.videosLimit || 0);
 }
+
+export async function getAiGenerationUsage(userId: string, type: 'image' | 'video' | 'blog'): Promise<number> {
+    const firstDayOfMonth = new Date();
+    firstDayOfMonth.setDate(1);
+    firstDayOfMonth.setHours(0, 0, 0, 0);
+
+    const q = query(
+        collection(db, "ai_generations"),
+        where("userId", "==", userId),
+        where("type", "==", type)
+    );
+    try {
+        const snap = await getDocs(q);
+        let used = 0;
+        snap.docs.forEach(d => {
+            const data = d.data();
+            const dateObj = data.createdAt?.toDate ? data.createdAt.toDate() : (data.createdAt ? new Date(data.createdAt) : new Date());
+            if (dateObj >= firstDayOfMonth) {
+                used += (data.count || 1);
+            }
+        });
+        return used;
+    } catch (e) {
+        console.error(`[getAiGenerationUsage] Error loading ${type} usage:`, e);
+        return 0;
+    }
+}
+
+export async function getAiPlanLimit(plan: string, type: 'image' | 'video' | 'blog', email?: string): Promise<number> {
+    if (isUserAdmin(email)) return 999999;
+    const planId = (plan || 'free').toLowerCase();
+    if (planId === 'unlimited') return 999999;
+
+    const fallbacks: Record<string, { image: number, video: number, blog: number }> = {
+        free:     { image: 8,   video: 0,  blog: 0  },
+        starter:  { image: 20,  video: 2,  blog: 0  },
+        growth:   { image: 40,  video: 6,  blog: 2  },
+        pro:      { image: 80,  video: 12, blog: 8  },
+        elite:    { image: 80,  video: 12, blog: 8  },
+        business: { image: 200, video: 30, blog: 20 },
+        agency:   { image: 999, video: 80, blog: 50 },
+    };
+    return fallbacks[planId]?.[type] ?? (type === 'image' ? 8 : 0);
+}

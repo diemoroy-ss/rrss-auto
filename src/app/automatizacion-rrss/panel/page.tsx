@@ -192,7 +192,9 @@ export default function RrssDashboard() {
         displayName={user?.displayName}
         quotaUsed={quota.quotaUsed}
         planLimit={quota.planLimit}
-        videosUsed={videosUsed}
+        imagesUsed={quota.imagesUsed}
+        imageLimit={quota.imageLimit}
+        videosUsed={quota.videosUsed}
         videoLimit={quota.videoLimit}
       />
 

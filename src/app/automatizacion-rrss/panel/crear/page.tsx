@@ -8,7 +8,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useProfile } from "../../../../contexts/ProfileContext";
-import { getQuotaUsage, getPlanLimit, getVideoPlanLimit } from "../../../../lib/quota";
+import { getQuotaUsage, getPlanLimit, getVideoPlanLimit, getAiGenerationUsage, getAiPlanLimit } from "../../../../lib/quota";
 import { fetchSocialRules, getCombinedConstraints, SocialRules, DEFAULT_SOCIAL_RULES } from "../../../../lib/socialRules";
 import { type PosterConfig, DEFAULT_POSTER_CONFIG, buildPosterPromptSuffix } from "../../../../types/poster";
 
@@ -119,6 +119,9 @@ export default function RrssCreatePost() {
   const [postsThisMonth, setPostsThisMonth] = useState(0);
   const [postLimit, setPostLimit] = useState(5);
   const [videoLimit, setVideoLimit] = useState(0);
+  const [imagesUsed, setImagesUsed] = useState(0);
+  const [imageLimit, setImageLimit] = useState(8);
+  const [videosUsed, setVideosUsed] = useState(0);
   const [showScheduler, setShowScheduler] = useState(false);
   const [quotaExceeded, setQuotaExceeded] = useState(false);
   const [userPlan, setUserPlan] = useState("free");
@@ -187,17 +190,24 @@ export default function RrssCreatePost() {
             const plan = data.plan || "free";
             setUserPlan(plan);
 
-            const used = await getQuotaUsage(u.uid, activeProfile?.id || 'default');
+            const [used, planLimit, vLimit, imgUsed, imgLimit, vidUsed] = await Promise.all([
+              getQuotaUsage(u.uid, activeProfile?.id || 'default'),
+              getPlanLimit(plan, u.email),
+              getVideoPlanLimit(plan, u.email),
+              getAiGenerationUsage(u.uid, "image"),
+              getAiPlanLimit(plan, "image", u.email),
+              getAiGenerationUsage(u.uid, "video")
+            ]);
+
             setPostsThisMonth(used);
-            
-            const planLimit = await getPlanLimit(plan, u.email);
             setPostLimit(planLimit);
             if (used >= planLimit) {
                 setQuotaExceeded(true);
             }
-
-            const vLimit = await getVideoPlanLimit(plan, u.email);
             setVideoLimit(vLimit);
+            setImagesUsed(imgUsed);
+            setImageLimit(imgLimit);
+            setVideosUsed(vidUsed);
 
             const isAdminRole = data.role === 'admin' || u.email === 'diemoroy@gmail.com' || u.email === 'spalezcom@gmail.com' || u.email === 'santisoftai@gmail.com';
             setIsAdmin(isAdminRole);
@@ -455,6 +465,18 @@ export default function RrssCreatePost() {
     targetExpectation = targetExpectation || postText.trim() || idea.trim();
     if (!targetIdea) return;
 
+    // Validación de cuota mensual antes de generar
+    const isVideoType = postType === 'Reel' || postType === 'Video';
+    if (isVideoType && videoLimit > 0 && videosUsed >= videoLimit && !isAdmin) {
+      setError(`Has alcanzado el límite de generación de videos (${videosUsed}/${videoLimit}) de tu plan este mes. Mejora tu plan para continuar.`);
+      return;
+    }
+    const reqImages = postType === 'Carrusel' ? carouselCount : 1;
+    if (!isVideoType && (imagesUsed + reqImages > imageLimit) && !isAdmin) {
+      setError(`Has alcanzado el límite de generación de imágenes de tu plan (${imagesUsed}/${imageLimit}). No puedes generar ${reqImages} imagen(es) más.`);
+      return;
+    }
+
     const webhookUrl = process.env.NEXT_PUBLIC_N8N_PREVIEW_URL || 'https://n8n.santisoft.cl/webhook/img-rrss-auto';
     console.log(`🚀 [PREVISUALIZAR] Iniciando flujo hacia webhook n8n: ${webhookUrl}`);
 
@@ -642,6 +664,22 @@ export default function RrssCreatePost() {
         `${p}. ${posterPromptSuffix}`.trim()
       ) || [];
 
+      // Validar cuotas antes de llamar a la generación
+      const isVideoType = postType === 'Reel' || postType === 'Video';
+      if (isVideoType && videoLimit > 0 && videosUsed >= videoLimit && !isAdmin) {
+        setGeneratingOpen(false);
+        setGeneratingSteps([]);
+        setError(`Has alcanzado el límite de generación de videos (${videosUsed}/${videoLimit}) de tu plan este mes. Mejora tu plan para continuar.`);
+        return;
+      }
+      const reqImages = postType === 'Carrusel' ? (promptsEnglish.length || carouselCount || 1) : 1;
+      if (!isVideoType && (imagesUsed + reqImages > imageLimit) && !isAdmin) {
+        setGeneratingOpen(false);
+        setGeneratingSteps([]);
+        setError(`Has alcanzado el límite de generación de imágenes de tu plan (${imagesUsed}/${imageLimit}). No puedes generar ${reqImages} imagen(es) más.`);
+        return;
+      }
+
       const webhookUrl = process.env.NEXT_PUBLIC_N8N_PREVIEW_URL || 'https://n8n.santisoft.cl/webhook/img-rrss-auto';
       console.log(`🚀 [GENERAR IMAGEN] Gatillando webhook de n8n en: ${webhookUrl}`);
       console.log(`📝 [PROMPT FINAL ENVIADO A N8N]`, {
@@ -661,6 +699,7 @@ export default function RrssCreatePost() {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` },
         body: JSON.stringify({
+          userId: user?.uid,
           idea: idea.trim(),
           imageExpectation: imageExpectation.trim(),
           promptEnglish,
@@ -709,30 +748,43 @@ export default function RrssCreatePost() {
       setGeneratingOpen(false);
       setGeneratingSteps([]);
 
+      // Refrescar contador de uso de imágenes y videos
+      if (user?.uid) {
+        getAiGenerationUsage(user.uid).then(usage => {
+          setImagesUsed(usage.imagesCount);
+          setVideosUsed(usage.videosCount);
+        }).catch(err => console.warn("No se pudo refrescar uso de IA:", err));
+      }
+
       // ── PERSISTENCIA: Guardar las imágenes en la Biblioteca de Firestore ──
+      let savedToLibrary = false;
       try {
-        if (postType === 'Carrusel' && resolvedImageUrls.length > 0) {
-          for (const url of resolvedImageUrls) {
+        if (user?.uid && user.uid !== "anonymous") {
+          if (postType === 'Carrusel' && resolvedImageUrls.length > 0) {
+            for (const url of resolvedImageUrls) {
+              await addDoc(collection(db, "generated_images"), {
+                userId: user.uid,
+                profileId: activeProfile?.id || "default",
+                url,
+                createdAt: new Date(),
+                source: "ia",
+                type: postType,
+                prompt: promptEnglish || (promptsEnglish.length > 0 ? promptsEnglish[0] : "")
+              });
+            }
+            savedToLibrary = true;
+          } else if (resolvedImageUrl) {
             await addDoc(collection(db, "generated_images"), {
-              userId: user?.uid || "anonymous",
+              userId: user.uid,
               profileId: activeProfile?.id || "default",
-              url,
+              url: resolvedImageUrl,
               createdAt: new Date(),
               source: "ia",
               type: postType,
               prompt: promptEnglish || (promptsEnglish.length > 0 ? promptsEnglish[0] : "")
             });
+            savedToLibrary = true;
           }
-        } else if (resolvedImageUrl) {
-          await addDoc(collection(db, "generated_images"), {
-            userId: user?.uid || "anonymous",
-            profileId: activeProfile?.id || "default",
-            url: resolvedImageUrl,
-            createdAt: new Date(),
-            source: "ia",
-            type: postType,
-            prompt: promptEnglish || (promptsEnglish.length > 0 ? promptsEnglish[0] : "")
-          });
         }
       } catch (persistErr) {
         console.error("Error al persistir imagen en biblioteca:", persistErr);
@@ -749,14 +801,24 @@ export default function RrssCreatePost() {
         setPreviewSlides([{ url: resolvedImageUrl, copy: resolvedCopy }]);
       }
 
-      // Mostrar modal de aviso informando que ya está guardado en biblioteca
-      setStatusModal({
-        isOpen: true,
-        type: "success",
-        title: "¡Diseño Guardado en Biblioteca!",
-        message: "Tu nueva imagen se ha generado exitosamente. Ya la tienes disponible en el menú Biblioteca para editar o postear cuando gustes.",
-        onConfirm: () => setStatusModal(prev => ({ ...prev, isOpen: false }))
-      });
+      // Mostrar modal informando estado real de persistencia (PF-10)
+      if (savedToLibrary) {
+        setStatusModal({
+          isOpen: true,
+          type: "success",
+          title: "¡Diseño Guardado en Biblioteca!",
+          message: "Tu nueva imagen se ha generado y guardado exitosamente en tu Biblioteca para editar o programar cuando gustes.",
+          onConfirm: () => setStatusModal(prev => ({ ...prev, isOpen: false }))
+        });
+      } else {
+        setStatusModal({
+          isOpen: true,
+          type: "info",
+          title: "¡Contenido Generado!",
+          message: "Tu contenido visual está listo para revisión y edición. Puedes programar tu publicación directamente.",
+          onConfirm: () => setStatusModal(prev => ({ ...prev, isOpen: false }))
+        });
+      }
 
       // Si es Reel, guardar assets
       if (postType === 'Reel') {

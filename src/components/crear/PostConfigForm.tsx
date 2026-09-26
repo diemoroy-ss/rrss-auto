@@ -443,14 +443,16 @@ export default function PostConfigForm({
           <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Tipo de Publicación</label>
           <div className="grid grid-cols-4 gap-2">
             {['Post', 'Historia', 'Carrusel', 'Reel'].map(type => {
-              const disabled = networks.tiktok && type !== 'Reel';
+              const isReelDisabledByPlan = type === 'Reel' && !allowVideo;
+              const disabled = (networks.tiktok && type !== 'Reel') || isReelDisabledByPlan;
               return (
                 <button 
                   key={type}
                   type="button"
                   disabled={disabled}
+                  title={isReelDisabledByPlan ? "Tu plan actual no incluye cuota de Reels/Video. Mejora tu plan para desbloquearlo." : ""}
                   onClick={() => setPostType(type)}
-                  className={`py-3 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all ${
+                  className={`py-3 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all relative ${
                     disabled ? 'opacity-40 bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed' :
                     postType === type 
                       ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
@@ -458,7 +460,10 @@ export default function PostConfigForm({
                   }`}
                 >
                   <span className="text-xl">{type === 'Post' ? '🖼️' : type === 'Historia' ? '📱' : type === 'Carrusel' ? '📑' : '🎬'}</span>
-                  <span className="text-[9px] font-bold uppercase">{type}</span>
+                  <span className="text-[9px] font-bold uppercase flex items-center gap-1">
+                    {type}
+                    {isReelDisabledByPlan && <span className="text-[10px]">🔒</span>}
+                  </span>
                 </button>
               );
             })}

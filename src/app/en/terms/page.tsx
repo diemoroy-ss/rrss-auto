@@ -75,7 +75,7 @@ export default function Terms() {
                   2. Data Protection and Law N° 21.719 of Chile
                 </h3>
                 <p style={{ fontSize: '15px', color: 'var(--ink-dim)', lineHeight: '1.6' }}>
-                  The processing of personal data in Santisoft AI is strictly governed by the principles of lawfulness, proportionality, purpose, and security established in <strong>Law N° 21.719 of Chile</strong>. Users retain absolute control over their data and can request access, rectification, deletion, or portability of their information at any time.
+                  The processing of personal data in Santisoft AI is strictly governed by the principles of lawfulness, proportionality, purpose, and security established in applicable legislation and in proactive alignment with the standards of <strong>Law N° 21.719 of Chile</strong>. Users retain absolute control over their data and can request access, rectification, deletion, or portability of their information at any time by emailing legal@santisoft.cl.
                 </p>
               </section>
 
@@ -102,10 +102,10 @@ export default function Terms() {
 
               <section style={{ borderTop: '1px solid var(--line)', paddingTop: '20px' }}>
                 <h3 style={{ fontSize: '20px', fontFamily: 'var(--disp)', marginBottom: '12px', fontWeight: 600 }}>
-                  5. Exclusive Use and AI Limits
+                  5. Scope of Content, Video, and Agent Generation
                 </h3>
                 <p style={{ fontSize: '15px', color: 'var(--ink-dim)', lineHeight: '1.6' }}>
-                  The Artificial Intelligence service powering Santisoft AI generates suggestions based on advanced language models. Although we optimize responses to maximize conversions and SEO, the client must validate that the content complies with their business regulations before publishing it on autopilot. We do not guarantee specific traffic, clicks, or commercial sales results derived directly or indirectly from the generated content.
+                  Our specialized agents assist in trend research, persuasive copywriting, image design, and video composition for social channels. In audiovisual generation, each video delivery includes structured scripts, professional high-fidelity voiceover, and visual scene/template composition adapted for Reels, TikTok, and Shorts within the contracted monthly quota. The client remains responsible for verifying that all published content complies with their industry regulations before dissemination.
                 </p>
               </section>
 

@@ -115,22 +115,23 @@ export default async function RenderPreviewPage(props: {
               // Para el lienzo de 1080px en Butterfly, escalamos el logo correspondientemente (multiplicado por 2.4).
               width: data.logoWidth ? `${Math.round(data.logoWidth * 2.4)}px` : "160px",
               height: data.logoWidth ? `${Math.round(data.logoWidth * 2.4)}px` : "160px",
-              backgroundColor: "white",
-              borderRadius: "15px",
-              padding: "10px",
+              backgroundColor: data.logoBg === "transparent" ? "transparent" : (data.logoBg || "white"),
+              borderRadius: data.logoBg === "transparent" ? "0" : "16px",
+              padding: data.logoBg === "transparent" ? "0" : "10px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.3)"
+              boxShadow: data.logoBg === "transparent" ? "none" : "0 8px 32px rgba(0,0,0,0.3)"
             }}
           >
-            // eslint-disable-next-line @next/next/no-img-element
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
               src={data.logoUrl} 
               style={{ 
                 maxWidth: "100%", 
                 maxHeight: "100%", 
-                objectFit: "contain" 
+                objectFit: "contain",
+                filter: data.logoBg === "transparent" ? "drop-shadow(0 4px 12px rgba(0,0,0,0.5))" : "none"
               }} 
               alt="logo" 
             />

@@ -44,14 +44,14 @@ export default function Privacidad() {
             <span className="eyebrow">Transparencia y Seguridad</span>
             <h2>Política de <em>Privacidad.</em></h2>
             <p className="sub" style={{ margin: '12px 0 0 0' }}>
-              En Santisoft AI nos tomamos muy en serio tu privacidad. Esta política detalla el tratamiento de tus datos bajo los nuevos estándares de la <strong>Ley N° 21.719</strong> (que moderniza la Ley N° 19.628 de Chile), aplicable a partir de diciembre de este año.
+              En Santisoft AI nos tomamos muy en serio tu privacidad. Esta política detalla el tratamiento de tus datos bajo la normativa legal vigente y en adecuación anticipada a los estándares de la <strong>Ley N° 21.719</strong> (que moderniza la Ley N° 19.628 de Chile).
             </p>
           </div>
 
           <div className="panel" style={{ padding: '40px 30px', background: 'var(--panel)', border: '1px solid var(--line-strong)', borderRadius: '16px' }}>
             <div className="fmono" style={{ fontSize: '12px', color: 'var(--ink-faint)', marginBottom: '30px', display: 'flex', gap: '15px' }}>
-              <span>ÚLTIMA ACTUALIZACIÓN: JULIO 2026</span>
-              <span>VERSIÓN: 2.1 (CONFORME LEY N° 21.719)</span>
+              <span>ÚLTIMA ACTUALIZACIÓN: AGOSTO 2026</span>
+              <span>VERSIÓN: 2.2 (ADECUACIÓN LEY N° 21.719)</span>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '35px' }}>
@@ -162,7 +162,7 @@ export default function Privacidad() {
         <div className="wrap">
           <div className="fmono">
             <span className="on-air"></span>
-            © 2026 SANTISOFT AI · CUMPLIENDO LEY DE DATOS N° 21.719
+            © 2026 SANTISOFT AI · ADECUACIÓN LEY N° 21.719
           </div>
           <div className="flinks">
             <Link href="/terminos">Términos de Servicio</Link>

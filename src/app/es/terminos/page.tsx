@@ -67,7 +67,7 @@ export default function TerminosPage() {
           
           <h2 className="text-2xl font-bold mt-10 mb-4">8. Contacto</h2>
           <p>
-            Para consultas relacionadas con estos términos, contáctanos en: <strong>santisoftai@gmail.com</strong>
+            Para consultas relacionadas con estos términos, contáctanos en: <strong>legal@santisoft.cl</strong> o <strong>contacto@santisoft.cl</strong>
           </p>
         </div>
       </div>

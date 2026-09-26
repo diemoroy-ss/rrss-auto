@@ -1,6 +1,13 @@
 "use client";
 import { useState, useEffect } from "react";
-import { signInWithEmailAndPassword, signInWithPopup, createUserWithEmailAndPassword, sendEmailVerification, onAuthStateChanged } from "firebase/auth";
+import { 
+  signInWithEmailAndPassword, 
+  signInWithPopup, 
+  createUserWithEmailAndPassword, 
+  sendEmailVerification, 
+  sendPasswordResetEmail,
+  onAuthStateChanged 
+} from "firebase/auth";
 import { auth, db, googleProvider } from "../../lib/firebase";
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "next/navigation";
@@ -18,6 +25,14 @@ export default function LoginGastronomico() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+  const [emailAlreadyRegistered, setEmailAlreadyRegistered] = useState(false);
+
+  // Modal para restablecer contraseña
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotStatus, setForgotStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
   const router = useRouter();
 
   // Redirect users who are already logged in
@@ -30,7 +45,12 @@ export default function LoginGastronomico() {
              const userDocRef = doc(db, "users", u.uid);
              const userDoc = await getDoc(userDocRef);
              if (userDoc.exists()) {
-               router.replace("/automatizacion-rrss/panel");
+               const userData = userDoc.data();
+               if (!userData?.onboardingCompleted) {
+                 router.replace("/onboarding");
+               } else {
+                 router.replace("/automatizacion-rrss/panel");
+               }
              } else {
                router.replace("/registro");
              }
@@ -94,10 +114,39 @@ export default function LoginGastronomico() {
     return resolvedRole;
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail) {
+      setForgotStatus({ type: 'error', message: "Ingresa tu correo para enviarte el enlace." });
+      return;
+    }
+    setForgotLoading(true);
+    setForgotStatus(null);
+    try {
+      await sendPasswordResetEmail(auth, forgotEmail.trim());
+      setForgotStatus({ 
+        type: 'success', 
+        message: "Enlace enviado con éxito. Revisa tu bandeja de entrada (y la carpeta de spam) para restablecer tu contraseña." 
+      });
+    } catch (err: any) {
+      console.error("[ForgotPassword] Error:", err);
+      if (err.code === 'auth/user-not-found') {
+        setForgotStatus({ type: 'error', message: "No encontramos ninguna cuenta registrada con este correo." });
+      } else if (err.code === 'auth/invalid-email') {
+        setForgotStatus({ type: 'error', message: "El formato del correo ingresado no es válido." });
+      } else {
+        setForgotStatus({ type: 'error', message: "No se pudo enviar el correo. Intenta de nuevo en unos minutos." });
+      }
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setSuccess("");
+    setEmailAlreadyRegistered(false);
     setLoading(true);
 
     try {
@@ -111,35 +160,36 @@ export default function LoginGastronomico() {
         // REGISTER FLOW
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await syncUserToDb(userCredential.user, { name, phone, company });
-        await sendEmailVerification(userCredential.user);
-        
-        // Log out immediately to force them to verify email
-        await auth.signOut();
-        setSuccess("Cuenta creada exitosamente. Por favor revisa tu correo y verifica tu dirección antes de iniciar sesión.");
-        setIsRegister(false); // Switch to login view
+        // Redirigir a onboarding directamente para configurar la marca
+        router.push("/onboarding");
       } else {
         // LOGIN FLOW
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        await syncUserToDb(userCredential.user);
         
-        // Require Email Verification
-        if (!userCredential.user.emailVerified) {
-          setError("Debes verificar tu correo electrónico antes de poder acceder.");
-          await auth.signOut();
-          setLoading(false);
-          return;
+        // Verificar si completó onboarding
+        const userDocRef = doc(db, "users", userCredential.user.uid);
+        const userDoc = await getDoc(userDocRef);
+        const userData = userDoc.exists() ? userDoc.data() : null;
+        if (!userData?.onboardingCompleted) {
+          router.push("/onboarding");
+        } else {
+          router.push("/automatizacion-rrss/panel");
         }
-
-        const role = await syncUserToDb(userCredential.user);
-        router.push("/automatizacion-rrss/panel");
       }
     } catch (err: any) {
       console.error(err);
       if (err.code === 'auth/email-already-in-use') {
-         setError("Este correo ya está registrado.");
-      } else if (err.code === 'auth/invalid-credential') {
-         setError("Credenciales incorrectas.");
+         setError("Este correo ya está registrado en Santisoft.");
+         setEmailAlreadyRegistered(true);
+      } else if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
+         setError("Correo o contraseña incorrectos. Si no recuerdas tu clave, puedes recuperarla abajo.");
+      } else if (err.code === 'auth/weak-password') {
+         setError("La contraseña debe tener al menos 6 caracteres.");
+      } else if (err.code === 'auth/invalid-email') {
+         setError("El formato de correo no es válido.");
       } else {
-         setError(isRegister ? "Error al crear cuenta. Verifica los datos." : "Credenciales incorrectas o usuario no existe.");
+         setError(err.message || (isRegister ? "Error al crear cuenta. Verifica los datos." : "Credenciales incorrectas o usuario no existe."));
       }
     } finally {
       setLoading(false);
@@ -149,15 +199,26 @@ export default function LoginGastronomico() {
   const handleGoogleLogin = async () => {
     setError("");
     setSuccess("");
+    setEmailAlreadyRegistered(false);
     setLoading(true);
     try {
       const result = await signInWithPopup(auth, googleProvider);
-      const role = await syncUserToDb(result.user);
-      router.push("/automatizacion-rrss/panel");
+      await syncUserToDb(result.user);
+      
+      const userDocRef = doc(db, "users", result.user.uid);
+      const userDoc = await getDoc(userDocRef);
+      const userData = userDoc.exists() ? userDoc.data() : null;
+      if (!userData?.onboardingCompleted) {
+        router.push("/onboarding");
+      } else {
+        router.push("/automatizacion-rrss/panel");
+      }
     } catch (err: any) {
-      console.error(err);
-      if (err.code !== "auth/popup-closed-by-user") {
-        setError("Error al iniciar sesión con Google.");
+      console.error("[GoogleLogin] Error:", err);
+      if (err.code === "auth/popup-blocked") {
+        setError("El navegador bloqueó la ventana emergente de Google. Permite ventanas emergentes o ingresa con correo.");
+      } else if (err.code !== "auth/popup-closed-by-user") {
+        setError("Error al iniciar sesión con Google. Si estás usando una app integrada (Instagram, TikTok), abre el enlace en tu navegador habitual.");
       }
     } finally {
       setLoading(false);
@@ -178,8 +239,21 @@ export default function LoginGastronomico() {
         <div className="bg-white p-8 rounded-[32px] shadow-xl shadow-slate-200/50 border border-slate-200">
           
           {error && (
-            <div className="mb-6 bg-rose-50 text-rose-600 text-sm font-bold p-4 rounded-xl text-center border border-rose-100">
-               {error}
+            <div className="mb-6 bg-rose-50 text-rose-600 text-sm font-bold p-4 rounded-xl text-center border border-rose-100 space-y-2">
+               <div>{error}</div>
+               {emailAlreadyRegistered && (
+                 <button
+                   type="button"
+                   onClick={() => {
+                     setIsRegister(false);
+                     setError("");
+                     setEmailAlreadyRegistered(false);
+                   }}
+                   className="inline-block text-xs bg-rose-600 hover:bg-rose-700 text-white font-bold py-1.5 px-3 rounded-lg transition-colors"
+                 >
+                   Iniciar sesión con este correo
+                 </button>
+               )}
             </div>
           )}
           {success && (
@@ -248,7 +322,22 @@ export default function LoginGastronomico() {
             </div>
             
             <div>
-               <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Contraseña</label>
+               <div className="flex items-center justify-between mb-1.5">
+                 <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-widest">Contraseña</label>
+                 {!isRegister && (
+                   <button
+                     type="button"
+                     onClick={() => {
+                       setForgotEmail(email);
+                       setForgotStatus(null);
+                       setShowForgotModal(true);
+                     }}
+                     className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 transition-colors"
+                   >
+                     ¿Olvidaste tu contraseña?
+                   </button>
+                 )}
+               </div>
                <input 
                  type="password" 
                  required 
@@ -271,14 +360,82 @@ export default function LoginGastronomico() {
           </form>
 
           <div className="mt-6 text-center">
-             <button type="button" onClick={() => setIsRegister(!isRegister)} className="text-indigo-600 text-sm font-bold hover:underline transition-all">
+             <button type="button" onClick={() => {
+                setIsRegister(!isRegister);
+                setError("");
+                setEmailAlreadyRegistered(false);
+             }} className="text-indigo-600 text-sm font-bold hover:underline transition-all">
                 {isRegister ? "¿Ya tienes cuenta? Inicia sesión aquí." : "¿No tienes cuenta? Regístrate aquí."}
              </button>
           </div>
           
         </div>
 
+        {/* Modal de Restablecer Contraseña */}
+        {showForgotModal && (
+          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-150 animate-in fade-in zoom-in duration-200">
+              <div className="text-center mb-4">
+                <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center text-xl mx-auto mb-2 font-bold">
+                  🔑
+                </div>
+                <h3 className="text-lg font-black text-slate-900">Recuperar Contraseña</h3>
+                <p className="text-xs text-slate-500 mt-1">
+                  Ingresa tu correo y te enviaremos un enlace seguro para restablecer tu contraseña.
+                </p>
+              </div>
+
+              {forgotStatus && (
+                <div className={`mb-4 p-3 rounded-xl text-xs font-bold text-center border ${
+                  forgotStatus.type === 'success' 
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
+                    : 'bg-rose-50 text-rose-700 border-rose-100'
+                }`}>
+                  {forgotStatus.message}
+                </div>
+              )}
+
+              <form onSubmit={handleForgotPassword} className="space-y-3">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
+                    Correo Registrado
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    placeholder="tucorreo@ejemplo.com"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                  />
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotModal(false)}
+                    className="flex-1 py-2.5 border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold rounded-xl text-xs transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={forgotLoading || !forgotEmail}
+                    className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-bold rounded-xl text-xs transition-colors shadow-sm flex items-center justify-center gap-1.5"
+                  >
+                    {forgotLoading ? (
+                      <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      "Enviar enlace"
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
-  )
+  );
 }

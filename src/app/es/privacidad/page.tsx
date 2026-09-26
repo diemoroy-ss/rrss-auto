@@ -17,7 +17,7 @@ export default function PrivacidadPage() {
 
         <div className="prose prose-slate max-w-none">
           <p>
-            En <strong>Santisoft AI</strong> (en adelante, "nosotros", "nuestro" o "la Plataforma"), operada bajo el dominio santisoft.cl, respetamos tu privacidad y estamos comprometidos con la protección de tus datos personales, en cumplimiento con la <strong>Ley N° 21.719</strong> sobre Protección de Datos Personales de Chile y los estándares internacionales de privacidad.
+            En <strong>Santisoft AI</strong> (en adelante, "nosotros", "nuestro" o "la Plataforma"), operada bajo el dominio santisoft.cl, respetamos tu privacidad y estamos comprometidos con la protección de tus datos personales, en cumplimiento con la normativa legal vigente y en adecuación anticipada a los estándares de la <strong>Ley N° 21.719</strong> sobre Protección de Datos Personales de Chile y directrices internacionales de privacidad.
           </p>
 
           <h2 className="text-2xl font-bold mt-10 mb-4">1. Uso de Servicios de API de Terceros (Google, YouTube, Meta, X, TikTok)</h2>
@@ -38,7 +38,7 @@ export default function PrivacidadPage() {
           <ul className="list-disc pl-6 mb-6">
             <li><strong>Información de perfil:</strong> Nombre, correo electrónico y foto de perfil proporcionados por tu cuenta de Google u otro proveedor de identidad.</li>
             <li><strong>Tokens de acceso (OAuth):</strong> Al conectar tus redes sociales, almacenamos de forma segura los tokens de acceso temporales para poder publicar contenido en tu nombre. <strong>No guardamos ni tenemos acceso a tus contraseñas de redes sociales.</strong></li>
-            <li><strong>Contenido generado:</strong> Los textos, imágenes y videos generados por nuestra IA para ser publicados en tus cuentas.</li>
+            <li><strong>Contenido generado:</strong> Los textos, imágenes y piezas de video generadas por nuestros agentes para ser publicados en tus cuentas.</li>
           </ul>
 
           <h2 className="text-2xl font-bold mt-10 mb-4">3. ¿Cómo utilizamos tus datos?</h2>
@@ -61,7 +61,7 @@ export default function PrivacidadPage() {
               <strong>Para Google / YouTube:</strong> Puedes revocar el acceso de Santisoft AI a tus datos de Google en cualquier momento visitando la página de configuración de seguridad de Google: <a href="https://security.google.com/settings/security/permissions" target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline">https://security.google.com/settings/security/permissions</a>. Al revocar el acceso, eliminaremos automáticamente tus tokens de nuestros servidores.
             </li>
             <li>
-              <strong>Eliminación de cuenta:</strong> Puedes solicitar la eliminación completa de tu cuenta de Santisoft AI y todos los datos asociados escribiéndonos a <strong>santisoftai@gmail.com</strong> o desde el panel de configuración de tu cuenta. Responderemos a tu solicitud en un plazo máximo de 72 horas.
+              <strong>Eliminación de cuenta:</strong> Puedes solicitar la eliminación completa de tu cuenta de Santisoft AI y todos los datos asociados escribiéndonos a <strong>privacidad@santisoft.cl</strong> o desde el panel de configuración de tu cuenta. Responderemos a tu solicitud en un plazo máximo de 72 horas.
             </li>
           </ul>
 
@@ -74,9 +74,9 @@ export default function PrivacidadPage() {
           <p>
             Si tienes alguna duda o reclamo respecto a cómo tratamos tus datos o sobre esta Política de Privacidad, puedes contactarnos en:
             <br /><br />
-            <strong>Correo electrónico:</strong> santisoftai@gmail.com
+            <strong>Privacidad y Datos:</strong> privacidad@santisoft.cl
             <br />
-            <strong>Equipo de Soporte:</strong> spalezcom@gmail.com
+            <strong>Equipo de Soporte:</strong> soporte@santisoft.cl
           </p>
         </div>
       </div>

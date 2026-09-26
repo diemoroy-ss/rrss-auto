@@ -193,39 +193,39 @@ export default function HeroSection() {
           <div className="panel dark-screen" data-reveal>
             <div className="panel-topbar">
               <span>CONSOLA DE TRANSMISIÓN — SANTISOFT AGENTES</span>
-              <div className="freqs"><span>98.6 FM</span><span>404 TERM</span><span>WA BOT</span></div>
+              <div className="freqs"><span>RRSS 360°</span><span>SEO &amp; GEO</span><span>WHATSAPP</span></div>
             </div>
             <div className="gauges three-signals">
               <div className="gauge a">
                 <div className="gauge-head">
-                  <span className="gauge-name">SEÑAL A — REDES</span>
+                  <span className="gauge-name">CANAL 1 — REDES</span>
                   <span className="gauge-status">AL AIRE</span>
                 </div>
                 <div className="ring-row">
                   <div className="eq-visual"><span></span><span></span><span></span><span></span><span></span></div>
-                  <p className="gauge-desc"><b>Meta + TikTok</b>, siempre al aire con el calendario automatizado para todo el mes.</p>
+                  <p className="gauge-desc"><b>Meta + TikTok</b>, siempre activos con el calendario automatizado para todo el mes.</p>
                 </div>
               </div>
               <div className="gauge b">
                 <div className="gauge-head">
-                  <span className="gauge-name">SEÑAL B — SEO &amp; GEO</span>
+                  <span className="gauge-name">CANAL 2 — SEO &amp; GEO</span>
                   <span className="gauge-status">INDEXANDO</span>
                 </div>
                 <div className="ring-row">
-                  <div className="term-visual">&gt; crawling...<br />&gt; cite: true<br />&gt; rank: up<span className="cursor"></span></div>
-                  <p className="gauge-desc"><b>Blog en tu CMS</b> estructurado para Google y para que los motores te citen.</p>
+                  <div className="term-visual">&gt; posicionando...<br />&gt; cite: ok<br />&gt; ranking: activo<span className="cursor"></span></div>
+                  <p className="gauge-desc"><b>Blog en tu CMS</b> estructurado para Google y para que los motores generativos te citen.</p>
                 </div>
               </div>
               <div className="gauge c">
                 <div className="gauge-head">
-                  <span className="gauge-name">SEÑAL C — WHATSAPP</span>
+                  <span className="gauge-name">CANAL 3 — WHATSAPP</span>
                   <span className="gauge-status">EN LÍNEA</span>
                 </div>
                 <div className="ring-row">
                   <div className="term-visual !border-emerald-500/40 !bg-emerald-950/20 !text-emerald-400">
-                    &gt; msg: &quot;6&quot;<br />&gt; posts: OK<br />&gt; ready<span className="cursor !bg-emerald-400"></span>
+                    &gt; msg: &quot;6&quot;<br />&gt; posts: OK<br />&gt; listos<span className="cursor !bg-emerald-400"></span>
                   </div>
-                  <p className="gauge-desc"><b>Comando móvil</b>: aprueba publicaciones, pide copys y revisa métricas desde el chat.</p>
+                  <p className="gauge-desc"><b>Comando móvil</b>: aprueba publicaciones, pide copys y revisa métricas desde tu chat.</p>
                 </div>
               </div>
             </div>
@@ -297,7 +297,7 @@ export default function HeroSection() {
               {advancedStep < 4 ? (
                 <div className="flex flex-col items-center justify-center py-8 gap-8 w-full max-w-sm mx-auto">
                   <div className="text-center">
-                    <h3 className="text-2xl font-bold mb-2 font-serif text-slate-800">Generando la magia...</h3>
+                    <h3 className="text-2xl font-bold mb-2 font-serif text-slate-800">Nuestros agentes están creando tu muestra...</h3>
                     <p className="text-slate-500 text-sm">Esto tomará unos 20-30 segundos.</p>
                   </div>
                   
@@ -313,14 +313,14 @@ export default function HeroSection() {
                       <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${advancedStep > 2 ? 'bg-green-500 text-white' : (advancedStep === 2 ? 'border-2 border-[#DD4B19] text-[#DD4B19]' : 'border-2 border-slate-200')}`}>
                         {advancedStep > 2 ? '✓' : (advancedStep === 2 ? <span className="w-2 h-2 bg-[#DD4B19] rounded-full animate-pulse"></span> : '')}
                       </div>
-                      <span className={`text-sm ${advancedStep >= 2 ? 'text-slate-800 font-semibold' : 'text-slate-400'}`}>Creando recursos gráficos con IA</span>
+                      <span className={`text-sm ${advancedStep >= 2 ? 'text-slate-800 font-semibold' : 'text-slate-400'}`}>Diseñando recursos visuales adaptados a tu marca</span>
                     </div>
 
                     <div className="flex items-center gap-3">
                       <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${advancedStep > 3 ? 'bg-green-500 text-white' : (advancedStep === 3 ? 'border-2 border-[#DD4B19] text-[#DD4B19]' : 'border-2 border-slate-200')}`}>
                         {advancedStep > 3 ? '✓' : (advancedStep === 3 ? <span className="w-2 h-2 bg-[#DD4B19] rounded-full animate-pulse"></span> : '')}
                       </div>
-                      <span className={`text-sm ${advancedStep >= 3 ? 'text-slate-800 font-semibold' : 'text-slate-400'}`}>Escribiendo texto y validando calidad</span>
+                      <span className={`text-sm ${advancedStep >= 3 ? 'text-slate-800 font-semibold' : 'text-slate-400'}`}>Redactando copy persuasivo y verificando estilo</span>
                     </div>
                   </div>
                 </div>
@@ -337,7 +337,7 @@ export default function HeroSection() {
                       <div className="relative rounded-xl overflow-hidden bg-slate-100 aspect-square flex items-center justify-center">
                         {advancedImgUrl ? (
                           <>
-                            <img src={advancedImgUrl} alt="Generado por IA" className="w-full h-full object-cover" />
+                            <img src={advancedImgUrl} alt="Contenido generado por nuestros agentes" className="w-full h-full object-cover" />
                             <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center opacity-30 select-none overflow-hidden mix-blend-overlay">
                               <div className="transform -rotate-45 text-white font-black text-4xl tracking-widest drop-shadow-lg" style={{ textShadow: '2px 2px 8px rgba(0,0,0,0.8)' }}>
                                 SANTISOFT.CL
