@@ -9,6 +9,13 @@ import Link from "next/link";
 import RemotionReelPlayer from "../../../../components/video/RemotionReelPlayer";
 import { VideoComposition } from "../../../../lib/video-poc-service";
 import TikTokPostSettings, { TikTokSettingsState, DEFAULT_TIKTOK_SETTINGS } from "../../../../components/crear/TikTokPostSettings";
+import {
+  VIDEO_PROMPT_STYLES,
+  videoPromptCategories,
+  buildImageToVideoPrompt,
+  VideoPromptTemplate
+} from "../../../../lib/video-prompt-templates";
+import { FaCopy, FaCheck, FaMagic, FaFilm, FaCamera, FaPlay, FaLightbulb } from "react-icons/fa";
 
 
 function VideoPoCContent() {
@@ -35,6 +42,47 @@ function VideoPoCContent() {
   const [imageStatus, setImageStatus] = useState<Record<number, "loading" | "ready" | "error">>({});
   const [networkCopies, setNetworkCopies] = useState<Record<string, string>>({});
   const [activeNetworkTab, setActiveNetworkTab] = useState<string>("tiktok");
+
+  // Tab Principal: Remotion vs Biblioteca de Prompts
+  const [activeMainTab, setActiveMainTab] = useState<"remotion" | "prompts">("remotion");
+  const [selectedPromptCategory, setSelectedPromptCategory] = useState<string>("Todas");
+  const [selectedPromptStyle, setSelectedPromptStyle] = useState<VideoPromptTemplate>(VIDEO_PROMPT_STYLES[0]);
+  const [promptBusiness, setPromptBusiness] = useState<string>(prof?.nombre || prof?.name || "");
+  const [promptRubro, setPromptRubro] = useState<string>(prof?.rubro || prof?.niche || "General");
+  const [promptConcept, setPromptConcept] = useState<string>("");
+  const [promptCustomDir, setPromptCustomDir] = useState<string>("");
+  const [copiedPromptText, setCopiedPromptText] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (prof?.nombre || prof?.name) {
+      setPromptBusiness(prof?.nombre || prof?.name);
+    }
+    if (prof?.rubro || prof?.niche) {
+      setPromptRubro(prof?.rubro || prof?.niche);
+    }
+  }, [prof?.nombre, prof?.name, prof?.rubro, prof?.niche]);
+
+  const compiledPrompt = selectedPromptStyle
+    ? buildImageToVideoPrompt(selectedPromptStyle, {
+        businessName: promptBusiness,
+        rubro: promptRubro,
+        offerText: promptConcept,
+        customDirection: promptCustomDir,
+      })
+    : null;
+
+  const handleCopyPrompt = () => {
+    if (compiledPrompt?.promptEnglish) {
+      navigator.clipboard.writeText(compiledPrompt.promptEnglish);
+      setCopiedPromptText(true);
+      setTimeout(() => setCopiedPromptText(false), 2500);
+    }
+  };
+
+  const filteredPromptStyles =
+    selectedPromptCategory === "Todas"
+      ? VIDEO_PROMPT_STYLES
+      : VIDEO_PROMPT_STYLES.filter((s) => s.category === selectedPromptCategory);
 
   const handleRegenerateSceneImage = async (idx: number, scene: any) => {
     setImageStatus((prev) => ({ ...prev, [idx]: "loading" }));
@@ -510,11 +558,39 @@ function VideoPoCContent() {
           </div>
 
           <h1 className="text-2xl md:text-4xl font-black tracking-tight text-white">
-            Generador de Reels Animados
+            Generador de Reels & Video Clips
           </h1>
           <p className="text-slate-300 text-sm md:text-base max-w-3xl leading-relaxed">
-            Estructura, anima y previsualiza Reels verticales a 60fps con subtítulos dinámicos estilo Alex Hormozi y marca de agua.
+            Estructura y previsualiza Reels verticales a 60fps con subtítulos dinámicos estilo Hormozi, o utiliza nuestra biblioteca de prompts de video para animar imágenes en Kling, Runway y Luma con movimientos de cámara cinemáticos.
           </p>
+
+          {/* TABS DE SELECCIÓN DE MODO */}
+          <div className="flex flex-wrap gap-2 pt-4 border-t border-indigo-900/60 mt-4">
+            <button
+              type="button"
+              onClick={() => setActiveMainTab("remotion")}
+              className={`px-4 py-2.5 rounded-xl font-bold text-xs md:text-sm flex items-center gap-2 transition-all ${
+                activeMainTab === "remotion"
+                  ? "bg-white text-indigo-950 shadow-lg font-black"
+                  : "bg-white/10 hover:bg-white/20 text-white"
+              }`}
+            >
+              <span>🎬</span>
+              <span>Reels con Remotion &amp; Locución</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveMainTab("prompts")}
+              className={`px-4 py-2.5 rounded-xl font-bold text-xs md:text-sm flex items-center gap-2 transition-all ${
+                activeMainTab === "prompts"
+                  ? "bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 shadow-lg font-black"
+                  : "bg-white/10 hover:bg-white/20 text-white"
+              }`}
+            >
+              <span>✨</span>
+              <span>Biblioteca de Prompts de Video (Kling / Runway / Luma)</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -525,8 +601,9 @@ function VideoPoCContent() {
         </div>
       )}
 
-      {/* GRID PRINCIPAL: CONTROLES A LA IZQUIERDA, PLAYER A LA DERECHA */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      {activeMainTab === "remotion" ? (
+        /* GRID PRINCIPAL: CONTROLES A LA IZQUIERDA, PLAYER A LA DERECHA */
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
         {/* PANEL IZQUIERDO: FORMULARIO Y EDICIÓN (7 COLUMNAS) */}
         <div className="lg:col-span-7 space-y-6">
@@ -1025,7 +1102,7 @@ function VideoPoCContent() {
                   Genera tu primer Reel animado
                 </h3>
                 <p className="text-slate-500 text-xs font-medium max-w-xs mx-auto leading-relaxed">
-                  Ingresa tu tema a la izquierda y presiona <strong>"✨ Generar Reel con IA"</strong> para que la IA cree las imágenes de fondo, subtítulos animados y el guion en tiempo real.
+                  Ingresa tu tema a la izquierda y presiona <strong>"✨ Generar Reel con Agentes"</strong> para que nuestros agentes creen las imágenes de fondo, subtítulos animados y el guion en tiempo real.
                 </p>
               </div>
             </div>
@@ -1033,6 +1110,344 @@ function VideoPoCContent() {
         </div>
 
       </div>
+      ) : (
+        <div className="space-y-8 animate-in fade-in duration-300">
+          {/* BANNER INFORMATIVO */}
+          <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 md:p-8 text-white border border-indigo-800/40 shadow-xl space-y-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <span className="text-xs font-mono font-bold uppercase text-amber-400 tracking-wider">
+                  Image-to-Video Prompt Engine
+                </span>
+                <h2 className="text-xl md:text-2xl font-black text-white">
+                  Biblioteca de Prompts de Video Cinematográfico
+                </h2>
+                <p className="text-xs md:text-sm text-slate-300 max-w-2xl leading-relaxed">
+                  Genera instrucciones precisas en inglés calibradas para motores como Kling AI, Runway Gen-3 Alpha, Luma Dream Machine y Sora. Diseñados por nuestros agentes para transformar cualquier foto o imagen de marca en un video publicitario de alto impacto.
+                </p>
+              </div>
+
+              <div className="shrink-0 flex items-center gap-3">
+                <Link
+                  href="/automatizacion-rrss/panel/admin/muestras"
+                  className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-extrabold shadow-md flex items-center gap-2 transition-all border border-indigo-400/30"
+                >
+                  <span>👑 Ir a Muestras de Prospectos</span>
+                  <span>→</span>
+                </Link>
+              </div>
+            </div>
+
+            {/* Pasos rápidos */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs">
+              <div className="p-3 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-3">
+                <span className="w-6 h-6 rounded-full bg-amber-400 text-slate-950 font-black flex items-center justify-center shrink-0">1</span>
+                <span className="text-slate-200">Elige el estilo de cámara y personaliza los datos de tu marca.</span>
+              </div>
+              <div className="p-3 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-3">
+                <span className="w-6 h-6 rounded-full bg-amber-400 text-slate-950 font-black flex items-center justify-center shrink-0">2</span>
+                <span className="text-slate-200">Copia el prompt optimizado en inglés con 1 solo clic.</span>
+              </div>
+              <div className="p-3 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-3">
+                <span className="w-6 h-6 rounded-full bg-amber-400 text-slate-950 font-black flex items-center justify-center shrink-0">3</span>
+                <span className="text-slate-200">Pégalo en Kling o Runway junto a la imagen base para animarla.</span>
+              </div>
+            </div>
+          </div>
+
+          {/* CONTENEDOR PRINCIPAL: FORMULARIO DE PERSONALIZACIÓN Y ESTILOS */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            {/* COLUMNA IZQUIERDA: CONFIGURACIÓN Y ESTILOS (7 COLUMNAS) */}
+            <div className="lg:col-span-7 space-y-6">
+              
+              {/* TARJETA DE PERSONALIZACIÓN DEL NEGOCIO */}
+              <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-4">
+                <h3 className="text-xs font-black uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                  <span>🎯</span>
+                  <span>Personalizar Contexto del Video</span>
+                </h3>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Nombre de la Marca o Negocio
+                    </label>
+                    <input
+                      type="text"
+                      value={promptBusiness}
+                      onChange={(e) => setPromptBusiness(e.target.value)}
+                      placeholder="Ej: Café Valparaíso, Clínica Estética..."
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Rubro o Nicho Comercial
+                    </label>
+                    <input
+                      type="text"
+                      value={promptRubro}
+                      onChange={(e) => setPromptRubro(e.target.value)}
+                      placeholder="Ej: Gastronomía, Bienes Raíces..."
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Concepto Visual o Producto a Destacar <span className="text-slate-400 font-normal">(Opcional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={promptConcept}
+                      onChange={(e) => setPromptConcept(e.target.value)}
+                      placeholder="Ej: Taza de cappuccino humeante servida sobre barra de mármol..."
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Instrucción Adicional de Cámara o Iluminación <span className="text-slate-400 font-normal">(Opcional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={promptCustomDir}
+                      onChange={(e) => setPromptCustomDir(e.target.value)}
+                      placeholder="Ej: Luz cálida de atardecer, vapor realista, reflejos sutiles..."
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* SELECTOR DE ESTILOS DE MOVIMIENTO DE CÁMARA */}
+              <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                      <span>🎬</span>
+                      <span>Estilos de Movimiento de Cámara Cinematográfica</span>
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Selecciona la dinámica visual que mejor se adapte al producto o servicio.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Filtro por Categorías */}
+                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+                  {["Todas", ...videoPromptCategories].map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setSelectedPromptCategory(cat)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                        selectedPromptCategory === cat
+                          ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20"
+                          : "bg-slate-100 hover:bg-slate-200 text-slate-600"
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Grid de Estilos */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  {filteredPromptStyles.map((item) => {
+                    const isSelected = selectedPromptStyle?.id === item.id;
+                    return (
+                      <div
+                        key={item.id}
+                        onClick={() => setSelectedPromptStyle(item)}
+                        className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex flex-col justify-between space-y-3 ${
+                          isSelected
+                            ? "border-indigo-600 bg-indigo-50/50 shadow-md ring-2 ring-indigo-500/20"
+                            : "border-slate-200 hover:border-slate-300 bg-white"
+                        }`}
+                      >
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-2xl">{item.icon}</span>
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-slate-100 text-indigo-700 border border-slate-200">
+                              {item.category}
+                            </span>
+                          </div>
+
+                          <h4 className="text-xs font-black text-slate-900 leading-tight">
+                            {item.title}
+                          </h4>
+
+                          <p className="text-[11px] text-slate-600 leading-relaxed">
+                            {item.description}
+                          </p>
+                        </div>
+
+                        <div className="pt-2 border-t border-slate-100 space-y-1.5">
+                          <div className="text-[10px] font-mono text-slate-500 truncate">
+                            📹 {item.cameraMotion}
+                          </div>
+                          <div className="text-[10px] font-semibold text-indigo-600 truncate">
+                            🎯 {item.recommendedFor}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* COLUMNA DERECHA: PROMPT COMPILADO Y ACCIONES (5 COLUMNAS) */}
+            <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-8">
+              
+              {/* TARJETA DEL PROMPT COMPILADO */}
+              <div className="bg-slate-950 rounded-3xl p-6 text-white border border-slate-800 shadow-2xl space-y-5">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{selectedPromptStyle?.icon || "✨"}</span>
+                    <div>
+                      <h4 className="text-xs font-mono font-bold text-amber-400 uppercase tracking-wider">
+                        Prompt Compilado
+                      </h4>
+                      <div className="text-xs font-black text-white">
+                        {selectedPromptStyle?.title}
+                      </div>
+                    </div>
+                  </div>
+
+                  <span className="px-2 py-0.5 rounded-full bg-indigo-950 text-indigo-300 text-[10px] font-bold border border-indigo-800">
+                    Inglés Técnico
+                  </span>
+                </div>
+
+                {/* Prompt Text Block */}
+                <div className="space-y-2">
+                  <div className="relative">
+                    <p className="text-xs text-slate-200 font-mono bg-slate-900/90 p-4 rounded-2xl border border-slate-800/80 leading-relaxed select-all max-h-64 overflow-y-auto">
+                      {compiledPrompt?.promptEnglish}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleCopyPrompt}
+                    className={`w-full py-3 rounded-2xl text-xs font-black flex items-center justify-center gap-2 transition-all shadow-lg ${
+                      copiedPromptText
+                        ? "bg-emerald-600 text-white shadow-emerald-600/30"
+                        : "bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 shadow-amber-500/20"
+                    }`}
+                  >
+                    {copiedPromptText ? (
+                      <>
+                        <FaCheck className="text-sm" />
+                        <span>¡Prompt Copiado al Portapapeles!</span>
+                      </>
+                    ) : (
+                      <>
+                        <FaCopy className="text-sm" />
+                        <span>Copiar Prompt para Kling / Runway</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Parámetros de Cámara & Resumen */}
+                <div className="space-y-2.5 pt-2 border-t border-slate-800/80 text-[11px]">
+                  <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1">
+                    <span className="text-[10px] font-bold uppercase text-slate-400 block font-mono">
+                      Detalle de Cinematografía
+                    </span>
+                    <p className="text-slate-300 leading-snug">
+                      {compiledPrompt?.cameraNotes}
+                    </p>
+                  </div>
+
+                  <p className="text-slate-400 text-[11px] leading-relaxed">
+                    ℹ️ {compiledPrompt?.promptSpanishSummary}
+                  </p>
+                </div>
+
+                {/* Plataformas Compatibles */}
+                <div className="pt-2 border-t border-slate-800/80 space-y-2">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block font-mono">
+                    Plataformas Recomendadas (Image-to-Video)
+                  </span>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs font-bold">
+                    <a
+                      href="https://klingai.com"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 flex items-center justify-between text-slate-200 transition-colors"
+                    >
+                      <span>Kling AI 1.5</span>
+                      <span className="text-indigo-400 text-[10px]">↗</span>
+                    </a>
+
+                    <a
+                      href="https://app.runwayml.com"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 flex items-center justify-between text-slate-200 transition-colors"
+                    >
+                      <span>Runway Gen-3</span>
+                      <span className="text-indigo-400 text-[10px]">↗</span>
+                    </a>
+
+                    <a
+                      href="https://lumalabs.ai/dream-machine"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 flex items-center justify-between text-slate-200 transition-colors"
+                    >
+                      <span>Luma Dream</span>
+                      <span className="text-indigo-400 text-[10px]">↗</span>
+                    </a>
+
+                    <a
+                      href="https://haiper.ai"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 flex items-center justify-between text-slate-200 transition-colors"
+                    >
+                      <span>Haiper Video</span>
+                      <span className="text-indigo-400 text-[10px]">↗</span>
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              {/* CALLOUT: ¿QUIERES ENVIAR MUESTRA COMPLETA POR WHATSAPP? */}
+              <div className="p-5 rounded-3xl bg-indigo-50 border border-indigo-200 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-base">💡</span>
+                  <h4 className="text-xs font-black text-indigo-950">
+                    ¿Quieres enviar una muestra completa a un cliente?
+                  </h4>
+                </div>
+                <p className="text-[11px] text-indigo-800 leading-relaxed">
+                  Si eres admin o estás en prospección comercial, usa el módulo <strong>Muestras Prospectos</strong> para montar el logo del cliente, generar la imagen y enviar la demo pública directamente a su WhatsApp.
+                </p>
+                <Link
+                  href="/automatizacion-rrss/panel/admin/muestras"
+                  className="inline-flex items-center gap-1.5 text-xs font-black text-indigo-600 hover:text-indigo-800 hover:underline pt-1"
+                >
+                  <span>Abrir Generador de Muestras para Prospectos</span>
+                  <span>→</span>
+                </Link>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+      )}
 
       {/* MODAL DE PROGRAMACIÓN DE PUBLICACIÓN */}
       {showScheduleModal && composition && (
