@@ -254,6 +254,14 @@ export default function PublicProspectDemoPage({ params }: { params: Promise<{ i
                   className="w-full h-full object-cover"
                 />
 
+                {/* Badge Permanente: Creado por Santisoft.cl */}
+                <div className="absolute bottom-3 right-3 z-10 bg-slate-950/85 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 flex items-center gap-1.5 shadow-xl pointer-events-none">
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse"></span>
+                  <span className="text-[11px] font-black text-white tracking-wide font-sans">
+                    Creado por Santisoft.cl
+                  </span>
+                </div>
+
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-4">
                   <span className="text-[11px] font-bold text-white bg-black/60 backdrop-blur-md px-3 py-1 rounded-lg">
                     {demo.prospectBusiness}

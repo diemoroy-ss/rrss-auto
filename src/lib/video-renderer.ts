@@ -109,3 +109,52 @@ export async function renderAndUploadReel(post: any, userId: string, postId: str
     console.log(`[VideoRenderer] Proceso finalizado. URL Pública: ${publicUrl}`);
     return publicUrl;
 }
+
+/**
+ * Descarga un video MP4 desde una URL remota (ej: n8n / Kling / Runway / Fal.ai)
+ * y lo persiste permanentemente en Firebase Storage.
+ */
+export async function persistRemoteVideoToStorage(
+    remoteUrl: string, 
+    userId: string = "system", 
+    postId: string = `vid_${Date.now()}`
+): Promise<string> {
+    // Si ya está en nuestro Firebase Storage, no descargar de nuevo
+    if (remoteUrl.includes("storage.googleapis.com") || remoteUrl.includes("firebasestorage.app")) {
+        return remoteUrl;
+    }
+
+    if (!adminStorage) {
+        console.warn("[VideoRenderer] adminStorage no disponible, usando URL remota directa.");
+        return remoteUrl;
+    }
+
+    try {
+        console.log(`[VideoRenderer] Descargando video remoto de n8n para almacenamiento permanente: ${remoteUrl}`);
+        const res = await fetch(remoteUrl);
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status} al descargar video remoto`);
+        }
+        const arrayBuffer = await res.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        const bucket = adminStorage.bucket();
+        const destination = `users/${userId}/reels/${postId}.mp4`;
+        const file = bucket.file(destination);
+
+        await file.save(buffer, {
+            metadata: {
+                contentType: "video/mp4",
+            },
+        });
+
+        await file.makePublic().catch(() => {});
+        const permanentUrl = `https://storage.googleapis.com/${bucket.name}/${destination}`;
+        console.log(`[VideoRenderer] ✅ Video guardado permanentemente en Firebase Storage: ${permanentUrl}`);
+        return permanentUrl;
+    } catch (err: any) {
+        console.error(`[VideoRenderer] Error al persistir video en Firebase Storage:`, err.message);
+        return remoteUrl; // fallback a la URL de n8n
+    }
+}
+

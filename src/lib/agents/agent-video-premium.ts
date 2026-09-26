@@ -132,10 +132,17 @@ IMPORTANTE: Finaliza SIEMPRE tu prompt con el texto exacto --ar 9:16`;
           const rawVideoUrl = statusData.videoUrl || statusData.url;
           console.log(`[AgentVideoPremium] ✅ Video recibido de n8n: ${rawVideoUrl}`);
 
-          // Si el switch está en 'raw', devolvemos el video tal cual sale del motor n8n
+          // Si el switch está en 'raw', persistimos el video en Firebase Storage de forma permanente
           if (renderMode === 'raw') {
-            console.log(`[AgentVideoPremium] ⚡ Modo 'raw' activo: retornando video puro.`);
-            return rawVideoUrl;
+            console.log(`[AgentVideoPremium] ⚡ Modo 'raw' activo: persistiendo video de n8n en Firebase Storage...`);
+            try {
+              const { persistRemoteVideoToStorage } = await import('../video-renderer');
+              const permanentStorageUrl = await persistRemoteVideoToStorage(rawVideoUrl, userId, postId);
+              return permanentStorageUrl;
+            } catch (persistErr: any) {
+              console.warn('[AgentVideoPremium] Fallo al persistir en Storage, usando URL cruda:', persistErr.message);
+              return rawVideoUrl;
+            }
           }
 
           // Si el switch está en 'remotion', componemos subtítulos dinámicos y logo

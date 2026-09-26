@@ -326,7 +326,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
         }
       }
 
-      // 4. Composición Instantánea en Canvas (Cliente)
+      // 4. Composición Instantánea en Canvas (Cliente) con Marca de Agua Santisoft
       let localCanvasDataUrl = "";
       try {
         localCanvasDataUrl = await compositeImageClient({
@@ -337,6 +337,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
           logoTransparent,
           offerText: offerText.trim() || undefined,
           businessName: prospectBusiness.trim(),
+          includeSantisoftWatermark: true,
         });
         setCanvasImageUrl(localCanvasDataUrl);
       } catch (canvasErr) {
@@ -356,6 +357,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
           offerText: offerText.trim() || undefined,
           businessName: prospectBusiness.trim(),
           userId: currentUser?.uid || "admin",
+          includeSantisoftWatermark: true,
         });
         bUrl = butterflyResult.butterflyUrl;
         setButterflyUrl(bUrl);

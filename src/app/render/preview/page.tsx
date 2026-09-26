@@ -137,6 +137,48 @@ export default async function RenderPreviewPage(props: {
             />
           </div>
         )}
+
+        {/* Marca de Agua Santisoft.cl */}
+        {data.watermarkSantisoft !== false && (
+          <div
+            style={{
+              position: "absolute",
+              bottom: "24px",
+              right: "28px",
+              zIndex: 70,
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              backgroundColor: "rgba(15, 23, 42, 0.82)",
+              backdropFilter: "blur(10px)",
+              padding: "8px 16px",
+              borderRadius: "9999px",
+              border: "1px solid rgba(255, 255, 255, 0.20)",
+              boxShadow: "0 6px 20px rgba(0, 0, 0, 0.45)",
+            }}
+          >
+            <span
+              style={{
+                width: "8px",
+                height: "8px",
+                borderRadius: "50%",
+                backgroundColor: "#818cf8",
+                display: "inline-block",
+              }}
+            />
+            <span
+              style={{
+                color: "#ffffff",
+                fontFamily: "Montserrat, sans-serif",
+                fontSize: "14px",
+                fontWeight: 700,
+                letterSpacing: "0.02em",
+              }}
+            >
+              Creado por Santisoft.cl
+            </span>
+          </div>
+        )}
       </div>
     </>
   );

@@ -10,6 +10,8 @@ export interface CompositeOptions {
   offerText?: string;
   businessName?: string;
   userId?: string;
+  /** Marca de agua que dice "Creado por Santisoft.cl" */
+  includeSantisoftWatermark?: boolean;
 }
 
 /**
@@ -25,6 +27,7 @@ export async function createButterflyRender(options: CompositeOptions): Promise<
     logoTransparent = false,
     offerText,
     userId = "admin",
+    includeSantisoftWatermark = true,
   } = options;
 
   // Mapear posición a coordenadas porcentuales (0-100%)
@@ -55,6 +58,23 @@ export async function createButterflyRender(options: CompositeOptions): Promise<
     });
   }
 
+  // Marca de agua Santisoft.cl
+  if (includeSantisoftWatermark) {
+    textLayers.push({
+      x: 82,
+      y: 96,
+      text: "Creado por Santisoft.cl",
+      color: "#ffffff",
+      font: "Montserrat",
+      size: 15,
+      isBold: true,
+      backgroundColor: "rgba(15, 23, 42, 0.82)",
+      isPill: true,
+      shadowLevel: "soft",
+      letterSpacing: "normal"
+    });
+  }
+
   const docRef = await addDoc(collection(db, "preview_renders"), {
     baseImageUrl,
     userId,
@@ -65,6 +85,7 @@ export async function createButterflyRender(options: CompositeOptions): Promise<
     logoWidth: logoSize,
     logoBg: logoTransparent ? "transparent" : "white",
     textLayers,
+    watermarkSantisoft: includeSantisoftWatermark,
     createdAt: new Date(),
   });
 
@@ -79,7 +100,7 @@ export async function createButterflyRender(options: CompositeOptions): Promise<
 }
 
 /**
- * Compone la imagen base con el logo y texto en un lienzo HTML5 Canvas en memoria.
+ * Compone la imagen base con el logo, texto y marca de agua en un lienzo HTML5 Canvas en memoria.
  * Funciona de manera instantánea en el navegador del admin, sin esperas de red ni dependencias externas.
  */
 export async function compositeImageClient(options: CompositeOptions): Promise<string> {
@@ -161,19 +182,30 @@ export async function compositeImageClient(options: CompositeOptions): Promise<s
           // 3. Dibujar badge de oferta si existe
           drawOfferBadge(ctx, options.offerText, W, H);
 
+          // 4. Dibujar marca de agua Santisoft.cl si está activa
+          if (options.includeSantisoftWatermark !== false) {
+            drawSantisoftWatermark(ctx, W, H, Boolean(options.offerText));
+          }
+
           resolve(canvas.toDataURL("image/jpeg", 0.94));
         };
 
         logoImg.onerror = () => {
-          // Si el logo falla por CORS, continuar con la base y el texto
+          // Si el logo falla por CORS, continuar con la base, el texto y la marca de agua
           drawOfferBadge(ctx, options.offerText, W, H);
+          if (options.includeSantisoftWatermark !== false) {
+            drawSantisoftWatermark(ctx, W, H, Boolean(options.offerText));
+          }
           resolve(canvas.toDataURL("image/jpeg", 0.94));
         };
 
         logoImg.src = options.logoUrl;
       } else {
-        // Sin logo: dibujar solo badge si hay
+        // Sin logo: dibujar solo badge y marca de agua
         drawOfferBadge(ctx, options.offerText, W, H);
+        if (options.includeSantisoftWatermark !== false) {
+          drawSantisoftWatermark(ctx, W, H, Boolean(options.offerText));
+        }
         resolve(canvas.toDataURL("image/jpeg", 0.94));
       }
     };
@@ -227,5 +259,48 @@ function drawOfferBadge(ctx: CanvasRenderingContext2D, text: string | undefined,
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(clean, W / 2, badgeY + badgeH / 2, badgeW - 40);
+  ctx.restore();
+}
+
+function drawSantisoftWatermark(ctx: CanvasRenderingContext2D, W: number, H: number, hasOfferBadge: boolean) {
+  ctx.save();
+  const text = "Creado por Santisoft.cl";
+  ctx.font = "bold 15px 'Montserrat', sans-serif";
+  const metrics = ctx.measureText(text);
+  const pillW = metrics.width + 42;
+  const pillH = 34;
+  
+  // Si hay badge de oferta centrado abajo, posicionar en la esquina inferior derecha sin superponer
+  const pillX = W - pillW - 32;
+  const pillY = hasOfferBadge ? H - pillH - 18 : H - pillH - 28;
+
+  // Sombra suave
+  ctx.shadowColor = "rgba(0, 0, 0, 0.45)";
+  ctx.shadowBlur = 14;
+  ctx.shadowOffsetY = 4;
+
+  // Cápsula oscura glassmorphism
+  ctx.fillStyle = "rgba(15, 23, 42, 0.84)";
+  drawRoundedRect(ctx, pillX, pillY, pillW, pillH, 17);
+  ctx.fill();
+
+  // Borde sutil
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.20)";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Punto brillante índigo Santisoft
+  ctx.fillStyle = "#818cf8";
+  ctx.beginPath();
+  ctx.arc(pillX + 16, pillY + pillH / 2, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Texto
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 14px 'Montserrat', sans-serif";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, pillX + 26, pillY + pillH / 2);
+
   ctx.restore();
 }
