@@ -140,6 +140,7 @@ export default function AdminMuestrasPage() {
 
   // Estado de Generación de Imagen (Fase 2)
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generatingStep, setGeneratingStep] = useState("");
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string>("");
   const [canvasImageUrl, setCanvasImageUrl] = useState<string>("");
   const [butterflyUrl, setButterflyUrl] = useState<string>("");
@@ -338,6 +339,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
     }
 
     setIsGenerating(true);
+    setGeneratingStep("Subiendo assets...");
     setIsUploadingAssets(true);
 
     try {
@@ -373,7 +375,55 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
         }
       }
 
+      // 3.5. Aplicar Estilo Visual seleccionado vía n8n (igual que Biblioteca de Prompts)
+      // Solo si hay un template seleccionado con prompt y hay imagen base
+      if (selectedTemplate?.prompt && rawBaseUrl?.startsWith("http")) {
+        setGeneratingStep(`Aplicando estilo "${selectedTemplate.title}" con nuestros agentes...`);
+        try {
+          // Traducir el prompt del estilo al inglés
+          let promptEN = selectedTemplate.prompt;
+          try {
+            const transRes = await fetch("/api/ai/translate", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ text: selectedTemplate.prompt }),
+            });
+            if (transRes.ok) {
+              const transData = await transRes.json();
+              promptEN = transData.translation || promptEN;
+            }
+          } catch (_) {}
+
+          const styleRes = await fetch("/api/ai/generate-from-prompt", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              promptText: `${rawBaseUrl} ${promptEN}`,
+              baseImageUrl: rawBaseUrl,
+              templateId: selectedTemplate.id,
+              email: currentUser?.email || "",
+              profileId: "admin",
+              businessType: rubro,
+              isCommercialPoster: selectedTemplate.isCommercialPoster || false,
+            }),
+          });
+
+          if (styleRes.ok) {
+            const styleData = await styleRes.json();
+            const styledUrl =
+              styleData.imageUrl || styleData.url || styleData.imgUrl ||
+              styleData[0]?.imageUrl || styleData[0]?.url;
+            if (styledUrl && styledUrl.startsWith("http")) {
+              rawBaseUrl = styledUrl; // ✅ Usamos la imagen con el estilo aplicado
+            }
+          }
+        } catch (styleErr) {
+          console.warn("Fallo aplicación de estilo visual — se continúa con imagen original:", styleErr);
+        }
+      }
+
       // 4. Composición Instantánea en Canvas (Cliente) con Marca de Agua Santisoft
+      setGeneratingStep("Componiendo imagen con logo y marca de agua...");
       let localCanvasDataUrl = "";
       try {
         localCanvasDataUrl = await compositeImageClient({
@@ -484,6 +534,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
     } finally {
       setIsGenerating(false);
       setIsUploadingAssets(false);
+      setGeneratingStep("");
     }
   };
 
@@ -1239,7 +1290,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
               {isGenerating ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Diseñando y retocando con nuestros agentes...</span>
+                  <span>{generatingStep || "Diseñando y retocando con nuestros agentes..."}</span>
                 </>
               ) : (
                 <>
