@@ -284,7 +284,11 @@ export default function AdminMuestrasPage() {
       : (offerText.trim() ? ` destacando "${offerText.trim()}"` : "");
     const offerPart = offerOrDish ? ` destacando${offerOrDish}` : "";
 
-    const demoLink = createdDemoId ? `${PUBLIC_APP_URL}/m/${createdDemoId}` : (generatedImageUrl || "[ENLACE_DE_MUESTRA]");
+    // Nunca usar base64 como link — solo URLs reales o el placeholder
+    const realImageUrl = generatedImageUrl?.startsWith("http") ? generatedImageUrl : null;
+    const demoLink = createdDemoId
+      ? `${PUBLIC_APP_URL}/m/${createdDemoId}`
+      : (realImageUrl || "[ENLACE_DE_MUESTRA]");
 
     const defaultMsg = `${namePart} 👋 Estuve revisando lo que hacen en tu marca y le pedí a nuestro equipo de agentes que diseñara esta propuesta visual y de video exclusiva${businessPart}${offerPart}:
 
@@ -690,9 +694,41 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
     }
   };
 
-  // Construir URL de WhatsApp
+  // Envío vía Evolution API
   const cleanPhone = `${countryCode}${prospectPhone.trim().replace(/[\s\-\(\)]/g, "").replace(/^0+/, "")}`.replace("+", "");
-  const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(customWhatsappCopy)}`;
+  const [isSendingWhatsApp, setIsSendingWhatsApp] = useState(false);
+  const [whatsAppSent, setWhatsAppSent] = useState(false);
+  const [whatsAppError, setWhatsAppError] = useState("");
+
+  const handleSendWhatsApp = async () => {
+    if (!cleanPhone || !customWhatsappCopy.trim()) return;
+    setIsSendingWhatsApp(true);
+    setWhatsAppError("");
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      // Usar butterflyUrl o imageUrl real (nunca base64)
+      const realImageUrl = butterflyUrl || (generatedImageUrl?.startsWith("http") ? generatedImageUrl : null);
+      const res = await fetch("/api/admin/whatsapp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          phone: cleanPhone,
+          text: customWhatsappCopy,
+          ...(realImageUrl ? { mediaUrl: realImageUrl, mediaType: "image" } : {}),
+        }),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        throw new Error(d.error || "Error al enviar");
+      }
+      setWhatsAppSent(true);
+      setTimeout(() => setWhatsAppSent(false), 4000);
+    } catch (err: any) {
+      setWhatsAppError(err.message || "No se pudo enviar el mensaje.");
+    } finally {
+      setIsSendingWhatsApp(false);
+    }
+  };
 
   const handleCopyLink = () => {
     const link = createdDemoId ? `${PUBLIC_APP_URL}/m/${createdDemoId}` : generatedImageUrl;
@@ -1767,21 +1803,36 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                 />
               </div>
 
-              <div className="pt-1">
+              <div className="pt-1 space-y-2">
                 {prospectPhone.trim() ? (
-                  <a
-                    href={whatsappUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="w-full py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-sm shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2"
+                  <button
+                    onClick={handleSendWhatsApp}
+                    disabled={isSendingWhatsApp || !customWhatsappCopy.trim()}
+                    className="w-full py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-extrabold text-sm shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2"
                   >
-                    <FaWhatsapp className="text-lg" />
-                    <span>Enviar a {cleanPhone} por WhatsApp</span>
-                  </a>
+                    {isSendingWhatsApp ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Enviando...
+                      </>
+                    ) : whatsAppSent ? (
+                      <>✅ ¡Enviado a {cleanPhone}!</>
+                    ) : (
+                      <>
+                        <FaWhatsapp className="text-lg" />
+                        <span>Enviar a {cleanPhone} por WhatsApp</span>
+                      </>
+                    )}
+                  </button>
                 ) : (
                   <div className="text-center py-2 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 rounded-xl border border-amber-200 dark:border-amber-800">
                     ⚠️ Ingresa el número de WhatsApp del prospecto para activar el botón.
                   </div>
+                )}
+                {whatsAppError && (
+                  <p className="text-xs text-rose-600 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2 font-medium">
+                    ❌ {whatsAppError}
+                  </p>
                 )}
               </div>
             </div>
