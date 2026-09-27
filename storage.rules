@@ -1,8 +1,8 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    
-    // Reglas para la carpeta de subidas de redes sociales y plantillas del usuario
+
+    // ── Uploads de redes sociales del usuario ──────────────────────────────
     match /social_media_uploads/{userId}/{allPaths=**} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
@@ -10,15 +10,48 @@ service firebase.storage {
     match /social_media_templates/{userId}/{allPaths=**} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
-    
-    // Reglas para logos corporativos del usuario
+
+    // ── Logos corporativos del usuario ────────────────────────────────────
     match /logos/{userId}/{allPaths=**} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Reglas para los perfiles y avatars de los usuarios
+    // ── Perfiles y avatars ────────────────────────────────────────────────
     match /users/{userId}/{allPaths=**} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
+
+    // ── Admin: Generador de Muestras para Prospectos ──────────────────────
+    // Imágenes base y logos subidos en el generador de demos comerciales.
+    match /admin_demos/{allPaths=**} {
+      allow read, write: if request.auth != null;
+    }
+
+    // ── Videos generados (image-to-video, Remotion, etc.) ────────────────
+    match /generated_videos/{allPaths=**} {
+      allow read, write: if request.auth != null;
+    }
+
+    // ── Blog: imágenes de portada generadas por agentes ──────────────────
+    match /blog/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // ── Posts: imágenes y videos generados por usuario ────────────────────
+    match /posts/{userId}/{allPaths=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ── Audios generados (ElevenLabs TTS voiceovers) ─────────────────────
+    match /audio/{userId}/{allPaths=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ── Catálogo de productos del usuario ────────────────────────────────
+    match /catalogo/{userId}/{allPaths=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
   }
 }
