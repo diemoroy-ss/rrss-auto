@@ -3,97 +3,119 @@ import { adminAuth } from "../../../../../lib/firebase-admin";
 
 export const dynamic = "force-dynamic";
 
-const EVOLUTION_API_URL = process.env.EVOLUTION_API_URL || "";
-const EVOLUTION_API_KEY = process.env.EVOLUTION_API_KEY || "";
-const EVOLUTION_INSTANCE_NAME = process.env.EVOLUTION_INSTANCE_NAME || "";
+const DEFAULT_EVOLUTION_URL = "https://evoapi.grupofugas.cl";
+const DEFAULT_INSTANCE_NAME = "Santisoft";
 
-const ADMIN_EMAILS = ["diemoroy@gmail.com", "spalezcom@gmail.com", "santisoftai@gmail.com"];
+const ADMIN_EMAILS = ["diemoroy@gmail.com", "spalezcom@gmail.com", "santisoftai@gmail.com", "admin@santisoft.cl"];
 
 export async function POST(req: Request) {
   try {
-    // Auth check
+    // 1. Auth check
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      return NextResponse.json({ error: "No token" }, { status: 401 });
+      return NextResponse.json({ error: "No token proporcionado" }, { status: 401 });
     }
     const token = authHeader.split("Bearer ")[1];
+    if (!adminAuth) {
+      return NextResponse.json({ error: "Firebase Admin no disponible" }, { status: 500 });
+    }
     const decoded = await adminAuth.verifyIdToken(token);
     const email = (decoded.email || "").toLowerCase();
     if (!ADMIN_EMAILS.includes(email)) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
-
-    // Check Evolution API config
-    if (!EVOLUTION_API_URL || !EVOLUTION_API_KEY || !EVOLUTION_INSTANCE_NAME) {
-      return NextResponse.json(
-        { error: "Evolution API no configurado en variables de entorno." },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 
     const body = await req.json();
-    const { phone, text, mediaUrl, mediaType } = body;
+    const { phone, text, mediaUrl, mediaType, apiKey: customApiKey, instanceName: customInstance } = body;
 
     if (!phone || !text) {
       return NextResponse.json({ error: "phone y text son requeridos" }, { status: 400 });
     }
 
-    // Clean phone: remove spaces, dashes, parentheses, leading zeros, and + sign
+    const evolutionUrl = (process.env.EVOLUTION_API_URL || DEFAULT_EVOLUTION_URL).replace(/\/$/, "");
+    const instanceName = customInstance || process.env.EVOLUTION_INSTANCE_NAME || DEFAULT_INSTANCE_NAME;
+    const apiKey = customApiKey || process.env.EVOLUTION_API_KEY || "";
+
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: "Falta la API Key de Evolution API. Por favor configúrala en las variables de entorno o ingrésala." },
+        { status: 500 }
+      );
+    }
+
+    // Limpiar teléfono
     const cleanPhone = phone.replace(/[\s\-\(\)\+]/g, "").replace(/^0+/, "");
 
-    // If there's a media URL (image), send as mediaMessage first, then text
-    if (mediaUrl && (mediaType === "image" || !mediaType)) {
-      const mediaRes = await fetch(
-        `${EVOLUTION_API_URL}/message/sendMedia/${EVOLUTION_INSTANCE_NAME}`,
-        {
+    console.log(`[WhatsApp Send] Enviando a ${cleanPhone} vía ${evolutionUrl} (Instancia: ${instanceName})`);
+
+    // Intento 1: Si hay imagen pública válida, enviar como Media con Caption
+    if (mediaUrl && typeof mediaUrl === "string" && mediaUrl.startsWith("http")) {
+      try {
+        const mediaEndpoint = `${evolutionUrl}/message/sendMedia/${instanceName}`;
+        console.log(`[WhatsApp Send] Intentando sendMedia en ${mediaEndpoint}`);
+        
+        const mediaRes = await fetch(mediaEndpoint, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            apikey: EVOLUTION_API_KEY,
+            apikey: apiKey,
           },
           body: JSON.stringify({
             number: cleanPhone,
-            mediatype: "image",
+            mediatype: mediaType || "image",
             media: mediaUrl,
             caption: text,
           }),
-        }
-      );
+        });
 
-      if (!mediaRes.ok) {
-        const errText = await mediaRes.text();
-        console.error("Evolution API sendMedia error:", errText);
-        // Fallback: send text only
-      } else {
-        return NextResponse.json({ ok: true, mode: "media" });
+        if (mediaRes.ok) {
+          console.log(`[WhatsApp Send] ✅ Media enviado exitosamente.`);
+          return NextResponse.json({ ok: true, mode: "media" });
+        } else {
+          const errText = await mediaRes.text();
+          console.warn(`[WhatsApp Send] ⚠️ sendMedia falló con status ${mediaRes.status}: ${errText}. Continuando con texto solo...`);
+        }
+      } catch (mediaErr: any) {
+        console.warn(`[WhatsApp Send] ⚠️ Excepción en sendMedia: ${mediaErr.message}. Continuando con texto solo...`);
       }
     }
 
-    // Send text message
-    const textRes = await fetch(
-      `${EVOLUTION_API_URL}/message/sendText/${EVOLUTION_INSTANCE_NAME}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: EVOLUTION_API_KEY,
-        },
-        body: JSON.stringify({
-          number: cleanPhone,
-          text,
-        }),
-      }
-    );
+    // Intento 2: Enviar como Mensaje de Texto directo
+    const textEndpoint = `${evolutionUrl}/message/sendText/${instanceName}`;
+    console.log(`[WhatsApp Send] Enviando sendText a ${textEndpoint}`);
+
+    const textRes = await fetch(textEndpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: apiKey,
+      },
+      body: JSON.stringify({
+        number: cleanPhone,
+        text: text,
+      }),
+    });
+
+    const resText = await textRes.text();
 
     if (!textRes.ok) {
-      const errText = await textRes.text();
-      console.error("Evolution API sendText error:", errText);
-      return NextResponse.json({ error: "Error al enviar mensaje por Evolution API", detail: errText }, { status: 500 });
+      console.error(`[WhatsApp Send] ❌ sendText falló (${textRes.status}):`, resText);
+      let parsedMsg = resText;
+      try {
+        const parsed = JSON.parse(resText);
+        parsedMsg = parsed.response?.message || parsed.message || parsed.error || resText;
+      } catch (_) {}
+      return NextResponse.json(
+        { error: `Evolution API (${textRes.status}): ${parsedMsg}`, detail: resText },
+        { status: textRes.status }
+      );
     }
 
+    console.log(`[WhatsApp Send] ✅ Mensaje de texto enviado exitosamente a ${cleanPhone}`);
     return NextResponse.json({ ok: true, mode: "text" });
+
   } catch (err: any) {
-    console.error("Error en /api/admin/whatsapp/send:", err);
-    return NextResponse.json({ error: err.message || "Internal Error" }, { status: 500 });
+    console.error("[WhatsApp Send Exception]:", err);
+    return NextResponse.json({ error: err.message || "Error interno del servidor" }, { status: 500 });
   }
 }

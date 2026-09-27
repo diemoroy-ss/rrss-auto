@@ -238,13 +238,14 @@ export default function AdminMuestrasPage() {
   const loadHistory = async () => {
     setLoadingHistory(true);
     try {
-      const q = query(collection(db, "admin_prospect_demos"), orderBy("createdAt", "desc"), limit(25));
-      const snap = await getDocs(q);
-      const list: ProspectDemo[] = [];
-      snap.forEach((d) => {
-        list.push({ id: d.id, ...d.data() } as ProspectDemo);
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch("/api/admin/muestras", {
+        headers: { Authorization: `Bearer ${token}` },
       });
-      setHistoryDemos(list);
+      if (res.ok) {
+        const data = await res.json();
+        setHistoryDemos(data.demos || []);
+      }
     } catch (e) {
       console.warn("No se pudo cargar el historial de demos:", e);
     } finally {
@@ -497,36 +498,43 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
         setIsGeneratingPostCaption(false);
       }
 
-      // 7. Guardar en Firestore para historial y generar enlace público /m/[id]
-      const docRef = await addDoc(collection(db, "admin_prospect_demos"), {
-        prospectName: prospectName.trim(),
-        prospectBusiness: prospectBusiness.trim(),
-        prospectPhone: `${countryCode}${prospectPhone.trim().replace(/^0+/, "")}`,
-        rubro,
-        offerText: offerText.trim(),
-        dishOrProductName: dishOrProductName.trim() || null,
-        generatedPostCaption: finalPostCaption || null,
-        baseImageUrl: uploadedBaseImageUrl || rawBaseUrl || null,
-        logoUrl: uploadedLogoUrl || null,
-        logoPosition,
-        logoSize,
-        logoTransparent,
-        selectedStyleId: selectedTemplate?.id || null,
-        selectedStyleTitle: selectedTemplate?.title || "Estándar Comercial",
-        generatedImageUrl: finalImage,
-        canvasImageUrl: localCanvasDataUrl || null,
-        butterflyUrl: bUrl || null,
-        videoStyleTitle: selectedVideoTemplate?.title || null,
-        videoPromptEnglish: customVideoPrompt || null,
-        createdAt: serverTimestamp(),
-        status: "generada",
+      // 7. Guardar en Backend Admin API (bypassea reglas de Firestore y garantiza permisos)
+      const token = await auth.currentUser?.getIdToken();
+      const saveRes = await fetch("/api/admin/muestras", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          prospectName: prospectName.trim(),
+          prospectBusiness: prospectBusiness.trim(),
+          prospectPhone: `${countryCode}${prospectPhone.trim().replace(/^0+/, "")}`,
+          rubro,
+          offerText: offerText.trim(),
+          dishOrProductName: dishOrProductName.trim() || null,
+          generatedPostCaption: finalPostCaption || null,
+          baseImageUrl: uploadedBaseImageUrl || rawBaseUrl || null,
+          logoUrl: uploadedLogoUrl || null,
+          logoPosition,
+          logoSize,
+          logoTransparent,
+          selectedStyleId: selectedTemplate?.id || null,
+          selectedStyleTitle: selectedTemplate?.title || "Estándar Comercial",
+          generatedImageUrl: finalImage,
+          canvasImageUrl: localCanvasDataUrl || null,
+          butterflyUrl: bUrl || null,
+          videoStyleTitle: selectedVideoTemplate?.title || null,
+          videoPromptEnglish: customVideoPrompt || null,
+          status: "generada",
+        }),
       });
 
-      const demoId = docRef.id;
+      if (!saveRes.ok) {
+        const errJson = await saveRes.json();
+        throw new Error(errJson.error || "Error al guardar la muestra en el servidor");
+      }
+
+      const saveData = await saveRes.json();
+      const demoId = saveData.demoId;
       setCreatedDemoId(demoId);
-      await updateDoc(doc(db, "admin_prospect_demos", demoId), {
-        publicDemoUrl: `${PUBLIC_APP_URL}/m/${demoId}`,
-      });
 
     } catch (err: any) {
       console.error("Error al preparar la muestra:", err);
@@ -562,9 +570,15 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
         if (copyData.copy) {
           setGeneratedPostCaption(copyData.copy);
           if (createdDemoId) {
-            await updateDoc(doc(db, "admin_prospect_demos", createdDemoId), {
-              generatedPostCaption: copyData.copy,
-              dishOrProductName: dishOrProductName.trim() || null,
+            const token = await auth.currentUser?.getIdToken();
+            await fetch("/api/admin/muestras", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+              body: JSON.stringify({
+                id: createdDemoId,
+                generatedPostCaption: copyData.copy,
+                dishOrProductName: dishOrProductName.trim() || null,
+              }),
             });
           }
         }
