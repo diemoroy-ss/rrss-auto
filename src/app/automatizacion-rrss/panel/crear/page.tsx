@@ -1151,6 +1151,10 @@ export default function RrssCreatePost() {
         visualStyle: selectedPromptTemplate?.title || null,
         promptTemplateId: selectedPromptTemplate?.id || null,
         previewUrl: selectedPromptTemplate?.previewUrl || null,
+        // Foto y contexto de producto del catálogo si fue seleccionado
+        baseImageUrl: selectedCatalogoItem?.imageUrl || null,
+        catalogoId: selectedCatalogoItem?.id || null,
+        catalogoName: selectedCatalogoItem?.name || null,
         // TikTok Direct Post settings
         tiktokPrivacyLevel: tiktokSettings.privacyLevel,
         tiktokAllowComment: tiktokSettings.allowComment,
