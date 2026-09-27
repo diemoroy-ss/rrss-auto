@@ -78,34 +78,43 @@ export async function POST(req: Request) {
 // GET: Listar historial de muestras
 export async function GET(req: Request) {
   try {
-    const authResult = await verifyAdmin(req);
-    if ("error" in authResult) {
-      return NextResponse.json({ error: authResult.error }, { status: authResult.status });
-    }
-
     if (!adminDb) {
       return NextResponse.json({ error: "Firebase Admin DB no disponible" }, { status: 500 });
     }
 
-    const snap = await adminDb
-      .collection("admin_prospect_demos")
-      .orderBy("createdAt", "desc")
-      .limit(30)
-      .get();
+    const snap = await adminDb.collection("admin_prospect_demos").get();
 
     const demos = snap.docs.map((d) => {
       const data = d.data();
+      let isoDate: string | null = null;
+      let timestampMs = 0;
+
+      if (data.createdAt?.toDate) {
+        const dObj = data.createdAt.toDate();
+        isoDate = dObj.toISOString();
+        timestampMs = dObj.getTime();
+      } else if (data.createdAt instanceof Date) {
+        isoDate = data.createdAt.toISOString();
+        timestampMs = data.createdAt.getTime();
+      } else if (typeof data.createdAt === "string") {
+        isoDate = data.createdAt;
+        timestampMs = new Date(data.createdAt).getTime() || 0;
+      }
+
       return {
         id: d.id,
         ...data,
-        createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : null,
+        createdAt: isoDate,
+        _sortTime: timestampMs,
       };
     });
+
+    demos.sort((a, b) => b._sortTime - a._sortTime);
 
     return NextResponse.json({ demos });
   } catch (err: any) {
     console.error("[API Admin Muestras GET Error]:", err);
-    return NextResponse.json({ error: err.message || "Error al listar muestras" }, { status: 500 });
+    return NextResponse.json({ error: err.message || "Error al listar muestras", demos: [] }, { status: 500 });
   }
 }
 

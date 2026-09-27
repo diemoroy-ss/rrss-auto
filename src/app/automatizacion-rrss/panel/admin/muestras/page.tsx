@@ -238,23 +238,50 @@ export default function AdminMuestrasPage() {
     return () => unsub();
   }, [router]);
 
-  // Cargar Historial
+  // Cargar Historial con doble respaldo (API de servidor + Firestore directo)
   const loadHistory = async () => {
     setLoadingHistory(true);
+    let loaded: ProspectDemo[] = [];
+
+    // Intento 1: API de Servidor con Admin SDK
     try {
       const token = await auth.currentUser?.getIdToken();
       const res = await fetch("/api/admin/muestras", {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (res.ok) {
         const data = await res.json();
-        setHistoryDemos(data.demos || []);
+        if (Array.isArray(data.demos) && data.demos.length > 0) {
+          loaded = data.demos;
+        }
       }
-    } catch (e) {
-      console.warn("No se pudo cargar el historial de demos:", e);
-    } finally {
-      setLoadingHistory(false);
+    } catch (apiErr) {
+      console.warn("Fallo API /api/admin/muestras, probando lectura directa de Firestore:", apiErr);
     }
+
+    // Intento 2: Lectura directa de Firestore como fallback si la API no trajo datos
+    if (loaded.length === 0) {
+      try {
+        const snap = await getDocs(collection(db, "admin_prospect_demos"));
+        const clientList: ProspectDemo[] = [];
+        snap.forEach((d) => {
+          clientList.push({ id: d.id, ...d.data() } as ProspectDemo);
+        });
+        clientList.sort((a: any, b: any) => {
+          const tA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+          const tB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+          return tB - tA;
+        });
+        if (clientList.length > 0) {
+          loaded = clientList;
+        }
+      } catch (fsErr) {
+        console.warn("Fallo fallback Firestore client:", fsErr);
+      }
+    }
+
+    setHistoryDemos(loaded);
+    setLoadingHistory(false);
   };
 
   useEffect(() => {
