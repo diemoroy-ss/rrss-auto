@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 
 const DEFAULT_EVOLUTION_URL = "https://evoapi.grupofugas.cl";
 const DEFAULT_INSTANCE_NAME = "Santisoft";
+const DEFAULT_API_KEY = "6833CC358FA4-42E4-8F45-E74D35CC85A7";
 
 const ADMIN_EMAILS = ["diemoroy@gmail.com", "spalezcom@gmail.com", "santisoftai@gmail.com", "admin@santisoft.cl"];
 
@@ -34,7 +35,7 @@ export async function POST(req: Request) {
 
     const evolutionUrl = (process.env.EVOLUTION_API_URL || DEFAULT_EVOLUTION_URL).replace(/\/$/, "");
     const instanceName = customInstance || process.env.EVOLUTION_INSTANCE_NAME || DEFAULT_INSTANCE_NAME;
-    const apiKey = customApiKey || process.env.EVOLUTION_API_KEY || "";
+    const apiKey = customApiKey || process.env.EVOLUTION_API_KEY || DEFAULT_API_KEY;
 
     if (!apiKey) {
       return NextResponse.json(
