@@ -136,6 +136,7 @@ export default function AdminMuestrasPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("Todas");
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [selectedTemplate, setSelectedTemplate] = useState<PromptTemplate | null>(null);
+  const [allTemplates, setAllTemplates] = useState<PromptTemplate[]>(HARDCODED_STYLES);
 
   // Estado de Generación de Imagen (Fase 2)
   const [isGenerating, setIsGenerating] = useState(false);
@@ -196,6 +197,32 @@ export default function AdminMuestrasPage() {
           return;
         }
         setIsAdmin(true);
+
+        // Cargar estilos desde Firestore (igual que Biblioteca de Prompts)
+        try {
+          const snap = await getDocs(collection(db, "prompt_library"));
+          const loaded: PromptTemplate[] = [];
+          const dbIds = new Set<string>();
+          snap.forEach((docSnap) => {
+            const data = docSnap.data();
+            dbIds.add(docSnap.id);
+            if (!data.isDeleted && data.title?.trim() && data.prompt?.trim()) {
+              loaded.push({
+                id: docSnap.id,
+                ...data,
+                // Firestore guarda previewImageUrl, el tipo usa previewUrl
+                previewUrl: data.previewImageUrl || data.previewUrl || "",
+              } as PromptTemplate);
+            }
+          });
+          // Añadir HARDCODED_STYLES solo si no fueron modificados ni eliminados en Firestore
+          HARDCODED_STYLES.forEach((style) => {
+            if (!dbIds.has(style.id)) loaded.push(style);
+          });
+          setAllTemplates(loaded);
+        } catch (err) {
+          console.warn("No se pudo cargar prompt_library, usando estilos locales:", err);
+        }
       } catch (err) {
         console.error("Error al validar rol admin:", err);
         router.replace("/automatizacion-rrss/panel");
@@ -271,8 +298,8 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
     setCustomWhatsappCopy(defaultMsg);
   }, [prospectName, prospectBusiness, offerText, dishOrProductName, generatedImageUrl, createdDemoId]);
 
-  // Filtro de plantillas de imagen
-  const filteredTemplates = HARDCODED_STYLES.filter((template) => {
+  // Filtro de plantillas de imagen (combina Firestore + estilos locales)
+  const filteredTemplates = allTemplates.filter((template) => {
     const matchCategory = selectedCategory === "Todas" || template.category === selectedCategory;
     const matchSearch =
       searchTerm.trim() === "" ||
