@@ -17,6 +17,7 @@ import {
   VideoPromptTemplate
 } from "../../../../../lib/video-prompt-templates";
 import { createButterflyRender, compositeImageClient } from "../../../../../lib/image-compositor";
+import { removeLogoBackground } from "../../../../../lib/logo-bg-remover";
 import { VideoComposition } from "../../../../../lib/video-poc-service";
 import {
   FaWhatsapp,
@@ -127,6 +128,9 @@ export default function AdminMuestrasPage() {
   const [baseImagePreview, setBaseImagePreview] = useState<string>("");
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string>("");
+  const [removeLogoBg, setRemoveLogoBg] = useState<boolean>(false);
+  const [cleanedLogoUrl, setCleanedLogoUrl] = useState<string>("");
+  const [isRemovingLogoBg, setIsRemovingLogoBg] = useState<boolean>(false);
   const [logoPosition, setLogoPosition] = useState<"top-left" | "top-right" | "bottom-left" | "bottom-right" | "top-center">("top-right");
   const [logoSize, setLogoSize] = useState<number>(80);
   const [logoTransparent, setLogoTransparent] = useState<boolean>(false);
@@ -324,11 +328,48 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
   };
 
   // Manejo de carga de logo
-  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setLogoFile(file);
-      setLogoPreview(URL.createObjectURL(file));
+      const originalPreview = URL.createObjectURL(file);
+      setLogoPreview(originalPreview);
+
+      if (removeLogoBg) {
+        setIsRemovingLogoBg(true);
+        try {
+          const transparentDataUrl = await removeLogoBackground(file);
+          setCleanedLogoUrl(transparentDataUrl);
+          setLogoTransparent(true);
+        } catch (bgErr) {
+          console.warn("Error eliminando fondo del logo:", bgErr);
+        } finally {
+          setIsRemovingLogoBg(false);
+        }
+      } else {
+        setCleanedLogoUrl("");
+      }
+    }
+  };
+
+  // Alternar eliminación de fondo del logo
+  const handleToggleRemoveLogoBg = async (checked: boolean) => {
+    setRemoveLogoBg(checked);
+    if (checked) {
+      setLogoTransparent(true);
+      if (logoFile || logoPreview) {
+        setIsRemovingLogoBg(true);
+        try {
+          const transparentDataUrl = await removeLogoBackground(logoFile || logoPreview);
+          setCleanedLogoUrl(transparentDataUrl);
+        } catch (bgErr) {
+          console.warn("Error eliminando fondo del logo:", bgErr);
+        } finally {
+          setIsRemovingLogoBg(false);
+        }
+      }
+    } else {
+      setCleanedLogoUrl("");
     }
   };
 
@@ -355,10 +396,24 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
       }
 
       // 2. Subir logo a Storage si fue seleccionado
-      if (logoFile && currentUser?.uid) {
-        const logoRef = ref(storage, `admin_demos/logo_${Date.now()}_${logoFile.name}`);
-        const snap = await uploadBytes(logoRef, logoFile);
-        uploadedLogoUrl = await getDownloadURL(snap.ref);
+      if ((logoFile || cleanedLogoUrl) && currentUser?.uid) {
+        let fileToUpload: File | Blob | null = logoFile;
+        let ext = logoFile?.name ? logoFile.name.replace(/\.[^/.]+$/, "") : "logo";
+        if (removeLogoBg && cleanedLogoUrl) {
+          try {
+            const blobRes = await fetch(cleanedLogoUrl);
+            fileToUpload = await blobRes.blob();
+            ext += "_clean.png";
+          } catch (_) {}
+        } else if (logoFile) {
+          ext = logoFile.name;
+        }
+
+        if (fileToUpload) {
+          const logoRef = ref(storage, `admin_demos/logo_${Date.now()}_${ext}`);
+          const snap = await uploadBytes(logoRef, fileToUpload);
+          uploadedLogoUrl = await getDownloadURL(snap.ref);
+        }
       }
 
       setIsUploadingAssets(false);
@@ -427,12 +482,13 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
       setGeneratingStep("Componiendo imagen con logo y marca de agua...");
       let localCanvasDataUrl = "";
       try {
+        const effectiveLogoForCanvas = (removeLogoBg && cleanedLogoUrl) ? cleanedLogoUrl : (uploadedLogoUrl || undefined);
         localCanvasDataUrl = await compositeImageClient({
           baseImageUrl: rawBaseUrl,
-          logoUrl: uploadedLogoUrl || undefined,
+          logoUrl: effectiveLogoForCanvas,
           logoPosition,
           logoSize,
-          logoTransparent,
+          logoTransparent: removeLogoBg ? true : logoTransparent,
           offerText: offerText.trim() || undefined,
           dishOrProductName: dishOrProductName.trim() || undefined,
           businessName: prospectBusiness.trim(),
@@ -1008,20 +1064,37 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
 
                   {logoPreview ? (
                     <div className="p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl flex items-center gap-3">
-                      <div className="w-14 h-14 bg-white rounded-xl p-1 flex items-center justify-center border border-slate-200 shadow-sm shrink-0">
-                        <img src={logoPreview} alt="Logo preview" className="max-w-full max-h-full object-contain" />
+                      <div
+                        className={`w-14 h-14 rounded-xl p-1 flex items-center justify-center border border-slate-200 shadow-sm shrink-0 overflow-hidden ${
+                          removeLogoBg && cleanedLogoUrl
+                            ? "bg-[linear-gradient(45deg,#e2e8f0_25%,transparent_25%),linear-gradient(-45deg,#e2e8f0_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#e2e8f0_75%),linear-gradient(-45deg,transparent_75%,#e2e8f0_75%)] bg-[size:10px_10px] bg-[position:0_0,0_5px,5px_-5px,-5px_0]"
+                            : "bg-white"
+                        }`}
+                      >
+                        <img
+                          src={removeLogoBg && cleanedLogoUrl ? cleanedLogoUrl : logoPreview}
+                          alt="Logo preview"
+                          className="max-w-full max-h-full object-contain"
+                        />
                       </div>
                       <div className="text-xs space-y-1">
                         <span className="font-semibold text-slate-700 dark:text-slate-200 block truncate max-w-[150px]">
                           {logoFile?.name || "Logo cargado"}
                         </span>
-                        <button
-                          type="button"
-                          onClick={() => logoInputRef.current?.click()}
-                          className="text-[10px] text-indigo-600 hover:underline font-bold"
-                        >
-                          Cambiar logo
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => logoInputRef.current?.click()}
+                            className="text-[10px] text-indigo-600 hover:underline font-bold"
+                          >
+                            Cambiar logo
+                          </button>
+                          {removeLogoBg && cleanedLogoUrl && (
+                            <span className="text-[9px] bg-emerald-100 text-emerald-700 font-bold px-1.5 py-0.5 rounded-full">
+                              ✓ Fondo Removido
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ) : (
@@ -1041,6 +1114,33 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                     accept="image/*"
                     className="hidden"
                   />
+
+                  {/* Quitar Fondo del Logo */}
+                  {logoPreview && (
+                    <div className="p-2.5 bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 rounded-xl space-y-1">
+                      <label className="flex items-center gap-2 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={removeLogoBg}
+                          disabled={isRemovingLogoBg}
+                          onChange={(e) => handleToggleRemoveLogoBg(e.target.checked)}
+                          className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 dark:border-slate-600"
+                        />
+                        <span className="text-xs font-bold text-indigo-950 dark:text-indigo-200 flex items-center gap-1.5">
+                          <span>✨</span> Quitar fondo del logo (hacer transparente)
+                        </span>
+                      </label>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 pl-6 leading-tight">
+                        Elimina el fondo blanco o sólido exterior para integrarlo limpiamente sobre el diseño.
+                      </p>
+                      {isRemovingLogoBg && (
+                        <div className="pl-6 text-[11px] text-indigo-600 font-semibold flex items-center gap-1.5 pt-0.5">
+                          <div className="w-3 h-3 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                          Procesando y limpiando fondo del logo...
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Configuración del Logo */}
                   {logoPreview && (
