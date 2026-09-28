@@ -8,6 +8,7 @@ export interface CompositeOptions {
   logoSize?: number; // en px (80 a 200)
   logoTransparent?: boolean;
   offerText?: string;
+  badgeCustomText?: string;
   dishOrProductName?: string;
   businessName?: string;
   userId?: string;
@@ -27,6 +28,7 @@ export async function createButterflyRender(options: CompositeOptions): Promise<
     logoSize = 100,
     logoTransparent = false,
     offerText,
+    badgeCustomText,
     dishOrProductName,
     userId = "admin",
     includeSantisoftWatermark = true,
@@ -43,9 +45,9 @@ export async function createButterflyRender(options: CompositeOptions): Promise<
 
   const coords = positionMap[logoPosition] || { x: 86, y: 14 };
 
-  const badgeText = offerText && dishOrProductName
-    ? `${dishOrProductName.trim()} · ${offerText.trim()}`
-    : (dishOrProductName?.trim() || offerText?.trim());
+  // El texto del badge en la imagen es EXCLUSIVAMENTE badgeCustomText o offerText.
+  // dishOrProductName es solo referencia para el copy y prompt de imagen.
+  const badgeText = badgeCustomText?.trim() || offerText?.trim() || "";
 
   const textLayers: any[] = [];
   if (badgeText && badgeText.length > 0) {
@@ -185,9 +187,7 @@ export async function compositeImageClient(options: CompositeOptions): Promise<s
 
           ctx.drawImage(logoImg, drawX, drawY, drawW, drawH);
 
-          const badgeText = options.offerText && options.dishOrProductName
-            ? `${options.dishOrProductName.trim()} · ${options.offerText.trim()}`
-            : (options.dishOrProductName?.trim() || options.offerText?.trim());
+          const badgeText = options.badgeCustomText?.trim() || options.offerText?.trim() || "";
 
           // 3. Dibujar badge de oferta o producto si existe
           drawOfferBadge(ctx, badgeText, W, H);
@@ -201,9 +201,7 @@ export async function compositeImageClient(options: CompositeOptions): Promise<s
         };
 
         logoImg.onerror = () => {
-          const badgeText = options.offerText && options.dishOrProductName
-            ? `${options.dishOrProductName.trim()} · ${options.offerText.trim()}`
-            : (options.dishOrProductName?.trim() || options.offerText?.trim());
+          const badgeText = options.badgeCustomText?.trim() || options.offerText?.trim() || "";
 
           // Si el logo falla por CORS, continuar con la base, el texto y la marca de agua
           drawOfferBadge(ctx, badgeText, W, H);
@@ -215,9 +213,7 @@ export async function compositeImageClient(options: CompositeOptions): Promise<s
 
         logoImg.src = options.logoUrl;
       } else {
-        const badgeText = options.offerText && options.dishOrProductName
-          ? `${options.dishOrProductName.trim()} · ${options.offerText.trim()}`
-          : (options.dishOrProductName?.trim() || options.offerText?.trim());
+        const badgeText = options.badgeCustomText?.trim() || options.offerText?.trim() || "";
 
         // Sin logo: dibujar solo badge y marca de agua
         drawOfferBadge(ctx, badgeText, W, H);

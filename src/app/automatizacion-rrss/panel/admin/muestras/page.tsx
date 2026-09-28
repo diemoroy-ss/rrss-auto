@@ -56,6 +56,7 @@ interface ProspectDemo {
   prospectPhone: string;
   rubro: string;
   offerText: string;
+  badgeCustomText?: string;
   dishOrProductName?: string;
   generatedPostCaption?: string;
   baseImageUrl?: string;
@@ -124,6 +125,7 @@ export default function AdminMuestrasPage() {
 
   // Paso 2: Assets del Prospecto y Plato/Producto
   const [dishOrProductName, setDishOrProductName] = useState<string>("");
+  const [badgeCustomText, setBadgeCustomText] = useState<string>("");
   const [baseImageFile, setBaseImageFile] = useState<File | null>(null);
   const [baseImagePreview, setBaseImagePreview] = useState<string>("");
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -517,6 +519,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
           logoSize,
           logoTransparent: removeLogoBg ? true : logoTransparent,
           offerText: offerText.trim() || undefined,
+          badgeCustomText: badgeCustomText.trim() || undefined,
           dishOrProductName: dishOrProductName.trim() || undefined,
           businessName: prospectBusiness.trim(),
           includeSantisoftWatermark: true,
@@ -537,6 +540,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
           logoSize,
           logoTransparent,
           offerText: offerText.trim() || undefined,
+          badgeCustomText: badgeCustomText.trim() || undefined,
           dishOrProductName: dishOrProductName.trim() || undefined,
           businessName: prospectBusiness.trim(),
           userId: currentUser?.uid || "admin",
@@ -548,8 +552,27 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
         console.warn("Fallo Butterfly Social render:", bErr);
       }
 
+      // 5.5. Subir imagen compuesta en HD a Firebase Storage para obtener URL HTTPS directa y permanente
+      let finalCanvasStorageUrl = "";
+      if (localCanvasDataUrl && localCanvasDataUrl.startsWith("data:")) {
+        try {
+          setGeneratingStep("Guardando imagen compuesta en alta definición...");
+          const resBlob = await fetch(localCanvasDataUrl);
+          const blob = await resBlob.blob();
+          const cleanBiz = (prospectBusiness || "prospecto").trim().replace(/[^a-zA-Z0-9_-]/g, "_").toLowerCase();
+          const finalRef = ref(storage, `admin_demos/final_${cleanBiz}_${Date.now()}.jpg`);
+          const snap = await uploadBytes(finalRef, blob, { contentType: "image/jpeg" });
+          finalCanvasStorageUrl = await getDownloadURL(snap.ref);
+        } catch (uploadFinalErr) {
+          console.warn("No se pudo subir imagen final a Storage, se mantendrá data URL:", uploadFinalErr);
+        }
+      }
+
+      const effectiveCanvasUrl = finalCanvasStorageUrl || localCanvasDataUrl;
+      setCanvasImageUrl(effectiveCanvasUrl);
+
       // La imagen principal seleccionada (Canvas por defecto para inmediatez, o Butterfly)
-      const finalImage = localCanvasDataUrl || bUrl || rawBaseUrl;
+      const finalImage = effectiveCanvasUrl || bUrl || rawBaseUrl;
       setGeneratedImageUrl(finalImage);
       setActiveImageVersion("canvas");
 
@@ -592,6 +615,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
           prospectPhone: `${countryCode}${prospectPhone.trim().replace(/^0+/, "")}`,
           rubro,
           offerText: offerText.trim(),
+          badgeCustomText: badgeCustomText.trim() || null,
           dishOrProductName: dishOrProductName.trim() || null,
           generatedPostCaption: finalPostCaption || null,
           baseImageUrl: uploadedBaseImageUrl || rawBaseUrl || null,
@@ -602,7 +626,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
           selectedStyleId: selectedTemplate?.id || null,
           selectedStyleTitle: selectedTemplate?.title || "Estándar Comercial",
           generatedImageUrl: finalImage,
-          canvasImageUrl: localCanvasDataUrl || null,
+          canvasImageUrl: effectiveCanvasUrl || null,
           butterflyUrl: bUrl || null,
           videoStyleTitle: selectedVideoTemplate?.title || null,
           videoPromptEnglish: customVideoPrompt || null,
@@ -884,6 +908,42 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
       navigator.clipboard.writeText(link);
       setCopySuccess(true);
       setTimeout(() => setCopySuccess(false), 2000);
+    }
+  };
+
+  const handleOpenHD = () => {
+    if (!generatedImageUrl) return;
+    if (generatedImageUrl.startsWith("data:")) {
+      fetch(generatedImageUrl)
+        .then((res) => res.blob())
+        .then((blob) => {
+          const blobUrl = URL.createObjectURL(blob);
+          window.open(blobUrl, "_blank");
+        })
+        .catch(() => {
+          window.open(generatedImageUrl, "_blank");
+        });
+    } else {
+      window.open(generatedImageUrl, "_blank");
+    }
+  };
+
+  const handleDownloadImage = async () => {
+    if (!generatedImageUrl) return;
+    try {
+      const res = await fetch(generatedImageUrl);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      const cleanName = (prospectBusiness || "muestra").trim().replace(/[^a-zA-Z0-9_-]/g, "_").toLowerCase();
+      a.download = `muestra_${cleanName}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+    } catch (_) {
+      window.open(generatedImageUrl, "_blank");
     }
   };
 
@@ -1284,13 +1344,13 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                 </div>
               </div>
 
-              {/* Nombre del Plato, Producto o Especialidad a Destacar */}
+              {/* Nombre del Plato o Producto (Referencia para Copy y Agentes) */}
               <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-1.5">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                    <span>🍽️</span> Nombre del Plato, Producto o Especialidad a Destacar
+                    <span>🍽️</span> Nombre del Plato o Producto (Referencia para Copy y Agentes)
                   </label>
-                  <span className="text-[10px] text-indigo-500 dark:text-indigo-400 font-bold">Leído por nuestros agentes</span>
+                  <span className="text-[10px] text-indigo-500 dark:text-indigo-400 font-bold">Solo referencia</span>
                 </div>
                 <input
                   type="text"
@@ -1300,7 +1360,27 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                   className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
                 <p className="text-[11px] text-slate-500 leading-tight">
-                  Nuestros agentes leerán este producto tanto para orientar la imagen comercial como para redactar un copy persuasivo y listo para publicar en redes sociales.
+                  Referencia exclusiva para que nuestros agentes guíen el copy y la dirección visual. <strong>No se estampará como texto sobre la foto</strong>.
+                </p>
+              </div>
+
+              {/* Texto o Titular a estampar en la Imagen */}
+              <div className="pt-2 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <span>🏷️</span> Texto o Titular a Estampar en la Imagen (Opcional)
+                  </label>
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">Pastilla en foto</span>
+                </div>
+                <input
+                  type="text"
+                  value={badgeCustomText}
+                  onChange={(e) => setBadgeCustomText(e.target.value)}
+                  placeholder="Ej: 2x1 Jueves y Viernes, 20% OFF Hoy, Edición Limitada, Nuevo Menú..."
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+                <p className="text-[11px] text-slate-500 leading-tight">
+                  Este texto sí aparecerá destacado sobre la imagen final. Si lo dejas vacío, se usará la oferta general o quedará la imagen limpia sin pastilla de texto.
                 </p>
               </div>
             </div>
@@ -1770,14 +1850,13 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                     />
 
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                      <a
-                        href={generatedImageUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="px-3 py-1.5 bg-white text-slate-900 rounded-xl text-xs font-bold shadow-lg hover:bg-slate-100 flex items-center gap-1.5"
+                      <button
+                        type="button"
+                        onClick={handleOpenHD}
+                        className="px-3 py-1.5 bg-white text-slate-900 rounded-xl text-xs font-bold shadow-lg hover:bg-slate-100 flex items-center gap-1.5 cursor-pointer transition-colors"
                       >
                         <FaEye /> Abrir HD
-                      </a>
+                      </button>
                     </div>
                   </div>
 
@@ -1790,15 +1869,13 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                     >
                       <FaCopy /> {copySuccess ? "¡Enlace Copiado!" : "Copiar Enlace"}
                     </button>
-                    <a
-                      href={generatedImageUrl}
-                      download={`muestra_${prospectBusiness || "cliente"}.jpg`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="py-2 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-100 transition-colors flex items-center gap-1.5"
+                    <button
+                      type="button"
+                      onClick={handleDownloadImage}
+                      className="py-2 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-100 transition-colors flex items-center gap-1.5 cursor-pointer"
                     >
                       <span>⬇️</span> Descargar
-                    </a>
+                    </button>
                   </div>
 
                   {createdDemoId && (
@@ -1864,14 +1941,24 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                 )}
               </div>
 
-              {dishOrProductName && (
-                <div className="flex items-center gap-1.5 text-xs">
-                  <span className="text-slate-500">Producto enfocado:</span>
-                  <span className="font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-2 py-0.5 rounded-lg border border-indigo-200 dark:border-indigo-800">
-                    {dishOrProductName}
-                  </span>
-                </div>
-              )}
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                {dishOrProductName && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-slate-500">Producto enfocado:</span>
+                    <span className="font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-2 py-0.5 rounded-lg border border-indigo-200 dark:border-indigo-800">
+                      {dishOrProductName}
+                    </span>
+                  </div>
+                )}
+                {badgeCustomText && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-slate-500">Texto en imagen:</span>
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                      {badgeCustomText}
+                    </span>
+                  </div>
+                )}
+              </div>
 
               {generatedPostCaption ? (
                 <div className="space-y-3">
@@ -2124,15 +2211,23 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                         </a>
                       )}
                       {demo.generatedImageUrl && (
-                        <a
-                          href={demo.generatedImageUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 text-xs font-bold"
-                          title="Ver imagen"
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (demo.generatedImageUrl?.startsWith("data:")) {
+                              fetch(demo.generatedImageUrl)
+                                .then((r) => r.blob())
+                                .then((b) => window.open(URL.createObjectURL(b), "_blank"))
+                                .catch(() => window.open(demo.generatedImageUrl, "_blank"));
+                            } else if (demo.generatedImageUrl) {
+                              window.open(demo.generatedImageUrl, "_blank");
+                            }
+                          }}
+                          className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 text-xs font-bold cursor-pointer"
+                          title="Ver imagen HD"
                         >
                           <FaEye />
-                        </a>
+                        </button>
                       )}
                     </div>
                   </div>
