@@ -35,7 +35,9 @@ import {
   FaExternalLinkAlt,
   FaFilm,
   FaSlidersH,
-  FaLayerGroup
+  FaLayerGroup,
+  FaEdit,
+  FaPlus
 } from "react-icons/fa";
 
 // Importación dinámica para RemotionReelPlayer (pesado)
@@ -156,6 +158,7 @@ export default function AdminMuestrasPage() {
   const [createdDemoId, setCreatedDemoId] = useState<string>("");
   const [customWhatsappCopy, setCustomWhatsappCopy] = useState<string>("");
   const [copySuccess, setCopySuccess] = useState(false);
+  const hasImageGenerated = Boolean(canvasImageUrl || generatedImageUrl);
 
   // Estado de Generación de Copy para Redes con Agentes
   const [generatedPostCaption, setGeneratedPostCaption] = useState<string>("");
@@ -312,6 +315,188 @@ export default function AdminMuestrasPage() {
       alert("Hubo un error al intentar eliminar la muestra.");
     } finally {
       setDeletingDemoId(null);
+    }
+  };
+
+  const [isSavingChanges, setIsSavingChanges] = useState(false);
+  const [saveSuccessMsg, setSaveSuccessMsg] = useState("");
+
+  // Crear una nueva muestra en blanco
+  const handleNewDemo = () => {
+    setCreatedDemoId("");
+    setProspectBusiness("");
+    setProspectName("");
+    setProspectPhone("");
+    setCountryCode("+56");
+    setRubro(COMMON_NICHES[0].label);
+    setOfferText("");
+    setDishOrProductName("");
+    setBadgeCustomText("");
+    setBadgeStyle("sticker-circle");
+    setBaseImageFile(null);
+    setBaseImagePreview("");
+    setLogoFile(null);
+    setLogoPreview("");
+    setCleanedLogoUrl("");
+    setRemoveLogoBg(false);
+    setLogoTransparent(false);
+    setLogoPosition("top-right");
+    setLogoSize(80);
+    setSelectedTemplate(null);
+    setGeneratedImageUrl("");
+    setCanvasImageUrl("");
+    setButterflyUrl("");
+    setActiveImageVersion("canvas");
+    setGeneratedPostCaption("");
+    setRemotionComposition(null);
+    setExternalVideoUrl("");
+    setSelectedVideoTemplate(VIDEO_PROMPT_STYLES[0]);
+    setCustomVideoPrompt("");
+    setCustomWhatsappCopy("");
+    setSaveSuccessMsg("");
+    setActiveTab("crear");
+  };
+
+  // Cargar una muestra guardada en el formulario para editar y ver todos sus datos
+  const handleEditDemo = (demo: ProspectDemo) => {
+    if (!demo) return;
+
+    // 1. Vincular el ID de la propuesta
+    setCreatedDemoId(demo.id || "");
+
+    // 2. Datos del Prospecto & Oferta
+    setProspectBusiness(demo.prospectBusiness || "");
+    setProspectName(demo.prospectName || "");
+
+    const rawPhone = (demo.prospectPhone || "").trim();
+    let matchedCode = "+56";
+    let restPhone = rawPhone;
+    for (const c of COUNTRY_CODES) {
+      if (rawPhone.startsWith(c.code)) {
+        matchedCode = c.code;
+        restPhone = rawPhone.slice(c.code.length).trim();
+        break;
+      } else {
+        const codeNoPlus = c.code.replace("+", "");
+        if (rawPhone.startsWith(codeNoPlus)) {
+          matchedCode = c.code;
+          restPhone = rawPhone.slice(codeNoPlus.length).trim();
+          break;
+        }
+      }
+    }
+    setCountryCode(matchedCode);
+    setProspectPhone(restPhone);
+
+    setRubro(demo.rubro || COMMON_NICHES[0].label);
+    setOfferText(demo.offerText || "");
+
+    // 3. Assets del Plato/Producto y Logo
+    setDishOrProductName(demo.dishOrProductName || "");
+    setBadgeCustomText(demo.badgeCustomText || "");
+    setBadgeStyle(demo.badgeStyle || "sticker-circle");
+    setBaseImagePreview(demo.baseImageUrl || "");
+    setBaseImageFile(null);
+    setLogoPreview(demo.logoUrl || "");
+    setCleanedLogoUrl(demo.logoUrl || "");
+    setLogoFile(null);
+    setRemoveLogoBg(Boolean(demo.logoTransparent));
+    setLogoTransparent(Boolean(demo.logoTransparent));
+    setLogoPosition((demo.logoPosition as any) || "top-right");
+    setLogoSize(demo.logoSize || 80);
+
+    // 4. Estilo de Imagen
+    if (demo.selectedStyleId) {
+      const found = allTemplates.find((t) => t.id === demo.selectedStyleId);
+      if (found) setSelectedTemplate(found);
+    } else if (demo.selectedStyleTitle) {
+      const found = allTemplates.find((t) => t.title.toLowerCase() === demo.selectedStyleTitle?.toLowerCase());
+      if (found) setSelectedTemplate(found);
+    }
+
+    // 5. Assets Gráficos y Copy
+    const mainImg = demo.canvasImageUrl || demo.generatedImageUrl || "";
+    setGeneratedImageUrl(demo.generatedImageUrl || mainImg);
+    setCanvasImageUrl(demo.canvasImageUrl || mainImg);
+    setButterflyUrl(demo.butterflyUrl || "");
+    setActiveImageVersion("canvas");
+    setGeneratedPostCaption(demo.generatedPostCaption || "");
+
+    // 6. Video y Animación
+    setRemotionComposition(demo.remotionComposition || null);
+    setExternalVideoUrl(demo.generatedVideoUrl || "");
+    if (demo.videoStyleTitle) {
+      const vFound = VIDEO_PROMPT_STYLES.find((v) => v.title.toLowerCase() === demo.videoStyleTitle?.toLowerCase());
+      if (vFound) setSelectedVideoTemplate(vFound);
+    }
+    if (demo.videoPromptEnglish) {
+      setCustomVideoPrompt(demo.videoPromptEnglish);
+    }
+
+    // 7. Mensaje de WhatsApp
+    if (demo.whatsappMessage) {
+      setCustomWhatsappCopy(demo.whatsappMessage);
+    }
+
+    setSaveSuccessMsg("");
+
+    // 8. Cambiar de pestaña a "crear" y subir el scroll
+    setActiveTab("crear");
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  // Guardar modificaciones directas sobre la muestra sin necesidad de regenerar la imagen
+  const handleSaveDemoChanges = async () => {
+    if (!createdDemoId) {
+      alert("No hay una muestra seleccionada para guardar.");
+      return;
+    }
+    setIsSavingChanges(true);
+    setSaveSuccessMsg("");
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      const phoneToSave = cleanPhone
+        ? `+${cleanPhone}`
+        : `${countryCode}${prospectPhone.trim().replace(/^0+/, "")}`;
+
+      const res = await fetch("/api/admin/muestras", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          id: createdDemoId,
+          prospectName: prospectName.trim(),
+          prospectBusiness: prospectBusiness.trim(),
+          prospectPhone: phoneToSave,
+          rubro,
+          offerText: offerText.trim(),
+          dishOrProductName: dishOrProductName.trim() || null,
+          badgeCustomText: badgeCustomText.trim() || null,
+          badgeStyle,
+          logoPosition,
+          logoSize,
+          logoTransparent: removeLogoBg ? true : logoTransparent,
+          generatedPostCaption: generatedPostCaption || null,
+          whatsappMessage: customWhatsappCopy || null,
+          generatedVideoUrl: externalVideoUrl || null,
+          videoStyleTitle: selectedVideoTemplate?.title || null,
+          videoPromptEnglish: customVideoPrompt || null,
+        }),
+      });
+
+      if (res.ok) {
+        setSaveSuccessMsg("¡Muestra actualizada correctamente!");
+        setTimeout(() => setSaveSuccessMsg(""), 3500);
+      } else {
+        const d = await res.json().catch(() => ({}));
+        alert(d.error || "No se pudieron guardar los cambios");
+      }
+    } catch (err: any) {
+      console.error("Error al guardar cambios de la muestra:", err);
+      alert("Hubo un error al guardar los cambios: " + err.message);
+    } finally {
+      setIsSavingChanges(false);
     }
   };
 
@@ -683,6 +868,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
+          id: createdDemoId || undefined,
           prospectName: prospectName.trim(),
           prospectBusiness: prospectBusiness.trim(),
           prospectPhone: `${countryCode}${prospectPhone.trim().replace(/^0+/, "")}`,
@@ -1163,33 +1349,99 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
           </p>
         </div>
 
-        {/* Tabs */}
-        <div className="flex bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-700 shrink-0">
-          <button
-            onClick={() => setActiveTab("crear")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-              activeTab === "crear"
-                ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm"
-                : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
-            }`}
-          >
-            ✨ Nueva Muestra
-          </button>
-          <button
-            onClick={() => setActiveTab("historial")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-              activeTab === "historial"
-                ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm"
-                : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
-            }`}
-          >
-            📋 Muestras Guardadas
-          </button>
+        {/* Tabs & Acciones */}
+        <div className="flex items-center gap-2 shrink-0">
+          {createdDemoId && (
+            <button
+              type="button"
+              onClick={handleNewDemo}
+              className="px-3.5 py-2 rounded-2xl text-xs font-bold border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
+            >
+              <FaPlus className="text-[10px]" />
+              <span>Nueva Muestra</span>
+            </button>
+          )}
+          <div className="flex bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-700">
+            <button
+              onClick={() => setActiveTab("crear")}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                activeTab === "crear"
+                  ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm"
+                  : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+              }`}
+            >
+              {createdDemoId ? "✏️ Editando Muestra" : "✨ Diseñador"}
+            </button>
+            <button
+              onClick={() => setActiveTab("historial")}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                activeTab === "historial"
+                  ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm"
+                  : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+              }`}
+            >
+              📋 Muestras Guardadas
+            </button>
+          </div>
         </div>
       </div>
 
       {activeTab === "crear" ? (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="space-y-6">
+          {createdDemoId && (
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-center gap-3">
+                <span className="p-2 rounded-xl bg-amber-500 text-white text-sm shrink-0">
+                  <FaEdit />
+                </span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black text-amber-900 dark:text-amber-200 uppercase tracking-wider">
+                      Modo Edición Activo
+                    </span>
+                    <span className="text-[10px] font-mono bg-amber-200/50 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded-md">
+                      ID: {createdDemoId}
+                    </span>
+                  </div>
+                  <p className="text-xs text-amber-800 dark:text-amber-300 mt-0.5">
+                    Revisando los datos de <strong>{prospectBusiness || "esta muestra"}</strong>. Puedes modificar los textos, logo, oferta o generar el video en la Viñeta 4.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleSaveDemoChanges}
+                  disabled={isSavingChanges}
+                  className="px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  {isSavingChanges ? (
+                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <FaCheck className="text-xs" />
+                  )}
+                  <span>Guardar Cambios</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNewDemo}
+                  className="px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer flex items-center gap-1"
+                >
+                  <FaPlus className="text-[10px]" /> Nueva Muestra
+                </button>
+              </div>
+            </div>
+          )}
+
+          {saveSuccessMsg && (
+            <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-bold rounded-2xl flex items-center gap-2">
+              <FaCheck className="text-emerald-500" />
+              <span>{saveSuccessMsg}</span>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
           {/* COLUMNA IZQUIERDA: CONFIGURACIÓN DEL PROSPECTO & ASSETS (7 cols) */}
           <div className="lg:col-span-7 space-y-6">
@@ -1897,56 +2149,66 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
               ) : (
                 <>
                   <span>🚀</span>
-                  <span>Generar Muestra Gráfica para {prospectBusiness || "el Prospecto"}</span>
+                  <span>
+                    {createdDemoId
+                      ? `Actualizar Muestra Gráfica de ${prospectBusiness || "la Marca"}`
+                      : `Generar Muestra Gráfica para ${prospectBusiness || "el Prospecto"}`}
+                  </span>
                 </>
               )}
             </button>
 
-            {/* SECCIÓN FASE 3: GENERADOR DE VIDEO (REMOTION + PROMPTS LLM) */}
-            <div className="bg-slate-900 text-white p-6 rounded-3xl border border-slate-800 shadow-md space-y-5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <span className="p-2 rounded-xl bg-indigo-600 text-white text-base">
-                    <FaFilm />
-                  </span>
-                  <div>
-                    <h3 className="text-base font-bold text-white">
-                      Generador de Video / Reel para el Prospecto
-                    </h3>
-                    <p className="text-xs text-indigo-300">
-                      Elige entre render interactivo con Remotion o la biblioteca de prompts imagen-a-video para LLMs.
-                    </p>
+            {/* Paso 4: Generador de Video / Reel (Aparece como nueva viñeta posterior a la generación de la imagen) */}
+            {hasImageGenerated ? (
+              <div className="bg-slate-900 text-white p-6 rounded-3xl border border-slate-800 shadow-xl space-y-5 animate-fade-in">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-full bg-indigo-500/20 text-indigo-400 font-black flex items-center justify-center text-sm border border-indigo-500/30">
+                      4
+                    </span>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-base font-bold text-white leading-tight">
+                          Paso 4: Generador de Video / Reel para el Prospecto
+                        </h3>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                          Opcional
+                        </span>
+                      </div>
+                      <p className="text-xs text-indigo-300/80 mt-0.5">
+                        Anima la fotografía generada en el Paso 3 usando nuestros agentes o crea un Reel interactivo con Remotion.
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Selector de Modalidad de Video */}
-              <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setVideoModality("remotion")}
-                  className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${
-                    videoModality === "remotion"
-                      ? "bg-indigo-600 text-white shadow-md"
-                      : "text-slate-400 hover:text-white"
-                  }`}
-                >
-                  <FaPlay className="text-[10px]" />
-                  <span>Opción A: Reel Interactivo con Remotion</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setVideoModality("prompt_library")}
-                  className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${
-                    videoModality === "prompt_library"
-                      ? "bg-indigo-600 text-white shadow-md"
-                      : "text-slate-400 hover:text-white"
-                  }`}
-                >
-                  <FaMagic className="text-[10px]" />
-                  <span>Opción B: Biblioteca de Prompts (Kling / Runway)</span>
-                </button>
-              </div>
+                {/* Selector de Modalidad de Video */}
+                <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setVideoModality("remotion")}
+                    className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                      videoModality === "remotion"
+                        ? "bg-indigo-600 text-white shadow-md"
+                        : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    <FaPlay className="text-[10px]" />
+                    <span>Opción A: Reel Interactivo con Remotion</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setVideoModality("prompt_library")}
+                    className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                      videoModality === "prompt_library"
+                        ? "bg-indigo-600 text-white shadow-md"
+                        : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    <FaMagic className="text-[10px]" />
+                    <span>Opción B: Biblioteca de Prompts &amp; Motor Cinemático</span>
+                  </button>
+                </div>
 
               {/* MODALIDAD A: REMOTION */}
               {videoModality === "remotion" && (
@@ -2177,6 +2439,31 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                 </div>
               )}
             </div>
+          ) : (
+            <div className="bg-slate-900/40 p-5 rounded-3xl border border-dashed border-slate-800 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <span className="w-8 h-8 rounded-full bg-slate-800 text-slate-500 font-black flex items-center justify-center text-sm border border-slate-700/80">
+                  4
+                </span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-xs font-bold text-slate-300">
+                      Paso 4: Generador de Video / Reel
+                    </h4>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
+                      Opcional
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Esta viñeta se activará automáticamente una vez que generes la muestra gráfica en el Paso 3.
+                  </p>
+                </div>
+              </div>
+              <span className="text-[11px] font-semibold text-indigo-400/80 bg-indigo-950/40 border border-indigo-900/60 px-3 py-1.5 rounded-xl shrink-0">
+                🔒 Requiere imagen previa
+              </span>
+            </div>
+          )}
 
           </div>
 
@@ -2541,6 +2828,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
 
           </div>
         </div>
+      </div>
       ) : (
         /* HISTORIAL DE MUESTRAS ENVIADAS */
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm space-y-4">
@@ -2578,16 +2866,20 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                 const publicUrl = demo.publicDemoUrl || `${PUBLIC_APP_URL}/m/${demo.id}`;
                 return (
                   <div key={demo.id} className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/50 dark:hover:bg-slate-800/40 p-3 rounded-2xl transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="w-16 h-16 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-200">
+                    <div
+                      onClick={() => handleEditDemo(demo)}
+                      className="flex items-center gap-3 cursor-pointer group flex-1"
+                      title="Haz clic para ver y editar los datos de esta muestra"
+                    >
+                      <div className="w-16 h-16 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-200 group-hover:border-indigo-400 transition-colors">
                         {demo.generatedImageUrl ? (
-                          <img src={demo.generatedImageUrl} alt={demo.prospectBusiness} className="w-full h-full object-cover" />
+                          <img src={demo.generatedImageUrl} alt={demo.prospectBusiness} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-slate-400">🖼️</div>
                         )}
                       </div>
                       <div>
-                        <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                           <span>{demo.prospectBusiness}</span>
                           {demo.remotionComposition && (
                             <span className="text-[9px] px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 font-bold">🎬 Reel</span>
@@ -2612,6 +2904,14 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleEditDemo(demo)}
+                        className="p-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                        title="Ver y editar todos los datos con los que se generó esta muestra"
+                      >
+                        <FaEdit className="text-xs" /> Editar
+                      </button>
                       {demo.id && (
                         <Link
                           href={`/m/${demo.id}`}
