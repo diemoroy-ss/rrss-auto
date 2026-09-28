@@ -158,6 +158,8 @@ export default function AdminMuestrasPage() {
   const [createdDemoId, setCreatedDemoId] = useState<string>("");
   const [customWhatsappCopy, setCustomWhatsappCopy] = useState<string>("");
   const [copySuccess, setCopySuccess] = useState(false);
+  const [mediaPreviewTab, setMediaPreviewTab] = useState<"foto" | "video">("foto");
+  const [showVideoConfig, setShowVideoConfig] = useState<boolean>(false);
   const hasImageGenerated = Boolean(canvasImageUrl || generatedImageUrl);
 
   // Estado de Generación de Copy para Redes con Agentes
@@ -2157,441 +2159,483 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                 </>
               )}
             </button>
-
-            {/* Paso 4: Generador de Video / Reel (Aparece como nueva viñeta posterior a la generación de la imagen) */}
-            {hasImageGenerated ? (
-              <div className="bg-slate-900 text-white p-6 rounded-3xl border border-slate-800 shadow-xl space-y-5 animate-fade-in">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="w-8 h-8 rounded-full bg-indigo-500/20 text-indigo-400 font-black flex items-center justify-center text-sm border border-indigo-500/30">
-                      4
-                    </span>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-base font-bold text-white leading-tight">
-                          Paso 4: Generador de Video / Reel para el Prospecto
-                        </h3>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                          Opcional
-                        </span>
-                      </div>
-                      <p className="text-xs text-indigo-300/80 mt-0.5">
-                        Anima la fotografía generada en el Paso 3 usando nuestros agentes o crea un Reel interactivo con Remotion.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Selector de Modalidad de Video */}
-                <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800">
-                  <button
-                    type="button"
-                    onClick={() => setVideoModality("remotion")}
-                    className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${
-                      videoModality === "remotion"
-                        ? "bg-indigo-600 text-white shadow-md"
-                        : "text-slate-400 hover:text-white"
-                    }`}
-                  >
-                    <FaPlay className="text-[10px]" />
-                    <span>Opción A: Reel Interactivo con Remotion</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setVideoModality("prompt_library")}
-                    className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${
-                      videoModality === "prompt_library"
-                        ? "bg-indigo-600 text-white shadow-md"
-                        : "text-slate-400 hover:text-white"
-                    }`}
-                  >
-                    <FaMagic className="text-[10px]" />
-                    <span>Opción B: Biblioteca de Prompts &amp; Motor Cinemático</span>
-                  </button>
-                </div>
-
-              {/* MODALIDAD A: REMOTION */}
-              {videoModality === "remotion" && (
-                <div className="space-y-4">
-                  <p className="text-xs text-slate-300">
-                    Crea un Reel vertical 9:16 con efecto Ken Burns sobre la imagen, subtítulos animados estilo Hormozi, locución y el logo del negocio.
-                  </p>
-
-                  <button
-                    type="button"
-                    onClick={handleGenerateRemotionReel}
-                    disabled={isGeneratingVideo}
-                    className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-xs font-extrabold flex items-center justify-center gap-2 shadow-lg transition-all disabled:opacity-50"
-                  >
-                    {isGeneratingVideo ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        <span>Estructurando escenas con locución...</span>
-                      </>
-                    ) : (
-                      <>
-                        <FaPlay />
-                        <span>Generar Reel Animado con Remotion</span>
-                      </>
-                    )}
-                  </button>
-
-                  {remotionComposition && (
-                    <div className="p-4 bg-slate-950/70 rounded-2xl border border-slate-800 space-y-3">
-                      <div className="flex items-center justify-between text-xs font-bold text-emerald-400">
-                        <span>✓ Reel estructurado con éxito</span>
-                        <span className="font-mono text-[10px]">12 segundos · 3 escenas</span>
-                      </div>
-                      <p className="text-xs text-slate-300 italic font-sans bg-slate-900/60 p-2.5 rounded-xl border border-slate-800">
-                        &quot;{remotionComposition.audioScript}&quot;
-                      </p>
-                      <p className="text-[11px] text-slate-400">
-                        Puedes reproducir el video con sonido y subtítulos en la columna derecha.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* MODALIDAD B: BIBLIOTECA DE PROMPTS IMAGEN-A-VIDEO */}
-              {videoModality === "prompt_library" && (
-                <div className="space-y-4">
-                  <p className="text-xs text-slate-300">
-                    Selecciona un movimiento de cámara cinematográfico para animar la imagen en Kling AI, Runway Gen-3, Luma Dream Machine o Sora:
-                  </p>
-
-                  {/* Grid de Estilos de Video */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {VIDEO_PROMPT_STYLES.map((style) => {
-                      const isSelected = selectedVideoTemplate?.id === style.id;
-                      return (
-                        <div
-                          key={style.id}
-                          onClick={() => setSelectedVideoTemplate(style)}
-                          className={`p-3 rounded-2xl border cursor-pointer transition-all ${
-                            isSelected
-                              ? "bg-indigo-950/70 border-indigo-500 shadow-md ring-1 ring-indigo-500/40"
-                              : "bg-slate-950/50 border-slate-800 hover:border-slate-700"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-base">{style.icon}</span>
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-indigo-300 font-mono">
-                              {style.category}
-                            </span>
-                          </div>
-                          <h4 className="text-xs font-bold text-white leading-tight">{style.title}</h4>
-                          <p className="text-[10px] text-slate-400 line-clamp-2 mt-1 leading-snug">
-                            {style.description}
-                          </p>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Visualizador del Prompt Compilado */}
-                  {customVideoPrompt && (
-                    <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-indigo-400 flex items-center gap-1.5">
-                          <span>✨</span> Prompt Cinematográfico Generado
-                        </span>
-                        <button
-                          type="button"
-                          onClick={handleCopyVideoPrompt}
-                          className="px-2.5 py-1 rounded-lg bg-indigo-600/90 hover:bg-indigo-500 text-white text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
-                        >
-                          {copiedVideoPrompt ? <FaCheck className="text-emerald-300" /> : <FaCopy />}
-                          <span>{copiedVideoPrompt ? "¡Copiado!" : "Copiar"}</span>
-                        </button>
-                      </div>
-
-                      <p className="text-xs text-slate-300 font-mono bg-slate-900/90 p-3 rounded-xl border border-slate-800/80 leading-relaxed select-all break-words">
-                        {customVideoPrompt}
-                      </p>
-
-                      {cameraNotes && (
-                        <div className="flex items-start gap-2 text-[11px] text-slate-400 bg-slate-900/40 p-2.5 rounded-xl border border-slate-800/60">
-                          <span className="text-indigo-400 shrink-0 mt-0.5">🎥</span>
-                          <span className="leading-snug">{cameraNotes}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* GENERACIÓN AUTOMÁTICA DE VIDEO VÍA MOTOR CINEMATOGRÁFICO */}
-                  <div className="p-5 rounded-2xl bg-gradient-to-b from-slate-950 via-slate-900/90 to-slate-950 border border-slate-800 shadow-xl space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center text-sm shadow-inner">
-                          <FaVideo />
-                        </div>
-                        <div>
-                          <h4 className="text-xs font-bold text-white tracking-wide">
-                            Generador de Video Cinemático (Reels 9:16)
-                          </h4>
-                          <p className="text-[11px] text-slate-400">
-                            Anima la imagen del producto con movimiento vertical publicitario
-                          </p>
-                        </div>
-                      </div>
-                      <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-800/60 flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                        Motor n8n
-                      </span>
-                    </div>
-
-                    {/* Selector de Modo de Renderizado */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      <button
-                        type="button"
-                        onClick={() => setN8nVideoRenderMode("raw")}
-                        className={`p-3 rounded-xl text-left border transition-all cursor-pointer ${
-                          n8nVideoRenderMode === "raw"
-                            ? "bg-indigo-600/15 border-indigo-500/80 text-white shadow-sm ring-1 ring-indigo-500/30"
-                            : "bg-slate-950/50 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700"
-                        }`}
-                      >
-                        <div className="flex items-center gap-1.5 text-xs font-bold text-white mb-0.5">
-                          <span className="text-amber-400">⚡</span> Video Cinemático Puro
-                        </div>
-                        <p className="text-[10px] text-slate-400 leading-snug">
-                          Directo del motor cinematográfico de alta resolución
-                        </p>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setN8nVideoRenderMode("remotion")}
-                        className={`p-3 rounded-xl text-left border transition-all cursor-pointer ${
-                          n8nVideoRenderMode === "remotion"
-                            ? "bg-purple-600/15 border-purple-500/80 text-white shadow-sm ring-1 ring-purple-500/30"
-                            : "bg-slate-950/50 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700"
-                        }`}
-                      >
-                        <div className="flex items-center gap-1.5 text-xs font-bold text-white mb-0.5">
-                          <span className="text-purple-400">✨</span> Con Subtítulos y Logo
-                        </div>
-                        <p className="text-[10px] text-slate-400 leading-snug">
-                          Edición tipo reel con subtítulos Hormozi y branding
-                        </p>
-                      </button>
-                    </div>
-
-                    {/* Botón de Generación Principal */}
-                    <button
-                      type="button"
-                      onClick={handleGenerateN8nVideo}
-                      disabled={isGeneratingN8nVideo || (!canvasImageUrl && !generatedImageUrl && !baseImagePreview)}
-                      className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20 transition-all cursor-pointer"
-                    >
-                      {isGeneratingN8nVideo ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          <span>{n8nVideoProgress || "Nuestros agentes están animando el video..."}</span>
-                        </>
-                      ) : (
-                        <>
-                          <FaFilm className="text-sm" />
-                          <span>Generar Video de la Propuesta</span>
-                        </>
-                      )}
-                    </button>
-
-                    {n8nVideoError && (
-                      <div className="text-xs text-rose-300 bg-rose-950/40 border border-rose-800/60 p-3 rounded-xl flex items-start gap-2">
-                        <span className="shrink-0 mt-0.5">⚠️</span>
-                        <span className="leading-snug">{n8nVideoError}</span>
-                      </div>
-                    )}
-
-                    {n8nVideoProgress && !n8nVideoError && (
-                      <div className="text-xs text-emerald-300 bg-emerald-950/40 border border-emerald-800/60 p-3 rounded-xl flex items-center gap-2">
-                        <FaCheck className="text-emerald-400 shrink-0" />
-                        <span>{n8nVideoProgress}</span>
-                      </div>
-                    )}
-
-                    {/* Enlace Manual de MP4 (Alternativo) */}
-                    <div className="pt-3 border-t border-slate-800/80 space-y-2">
-                      <label className="block text-[11px] font-medium text-slate-400">
-                        ¿Ya tienes el video generado? Pega el enlace MP4:
-                      </label>
-                      <div className="flex gap-2">
-                        <input
-                          type="url"
-                          value={externalVideoUrl}
-                          onChange={(e) => setExternalVideoUrl(e.target.value)}
-                          placeholder="https://.../video.mp4"
-                          className="flex-1 bg-slate-950/90 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
-                        />
-                        <button
-                          type="button"
-                          onClick={handleSaveExternalVideo}
-                          disabled={!externalVideoUrl.trim()}
-                          className="px-4 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
-                        >
-                          Enlazar
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="bg-slate-900/40 p-5 rounded-3xl border border-dashed border-slate-800 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <span className="w-8 h-8 rounded-full bg-slate-800 text-slate-500 font-black flex items-center justify-center text-sm border border-slate-700/80">
-                  4
-                </span>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h4 className="text-xs font-bold text-slate-300">
-                      Paso 4: Generador de Video / Reel
-                    </h4>
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
-                      Opcional
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    Esta viñeta se activará automáticamente una vez que generes la muestra gráfica en el Paso 3.
-                  </p>
-                </div>
-              </div>
-              <span className="text-[11px] font-semibold text-indigo-400/80 bg-indigo-950/40 border border-indigo-900/60 px-3 py-1.5 rounded-xl shrink-0">
-                🔒 Requiere imagen previa
-              </span>
-            </div>
-          )}
-
           </div>
 
           {/* COLUMNA DERECHA: RESULTADO, REPRODUCTOR & WHATSAPP (5 cols) */}
           <div className="lg:col-span-5 space-y-6">
             
-            {/* Visualizador de la Muestra Gráfica (Fase 2) */}
+            {/* Visualizador Unificado de Medios: Foto Publicitaria y Video / Reel */}
             <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <span>🖼️</span> Vista de la Propuesta Gráfica
-                </h3>
-                {generatedImageUrl && (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-200">
-                    Lista para enviar
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 text-sm">
+                    {mediaPreviewTab === "foto" ? "🖼️" : "🎬"}
                   </span>
-                )}
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white leading-tight">
+                      {mediaPreviewTab === "foto" ? "Propuesta Gráfica" : "Propuesta Audiovisual"}
+                    </h3>
+                    <p className="text-[11px] text-slate-500">
+                      {mediaPreviewTab === "foto" ? "Fotografía con logo y titular" : "Paso 4: Animación y Reel 9:16"}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Pestañas de Medios: Foto vs Video */}
+                <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setMediaPreviewTab("foto")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                      mediaPreviewTab === "foto"
+                        ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs"
+                        : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                    }`}
+                  >
+                    <span>🖼️</span> Foto
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMediaPreviewTab("video")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                      mediaPreviewTab === "video"
+                        ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs"
+                        : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                    }`}
+                  >
+                    <span>🎬</span> Video
+                    {externalVideoUrl || remotionComposition ? (
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="Video listo" />
+                    ) : (
+                      <span className="text-[9px] bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 px-1 py-0.5 rounded font-mono font-bold">Paso 4</span>
+                    )}
+                  </button>
+                </div>
               </div>
 
-              {generatedImageUrl ? (
-                <div className="space-y-4">
-                  
-                  {/* Selector entre Canvas y Butterfly si ambos existen */}
-                  {(canvasImageUrl || butterflyUrl) && (
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-[11px] text-slate-500">Versión de retoque:</span>
-                      <div className="flex gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-                        {canvasImageUrl && (
+              {/* CONTENIDO PESTAÑA: FOTO */}
+              {mediaPreviewTab === "foto" && (
+                <>
+                  {generatedImageUrl ? (
+                    <div className="space-y-4">
+                      {/* Selector entre Canvas y Butterfly si ambos existen */}
+                      {(canvasImageUrl || butterflyUrl) && (
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-[11px] text-slate-500">Versión de retoque:</span>
+                          <div className="flex gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                            {canvasImageUrl && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setActiveImageVersion("canvas");
+                                  setGeneratedImageUrl(canvasImageUrl);
+                                }}
+                                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                                  activeImageVersion === "canvas"
+                                    ? "bg-white dark:bg-slate-900 text-indigo-600 shadow-xs"
+                                    : "text-slate-500"
+                                }`}
+                              >
+                                Canvas Instantáneo
+                              </button>
+                            )}
+                            {butterflyUrl && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setActiveImageVersion("butterfly");
+                                  setGeneratedImageUrl(butterflyUrl);
+                                }}
+                                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                                  activeImageVersion === "butterfly"
+                                    ? "bg-white dark:bg-slate-900 text-indigo-600 shadow-xs"
+                                    : "text-slate-500"
+                                }`}
+                              >
+                                Butterfly Social
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="relative aspect-square rounded-2xl overflow-hidden bg-slate-950 border border-slate-200 dark:border-slate-800 shadow-inner group">
+                        <img
+                          src={generatedImageUrl}
+                          alt="Muestra comercial"
+                          className="w-full h-full object-cover"
+                        />
+
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                           <button
                             type="button"
-                            onClick={() => {
-                              setActiveImageVersion("canvas");
-                              setGeneratedImageUrl(canvasImageUrl);
-                            }}
-                            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${
-                              activeImageVersion === "canvas"
-                                ? "bg-white dark:bg-slate-900 text-indigo-600 shadow-xs"
-                                : "text-slate-500"
-                            }`}
+                            onClick={handleOpenHD}
+                            className="px-3 py-1.5 bg-white text-slate-900 rounded-xl text-xs font-bold shadow-lg hover:bg-slate-100 flex items-center gap-1.5 cursor-pointer transition-colors"
                           >
-                            Canvas Instantáneo
+                            <FaEye /> Abrir HD
                           </button>
-                        )}
-                        {butterflyUrl && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setActiveImageVersion("butterfly");
-                              setGeneratedImageUrl(butterflyUrl);
-                            }}
-                            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${
-                              activeImageVersion === "butterfly"
-                                ? "bg-white dark:bg-slate-900 text-indigo-600 shadow-xs"
-                                : "text-slate-500"
-                            }`}
-                          >
-                            Butterfly Social
-                          </button>
-                        )}
+                        </div>
                       </div>
+
+                      {/* Acciones de la imagen */}
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={handleCopyLink}
+                          className="flex-1 py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-100 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <FaCopy /> {copySuccess ? "¡Enlace Copiado!" : "Copiar Enlace"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleDownloadImage}
+                          className="py-2 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-100 transition-colors flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <span>⬇️</span> Descargar
+                        </button>
+                      </div>
+
+                      {/* Acceso directo a Paso 4 Video */}
+                      <div className="pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setMediaPreviewTab("video")}
+                          className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-indigo-600/10 via-purple-600/10 to-indigo-600/10 hover:from-indigo-600/20 hover:to-purple-600/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs"
+                        >
+                          <span>🎬</span>
+                          <span>
+                            {externalVideoUrl || remotionComposition
+                              ? "Ver Reproductor de Video / Reel Generado →"
+                              : "Paso 4: Animar esta foto a Video o Reel →"}
+                          </span>
+                        </button>
+                      </div>
+
+                      {createdDemoId && (
+                        <div className="p-3 bg-indigo-50 dark:bg-indigo-950/40 rounded-2xl border border-indigo-200 dark:border-indigo-800 flex items-center justify-between text-xs">
+                          <div>
+                            <span className="font-bold text-indigo-900 dark:text-indigo-300 block">Página pública de la propuesta:</span>
+                            <span className="text-[11px] text-indigo-700 dark:text-indigo-400 font-mono">{PUBLIC_APP_URL}/m/{createdDemoId}</span>
+                          </div>
+                          <Link
+                            href={`/m/${createdDemoId}`}
+                            target="_blank"
+                            className="px-3 py-1.5 bg-indigo-600 text-white rounded-xl font-bold text-xs hover:bg-indigo-500 transition-colors flex items-center gap-1"
+                          >
+                            <FaExternalLinkAlt className="text-[10px]" /> Ver Landing
+                          </Link>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="aspect-square rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center p-6 text-center bg-slate-50/50 dark:bg-slate-800/30">
+                      <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-500 flex items-center justify-center text-xl mb-2">
+                        🎨
+                      </div>
+                      <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                        Aún no se genera la muestra
+                      </h4>
+                      <p className="text-xs text-slate-400 mt-1 max-w-[220px]">
+                        Completa los datos del prospecto a la izquierda y presiona &quot;Generar Muestra Gráfica&quot;.
+                      </p>
                     </div>
                   )}
+                </>
+              )}
 
-                  <div className="relative aspect-square rounded-2xl overflow-hidden bg-slate-950 border border-slate-200 dark:border-slate-800 shadow-inner group">
-                    <img
-                      src={generatedImageUrl}
-                      alt="Muestra comercial"
-                      className="w-full h-full object-cover"
-                    />
-
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+              {/* CONTENIDO PESTAÑA: VIDEO / REEL */}
+              {mediaPreviewTab === "video" && (
+                <>
+                  {!hasImageGenerated ? (
+                    <div className="aspect-square rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center p-6 text-center bg-slate-50/50 dark:bg-slate-800/30 space-y-2">
+                      <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-500 flex items-center justify-center text-xl">
+                        🔒
+                      </div>
+                      <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                        Primero genera la propuesta gráfica
+                      </h4>
+                      <p className="text-xs text-slate-400 max-w-[240px]">
+                        Nuestros agentes necesitan la fotografía base del plato o producto para animarla en video vertical 9:16.
+                      </p>
                       <button
                         type="button"
-                        onClick={handleOpenHD}
-                        className="px-3 py-1.5 bg-white text-slate-900 rounded-xl text-xs font-bold shadow-lg hover:bg-slate-100 flex items-center gap-1.5 cursor-pointer transition-colors"
+                        onClick={() => setMediaPreviewTab("foto")}
+                        className="mt-2 px-3 py-1.5 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-500 transition-colors cursor-pointer"
                       >
-                        <FaEye /> Abrir HD
+                        ← Ir a Foto Publicitaria
                       </button>
                     </div>
-                  </div>
-
-                  {/* Acciones de la imagen */}
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={handleCopyLink}
-                      className="flex-1 py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-100 transition-colors flex items-center justify-center gap-1.5"
-                    >
-                      <FaCopy /> {copySuccess ? "¡Enlace Copiado!" : "Copiar Enlace"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleDownloadImage}
-                      className="py-2 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-100 transition-colors flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <span>⬇️</span> Descargar
-                    </button>
-                  </div>
-
-                  {createdDemoId && (
-                    <div className="p-3 bg-indigo-50 dark:bg-indigo-950/40 rounded-2xl border border-indigo-200 dark:border-indigo-800 flex items-center justify-between text-xs">
-                      <div>
-                        <span className="font-bold text-indigo-900 dark:text-indigo-300 block">Página pública de la propuesta:</span>
-                        <span className="text-[11px] text-indigo-700 dark:text-indigo-400 font-mono">{PUBLIC_APP_URL}/m/{createdDemoId}</span>
+                  ) : (remotionComposition || externalVideoUrl) && !showVideoConfig ? (
+                    /* REPRODUCTOR DE VIDEO YA GENERADO */
+                    <div className="space-y-4">
+                      <div className="max-w-[280px] mx-auto">
+                        {remotionComposition ? (
+                          <RemotionReelPlayer
+                            composition={remotionComposition}
+                            companyName={prospectBusiness}
+                            companyLogoUrl={logoPreview}
+                          />
+                        ) : externalVideoUrl ? (
+                          <div className="aspect-[9/16] rounded-2xl overflow-hidden bg-black border border-slate-800 shadow-xl">
+                            <video src={externalVideoUrl} controls playsInline className="w-full h-full object-cover" />
+                          </div>
+                        ) : null}
                       </div>
-                      <Link
-                        href={`/m/${createdDemoId}`}
-                        target="_blank"
-                        className="px-3 py-1.5 bg-indigo-600 text-white rounded-xl font-bold text-xs hover:bg-indigo-500 transition-colors flex items-center gap-1"
-                      >
-                        <FaExternalLinkAlt className="text-[10px]" /> Ver Landing
-                      </Link>
+
+                      <div className="flex gap-2">
+                        {externalVideoUrl && (
+                          <button
+                            type="button"
+                            onClick={() => window.open(externalVideoUrl, "_blank")}
+                            className="flex-1 py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-100 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                          >
+                            <FaExternalLinkAlt className="text-[10px]" /> Abrir MP4
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setShowVideoConfig(true)}
+                          className="flex-1 py-2 px-3 rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 text-xs font-bold hover:bg-indigo-100 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <FaFilm className="text-[10px]" /> Regenerar / Ajustar
+                        </button>
+                      </div>
+
+                      {createdDemoId && (
+                        <div className="p-3 bg-indigo-50 dark:bg-indigo-950/40 rounded-2xl border border-indigo-200 dark:border-indigo-800 flex items-center justify-between text-xs">
+                          <div>
+                            <span className="font-bold text-indigo-900 dark:text-indigo-300 block">Landing pública con video:</span>
+                            <span className="text-[11px] text-indigo-700 dark:text-indigo-400 font-mono">{PUBLIC_APP_URL}/m/{createdDemoId}</span>
+                          </div>
+                          <Link
+                            href={`/m/${createdDemoId}`}
+                            target="_blank"
+                            className="px-3 py-1.5 bg-indigo-600 text-white rounded-xl font-bold text-xs hover:bg-indigo-500 transition-colors flex items-center gap-1"
+                          >
+                            <FaExternalLinkAlt className="text-[10px]" /> Ver Landing
+                          </Link>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    /* GENERADOR DE VIDEO (PASO 4) */
+                    <div className="bg-slate-900 text-white p-5 rounded-2xl border border-slate-800 shadow-md space-y-4">
+                      {showVideoConfig && (remotionComposition || externalVideoUrl) && (
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                          <span className="text-xs text-indigo-300 font-bold">Ajustar Video</span>
+                          <button
+                            type="button"
+                            onClick={() => setShowVideoConfig(false)}
+                            className="text-xs text-slate-400 hover:text-white underline cursor-pointer"
+                          >
+                            ← Volver al Reproductor
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Selector de Modalidad de Video */}
+                      <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800 gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setVideoModality("remotion")}
+                          className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                            videoModality === "remotion"
+                              ? "bg-indigo-600 text-white shadow-md"
+                              : "text-slate-400 hover:text-white"
+                          }`}
+                        >
+                          <FaPlay className="text-[10px]" />
+                          <span>Opción A: Reel Remotion</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setVideoModality("prompt_library")}
+                          className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                            videoModality === "prompt_library"
+                              ? "bg-indigo-600 text-white shadow-md"
+                              : "text-slate-400 hover:text-white"
+                          }`}
+                        >
+                          <FaMagic className="text-[10px]" />
+                          <span>Opción B: Motor Cinemático</span>
+                        </button>
+                      </div>
+
+                      {/* MODALIDAD A: REMOTION */}
+                      {videoModality === "remotion" && (
+                        <div className="space-y-3">
+                          <p className="text-[11px] text-slate-300 leading-snug">
+                            Crea un Reel vertical 9:16 con efecto Ken Burns sobre la foto, subtítulos animados estilo Hormozi y el logo del negocio.
+                          </p>
+
+                          <button
+                            type="button"
+                            onClick={handleGenerateRemotionReel}
+                            disabled={isGeneratingVideo}
+                            className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-xs font-extrabold flex items-center justify-center gap-2 shadow-lg transition-all disabled:opacity-50 cursor-pointer"
+                          >
+                            {isGeneratingVideo ? (
+                              <>
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                <span>Estructurando escenas con locución...</span>
+                              </>
+                            ) : (
+                              <>
+                                <FaPlay />
+                                <span>Generar Reel Animado con Remotion</span>
+                              </>
+                            )}
+                          </button>
+
+                          {remotionComposition && (
+                            <div className="p-3 bg-slate-950/70 rounded-xl border border-slate-800 space-y-2">
+                              <div className="flex items-center justify-between text-xs font-bold text-emerald-400">
+                                <span>✓ Reel estructurado con éxito</span>
+                                <span className="font-mono text-[10px]">12 seg · 3 escenas</span>
+                              </div>
+                              <p className="text-xs text-slate-300 italic font-sans bg-slate-900/60 p-2 rounded-lg border border-slate-800">
+                                &quot;{remotionComposition.audioScript}&quot;
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* MODALIDAD B: BIBLIOTECA DE PROMPTS & MOTOR CINEMÁTICO */}
+                      {videoModality === "prompt_library" && (
+                        <div className="space-y-3">
+                          <p className="text-[11px] text-slate-300 leading-snug">
+                            Selecciona el movimiento de cámara publicitario para animar la fotografía:
+                          </p>
+
+                          {/* Grid de Estilos de Video */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[220px] overflow-y-auto p-0.5 scrollbar-thin">
+                            {VIDEO_PROMPT_STYLES.map((style) => {
+                              const isSelected = selectedVideoTemplate?.id === style.id;
+                              return (
+                                <div
+                                  key={style.id}
+                                  onClick={() => setSelectedVideoTemplate(style)}
+                                  className={`p-2.5 rounded-xl border cursor-pointer transition-all ${
+                                    isSelected
+                                      ? "bg-indigo-950/70 border-indigo-500 shadow-md ring-1 ring-indigo-500/40"
+                                      : "bg-slate-950/50 border-slate-800 hover:border-slate-700"
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between mb-0.5">
+                                    <span className="text-sm">{style.icon}</span>
+                                    <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-slate-800 text-indigo-300 font-mono">
+                                      {style.category}
+                                    </span>
+                                  </div>
+                                  <h4 className="text-xs font-bold text-white leading-tight">{style.title}</h4>
+                                  <p className="text-[10px] text-slate-400 line-clamp-1 mt-0.5 leading-snug">
+                                    {style.description}
+                                  </p>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* Selector de Modo de Renderizado */}
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setN8nVideoRenderMode("raw")}
+                              className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer ${
+                                n8nVideoRenderMode === "raw"
+                                  ? "bg-indigo-600/20 border-indigo-500 text-white shadow-sm ring-1 ring-indigo-500/30"
+                                  : "bg-slate-950/50 border-slate-800 text-slate-400 hover:text-slate-200"
+                              }`}
+                            >
+                              <div className="flex items-center gap-1 text-[11px] font-bold text-white mb-0.5">
+                                <span className="text-amber-400">⚡</span> Cinemático Puro
+                              </div>
+                              <p className="text-[9px] text-slate-400 leading-tight">
+                                Video publicitario limpio
+                              </p>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setN8nVideoRenderMode("remotion")}
+                              className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer ${
+                                n8nVideoRenderMode === "remotion"
+                                  ? "bg-purple-600/20 border-purple-500 text-white shadow-sm ring-1 ring-purple-500/30"
+                                  : "bg-slate-950/50 border-slate-800 text-slate-400 hover:text-slate-200"
+                              }`}
+                            >
+                              <div className="flex items-center gap-1 text-[11px] font-bold text-white mb-0.5">
+                                <span className="text-purple-400">✨</span> Con Subtítulos
+                              </div>
+                              <p className="text-[9px] text-slate-400 leading-tight">
+                                Tipo reel con branding
+                              </p>
+                            </button>
+                          </div>
+
+                          {/* Botón de Generación Principal */}
+                          <button
+                            type="button"
+                            onClick={handleGenerateN8nVideo}
+                            disabled={isGeneratingN8nVideo || (!canvasImageUrl && !generatedImageUrl && !baseImagePreview)}
+                            className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20 transition-all cursor-pointer"
+                          >
+                            {isGeneratingN8nVideo ? (
+                              <>
+                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                <span>{n8nVideoProgress || "Nuestros agentes están animando el video..."}</span>
+                              </>
+                            ) : (
+                              <>
+                                <FaFilm className="text-xs" />
+                                <span>Generar Video de la Propuesta</span>
+                              </>
+                            )}
+                          </button>
+
+                          {n8nVideoError && (
+                            <div className="text-xs text-rose-300 bg-rose-950/40 border border-rose-800/60 p-2.5 rounded-xl flex items-start gap-1.5">
+                              <span className="shrink-0 mt-0.5">⚠️</span>
+                              <span className="leading-snug">{n8nVideoError}</span>
+                            </div>
+                          )}
+
+                          {n8nVideoProgress && !n8nVideoError && (
+                            <div className="text-xs text-emerald-300 bg-emerald-950/40 border border-emerald-800/60 p-2.5 rounded-xl flex items-center gap-1.5">
+                              <FaCheck className="text-emerald-400 shrink-0" />
+                              <span>{n8nVideoProgress}</span>
+                            </div>
+                          )}
+
+                          {/* Enlace Manual de MP4 (Alternativo) */}
+                          <div className="pt-2 border-t border-slate-800/80 space-y-1.5">
+                            <label className="block text-[10px] font-medium text-slate-400">
+                              ¿Ya tienes el video generado? Pega el enlace MP4:
+                            </label>
+                            <div className="flex gap-2">
+                              <input
+                                type="url"
+                                value={externalVideoUrl}
+                                onChange={(e) => setExternalVideoUrl(e.target.value)}
+                                placeholder="https://.../video.mp4"
+                                className="flex-1 bg-slate-950/90 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
+                              />
+                              <button
+                                type="button"
+                                onClick={handleSaveExternalVideo}
+                                disabled={!externalVideoUrl.trim()}
+                                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+                              >
+                                Enlazar
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
-
-                </div>
-              ) : (
-                <div className="aspect-square rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center p-6 text-center bg-slate-50/50 dark:bg-slate-800/30">
-                  <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-500 flex items-center justify-center text-xl mb-2">
-                    🎨
-                  </div>
-                  <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                    Aún no se genera la muestra
-                  </h4>
-                  <p className="text-xs text-slate-400 mt-1 max-w-[220px]">
-                    Completa los datos del prospecto a la izquierda y presiona &quot;Generar Muestra Gráfica&quot;.
-                  </p>
-                </div>
+                </>
               )}
             </div>
 
@@ -2711,33 +2755,6 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
               )}
             </div>
 
-            {/* Visualizador de Video / Reel (Remotion Player o MP4) */}
-            {(remotionComposition || externalVideoUrl) && (
-              <div className="bg-slate-900 text-white p-6 rounded-3xl border border-slate-800 shadow-md space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-base font-bold text-white flex items-center gap-2">
-                    <span>🎬</span> Reproductor de Reel / Video
-                  </h3>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">
-                    9:16 Vertical
-                  </span>
-                </div>
-
-                {remotionComposition ? (
-                  <div className="max-w-[280px] mx-auto">
-                    <RemotionReelPlayer
-                      composition={remotionComposition}
-                      companyName={prospectBusiness}
-                      companyLogoUrl={logoPreview}
-                    />
-                  </div>
-                ) : externalVideoUrl ? (
-                  <div className="max-w-[280px] mx-auto aspect-[9/16] rounded-2xl overflow-hidden bg-black border border-slate-800">
-                    <video src={externalVideoUrl} controls playsInline className="w-full h-full object-cover" />
-                  </div>
-                ) : null}
-              </div>
-            )}
 
             {/* Módulo de Envío Directo por WhatsApp */}
             <div className="bg-emerald-50/60 dark:bg-emerald-950/20 p-6 rounded-3xl border border-emerald-200 dark:border-emerald-800/60 shadow-sm space-y-4">
