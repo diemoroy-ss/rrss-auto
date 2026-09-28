@@ -28,6 +28,7 @@ interface DemoData {
   rubro?: string;
   offerText?: string;
   dishOrProductName?: string;
+  badgeCustomText?: string;
   generatedPostCaption?: string;
   generatedImageUrl?: string;
   generatedVideoUrl?: string;
@@ -55,6 +56,25 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
       return;
     }
     async function fetchDemo() {
+      // 1. Intento primario: API pública de servidor con Admin SDK (garantiza permisos sin importar auth)
+      try {
+        const apiRes = await fetch(`/api/public/muestras/${encodeURIComponent(demoId)}`);
+        if (apiRes.ok) {
+          const apiData = await apiRes.json();
+          if (apiData.success && apiData.demo) {
+            setDemo(apiData.demo);
+            if (!apiData.demo.generatedImageUrl && (apiData.demo.remotionComposition || apiData.demo.generatedVideoUrl)) {
+              setActiveMediaTab("video");
+            }
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (apiErr) {
+        console.warn("Fallo lectura vía API pública, intentando Firestore cliente:", apiErr);
+      }
+
+      // 2. Intento secundario: Fallback cliente directo
       try {
         const ref = doc(db, "admin_prospect_demos", demoId);
         const snap = await getDoc(ref);
@@ -68,6 +88,7 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
             rubro: data.rubro || "Comercial",
             offerText: data.offerText || "",
             dishOrProductName: data.dishOrProductName || "",
+            badgeCustomText: data.badgeCustomText || "",
             generatedPostCaption: data.generatedPostCaption || data.postCaption || "",
             generatedImageUrl: data.generatedImageUrl || "",
             generatedVideoUrl: data.generatedVideoUrl || "",
