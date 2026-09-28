@@ -479,28 +479,70 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
       // 3. Determinar imagen base
       let rawBaseUrl = uploadedBaseImageUrl;
       if (!rawBaseUrl) {
-        if (selectedTemplate?.previewUrl) {
-          rawBaseUrl = selectedTemplate.previewUrl;
-        } else {
+        // NO se subió foto real del negocio: generar fotografía profesional del plato/producto con nuestros agentes
+        setGeneratingStep(`Fotografiando "${dishOrProductName.trim() || rubro}" con nuestros agentes...`);
+        try {
+          const token = await auth.currentUser?.getIdToken();
+          const genRes = await fetch("/api/admin/muestras/generate-image", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              dishOrProductName: dishOrProductName.trim(),
+              rubro: rubro || "Gastronomía",
+              businessName: prospectBusiness.trim(),
+              offerText: offerText.trim(),
+              styleId: selectedTemplate?.id || null,
+              styleTitle: selectedTemplate?.title || null,
+              styleKeywords: selectedTemplate?.styleKeywords || null,
+              stylePrompt: selectedTemplate?.prompt || null,
+            }),
+          });
+
+          if (genRes.ok) {
+            const genData = await genRes.json();
+            if (genData.imageUrl && typeof genData.imageUrl === "string" && genData.imageUrl.startsWith("http")) {
+              rawBaseUrl = genData.imageUrl;
+              console.log("[Muestras] ✅ Imagen de producto generada con agentes:", rawBaseUrl);
+            }
+          } else {
+            console.warn("[Muestras] ⚠️ Endpoint generate-image devolvió status:", genRes.status);
+          }
+        } catch (genErr) {
+          console.warn("[Muestras] ⚠️ Error llamando a generate-image:", genErr);
+        }
+
+        // Fallback de contingencia si no se obtuvo imagen
+        if (!rawBaseUrl) {
           const fallbackSeed = Math.floor(Math.random() * 100000);
           const dishPart = dishOrProductName.trim() ? `${dishOrProductName.trim()}, ` : "";
-          const promptQuery = encodeURIComponent(`${dishPart}${rubro} commercial photography high quality professional lighting ${offerText}`);
-          rawBaseUrl = `https://image.pollinations.ai/prompt/${promptQuery}?width=1080&height=1080&nologo=true&seed=${fallbackSeed}`;
+          const promptQuery = encodeURIComponent(`${dishPart}${rubro} commercial food advertising photography high quality professional lighting`);
+          rawBaseUrl = `https://image.pollinations.ai/prompt/${promptQuery}?width=1080&height=1080&model=flux&nologo=true&seed=${fallbackSeed}`;
         }
-      }
-
-      // 3.5. Aplicar Estilo Visual seleccionado vía n8n (igual que Biblioteca de Prompts)
-      // Solo si hay un template seleccionado con prompt y hay imagen base
-      if (selectedTemplate?.prompt && rawBaseUrl?.startsWith("http")) {
-        setGeneratingStep(`Aplicando estilo "${selectedTemplate.title}" con nuestros agentes...`);
+      } else if (selectedTemplate?.prompt && rawBaseUrl?.startsWith("http")) {
+        // El usuario SÍ subió una foto real: aplicar estilo visual seleccionado vía n8n sobre su foto
+        setGeneratingStep(`Aplicando estilo "${selectedTemplate.title}" a tu foto con nuestros agentes...`);
         try {
-          // Traducir el prompt del estilo al inglés
           let promptEN = selectedTemplate.prompt;
+          // Reemplazar placeholders en el prompt del estilo por el plato y negocio real
+          if (dishOrProductName.trim()) {
+            promptEN = promptEN
+              .replace(/\[Producto:[^\]]+\]/gi, dishOrProductName.trim())
+              .replace(/\[Nombre del Producto:[^\]]+\]/gi, dishOrProductName.trim())
+              .replace(/\[Objeto:[^\]]+\]/gi, dishOrProductName.trim())
+              .replace(/\[Sujeto:[^\]]+\]/gi, dishOrProductName.trim());
+          }
+          if (prospectBusiness.trim()) {
+            promptEN = promptEN.replace(/\[Marca o industria:[^\]]+\]/gi, prospectBusiness.trim());
+          }
+
           try {
             const transRes = await fetch("/api/ai/translate", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ text: selectedTemplate.prompt }),
+              body: JSON.stringify({ text: promptEN }),
             });
             if (transRes.ok) {
               const transData = await transRes.json();
@@ -528,11 +570,11 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
               styleData.imageUrl || styleData.url || styleData.imgUrl ||
               styleData[0]?.imageUrl || styleData[0]?.url;
             if (styledUrl && styledUrl.startsWith("http")) {
-              rawBaseUrl = styledUrl; // ✅ Usamos la imagen con el estilo aplicado
+              rawBaseUrl = styledUrl;
             }
           }
         } catch (styleErr) {
-          console.warn("Fallo aplicación de estilo visual — se continúa con imagen original:", styleErr);
+          console.warn("Fallo aplicación de estilo visual a foto subida:", styleErr);
         }
       }
 
