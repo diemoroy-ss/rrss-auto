@@ -29,10 +29,33 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { phone, text, mediaUrl, mediaType, apiKey: customApiKey, instanceName: customInstance } = body;
+    const { phone, text, mediaUrl, mediaType, apiKey: customApiKey, instanceName: customInstance, logOnly } = body;
 
     if (!phone || !text) {
       return NextResponse.json({ error: "phone y text son requeridos" }, { status: 400 });
+    }
+
+    const cleanPhone = phone.replace(/[\s\-\(\)\+]/g, "").replace(/^0+/, "");
+    const n8nWebhookUrl = process.env.N8N_EVOAPI_WEBHOOK_URL || N8N_EVOAPI_WEBHOOK_URL;
+
+    // Si ya se entregó directamente por el navegador (CORS), solo registramos y salimos
+    if (logOnly) {
+      if (n8nWebhookUrl) {
+        fetch(n8nWebhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json; charset=utf-8" },
+          body: JSON.stringify({
+            phone: cleanPhone,
+            number: cleanPhone,
+            text: text,
+            deliveryStatus: "sent",
+            deliveredMode: "direct_browser",
+            timestamp: new Date().toISOString(),
+          }),
+          signal: AbortSignal.timeout(3000),
+        }).catch(() => {});
+      }
+      return NextResponse.json({ ok: true, mode: "direct_browser_logged" });
     }
 
     const rawUrl = process.env.EVOLUTION_API_URL || DEFAULT_EVOLUTION_URL;
@@ -44,9 +67,6 @@ export async function POST(req: Request) {
     }
     const rawApiKey = customApiKey || process.env.EVOLUTION_API_KEY || DEFAULT_API_KEY;
     const apiKey = rawApiKey.trim().replace(/^["']|["']$/g, "");
-
-    // Limpiar teléfono (solo números)
-    const cleanPhone = phone.replace(/[\s\-\(\)\+]/g, "").replace(/^0+/, "");
 
     // Validar formato de media
     // Solo enviamos media si es una URL pública directa de Cloudinary o CDN compatible.

@@ -947,6 +947,10 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
   const [whatsAppError, setWhatsAppError] = useState("");
   const [attachImageToWhatsApp, setAttachImageToWhatsApp] = useState(false);
 
+  const EVOLUTION_URL = "https://evoapi.grupofugas.cl";
+  const EVOLUTION_INSTANCE = "Santisoft";
+  const EVOLUTION_API_KEY = "6833CC358FA4-42E4-8F45-E74D35CC85A7";
+
   const handleSendWhatsApp = async () => {
     if (!cleanPhone || !customWhatsappCopy.trim()) return;
     setIsSendingWhatsApp(true);
@@ -962,20 +966,77 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
 
       console.log("[WhatsApp Frontend] Enviando propuesta a WhatsApp:", { phone: cleanPhone, hasMedia: !!targetMediaUrl });
 
-      const res = await fetch("/api/admin/whatsapp/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          phone: cleanPhone,
-          text: customWhatsappCopy,
-          ...(targetMediaUrl ? { mediaUrl: targetMediaUrl, mediaType: "image" } : {}),
-        }),
-      });
+      let delivered = false;
 
-      const resData = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(resData.error || resData.details?.lastTextError || "Error al enviar mensaje");
+      // 1. Intento primario: Envío directo desde el navegador (conexión directa del usuario a Evolution API)
+      // evoapi.grupofugas.cl tiene CORS explícitamente habilitado para https://rrss.santisoft.cl
+      // y entrega en 0.3 segundos, evitando el firewall de DigitalOcean que bloquea las IPs de servidores cloud como Vercel.
+      try {
+        console.log("[WhatsApp Frontend] Intentando entrega directa vía Evolution API (CORS)...");
+        const endpoint = targetMediaUrl
+          ? `${EVOLUTION_URL}/message/sendMedia/${EVOLUTION_INSTANCE}`
+          : `${EVOLUTION_URL}/message/sendText/${EVOLUTION_INSTANCE}`;
+
+        const payload = targetMediaUrl
+          ? {
+              number: cleanPhone,
+              mediatype: "image",
+              mimetype: "image/jpeg",
+              caption: customWhatsappCopy,
+              media: targetMediaUrl,
+            }
+          : {
+              number: cleanPhone,
+              text: customWhatsappCopy,
+            };
+
+        const evoRes = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json; charset=utf-8",
+            apikey: EVOLUTION_API_KEY,
+          },
+          body: JSON.stringify(payload),
+          signal: AbortSignal.timeout(8000),
+        });
+
+        if (evoRes.ok) {
+          const evoData = await evoRes.json().catch(() => ({}));
+          console.log("[WhatsApp Frontend] ✅ Entregado directamente por Evolution API:", evoData);
+          delivered = true;
+          // Registro asíncrono en segundo plano
+          fetch("/api/admin/whatsapp/send", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ phone: cleanPhone, text: customWhatsappCopy, logOnly: true }),
+          }).catch(() => {});
+        } else {
+          const errText = await evoRes.text().catch(() => "");
+          console.warn(`[WhatsApp Frontend] Envío directo respondió ${evoRes.status}: ${errText}. Intentando vía backend...`);
+        }
+      } catch (clientErr: any) {
+        console.warn("[WhatsApp Frontend] Envío directo por navegador no disponible:", clientErr.message, "Probando vía backend...");
       }
+
+      // 2. Intento secundario: Si falló el envío directo (ej: bloqueador de anuncios o red corporativa), intentar vía backend
+      if (!delivered) {
+        const res = await fetch("/api/admin/whatsapp/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            phone: cleanPhone,
+            text: customWhatsappCopy,
+            ...(targetMediaUrl ? { mediaUrl: targetMediaUrl, mediaType: "image" } : {}),
+          }),
+        });
+
+        const resData = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(resData.error || resData.details?.lastTextError || "Error al enviar mensaje por WhatsApp");
+        }
+        delivered = true;
+      }
+
       setWhatsAppSent(true);
       setTimeout(() => setWhatsAppSent(false), 5000);
     } catch (err: any) {
