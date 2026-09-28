@@ -2113,6 +2113,19 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                     ❌ {whatsAppError}
                   </p>
                 )}
+
+                {cleanPhone && customWhatsappCopy.trim() && (
+                  <div className="pt-1 text-center">
+                    <a
+                      href={`https://wa.me/${cleanPhone}?text=${encodeURIComponent(customWhatsappCopy)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs text-emerald-700 dark:text-emerald-400 hover:underline font-semibold inline-flex items-center gap-1.5"
+                    >
+                      <FaWhatsapp className="text-sm" /> ¿Prefieres abrir WhatsApp Web directamente? Haz clic aquí
+                    </a>
+                  </div>
+                )}
               </div>
             </div>
 
