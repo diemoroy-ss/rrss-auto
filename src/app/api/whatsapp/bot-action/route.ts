@@ -176,8 +176,82 @@ export async function POST(req: Request) {
       }
     }
 
-    // Si el usuario no tiene ninguna cuenta asociada
+    // Si el usuario no tiene ninguna cuenta asociada en la plataforma
     if (matchedAccounts.length === 0) {
+      const isPlanOrDemoInquiry =
+        /propuesta|demo|muestra|quiero activar|activar (este |un )?plan|informaci[oó]n (de |sobre )?(los )?planes|precios?|tarifas?|planes disponibles|cu[aá]les son los planes/i.test(cleanInput) ||
+        /plan\s+(starter|growth|pro|business|free|prueba)/i.test(cleanInput) ||
+        /hola santisoft.*propuesta/i.test(cleanInput);
+
+      if (isPlanOrDemoInquiry) {
+        let specificPlanResponse = "";
+        if (/starter/i.test(cleanInput)) {
+          specificPlanResponse =
+            `⚡ *Plan Starter ($24.990 CLP/mes)*:\n` +
+            `• 20 publicaciones al mes en tus redes (Instagram y Facebook)\n` +
+            `• 2 videos verticales para Reels y TikTok al mes\n` +
+            `• 20 diseños fotográficos preparados por nuestros agentes\n` +
+            `• Programación y publicación 100% automática\n\n` +
+            `¿Te gustaría activar este plan para tu marca? Responde *"SÍ"* o indícanos el nombre de tu negocio para enviarte el enlace de activación directa.`;
+        } else if (/growth/i.test(cleanInput)) {
+          specificPlanResponse =
+            `🚀 *Plan Growth ($44.990 CLP/mes)* ⭐ _El más recomendado_:\n` +
+            `• 40 publicaciones al mes en todas tus redes\n` +
+            `• 6 videos con guión y locución para Reels y TikTok\n` +
+            `• 40 imágenes de alta calidad creadas por nuestros agentes\n` +
+            `• Bot de WhatsApp para revisar y aprobar publicaciones desde este chat\n` +
+            `• 2 artículos de Blog SEO al mes\n\n` +
+            `¿Te gustaría activar el Plan Growth? Responde *"SÍ"* o indícanos el nombre de tu marca para guiarte en el alta de tu cuenta.`;
+        } else if (/pro/i.test(cleanInput)) {
+          specificPlanResponse =
+            `👑 *Plan Pro ($89.990 CLP/mes)*:\n` +
+            `• 80 publicaciones al mes\n` +
+            `• 12 videos con locución y edición completa\n` +
+            `• 80 imágenes de alto impacto\n` +
+            `• Bot de WhatsApp completo + Meta Ads integrado y Radar de Nicho\n` +
+            `• 8 artículos de Blog SEO al mes\n\n` +
+            `¿Deseas activar el Plan Pro? Responde *"SÍ"* o indícanos el nombre de tu marca para coordinar la activación.`;
+        } else if (/free|prueba/i.test(cleanInput)) {
+          specificPlanResponse =
+            `🎁 *Prueba Gratuita por 10 Días ($0)*:\n` +
+            `• 5 publicaciones automáticas preparadas por nuestros agentes\n` +
+            `• 8 imágenes personalizadas para tu marca\n` +
+            `• Publicación en tus redes (Instagram, Facebook)\n` +
+            `• 100% sin costo y sin tarjeta de crédito\n\n` +
+            `Para comenzar la prueba gratis de inmediato, indícanos el nombre de tu negocio o regístrate en https://rrss.santisoft.cl/auth/register en menos de 1 minuto.`;
+        } else {
+          specificPlanResponse =
+            `🚀 *Planes de Automatización de Redes Santisoft:*\n\n` +
+            `🎁 *1. Prueba Gratuita ($0)*\n` +
+            `• 5 publicaciones automáticas por 10 días\n` +
+            `• Sin tarjeta ni compromisos\n\n` +
+            `⚡ *2. Plan Starter ($24.990 CLP/mes)*\n` +
+            `• 20 publicaciones en redes al mes\n` +
+            `• 2 videos verticales para Reels y TikTok\n` +
+            `• Todas tus redes conectadas\n\n` +
+            `🚀 *3. Plan Growth ($44.990 CLP/mes)* ⭐ _El más popular_\n` +
+            `• 40 publicaciones al mes\n` +
+            `• 6 videos con locución y guión\n` +
+            `• Bot de WhatsApp para revisar y aprobar posts\n\n` +
+            `👑 *4. Plan Pro ($89.990 CLP/mes)*\n` +
+            `• 80 publicaciones al mes\n` +
+            `• 12 videos con locución\n` +
+            `• Meta Ads integrado + Radar de Nicho semanal\n\n` +
+            `¿Cuál de estos planes te interesa para tu negocio? Responde con el nombre del plan (ej: *Starter*, *Growth*, *Pro* o *Prueba*) y te ayudamos a comenzar de inmediato.`;
+        }
+
+        const replyText =
+          `¡Hola ${pushName}! 👋 Qué gusto saludarte.\n\n` +
+          `Vimos tu mensaje sobre la propuesta que prepararon nuestros agentes.\n\n` +
+          specificPlanResponse;
+
+        return NextResponse.json({
+          success: true,
+          replyText,
+          isRegistered: false,
+        });
+      }
+
       const notFoundMessage =
         `¡Hola ${pushName}! 👋\n\n` +
         `No encontramos una cuenta de Santisoft asociada a este número de teléfono (*${phone}*).\n\n` +
@@ -290,7 +364,13 @@ export async function POST(req: Request) {
     // Detección inteligente de acción si viene como texto libre
     let effectiveAction = action;
     if (action === '0' || !action) {
-      if (/^6\b|aprobar|publicar ya|publicar ahora|ahora|cola/i.test(cleanInput)) {
+      if (
+        /propuesta|demo|muestra|quiero activar|activar (este |un )?plan|informaci[oó]n (de |sobre )?(los )?planes|precios?|tarifas?|planes disponibles|cu[aá]les son los planes/i.test(cleanInput) ||
+        /plan\s+(starter|growth|pro|business|free|prueba)/i.test(cleanInput) ||
+        /hola santisoft.*propuesta/i.test(cleanInput)
+      ) {
+        effectiveAction = 'planes_info';
+      } else if (/^6\b|aprobar|publicar ya|publicar ahora|ahora|cola/i.test(cleanInput)) {
         effectiveAction = '6';
       } else if (
         /^(\+|\-|solo\s+|sin\s+|quitar\s+|sacar\s+|desasociar\s+|desvincular\s+|agregar\s+|sumar\s+|asociar\s+|incluir\s+|redes\b|cambiar\s+redes)/i.test(cleanInput) ||
@@ -1156,6 +1236,71 @@ Responde ÚNICAMENTE un objeto JSON válido con este formato:
             `Si necesitas añadir otra cuenta o negocio, puedes hacerlo desde tu panel web en *Configuración > Perfiles*.\n\n` +
             `_Escribe *0* para volver al menú principal._`;
         }
+        break;
+      }
+
+      // ----------------------------------------------------
+      // OPCIÓN PLANES_INFO: Información y Selección de Planes
+      // ----------------------------------------------------
+      case 'planes_info': {
+        let specificPlanDetail = '';
+
+        if (/starter/i.test(cleanInput)) {
+          specificPlanDetail =
+            `⚡ *Plan Starter ($24.990 CLP/mes)*:\n` +
+            `• 20 publicaciones en redes al mes\n` +
+            `• 2 videos verticales para Reels y TikTok al mes\n` +
+            `• 20 imágenes de impacto creadas por nuestros agentes\n` +
+            `• Instagram y Facebook automáticos\n\n` +
+            `¿Deseas activar el Plan Starter para *${businessName}*?\n` +
+            `Responde *"ACTIVAR"* para proceder o escribe *0* para volver al menú.`;
+        } else if (/growth/i.test(cleanInput)) {
+          specificPlanDetail =
+            `🚀 *Plan Growth ($44.990 CLP/mes)* ⭐ _El más recomendado_:\n` +
+            `• 40 publicaciones al mes en todas tus redes\n` +
+            `• 6 videos con locución y guión al mes\n` +
+            `• 40 imágenes de alta calidad con nuestros agentes\n` +
+            `• Bot de WhatsApp para revisar y aprobar publicaciones desde este chat\n` +
+            `• 2 artículos de Blog SEO al mes\n\n` +
+            `¿Deseas activar el Plan Growth para *${businessName}*?\n` +
+            `Responde *"ACTIVAR"* para proceder o escribe *0* para volver al menú.`;
+        } else if (/pro/i.test(cleanInput)) {
+          specificPlanDetail =
+            `👑 *Plan Pro ($89.990 CLP/mes)*:\n` +
+            `• 80 publicaciones al mes\n` +
+            `• 12 videos con locución y guión al mes\n` +
+            `• 80 imágenes de alto impacto\n` +
+            `• Bot de WhatsApp completo + Meta Ads integrado y Radar de Nicho\n` +
+            `• 8 artículos de Blog SEO al mes\n\n` +
+            `¿Deseas activar el Plan Pro para *${businessName}*?\n` +
+            `Responde *"ACTIVAR"* para proceder o escribe *0* para volver al menú.`;
+        } else if (/free|prueba/i.test(cleanInput)) {
+          specificPlanDetail =
+            `🎁 *Prueba Gratuita por 10 Días ($0)*:\n` +
+            `• 5 publicaciones automáticas para tus redes\n` +
+            `• 8 imágenes diseñadas por nuestros agentes\n` +
+            `• 100% sin tarjeta de crédito ni compromisos\n\n` +
+            `Tu cuenta actual de *${businessName}* tiene plan *${userPlan.toUpperCase()}*.\n` +
+            `Si deseas activar una prueba para otro negocio, escríbenos el nombre de la nueva marca.`;
+        } else {
+          specificPlanDetail =
+            `🚀 *Planes Disponibles de Automatización de Redes:*\n\n` +
+            `🎁 *1. Prueba Gratuita ($0)*\n` +
+            `• 5 publicaciones automáticas por 10 días sin tarjeta\n\n` +
+            `⚡ *2. Plan Starter ($24.990 CLP/mes)*\n` +
+            `• 20 publicaciones al mes + 2 videos para Reels/TikTok\n\n` +
+            `🚀 *3. Plan Growth ($44.990 CLP/mes)* ⭐ _El más popular_\n` +
+            `• 40 publicaciones al mes + 6 videos con locución + Bot de WhatsApp\n\n` +
+            `👑 *4. Plan Pro ($89.990 CLP/mes)*\n` +
+            `• 80 publicaciones al mes + 12 videos + Meta Ads y Radar de Nicho\n\n` +
+            `Tu cuenta activa es: *${businessName}* (Plan actual: ${userPlan.toUpperCase()}).\n\n` +
+            `👉 *¿Qué plan te gustaría activar?* Responde con el nombre (ej: *Starter*, *Growth*, *Pro*) para darte los pasos de activación o escribe *0* para ver tus opciones de gestión diaria.`;
+        }
+
+        replyText =
+          `👋 *Información de Planes Santisoft:*\n\n` +
+          specificPlanDetail +
+          multiAccountFooter;
         break;
       }
 

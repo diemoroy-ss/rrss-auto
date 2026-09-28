@@ -438,6 +438,236 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
           </section>
         )}
 
+        {/* SECCIÓN DE PLANES Y TARIFAS DISPONIBLES */}
+        <section id="planes" className="space-y-6 pt-2 scroll-mt-20">
+          <div className="text-center space-y-2">
+            <span className="px-3 py-1 rounded-full text-[11px] font-black tracking-wider uppercase bg-indigo-50 text-indigo-700 border border-indigo-200/80">
+              Planes Flexibles
+            </span>
+            <h3 className="text-xl sm:text-2xl font-black text-slate-900">
+              Elige el plan ideal para {demo.prospectBusiness}
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-500 max-w-xl mx-auto">
+              Planes transparentes en pesos chilenos, sin contratos forzosos ni comisiones ocultas. Cancela o cambia de plan cuando quieras.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            
+            {/* PLAN 1: PRUEBA GRATUITA */}
+            <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs flex flex-col justify-between hover:shadow-md transition-shadow">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 uppercase">
+                    10 Días
+                  </span>
+                  <span className="text-xs">🎁</span>
+                </div>
+                <div>
+                  <h4 className="text-base font-black text-slate-900">Prueba Gratis</h4>
+                  <p className="text-[11px] text-slate-500 mt-0.5">Comprueba la calidad en tus redes</p>
+                </div>
+                <div className="pt-1">
+                  <span className="text-2xl font-black text-slate-900">$0</span>
+                  <span className="text-xs text-slate-500 ml-1">/ 10 días</span>
+                </div>
+                <ul className="text-xs text-slate-600 space-y-2 pt-2 border-t border-slate-100">
+                  <li className="flex items-start gap-2">
+                    <FaCheck className="text-emerald-500 text-xs shrink-0 mt-0.5" />
+                    <span><strong>5 posts</strong> automáticos listos</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <FaCheck className="text-emerald-500 text-xs shrink-0 mt-0.5" />
+                    <span>8 imágenes con tus agentes</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <FaCheck className="text-emerald-500 text-xs shrink-0 mt-0.5" />
+                    <span>Instagram y Facebook</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <FaCheck className="text-emerald-500 text-xs shrink-0 mt-0.5" />
+                    <span>Sin tarjeta de crédito</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="pt-5">
+                <a
+                  href={`https://wa.me/${santisoftWhatsAppNumber}?text=${encodeURIComponent(
+                    `¡Hola Santisoft! Vi la propuesta para ${businessName} (Demo #${demoId.substring(0, 6)}) y me gustaría comenzar con la Prueba Gratuita de 5 publicaciones.`
+                  )}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-full py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-extrabold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <FaWhatsapp className="text-emerald-600 text-sm" />
+                  <span>Probar 5 Posts Gratis</span>
+                </a>
+              </div>
+            </div>
+
+            {/* PLAN 2: STARTER */}
+            <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs flex flex-col justify-between hover:shadow-md transition-shadow">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 uppercase">
+                    Básico
+                  </span>
+                  <span className="text-xs">⚡</span>
+                </div>
+                <div>
+                  <h4 className="text-base font-black text-slate-900">Plan Starter</h4>
+                  <p className="text-[11px] text-slate-500 mt-0.5">Constancia esencial mes a mes</p>
+                </div>
+                <div className="pt-1">
+                  <span className="text-2xl font-black text-slate-900">$24.990</span>
+                  <span className="text-xs text-slate-500 ml-1">/ mes</span>
+                </div>
+                <ul className="text-xs text-slate-600 space-y-2 pt-2 border-t border-slate-100">
+                  <li className="flex items-start gap-2">
+                    <FaCheck className="text-emerald-500 text-xs shrink-0 mt-0.5" />
+                    <span><strong>20 publicaciones</strong> al mes</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <FaCheck className="text-emerald-500 text-xs shrink-0 mt-0.5" />
+                    <span><strong>2 videos</strong> Reels / TikTok</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <FaCheck className="text-emerald-500 text-xs shrink-0 mt-0.5" />
+                    <span>20 imágenes con tus agentes</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <FaCheck className="text-emerald-500 text-xs shrink-0 mt-0.5" />
+                    <span>Publicación automática</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="pt-5">
+                <a
+                  href={`https://wa.me/${santisoftWhatsAppNumber}?text=${encodeURIComponent(
+                    `¡Hola Santisoft! Vi la propuesta para ${businessName} y me interesa activar el Plan Starter ($24.990/mes). ¿Cuáles son los siguientes pasos?`
+                  )}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-full py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                >
+                  <FaWhatsapp className="text-emerald-400 text-sm" />
+                  <span>Elegir Starter ($24.990)</span>
+                </a>
+              </div>
+            </div>
+
+            {/* PLAN 3: GROWTH (DESTACADO) */}
+            <div className="bg-white rounded-3xl p-5 border-2 border-indigo-600 shadow-xl flex flex-col justify-between relative ring-4 ring-indigo-500/10">
+              <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-black uppercase tracking-wider shadow-sm">
+                ⭐ Más Recomendado
+              </span>
+              <div className="space-y-3 pt-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 uppercase">
+                    Crecimiento
+                  </span>
+                  <span className="text-xs">🚀</span>
+                </div>
+                <div>
+                  <h4 className="text-base font-black text-slate-900">Plan Growth</h4>
+                  <p className="text-[11px] text-slate-500 mt-0.5">El equilibrio perfecto de video y contenido</p>
+                </div>
+                <div className="pt-1">
+                  <span className="text-2xl font-black text-indigo-600">$44.990</span>
+                  <span className="text-xs text-slate-500 ml-1">/ mes</span>
+                </div>
+                <ul className="text-xs text-slate-600 space-y-2 pt-2 border-t border-slate-100">
+                  <li className="flex items-start gap-2">
+                    <FaCheck className="text-emerald-500 text-xs shrink-0 mt-0.5" />
+                    <span><strong>40 publicaciones</strong> al mes</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <FaCheck className="text-emerald-500 text-xs shrink-0 mt-0.5" />
+                    <span><strong>6 videos con locución</strong> y guión</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <FaCheck className="text-emerald-500 text-xs shrink-0 mt-0.5" />
+                    <span><strong>Bot de WhatsApp</strong> (aprueba posts)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <FaCheck className="text-emerald-500 text-xs shrink-0 mt-0.5" />
+                    <span>2 artículos Blog SEO al mes</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="pt-5">
+                <a
+                  href={`https://wa.me/${santisoftWhatsAppNumber}?text=${encodeURIComponent(
+                    `¡Hola Santisoft! Vi la propuesta para ${businessName} y me interesa activar el Plan Growth ($44.990/mes). ¿Cuáles son los siguientes pasos?`
+                  )}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/25 transition-all cursor-pointer"
+                >
+                  <FaWhatsapp className="text-emerald-300 text-sm" />
+                  <span>Elegir Growth ($44.990)</span>
+                </a>
+              </div>
+            </div>
+
+            {/* PLAN 4: PRO */}
+            <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs flex flex-col justify-between hover:shadow-md transition-shadow">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 uppercase">
+                    Avanzado
+                  </span>
+                  <span className="text-xs">👑</span>
+                </div>
+                <div>
+                  <h4 className="text-base font-black text-slate-900">Plan Pro</h4>
+                  <p className="text-[11px] text-slate-500 mt-0.5">Máximo impacto con Meta Ads</p>
+                </div>
+                <div className="pt-1">
+                  <span className="text-2xl font-black text-slate-900">$89.990</span>
+                  <span className="text-xs text-slate-500 ml-1">/ mes</span>
+                </div>
+                <ul className="text-xs text-slate-600 space-y-2 pt-2 border-t border-slate-100">
+                  <li className="flex items-start gap-2">
+                    <FaCheck className="text-emerald-500 text-xs shrink-0 mt-0.5" />
+                    <span><strong>80 publicaciones</strong> al mes</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <FaCheck className="text-emerald-500 text-xs shrink-0 mt-0.5" />
+                    <span><strong>12 videos</strong> con locución</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <FaCheck className="text-emerald-500 text-xs shrink-0 mt-0.5" />
+                    <span><strong>Meta Ads integrado</strong> + Radar</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <FaCheck className="text-emerald-500 text-xs shrink-0 mt-0.5" />
+                    <span>8 artículos Blog SEO al mes</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="pt-5">
+                <a
+                  href={`https://wa.me/${santisoftWhatsAppNumber}?text=${encodeURIComponent(
+                    `¡Hola Santisoft! Vi la propuesta para ${businessName} y me interesa activar el Plan Pro ($89.990/mes). ¿Cuáles son los siguientes pasos?`
+                  )}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-full py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                >
+                  <FaWhatsapp className="text-emerald-400 text-sm" />
+                  <span>Elegir Pro ($89.990)</span>
+                </a>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
         {/* BENEFICIOS: CÓMO TRABAJAN NUESTROS AGENTES */}
         <section className="space-y-4">
           <div className="text-center space-y-1">
@@ -476,7 +706,7 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
               </div>
               <h4 className="text-sm font-bold text-slate-900">Sin Costos de Agencia</h4>
               <p className="text-xs text-slate-600 leading-relaxed">
-                Planes transparentes en pesos chilenos desde $29.990/mes. Sin contratos de permanencia ni cobros sorpresa.
+                Planes transparentes en pesos chilenos desde $24.990/mes. Sin contratos de permanencia ni cobros sorpresa.
               </p>
             </div>
           </div>
@@ -488,20 +718,31 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
       <footer className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200/90 p-3 sm:p-4 shadow-[0_-8px_30px_rgba(0,0,0,0.06)]">
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="hidden sm:block">
-            <p className="text-xs font-bold text-slate-900">¿Te gusta lo que ves para {demo.prospectBusiness}?</p>
-            <p className="text-[11px] text-slate-500">Podemos activar tus agentes hoy mismo con 5 publicaciones de prueba.</p>
+            <p className="text-xs font-bold text-slate-900">¿Listo para activar las redes de {demo.prospectBusiness}?</p>
+            <p className="text-[11px] text-slate-500">Elige tu plan arriba o consúltanos directamente por WhatsApp.</p>
           </div>
 
-          <a
-            href={whatsappCtaUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-sm shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2.5 active:scale-[0.98] transition-all"
-          >
-            <FaWhatsapp className="text-xl" />
-            <span>Quiero Activar Este Plan para Mi Negocio</span>
-            <FaArrowRight className="text-xs" />
-          </a>
+          <div className="w-full sm:w-auto flex items-center gap-2">
+            <a
+              href="#planes"
+              className="py-3 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-xs transition-colors text-center cursor-pointer border border-slate-200/80 shrink-0"
+            >
+              Ver Planes
+            </a>
+
+            <a
+              href={`https://wa.me/${santisoftWhatsAppNumber}?text=${encodeURIComponent(
+                `¡Hola Santisoft! Vi la propuesta que prepararon sus agentes para ${businessName} (Demo #${demoId.substring(0, 6)}) y me gustaría recibir información sobre los planes disponibles para comenzar.`
+              )}`}
+              target="_blank"
+              rel="noreferrer"
+              className="flex-1 sm:flex-initial px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs sm:text-sm shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
+            >
+              <FaWhatsapp className="text-lg" />
+              <span>Consultar Planes por WhatsApp</span>
+              <FaArrowRight className="text-xs" />
+            </a>
+          </div>
         </div>
       </footer>
 
