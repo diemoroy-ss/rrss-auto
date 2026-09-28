@@ -286,6 +286,33 @@ export default function AdminMuestrasPage() {
     setLoadingHistory(false);
   };
 
+  const [deletingDemoId, setDeletingDemoId] = useState<string | null>(null);
+
+  const handleDeleteDemo = async (id: string, businessName: string) => {
+    if (!confirm(`¿Eliminar la muestra de "${businessName}"? Esta acción borrará la propuesta y su enlace.`)) {
+      return;
+    }
+    setDeletingDemoId(id);
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch(`/api/admin/muestras?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (res.ok) {
+        setHistoryDemos((prev) => prev.filter((d) => d.id !== id));
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "No se pudo eliminar la muestra");
+      }
+    } catch (err: any) {
+      console.error("Error al eliminar muestra:", err);
+      alert("Hubo un error al intentar eliminar la muestra.");
+    } finally {
+      setDeletingDemoId(null);
+    }
+  };
+
   useEffect(() => {
     if (isAdmin && activeTab === "historial") {
       loadHistory();
@@ -2142,11 +2169,13 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
               <p className="text-xs text-slate-500">Historial de propuestas preparadas para prospectos.</p>
             </div>
             <button
+              type="button"
               onClick={loadHistory}
               disabled={loadingHistory}
-              className="text-xs px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 font-bold"
+              className="text-xs px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700 font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
             >
-              {loadingHistory ? "Cargando..." : "↻ Refrescar"}
+              <span className={loadingHistory ? "animate-spin" : ""}>↻</span>
+              <span>{loadingHistory ? "Actualizando..." : "Refrescar"}</span>
             </button>
           </div>
 
@@ -2240,6 +2269,21 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                           title="Ver imagen HD"
                         >
                           <FaEye />
+                        </button>
+                      )}
+                      {demo.id && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteDemo(demo.id!, demo.prospectBusiness)}
+                          disabled={deletingDemoId === demo.id}
+                          className="p-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 dark:text-rose-400 border border-rose-200 dark:border-rose-800 text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
+                          title="Eliminar muestra"
+                        >
+                          {deletingDemoId === demo.id ? (
+                            <div className="w-3.5 h-3.5 border-2 border-rose-600 border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <FaTrash className="text-xs" />
+                          )}
                         </button>
                       )}
                     </div>
