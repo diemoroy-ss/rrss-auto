@@ -70,7 +70,7 @@ export async function POST(req: Request) {
         const mediaRes = await fetch(mediaEndpoint, {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type": "application/json; charset=utf-8",
             apikey: apiKey,
           },
           body: JSON.stringify({
@@ -105,7 +105,7 @@ export async function POST(req: Request) {
         const textRes = await fetch(textEndpoint, {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type": "application/json; charset=utf-8",
             apikey: apiKey,
           },
           body: JSON.stringify({
