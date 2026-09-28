@@ -16,7 +16,7 @@ import {
   buildImageToVideoPrompt,
   VideoPromptTemplate
 } from "../../../../../lib/video-prompt-templates";
-import { createButterflyRender, compositeImageClient } from "../../../../../lib/image-compositor";
+import { createButterflyRender, compositeImageClient, BadgeStyle } from "../../../../../lib/image-compositor";
 import { removeLogoBackground } from "../../../../../lib/logo-bg-remover";
 import { VideoComposition } from "../../../../../lib/video-poc-service";
 import {
@@ -57,6 +57,7 @@ interface ProspectDemo {
   rubro: string;
   offerText: string;
   badgeCustomText?: string;
+  badgeStyle?: BadgeStyle;
   dishOrProductName?: string;
   generatedPostCaption?: string;
   baseImageUrl?: string;
@@ -126,6 +127,7 @@ export default function AdminMuestrasPage() {
   // Paso 2: Assets del Prospecto y Plato/Producto
   const [dishOrProductName, setDishOrProductName] = useState<string>("");
   const [badgeCustomText, setBadgeCustomText] = useState<string>("");
+  const [badgeStyle, setBadgeStyle] = useState<BadgeStyle>("sticker-circle");
   const [baseImageFile, setBaseImageFile] = useState<File | null>(null);
   const [baseImagePreview, setBaseImagePreview] = useState<string>("");
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -547,6 +549,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
           logoTransparent: removeLogoBg ? true : logoTransparent,
           offerText: offerText.trim() || undefined,
           badgeCustomText: badgeCustomText.trim() || undefined,
+          badgeStyle,
           dishOrProductName: dishOrProductName.trim() || undefined,
           businessName: prospectBusiness.trim(),
           includeSantisoftWatermark: true,
@@ -568,6 +571,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
           logoTransparent,
           offerText: offerText.trim() || undefined,
           badgeCustomText: badgeCustomText.trim() || undefined,
+          badgeStyle,
           dishOrProductName: dishOrProductName.trim() || undefined,
           businessName: prospectBusiness.trim(),
           userId: currentUser?.uid || "admin",
@@ -643,6 +647,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
           rubro,
           offerText: offerText.trim(),
           badgeCustomText: badgeCustomText.trim() || null,
+          badgeStyle,
           dishOrProductName: dishOrProductName.trim() || null,
           generatedPostCaption: finalPostCaption || null,
           baseImageUrl: uploadedBaseImageUrl || rawBaseUrl || null,
@@ -1409,6 +1414,201 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                 <p className="text-[11px] text-slate-500 leading-tight">
                   Este texto sí aparecerá destacado sobre la imagen final. Si lo dejas vacío, se usará la oferta general o quedará la imagen limpia sin pastilla de texto.
                 </p>
+              </div>
+
+              {/* Selector de Estilo de Titular con Vista Previa en Vivo */}
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <span>🎨</span> Estilo Visual del Titular en la Imagen
+                  </label>
+                  <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold">
+                    {badgeStyle === "sticker-circle" && "🔥 Sticker Troquelado"}
+                    {badgeStyle === "pill-fire" && "⚡ Cápsula Fuego"}
+                    {badgeStyle === "gold-gourmet" && "⭐ Dorado Gourmet"}
+                    {badgeStyle === "corner-ribbon" && "🏷️ Banderín Troquelado"}
+                  </span>
+                </div>
+
+                <p className="text-[11px] text-slate-500 leading-tight">
+                  Elige cómo se presentará el titular promocional sobre la foto. Nuestros agentes lo ubicarán estratégicamente en la esquina opuesta al logo para no tapar el plato.
+                </p>
+
+                {(() => {
+                  const previewBadgeText = (badgeCustomText.trim() || offerText.trim() || "30% OFF HOY").toUpperCase();
+                  const previewBadgeWords = previewBadgeText.split(" ");
+                  let previewBadgeLine1 = "";
+                  let previewBadgeLine2 = "";
+                  if (previewBadgeWords.length >= 2) {
+                    if (previewBadgeWords.length === 2) {
+                      previewBadgeLine1 = previewBadgeWords[0];
+                      previewBadgeLine2 = previewBadgeWords[1];
+                    } else {
+                      previewBadgeLine1 = previewBadgeWords[0];
+                      previewBadgeLine2 = previewBadgeWords.slice(1).join(" ");
+                    }
+                  } else {
+                    previewBadgeLine1 = "";
+                    previewBadgeLine2 = previewBadgeText;
+                  }
+
+                  return (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                      {/* 1. STICKER CIRCULAR TROQUELADO */}
+                      <div
+                        onClick={() => setBadgeStyle("sticker-circle")}
+                        className={`relative p-3.5 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between overflow-hidden group ${
+                          badgeStyle === "sticker-circle"
+                            ? "border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/30 ring-2 ring-indigo-500/20 shadow-md"
+                            : "border-slate-200 dark:border-slate-700/80 bg-slate-50/60 dark:bg-slate-800/40 hover:border-slate-300 dark:hover:border-slate-600"
+                        }`}
+                      >
+                        {badgeStyle === "sticker-circle" && (
+                          <span className="absolute top-2 right-2 px-1.5 py-0.5 rounded-md bg-indigo-600 text-white text-[9px] font-black tracking-wide flex items-center gap-1 shadow-xs z-10">
+                            <FaCheck className="text-[8px]" /> Activo
+                          </span>
+                        )}
+                        <div className="mb-2">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-sm">🔥</span>
+                            <h4 className="text-xs font-bold text-slate-900 dark:text-white">Sticker Circular Troquelado</h4>
+                          </div>
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                            Sello rotado -8°, degradado fuego rojo-naranja y borde troquelado.
+                          </p>
+                        </div>
+
+                        {/* Mini Simulador de Fondo */}
+                        <div className="w-full h-24 rounded-xl bg-gradient-to-br from-slate-900 via-zinc-900 to-stone-900 relative flex items-center justify-center overflow-hidden border border-slate-800/60 shadow-inner">
+                          <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:10px_10px]" />
+                          <div className="relative -rotate-6 transform transition-transform group-hover:rotate-0">
+                            <div className="w-18 h-18 rounded-full bg-white p-[2.5px] shadow-[0_6px_16px_rgba(0,0,0,0.6)] flex items-center justify-center">
+                              <div className="w-full h-full rounded-full bg-gradient-to-br from-red-600 via-red-500 to-orange-600 flex flex-col items-center justify-center p-1 relative border border-dashed border-white/50 text-center leading-tight">
+                                {previewBadgeLine1 && (
+                                  <span className="text-[8px] font-black text-white tracking-wider uppercase drop-shadow-sm">
+                                    {previewBadgeLine1}
+                                  </span>
+                                )}
+                                <span className="text-[10px] font-black text-yellow-200 tracking-tight uppercase drop-shadow-[0_2px_2px_rgba(0,0,0,0.6)]">
+                                  {previewBadgeLine2}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 2. CÁPSULA NEÓN / FUEGO */}
+                      <div
+                        onClick={() => setBadgeStyle("pill-fire")}
+                        className={`relative p-3.5 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between overflow-hidden group ${
+                          badgeStyle === "pill-fire"
+                            ? "border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/30 ring-2 ring-indigo-500/20 shadow-md"
+                            : "border-slate-200 dark:border-slate-700/80 bg-slate-50/60 dark:bg-slate-800/40 hover:border-slate-300 dark:hover:border-slate-600"
+                        }`}
+                      >
+                        {badgeStyle === "pill-fire" && (
+                          <span className="absolute top-2 right-2 px-1.5 py-0.5 rounded-md bg-indigo-600 text-white text-[9px] font-black tracking-wide flex items-center gap-1 shadow-xs z-10">
+                            <FaCheck className="text-[8px]" /> Activo
+                          </span>
+                        )}
+                        <div className="mb-2">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-sm">⚡</span>
+                            <h4 className="text-xs font-bold text-slate-900 dark:text-white">Cápsula Flotante de Fuego</h4>
+                          </div>
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                            Pastilla curva con resplandor neón rojizo, borde luminoso y llama.
+                          </p>
+                        </div>
+
+                        {/* Mini Simulador */}
+                        <div className="w-full h-24 rounded-xl bg-gradient-to-br from-slate-900 via-zinc-900 to-stone-900 relative flex items-center justify-center p-2.5 overflow-hidden border border-slate-800/60 shadow-inner">
+                          <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:10px_10px]" />
+                          <div className="max-w-[95%] px-3 py-1.5 rounded-full bg-gradient-to-r from-red-500 to-orange-500 border border-white/50 shadow-[0_0_20px_rgba(239,68,68,0.7)] flex items-center gap-1.5 text-center">
+                            <span className="text-xs shrink-0">🔥</span>
+                            <span className="text-[10px] font-black text-white uppercase tracking-wide truncate drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">
+                              {previewBadgeText}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 3. SELLO DORADO GOURMET */}
+                      <div
+                        onClick={() => setBadgeStyle("gold-gourmet")}
+                        className={`relative p-3.5 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between overflow-hidden group ${
+                          badgeStyle === "gold-gourmet"
+                            ? "border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/30 ring-2 ring-indigo-500/20 shadow-md"
+                            : "border-slate-200 dark:border-slate-700/80 bg-slate-50/60 dark:bg-slate-800/40 hover:border-slate-300 dark:hover:border-slate-600"
+                        }`}
+                      >
+                        {badgeStyle === "gold-gourmet" && (
+                          <span className="absolute top-2 right-2 px-1.5 py-0.5 rounded-md bg-indigo-600 text-white text-[9px] font-black tracking-wide flex items-center gap-1 shadow-xs z-10">
+                            <FaCheck className="text-[8px]" /> Activo
+                          </span>
+                        )}
+                        <div className="mb-2">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-sm">⭐</span>
+                            <h4 className="text-xs font-bold text-slate-900 dark:text-white">Sello Dorado Gourmet</h4>
+                          </div>
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                            Fondo obsidiana carbón, doble filete dorado metálico y estrella.
+                          </p>
+                        </div>
+
+                        {/* Mini Simulador */}
+                        <div className="w-full h-24 rounded-xl bg-gradient-to-br from-slate-900 via-zinc-900 to-stone-900 relative flex items-center justify-center p-2.5 overflow-hidden border border-slate-800/60 shadow-inner">
+                          <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:10px_10px]" />
+                          <div className="max-w-[95%] px-3 py-1.5 rounded-xl bg-slate-950/95 border-2 border-amber-500 shadow-[0_6px_16px_rgba(0,0,0,0.7)] flex items-center gap-1.5 relative">
+                            <div className="absolute inset-[2px] border border-amber-200/30 rounded-lg pointer-events-none" />
+                            <span className="text-xs text-amber-400 shrink-0">⭐</span>
+                            <span className="text-[9px] font-black text-amber-200 uppercase tracking-wider truncate">
+                              {previewBadgeText}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 4. CINTA / BANDERÍN TROQUELADO */}
+                      <div
+                        onClick={() => setBadgeStyle("corner-ribbon")}
+                        className={`relative p-3.5 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between overflow-hidden group ${
+                          badgeStyle === "corner-ribbon"
+                            ? "border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/30 ring-2 ring-indigo-500/20 shadow-md"
+                            : "border-slate-200 dark:border-slate-700/80 bg-slate-50/60 dark:bg-slate-800/40 hover:border-slate-300 dark:hover:border-slate-600"
+                        }`}
+                      >
+                        {badgeStyle === "corner-ribbon" && (
+                          <span className="absolute top-2 right-2 px-1.5 py-0.5 rounded-md bg-indigo-600 text-white text-[9px] font-black tracking-wide flex items-center gap-1 shadow-xs z-10">
+                            <FaCheck className="text-[8px]" /> Activo
+                          </span>
+                        )}
+                        <div className="mb-2">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-sm">🏷️</span>
+                            <h4 className="text-xs font-bold text-slate-900 dark:text-white">Cinta / Banderín Troquelado</h4>
+                          </div>
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                            Banderín lateral con muesca en punta y ribete dorado inferior.
+                          </p>
+                        </div>
+
+                        {/* Mini Simulador */}
+                        <div className="w-full h-24 rounded-xl bg-gradient-to-br from-slate-900 via-zinc-900 to-stone-900 relative flex items-center justify-start overflow-hidden border border-slate-800/60 shadow-inner">
+                          <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:10px_10px]" />
+                          <div className="relative pl-3 pr-4 py-1 bg-gradient-to-r from-red-700 to-red-600 border-b-2 border-amber-400 shadow-xl flex items-center gap-1.5 [clip-path:polygon(0%_0%,100%_0%,calc(100%-10px)_50%,100%_100%,0%_100%)]">
+                            <span className="text-xs shrink-0">🏷️</span>
+                            <span className="text-[9px] font-black text-white uppercase tracking-wider truncate drop-shadow-sm pr-1">
+                              {previewBadgeText}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 
