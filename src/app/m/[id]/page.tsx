@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { db } from "../../../lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
@@ -38,9 +39,9 @@ interface DemoData {
   createdAt?: any;
 }
 
-export default function PublicProspectDemoPage({ params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = use(params);
-  const demoId = resolvedParams.id;
+export default function PublicProspectDemoPage({ params }: { params?: { id?: string } }) {
+  const routeParams = useParams();
+  const demoId = (typeof routeParams?.id === "string" ? routeParams.id : null) || params?.id || "";
 
   const [demo, setDemo] = useState<DemoData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -49,6 +50,10 @@ export default function PublicProspectDemoPage({ params }: { params: Promise<{ i
   const [copiedCaption, setCopiedCaption] = useState(false);
 
   useEffect(() => {
+    if (!demoId) {
+      setLoading(false);
+      return;
+    }
     async function fetchDemo() {
       try {
         const ref = doc(db, "admin_prospect_demos", demoId);
