@@ -60,16 +60,12 @@ IMPORTANTE: Finaliza SIEMPRE tu prompt con el texto exacto --ar 9:16`;
 
   console.log(`[AgentVideoPremium] Prompt de video final:`, optimizedPrompt);
 
-  // 2. Determinar webhooks según si es Image-to-Video o Text-to-Video
-  const isImageToVideo = !!imageUrl;
-  
-  const startWebhookUrl = isImageToVideo
-    ? (process.env.NEXT_PUBLIC_N8N_IMAGE_TO_VIDEO_URL || 'https://n8n.santisoft.cl/webhook/image-to-video')
-    : (process.env.NEXT_PUBLIC_N8N_VIDEO_PREMIUM_URL || 'https://n8n.santisoft.cl/webhook/video-premium');
+  // 2. Determinar webhooks (en n8n el flujo activo y verificado es video-premium)
+  const startWebhookUrl = process.env.NEXT_PUBLIC_N8N_VIDEO_PREMIUM_URL || 
+    'https://n8n.santisoft.cl/webhook/video-premium';
 
-  const statusWebhookUrl = isImageToVideo
-    ? (process.env.NEXT_PUBLIC_N8N_IMAGE_TO_VIDEO_STATUS_URL || 'https://n8n.santisoft.cl/webhook/image-to-video-status')
-    : (process.env.NEXT_PUBLIC_N8N_VIDEO_PREMIUM_STATUS_URL || 'https://n8n.santisoft.cl/webhook/video-premium-status');
+  const statusWebhookUrl = process.env.NEXT_PUBLIC_N8N_VIDEO_PREMIUM_STATUS_URL || 
+    'https://n8n.santisoft.cl/webhook/video-premium-status';
 
   let jobId = '';
 
@@ -105,6 +101,43 @@ IMPORTANTE: Finaliza SIEMPRE tu prompt con el texto exacto --ar 9:16`;
     }
 
     const startData = await startRes.json();
+
+    // Si n8n generó y entregó el video de inmediato (ej: Cloudinary)
+    if (startData.videoUrl || startData.url) {
+      const directVideoUrl = startData.videoUrl || startData.url;
+      console.log(`[AgentVideoPremium] ✅ Video recibido directamente de n8n: ${directVideoUrl}`);
+
+      if (renderMode === 'remotion') {
+        try {
+          const { generateVideoPoCComposition } = await import('../video-poc-service');
+          const composition = await generateVideoPoCComposition({
+            topic: idea || businessName || rubro,
+            rubro,
+            style: 'vibrante',
+            skipImages: true
+          });
+
+          const { renderAndUploadReel } = await import('../video-renderer');
+          const finalCompositedUrl = await renderAndUploadReel({
+            id: postId,
+            bgVideoUrl: directVideoUrl,
+            scenes: composition.scenes,
+            audioScript: composition.audioScript,
+            showWatermark: showWatermark,
+            logoUrl: logoUrl,
+            businessName: businessName
+          }, userId, postId);
+
+          return finalCompositedUrl;
+        } catch (remotionErr: any) {
+          console.warn('[AgentVideoPremium] Fallo al componer con Remotion, usando video directo:', remotionErr.message);
+          return directVideoUrl;
+        }
+      }
+
+      return directVideoUrl;
+    }
+
     jobId = startData.jobId;
 
     if (!jobId) {
