@@ -35,77 +35,41 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "phone y text son requeridos" }, { status: 400 });
     }
 
-    const n8nWebhookUrl = process.env.N8N_EVOAPI_WEBHOOK_URL || N8N_EVOAPI_WEBHOOK_URL;
-    const evolutionUrl = (process.env.EVOLUTION_API_URL || DEFAULT_EVOLUTION_URL).replace(/\/$/, "");
-    const instanceName = customInstance || process.env.EVOLUTION_INSTANCE_NAME || DEFAULT_INSTANCE_NAME;
-    const apiKey = customApiKey || process.env.EVOLUTION_API_KEY || DEFAULT_API_KEY;
+    const rawUrl = process.env.EVOLUTION_API_URL || DEFAULT_EVOLUTION_URL;
+    const evolutionUrl = rawUrl.trim().replace(/^["']|["']$/g, "").replace(/\/$/, "");
+    const rawInstance = customInstance || process.env.EVOLUTION_INSTANCE_NAME || DEFAULT_INSTANCE_NAME;
+    let instanceName = rawInstance.trim().replace(/^["']|["']$/g, "");
+    if (instanceName.toLowerCase() === "santisoft") {
+      instanceName = "Santisoft";
+    }
+    const rawApiKey = customApiKey || process.env.EVOLUTION_API_KEY || DEFAULT_API_KEY;
+    const apiKey = rawApiKey.trim().replace(/^["']|["']$/g, "");
 
     // Limpiar teléfono (solo números)
     const cleanPhone = phone.replace(/[\s\-\(\)\+]/g, "").replace(/^0+/, "");
 
-    // Validar formato de media (HTTP URL o data URI / base64)
+    // Validar formato de media
+    // Solo enviamos media si es una URL pública directa de Cloudinary o CDN compatible.
+    // NUNCA enviamos Firebase Storage (da 403 en Axios de Evolution) ni base64 pesados (dan timeout en Vercel).
     let validMedia: string | null = null;
     let mimeType = "image/jpeg";
     if (mediaUrl && typeof mediaUrl === "string") {
-      if (mediaUrl.startsWith("data:")) {
-        const parts = mediaUrl.split(",");
-        if (parts.length === 2) {
-          const match = parts[0].match(/data:(.*?);base64/);
-          if (match) mimeType = match[1];
-          validMedia = parts[1]; // base64 puro
-        }
-      } else if (mediaUrl.includes("firebasestorage.googleapis.com") || mediaUrl.includes("butterfly.santisoft.cl")) {
-        // Los servidores externos como Evolution API son bloqueados por Google con 403 o dan timeout en Butterfly.
-        // Lo descargamos directamente en el servidor Node y lo enviamos como base64 seguro:
-        try {
-          console.log(`[WhatsApp Send] Descargando imagen de ${mediaUrl.includes("firebase") ? "Firebase Storage" : "Butterfly"} en el servidor para convertir a base64...`);
-          const dlRes = await fetch(mediaUrl, {
-            headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
-            signal: AbortSignal.timeout(10000),
-          });
-          if (dlRes.ok) {
-            const ab = await dlRes.arrayBuffer();
-            validMedia = Buffer.from(ab).toString("base64");
-            const ct = dlRes.headers.get("content-type");
-            if (ct && ct.startsWith("image/")) mimeType = ct;
-            console.log(`[WhatsApp Send] ✅ Imagen convertida a base64 (${validMedia.length} caracteres)`);
-          } else {
-            console.warn(`[WhatsApp Send] Descarga falló con status ${dlRes.status}, se enviará URL original`);
-            validMedia = mediaUrl;
-          }
-        } catch (dlErr: any) {
-          console.warn(`[WhatsApp Send] Error descargando imagen (${dlErr.message}), se enviará URL original`);
-          validMedia = mediaUrl;
-        }
-      } else if (mediaUrl.startsWith("http")) {
+      if (mediaUrl.includes("res.cloudinary.com") || (mediaUrl.startsWith("http") && !mediaUrl.includes("firebasestorage.googleapis.com") && !mediaUrl.includes("butterfly.santisoft.cl"))) {
         validMedia = mediaUrl;
       }
     }
 
-    const payload = {
-      phone: cleanPhone,
-      number: cleanPhone,
-      text: text,
-      message: text,
-      caption: text,
-      mediaUrl: validMedia,
-      media: validMedia,
-      mediaType: mediaType || "image",
-      mediatype: mediaType || "image",
-      instance: instanceName,
-      instanceName: instanceName,
-      apiKey: apiKey,
-    };
-
-    console.log(`[WhatsApp Send] Iniciando envío a ${cleanPhone} vía Evolution API (${instanceName})`);
+    console.log(`[WhatsApp Send] Destino: ${cleanPhone} | Instancia: ${instanceName} | Media: ${validMedia ? "si (Cloudinary/CDN)" : "no (solo texto)"}`);
 
     let delivered = false;
     let deliveredMode = "";
+    let lastMediaError = "";
+    let lastTextError = "";
 
-    // Intento 1: Si hay imagen, enviar como Media con Caption
+    // Intento 1: Si hay imagen válida y ligera de Cloudinary, intentar envío con caption
     if (validMedia) {
       try {
-        console.log(`[WhatsApp Send] Intentando envío de imagen con caption vía Evolution API sendMedia...`);
+        console.log(`[WhatsApp Send] Intentando envío con imagen vía sendMedia...`);
         const mediaEndpoint = `${evolutionUrl}/message/sendMedia/${instanceName}`;
         const mediaRes = await fetch(mediaEndpoint, {
           method: "POST",
@@ -120,27 +84,29 @@ export async function POST(req: Request) {
             caption: text,
             media: validMedia,
           }),
-          signal: AbortSignal.timeout(25000),
+          signal: AbortSignal.timeout(6000), // Timeout corto de 6s
         });
 
         if (mediaRes.ok) {
           const resJson = await mediaRes.json().catch(() => ({}));
-          console.log(`[WhatsApp Send] ✅ Media enviado exitosamente por Evolution API:`, resJson);
+          console.log(`[WhatsApp Send] ✅ Media enviado exitosamente:`, resJson);
           delivered = true;
           deliveredMode = "media_direct";
         } else {
           const errText = await mediaRes.text().catch(() => "");
-          console.warn(`[WhatsApp Send] ⚠️ sendMedia respondió ${mediaRes.status}: ${errText}. Intentando como texto directo...`);
+          lastMediaError = `sendMedia status ${mediaRes.status}: ${errText}`;
+          console.warn(`[WhatsApp Send] ⚠️ ${lastMediaError}. Continuando con texto directo...`);
         }
       } catch (mediaErr: any) {
-        console.warn(`[WhatsApp Send] ⚠️ Excepción en sendMedia (${mediaErr.message}). Intentando como texto directo...`);
+        lastMediaError = `sendMedia excepción: ${mediaErr.message}`;
+        console.warn(`[WhatsApp Send] ⚠️ ${lastMediaError}. Continuando con texto directo...`);
       }
     }
 
-    // Intento 2: Si no hubo media o falló sendMedia, enviar como Texto puro
+    // Intento 2: Envío de texto directo (el mensaje comercial con el enlace interactivo)
     if (!delivered) {
       try {
-        console.log(`[WhatsApp Send] Enviando mensaje como texto directo vía Evolution API sendText...`);
+        console.log(`[WhatsApp Send] Enviando mensaje como texto directo vía sendText...`);
         const textEndpoint = `${evolutionUrl}/message/sendText/${instanceName}`;
         const textRes = await fetch(textEndpoint, {
           method: "POST",
@@ -152,39 +118,51 @@ export async function POST(req: Request) {
             number: cleanPhone,
             text: text,
           }),
-          signal: AbortSignal.timeout(15000),
+          signal: AbortSignal.timeout(8000),
         });
 
         if (textRes.ok) {
           const textJson = await textRes.json().catch(() => ({}));
-          console.log(`[WhatsApp Send] ✅ Texto enviado exitosamente por Evolution API:`, textJson);
+          console.log(`[WhatsApp Send] ✅ Texto enviado exitosamente:`, textJson);
           delivered = true;
           deliveredMode = validMedia ? "text_fallback" : "text_direct";
         } else {
           const errBody = await textRes.text().catch(() => "");
-          console.warn(`[WhatsApp Send] sendText devolvió ${textRes.status}: ${errBody}`);
+          lastTextError = `sendText status ${textRes.status}: ${errBody}`;
+          console.warn(`[WhatsApp Send] ${lastTextError}`);
         }
       } catch (textErr: any) {
+        lastTextError = `sendText excepción: ${textErr.message}`;
         console.error("[WhatsApp Send Text Error]:", textErr);
       }
     }
 
     if (!delivered) {
       return NextResponse.json(
-        { error: "No se pudo entregar el mensaje por WhatsApp. Por favor intenta nuevamente o usa WhatsApp Web." },
-        { status: 500 }
+        {
+          error: `No se pudo entregar el mensaje por WhatsApp. ${lastTextError || lastMediaError || "Error de conexión"}`.trim(),
+          details: { lastTextError, lastMediaError, instanceName, evolutionUrl },
+        },
+        { status: 502 }
       );
     }
 
-    // Notificación en segundo plano al webhook de n8n para registro y trazabilidad
+    // Notificación asíncrona a n8n para métricas
     if (delivered && n8nWebhookUrl) {
       fetch(n8nWebhookUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json; charset=utf-8" },
-        body: JSON.stringify({ ...payload, deliveryStatus: "sent", deliveredMode }),
-        signal: AbortSignal.timeout(5000),
+        body: JSON.stringify({
+          phone: cleanPhone,
+          number: cleanPhone,
+          text: text,
+          deliveryStatus: "sent",
+          deliveredMode,
+          timestamp: new Date().toISOString(),
+        }),
+        signal: AbortSignal.timeout(3000),
       }).catch((n8nErr) => {
-        console.warn("[WhatsApp Send] Registro asíncrono en n8n omitido:", n8nErr.message);
+        console.warn("[WhatsApp Send] Log asíncrono en n8n omitido:", n8nErr.message);
       });
     }
 

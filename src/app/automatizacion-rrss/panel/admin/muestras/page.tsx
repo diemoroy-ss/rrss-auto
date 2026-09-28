@@ -945,6 +945,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
   const [isSendingWhatsApp, setIsSendingWhatsApp] = useState(false);
   const [whatsAppSent, setWhatsAppSent] = useState(false);
   const [whatsAppError, setWhatsAppError] = useState("");
+  const [attachImageToWhatsApp, setAttachImageToWhatsApp] = useState(false);
 
   const handleSendWhatsApp = async () => {
     if (!cleanPhone || !customWhatsappCopy.trim()) return;
@@ -953,22 +954,13 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
     try {
       const token = await auth.currentUser?.getIdToken();
 
-      // Prioridad 1: Imagen directa de Firebase Storage (canvasImageUrl o generatedImageUrl con logo y badge)
-      // Prioridad 2: Data URI base64 del canvas (Evolution API la procesa en 1.5s sin peticiones externas)
-      // Prioridad 3: Imagen generada por n8n (Cloudinary)
-      // Prioridad 4: Butterfly URL como último recurso
+      // Solo si el usuario marcó adjuntar imagen y tenemos la URL de Cloudinary (ultrarrápida y sin bloqueos de Storage)
       let targetMediaUrl: string | null = null;
-      if (canvasImageUrl && typeof canvasImageUrl === "string" && canvasImageUrl.startsWith("http") && !canvasImageUrl.includes("butterfly")) {
-        targetMediaUrl = canvasImageUrl;
-      } else if (generatedImageUrl && typeof generatedImageUrl === "string" && generatedImageUrl.startsWith("http") && !generatedImageUrl.includes("butterfly")) {
+      if (attachImageToWhatsApp && generatedImageUrl && typeof generatedImageUrl === "string" && generatedImageUrl.includes("cloudinary.com")) {
         targetMediaUrl = generatedImageUrl;
-      } else if (canvasImageUrl && typeof canvasImageUrl === "string" && canvasImageUrl.startsWith("data:")) {
-        targetMediaUrl = canvasImageUrl;
-      } else if (butterflyUrl && typeof butterflyUrl === "string") {
-        targetMediaUrl = butterflyUrl;
       }
 
-      console.log("[WhatsApp Frontend] Enviando a WhatsApp con imagen:", targetMediaUrl ? (targetMediaUrl.startsWith("data:") ? "base64" : targetMediaUrl.substring(0, 80)) : "sin imagen");
+      console.log("[WhatsApp Frontend] Enviando propuesta a WhatsApp:", { phone: cleanPhone, hasMedia: !!targetMediaUrl });
 
       const res = await fetch("/api/admin/whatsapp/send", {
         method: "POST",
@@ -982,7 +974,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
 
       const resData = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new Error(resData.error || "Error al enviar mensaje");
+        throw new Error(resData.error || resData.details?.lastTextError || "Error al enviar mensaje");
       }
       setWhatsAppSent(true);
       setTimeout(() => setWhatsAppSent(false), 5000);
@@ -2368,6 +2360,18 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                   className="w-full bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800 rounded-xl p-3 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-sans leading-relaxed"
                 />
               </div>
+
+              {generatedImageUrl && generatedImageUrl.includes("cloudinary.com") && (
+                <label className="flex items-center gap-2 text-[11px] text-slate-700 dark:text-slate-300 cursor-pointer select-none bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 p-2.5 rounded-xl font-medium">
+                  <input
+                    type="checkbox"
+                    checked={attachImageToWhatsApp}
+                    onChange={(e) => setAttachImageToWhatsApp(e.target.checked)}
+                    className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
+                  />
+                  <span>📷 Adjuntar foto gastronómica generada (Cloudinary) en el mensaje</span>
+                </label>
+              )}
 
               <div className="pt-1 space-y-2">
                 {prospectPhone.trim() ? (
