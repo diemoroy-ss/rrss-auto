@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { adminAuth } from "../../../../../lib/firebase-admin";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 const N8N_EVOAPI_WEBHOOK_URL = process.env.N8N_EVOAPI_WEBHOOK_URL || "https://n8n.santisoft.cl/webhook/evoapi";
 const DEFAULT_EVOLUTION_URL = "https://evoapi.grupofugas.cl";
@@ -42,14 +43,30 @@ export async function POST(req: Request) {
     // Limpiar teléfono (solo números)
     const cleanPhone = phone.replace(/[\s\-\(\)\+]/g, "").replace(/^0+/, "");
 
+    // Validar formato de media (HTTP URL o data URI / base64)
+    let validMedia: string | null = null;
+    let mimeType = "image/jpeg";
+    if (mediaUrl && typeof mediaUrl === "string") {
+      if (mediaUrl.startsWith("http")) {
+        validMedia = mediaUrl;
+      } else if (mediaUrl.startsWith("data:")) {
+        const parts = mediaUrl.split(",");
+        if (parts.length === 2) {
+          const match = parts[0].match(/data:(.*?);base64/);
+          if (match) mimeType = match[1];
+          validMedia = parts[1]; // base64 puro
+        }
+      }
+    }
+
     const payload = {
       phone: cleanPhone,
       number: cleanPhone,
       text: text,
       message: text,
       caption: text,
-      mediaUrl: (mediaUrl && typeof mediaUrl === "string" && mediaUrl.startsWith("http")) ? mediaUrl : null,
-      media: (mediaUrl && typeof mediaUrl === "string" && mediaUrl.startsWith("http")) ? mediaUrl : null,
+      mediaUrl: validMedia,
+      media: validMedia,
       mediaType: mediaType || "image",
       mediatype: mediaType || "image",
       instance: instanceName,
@@ -63,9 +80,9 @@ export async function POST(req: Request) {
     let deliveredMode = "";
 
     // Intento 1: Si hay imagen, enviar como Media con Caption
-    if (payload.mediaUrl) {
+    if (validMedia) {
       try {
-        console.log(`[WhatsApp Send] Intentando envío de imagen con texto vía Evolution API sendMedia...`);
+        console.log(`[WhatsApp Send] Intentando envío de imagen con caption vía Evolution API sendMedia...`);
         const mediaEndpoint = `${evolutionUrl}/message/sendMedia/${instanceName}`;
         const mediaRes = await fetch(mediaEndpoint, {
           method: "POST",
@@ -76,11 +93,11 @@ export async function POST(req: Request) {
           body: JSON.stringify({
             number: cleanPhone,
             mediatype: "image",
-            mimetype: "image/jpeg",
+            mimetype: mimeType,
             caption: text,
-            media: payload.mediaUrl,
+            media: validMedia,
           }),
-          signal: AbortSignal.timeout(12000),
+          signal: AbortSignal.timeout(25000),
         });
 
         if (mediaRes.ok) {
@@ -89,18 +106,18 @@ export async function POST(req: Request) {
           delivered = true;
           deliveredMode = "media_direct";
         } else {
-          const errText = await mediaRes.text();
-          console.warn(`[WhatsApp Send] ⚠️ sendMedia respondió ${mediaRes.status}: ${errText}. Probando envío como texto...`);
+          const errText = await mediaRes.text().catch(() => "");
+          console.warn(`[WhatsApp Send] ⚠️ sendMedia respondió ${mediaRes.status}: ${errText}. Intentando como texto directo...`);
         }
       } catch (mediaErr: any) {
-        console.warn(`[WhatsApp Send] ⚠️ Excepción en sendMedia (${mediaErr.message}). Probando envío como texto...`);
+        console.warn(`[WhatsApp Send] ⚠️ Excepción en sendMedia (${mediaErr.message}). Intentando como texto directo...`);
       }
     }
 
     // Intento 2: Si no hubo media o falló sendMedia, enviar como Texto puro
     if (!delivered) {
       try {
-        console.log(`[WhatsApp Send] Intentando envío de texto puro vía Evolution API sendText...`);
+        console.log(`[WhatsApp Send] Enviando mensaje como texto directo vía Evolution API sendText...`);
         const textEndpoint = `${evolutionUrl}/message/sendText/${instanceName}`;
         const textRes = await fetch(textEndpoint, {
           method: "POST",
@@ -112,16 +129,16 @@ export async function POST(req: Request) {
             number: cleanPhone,
             text: text,
           }),
-          signal: AbortSignal.timeout(10000),
+          signal: AbortSignal.timeout(15000),
         });
 
         if (textRes.ok) {
           const textJson = await textRes.json().catch(() => ({}));
           console.log(`[WhatsApp Send] ✅ Texto enviado exitosamente por Evolution API:`, textJson);
           delivered = true;
-          deliveredMode = "text_direct";
+          deliveredMode = validMedia ? "text_fallback" : "text_direct";
         } else {
-          const errBody = await textRes.text();
+          const errBody = await textRes.text().catch(() => "");
           throw new Error(`Evolution API (${textRes.status}): ${errBody}`);
         }
       } catch (textErr: any) {
@@ -134,7 +151,7 @@ export async function POST(req: Request) {
     if (delivered && n8nWebhookUrl) {
       fetch(n8nWebhookUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json; charset=utf-8" },
         body: JSON.stringify({ ...payload, deliveryStatus: "sent", deliveredMode }),
         signal: AbortSignal.timeout(5000),
       }).catch((n8nErr) => {

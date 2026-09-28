@@ -952,24 +952,42 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
     setWhatsAppError("");
     try {
       const token = await auth.currentUser?.getIdToken();
-      // Usar butterflyUrl o imageUrl real (nunca base64)
-      const realImageUrl = butterflyUrl || (generatedImageUrl?.startsWith("http") ? generatedImageUrl : null);
+
+      // Prioridad 1: Imagen directa de Firebase Storage (canvasImageUrl o generatedImageUrl con logo y badge)
+      // Prioridad 2: Data URI base64 del canvas (Evolution API la procesa en 1.5s sin peticiones externas)
+      // Prioridad 3: Imagen generada por n8n (Cloudinary)
+      // Prioridad 4: Butterfly URL como último recurso
+      let targetMediaUrl: string | null = null;
+      if (canvasImageUrl && typeof canvasImageUrl === "string" && canvasImageUrl.startsWith("http") && !canvasImageUrl.includes("butterfly")) {
+        targetMediaUrl = canvasImageUrl;
+      } else if (generatedImageUrl && typeof generatedImageUrl === "string" && generatedImageUrl.startsWith("http") && !generatedImageUrl.includes("butterfly")) {
+        targetMediaUrl = generatedImageUrl;
+      } else if (canvasImageUrl && typeof canvasImageUrl === "string" && canvasImageUrl.startsWith("data:")) {
+        targetMediaUrl = canvasImageUrl;
+      } else if (butterflyUrl && typeof butterflyUrl === "string") {
+        targetMediaUrl = butterflyUrl;
+      }
+
+      console.log("[WhatsApp Frontend] Enviando a WhatsApp con imagen:", targetMediaUrl ? (targetMediaUrl.startsWith("data:") ? "base64" : targetMediaUrl.substring(0, 80)) : "sin imagen");
+
       const res = await fetch("/api/admin/whatsapp/send", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           phone: cleanPhone,
           text: customWhatsappCopy,
-          ...(realImageUrl ? { mediaUrl: realImageUrl, mediaType: "image" } : {}),
+          ...(targetMediaUrl ? { mediaUrl: targetMediaUrl, mediaType: "image" } : {}),
         }),
       });
+
+      const resData = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const d = await res.json();
-        throw new Error(d.error || "Error al enviar");
+        throw new Error(resData.error || "Error al enviar mensaje");
       }
       setWhatsAppSent(true);
-      setTimeout(() => setWhatsAppSent(false), 4000);
+      setTimeout(() => setWhatsAppSent(false), 5000);
     } catch (err: any) {
+      console.error("[WhatsApp Frontend Send Error]:", err);
       setWhatsAppError(err.message || "No se pudo enviar el mensaje.");
     } finally {
       setIsSendingWhatsApp(false);
