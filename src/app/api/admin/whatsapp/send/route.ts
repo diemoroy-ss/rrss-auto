@@ -47,15 +47,38 @@ export async function POST(req: Request) {
     let validMedia: string | null = null;
     let mimeType = "image/jpeg";
     if (mediaUrl && typeof mediaUrl === "string") {
-      if (mediaUrl.startsWith("http")) {
-        validMedia = mediaUrl;
-      } else if (mediaUrl.startsWith("data:")) {
+      if (mediaUrl.startsWith("data:")) {
         const parts = mediaUrl.split(",");
         if (parts.length === 2) {
           const match = parts[0].match(/data:(.*?);base64/);
           if (match) mimeType = match[1];
           validMedia = parts[1]; // base64 puro
         }
+      } else if (mediaUrl.includes("firebasestorage.googleapis.com") || mediaUrl.includes("butterfly.santisoft.cl")) {
+        // Los servidores externos como Evolution API son bloqueados por Google con 403 o dan timeout en Butterfly.
+        // Lo descargamos directamente en el servidor Node y lo enviamos como base64 seguro:
+        try {
+          console.log(`[WhatsApp Send] Descargando imagen de ${mediaUrl.includes("firebase") ? "Firebase Storage" : "Butterfly"} en el servidor para convertir a base64...`);
+          const dlRes = await fetch(mediaUrl, {
+            headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
+            signal: AbortSignal.timeout(10000),
+          });
+          if (dlRes.ok) {
+            const ab = await dlRes.arrayBuffer();
+            validMedia = Buffer.from(ab).toString("base64");
+            const ct = dlRes.headers.get("content-type");
+            if (ct && ct.startsWith("image/")) mimeType = ct;
+            console.log(`[WhatsApp Send] ✅ Imagen convertida a base64 (${validMedia.length} caracteres)`);
+          } else {
+            console.warn(`[WhatsApp Send] Descarga falló con status ${dlRes.status}, se enviará URL original`);
+            validMedia = mediaUrl;
+          }
+        } catch (dlErr: any) {
+          console.warn(`[WhatsApp Send] Error descargando imagen (${dlErr.message}), se enviará URL original`);
+          validMedia = mediaUrl;
+        }
+      } else if (mediaUrl.startsWith("http")) {
+        validMedia = mediaUrl;
       }
     }
 
@@ -139,12 +162,18 @@ export async function POST(req: Request) {
           deliveredMode = validMedia ? "text_fallback" : "text_direct";
         } else {
           const errBody = await textRes.text().catch(() => "");
-          throw new Error(`Evolution API (${textRes.status}): ${errBody}`);
+          console.warn(`[WhatsApp Send] sendText devolvió ${textRes.status}: ${errBody}`);
         }
       } catch (textErr: any) {
         console.error("[WhatsApp Send Text Error]:", textErr);
-        throw textErr;
       }
+    }
+
+    if (!delivered) {
+      return NextResponse.json(
+        { error: "No se pudo entregar el mensaje por WhatsApp. Por favor intenta nuevamente o usa WhatsApp Web." },
+        { status: 500 }
+      );
     }
 
     // Notificación en segundo plano al webhook de n8n para registro y trazabilidad
