@@ -801,9 +801,9 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
 
   if (loadingAuth) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4">
-        <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p className="text-sm font-bold text-slate-400">Verificando acceso de vendedor...</p>
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
+        <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p className="text-sm font-bold text-slate-500">Verificando acceso de vendedor...</p>
       </div>
     );
   }
@@ -812,22 +812,22 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
   const fullPhoneForPreview = cleanPhone ? `${countryCode}${cleanPhone}` : "";
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col pb-20 sm:pb-8">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col pb-20 sm:pb-8">
       {/* HEADER SUPERIOR */}
-      <header className="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-4 py-3 sm:px-6">
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 py-3 sm:px-6 shadow-xs">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
+            <div className="p-2 rounded-xl bg-indigo-50 border border-indigo-100">
               <LogoMark size={28} />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-base font-black text-white tracking-tight">Santisoft Muestras</h1>
-                <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <h1 className="text-base font-black text-slate-900 tracking-tight">Santisoft Muestras</h1>
+                <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                   PWA
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 font-medium truncate max-w-[200px] sm:max-w-none">
+              <p className="text-[11px] text-slate-500 font-medium truncate max-w-[200px] sm:max-w-none">
                 {currentUser?.displayName || currentUser?.email}
               </p>
             </div>
@@ -837,7 +837,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
             {isInstallable && (
               <button
                 onClick={handleInstallClick}
-                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md shadow-indigo-500/20 transition-all"
+                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 transition-all"
               >
                 <FaMobileAlt /> Instalar App
               </button>
@@ -855,9 +855,9 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                     setChangePassSuccess("");
                   }}
                   title="Cambiar mi contraseña"
-                  className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors flex items-center gap-1.5 text-xs font-bold"
+                  className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 transition-colors flex items-center gap-1.5 text-xs font-bold"
                 >
-                  <FaKey className="text-xs text-indigo-400" />
+                  <FaKey className="text-xs text-indigo-600" />
                   <span className="hidden sm:inline">Clave</span>
                 </button>
             )}
@@ -865,7 +865,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
             <button
               onClick={handleSignOut}
               title="Cerrar Sesión"
-              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 hover:text-slate-900 transition-colors"
             >
               <FaSignOutAlt className="text-sm" />
             </button>
@@ -874,14 +874,14 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
 
         {/* Banner de instalación en móviles si está disponible */}
         {isInstallable && (
-          <div className="sm:hidden mt-2 p-2 rounded-xl bg-indigo-950/60 border border-indigo-500/30 flex items-center justify-between">
+          <div className="sm:hidden mt-2 p-2.5 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-between shadow-xs">
             <div className="flex items-center gap-2">
               <span className="text-base">📲</span>
-              <span className="text-xs text-indigo-200 font-semibold">¿Instalar en tu pantalla de inicio?</span>
+              <span className="text-xs text-indigo-900 font-bold">¿Instalar en tu pantalla de inicio?</span>
             </div>
             <button
               onClick={handleInstallClick}
-              className="px-2.5 py-1 rounded-lg bg-indigo-500 text-white text-[11px] font-bold"
+              className="px-3 py-1.5 rounded-xl bg-indigo-600 text-white text-xs font-bold shadow-xs"
             >
               Instalar
             </button>
@@ -890,29 +890,29 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
       </header>
 
       {/* TABS SWITCHER */}
-      <div className="bg-slate-900 border-b border-slate-800/80 px-4 py-2 sticky top-[57px] z-30">
-        <div className="max-w-4xl mx-auto flex items-center justify-center gap-2">
+      <div className="bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 py-2.5 sticky top-[57px] z-30">
+        <div className="max-w-4xl mx-auto flex items-center justify-center p-1 bg-slate-100 rounded-2xl border border-slate-200 gap-1">
           <button
             onClick={() => setActiveTab("crear")}
-            className={`flex-1 sm:flex-initial sm:px-6 py-2 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 ${
+            className={`flex-1 sm:flex-initial sm:px-6 py-2 rounded-xl text-xs sm:text-sm transition-all flex items-center justify-center gap-2 ${
               activeTab === "crear"
-                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
-                : "bg-slate-800/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+                ? "bg-white text-indigo-600 shadow-sm font-black"
+                : "text-slate-500 hover:text-slate-900 font-bold hover:bg-white/50"
             }`}
           >
             <FaMagic className="text-xs" /> Nueva Muestra
           </button>
           <button
             onClick={() => setActiveTab("historial")}
-            className={`flex-1 sm:flex-initial sm:px-6 py-2 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 ${
+            className={`flex-1 sm:flex-initial sm:px-6 py-2 rounded-xl text-xs sm:text-sm transition-all flex items-center justify-center gap-2 ${
               activeTab === "historial"
-                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
-                : "bg-slate-800/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800"
+                ? "bg-white text-indigo-600 shadow-sm font-black"
+                : "text-slate-500 hover:text-slate-900 font-bold hover:bg-white/50"
             }`}
           >
             <FaSearch className="text-xs" /> Mis Muestras
             {historyDemos.length > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full bg-slate-700 text-[10px] font-bold text-slate-200">
+              <span className="px-2 py-0.5 rounded-full bg-slate-200 text-[10px] font-black text-slate-700">
                 {historyDemos.length}
               </span>
             )}
@@ -925,17 +925,17 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
         {activeTab === "crear" ? (
           <div className="space-y-6">
             {/* PASO 1: DATOS DEL PROSPECTO */}
-            <section className="bg-slate-900/80 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-xl">
+            <section className="bg-white border border-slate-200/80 rounded-3xl p-5 sm:p-6 shadow-sm">
               <div className="flex items-center gap-2.5 mb-4">
-                <span className="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-400 text-xs font-black flex items-center justify-center border border-indigo-500/30">
+                <span className="w-7 h-7 rounded-full bg-indigo-50 text-indigo-600 text-xs font-black flex items-center justify-center border border-indigo-100">
                   1
                 </span>
-                <h2 className="text-sm sm:text-base font-black text-white">Datos del Prospecto</h2>
+                <h2 className="text-sm sm:text-base font-black text-slate-900">Datos del Prospecto</h2>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                     Nombre del Negocio / Marca *
                   </label>
                   <input
@@ -944,12 +944,12 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                     value={prospectBusiness}
                     onChange={(e) => setProspectBusiness(e.target.value)}
                     placeholder="Ej. Parrilladas Don Carlos"
-                    className="w-full bg-slate-950 border border-slate-700 rounded-2xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition-all font-medium"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                     Nombre del Dueño o Contacto
                   </label>
                   <input
@@ -957,19 +957,19 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                     value={prospectName}
                     onChange={(e) => setProspectName(e.target.value)}
                     placeholder="Ej. Don Carlos Muñoz"
-                    className="w-full bg-slate-950 border border-slate-700 rounded-2xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition-all font-medium"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                     WhatsApp del Prospecto
                   </label>
                   <div className="flex gap-2">
                     <select
                       value={countryCode}
                       onChange={(e) => setCountryCode(e.target.value)}
-                      className="bg-slate-950 border border-slate-700 rounded-2xl px-2.5 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                      className="bg-slate-50 border border-slate-200 rounded-2xl px-2.5 py-2.5 text-xs text-slate-900 focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 font-medium"
                     >
                       {COUNTRY_CODES.map((c) => (
                         <option key={c.code} value={c.code}>
@@ -982,19 +982,19 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                       value={prospectPhone}
                       onChange={(e) => setProspectPhone(e.target.value)}
                       placeholder="9 1234 5678"
-                      className="flex-1 bg-slate-950 border border-slate-700 rounded-2xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                      className="flex-1 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition-all font-medium"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                     Rubro / Industria
                   </label>
                   <select
                     value={rubro}
                     onChange={(e) => setRubro(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-2xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 font-medium"
                   >
                     {COMMON_NICHES.map((n) => (
                       <option key={n.label} value={n.label}>
@@ -1005,7 +1005,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                     Plato, Producto o Servicio a Destacar
                   </label>
                   <input
@@ -1013,12 +1013,12 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                     value={dishOrProductName}
                     onChange={(e) => setDishOrProductName(e.target.value)}
                     placeholder="Ej. Bife de Chorizo a las Brasas"
-                    className="w-full bg-slate-950 border border-slate-700 rounded-2xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition-all font-medium"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                     Oferta, Promo o Gancho (Opcional)
                   </label>
                   <input
@@ -1026,26 +1026,26 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                     value={offerText}
                     onChange={(e) => setOfferText(e.target.value)}
                     placeholder="Ej. 20% Dto los jueves o 2x1"
-                    className="w-full bg-slate-950 border border-slate-700 rounded-2xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition-all font-medium"
                   />
                 </div>
               </div>
             </section>
 
             {/* PASO 2: ASSETS (FOTO Y LOGO) */}
-            <section className="bg-slate-900/80 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-xl">
+            <section className="bg-white border border-slate-200/80 rounded-3xl p-5 sm:p-6 shadow-sm">
               <div className="flex items-center gap-2.5 mb-4">
-                <span className="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-400 text-xs font-black flex items-center justify-center border border-indigo-500/30">
+                <span className="w-7 h-7 rounded-full bg-indigo-50 text-indigo-600 text-xs font-black flex items-center justify-center border border-indigo-100">
                   2
                 </span>
-                <h2 className="text-sm sm:text-base font-black text-white">Foto Real y Logo (Opcional)</h2>
+                <h2 className="text-sm sm:text-base font-black text-slate-900">Foto Real y Logo (Opcional)</h2>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* FOTO BASE */}
-                <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800">
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
                   <div className="flex items-center justify-between mb-2">
-                    <label className="text-xs font-bold uppercase text-slate-300">
+                    <label className="text-xs font-bold uppercase text-slate-700">
                       📸 Foto Real del Producto
                     </label>
                     {baseImagePreview && (
@@ -1055,7 +1055,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                           setBaseImageFile(null);
                           setBaseImagePreview("");
                         }}
-                        className="text-[11px] text-rose-400 font-bold hover:underline"
+                        className="text-[11px] text-rose-600 font-bold hover:underline"
                       >
                         Quitar
                       </button>
@@ -1063,7 +1063,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                   </div>
 
                   {baseImagePreview ? (
-                    <div className="relative aspect-video rounded-xl overflow-hidden border border-slate-700">
+                    <div className="relative aspect-video rounded-xl overflow-hidden border border-slate-200 bg-white">
                       <img
                         src={baseImagePreview}
                         alt="Preview Foto"
@@ -1073,11 +1073,11 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                   ) : (
                     <div
                       onClick={() => baseImageInputRef.current?.click()}
-                      className="border-2 border-dashed border-slate-700 hover:border-indigo-500 rounded-xl p-4 text-center cursor-pointer transition-colors"
+                      className="border-2 border-dashed border-slate-300 hover:border-indigo-500 rounded-2xl p-4 text-center cursor-pointer transition-colors bg-white"
                     >
-                      <FaUpload className="mx-auto text-slate-500 text-lg mb-1" />
-                      <p className="text-xs text-slate-400 font-medium">Subir foto desde tu celular</p>
-                      <p className="text-[10px] text-slate-500 mt-1">
+                      <FaUpload className="mx-auto text-slate-400 text-lg mb-1" />
+                      <p className="text-xs text-slate-700 font-bold">Subir foto desde tu celular</p>
+                      <p className="text-[10px] text-slate-400 mt-1">
                         Si no tienes foto real, nuestros agentes la generarán automáticamente.
                       </p>
                     </div>
@@ -1092,9 +1092,9 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                 </div>
 
                 {/* LOGO */}
-                <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800">
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
                   <div className="flex items-center justify-between mb-2">
-                    <label className="text-xs font-bold uppercase text-slate-300">
+                    <label className="text-xs font-bold uppercase text-slate-700">
                       🏷️ Logo del Negocio
                     </label>
                     {logoPreview && (
@@ -1105,7 +1105,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                           setLogoPreview("");
                           setCleanedLogoUrl("");
                         }}
-                        className="text-[11px] text-rose-400 font-bold hover:underline"
+                        className="text-[11px] text-rose-600 font-bold hover:underline"
                       >
                         Quitar
                       </button>
@@ -1114,7 +1114,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
 
                   {logoPreview ? (
                     <div className="space-y-3">
-                      <div className="relative h-24 rounded-xl overflow-hidden border border-slate-700 bg-slate-900 flex items-center justify-center p-2">
+                      <div className="relative h-24 rounded-xl overflow-hidden border border-slate-200 bg-white flex items-center justify-center p-2">
                         <img
                           src={removeLogoBg && cleanedLogoUrl ? cleanedLogoUrl : logoPreview}
                           alt="Preview Logo"
@@ -1123,24 +1123,24 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                       </div>
 
                       {/* Quitar fondo toggle */}
-                      <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-300">
+                      <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700">
                         <input
                           type="checkbox"
                           checked={removeLogoBg}
                           onChange={(e) => handleToggleRemoveLogoBg(e.target.checked)}
-                          className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 bg-slate-800 border-slate-700"
+                          className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
                         />
                         <span>Quitar fondo del logo automáticamente</span>
                       </label>
                       {isRemovingLogoBg && (
-                        <p className="text-[10px] text-indigo-400 font-bold animate-pulse">
+                        <p className="text-[10px] text-indigo-600 font-bold animate-pulse">
                           Recortando fondo del logo...
                         </p>
                       )}
 
                       {/* Posición del Logo */}
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
                           Posición del logo en el flyer:
                         </label>
                         <div className="grid grid-cols-2 gap-1.5">
@@ -1154,10 +1154,10 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                               key={pos.id}
                               type="button"
                               onClick={() => setLogoPosition(pos.id as any)}
-                              className={`py-1 px-2 rounded-lg text-[10px] font-bold transition-all ${
+                              className={`py-1.5 px-2 rounded-xl text-[10px] font-bold transition-all border ${
                                 logoPosition === pos.id
-                                  ? "bg-indigo-600 text-white"
-                                  : "bg-slate-800 text-slate-400 hover:bg-slate-700"
+                                  ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
+                                  : "bg-white border-slate-200 text-slate-600 hover:bg-slate-100"
                               }`}
                             >
                               {pos.label}
@@ -1169,11 +1169,11 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                   ) : (
                     <div
                       onClick={() => logoInputRef.current?.click()}
-                      className="border-2 border-dashed border-slate-700 hover:border-indigo-500 rounded-xl p-4 text-center cursor-pointer transition-colors"
+                      className="border-2 border-dashed border-slate-300 hover:border-indigo-500 rounded-2xl p-4 text-center cursor-pointer transition-colors bg-white"
                     >
-                      <FaUpload className="mx-auto text-slate-500 text-lg mb-1" />
-                      <p className="text-xs text-slate-400 font-medium">Subir logo del cliente</p>
-                      <p className="text-[10px] text-slate-500 mt-1">PNG, JPG o WebP</p>
+                      <FaUpload className="mx-auto text-slate-400 text-lg mb-1" />
+                      <p className="text-xs text-slate-700 font-bold">Subir logo del cliente</p>
+                      <p className="text-[10px] text-slate-400 mt-1">PNG, JPG o WebP</p>
                     </div>
                   )}
                   <input
@@ -1188,17 +1188,17 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
             </section>
 
             {/* PASO 3: SELLO COMERCIAL (BADGE) */}
-            <section className="bg-slate-900/80 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-xl">
+            <section className="bg-white border border-slate-200/80 rounded-3xl p-5 sm:p-6 shadow-sm">
               <div className="flex items-center gap-2.5 mb-4">
-                <span className="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-400 text-xs font-black flex items-center justify-center border border-indigo-500/30">
+                <span className="w-7 h-7 rounded-full bg-indigo-50 text-indigo-600 text-xs font-black flex items-center justify-center border border-indigo-100">
                   3
                 </span>
-                <h2 className="text-sm sm:text-base font-black text-white">Sello Publicitario en Flyer</h2>
+                <h2 className="text-sm sm:text-base font-black text-slate-900">Sello Publicitario en Flyer</h2>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                     Texto en el Sello (Badge)
                   </label>
                   <input
@@ -1206,15 +1206,15 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                     value={badgeCustomText}
                     onChange={(e) => setBadgeCustomText(e.target.value)}
                     placeholder="Ej. ¡OFERTA DE LA SEMANA! o 2X1"
-                    className="w-full bg-slate-950 border border-slate-700 rounded-2xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition-all font-medium"
                   />
-                  <p className="text-[10px] text-slate-500 mt-1">
+                  <p className="text-[10px] text-slate-400 mt-1">
                     Si lo dejas vacío, usará el texto de la oferta o no pondrá sello.
                   </p>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                     Estilo de Sello
                   </label>
                   <div className="grid grid-cols-2 gap-2">
@@ -1228,10 +1228,10 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                         key={b.id}
                         type="button"
                         onClick={() => setBadgeStyle(b.id as any)}
-                        className={`py-2 px-3 rounded-xl text-xs font-bold transition-all text-left ${
+                        className={`py-2 px-3 rounded-xl text-xs font-bold transition-all text-left border ${
                           badgeStyle === b.id
-                            ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
-                            : "bg-slate-950 border border-slate-800 text-slate-400 hover:bg-slate-800"
+                            ? "bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-600/20"
+                            : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
                         }`}
                       >
                         {b.label}
@@ -1243,19 +1243,19 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
             </section>
 
             {/* PASO 4: SELECCIÓN DE ESTILO VISUAL */}
-            <section className="bg-slate-900/80 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-xl">
+            <section className="bg-white border border-slate-200/80 rounded-3xl p-5 sm:p-6 shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2.5">
-                  <span className="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-400 text-xs font-black flex items-center justify-center border border-indigo-500/30">
+                  <span className="w-7 h-7 rounded-full bg-indigo-50 text-indigo-600 text-xs font-black flex items-center justify-center border border-indigo-100">
                     4
                   </span>
-                  <h2 className="text-sm sm:text-base font-black text-white">Estilo Visual Publicitario</h2>
+                  <h2 className="text-sm sm:text-base font-black text-slate-900">Estilo Visual Publicitario</h2>
                 </div>
                 {selectedTemplate && (
                   <button
                     type="button"
                     onClick={() => setSelectedTemplate(null)}
-                    className="text-xs text-indigo-400 hover:underline font-bold"
+                    className="text-xs text-indigo-600 hover:underline font-bold"
                   >
                     Limpiar selección
                   </button>
@@ -1265,13 +1265,13 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
               {/* Categorías y Búsqueda */}
               <div className="space-y-3 mb-4">
                 <div className="relative">
-                  <FaSearch className="absolute left-3.5 top-3 text-slate-500 text-xs" />
+                  <FaSearch className="absolute left-3.5 top-3 text-slate-400 text-xs" />
                   <input
                     type="text"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     placeholder="Buscar estilo (ej. Gourmet, Neón, Cyber, Blanco)..."
-                    className="w-full bg-slate-950 border border-slate-700 rounded-2xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-9 pr-4 py-2 text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition-all font-medium"
                   />
                 </div>
 
@@ -1282,10 +1282,10 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                       key={cat}
                       type="button"
                       onClick={() => setSelectedCategory(cat)}
-                      className={`whitespace-nowrap px-3 py-1 rounded-xl text-[11px] font-bold transition-all ${
+                      className={`whitespace-nowrap px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all border ${
                         selectedCategory === cat
-                          ? "bg-indigo-600 text-white"
-                          : "bg-slate-950 border border-slate-800 text-slate-400 hover:text-slate-200"
+                          ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
+                          : "bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200"
                       }`}
                     >
                       {cat}
@@ -1304,11 +1304,11 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                       onClick={() => setSelectedTemplate(template)}
                       className={`group relative rounded-2xl overflow-hidden border cursor-pointer transition-all ${
                         isSelected
-                          ? "border-indigo-500 ring-2 ring-indigo-500 shadow-lg shadow-indigo-500/25 bg-indigo-950/20"
-                          : "border-slate-800 bg-slate-950 hover:border-slate-700"
+                          ? "border-indigo-600 ring-2 ring-indigo-600 shadow-md shadow-indigo-600/20 bg-indigo-50/50"
+                          : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-xs"
                       }`}
                     >
-                      <div className="aspect-square relative overflow-hidden bg-slate-900">
+                      <div className="aspect-square relative overflow-hidden bg-slate-100">
                         {template.previewUrl ? (
                           <img
                             src={template.previewUrl}
@@ -1316,19 +1316,19 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-slate-600">
+                          <div className="w-full h-full flex items-center justify-center text-slate-400">
                             <FaImage className="text-2xl" />
                           </div>
                         )}
                         {isSelected && (
-                          <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-lg">
+                          <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-md">
                             <FaCheck className="text-[10px]" />
                           </div>
                         )}
                       </div>
                       <div className="p-2.5">
-                        <h4 className="text-xs font-bold text-white truncate">{template.title}</h4>
-                        <p className="text-[10px] text-slate-400 line-clamp-1 mt-0.5">
+                        <h4 className="text-xs font-bold text-slate-900 truncate">{template.title}</h4>
+                        <p className="text-[10px] text-slate-500 line-clamp-1 mt-0.5">
                           {template.category}
                         </p>
                       </div>
@@ -1344,7 +1344,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                 type="button"
                 disabled={isGenerating || !prospectBusiness.trim()}
                 onClick={handleGenerateSample}
-                className="w-full py-4 px-6 rounded-3xl bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-black text-base shadow-xl shadow-indigo-600/30 transition-all transform active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+                className="w-full py-4 px-6 rounded-3xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-base shadow-lg shadow-indigo-600/25 transition-all transform active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
               >
                 {isGenerating ? (
                   <>
@@ -1364,17 +1364,17 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
             {(canvasImageUrl || generatedImageUrl) && (
               <section
                 id="resultado-generacion"
-                className="bg-slate-900 border-2 border-indigo-500/40 rounded-3xl p-5 sm:p-7 shadow-2xl space-y-6 animate-in fade-in slide-in-from-bottom-6 duration-300"
+                className="bg-white border-2 border-indigo-100 rounded-3xl p-5 sm:p-7 shadow-xl space-y-6 animate-in fade-in slide-in-from-bottom-6 duration-300"
               >
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                   <div className="flex items-center gap-2">
                     <span className="text-xl">🎉</span>
-                    <h3 className="text-base sm:text-lg font-black text-white">
+                    <h3 className="text-base sm:text-lg font-black text-slate-900">
                       Muestra Lista para Enviar
                     </h3>
                   </div>
                   {createdDemoId && (
-                    <span className="text-[10px] font-bold uppercase px-2.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                    <span className="text-[10px] font-bold uppercase px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">
                       ID: {createdDemoId.slice(0, 8)}
                     </span>
                   )}
@@ -1383,7 +1383,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                   {/* IMAGEN GENERADA */}
                   <div className="space-y-3">
-                    <div className="aspect-square relative rounded-2xl overflow-hidden border border-slate-700 bg-slate-950 shadow-xl">
+                    <div className="aspect-square relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 shadow-sm">
                       <img
                         src={butterflyUrl || canvasImageUrl || generatedImageUrl}
                         alt="Flyer Muestra"
@@ -1397,18 +1397,18 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                           href={`${PUBLIC_APP_URL}/m/${createdDemoId}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="flex-1 py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-center text-slate-200 transition-colors flex items-center justify-center gap-1.5"
+                          className="flex-1 py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-xs font-bold text-center text-slate-700 transition-colors flex items-center justify-center gap-1.5"
                         >
-                          <FaEye className="text-indigo-400" /> Ver Landing Pública
+                          <FaEye className="text-indigo-600" /> Ver Landing Pública
                         </a>
                       )}
                       {createdDemoId && (
                         <button
                           type="button"
                           onClick={() => handleCopyDemoLink(createdDemoId)}
-                          className="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 transition-colors flex items-center justify-center gap-1.5"
+                          className="py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-xs font-bold text-slate-700 transition-colors flex items-center justify-center gap-1.5"
                         >
-                          <FaCopy className="text-indigo-400" />
+                          <FaCopy className="text-indigo-600" />
                           {copySuccess ? "¡Copiado!" : "Copiar Enlace"}
                         </button>
                       )}
@@ -1418,13 +1418,13 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                   {/* COPY Y ENVÍO POR WHATSAPP */}
                   <div className="space-y-4">
                     {/* ENVIAR WHATSAPP BOTÓN GIGANTE */}
-                    <div className="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 space-y-3">
+                    <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold uppercase tracking-wider text-emerald-300 flex items-center gap-1.5">
-                          <FaWhatsapp className="text-emerald-400 text-base" /> Envío Directo al Prospecto
+                        <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1.5">
+                          <FaWhatsapp className="text-emerald-600 text-base" /> Envío Directo al Prospecto
                         </span>
                         {fullPhoneForPreview && (
-                          <span className="text-xs font-bold text-emerald-400 font-mono">
+                          <span className="text-xs font-bold text-emerald-700 font-mono">
                             {fullPhoneForPreview}
                           </span>
                         )}
@@ -1433,7 +1433,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                       <button
                         type="button"
                         onClick={() => handleSendWhatsApp()}
-                        className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-black text-sm shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2 transform active:scale-[0.99] transition-all"
+                        className="w-full py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 transform active:scale-[0.99] transition-all"
                       >
                         <FaWhatsapp className="text-lg" />
                         <span>Enviar Propuesta por WhatsApp</span>
@@ -1442,33 +1442,33 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
 
                     {/* MENSAJE DE WHATSAPP EDITABLE */}
                     <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                         Mensaje a Enviar por WhatsApp:
                       </label>
                       <textarea
                         rows={6}
                         value={customWhatsappCopy}
                         onChange={(e) => setCustomWhatsappCopy(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 font-sans leading-relaxed"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3.5 text-xs text-slate-800 focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 font-sans leading-relaxed"
                       />
                     </div>
 
                     {/* COPY REDACTADO PARA EL POST */}
                     {generatedPostCaption && (
-                      <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2">
+                      <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
                         <div className="flex items-center justify-between">
-                          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600">
                             📝 Copy de Publicación Redactado por Agentes
                           </span>
                           <button
                             type="button"
                             onClick={handleCopyPostCaption}
-                            className="text-xs text-indigo-400 font-bold hover:underline flex items-center gap-1"
+                            className="text-xs text-indigo-600 font-bold hover:underline flex items-center gap-1"
                           >
                             <FaCopy /> {copyPostSuccess ? "¡Copiado!" : "Copiar"}
                           </button>
                         </div>
-                        <p className="text-xs text-slate-300 line-clamp-3 whitespace-pre-wrap italic">
+                        <p className="text-xs text-slate-700 line-clamp-3 whitespace-pre-wrap italic">
                           {generatedPostCaption}
                         </p>
                       </div>
@@ -1483,13 +1483,13 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
               <div className="relative flex-1">
-                <FaSearch className="absolute left-3.5 top-3 text-slate-500 text-xs" />
+                <FaSearch className="absolute left-3.5 top-3 text-slate-400 text-xs" />
                 <input
                   type="text"
                   value={historySearch}
                   onChange={(e) => setHistorySearch(e.target.value)}
                   placeholder="Buscar por negocio, contacto o teléfono..."
-                  className="w-full bg-slate-900 border border-slate-700 rounded-2xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-white border border-slate-200 rounded-2xl pl-9 pr-4 py-2 text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 font-medium"
                 />
               </div>
 
@@ -1498,7 +1498,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                   type="button"
                   onClick={loadHistory}
                   disabled={loadingHistory}
-                  className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-300 flex items-center gap-1.5 transition-colors"
+                  className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-xs font-bold text-slate-700 flex items-center gap-1.5 transition-colors"
                 >
                   <FaSyncAlt className={loadingHistory ? "animate-spin" : ""} />
                   <span>Actualizar</span>
@@ -1506,7 +1506,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                 <button
                   type="button"
                   onClick={() => setActiveTab("crear")}
-                  className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white flex items-center gap-1.5 transition-colors"
+                  className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-xs font-bold text-white flex items-center gap-1.5 transition-colors shadow-xs"
                 >
                   <FaPlus /> <span>Nueva</span>
                 </button>
@@ -1515,22 +1515,22 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
 
             {loadingHistory ? (
               <div className="text-center py-12">
-                <div className="w-8 h-8 border-3 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-                <p className="text-xs text-slate-400 font-bold">Cargando tus muestras...</p>
+                <div className="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                <p className="text-xs text-slate-500 font-bold">Cargando tus muestras...</p>
               </div>
             ) : historyDemos.length === 0 ? (
-              <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-8 text-center space-y-3">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center mx-auto text-xl">
+              <div className="bg-white border border-slate-200 rounded-3xl p-8 text-center space-y-3 shadow-xs">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center mx-auto text-xl">
                   📋
                 </div>
-                <h3 className="text-sm font-bold text-white">Aún no tienes muestras creadas</h3>
-                <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                <h3 className="text-sm font-black text-slate-900">Aún no tienes muestras creadas</h3>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto">
                   Genera tu primera muestra comercial para sorprender a un prospecto por WhatsApp.
                 </p>
                 <button
                   type="button"
                   onClick={() => setActiveTab("crear")}
-                  className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold"
+                  className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs"
                 >
                   <FaMagic /> Crear mi primera muestra
                 </button>
@@ -1555,11 +1555,11 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                     return (
                       <div
                         key={demo.id}
-                        className="bg-slate-900/90 border border-slate-800 hover:border-slate-700 rounded-3xl p-4 shadow-xl flex flex-col justify-between space-y-3 transition-all"
+                        className="bg-white border border-slate-200/80 hover:border-slate-300 rounded-3xl p-4 shadow-sm hover:shadow-md flex flex-col justify-between space-y-3 transition-all"
                       >
                         <div className="flex gap-3">
                           {thumb ? (
-                            <div className="w-20 h-20 rounded-2xl overflow-hidden bg-slate-950 flex-shrink-0 border border-slate-700">
+                            <div className="w-20 h-20 rounded-2xl overflow-hidden bg-slate-100 flex-shrink-0 border border-slate-200">
                               <img
                                 src={thumb}
                                 alt={demo.prospectBusiness}
@@ -1567,37 +1567,37 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                               />
                             </div>
                           ) : (
-                            <div className="w-20 h-20 rounded-2xl bg-slate-800 flex items-center justify-center text-slate-500 flex-shrink-0">
+                            <div className="w-20 h-20 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 flex-shrink-0">
                               <FaImage className="text-xl" />
                             </div>
                           )}
 
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
-                              <h4 className="text-sm font-black text-white truncate">
+                              <h4 className="text-sm font-black text-slate-900 truncate">
                                 {demo.prospectBusiness}
                               </h4>
                               <span
                                 className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${
                                   isSent
-                                    ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                                    : "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                    : "bg-amber-50 text-amber-700 border border-amber-200"
                                 }`}
                               >
                                 {isSent ? "Enviada" : "Generada"}
                               </span>
                             </div>
 
-                            <p className="text-xs text-slate-400 truncate">
+                            <p className="text-xs text-slate-500 truncate">
                               👤 {demo.prospectName || "Sin contacto"}
                             </p>
                             {demo.dishOrProductName && (
-                              <p className="text-[11px] text-indigo-400 font-medium truncate mt-0.5">
+                              <p className="text-[11px] text-indigo-600 font-bold truncate mt-0.5">
                                 ⭐ {demo.dishOrProductName}
                               </p>
                             )}
                             {demo.prospectPhone && (
-                              <p className="text-[10px] text-slate-500 font-mono mt-0.5">
+                              <p className="text-[10px] text-slate-400 font-mono mt-0.5">
                                 📞 {demo.prospectPhone}
                               </p>
                             )}
@@ -1605,11 +1605,11 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                         </div>
 
                         {/* ACCIONES DE LA TARJETA */}
-                        <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-1.5">
+                        <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5">
                           <button
                             type="button"
                             onClick={() => handleSendWhatsApp(demo.id, demo.prospectPhone, demo.whatsappMessage)}
-                            className="flex-1 py-2 px-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
+                            className="flex-1 py-2 px-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-xs"
                           >
                             <FaWhatsapp /> Enviar
                           </button>
@@ -1619,7 +1619,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                               href={`${PUBLIC_APP_URL}/m/${demo.id}`}
                               target="_blank"
                               rel="noreferrer"
-                              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+                              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 hover:text-slate-900 transition-colors"
                               title="Ver Landing"
                             >
                               <FaExternalLinkAlt className="text-xs" />
@@ -1629,7 +1629,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                           <button
                             type="button"
                             onClick={() => handleLoadDemoToEdit(demo)}
-                            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+                            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 hover:text-slate-900 transition-colors"
                             title="Editar en formulario"
                           >
                             <FaEdit className="text-xs" />
@@ -1639,7 +1639,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                             <button
                               type="button"
                               onClick={() => handleDeleteDemo(demo.id!)}
-                              className="p-2 rounded-xl bg-slate-800 hover:bg-rose-900/40 text-slate-400 hover:text-rose-400 transition-colors"
+                              className="p-2 rounded-xl bg-slate-100 hover:bg-rose-50 border border-slate-200 text-slate-400 hover:text-rose-600 transition-colors"
                               title="Eliminar muestra"
                             >
                               <FaTrash className="text-xs" />
@@ -1657,38 +1657,38 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
 
       {/* MODAL CAMBIAR CONTRASEÑA DEL VENDEDOR */}
       {showChangePassModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-sm w-full p-6 text-slate-200 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white border border-slate-200 rounded-[28px] max-w-sm w-full p-6 text-slate-800 shadow-2xl space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 text-sm">
+                <span className="p-2 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 text-sm">
                   <FaKey />
                 </span>
-                <h3 className="text-base font-bold text-white">Cambiar mi Contraseña</h3>
+                <h3 className="text-base font-black text-slate-900">Cambiar mi Contraseña</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setShowChangePassModal(false)}
-                className="text-slate-400 hover:text-white text-lg font-light"
+                className="text-slate-400 hover:text-slate-700 text-lg font-light"
               >
                 ✕
               </button>
             </div>
 
             {changePassSuccess ? (
-              <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold flex items-center gap-2">
+              <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold flex items-center gap-2">
                 <FaCheck /> {changePassSuccess}
               </div>
             ) : (
               <form onSubmit={handleChangeMyPassword} className="space-y-4">
                 {changePassError && (
-                  <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-semibold">
+                  <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
                     ⚠️ {changePassError}
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1">
                     Nueva Contraseña *
                   </label>
                   <input
@@ -1698,12 +1698,12 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                     value={newPassInput}
                     onChange={(e) => setNewPassInput(e.target.value)}
                     placeholder="Mínimo 6 caracteres"
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-medium"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 font-medium"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1">
                     Confirmar Nueva Contraseña *
                   </label>
                   <input
@@ -1713,7 +1713,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                     value={confirmPassInput}
                     onChange={(e) => setConfirmPassInput(e.target.value)}
                     placeholder="Repite tu nueva contraseña"
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-medium"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 font-medium"
                   />
                 </div>
 
@@ -1721,14 +1721,14 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                   <button
                     type="button"
                     onClick={() => setShowChangePassModal(false)}
-                    className="flex-1 py-2.5 rounded-xl border border-slate-700 text-xs font-bold text-slate-300 hover:bg-slate-800"
+                    className="flex-1 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
                     disabled={changePassLoading}
-                    className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold disabled:opacity-50 flex items-center justify-center gap-1.5"
+                    className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-sm"
                   >
                     {changePassLoading ? "Guardando..." : "Actualizar Clave"}
                   </button>
@@ -1741,13 +1741,13 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
 
       {/* MODAL INSTRUCCIONES INSTALACIÓN iOS */}
       {showIosInstallModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-sm w-full p-6 text-slate-200 shadow-2xl text-center space-y-4">
-            <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center mx-auto text-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white border border-slate-200 rounded-[28px] max-w-sm w-full p-6 text-slate-800 shadow-2xl text-center space-y-4">
+            <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center mx-auto text-2xl">
               📲
             </div>
-            <h3 className="text-base font-bold text-white">Instalar en tu iPhone</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <h3 className="text-base font-black text-slate-900">Instalar en tu iPhone</h3>
+            <p className="text-xs text-slate-500 leading-relaxed">
               1. En Safari, toca el botón <strong>Compartir</strong> (el ícono cuadrado con flecha hacia arriba ⬆️ en la barra inferior).
               <br /><br />
               2. Desplázate hacia abajo y selecciona <strong>&quot;Añadir a pantalla de inicio&quot;</strong>.
@@ -1757,7 +1757,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
             <button
               type="button"
               onClick={() => setShowIosInstallModal(false)}
-              className="w-full py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-bold"
+              className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm"
             >
               Entendido
             </button>

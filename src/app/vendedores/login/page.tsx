@@ -344,26 +344,26 @@ export default function VendedoresLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 flex flex-col justify-center px-4 py-8 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-slate-50 flex flex-col justify-center px-4 py-8 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 mb-4 shadow-lg shadow-indigo-500/10">
+        <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-indigo-50 border border-indigo-100 mb-4 shadow-sm">
           <LogoMark size={44} />
         </div>
-        <div className="inline-block px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-[11px] font-bold tracking-wider uppercase mb-2 border border-emerald-500/20">
+        <div className="inline-block px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-black tracking-wider uppercase mb-2 border border-emerald-200">
           Acceso Comercial PWA
         </div>
-        <h1 className="text-2xl font-black text-white tracking-tight sm:text-3xl">
+        <h1 className="text-2xl font-black text-slate-900 tracking-tight sm:text-3xl">
           Muestras Comerciales
         </h1>
-        <p className="mt-2 text-xs sm:text-sm text-slate-400 font-medium">
+        <p className="mt-2 text-xs sm:text-sm text-slate-500 font-medium">
           Genera propuestas y demos exclusivas con nuestros agentes para tus prospectos
         </p>
       </div>
 
       <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl">
+        <div className="bg-white border border-slate-200/80 rounded-[32px] p-6 sm:p-8 shadow-xl shadow-slate-200/50">
           {error && (
-            <div className="mb-5 p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-semibold leading-relaxed">
+            <div className="mb-5 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold leading-relaxed">
               ⚠️ {error}
             </div>
           )}
@@ -373,7 +373,7 @@ export default function VendedoresLoginPage() {
             type="button"
             onClick={handleGoogleLogin}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-2xl bg-white hover:bg-slate-100 text-slate-800 font-bold text-sm shadow-md transition-all transform active:scale-[0.99] disabled:opacity-50 mb-5"
+            className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold text-sm shadow-sm transition-all transform active:scale-[0.99] disabled:opacity-50 mb-5"
           >
             <svg width="18" height="18" viewBox="0 0 24 24">
               <path
@@ -397,15 +397,15 @@ export default function VendedoresLoginPage() {
           </button>
 
           <div className="relative flex items-center justify-center mb-5">
-            <div className="border-t border-slate-800 w-full"></div>
-            <span className="bg-slate-900 px-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 relative">
+            <div className="border-t border-slate-200 w-full"></div>
+            <span className="bg-white px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 relative">
               O con correo y contraseña
             </span>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                 Correo Electrónico
               </label>
               <input
@@ -414,13 +414,13 @@ export default function VendedoresLoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="vendedor@empresa.com"
-                className="w-full bg-slate-950/80 border border-slate-700/80 rounded-2xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium"
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition-all font-medium"
               />
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
                   Contraseña
                 </label>
                 <button
@@ -429,7 +429,7 @@ export default function VendedoresLoginPage() {
                     setForgotEmail(email);
                     setShowForgotModal(true);
                   }}
-                  className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition-colors"
+                  className="text-xs font-bold text-indigo-600 hover:text-indigo-700 transition-colors"
                 >
                   ¿La olvidaste?
                 </button>
@@ -440,14 +440,14 @@ export default function VendedoresLoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full bg-slate-950/80 border border-slate-700/80 rounded-2xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all font-medium"
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition-all font-medium"
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-2 py-3.5 px-4 rounded-2xl bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white font-bold text-sm shadow-lg shadow-indigo-500/25 transition-all transform active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full mt-2 py-3.5 px-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md shadow-indigo-600/20 transition-all transform active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>
@@ -460,12 +460,12 @@ export default function VendedoresLoginPage() {
             </button>
           </form>
 
-          <div className="mt-6 pt-5 border-t border-slate-800 text-center">
+          <div className="mt-6 pt-5 border-t border-slate-100 text-center">
             <p className="text-xs text-slate-500">
               ¿Eres cliente regular?{" "}
               <Link
                 href="/login"
-                className="text-indigo-400 font-semibold hover:underline"
+                className="text-indigo-600 font-bold hover:underline"
               >
                 Inicia sesión en el panel aquí
               </Link>
@@ -475,7 +475,7 @@ export default function VendedoresLoginPage() {
 
         {/* Info PWA */}
         <div className="mt-6 text-center">
-          <p className="text-[11px] text-slate-500 font-medium">
+          <p className="text-[11px] text-slate-400 font-medium">
             💡 Puedes instalar esta app en tu pantalla de inicio desde las opciones de tu navegador.
           </p>
         </div>
@@ -483,34 +483,34 @@ export default function VendedoresLoginPage() {
 
       {/* MODAL CAMBIO OBLIGATORIO DE CONTRASEÑA */}
       {showMandatoryModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in">
-          <div className="bg-slate-900 border border-indigo-500/40 rounded-3xl max-w-md w-full p-6 sm:p-8 text-slate-200 shadow-2xl space-y-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white border border-slate-200 rounded-[28px] max-w-md w-full p-6 sm:p-8 text-slate-800 shadow-2xl space-y-5">
             <div className="text-center space-y-2">
-              <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 flex items-center justify-center mx-auto text-2xl shadow-lg shadow-indigo-500/10">
+              <div className="w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center mx-auto text-2xl shadow-sm">
                 🔒
               </div>
-              <h3 className="text-lg sm:text-xl font-black text-white">
+              <h3 className="text-lg sm:text-xl font-black text-slate-900">
                 Cambio Obligatorio de Contraseña
               </h3>
-              <p className="text-xs text-slate-400 leading-relaxed max-w-sm mx-auto">
+              <p className="text-xs text-slate-500 leading-relaxed max-w-sm mx-auto">
                 Ingresaste con la clave inicial temporal (<strong>Santisoft</strong>). Por seguridad de tu cuenta, define tu contraseña personal para acceder a la mini app.
               </p>
             </div>
 
             {mandatorySuccess ? (
-              <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold text-center">
+              <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold text-center">
                 ✓ {mandatorySuccess}
               </div>
             ) : (
               <form onSubmit={handleMandatoryPasswordChange} className="space-y-4">
                 {mandatoryError && (
-                  <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-semibold">
+                  <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
                     ⚠️ {mandatoryError}
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                     Nueva Contraseña Personal *
                   </label>
                   <input
@@ -520,12 +520,12 @@ export default function VendedoresLoginPage() {
                     value={mandatoryNewPass}
                     onChange={(e) => setMandatoryNewPass(e.target.value)}
                     placeholder="Mínimo 6 caracteres"
-                    className="w-full bg-slate-950/80 border border-slate-700 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 font-medium"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 font-medium transition-all"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                     Confirmar Nueva Contraseña *
                   </label>
                   <input
@@ -535,14 +535,14 @@ export default function VendedoresLoginPage() {
                     value={mandatoryConfirmPass}
                     onChange={(e) => setMandatoryConfirmPass(e.target.value)}
                     placeholder="Repite tu nueva contraseña"
-                    className="w-full bg-slate-950/80 border border-slate-700 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 font-medium"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 font-medium transition-all"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={mandatoryLoading}
-                  className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white font-bold text-sm shadow-lg shadow-indigo-500/25 transition-all transform active:scale-[0.99] disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full py-3.5 px-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md shadow-indigo-600/20 transition-all transform active:scale-[0.99] disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {mandatoryLoading ? "Guardando..." : "Guardar Nueva Contraseña y Acceder"}
                 </button>
@@ -554,12 +554,12 @@ export default function VendedoresLoginPage() {
 
       {/* MODAL RECUPERAR CONTRASEÑA */}
       {showForgotModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-sm w-full p-6 text-slate-200 shadow-2xl">
-            <h3 className="text-lg font-bold text-white mb-1">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white border border-slate-200 rounded-[28px] max-w-sm w-full p-6 text-slate-800 shadow-2xl">
+            <h3 className="text-lg font-black text-slate-900 mb-1">
               Recuperar Contraseña
             </h3>
-            <p className="text-xs text-slate-400 mb-4">
+            <p className="text-xs text-slate-500 mb-4">
               Ingresa el correo con el que tienes acceso de vendedor y te enviaremos el enlace para restablecer tu clave.
             </p>
 
@@ -567,8 +567,8 @@ export default function VendedoresLoginPage() {
               <div
                 className={`mb-4 p-3 rounded-xl text-xs font-semibold ${
                   forgotStatus.type === "success"
-                    ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
-                    : "bg-rose-500/10 text-rose-300 border border-rose-500/20"
+                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                    : "bg-rose-50 text-rose-700 border border-rose-200"
                 }`}
               >
                 {forgotStatus.message}
@@ -582,20 +582,20 @@ export default function VendedoresLoginPage() {
                 value={forgotEmail}
                 onChange={(e) => setForgotEmail(e.target.value)}
                 placeholder="tu-correo@ejemplo.com"
-                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100"
               />
               <div className="flex gap-2">
                 <button
                   type="button"
                   onClick={() => setShowForgotModal(false)}
-                  className="flex-1 py-2.5 rounded-xl border border-slate-700 text-xs font-bold text-slate-300 hover:bg-slate-800"
+                  className="flex-1 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={forgotLoading}
-                  className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-xs font-bold text-white disabled:opacity-50"
+                  className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-xs font-bold text-white disabled:opacity-50 shadow-sm"
                 >
                   {forgotLoading ? "Enviando..." : "Enviar Enlace"}
                 </button>

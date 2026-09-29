@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   manifest: "/manifest-vendedores.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
     title: "Muestras",
   },
   icons: {
@@ -30,7 +30,7 @@ export default function VendedoresLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white antialiased">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-indigo-600 selection:text-white antialiased">
       {children}
     </div>
   );
