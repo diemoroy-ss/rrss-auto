@@ -30,7 +30,14 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
       if (u) {
         try {
           const d = await getDoc(doc(db, "users", u.uid));
-          if (d.exists()) setUserDoc(d.data());
+          if (d.exists()) {
+            const data = d.data();
+            setUserDoc(data);
+            if (data?.role === "vendedor") {
+              router.replace("/vendedores");
+              return;
+            }
+          }
         } catch (error) {
           console.error("Error fetching user", error);
         } finally {

@@ -23,8 +23,9 @@ async function verifyAdmin(req: Request) {
     return { uid: decoded.uid, email };
   }
   const userDoc = await adminDb!.collection("users").doc(decoded.uid).get();
-  if (userDoc.data()?.role === "admin") {
-    return { uid: decoded.uid, email };
+  const role = userDoc.data()?.role;
+  if (role === "admin" || role === "vendedor") {
+    return { uid: decoded.uid, email, role };
   }
   return { error: "Unauthorized", status: 403 };
 }

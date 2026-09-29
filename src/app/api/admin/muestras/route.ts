@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 const ADMIN_EMAILS = ["diemoroy@gmail.com", "spalezcom@gmail.com", "santisoftai@gmail.com", "admin@santisoft.cl"];
 
-async function verifyAdmin(req: Request) {
+async function verifyUserAccess(req: Request) {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
     return { error: "No token", status: 401 };
@@ -17,12 +17,20 @@ async function verifyAdmin(req: Request) {
   const decoded = await adminAuth.verifyIdToken(token);
   const email = (decoded.email || "").toLowerCase();
   if (ADMIN_EMAILS.includes(email)) {
-    return { uid: decoded.uid, email };
+    return { uid: decoded.uid, email, role: "admin", isSuperAdmin: true, sellerName: "Admin" };
   }
   // Check role in users collection
   const userDoc = await adminDb!.collection("users").doc(decoded.uid).get();
-  if (userDoc.data()?.role === "admin") {
-    return { uid: decoded.uid, email };
+  const userData = userDoc.data();
+  const role = userData?.role;
+  if (role === "admin" || role === "vendedor") {
+    return { 
+      uid: decoded.uid, 
+      email, 
+      role, 
+      isSuperAdmin: role === "admin", 
+      sellerName: userData?.name || email 
+    };
   }
   return { error: "Unauthorized", status: 403 };
 }
@@ -30,7 +38,7 @@ async function verifyAdmin(req: Request) {
 // POST: Crear o actualizar una muestra para prospecto
 export async function POST(req: Request) {
   try {
-    const authResult = await verifyAdmin(req);
+    const authResult = await verifyUserAccess(req);
     if ("error" in authResult) {
       return NextResponse.json({ error: authResult.error }, { status: authResult.status });
     }
@@ -45,7 +53,15 @@ export async function POST(req: Request) {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://rrss.santisoft.cl";
 
     if (id) {
-      // Actualizar existente
+      // Actualizar existente (verificar si el vendedor es dueño o admin)
+      const existingDoc = await adminDb.collection("admin_prospect_demos").doc(id).get();
+      if (existingDoc.exists) {
+        const existingData = existingDoc.data();
+        if (authResult.role === "vendedor" && existingData?.createdBy && existingData.createdBy !== authResult.uid) {
+          return NextResponse.json({ error: "No tienes permiso para modificar esta muestra" }, { status: 403 });
+        }
+      }
+
       await adminDb.collection("admin_prospect_demos").doc(id).set(
         {
           ...data,
@@ -55,9 +71,12 @@ export async function POST(req: Request) {
       );
       return NextResponse.json({ success: true, demoId: id, publicDemoUrl: `${baseUrl}/m/${id}` });
     } else {
-      // Crear nueva
+      // Crear nueva muestra vinculada al vendedor
       const docRef = await adminDb.collection("admin_prospect_demos").add({
         ...data,
+        createdBy: authResult.uid,
+        sellerEmail: authResult.email,
+        sellerName: authResult.sellerName || authResult.email,
         createdAt: new Date(),
         status: data.status || "generada",
       });
@@ -75,14 +94,28 @@ export async function POST(req: Request) {
   }
 }
 
-// GET: Listar historial de muestras
+// GET: Listar historial de muestras (filtrado por vendedor si aplica)
 export async function GET(req: Request) {
   try {
+    const authResult = await verifyUserAccess(req);
+    if ("error" in authResult) {
+      return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+    }
+
     if (!adminDb) {
       return NextResponse.json({ error: "Firebase Admin DB no disponible" }, { status: 500 });
     }
 
-    const snap = await adminDb.collection("admin_prospect_demos").get();
+    let snap;
+    if (authResult.role === "vendedor") {
+      // El vendedor solo ve su propio historial
+      snap = await adminDb.collection("admin_prospect_demos")
+        .where("createdBy", "==", authResult.uid)
+        .get();
+    } else {
+      // Administrador ve todas las muestras
+      snap = await adminDb.collection("admin_prospect_demos").get();
+    }
 
     const demos = snap.docs.map((d) => {
       const data = d.data();
@@ -121,7 +154,7 @@ export async function GET(req: Request) {
 // DELETE: Eliminar una muestra
 export async function DELETE(req: Request) {
   try {
-    const authResult = await verifyAdmin(req);
+    const authResult = await verifyUserAccess(req);
     if ("error" in authResult) {
       return NextResponse.json({ error: authResult.error }, { status: authResult.status });
     }
@@ -134,6 +167,15 @@ export async function DELETE(req: Request) {
     const id = searchParams.get("id");
     if (!id) {
       return NextResponse.json({ error: "id es requerido" }, { status: 400 });
+    }
+
+    // Verificar si el vendedor es dueño
+    const demoDoc = await adminDb.collection("admin_prospect_demos").doc(id).get();
+    if (demoDoc.exists) {
+      const demoData = demoDoc.data();
+      if (authResult.role === "vendedor" && demoData?.createdBy && demoData.createdBy !== authResult.uid) {
+        return NextResponse.json({ error: "No tienes permiso para eliminar esta muestra" }, { status: 403 });
+      }
     }
 
     await adminDb.collection("admin_prospect_demos").doc(id).delete();

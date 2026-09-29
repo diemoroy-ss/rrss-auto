@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { adminAuth } from "../../../../../lib/firebase-admin";
+import { adminAuth, adminDb } from "../../../../../lib/firebase-admin";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -25,7 +25,15 @@ export async function POST(req: Request) {
     const decoded = await adminAuth.verifyIdToken(token);
     const email = (decoded.email || "").toLowerCase();
     if (!ADMIN_EMAILS.includes(email)) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 403 });
+      if (adminDb) {
+        const userDoc = await adminDb.collection("users").doc(decoded.uid).get();
+        const role = userDoc.data()?.role;
+        if (role !== "admin" && role !== "vendedor") {
+          return NextResponse.json({ error: "No autorizado" }, { status: 403 });
+        }
+      } else {
+        return NextResponse.json({ error: "No autorizado" }, { status: 403 });
+      }
     }
 
     const body = await req.json();

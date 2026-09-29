@@ -254,6 +254,7 @@ export default function AdminUsersPage() {
                            className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[10px] font-black uppercase tracking-widest text-slate-700 outline-none focus:border-indigo-500 cursor-pointer shadow-sm hover:bg-slate-50 transition-colors focus:ring-2 focus:ring-indigo-500/20"
                         >
                            <option value="user">USER</option>
+                           <option value="vendedor">VENDEDOR (PWA)</option>
                            <option value="admin">ADMIN</option>
                         </select>
                      </td>
@@ -341,6 +342,11 @@ export default function AdminUsersPage() {
                                           Administrador
                                       </span>
                                   )}
+                                  {selectedUser.role === 'vendedor' && (
+                                      <span className="bg-emerald-500 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full">
+                                          Vendedor PWA
+                                      </span>
+                                  )}
                               </div>
                           </div>
                       </div>
@@ -413,6 +419,7 @@ export default function AdminUsersPage() {
                                 className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 text-sm font-black text-slate-900 outline-none focus:border-indigo-500 transition-all cursor-pointer"
                               >
                                 <option value="user">Usuario Regular (USER)</option>
+                                <option value="vendedor">Vendedor / Comercial (Muestras PWA)</option>
                                 <option value="admin">Administrador (ADMIN)</option>
                               </select>
                           </div>

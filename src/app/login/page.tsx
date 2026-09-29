@@ -46,7 +46,9 @@ export default function LoginGastronomico() {
              const userDoc = await getDoc(userDocRef);
              if (userDoc.exists()) {
                const userData = userDoc.data();
-               if (!userData?.onboardingCompleted) {
+               if (userData?.role === "vendedor") {
+                 router.replace("/vendedores");
+               } else if (!userData?.onboardingCompleted) {
                  router.replace("/onboarding");
                } else {
                  router.replace("/automatizacion-rrss/panel");
@@ -171,7 +173,9 @@ export default function LoginGastronomico() {
         const userDocRef = doc(db, "users", userCredential.user.uid);
         const userDoc = await getDoc(userDocRef);
         const userData = userDoc.exists() ? userDoc.data() : null;
-        if (!userData?.onboardingCompleted) {
+        if (userData?.role === "vendedor") {
+          router.push("/vendedores");
+        } else if (!userData?.onboardingCompleted) {
           router.push("/onboarding");
         } else {
           router.push("/automatizacion-rrss/panel");
