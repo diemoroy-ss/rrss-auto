@@ -25,6 +25,7 @@ import {
   FaExternalLinkAlt,
   FaSignOutAlt,
   FaMobileAlt,
+  FaKey,
   FaPlus,
   FaEdit,
   FaSyncAlt,
@@ -152,6 +153,14 @@ export default function VendedoresPwaPage() {
   const [historyDemos, setHistoryDemos] = useState<ProspectDemo[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [historySearch, setHistorySearch] = useState("");
+
+  // Estado Modal Cambiar Contraseña del Vendedor
+  const [showChangePassModal, setShowChangePassModal] = useState(false);
+  const [newPassInput, setNewPassInput] = useState("");
+  const [confirmPassInput, setConfirmPassInput] = useState("");
+  const [changePassLoading, setChangePassLoading] = useState(false);
+  const [changePassError, setChangePassError] = useState("");
+  const [changePassSuccess, setChangePassSuccess] = useState("");
 
   // Input refs
   const baseImageInputRef = useRef<HTMLInputElement>(null);
@@ -724,6 +733,53 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
     }
   };
 
+  // 13.5 Cambiar contraseña del vendedor
+  const handleChangeMyPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setChangePassError("");
+    setChangePassSuccess("");
+
+    if (!newPassInput || newPassInput.length < 6) {
+      setChangePassError("La nueva contraseña debe tener al menos 6 caracteres.");
+      return;
+    }
+
+    if (newPassInput !== confirmPassInput) {
+      setChangePassError("Las contraseñas no coinciden. Verifícalas.");
+      return;
+    }
+
+    setChangePassLoading(true);
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch("/api/vendedores/change-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ newPassword: newPassInput }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "No se pudo actualizar la contraseña");
+      }
+
+      setChangePassSuccess("¡Contraseña actualizada exitosamente!");
+      setTimeout(() => {
+        setShowChangePassModal(false);
+        setNewPassInput("");
+        setConfirmPassInput("");
+        setChangePassSuccess("");
+      }, 2000);
+    } catch (err: any) {
+      setChangePassError(err.message || "Error al actualizar contraseña");
+    } finally {
+      setChangePassLoading(false);
+    }
+  };
+
   // 14. Logout
   const handleSignOut = async () => {
     await signOut(auth);
@@ -773,6 +829,21 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                 <FaMobileAlt /> Instalar App
               </button>
             )}
+
+            <button
+              onClick={() => {
+                setShowChangePassModal(true);
+                setNewPassInput("");
+                setConfirmPassInput("");
+                setChangePassError("");
+                setChangePassSuccess("");
+              }}
+              title="Cambiar mi contraseña"
+              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors flex items-center gap-1.5 text-xs font-bold"
+            >
+              <FaKey className="text-xs text-indigo-400" />
+              <span className="hidden sm:inline">Clave</span>
+            </button>
 
             <button
               onClick={handleSignOut}
@@ -1566,6 +1637,90 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
           </div>
         )}
       </main>
+
+      {/* MODAL CAMBIAR CONTRASEÑA DEL VENDEDOR */}
+      {showChangePassModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-sm w-full p-6 text-slate-200 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 text-sm">
+                  <FaKey />
+                </span>
+                <h3 className="text-base font-bold text-white">Cambiar mi Contraseña</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowChangePassModal(false)}
+                className="text-slate-400 hover:text-white text-lg font-light"
+              >
+                ✕
+              </button>
+            </div>
+
+            {changePassSuccess ? (
+              <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold flex items-center gap-2">
+                <FaCheck /> {changePassSuccess}
+              </div>
+            ) : (
+              <form onSubmit={handleChangeMyPassword} className="space-y-4">
+                {changePassError && (
+                  <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-semibold">
+                    ⚠️ {changePassError}
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                    Nueva Contraseña *
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    value={newPassInput}
+                    onChange={(e) => setNewPassInput(e.target.value)}
+                    placeholder="Mínimo 6 caracteres"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                    Confirmar Nueva Contraseña *
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    value={confirmPassInput}
+                    onChange={(e) => setConfirmPassInput(e.target.value)}
+                    placeholder="Repite tu nueva contraseña"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-medium"
+                  />
+                </div>
+
+                <div className="pt-2 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowChangePassModal(false)}
+                    className="flex-1 py-2.5 rounded-xl border border-slate-700 text-xs font-bold text-slate-300 hover:bg-slate-800"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={changePassLoading}
+                    className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold disabled:opacity-50 flex items-center justify-center gap-1.5"
+                  >
+                    {changePassLoading ? "Guardando..." : "Actualizar Clave"}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* MODAL INSTRUCCIONES INSTALACIÓN iOS */}
       {showIosInstallModal && (

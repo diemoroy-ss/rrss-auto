@@ -59,6 +59,7 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
   const adminLinks = [
     { href: "/automatizacion-rrss/panel/admin", label: "Usuarios", icon: "👥", exact: true },
     { href: "/automatizacion-rrss/panel/admin/muestras", label: "Muestras Prospectos", icon: "🎨", exact: false },
+    { href: "/automatizacion-rrss/panel/admin/vendedores", label: "Equipo Vendedores", icon: "💼", exact: false },
     { href: "/automatizacion-rrss/panel/admin/agenda", label: "Agenda & Demos", icon: "📅", exact: false },
     { href: "/automatizacion-rrss/panel/admin/pagos", label: "Pagos", icon: "💰", exact: false },
     { href: "/automatizacion-rrss/panel/admin/planes", label: "Planes", icon: "💳", exact: false },
