@@ -212,7 +212,9 @@ export default function LoginGastronomico() {
       const userDocRef = doc(db, "users", result.user.uid);
       const userDoc = await getDoc(userDocRef);
       const userData = userDoc.exists() ? userDoc.data() : null;
-      if (!userData?.onboardingCompleted) {
+      if (userData?.role === "vendedor") {
+        router.push("/vendedores");
+      } else if (!userData?.onboardingCompleted) {
         router.push("/onboarding");
       } else {
         router.push("/automatizacion-rrss/panel");

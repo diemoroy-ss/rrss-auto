@@ -212,7 +212,11 @@ export default function VendedoresPwaPage() {
         setUserRole(role);
 
         const email = (user.email || "").toLowerCase();
-        const isAllowed = ADMIN_EMAILS.includes(email) || role === "admin" || role === "vendedor";
+        const isAllowed =
+          email === "santisoftai@gmail.com" ||
+          ADMIN_EMAILS.includes(email) ||
+          role === "admin" ||
+          role === "vendedor";
 
         if (!isAllowed) {
           await signOut(auth);
