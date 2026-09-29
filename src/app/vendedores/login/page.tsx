@@ -47,6 +47,14 @@ export default function VendedoresLoginPage() {
     message: string;
   } | null>(null);
 
+  // Modal Cambio Obligatorio de Contraseña (cuando ingresan con "Santisoft")
+  const [showMandatoryModal, setShowMandatoryModal] = useState(false);
+  const [mandatoryNewPass, setMandatoryNewPass] = useState("");
+  const [mandatoryConfirmPass, setMandatoryConfirmPass] = useState("");
+  const [mandatoryLoading, setMandatoryLoading] = useState(false);
+  const [mandatoryError, setMandatoryError] = useState("");
+  const [mandatorySuccess, setMandatorySuccess] = useState("");
+
   // Redirigir si ya tiene sesión válida
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
@@ -61,13 +69,19 @@ export default function VendedoresLoginPage() {
           }
 
           const userDoc = await getDoc(doc(db, "users", user.uid));
-          const role = userDoc.data()?.role;
+          const userData = userDoc.data();
+          const role = userData?.role;
           const isAllowed =
             ADMIN_EMAILS.includes(userEmail) ||
             role === "admin" ||
             role === "vendedor";
 
           if (isAllowed) {
+            // Si tiene que cambiar la clave inicial, abrir modal
+            if (userData?.mustChangePassword) {
+              setShowMandatoryModal(true);
+              return;
+            }
             router.replace("/vendedores");
           }
         } catch (e) {
@@ -198,7 +212,8 @@ export default function VendedoresLoginPage() {
 
       // Verificar rol
       const userDoc = await getDoc(doc(db, "users", user.uid));
-      const role = userDoc.data()?.role;
+      const userData = userDoc.data();
+      const role = userData?.role;
       const isAllowed =
         ADMIN_EMAILS.includes(userEmail) ||
         role === "admin" ||
@@ -209,6 +224,19 @@ export default function VendedoresLoginPage() {
         setError(
           "Tu cuenta no tiene habilitado el rol de vendedor para esta mini app. Pídele al administrador que active tu acceso comercial."
         );
+        return;
+      }
+
+      // Comprobar si ingresó con la contraseña inicial "Santisoft" o tiene flag de cambio
+      const isInitialPass = password === "Santisoft";
+      const mustChange = Boolean(userData?.mustChangePassword) || isInitialPass;
+
+      if (mustChange) {
+        setShowMandatoryModal(true);
+        setMandatoryNewPass("");
+        setMandatoryConfirmPass("");
+        setMandatoryError("");
+        setMandatorySuccess("");
         return;
       }
 
@@ -228,6 +256,55 @@ export default function VendedoresLoginPage() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  // CAMBIO OBLIGATORIO DE CONTRASEÑA
+  const handleMandatoryPasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMandatoryError("");
+    setMandatorySuccess("");
+
+    if (!mandatoryNewPass || mandatoryNewPass.length < 6) {
+      setMandatoryError("La nueva contraseña debe tener al menos 6 caracteres.");
+      return;
+    }
+
+    if (mandatoryNewPass.trim().toLowerCase() === "santisoft") {
+      setMandatoryError("Debes elegir una contraseña personal diferente a 'Santisoft'.");
+      return;
+    }
+
+    if (mandatoryNewPass !== mandatoryConfirmPass) {
+      setMandatoryError("Las contraseñas no coinciden. Por favor verifícalas.");
+      return;
+    }
+
+    setMandatoryLoading(true);
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch("/api/vendedores/change-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ newPassword: mandatoryNewPass }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "No se pudo actualizar la contraseña");
+      }
+
+      setMandatorySuccess("¡Contraseña actualizada con éxito! Ingresando a la app...");
+      setTimeout(() => {
+        router.replace("/vendedores");
+      }, 1500);
+    } catch (err: any) {
+      setMandatoryError(err.message || "Error al actualizar la contraseña");
+    } finally {
+      setMandatoryLoading(false);
     }
   };
 
@@ -395,6 +472,77 @@ export default function VendedoresLoginPage() {
           </p>
         </div>
       </div>
+
+      {/* MODAL CAMBIO OBLIGATORIO DE CONTRASEÑA */}
+      {showMandatoryModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in">
+          <div className="bg-slate-900 border border-indigo-500/40 rounded-3xl max-w-md w-full p-6 sm:p-8 text-slate-200 shadow-2xl space-y-5">
+            <div className="text-center space-y-2">
+              <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 flex items-center justify-center mx-auto text-2xl shadow-lg shadow-indigo-500/10">
+                🔒
+              </div>
+              <h3 className="text-lg sm:text-xl font-black text-white">
+                Cambio Obligatorio de Contraseña
+              </h3>
+              <p className="text-xs text-slate-400 leading-relaxed max-w-sm mx-auto">
+                Ingresaste con la clave inicial temporal (<strong>Santisoft</strong>). Por seguridad de tu cuenta, define tu contraseña personal para acceder a la mini app.
+              </p>
+            </div>
+
+            {mandatorySuccess ? (
+              <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold text-center">
+                ✓ {mandatorySuccess}
+              </div>
+            ) : (
+              <form onSubmit={handleMandatoryPasswordChange} className="space-y-4">
+                {mandatoryError && (
+                  <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-semibold">
+                    ⚠️ {mandatoryError}
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                    Nueva Contraseña Personal *
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    value={mandatoryNewPass}
+                    onChange={(e) => setMandatoryNewPass(e.target.value)}
+                    placeholder="Mínimo 6 caracteres"
+                    className="w-full bg-slate-950/80 border border-slate-700 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                    Confirmar Nueva Contraseña *
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    value={mandatoryConfirmPass}
+                    onChange={(e) => setMandatoryConfirmPass(e.target.value)}
+                    placeholder="Repite tu nueva contraseña"
+                    className="w-full bg-slate-950/80 border border-slate-700 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 font-medium"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={mandatoryLoading}
+                  className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white font-bold text-sm shadow-lg shadow-indigo-500/25 transition-all transform active:scale-[0.99] disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {mandatoryLoading ? "Guardando..." : "Guardar Nueva Contraseña y Acceder"}
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* MODAL RECUPERAR CONTRASEÑA */}
       {showForgotModal && (

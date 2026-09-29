@@ -224,6 +224,11 @@ export default function VendedoresPwaPage() {
           return;
         }
 
+        // Si debe cambiar su contraseña inicial, abrir modal
+        if (userDoc.data()?.mustChangePassword) {
+          setShowChangePassModal(true);
+        }
+
         // Cargar estilos desde Firestore
         try {
           const snap = await getDocs(collection(db, "prompt_library"));

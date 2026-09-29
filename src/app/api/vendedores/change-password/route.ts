@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { adminAuth } from "../../../../lib/firebase-admin";
+import { adminAuth, adminDb } from "../../../../lib/firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +11,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Falta token de autenticación" }, { status: 401 });
     }
     const token = authHeader.split("Bearer ")[1];
-    if (!adminAuth) {
+    if (!adminAuth || !adminDb) {
       return NextResponse.json({ error: "Firebase Admin no disponible" }, { status: 500 });
     }
 
@@ -27,10 +28,26 @@ export async function POST(req: Request) {
       );
     }
 
-    // Actualizar contraseña directamente en Firebase Auth
+    if (newPassword.trim().toLowerCase() === "santisoft") {
+      return NextResponse.json(
+        { error: "Debes elegir una contraseña personal diferente a la clave inicial 'Santisoft'" },
+        { status: 400 }
+      );
+    }
+
+    // 1. Actualizar contraseña directamente en Firebase Auth
     await adminAuth.updateUser(userId, {
       password: newPassword,
     });
+
+    // 2. Desactivar flag mustChangePassword en Firestore
+    await adminDb.collection("users").doc(userId).set(
+      {
+        mustChangePassword: false,
+        updatedAt: FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    );
 
     return NextResponse.json({
       success: true,

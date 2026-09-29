@@ -113,7 +113,8 @@ export async function POST(req: Request) {
     if (!email?.trim() || !email.includes("@")) {
       return NextResponse.json({ error: "Ingresa un correo electrónico válido" }, { status: 400 });
     }
-    if (!password || password.length < 6) {
+    const initialPassword = password?.trim() || "Santisoft";
+    if (initialPassword.length < 6) {
       return NextResponse.json({ error: "La contraseña debe tener al menos 6 caracteres" }, { status: 400 });
     }
 
@@ -130,7 +131,7 @@ export async function POST(req: Request) {
 
       // Actualizar su contraseña y nombre en Auth
       await adminAuth!.updateUser(uid, {
-        password,
+        password: initialPassword,
         displayName: cleanName,
         disabled: false,
       });
@@ -139,7 +140,7 @@ export async function POST(req: Request) {
         // Crear nuevo usuario en Firebase Auth
         const newUser = await adminAuth!.createUser({
           email: cleanEmail,
-          password,
+          password: initialPassword,
           displayName: cleanName,
           emailVerified: true,
         });
@@ -153,6 +154,7 @@ export async function POST(req: Request) {
     const userDocRef = adminDb!.collection("users").doc(uid);
     const existingDoc = await userDocRef.get();
 
+    const isSantisoftPassword = initialPassword === "Santisoft";
     const userDataToSave = {
       name: cleanName,
       email: cleanEmail,
@@ -161,6 +163,7 @@ export async function POST(req: Request) {
       plan: "free",
       registeredApps: ["muestras", "vendedores"],
       isDisabled: false,
+      mustChangePassword: isSantisoftPassword,
       updatedAt: FieldValue.serverTimestamp(),
       ...(existingDoc.exists ? {} : { createdAt: FieldValue.serverTimestamp() }),
       assignedBy: authResult.uid,
@@ -215,6 +218,9 @@ export async function PATCH(req: Request) {
         return NextResponse.json({ error: "La nueva contraseña debe tener al menos 6 caracteres" }, { status: 400 });
       }
       authUpdates.password = newPassword;
+      if (newPassword.trim() === "Santisoft") {
+        firestoreUpdates.mustChangePassword = true;
+      }
     }
 
     // Nombre

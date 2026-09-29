@@ -51,7 +51,7 @@ export default function AdminVendedoresPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createName, setCreateName] = useState("");
   const [createEmail, setCreateEmail] = useState("");
-  const [createPassword, setCreatePassword] = useState("");
+  const [createPassword, setCreatePassword] = useState("Santisoft");
   const [createPhone, setCreatePhone] = useState("");
   const [createLoading, setCreateLoading] = useState(false);
   const [createError, setCreateError] = useState("");
@@ -314,6 +314,7 @@ export default function AdminVendedoresPage() {
             onClick={() => {
               setCreatedSummary(null);
               setCreateError("");
+              setCreatePassword("Santisoft");
               setShowCreateModal(true);
             }}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-lg shadow-indigo-500/25 transition-all transform active:scale-[0.98]"
@@ -591,11 +592,11 @@ export default function AdminVendedoresPage() {
                     minLength={6}
                     value={createPassword}
                     onChange={(e) => setCreatePassword(e.target.value)}
-                    placeholder="Mínimo 6 caracteres (ej. Ventas2026!)"
+                    placeholder="Santisoft"
                     className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 font-bold font-mono"
                   />
                   <p className="text-[10px] text-slate-400 mt-1">
-                    El vendedor podrá cambiar esta contraseña desde la PWA si lo desea.
+                    Predeterminada: <strong>Santisoft</strong>. En su primer ingreso con esta clave inicial, el sistema le exigirá definir su contraseña personal.
                   </p>
                 </div>
 
