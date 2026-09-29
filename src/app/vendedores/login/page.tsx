@@ -76,9 +76,13 @@ export default function VendedoresLoginPage() {
             role === "admin" ||
             role === "vendedor";
 
+          const isGoogleUser =
+            userEmail.endsWith("@gmail.com") ||
+            user.providerData.some((p) => p.providerId === "google.com");
+
           if (isAllowed) {
-            // Si tiene que cambiar la clave inicial, abrir modal
-            if (userData?.mustChangePassword) {
+            // Si tiene que cambiar la clave inicial (solo para cuentas con clave tradicional)
+            if (!isGoogleUser && userData?.mustChangePassword) {
               setShowMandatoryModal(true);
               return;
             }
@@ -160,21 +164,25 @@ export default function VendedoresLoginPage() {
         return;
       }
 
-      // Si es un vendedor válido pero aún no tenía doc bajo su UID actual de Google
-      if (!userDoc.exists()) {
-        await setDoc(
-          userDocRef,
-          {
-            name: user.displayName || "Vendedor",
-            email: userEmail,
-            role: role || "vendedor",
-            plan: "free",
-            registeredApps: ["muestras", "vendedores"],
-            createdAt: serverTimestamp(),
-          },
-          { merge: true }
-        );
-      }
+      // Asegurar que las cuentas Google tengan mustChangePassword en false y authMethod 'google'
+      await setDoc(
+        userDocRef,
+        {
+          mustChangePassword: false,
+          authMethod: "google",
+          ...(userDoc.exists()
+            ? { updatedAt: serverTimestamp() }
+            : {
+                name: user.displayName || "Vendedor",
+                email: userEmail,
+                role: role || "vendedor",
+                plan: "free",
+                registeredApps: ["muestras", "vendedores"],
+                createdAt: serverTimestamp(),
+              }),
+        },
+        { merge: true }
+      );
 
       router.replace("/vendedores");
     } catch (err: any) {

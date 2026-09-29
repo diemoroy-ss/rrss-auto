@@ -224,8 +224,12 @@ export default function VendedoresPwaPage() {
           return;
         }
 
-        // Si debe cambiar su contraseña inicial, abrir modal
-        if (userDoc.data()?.mustChangePassword) {
+        // Si debe cambiar su contraseña inicial, abrir modal (solo para cuentas con contraseña tradicional)
+        const isGoogleAccount =
+          email.endsWith("@gmail.com") ||
+          user.providerData.some((p) => p.providerId === "google.com");
+
+        if (!isGoogleAccount && userDoc.data()?.mustChangePassword) {
           setShowChangePassModal(true);
         }
 
@@ -839,20 +843,24 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
               </button>
             )}
 
-            <button
-              onClick={() => {
-                setShowChangePassModal(true);
-                setNewPassInput("");
-                setConfirmPassInput("");
-                setChangePassError("");
-                setChangePassSuccess("");
-              }}
-              title="Cambiar mi contraseña"
-              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors flex items-center gap-1.5 text-xs font-bold"
-            >
-              <FaKey className="text-xs text-indigo-400" />
-              <span className="hidden sm:inline">Clave</span>
-            </button>
+            {/* Solo mostrar botón de clave para cuentas tradicionales (NO Google) */}
+            {!currentUser?.email?.toLowerCase().endsWith("@gmail.com") &&
+              !currentUser?.providerData.some((p) => p.providerId === "google.com") && (
+                <button
+                  onClick={() => {
+                    setShowChangePassModal(true);
+                    setNewPassInput("");
+                    setConfirmPassInput("");
+                    setChangePassError("");
+                    setChangePassSuccess("");
+                  }}
+                  title="Cambiar mi contraseña"
+                  className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors flex items-center gap-1.5 text-xs font-bold"
+                >
+                  <FaKey className="text-xs text-indigo-400" />
+                  <span className="hidden sm:inline">Clave</span>
+                </button>
+            )}
 
             <button
               onClick={handleSignOut}
