@@ -63,7 +63,8 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
           const apiData = await apiRes.json();
           if (apiData.success && apiData.demo) {
             setDemo(apiData.demo);
-            if (!apiData.demo.generatedImageUrl && (apiData.demo.remotionComposition || apiData.demo.generatedVideoUrl)) {
+            // Si la muestra tiene video (generado o Remotion), darle protagonismo por defecto
+            if (apiData.demo.remotionComposition || apiData.demo.generatedVideoUrl) {
               setActiveMediaTab("video");
             }
             setLoading(false);
@@ -99,8 +100,8 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
             selectedStyleTitle: data.selectedStyleTitle || "Estándar Comercial",
           };
           setDemo(d);
-          // Si tiene video y no tiene imagen, activar tab video por defecto
-          if (!d.generatedImageUrl && (d.remotionComposition || d.generatedVideoUrl)) {
+          // Si tiene video, activar tab video por defecto
+          if (d.remotionComposition || d.generatedVideoUrl) {
             setActiveMediaTab("video");
           }
         }
@@ -239,22 +240,10 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
           )}
         </section>
 
-        {/* Switcher de Formatos (Diseño Gráfico vs Video Reel) */}
+        {/* Switcher de Formatos (Video Reel vs Diseño Gráfico) */}
         {hasImage && hasVideo && (
           <div className="flex justify-center">
-            <div className="inline-flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200 shadow-inner">
-              <button
-                type="button"
-                onClick={() => setActiveMediaTab("imagen")}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
-                  activeMediaTab === "imagen"
-                    ? "bg-white text-indigo-700 shadow-sm border border-slate-200/60 font-black"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                <FaImage />
-                <span>Diseño Publicitario</span>
-              </button>
+            <div className="inline-flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200 shadow-inner gap-1">
               <button
                 type="button"
                 onClick={() => setActiveMediaTab("video")}
@@ -264,8 +253,26 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
-                <FaVideo />
+                <FaVideo className="text-sm" />
                 <span>Video Reel Animado</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200/80 font-bold">
+                  9:16
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveMediaTab("imagen")}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                  activeMediaTab === "imagen"
+                    ? "bg-white text-indigo-700 shadow-sm border border-slate-200/60 font-black"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <FaImage className="text-sm" />
+                <span>Diseño Publicitario</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 font-bold">
+                  Feed 1:1
+                </span>
               </button>
             </div>
           </div>
@@ -308,7 +315,7 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
                 </div>
               </div>
 
-              <div className="flex justify-center gap-3 pt-2">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
                 <a
                   href={demo.generatedImageUrl}
                   download={`propuesta_${demo.prospectBusiness}.jpg`}
@@ -318,6 +325,17 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
                 >
                   <span>⬇️</span> Descargar Diseño en Alta Resolución
                 </a>
+
+                {hasVideo && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveMediaTab("video")}
+                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-extrabold shadow-md flex items-center gap-2 transition-all active:scale-95 cursor-pointer"
+                  >
+                    <FaVideo />
+                    <span>Ver en Video Reel (9:16) →</span>
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -364,6 +382,19 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
                   <p className="text-xs text-slate-500 max-w-xs mx-auto">
                     Nuestros agentes están estructurando el guión y las escenas de video para este negocio.
                   </p>
+                </div>
+              )}
+
+              {hasImage && (
+                <div className="flex justify-center pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setActiveMediaTab("imagen")}
+                    className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer"
+                  >
+                    <FaImage className="text-indigo-600" />
+                    <span>Ver también versión Diseño Gráfico (Feed 1:1) →</span>
+                  </button>
                 </div>
               )}
 

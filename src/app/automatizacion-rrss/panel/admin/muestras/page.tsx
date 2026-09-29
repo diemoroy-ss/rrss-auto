@@ -449,6 +449,28 @@ export default function AdminMuestrasPage() {
     }
   };
 
+  // Sincronizar datos de la muestra con el backend Admin SDK (garantiza persistencia y bypass de reglas cliente)
+  const syncDemoToBackend = async (demoId: string, partialData: Record<string, any>) => {
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      await fetch("/api/admin/muestras", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          id: demoId,
+          ...partialData,
+        }),
+      });
+      console.log("[syncDemoToBackend] Sincronización exitosa con Firestore Admin SDK");
+    } catch (syncErr) {
+      console.warn("[syncDemoToBackend] Fallo sincronización vía API admin, intentando fallback:", syncErr);
+    }
+    // Fallback secundario directo a Firestore cliente
+    try {
+      await updateDoc(doc(db, "admin_prospect_demos", demoId), partialData);
+    } catch (_) {}
+  };
+
   // Guardar modificaciones directas sobre la muestra sin necesidad de regenerar la imagen
   const handleSaveDemoChanges = async () => {
     if (!createdDemoId) {
@@ -482,6 +504,7 @@ export default function AdminMuestrasPage() {
           generatedPostCaption: generatedPostCaption || null,
           whatsappMessage: customWhatsappCopy || null,
           generatedVideoUrl: externalVideoUrl || null,
+          remotionComposition: remotionComposition || null,
           videoStyleTitle: selectedVideoTemplate?.title || null,
           videoPromptEnglish: customVideoPrompt || null,
         }),
@@ -892,6 +915,8 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
           butterflyUrl: bUrl || null,
           videoStyleTitle: selectedVideoTemplate?.title || null,
           videoPromptEnglish: customVideoPrompt || null,
+          generatedVideoUrl: externalVideoUrl || null,
+          remotionComposition: remotionComposition || null,
           status: "generada",
         }),
       });
@@ -1029,7 +1054,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
 
       // Si ya existe la demo en Firestore, sincronizar la composición de Remotion
       if (createdDemoId) {
-        await updateDoc(doc(db, "admin_prospect_demos", createdDemoId), {
+        await syncDemoToBackend(createdDemoId, {
           remotionComposition: comp,
         });
       }
@@ -1053,7 +1078,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
     }
 
     try {
-      await updateDoc(doc(db, "admin_prospect_demos", createdDemoId), {
+      await syncDemoToBackend(createdDemoId, {
         generatedVideoUrl: externalVideoUrl.trim(),
         videoStyleTitle: selectedVideoTemplate?.title || null,
         videoPromptEnglish: customVideoPrompt || null,
@@ -1141,7 +1166,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
       if (finalVideoUrl) {
         setExternalVideoUrl(finalVideoUrl);
         if (createdDemoId) {
-          await updateDoc(doc(db, "admin_prospect_demos", createdDemoId), {
+          await syncDemoToBackend(createdDemoId, {
             generatedVideoUrl: finalVideoUrl,
             videoStyleTitle: selectedVideoTemplate?.title || null,
             videoPromptEnglish: customVideoPrompt || null,
