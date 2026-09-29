@@ -577,7 +577,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
 
       // 7. Guardar en Base de Datos vía API
       setGeneratingStep("Creando enlace de muestra interactiva...");
-      const finalImageToSave = butterflyUrlResult || clientCanvasDataUrl || rawBaseUrl;
+      const finalImageToSave = clientCanvasDataUrl || rawBaseUrl || butterflyUrlResult;
       const phoneToSave = prospectPhone.trim() ? `${countryCode}${prospectPhone.trim().replace(/^0+/, "")}` : "";
 
       let savedDemoId = "";
@@ -1385,9 +1385,17 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                   <div className="space-y-3">
                     <div className="aspect-square relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 shadow-sm">
                       <img
-                        src={butterflyUrl || canvasImageUrl || generatedImageUrl}
+                        src={canvasImageUrl || generatedImageUrl || baseImagePreview || ""}
                         alt="Flyer Muestra"
                         className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.currentTarget;
+                          if (generatedImageUrl && target.src !== generatedImageUrl) {
+                            target.src = generatedImageUrl;
+                          } else if (baseImagePreview && target.src !== baseImagePreview) {
+                            target.src = baseImagePreview;
+                          }
+                        }}
                       />
                     </div>
 
@@ -1549,7 +1557,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                     );
                   })
                   .map((demo) => {
-                    const thumb = demo.butterflyUrl || demo.canvasImageUrl || demo.generatedImageUrl || "";
+                    const thumb = demo.canvasImageUrl || demo.generatedImageUrl || demo.baseImageUrl || "";
                     const isSent = demo.status === "enviada";
 
                     return (
@@ -1559,13 +1567,28 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                       >
                         <div className="flex gap-3">
                           {thumb ? (
-                            <div className="w-20 h-20 rounded-2xl overflow-hidden bg-slate-100 flex-shrink-0 border border-slate-200">
+                            <a
+                              href={`${PUBLIC_APP_URL}/m/${demo.id}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              title="Ver muestra completa"
+                              className="w-20 h-20 rounded-2xl overflow-hidden bg-slate-100 flex-shrink-0 border border-slate-200 hover:opacity-90 transition-opacity block group relative"
+                            >
                               <img
                                 src={thumb}
                                 alt={demo.prospectBusiness}
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                                loading="lazy"
+                                onError={(e) => {
+                                  const target = e.currentTarget;
+                                  if (demo.generatedImageUrl && target.src !== demo.generatedImageUrl) {
+                                    target.src = demo.generatedImageUrl;
+                                  } else if (demo.baseImageUrl && target.src !== demo.baseImageUrl) {
+                                    target.src = demo.baseImageUrl;
+                                  }
+                                }}
                               />
-                            </div>
+                            </a>
                           ) : (
                             <div className="w-20 h-20 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 flex-shrink-0">
                               <FaImage className="text-xl" />
