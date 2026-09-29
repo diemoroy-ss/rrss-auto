@@ -40,12 +40,14 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://rrss.santisoft.cl'),
   icons: {
     icon: [
-      { url: '/favicon.svg?v=4', type: 'image/svg+xml' },
+      { url: '/favicon.svg?v=5', type: 'image/svg+xml' },
+      { url: '/icon-192.png?v=5', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png?v=5', sizes: '512x512', type: 'image/png' },
     ],
-    shortcut: '/favicon.svg?v=4',
-    apple: '/favicon.svg?v=4',
+    shortcut: '/favicon.svg?v=5',
+    apple: '/apple-touch-icon.png?v=5',
   },
-  manifest: '/site.webmanifest?v=5',
+  manifest: '/site.webmanifest?v=6',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
