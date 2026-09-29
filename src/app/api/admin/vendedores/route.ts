@@ -113,14 +113,18 @@ export async function POST(req: Request) {
     if (!email?.trim() || !email.includes("@")) {
       return NextResponse.json({ error: "Ingresa un correo electrónico válido" }, { status: 400 });
     }
-    const initialPassword = password?.trim() || "Santisoft";
-    if (initialPassword.length < 6) {
-      return NextResponse.json({ error: "La contraseña debe tener al menos 6 caracteres" }, { status: 400 });
-    }
-
     const cleanEmail = email.trim().toLowerCase();
     const cleanName = name.trim();
     const cleanPhone = phone?.trim() || "";
+    const isGmail = cleanEmail.endsWith("@gmail.com") || cleanEmail.includes("@gmail.com");
+
+    let initialPassword = "";
+    if (!isGmail) {
+      initialPassword = password?.trim() || "Santisoft";
+      if (initialPassword.length < 6) {
+        return NextResponse.json({ error: "La contraseña debe tener al menos 6 caracteres" }, { status: 400 });
+      }
+    }
 
     let uid = "";
 
@@ -129,21 +133,27 @@ export async function POST(req: Request) {
       const existingUser = await adminAuth!.getUserByEmail(cleanEmail);
       uid = existingUser.uid;
 
-      // Actualizar su contraseña y nombre en Auth
-      await adminAuth!.updateUser(uid, {
-        password: initialPassword,
+      // Actualizar nombre y habilitar usuario
+      const authUpdates: any = {
         displayName: cleanName,
         disabled: false,
-      });
+      };
+      if (!isGmail && initialPassword) {
+        authUpdates.password = initialPassword;
+      }
+      await adminAuth!.updateUser(uid, authUpdates);
     } catch (err: any) {
       if (err.code === "auth/user-not-found") {
         // Crear nuevo usuario en Firebase Auth
-        const newUser = await adminAuth!.createUser({
+        const createPayload: any = {
           email: cleanEmail,
-          password: initialPassword,
           displayName: cleanName,
-          emailVerified: true,
-        });
+          emailVerified: isGmail ? true : false,
+        };
+        if (!isGmail && initialPassword) {
+          createPayload.password = initialPassword;
+        }
+        const newUser = await adminAuth!.createUser(createPayload);
         uid = newUser.uid;
       } else {
         throw err;
@@ -154,7 +164,7 @@ export async function POST(req: Request) {
     const userDocRef = adminDb!.collection("users").doc(uid);
     const existingDoc = await userDocRef.get();
 
-    const isSantisoftPassword = initialPassword === "Santisoft";
+    const isSantisoftPassword = !isGmail && initialPassword === "Santisoft";
     const userDataToSave = {
       name: cleanName,
       email: cleanEmail,
@@ -163,6 +173,7 @@ export async function POST(req: Request) {
       plan: "free",
       registeredApps: ["muestras", "vendedores"],
       isDisabled: false,
+      authMethod: isGmail ? "google" : "password",
       mustChangePassword: isSantisoftPassword,
       updatedAt: FieldValue.serverTimestamp(),
       ...(existingDoc.exists ? {} : { createdAt: FieldValue.serverTimestamp() }),
@@ -173,13 +184,17 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      message: `Vendedor ${cleanName} registrado correctamente con rol comercial`,
+      message: isGmail
+        ? `Vendedor ${cleanName} registrado con cuenta Google (@gmail.com)`
+        : `Vendedor ${cleanName} registrado con clave inicial Santisoft`,
       vendedor: {
         id: uid,
         name: cleanName,
         email: cleanEmail,
         phone: cleanPhone,
         role: "vendedor",
+        authMethod: isGmail ? "google" : "password",
+        isGmail,
         demosCount: 0,
       },
     });

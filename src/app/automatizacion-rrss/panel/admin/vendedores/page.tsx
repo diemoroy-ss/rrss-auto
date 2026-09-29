@@ -59,6 +59,7 @@ export default function AdminVendedoresPage() {
     name: string;
     email: string;
     pass: string;
+    isGmail: boolean;
   } | null>(null);
 
   // Modal: Cambiar Contraseña
@@ -128,6 +129,7 @@ export default function AdminVendedoresPage() {
     setCreateLoading(true);
 
     try {
+      const isGmail = createEmail.trim().toLowerCase().includes("@gmail.com");
       const token = await auth.currentUser?.getIdToken();
       const res = await fetch("/api/admin/vendedores", {
         method: "POST",
@@ -138,7 +140,7 @@ export default function AdminVendedoresPage() {
         body: JSON.stringify({
           name: createName.trim(),
           email: createEmail.trim(),
-          password: createPassword,
+          password: isGmail ? "" : createPassword,
           phone: createPhone.trim(),
         }),
       });
@@ -152,7 +154,8 @@ export default function AdminVendedoresPage() {
       setCreatedSummary({
         name: createName.trim(),
         email: createEmail.trim(),
-        pass: createPassword,
+        pass: isGmail ? "" : createPassword,
+        isGmail,
       });
 
       // Limpiar formulario y recargar lista
@@ -440,21 +443,30 @@ export default function AdminVendedoresPage() {
 
                   <td className="p-5 text-right px-6">
                     <div className="flex items-center justify-end gap-2">
-                      {/* Botón Asignar/Cambiar Contraseña */}
-                      <button
-                        onClick={() => {
-                          setSelectedVendedor(v);
-                          setNewPassword("");
-                          setPassError("");
-                          setPassSuccess("");
-                          setShowPasswordModal(true);
-                        }}
-                        className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition-all text-xs flex items-center gap-1"
-                        title="Cambiar contraseña de este vendedor"
-                      >
-                        <FaKey className="text-indigo-600" />
-                        <span className="hidden sm:inline">Clave</span>
-                      </button>
+                      {/* Botón Asignar/Cambiar Contraseña o Etiqueta Google */}
+                      {v.email.toLowerCase().includes("@gmail.com") ? (
+                        <span
+                          className="px-2.5 py-1.5 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-700 font-bold text-[11px] flex items-center gap-1"
+                          title="Inicia sesión directamente con el botón de Google"
+                        >
+                          <span>🔵</span> Google Auth
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setSelectedVendedor(v);
+                            setNewPassword("");
+                            setPassError("");
+                            setPassSuccess("");
+                            setShowPasswordModal(true);
+                          }}
+                          className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition-all text-xs flex items-center gap-1"
+                          title="Cambiar contraseña de este vendedor"
+                        >
+                          <FaKey className="text-indigo-600" />
+                          <span className="hidden sm:inline">Clave</span>
+                        </button>
+                      )}
 
                       {/* Botón Suspender / Habilitar */}
                       <button
@@ -521,18 +533,30 @@ export default function AdminVendedoresPage() {
                 <p className="text-xs text-emerald-700">
                   Copia estas credenciales y compártelas con tu vendedor para que ingrese en la PWA:
                 </p>
-                <div className="bg-white p-3 rounded-xl border border-emerald-200 text-xs font-mono space-y-1">
-                  <div><strong>App:</strong> https://rrss.santisoft.cl/vendedores</div>
-                  <div><strong>Usuario:</strong> {createdSummary.email}</div>
-                  <div><strong>Contraseña:</strong> {createdSummary.pass}</div>
-                </div>
+
+                {createdSummary.isGmail ? (
+                  <div className="bg-white p-3.5 rounded-xl border border-emerald-200 text-xs font-mono space-y-1.5">
+                    <div><strong>App:</strong> https://rrss.santisoft.cl/vendedores</div>
+                    <div><strong>Cuenta:</strong> {createdSummary.email}</div>
+                    <div className="text-indigo-600 font-bold"><strong>Acceso:</strong> Botón &quot;Continuar con Google&quot; (No requiere contraseña)</div>
+                  </div>
+                ) : (
+                  <div className="bg-white p-3.5 rounded-xl border border-emerald-200 text-xs font-mono space-y-1.5">
+                    <div><strong>App:</strong> https://rrss.santisoft.cl/vendedores</div>
+                    <div><strong>Usuario:</strong> {createdSummary.email}</div>
+                    <div><strong>Contraseña Inicial:</strong> {createdSummary.pass}</div>
+                    <div className="text-amber-600 font-bold text-[11px] font-sans">Le solicitará definir su clave personal al ingresar.</div>
+                  </div>
+                )}
 
                 <div className="flex gap-2 pt-2">
                   <button
                     onClick={() => {
-                      const msg = `¡Hola ${createdSummary.name}! Aquí tienes tu acceso comercial a la mini app de Muestras de Santisoft:\n\n🔗 Enlace: https://rrss.santisoft.cl/vendedores\n👤 Usuario: ${createdSummary.email}\n🔑 Contraseña: ${createdSummary.pass}\n\nDesde allí puedes generar muestras para prospectos y compartirlas en 1 clic. ¡Mucho éxito!`;
+                      const msg = createdSummary.isGmail
+                        ? `¡Hola ${createdSummary.name}! Ya tienes habilitado tu acceso comercial a la mini app de Muestras de Santisoft:\n\n🔗 Enlace: https://rrss.santisoft.cl/vendedores\n\n👉 Para ingresar, simplemente abre el enlace y toca el botón 'Continuar con Google' con tu cuenta ${createdSummary.email}. ¡Mucho éxito!`
+                        : `¡Hola ${createdSummary.name}! Aquí tienes tu acceso comercial a la mini app de Muestras de Santisoft:\n\n🔗 Enlace: https://rrss.santisoft.cl/vendedores\n👤 Usuario: ${createdSummary.email}\n🔑 Contraseña inicial: ${createdSummary.pass} (deberás definir tu clave personal al entrar).\n\n¡Mucho éxito!`;
                       navigator.clipboard.writeText(msg);
-                      alert("¡Datos copiados al portapapeles listos para enviar por WhatsApp!");
+                      alert("¡Mensaje copiado al portapapeles listo para enviar por WhatsApp!");
                     }}
                     className="flex-1 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5"
                   >
@@ -577,28 +601,42 @@ export default function AdminVendedoresPage() {
                     required
                     value={createEmail}
                     onChange={(e) => setCreateEmail(e.target.value)}
-                    placeholder="juan.perez@empresa.com"
+                    placeholder="juan.perez@gmail.com o empresa.com"
                     className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 font-bold"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-500 mb-1">
-                    Contraseña Inicial *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    minLength={6}
-                    value={createPassword}
-                    onChange={(e) => setCreatePassword(e.target.value)}
-                    placeholder="Santisoft"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 font-bold font-mono"
-                  />
-                  <p className="text-[10px] text-slate-400 mt-1">
-                    Predeterminada: <strong>Santisoft</strong>. En su primer ingreso con esta clave inicial, el sistema le exigirá definir su contraseña personal.
-                  </p>
-                </div>
+                {createEmail.trim().toLowerCase().includes("@gmail.com") ? (
+                  <div className="p-3.5 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-start gap-2.5 animate-in fade-in">
+                    <span className="text-lg">🔵</span>
+                    <div className="text-xs">
+                      <div className="font-bold text-indigo-900">
+                        Cuenta Google (@gmail.com) detectada
+                      </div>
+                      <p className="text-indigo-700 leading-relaxed mt-0.5 text-[11px]">
+                        Este vendedor ingresará directamente con el botón <strong>&quot;Continuar con Google&quot;</strong>. No necesitas asignarle contraseña.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-[11px] font-black uppercase tracking-wider text-slate-500 mb-1">
+                      Contraseña Inicial *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      minLength={6}
+                      value={createPassword}
+                      onChange={(e) => setCreatePassword(e.target.value)}
+                      placeholder="Santisoft"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-indigo-500 font-bold font-mono"
+                    />
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      Predeterminada: <strong>Santisoft</strong>. En su primer ingreso con esta clave inicial, el sistema le exigirá definir su contraseña personal.
+                    </p>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-[11px] font-black uppercase tracking-wider text-slate-500 mb-1">
