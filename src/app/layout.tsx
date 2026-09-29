@@ -45,7 +45,12 @@ export const metadata: Metadata = {
     shortcut: '/favicon.svg?v=4',
     apple: '/favicon.svg?v=4',
   },
-  manifest: '/site.webmanifest?v=4',
+  manifest: '/site.webmanifest?v=5',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Santisoft RRSS',
+  },
   openGraph: {
     title: 'Santisoft | Redes & Contenido - Automatización Inteligente',
     description: 'Generación automática de contenido persuasivo, calendarios estratégicos y posicionamiento GEO en IA.',

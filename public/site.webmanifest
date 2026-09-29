@@ -1,19 +1,31 @@
 {
+  "id": "/app-principal",
   "name": "Santisoft | Redes & Contenido",
   "short_name": "Santisoft RRSS",
+  "description": "Automatización y gestión estratégica de redes sociales con agentes especializados",
+  "start_url": "/automatizacion-rrss/panel",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#4f46e5",
   "icons": [
     {
-      "src": "/favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml"
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "/favicon.png?v=3",
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.png?v=5",
       "sizes": "512x512",
       "type": "image/png"
     }
-  ],
-  "theme_color": "#E5300A",
-  "background_color": "#EEF0E5",
-  "display": "standalone"
+  ]
 }

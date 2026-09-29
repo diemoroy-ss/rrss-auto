@@ -12,15 +12,15 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "Santisoft Muestras | Vendedores",
   description: "Mini app para vendedores: generación de muestras comerciales y demos exclusivas con nuestros agentes.",
-  manifest: "/manifest-vendedores.json",
+  manifest: "/manifest-vendedores.json?v=2",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "Muestras",
   },
   icons: {
-    apple: "/apple-touch-icon.png",
-    icon: "/favicon.png",
+    apple: "/apple-touch-icon-vendedores.png",
+    icon: "/icon-vendedores-512.png",
   },
 };
 
