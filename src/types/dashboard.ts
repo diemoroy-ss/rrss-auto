@@ -38,6 +38,10 @@ export interface SocialPost {
   createdAt?: any;
   profileId?: string;
   userId?: string;
+  productId?: string;
+  productName?: string;
+  productDescription?: string;
+  hasProductImage?: boolean;
 }
 
 /** Configuración visual por estado de un post */

@@ -528,15 +528,22 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
                 try {
                     const { generateImageWithAgent } = await import('../../../lib/agents/agent-image');
 
-                    // 1. Jerarquía para Imagen Base:
-                    // Nivel 1: Imagen base explícita del post
-                    // Nivel 2: Foto de producto/servicio del catálogo (por coincidencia o primer ítem con foto)
+                    // 1. Jerarquía Inteligente para Producto e Imagen Base:
+                    // Nivel 1: Imagen base explícita del post o producto con foto real
+                    // Nivel 2: Producto de catálogo asociado sin foto (generar desde cero con estilo)
+                    // Nivel 3: Búsqueda dinámica en catálogo por coincidencia de texto
                     let resolvedBaseImage: string | undefined = undefined;
-                    let imageSource: "uploaded_base" | "catalog_product" | "business_description" = "business_description";
+                    let resolvedProductName: string | undefined = post.productName || undefined;
+                    let resolvedProductDesc: string | undefined = post.productDescription || undefined;
+                    let imageSource: "uploaded_base" | "catalog_product" | "catalog_product_generated" | "business_description" = "business_description";
 
                     if (post.baseImageUrl && typeof post.baseImageUrl === 'string' && post.baseImageUrl.startsWith('http')) {
                         resolvedBaseImage = post.baseImageUrl;
-                        imageSource = "uploaded_base";
+                        imageSource = resolvedProductName ? "catalog_product" : "uploaded_base";
+                    } else if (resolvedProductName) {
+                        // Producto del catálogo asignado pero SIN foto previa: nuestros agentes generan la fotografía desde cero
+                        imageSource = "catalog_product_generated";
+                        console.log(`[publishInBackground] Post ${postId}: Producto de catálogo sin foto previa: "${resolvedProductName}". Nuestros agentes generarán la fotografía desde cero con el estilo visual.`);
                     } else {
                         try {
                             const catSnap = await adminDb
@@ -548,22 +555,26 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
                                 .get();
 
                             if (!catSnap.empty) {
-                                const items = catSnap.docs
-                                    .map((d) => ({ id: d.id, ...d.data() } as any))
-                                    .filter((item) => item.imageUrl && typeof item.imageUrl === "string" && item.imageUrl.startsWith("http"));
+                                const allItems = catSnap.docs.map((d) => ({ id: d.id, ...d.data() } as any));
+                                const postTextLower = `${post.idea || ""} ${post.text || ""} ${post.copy || ""} ${post.postText || ""}`.toLowerCase();
+                                
+                                const matchedItem = allItems.find((it) => {
+                                    const nameLower = (it.name || "").toLowerCase();
+                                    return nameLower.length > 2 && postTextLower.includes(nameLower);
+                                });
 
-                                if (items.length > 0) {
-                                    // Coincidencia inteligente de keywords con el post
-                                    const postTextLower = `${post.idea || ""} ${post.text || ""} ${post.copy || ""} ${post.postText || ""}`.toLowerCase();
-                                    const matchedItem = items.find((it) => {
-                                        const nameLower = (it.name || "").toLowerCase();
-                                        return nameLower.length > 2 && postTextLower.includes(nameLower);
-                                    });
-
-                                    const selectedItem = matchedItem || items[0];
-                                    resolvedBaseImage = selectedItem.imageUrl;
-                                    imageSource = "catalog_product";
-                                    console.log(`[publishInBackground] Post ${postId}: Foto de catálogo vinculada automáticamente: "${selectedItem.name}" (${resolvedBaseImage})`);
+                                const selectedItem = matchedItem || allItems.find((it) => it.imageUrl && it.imageUrl.startsWith("http")) || allItems[0];
+                                if (selectedItem) {
+                                    resolvedProductName = selectedItem.name;
+                                    resolvedProductDesc = selectedItem.description;
+                                    if (selectedItem.imageUrl && typeof selectedItem.imageUrl === "string" && selectedItem.imageUrl.startsWith("http")) {
+                                        resolvedBaseImage = selectedItem.imageUrl;
+                                        imageSource = "catalog_product";
+                                        console.log(`[publishInBackground] Post ${postId}: Foto de catálogo vinculada automáticamente: "${selectedItem.name}" (${resolvedBaseImage})`);
+                                    } else {
+                                        imageSource = "catalog_product_generated";
+                                        console.log(`[publishInBackground] Post ${postId}: Producto de catálogo sin foto vinculado: "${selectedItem.name}". Generando desde cero.`);
+                                    }
                                 }
                             }
                         } catch (catErr) {
@@ -571,9 +582,13 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
                         }
                     }
 
+                    const productFocus = resolvedProductName 
+                        ? `Producto/servicio protagonista: "${resolvedProductName}"${resolvedProductDesc ? ` (${resolvedProductDesc})` : ''}. ` 
+                        : '';
+
                     const imagePromptIdea = post.imageDirection 
-                        ? `${post.imageDirection}${post.visualStyle ? ` en estilo visual ${post.visualStyle}` : ''}. Contexto del post: ${post.idea || caption}`
-                        : (post.idea || caption || 'Fotografía promocional profesional');
+                        ? `${productFocus}${post.imageDirection}${post.visualStyle ? ` en estilo visual ${post.visualStyle}` : ''}. Contexto del post: ${post.idea || caption}`
+                        : `${productFocus}${post.idea || caption || 'Fotografía promocional profesional'}`;
 
                     const generatedImageUrl = await generateImageWithAgent({
                         idea: imagePromptIdea,
@@ -582,6 +597,8 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
                         businessDescription: targetProfile?.businessDescription || '',
                         promotions: targetProfile?.promotions || '',
                         customOffer: post.customOffer || '',
+                        productName: resolvedProductName,
+                        productDescription: resolvedProductDesc,
                         bannerStyle: (targetProfile?.bannerStyle as any) || 'banner',
                         aspectRatio: isStory ? '9:16' : '1:1',
                         logoPrompt: targetProfile?.logoPrompt || '',
@@ -600,6 +617,9 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
                         imageUrl: generatedImageUrl,
                         imageUrls: [generatedImageUrl],
                         baseImageUrl: resolvedBaseImage || post.baseImageUrl || null,
+                        productName: resolvedProductName || post.productName || null,
+                        productDescription: resolvedProductDesc || post.productDescription || null,
+                        hasProductImage: Boolean(resolvedBaseImage),
                         imageSource,
                         autoGenerated: true,
                         autoGeneratedImage: true,

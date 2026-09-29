@@ -294,11 +294,14 @@ export default function EstrategiaPage() {
                  profileId: activeProfile?.id || 'default',
                  catalogUsage,
                  catalogoItems: catalogoItems.map((item: any) => ({
+                     id: item.id,
                      name: item.name,
                      description: item.description,
                      type: item.type,
                      price: item.price || null,
-                 })),
+                     imageUrl: item.imageUrl || null,
+                     hasImage: Boolean(item.imageUrl && typeof item.imageUrl === 'string' && item.imageUrl.startsWith('http'))
+                  })),
                  usePromptStyles,
                  selectedPromptStyles: usePromptStyles ? selectedPromptStyles : [],
                  connectedPlatforms: {
@@ -405,7 +408,12 @@ export default function EstrategiaPage() {
                 visualStyle: post.visualStyle || null,
                 promptTemplateId: post.promptTemplateId || null,
                 previewUrl: post.previewUrl || null,
-                imageDirection: post.imageDirection || null
+                imageDirection: post.imageDirection || null,
+                productId: post.productId || null,
+                productName: post.productName || null,
+                productDescription: post.productDescription || null,
+                baseImageUrl: post.baseImageUrl || null,
+                hasProductImage: Boolean(post.baseImageUrl)
             });
 
             try {
@@ -792,6 +800,33 @@ export default function EstrategiaPage() {
                                             </div>
                                             <span className={`${formatColor} font-black text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-xl`}>{post.format}</span>
                                          </div>
+
+                                         {/* Product badge if assigned */}
+                                         {post.productName && (
+                                            <div className="flex items-center gap-2.5 p-2.5 rounded-2xl bg-amber-50/90 border border-amber-200/90 mb-3 relative z-10 shadow-xs">
+                                              {post.baseImageUrl ? (
+                                                <img 
+                                                  src={post.baseImageUrl} 
+                                                  alt={post.productName} 
+                                                  className="w-10 h-10 rounded-xl object-cover border border-amber-300 shadow-2xs shrink-0" 
+                                                />
+                                              ) : (
+                                                <span className="w-10 h-10 rounded-xl bg-amber-100 border border-amber-200 flex items-center justify-center text-lg shrink-0">🛍️</span>
+                                              )}
+                                              <div className="min-w-0 flex-1">
+                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                  <span className="text-[9px] font-black uppercase tracking-wider text-amber-800">Producto Destacado</span>
+                                                  <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full ${post.baseImageUrl ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-indigo-100 text-indigo-800 border border-indigo-200'}`}>
+                                                    {post.baseImageUrl ? '✓ Foto de Catálogo' : '🎨 Foto a Generar'}
+                                                  </span>
+                                                </div>
+                                                <div className="text-xs font-black text-amber-950 truncate mt-0.5">{post.productName}</div>
+                                                {post.productDescription && (
+                                                  <div className="text-[10px] text-amber-800/80 font-medium line-clamp-1 mt-0.5">{post.productDescription}</div>
+                                                )}
+                                              </div>
+                                            </div>
+                                         )}
 
                                          {/* Style badge if assigned */}
                                          {post.visualStyle && (

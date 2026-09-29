@@ -164,7 +164,9 @@ export async function POST(req: NextRequest) {
         promptStylesToPass,
         businessData || {},
         userPlan,
-        maxVideos
+        maxVideos,
+        catalogoItems || [],
+        catalogUsage || "mixed"
     );
 
     console.log(`[STRATEGY] LangGraph Strategy generated successfully for plan ${userPlan} (posts: ${effectivePosts}, maxVideos: ${maxVideos}).`);

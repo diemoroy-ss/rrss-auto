@@ -12,6 +12,8 @@ export const StrategyAnnotation = Annotation.Root({
   history: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "Sin historial." }),
   nicheContext: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "" }),
   promptStyles: Annotation<any[]>({ reducer: (a, b) => b ?? a, default: () => [] }),
+  catalogItems: Annotation<any[]>({ reducer: (a, b) => b ?? a, default: () => [] }),
+  catalogUsage: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "mixed" }),
   postsPerWeek: Annotation<number>({ reducer: (a, b) => b ?? a, default: () => 5 }),
   planId: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "pro" }),
   maxVideos: Annotation<number>({ reducer: (a, b) => b ?? a, default: () => 2 }),
@@ -92,6 +94,38 @@ Por cada post, incluye:
 - "imageDirection": "Instrucción visual clara de cómo adaptar este estilo a este post específico"\n\n`
     : "";
 
+  let catalogInstruction = "";
+  if (state.catalogItems && state.catalogItems.length > 0 && state.catalogUsage !== "none") {
+    const itemsFormatted = state.catalogItems.map((item: any, idx: number) => {
+      const hasPic = Boolean(item.imageUrl && typeof item.imageUrl === "string" && item.imageUrl.startsWith("http"));
+      const picStatus = hasPic 
+        ? `[TIENE FOTO REAL DEL NEGOCIO: "${item.imageUrl}"]` 
+        : `[SIN FOTO: NUESTROS AGENTES GENERARÁN LA FOTOGRAFÍA COMERCIAL DESDE CERO CON EL ESTILO VISUAL]`;
+      return `- Ítem #${idx + 1}: ID: "${item.id || ''}" | Nombre: "${item.name}" | Tipo: ${item.type || 'producto'} | Precio: "${item.price || 'No especificado'}" | Descripción: "${item.description || 'Sin descripción'}" | Estado Fotográfico: ${picStatus}`;
+    }).join("\n");
+
+    catalogInstruction = `
+CATÁLOGO DE PRODUCTOS Y SERVICIOS DEL CLIENTE:
+${itemsFormatted}
+
+INSTRUCCIÓN OBLIGATORIA DE INTEGRACIÓN DE CATÁLOGO (${state.catalogUsage === "all" ? "100% CATÁLOGO OBLIGATORIO" : "INTEGRACIÓN MIXTA PRIORITARIA"}):
+${state.catalogUsage === "all" 
+  ? "1. TODAS las publicaciones deben estar basadas obligatoriamente en uno de los productos o servicios del catálogo." 
+  : "1. Prioriza asignar productos o servicios del catálogo a las publicaciones comerciales, de venta y promociones."}
+2. Cuando asignes un producto a un post:
+   - "productId": ID exacto del ítem del catálogo.
+   - "productName": Nombre exacto del producto o servicio.
+   - "productDescription": Descripción breve del producto o servicio.
+   - Si el producto [TIENE FOTO REAL DEL NEGOCIO]:
+     * "baseImageUrl": URL de la foto real del producto.
+     * "hasProductImage": true.
+     * En "imageDirection", instruye a nuestros agentes cómo aplicar el estilo visual ("visualStyle") integrando la foto real del producto como protagonista.
+   - Si el producto está [SIN FOTO]:
+     * "baseImageUrl": null.
+     * "hasProductImage": false.
+     * En "imageDirection", instruye a nuestros agentes para generar desde cero una fotografía comercial de alta gama para el producto, destacando sus características y aplicando con fidelidad el estilo visual seleccionado ("visualStyle").\n\n`;
+  }
+
   const contactLines: string[] = [];
   if (state.businessData?.businessName) contactLines.push(`- Nombre Empresa / Marca: ${state.businessData.businessName}`);
   if (state.businessData?.businessDescription || state.businessData?.description) contactLines.push(`- Descripción del Negocio: ${state.businessData.businessDescription || state.businessData.description}`);
@@ -110,7 +144,7 @@ Basándote en el siguiente análisis, genera un plan táctico de publicaciones.
 ANÁLISIS ESTRATÉGICO:
 ${state.analysis}
 
-${contactContext}${state.promotions ? `PROMOCIONES Y OFERTAS CLAVE DEL NEGOCIO (Incluye estas promociones, precios o combos reales en los ganchos y copys comerciales):\n"${state.promotions}"\n\n` : ""}${state.nicheContext ? `CONTEXTO DEL RADAR DE NICHO (Últimos 30 días):\n${state.nicheContext}\n\n` : ""}${stylesContext}
+${contactContext}${catalogInstruction}${state.promotions ? `PROMOCIONES Y OFERTAS CLAVE DEL NEGOCIO (Incluye estas promociones, precios o combos reales en los ganchos y copys comerciales):\n"${state.promotions}"\n\n` : ""}${state.nicheContext ? `CONTEXTO DEL RADAR DE NICHO (Últimos 30 días):\n${state.nicheContext}\n\n` : ""}${stylesContext}
 
 HISTORIAL DE POSTS Y RENDIMIENTO (Analiza esto para replicar qué formatos/ideas tuvieron más likes/alcance, y descarta lo que no sirvió):
 ${state.history}
@@ -132,7 +166,12 @@ DEBES GENERAR UNA ESTRUCTURA DE JSON válida que contenga un arreglo 'strategy' 
   "format": "Formato exacto (${state.maxVideos > 0 ? 'Reel, Carrusel, Post Fijo o Historia' : 'Post Fijo, Carrusel o Historia'})",
   "hook": "Gancho corto y potente",
   "content": "Resumen del contenido a grabar/diseñar",
-  "cta": "Llamado a la acción (incluyendo canal de contacto)"${state.promptStyles && state.promptStyles.length > 0 ? `,\n  "visualStyle": "Nombre del estilo asignado",\n  "promptTemplateId": "ID del estilo asignado",\n  "previewUrl": "URL de preview del estilo",\n  "imageDirection": "Idea de la imagen adaptada"` : ""}
+  "cta": "Llamado a la acción (incluyendo canal de contacto)",
+  "productId": "ID del producto o servicio asignado si aplica (o null)",
+  "productName": "Nombre exacto del producto o servicio si aplica (o null)",
+  "productDescription": "Descripción breve del producto o servicio (o null)",
+  "baseImageUrl": "URL de la foto si el producto tiene foto real, o null si no tiene",
+  "hasProductImage": true o false${state.promptStyles && state.promptStyles.length > 0 ? `,\n  "visualStyle": "Nombre del estilo asignado",\n  "promptTemplateId": "ID del estilo asignado",\n  "previewUrl": "URL de preview del estilo",\n  "imageDirection": "Instrucción de imagen aplicando el estilo y destacando el producto"` : ""}
 }
 
 GENERA EXACTAMENTE ${state.postsPerWeek} PUBLICACIONES DISTRIBUIDAS EN LOS PRÓXIMOS DÍAS.
@@ -157,7 +196,8 @@ REGLAS A VALIDAR:
 2. Si el plan es Free o máx videos es 0, NINGUNA publicación debe tener formato 'Reel' o 'Video'. Cámbialo a 'Post Fijo' o 'Carrusel'.
 3. Los 'dayOffset' deben ser números coherentes (0 a 14).
 4. El texto de 'hook' y 'cta' debe ser profesional y persuasivo.
-5. Conserva los campos visuales si están presentes: 'visualStyle', 'promptTemplateId', 'previewUrl', 'imageDirection'.
+5. CONSERVA INTACTOS los campos de producto si están presentes: 'productId', 'productName', 'productDescription', 'baseImageUrl', 'hasProductImage'.
+6. CONSERVA INTACTOS los campos de estilo visual: 'visualStyle', 'promptTemplateId', 'previewUrl', 'imageDirection'.
 
 DEVUELVE ÚNICAMENTE EL OBJETO JSON LIMPIO. SIN MARKDOWN.`;
 
@@ -290,7 +330,9 @@ export async function runProfessionalStrategyWorkflow(
     promptStyles: any[] = [],
     businessData: any = {},
     planId: string = "pro",
-    maxVideos: number = 2
+    maxVideos: number = 2,
+    catalogItems: any[] = [],
+    catalogUsage: string = "mixed"
 ) {
   const app = createStrategyWorkflow();
   const initialState = {
@@ -303,6 +345,8 @@ export async function runProfessionalStrategyWorkflow(
     history,
     nicheContext,
     promptStyles,
+    catalogItems,
+    catalogUsage,
     postsPerWeek,
     planId,
     maxVideos,

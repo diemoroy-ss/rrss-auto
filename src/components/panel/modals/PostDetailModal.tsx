@@ -276,6 +276,30 @@ export default function PostDetailModal({
                 )}
               </div>
 
+              {/* Producto asignado del catálogo */}
+              {post.productName && (
+                <div className="bg-white rounded-2xl p-4 border border-amber-200/90 shadow-2xs space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black text-amber-900 flex items-center gap-1.5">
+                      <span>🛍️</span> Producto del Catálogo Asociado
+                    </span>
+                    <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full ${post.baseImageUrl || post.hasProductImage ? "bg-emerald-100 text-emerald-800 border border-emerald-200" : "bg-indigo-100 text-indigo-800 border border-indigo-200"}`}>
+                      {post.baseImageUrl || post.hasProductImage ? "✓ Con Foto de Catálogo" : "🎨 Fotografía a Generar"}
+                    </span>
+                  </div>
+                  <div className="text-sm font-black text-slate-900">{post.productName}</div>
+                  {post.productDescription && (
+                    <p className="text-xs text-slate-600 font-medium">{post.productDescription}</p>
+                  )}
+                  {post.imageDirection && (
+                    <div className="text-[11px] text-slate-600 bg-amber-50/60 p-2.5 rounded-xl border border-amber-200/60 mt-1">
+                      <span className="font-bold text-amber-950">Dirección de Arte de nuestros agentes: </span>
+                      {post.imageDirection}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Zona de imagen base */}
               <div className="bg-white rounded-2xl p-4 border border-indigo-100/80 space-y-3">
                 <div className="flex items-center justify-between">
@@ -315,7 +339,7 @@ export default function PostDetailModal({
                       </label>
                     </div>
                     <p className="text-[11px] text-slate-500 leading-relaxed bg-indigo-50/50 p-2.5 rounded-xl border border-indigo-100/60">
-                      💡 <strong>Jerarquía Inteligente:</strong> Si no subes una imagen base, nuestros agentes buscarán primero una foto de tus productos o servicios en tu catálogo. Si no tienes fotos cargadas en el catálogo, generarán una pieza desde cero usando la descripción de tu negocio.
+                      💡 <strong>Jerarquía Inteligente:</strong> Si no subes una imagen base, nuestros agentes buscarán la foto de este producto en tu catálogo. Si tu producto no tiene foto cargada, generarán la fotografía publicitaria desde cero con el estilo visual seleccionado.
                     </p>
                   </div>
                 )}

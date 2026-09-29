@@ -151,6 +151,27 @@ export default function PostCard({
           </div>
         </div>
 
+        {/* Product & Style Badges */}
+        {(post.productName || post.visualStyle) && (
+          <div className="flex flex-wrap items-center gap-1.5 mb-4">
+            {post.productName && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-50 border border-amber-200/80 text-amber-900 text-[10px] font-black tracking-tight shadow-2xs">
+                <span>🛍️</span>
+                <span className="truncate max-w-[130px]">{post.productName}</span>
+                <span className={`text-[8px] uppercase px-1.5 py-0.5 rounded-md font-black ${post.baseImageUrl || post.hasProductImage ? "bg-emerald-100 text-emerald-800" : "bg-indigo-100 text-indigo-800"}`}>
+                  {post.baseImageUrl || post.hasProductImage ? "Foto Catálogo" : "Foto IA"}
+                </span>
+              </span>
+            )}
+            {post.visualStyle && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-indigo-50 border border-indigo-200/80 text-indigo-900 text-[10px] font-black tracking-tight shadow-2xs">
+                <span>🎨</span>
+                <span className="truncate max-w-[120px]">{post.visualStyle}</span>
+              </span>
+            )}
+          </div>
+        )}
+
         {/* Media thumbnail */}
         {post.isGeneratingImage ? (
           <div
