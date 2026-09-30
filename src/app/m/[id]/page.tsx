@@ -114,6 +114,22 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
     fetchDemo();
   }, [demoId]);
 
+  // Registro de vista del prospecto (tracking analítico)
+  useEffect(() => {
+    if (!demoId) return;
+    try {
+      const sessionKey = `viewed_demo_${demoId}`;
+      if (typeof window !== "undefined" && !sessionStorage.getItem(sessionKey)) {
+        sessionStorage.setItem(sessionKey, "1");
+        fetch(`/api/public/muestras/${encodeURIComponent(demoId)}/view`, {
+          method: "POST",
+        }).catch(() => {});
+      }
+    } catch (e) {
+      // Ignorar errores de sessionStorage/cookies
+    }
+  }, [demoId]);
+
   const handleShareLink = () => {
     if (typeof window !== "undefined") {
       const basePublicUrl = process.env.NEXT_PUBLIC_APP_URL || "https://rrss.santisoft.cl";

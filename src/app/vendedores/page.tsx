@@ -32,7 +32,14 @@ import {
   FaPaperPlane,
   FaVideo,
   FaFilm,
-  FaPlay
+  FaPlay,
+  FaChartLine,
+  FaCheckCircle,
+  FaClock,
+  FaFire,
+  FaTimesCircle,
+  FaTrophy,
+  FaUserCheck
 } from "react-icons/fa";
 import { VIDEO_PROMPT_STYLES, VideoPromptTemplate } from "../../lib/video-prompt-templates";
 
@@ -67,6 +74,14 @@ interface ProspectDemo {
   createdBy?: string;
   sellerEmail?: string;
   sellerName?: string;
+  // Campos analíticos y pipeline (Puntos 1, 2 y 5)
+  viewCount?: number;
+  firstViewedAt?: string;
+  lastViewedAt?: string;
+  lastViewDevice?: string;
+  outcome?: "nuevo" | "enviado" | "visto" | "interesado" | "cerrado" | "descartado";
+  lastFollowUpAt?: string;
+  followUpCount?: number;
 }
 
 const COMMON_NICHES = [
@@ -131,6 +146,77 @@ ${demoLink}
 Diseñamos este contenido con su identidad para que veas la calidad y el impacto que tendrían sus redes semana a semana sin quitarte tiempo.
 
 ¿Qué te parece el estilo?`;
+}
+
+function buildFollowUpCopy(
+  pName: string,
+  pBusiness: string,
+  demoId: string,
+  viewCount: number = 0
+) {
+  const namePart = pName.trim() ? `¡Hola ${pName.trim()}!` : "¡Hola!";
+  const businessPart = pBusiness.trim() ? ` para ${pBusiness.trim()}` : "";
+  const demoLink = `${PUBLIC_APP_URL}/m/${demoId}`;
+
+  if (viewCount > 0) {
+    return `${namePart} 👋 Vi que pudiste revisar la propuesta visual que prepararon nuestros agentes${businessPart}.
+
+¿Lograste ver el video reel y la muestra interactiva?
+
+Cuéntame qué te pareció o si te gustaría que ajustemos algún detalle para tu negocio:
+${demoLink}
+
+¡Quedo muy atento a tus comentarios!`;
+  }
+
+  return `${namePart} 👋 Te compartí arriba la propuesta que diseñaron nuestros agentes${businessPart}.
+
+Te vuelvo a dejar el enlace directo para que puedas mirarlo con calma en 1 minuto:
+${demoLink}
+
+Avísame si pudiste abrirlo o si tienes alguna duda para que coordinemos los siguientes pasos.`;
+}
+
+function getFollowUpStatus(demo: ProspectDemo) {
+  if (demo.outcome === "cerrado" || demo.outcome === "descartado") return null;
+
+  const dateStr = demo.lastFollowUpAt || demo.createdAt;
+  if (!dateStr) return null;
+
+  const sentTime = new Date(dateStr).getTime();
+  if (isNaN(sentTime)) return null;
+
+  const hoursDiff = (Date.now() - sentTime) / (1000 * 60 * 60);
+
+  if (hoursDiff >= 48) {
+    return {
+      type: "urgent" as const,
+      hours: Math.floor(hoursDiff),
+      label: `Seguimiento prioritario (+${Math.floor(hoursDiff)}h)`,
+    };
+  } else if (hoursDiff >= 24) {
+    return {
+      type: "warning" as const,
+      hours: Math.floor(hoursDiff),
+      label: `Seguimiento sugerido (+${Math.floor(hoursDiff)}h)`,
+    };
+  }
+  return null;
+}
+
+function formatRelativeTime(isoString?: string) {
+  if (!isoString) return "";
+  const d = new Date(isoString);
+  if (isNaN(d.getTime())) return "";
+  const diffMs = Date.now() - d.getTime();
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  if (diffMins < 1) return "hace un momento";
+  if (diffMins < 60) return `hace ${diffMins}m`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `hace ${diffHours}h`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 7) return `hace ${diffDays}d`;
+  return d.toLocaleDateString("es-CL", { day: "numeric", month: "short" });
 }
 
 export default function VendedoresPwaPage() {
@@ -208,6 +294,17 @@ export default function VendedoresPwaPage() {
   const [historyDemos, setHistoryDemos] = useState<ProspectDemo[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [historySearch, setHistorySearch] = useState("");
+  const [historyFilter, setHistoryFilter] = useState<"todos" | "vistos" | "interesados" | "cerrados" | "seguimiento">("todos");
+
+  // Estado Seguimiento / Follow-Up (Punto 2)
+  const [followUpDemo, setFollowUpDemo] = useState<ProspectDemo | null>(null);
+  const [followUpMsg, setFollowUpMsg] = useState("");
+  const [isSendingFollowUp, setIsSendingFollowUp] = useState(false);
+  const [followUpSuccessMsg, setFollowUpSuccessMsg] = useState("");
+  const [followUpErrorMsg, setFollowUpErrorMsg] = useState("");
+
+  // Estado actualización de Outcome (Punto 5)
+  const [updatingOutcomeId, setUpdatingOutcomeId] = useState<string | null>(null);
 
   // Estado Modal Cambiar Contraseña del Vendedor
   const [showChangePassModal, setShowChangePassModal] = useState(false);
@@ -1085,6 +1182,175 @@ export default function VendedoresPwaPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // 13.1 Abrir modal de seguimiento (Punto 2)
+  const handleOpenFollowUp = (demo: ProspectDemo) => {
+    if (!demo.id) return;
+    const msg = buildFollowUpCopy(
+      demo.prospectName || "",
+      demo.prospectBusiness || "",
+      demo.id,
+      demo.viewCount || 0
+    );
+    setFollowUpDemo(demo);
+    setFollowUpMsg(msg);
+    setFollowUpSuccessMsg("");
+    setFollowUpErrorMsg("");
+  };
+
+  // 13.2 Enviar seguimiento por WhatsApp (Punto 2)
+  const handleSendFollowUp = async () => {
+    if (!followUpDemo || !followUpDemo.id) return;
+    const rawTargetPhone = followUpDemo.prospectPhone || "";
+    const cleanPhone = rawTargetPhone.replace(/[\s\-\(\)\+]/g, "").replace(/^0+/, "");
+
+    if (!cleanPhone) {
+      setFollowUpErrorMsg("El prospecto no tiene número de WhatsApp registrado.");
+      return;
+    }
+
+    if (!followUpMsg.trim()) {
+      setFollowUpErrorMsg("El mensaje de seguimiento no puede estar vacío.");
+      return;
+    }
+
+    setIsSendingFollowUp(true);
+    setFollowUpErrorMsg("");
+    setFollowUpSuccessMsg("");
+
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      let delivered = false;
+
+      // 1. Intento directo vía Evolution API (CORS)
+      try {
+        const evoRes = await fetch(`${EVOLUTION_URL}/message/sendText/${EVOLUTION_INSTANCE}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json; charset=utf-8",
+            apikey: EVOLUTION_API_KEY,
+          },
+          body: JSON.stringify({
+            number: cleanPhone,
+            text: followUpMsg.trim(),
+          }),
+          signal: AbortSignal.timeout(8000),
+        });
+
+        if (evoRes.ok) {
+          delivered = true;
+          fetch("/api/admin/whatsapp/send", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ phone: cleanPhone, text: followUpMsg.trim(), logOnly: true }),
+          }).catch(() => {});
+        }
+      } catch (clientErr) {
+        console.warn("Direct follow-up failed, fallback to backend:", clientErr);
+      }
+
+      // 2. Intento secundario: Backend fallback
+      if (!delivered) {
+        const res = await fetch("/api/admin/whatsapp/send", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            phone: cleanPhone,
+            text: followUpMsg.trim(),
+          }),
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || "No se pudo entregar el seguimiento por WhatsApp");
+        }
+        delivered = true;
+      }
+
+      // 3. Notificación complementaria directa a webhook n8n
+      fetch(N8N_EVOAPI_WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+        body: JSON.stringify({
+          phone: cleanPhone,
+          number: cleanPhone,
+          text: followUpMsg.trim(),
+          demoId: followUpDemo.id,
+          demoUrl: `${PUBLIC_APP_URL}/m/${followUpDemo.id}`,
+          isFollowUp: true,
+          deliveredMode: "vendedores_pwa_followup",
+          timestamp: new Date().toISOString(),
+        }),
+        signal: AbortSignal.timeout(3000),
+      }).catch(() => {});
+
+      // 4. Actualizar estado y contador de seguimiento en Firestore
+      const nowIso = new Date().toISOString();
+      const newFollowUpCount = (followUpDemo.followUpCount || 0) + 1;
+      await fetch("/api/admin/muestras", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          id: followUpDemo.id,
+          lastFollowUpAt: nowIso,
+          followUpCount: newFollowUpCount,
+        }),
+      });
+
+      // 5. Actualizar estado local
+      setHistoryDemos((prev) =>
+        prev.map((d) =>
+          d.id === followUpDemo.id
+            ? { ...d, lastFollowUpAt: nowIso, followUpCount: newFollowUpCount }
+            : d
+        )
+      );
+
+      setFollowUpSuccessMsg("¡Seguimiento enviado con éxito por WhatsApp!");
+      setTimeout(() => {
+        setFollowUpDemo(null);
+        setFollowUpSuccessMsg("");
+      }, 2000);
+    } catch (err: any) {
+      console.error("Error al enviar seguimiento:", err);
+      setFollowUpErrorMsg(err.message || "Error al enviar el mensaje de seguimiento.");
+    } finally {
+      setIsSendingFollowUp(false);
+    }
+  };
+
+  // 13.3 Actualizar estado comercial / outcome del prospecto (Punto 5)
+  const handleUpdateOutcome = async (demoId: string, newOutcome: ProspectDemo["outcome"]) => {
+    setUpdatingOutcomeId(demoId);
+    setHistoryDemos((prev) =>
+      prev.map((d) => (d.id === demoId ? { ...d, outcome: newOutcome } : d))
+    );
+
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      await fetch("/api/admin/muestras", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          id: demoId,
+          outcome: newOutcome,
+        }),
+      });
+    } catch (err) {
+      console.error("Error al guardar estado del prospecto:", err);
+    } finally {
+      setUpdatingOutcomeId(null);
+    }
+  };
+
   // 13. Eliminar demo
   const handleDeleteDemo = async (demoId: string) => {
     if (!confirm("¿Seguro que deseas eliminar esta muestra?")) return;
@@ -1168,6 +1434,20 @@ export default function VendedoresPwaPage() {
 
   const cleanPhone = prospectPhone.trim().replace(/[\s\-\(\)\+]/g, "").replace(/^0+/, "");
   const fullPhoneForPreview = cleanPhone ? `${countryCode}${cleanPhone}` : "";
+
+  // Métricas del pipeline del vendedor (Puntos 1, 2 y 5)
+  const totalDemos = historyDemos.length;
+  const totalEnviadas = historyDemos.filter(
+    (d) => d.status === "enviada" || (d.outcome && d.outcome !== "nuevo")
+  ).length;
+  const totalVistas = historyDemos.filter((d) => (d.viewCount || 0) > 0).length;
+  const openRate = totalEnviadas > 0 ? Math.round((totalVistas / totalEnviadas) * 100) : 0;
+  const totalInteresados = historyDemos.filter((d) => d.outcome === "interesado").length;
+  const totalCerrados = historyDemos.filter((d) => d.outcome === "cerrado").length;
+  const conversionRate = totalEnviadas > 0 ? Math.round((totalCerrados / totalEnviadas) * 100) : 0;
+  const totalPendientesSeguimiento = historyDemos.filter(
+    (d) => getFollowUpStatus(d) !== null
+  ).length;
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col pb-20 sm:pb-8">
@@ -2047,6 +2327,65 @@ export default function VendedoresPwaPage() {
         ) : (
           /* PESTAÑA: MIS MUESTRAS (HISTORIAL DEL VENDEDOR) */
           <div className="space-y-4">
+            {/* PANEL DE MÉTRICAS Y PIPELINE DE CONVERSIÓN (PUNTO 5) */}
+            {historyDemos.length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                <div className="bg-white border border-slate-200/80 rounded-2xl p-3 shadow-xs">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-1">
+                    Muestras
+                  </span>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-xl font-black text-slate-900">{totalDemos}</span>
+                    <span className="text-[10px] font-bold text-slate-400">creadas</span>
+                  </div>
+                </div>
+
+                <div className="bg-white border border-slate-200/80 rounded-2xl p-3 shadow-xs">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-indigo-500 block mb-1 flex items-center gap-1">
+                    <FaEye className="text-xs" /> Aperturas
+                  </span>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-xl font-black text-indigo-600">{totalVistas}</span>
+                    <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded-full">
+                      {openRate}%
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-white border border-slate-200/80 rounded-2xl p-3 shadow-xs">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-amber-600 block mb-1 flex items-center gap-1">
+                    <FaFire className="text-xs" /> Interesados
+                  </span>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-xl font-black text-amber-600">{totalInteresados}</span>
+                    <span className="text-[10px] font-bold text-slate-400">leads</span>
+                  </div>
+                </div>
+
+                <div className="bg-white border border-slate-200/80 rounded-2xl p-3 shadow-xs">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 block mb-1 flex items-center gap-1">
+                    <FaTrophy className="text-xs" /> Cierres
+                  </span>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-xl font-black text-emerald-600">{totalCerrados}</span>
+                    <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">
+                      {conversionRate}%
+                    </span>
+                  </div>
+                </div>
+
+                <div className="col-span-2 sm:col-span-1 bg-white border border-slate-200/80 rounded-2xl p-3 shadow-xs">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-rose-500 block mb-1 flex items-center gap-1">
+                    <FaClock className="text-xs" /> Seguimiento
+                  </span>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-xl font-black text-rose-600">{totalPendientesSeguimiento}</span>
+                    <span className="text-[10px] font-bold text-slate-400">pendientes</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
               <div className="relative flex-1">
                 <FaSearch className="absolute left-3.5 top-3 text-slate-400 text-xs" />
@@ -2079,6 +2418,67 @@ export default function VendedoresPwaPage() {
               </div>
             </div>
 
+            {/* PÍLDORAS DE FILTRADO POR ESTADO / EMBUDO */}
+            {historyDemos.length > 0 && (
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs font-bold scrollbar-none">
+                <button
+                  type="button"
+                  onClick={() => setHistoryFilter("todos")}
+                  className={`px-3 py-1.5 rounded-xl border transition-all cursor-pointer whitespace-nowrap ${
+                    historyFilter === "todos"
+                      ? "bg-slate-900 border-slate-900 text-white"
+                      : "bg-white border-slate-200 text-slate-600 hover:bg-slate-100"
+                  }`}
+                >
+                  Todos ({totalDemos})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHistoryFilter("vistos")}
+                  className={`px-3 py-1.5 rounded-xl border transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                    historyFilter === "vistos"
+                      ? "bg-indigo-600 border-indigo-600 text-white"
+                      : "bg-white border-slate-200 text-slate-600 hover:bg-indigo-50 hover:text-indigo-700"
+                  }`}
+                >
+                  <FaEye className="text-xs" /> Abiertas ({totalVistas})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHistoryFilter("interesados")}
+                  className={`px-3 py-1.5 rounded-xl border transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                    historyFilter === "interesados"
+                      ? "bg-amber-600 border-amber-600 text-white"
+                      : "bg-white border-slate-200 text-slate-600 hover:bg-amber-50 hover:text-amber-700"
+                  }`}
+                >
+                  <FaFire className="text-xs" /> Interesados ({totalInteresados})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHistoryFilter("cerrados")}
+                  className={`px-3 py-1.5 rounded-xl border transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                    historyFilter === "cerrados"
+                      ? "bg-emerald-600 border-emerald-600 text-white"
+                      : "bg-white border-slate-200 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700"
+                  }`}
+                >
+                  <FaTrophy className="text-xs" /> Cerrados ({totalCerrados})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHistoryFilter("seguimiento")}
+                  className={`px-3 py-1.5 rounded-xl border transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                    historyFilter === "seguimiento"
+                      ? "bg-rose-600 border-rose-600 text-white"
+                      : "bg-white border-slate-200 text-slate-600 hover:bg-rose-50 hover:text-rose-700"
+                  }`}
+                >
+                  <FaClock className="text-xs" /> Por Seguimiento ({totalPendientesSeguimiento})
+                </button>
+              </div>
+            )}
+
             {loadingHistory ? (
               <div className="text-center py-12">
                 <div className="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
@@ -2106,17 +2506,27 @@ export default function VendedoresPwaPage() {
                 {historyDemos
                   .filter((d) => {
                     const q = historySearch.toLowerCase();
-                    return (
+                    const matchText =
                       !q ||
                       d.prospectBusiness?.toLowerCase().includes(q) ||
                       d.prospectName?.toLowerCase().includes(q) ||
                       d.prospectPhone?.includes(q) ||
-                      d.rubro?.toLowerCase().includes(q)
-                    );
+                      d.rubro?.toLowerCase().includes(q);
+
+                    if (!matchText) return false;
+
+                    if (historyFilter === "vistos") return (d.viewCount || 0) > 0;
+                    if (historyFilter === "interesados") return d.outcome === "interesado";
+                    if (historyFilter === "cerrados") return d.outcome === "cerrado";
+                    if (historyFilter === "seguimiento") return getFollowUpStatus(d) !== null;
+
+                    return true;
                   })
                   .map((demo) => {
                     const thumb = demo.canvasImageUrl || demo.generatedImageUrl || demo.baseImageUrl || "";
                     const isSent = demo.status === "enviada";
+                    const followUpAlert = getFollowUpStatus(demo);
+                    const currentOutcome = demo.outcome || (isSent ? "enviado" : "nuevo");
 
                     return (
                       <div
@@ -2154,7 +2564,7 @@ export default function VendedoresPwaPage() {
                           )}
 
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
+                            <div className="flex items-center gap-1.5 mb-1 flex-wrap">
                               <h4 className="text-sm font-black text-slate-900 truncate">
                                 {demo.prospectBusiness}
                               </h4>
@@ -2184,31 +2594,109 @@ export default function VendedoresPwaPage() {
                             )}
                             {demo.prospectPhone && (
                               <p className="text-[10px] text-slate-400 font-mono mt-0.5">
-                                📞 {demo.prospectPhone}
+                                📞 +{demo.prospectPhone}
                               </p>
                             )}
                           </div>
                         </div>
 
+                        {/* BADGES ANALÍTICOS Y ALERTAS (PUNTOS 1 Y 2) */}
+                        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                          {(demo.viewCount || 0) > 0 ? (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center gap-1">
+                              <FaEye className="text-[9px]" /> {demo.viewCount} {demo.viewCount === 1 ? "apertura" : "aperturas"}
+                              {demo.lastViewedAt && (
+                                <span className="text-indigo-400 font-normal">· {formatRelativeTime(demo.lastViewedAt)}</span>
+                              )}
+                            </span>
+                          ) : isSent ? (
+                            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200 flex items-center gap-1">
+                              <FaClock className="text-[9px]" /> No abierta aún
+                            </span>
+                          ) : null}
+
+                          {demo.followUpCount && demo.followUpCount > 0 ? (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+                              <FaCheckCircle className="text-[9px]" /> {demo.followUpCount} {demo.followUpCount === 1 ? "seguimiento" : "seguimientos"}
+                            </span>
+                          ) : null}
+
+                          {followUpAlert && (
+                            <span
+                              className={`text-[10px] font-black px-2 py-0.5 rounded-full border flex items-center gap-1 ${
+                                followUpAlert.type === "urgent"
+                                  ? "bg-rose-50 text-rose-700 border-rose-200 animate-pulse"
+                                  : "bg-amber-50 text-amber-700 border-amber-200"
+                              }`}
+                            >
+                              <FaClock className="text-[9px]" /> {followUpAlert.label}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* SELECTOR DE ESTADO COMERCIAL / PIPELINE (PUNTO 5) */}
+                        <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-[11px]">
+                          <span className="text-slate-500 font-bold flex items-center gap-1">
+                            <span>Estado lead:</span>
+                          </span>
+                          <select
+                            value={currentOutcome}
+                            disabled={updatingOutcomeId === demo.id}
+                            onChange={(e) => demo.id && handleUpdateOutcome(demo.id, e.target.value as any)}
+                            className={`rounded-lg px-2.5 py-1 text-[11px] font-black focus:outline-none border cursor-pointer transition-colors ${
+                              currentOutcome === "cerrado"
+                                ? "bg-emerald-50 text-emerald-800 border-emerald-300"
+                                : currentOutcome === "interesado"
+                                ? "bg-amber-50 text-amber-800 border-amber-300"
+                                : currentOutcome === "visto"
+                                ? "bg-indigo-50 text-indigo-700 border-indigo-200"
+                                : currentOutcome === "enviado"
+                                ? "bg-blue-50 text-blue-700 border-blue-200"
+                                : currentOutcome === "descartado"
+                                ? "bg-slate-100 text-slate-400 border-slate-200"
+                                : "bg-slate-50 text-slate-700 border-slate-200"
+                            }`}
+                          >
+                            <option value="nuevo">Nuevo</option>
+                            <option value="enviado">Enviado</option>
+                            <option value="visto">Abierto</option>
+                            <option value="interesado">Interesado 🔥</option>
+                            <option value="cerrado">Cerrado 🏆</option>
+                            <option value="descartado">Descartado</option>
+                          </select>
+                        </div>
+
                         {/* ACCIONES DE LA TARJETA */}
                         <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5">
-                          <button
-                            type="button"
-                            disabled={sendingWhatsAppId === demo.id}
-                            onClick={() => handleSendWhatsApp(demo.id, demo.prospectPhone, demo.whatsappMessage)}
-                            className="flex-1 py-2 px-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer"
-                          >
-                            {sendingWhatsAppId === demo.id ? (
-                              <>
-                                <div className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                                <span>Enviando...</span>
-                              </>
-                            ) : (
-                              <>
-                                <FaWhatsapp /> <span>Enviar</span>
-                              </>
-                            )}
-                          </button>
+                          {isSent ? (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenFollowUp(demo)}
+                              className="flex-1 py-2 px-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                              title="Hacer seguimiento por WhatsApp"
+                            >
+                              <FaWhatsapp />
+                              <span>Seguimiento</span>
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              disabled={sendingWhatsAppId === demo.id}
+                              onClick={() => handleSendWhatsApp(demo.id, demo.prospectPhone, demo.whatsappMessage)}
+                              className="flex-1 py-2 px-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+                            >
+                              {sendingWhatsAppId === demo.id ? (
+                                <>
+                                  <div className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                                  <span>Enviando...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <FaWhatsapp /> <span>Enviar</span>
+                                </>
+                              )}
+                            </button>
+                          )}
 
                           {demo.id && (
                             <a
@@ -2216,7 +2704,7 @@ export default function VendedoresPwaPage() {
                               target="_blank"
                               rel="noreferrer"
                               className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 hover:text-slate-900 transition-colors"
-                              title="Ver Landing"
+                              title="Ver Landing del prospecto"
                             >
                               <FaExternalLinkAlt className="text-xs" />
                             </a>
@@ -2357,6 +2845,138 @@ export default function VendedoresPwaPage() {
             >
               Entendido
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE SEGUIMIENTO WHATSAPP (PUNTO 2) */}
+      {followUpDemo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white border border-slate-200 rounded-[28px] max-w-lg w-full p-6 text-slate-800 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start justify-between">
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                  Seguimiento Oportuno
+                </span>
+                <h3 className="text-lg font-black text-slate-900 mt-1">
+                  Seguimiento para {followUpDemo.prospectBusiness}
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Contacto: {followUpDemo.prospectName || "Sin nombre"} · 📞 +{followUpDemo.prospectPhone}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFollowUpDemo(null)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer"
+              >
+                <FaTimesCircle className="text-lg" />
+              </button>
+            </div>
+
+            {/* Contexto de visualización / analítica */}
+            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2.5">
+                <span className="text-xl">👁️</span>
+                <div>
+                  <p className="font-bold text-slate-800">
+                    {(followUpDemo.viewCount || 0) > 0
+                      ? `¡El prospecto abrió la propuesta ${followUpDemo.viewCount} ${followUpDemo.viewCount === 1 ? 'vez' : 'veces'}!`
+                      : "Aún no ha abierto el enlace de la muestra"}
+                  </p>
+                  {followUpDemo.lastViewedAt ? (
+                    <p className="text-[10px] text-slate-500">
+                      Última visita: {formatRelativeTime(followUpDemo.lastViewedAt)}
+                    </p>
+                  ) : (
+                    <p className="text-[10px] text-slate-400">
+                      Enviada {formatRelativeTime(followUpDemo.createdAt)}
+                    </p>
+                  )}
+                </div>
+              </div>
+              {followUpDemo.followUpCount && followUpDemo.followUpCount > 0 ? (
+                <span className="text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-full shrink-0">
+                  {followUpDemo.followUpCount} {followUpDemo.followUpCount === 1 ? 'seguimiento previo' : 'seguimientos previos'}
+                </span>
+              ) : null}
+            </div>
+
+            {/* Mensaje de seguimiento */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-700">
+                Mensaje personalizado (redactado por nuestros agentes):
+              </label>
+              <textarea
+                rows={5}
+                value={followUpMsg}
+                onChange={(e) => setFollowUpMsg(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3 text-xs text-slate-900 leading-relaxed focus:bg-white focus:outline-none focus:border-indigo-600 font-sans"
+              />
+              <p className="text-[10px] text-slate-400">
+                Puedes ajustar el mensaje a tu gusto antes de enviarlo. El enlace a la propuesta ya está incluido.
+              </p>
+            </div>
+
+            {followUpErrorMsg && (
+              <div className="text-xs text-rose-700 bg-rose-50 border border-rose-200 p-3 rounded-xl flex items-center gap-1.5">
+                <FaTimesCircle className="text-rose-600 shrink-0" />
+                <span>{followUpErrorMsg}</span>
+              </div>
+            )}
+
+            {followUpSuccessMsg && (
+              <div className="text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 p-3 rounded-xl flex items-center gap-1.5">
+                <FaCheckCircle className="text-emerald-600 shrink-0" />
+                <span>{followUpSuccessMsg}</span>
+              </div>
+            )}
+
+            <div className="pt-2 flex flex-col sm:flex-row gap-2">
+              <button
+                type="button"
+                onClick={handleSendFollowUp}
+                disabled={isSendingFollowUp}
+                className="flex-1 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-extrabold flex items-center justify-center gap-2 transition-all shadow-md shadow-emerald-600/20 cursor-pointer"
+              >
+                {isSendingFollowUp ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    <span>Enviando por WhatsApp...</span>
+                  </>
+                ) : (
+                  <>
+                    <FaWhatsapp className="text-base" />
+                    <span>Enviar Seguimiento (Directo)</span>
+                  </>
+                )}
+              </button>
+
+              <a
+                href={`https://wa.me/${followUpDemo.prospectPhone.replace(/[\s\-\(\)\+]/g, "").replace(/^0+/, "")}?text=${encodeURIComponent(followUpMsg)}`}
+                target="_blank"
+                rel="noreferrer"
+                onClick={() => {
+                  if (followUpDemo.id) {
+                    const nowIso = new Date().toISOString();
+                    const newCount = (followUpDemo.followUpCount || 0) + 1;
+                    auth.currentUser?.getIdToken().then((token) => {
+                      fetch("/api/admin/muestras", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                        body: JSON.stringify({ id: followUpDemo.id, lastFollowUpAt: nowIso, followUpCount: newCount }),
+                      });
+                    });
+                    setHistoryDemos((prev) =>
+                      prev.map((d) => d.id === followUpDemo.id ? { ...d, lastFollowUpAt: nowIso, followUpCount: newCount } : d)
+                    );
+                  }
+                }}
+                className="py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <span>Abrir en WhatsApp</span>
+              </a>
+            </div>
           </div>
         </div>
       )}
