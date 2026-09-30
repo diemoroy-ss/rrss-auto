@@ -74,6 +74,7 @@ interface ProspectDemo {
   createdBy?: string;
   sellerEmail?: string;
   sellerName?: string;
+  sentAt?: string;
   // Campos analíticos y pipeline (Puntos 1, 2 y 5)
   viewCount?: number;
   firstViewedAt?: string;
@@ -180,7 +181,7 @@ Avísame si pudiste abrirlo o si tienes alguna duda para que coordinemos los sig
 function getFollowUpStatus(demo: ProspectDemo) {
   if (demo.outcome === "cerrado" || demo.outcome === "descartado") return null;
 
-  const dateStr = demo.lastFollowUpAt || demo.createdAt;
+  const dateStr = demo.lastFollowUpAt || demo.sentAt || demo.createdAt;
   if (!dateStr) return null;
 
   const sentTime = new Date(dateStr).getTime();
@@ -949,6 +950,7 @@ export default function VendedoresPwaPage() {
 
       // Actualizar estado a "enviada" en Firestore y persistir el mensaje sanitizado
       if (targetId) {
+        const sentIso = new Date().toISOString();
         await fetch("/api/admin/muestras", {
           method: "POST",
           headers: {
@@ -959,12 +961,13 @@ export default function VendedoresPwaPage() {
             id: targetId,
             status: "enviada",
             whatsappMessage: messageToSend,
+            sentAt: sentIso,
           }),
         });
 
         // Actualizar en el historial local
         setHistoryDemos((prev) =>
-          prev.map((d) => (d.id === targetId ? { ...d, status: "enviada", whatsappMessage: messageToSend } : d))
+          prev.map((d) => (d.id === targetId ? { ...d, status: "enviada", whatsappMessage: messageToSend, sentAt: sentIso } : d))
         );
       }
 
