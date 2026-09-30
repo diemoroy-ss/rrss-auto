@@ -29,8 +29,12 @@ import {
   FaPlus,
   FaEdit,
   FaSyncAlt,
-  FaPaperPlane
+  FaPaperPlane,
+  FaVideo,
+  FaFilm,
+  FaPlay
 } from "react-icons/fa";
+import { VIDEO_PROMPT_STYLES, VideoPromptTemplate } from "../../lib/video-prompt-templates";
 
 interface ProspectDemo {
   id?: string;
@@ -53,6 +57,9 @@ interface ProspectDemo {
   generatedImageUrl?: string;
   canvasImageUrl?: string;
   butterflyUrl?: string;
+  generatedVideoUrl?: string;
+  videoStyleTitle?: string;
+  videoPromptEnglish?: string;
   publicDemoUrl?: string;
   whatsappMessage?: string;
   createdAt?: any;
@@ -148,6 +155,21 @@ export default function VendedoresPwaPage() {
   const [customWhatsappCopy, setCustomWhatsappCopy] = useState("");
   const [copySuccess, setCopySuccess] = useState(false);
   const [copyPostSuccess, setCopyPostSuccess] = useState(false);
+
+  // Step 4b: Video Generation State
+  const [generatedVideoUrl, setGeneratedVideoUrl] = useState("");
+  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
+  const [videoProgress, setVideoProgress] = useState("");
+  const [videoError, setVideoError] = useState("");
+  const [selectedVideoStyle, setSelectedVideoStyle] = useState<VideoPromptTemplate>(VIDEO_PROMPT_STYLES[0]);
+  const [customVideoPrompt, setCustomVideoPrompt] = useState("");
+  const [manualVideoUrlInput, setManualVideoUrlInput] = useState("");
+
+  // WhatsApp Sending State
+  const [isSendingWhatsApp, setIsSendingWhatsApp] = useState(false);
+  const [sendingWhatsAppId, setSendingWhatsAppId] = useState<string | null>(null);
+  const [whatsAppSuccessMsg, setWhatsAppSuccessMsg] = useState("");
+  const [whatsAppErrorMsg, setWhatsAppErrorMsg] = useState("");
 
   // History State
   const [historyDemos, setHistoryDemos] = useState<ProspectDemo[]>([]);
@@ -617,6 +639,23 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
           const saveJson = await saveRes.json();
           savedDemoId = saveJson.id;
           setCreatedDemoId(savedDemoId);
+
+          // Actualizar mensaje de WhatsApp con el link interactivo real
+          const finalDemoLink = `${PUBLIC_APP_URL}/m/${savedDemoId}`;
+          const updatedMsg = customWhatsappCopy.replace(/https?:\/\/[^\s]+|\[ENLACE_DE_MUESTRA\]/g, finalDemoLink);
+          setCustomWhatsappCopy(updatedMsg);
+
+          fetch("/api/admin/muestras", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              id: savedDemoId,
+              whatsappMessage: updatedMsg,
+            }),
+          }).catch(() => {});
         }
       } catch (saveErr) {
         console.error("Error guardando demo:", saveErr);
@@ -640,7 +679,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
     }
   };
 
-  // 9. Enviar por WhatsApp (1-click)
+  // 9. Enviar por WhatsApp vía Evolution API y n8n
   const handleSendWhatsApp = async (overrideDemoId?: string, overridePhone?: string, overrideMsg?: string) => {
     const targetId = overrideDemoId || createdDemoId;
     const rawTargetPhone = overridePhone || (prospectPhone.trim() ? `${countryCode}${prospectPhone.trim().replace(/^0+/, "")}` : "");
@@ -652,11 +691,35 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
     }
 
     const messageToSend = overrideMsg || customWhatsappCopy;
+    setIsSendingWhatsApp(true);
+    setSendingWhatsAppId(targetId || "current");
+    setWhatsAppSuccessMsg("");
+    setWhatsAppErrorMsg("");
 
-    // Actualizar estado a "enviada" en backend
-    if (targetId) {
-      try {
-        const token = await auth.currentUser?.getIdToken();
+    try {
+      const token = await auth.currentUser?.getIdToken();
+
+      // Enviar a través de la API que conecta con Evolution API y notifica a n8n
+      const res = await fetch("/api/admin/whatsapp/send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          phone: cleanPhone,
+          text: messageToSend,
+          mediaUrl: (canvasImageUrl || generatedImageUrl)?.startsWith("http") ? (canvasImageUrl || generatedImageUrl) : undefined,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || "No se pudo entregar el mensaje por WhatsApp");
+      }
+
+      // Actualizar estado a "enviada" en Firestore
+      if (targetId) {
         await fetch("/api/admin/muestras", {
           method: "POST",
           headers: {
@@ -668,15 +731,159 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
             status: "enviada",
           }),
         });
-      } catch (_) {}
-    }
 
-    // Abrir WhatsApp Web o App directamente
-    const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(messageToSend)}`;
-    window.open(waUrl, "_blank");
+        // Actualizar en el historial local
+        setHistoryDemos((prev) =>
+          prev.map((d) => (d.id === targetId ? { ...d, status: "enviada" } : d))
+        );
+      }
+
+      setWhatsAppSuccessMsg(`¡Propuesta enviada con éxito a +${cleanPhone} mediante WhatsApp y n8n!`);
+      setTimeout(() => setWhatsAppSuccessMsg(""), 7000);
+    } catch (err: any) {
+      console.error("[WhatsApp Send Error]:", err);
+      setWhatsAppErrorMsg(err.message || "No se pudo enviar el mensaje directamente.");
+    } finally {
+      setIsSendingWhatsApp(false);
+      setSendingWhatsAppId(null);
+    }
   };
 
-  // 10. Copiar enlace al portapapeles
+  // 10. Generar Video Reel (9:16) con Agentes y n8n
+  const handleGenerateVideo = async () => {
+    const targetImage = canvasImageUrl || generatedImageUrl || baseImagePreview;
+    if (!targetImage) {
+      alert("Se requiere una imagen generada para crear el video.");
+      return;
+    }
+
+    setIsGeneratingVideo(true);
+    setVideoProgress("Iniciando motor de video con nuestros agentes...");
+    setVideoError("");
+
+    try {
+      let finalVideoUrl = "";
+
+      // 1. Intento directo al webhook de n8n
+      try {
+        const payload = {
+          prospectBusiness: prospectBusiness.trim() || prospectName.trim(),
+          dishOrProductName: dishOrProductName.trim(),
+          offerText: offerText.trim(),
+          styleTitle: selectedVideoStyle?.title || "Video Comercial Cinemático",
+          prompt: customVideoPrompt || selectedVideoStyle?.baseEnglishPrompt,
+          baseImageUrl: targetImage,
+          renderMode: "raw",
+        };
+
+        const directN8nRes = await fetch("https://n8n.santisoft.cl/webhook/video-premium", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          signal: AbortSignal.timeout(180000), // 3 min
+        });
+
+        if (directN8nRes.ok) {
+          const directData = await directN8nRes.json().catch(() => ({}));
+          if (directData.videoUrl || directData.url) {
+            finalVideoUrl = directData.videoUrl || directData.url;
+            console.log("[Video Frontend] ✅ Video recibido directamente de n8n:", finalVideoUrl);
+          }
+        }
+      } catch (clientErr: any) {
+        console.warn("[Video Frontend] Intento directo a webhook n8n omitido:", clientErr);
+      }
+
+      // 2. Si falló intento directo, llamar al endpoint del servidor /api/ai/image-to-video
+      if (!finalVideoUrl) {
+        setVideoProgress("Animando escenas y movimiento de cámara con nuestros agentes...");
+        const res = await fetch("/api/ai/image-to-video", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            imageUrl: targetImage,
+            prompt: customVideoPrompt || selectedVideoStyle?.baseEnglishPrompt,
+            motionStyle: selectedVideoStyle?.id || "cinematic_slow_push_in",
+            businessName: prospectBusiness.trim() || prospectName.trim(),
+            rubro,
+            renderMode: "raw",
+            logoUrl: cleanedLogoUrl || logoPreview || "",
+            postId: createdDemoId || `demo_${Date.now()}`,
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || "Fallo al generar el video con nuestros agentes.");
+        }
+        finalVideoUrl = data.videoUrl;
+      }
+
+      if (finalVideoUrl) {
+        setGeneratedVideoUrl(finalVideoUrl);
+        // Persistir en Firestore vinculándolo a la muestra actual
+        if (createdDemoId) {
+          const token = await auth.currentUser?.getIdToken();
+          await fetch("/api/admin/muestras", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              id: createdDemoId,
+              generatedVideoUrl: finalVideoUrl,
+              videoStyleTitle: selectedVideoStyle?.title || null,
+              videoPromptEnglish: customVideoPrompt || null,
+            }),
+          });
+
+          // Actualizar en el estado de historial local
+          setHistoryDemos((prev) =>
+            prev.map((d) => (d.id === createdDemoId ? { ...d, generatedVideoUrl: finalVideoUrl } : d))
+          );
+        }
+        setVideoProgress("¡Video 9:16 generado y enlazado con éxito a la propuesta interactiva!");
+        setTimeout(() => setVideoProgress(""), 7000);
+      } else {
+        throw new Error("El motor no retornó una URL de video válida.");
+      }
+    } catch (err: any) {
+      console.error("[Error generating video]:", err);
+      setVideoError(err.message || "Error al procesar el video con nuestros agentes.");
+    } finally {
+      setIsGeneratingVideo(false);
+    }
+  };
+
+  // 11. Enlazar video MP4 manual
+  const handleSaveManualVideo = async () => {
+    if (!manualVideoUrlInput.trim() || !createdDemoId) return;
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      await fetch("/api/admin/muestras", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          id: createdDemoId,
+          generatedVideoUrl: manualVideoUrlInput.trim(),
+        }),
+      });
+      setGeneratedVideoUrl(manualVideoUrlInput.trim());
+      setHistoryDemos((prev) =>
+        prev.map((d) => (d.id === createdDemoId ? { ...d, generatedVideoUrl: manualVideoUrlInput.trim() } : d))
+      );
+      setManualVideoUrlInput("");
+      alert("¡Video enlazado con éxito a la muestra interactiva!");
+    } catch (e: any) {
+      alert("Error al enlazar el video: " + e.message);
+    }
+  };
+
+  // 12. Copiar enlace al portapapeles
   const handleCopyDemoLink = (demoId: string) => {
     const url = `${PUBLIC_APP_URL}/m/${demoId}`;
     navigator.clipboard.writeText(url);
@@ -684,7 +891,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
     setTimeout(() => setCopySuccess(false), 2500);
   };
 
-  // 11. Copiar Copy del Post
+  // 13. Copiar Copy del Post
   const handleCopyPostCaption = () => {
     if (!generatedPostCaption) return;
     navigator.clipboard.writeText(generatedPostCaption);
@@ -692,7 +899,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
     setTimeout(() => setCopyPostSuccess(false), 2500);
   };
 
-  // 12. Cargar demo anterior al editor
+  // 14. Cargar demo anterior al editor
   const handleLoadDemoToEdit = (demo: ProspectDemo) => {
     setProspectName(demo.prospectName || "");
     setProspectBusiness(demo.prospectBusiness || "");
@@ -716,6 +923,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
     setGeneratedImageUrl(demo.generatedImageUrl || mainImg);
     setCanvasImageUrl(demo.canvasImageUrl || mainImg);
     setButterflyUrl(demo.butterflyUrl || "");
+    setGeneratedVideoUrl(demo.generatedVideoUrl || "");
     setGeneratedPostCaption(demo.generatedPostCaption || "");
     setCreatedDemoId(demo.id || "");
 
@@ -1425,7 +1633,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
 
                   {/* COPY Y ENVÍO POR WHATSAPP */}
                   <div className="space-y-4">
-                    {/* ENVIAR WHATSAPP BOTÓN GIGANTE */}
+                    {/* ENVIAR WHATSAPP BOTÓN AUTOMATIZADO CON EVOLUTION Y N8N */}
                     <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1.5">
@@ -1441,11 +1649,49 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                       <button
                         type="button"
                         onClick={() => handleSendWhatsApp()}
-                        className="w-full py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 transform active:scale-[0.99] transition-all"
+                        disabled={isSendingWhatsApp}
+                        className="w-full py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-black text-sm shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 transform active:scale-[0.99] transition-all cursor-pointer"
                       >
-                        <FaWhatsapp className="text-lg" />
-                        <span>Enviar Propuesta por WhatsApp</span>
+                        {isSendingWhatsApp ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                            <span>Enviando por WhatsApp mediante Agentes y n8n...</span>
+                          </>
+                        ) : (
+                          <>
+                            <FaWhatsapp className="text-lg" />
+                            <span>Enviar Propuesta por WhatsApp</span>
+                          </>
+                        )}
                       </button>
+
+                      {whatsAppSuccessMsg && (
+                        <div className="p-3 bg-emerald-100/90 border border-emerald-300 rounded-xl text-xs font-bold text-emerald-800 flex items-center gap-2 animate-in fade-in">
+                          <FaCheck className="text-emerald-600 shrink-0 text-sm" />
+                          <span>{whatsAppSuccessMsg}</span>
+                        </div>
+                      )}
+
+                      {whatsAppErrorMsg && (
+                        <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 space-y-1.5 animate-in fade-in">
+                          <div className="font-bold flex items-center gap-1.5">
+                            <span>⚠️ {whatsAppErrorMsg}</span>
+                          </div>
+                          <p className="text-[11px] text-slate-600">
+                            Puedes abrir WhatsApp Web o tu aplicación móvil directamente para enviarlo:
+                          </p>
+                          {fullPhoneForPreview && (
+                            <a
+                              href={`https://wa.me/${fullPhoneForPreview.replace("+", "")}?text=${encodeURIComponent(customWhatsappCopy)}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:underline"
+                            >
+                              <FaWhatsapp /> Abrir en WhatsApp Web / App
+                            </a>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* MENSAJE DE WHATSAPP EDITABLE */}
@@ -1481,6 +1727,152 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                         </p>
                       </div>
                     )}
+                  </div>
+                </div>
+
+                {/* SECCIÓN 5: GENERADOR DE VIDEO REEL PUBLICITARIO (9:16) */}
+                <div className="pt-6 border-t border-slate-100 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">🎬</span>
+                      <div>
+                        <h4 className="text-sm sm:text-base font-black text-slate-900">
+                          Animar a Video Reel Publicitario (9:16)
+                        </h4>
+                        <p className="text-xs text-slate-500">
+                          Convierte la propuesta visual en un video vertical cinematográfico con nuestros agentes para impacto en Reels y TikTok.
+                        </p>
+                      </div>
+                    </div>
+                    {generatedVideoUrl && (
+                      <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 self-start sm:self-auto flex items-center gap-1">
+                        <FaCheck /> Video Activo en Landing
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                    {/* COLUMNA 1: SELECTOR DE ESTILO DE MOVIMIENTO */}
+                    <div className="space-y-3">
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                        1. Selecciona el Estilo de Cámara y Movimiento:
+                      </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1">
+                        {VIDEO_PROMPT_STYLES.map((style) => {
+                          const isSelected = selectedVideoStyle?.id === style.id;
+                          return (
+                            <div
+                              key={style.id}
+                              onClick={() => setSelectedVideoStyle(style)}
+                              className={`p-3 rounded-2xl border cursor-pointer transition-all ${
+                                isSelected
+                                  ? "bg-indigo-50 border-indigo-600 ring-2 ring-indigo-600/20 shadow-sm"
+                                  : "bg-white border-slate-200 hover:border-slate-300"
+                              }`}
+                            >
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-base">{style.icon}</span>
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 text-indigo-700">
+                                  {style.category}
+                                </span>
+                              </div>
+                              <h5 className="text-xs font-bold text-slate-900 leading-tight">{style.title}</h5>
+                              <p className="text-[10px] text-slate-500 line-clamp-2 mt-1 leading-snug">{style.description}</p>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleGenerateVideo}
+                        disabled={isGeneratingVideo}
+                        className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black text-xs shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2 transition-all cursor-pointer"
+                      >
+                        {isGeneratingVideo ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                            <span>{videoProgress || "Animando video con nuestros agentes..."}</span>
+                          </>
+                        ) : (
+                          <>
+                            <FaFilm />
+                            <span>{generatedVideoUrl ? "Regenerar Video Reel con Agentes" : "Generar Video Reel de la Propuesta"}</span>
+                          </>
+                        )}
+                      </button>
+
+                      {videoError && (
+                        <div className="text-xs text-rose-700 bg-rose-50 border border-rose-200 p-3 rounded-xl animate-in fade-in">
+                          ⚠️ {videoError}
+                        </div>
+                      )}
+
+                      {videoProgress && !videoError && !isGeneratingVideo && (
+                        <div className="text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 p-3 rounded-xl flex items-center gap-1.5 animate-in fade-in">
+                          <FaCheck className="text-emerald-600" />
+                          <span>{videoProgress}</span>
+                        </div>
+                      )}
+
+                      {/* Opción de enlace MP4 manual */}
+                      <div className="pt-2 border-t border-slate-100 space-y-1.5">
+                        <label className="block text-[11px] font-bold text-slate-500">
+                          ¿Ya tienes un video generado? Pega el enlace MP4:
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="url"
+                            value={manualVideoUrlInput}
+                            onChange={(e) => setManualVideoUrlInput(e.target.value)}
+                            placeholder="https://.../video.mp4"
+                            className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:bg-white focus:outline-none focus:border-indigo-600 font-mono"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleSaveManualVideo}
+                            disabled={!manualVideoUrlInput.trim()}
+                            className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 disabled:opacity-40 text-slate-700 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                          >
+                            Enlazar
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* COLUMNA 2: PREVISUALIZACIÓN DEL VIDEO EN LA PWA */}
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+                        2. Previsualización del Video Reel (9:16):
+                      </label>
+                      {generatedVideoUrl ? (
+                        <div className="space-y-3">
+                          <div className="max-w-[260px] mx-auto aspect-[9/16] rounded-3xl overflow-hidden bg-black border border-slate-200 shadow-xl relative">
+                            <video
+                              src={generatedVideoUrl}
+                              controls
+                              playsInline
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div className="text-center">
+                            <p className="text-xs text-emerald-600 font-bold flex items-center justify-center gap-1">
+                              <FaCheck /> Listo y visible en la landing del prospecto
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="max-w-[260px] mx-auto aspect-[9/16] rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center p-6 text-center text-slate-400">
+                          <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-500 flex items-center justify-center text-2xl mb-3">
+                            🎬
+                          </div>
+                          <h5 className="text-xs font-bold text-slate-700">Sin video generado aún</h5>
+                          <p className="text-[11px] text-slate-400 mt-1">
+                            Selecciona un estilo y genera el video para que el prospecto pueda reproducirlo en su landing.
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </section>
@@ -1619,6 +2011,11 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                                 ⭐ {demo.dishOrProductName}
                               </p>
                             )}
+                            {demo.generatedVideoUrl && (
+                              <span className="text-[10px] text-purple-700 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-md font-bold inline-flex items-center gap-1 mt-1">
+                                <FaFilm className="text-[9px]" /> Con Video Reel
+                              </span>
+                            )}
                             {demo.prospectPhone && (
                               <p className="text-[10px] text-slate-400 font-mono mt-0.5">
                                 📞 {demo.prospectPhone}
@@ -1631,10 +2028,20 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                         <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5">
                           <button
                             type="button"
+                            disabled={sendingWhatsAppId === demo.id}
                             onClick={() => handleSendWhatsApp(demo.id, demo.prospectPhone, demo.whatsappMessage)}
-                            className="flex-1 py-2 px-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-xs"
+                            className="flex-1 py-2 px-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer"
                           >
-                            <FaWhatsapp /> Enviar
+                            {sendingWhatsAppId === demo.id ? (
+                              <>
+                                <div className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                                <span>Enviando...</span>
+                              </>
+                            ) : (
+                              <>
+                                <FaWhatsapp /> <span>Enviar</span>
+                              </>
+                            )}
                           </button>
 
                           {demo.id && (
