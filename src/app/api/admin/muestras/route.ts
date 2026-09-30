@@ -55,10 +55,38 @@ export async function POST(req: Request) {
     if (id) {
       // Actualizar existente (verificar si el vendedor es dueño o admin)
       const existingDoc = await adminDb.collection("admin_prospect_demos").doc(id).get();
+      const existingData = existingDoc.exists ? existingDoc.data() : null;
+
       if (existingDoc.exists) {
-        const existingData = existingDoc.data();
         if (authResult.role === "vendedor" && existingData?.createdBy && existingData.createdBy !== authResult.uid) {
           return NextResponse.json({ error: "No tienes permiso para modificar esta muestra" }, { status: 403 });
+        }
+      }
+
+      // GOOGLE CLOUD TASKS: Programar seguimiento automático a 48h si se envía y no tiene vistas
+      if (data.status === "enviada" && !existingData?.gcpFollowUpTaskName && (existingData?.viewCount || 0) === 0) {
+        try {
+          const { enqueueMuestraFollowUpTask } = await import("../../../../lib/gcp-tasks");
+          const scheduled48h = new Date(Date.now() + 48 * 60 * 60 * 1000);
+          const taskName = await enqueueMuestraFollowUpTask(id, scheduled48h);
+          if (taskName) {
+            data.gcpFollowUpTaskName = taskName;
+            console.log(`[API Muestras] Tarea de seguimiento a 48h encolada en Cloud Tasks: ${taskName}`);
+          }
+        } catch (taskErr) {
+          console.warn("[API Muestras] Error al encolar tarea Cloud Tasks:", taskErr);
+        }
+      }
+
+      // Si el vendedor marca como cerrado o descartado, cancelar tarea de Cloud Tasks
+      if ((data.outcome === "cerrado" || data.outcome === "descartado") && existingData?.gcpFollowUpTaskName) {
+        try {
+          const { deletePostTask } = await import("../../../../lib/gcp-tasks");
+          await deletePostTask(existingData.gcpFollowUpTaskName);
+          data.gcpFollowUpTaskName = null;
+          console.log(`[API Muestras] Tarea Cloud Tasks cancelada por cambio a estado ${data.outcome}`);
+        } catch (taskErr) {
+          console.warn("[API Muestras] Error al cancelar tarea Cloud Tasks:", taskErr);
         }
       }
 
@@ -169,12 +197,20 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "id es requerido" }, { status: 400 });
     }
 
-    // Verificar si el vendedor es dueño
+    // Verificar si el vendedor es dueño y limpiar tarea pendiente de Cloud Tasks
     const demoDoc = await adminDb.collection("admin_prospect_demos").doc(id).get();
     if (demoDoc.exists) {
       const demoData = demoDoc.data();
       if (authResult.role === "vendedor" && demoData?.createdBy && demoData.createdBy !== authResult.uid) {
         return NextResponse.json({ error: "No tienes permiso para eliminar esta muestra" }, { status: 403 });
+      }
+
+      if (demoData?.gcpFollowUpTaskName) {
+        try {
+          const { deletePostTask } = await import("../../../../lib/gcp-tasks");
+          await deletePostTask(demoData.gcpFollowUpTaskName);
+          console.log(`[API Muestras DELETE] Tarea Cloud Tasks cancelada: ${demoData.gcpFollowUpTaskName}`);
+        } catch (e) {}
       }
     }
 

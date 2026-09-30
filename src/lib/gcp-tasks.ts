@@ -195,3 +195,52 @@ export async function enqueueBlogTask(postId: string, scheduledFor: Date): Promi
         throw error;
     }
 }
+
+/**
+ * Encola un recordatorio de seguimiento para una muestra comercial (T + 48h).
+ * Llama al endpoint /api/tasks/muestras/followup.
+ * Si el prospecto abre la landing antes de que se ejecute, se cancela vía deletePostTask.
+ */
+export async function enqueueMuestraFollowUpTask(demoId: string, scheduledFor: Date): Promise<string | null> {
+    const clientInstance = await getClient();
+    if (!clientInstance) {
+        console.warn("[GCP TASKS] Cloud Tasks client is not initialized. Skipping muestra follow-up queue.");
+        return null;
+    }
+
+    const projectId = process.env.GCP_PROJECT_ID;
+    const location = process.env.GCP_TASKS_LOCATION || 'us-central1';
+    const queue = process.env.GCP_TASKS_QUEUE || 'social-posts-queue';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://rrss.santisoft.cl';
+
+    const parent = clientInstance.queuePath(projectId!, location, queue);
+    const url = `${appUrl}/api/tasks/muestras/followup`;
+
+    const payload = JSON.stringify({ demoId });
+
+    const task: TaskPayload = {
+        httpRequest: {
+            httpMethod: 'POST',
+            url: url,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${process.env.CRON_SECRET || 'santisoft-n8n-cron-key-123'}`
+            },
+            body: Buffer.from(payload).toString('base64'),
+        },
+    };
+
+    const seconds = Math.floor(scheduledFor.getTime() / 1000);
+    task.scheduleTime = { seconds: seconds };
+
+    try {
+        console.log(`[GCP TASKS] Scheduling follow-up task for demo ${demoId} at ${scheduledFor.toISOString()}`);
+        const request = { parent: parent, task: task };
+        const [response] = await clientInstance.createTask(request);
+        console.log(`[GCP TASKS] Created follow-up task ${response.name}`);
+        return response.name || null;
+    } catch (error) {
+        console.error(`[GCP TASKS] Error creating follow-up task for demo ${demoId}:`, error);
+        return null;
+    }
+}

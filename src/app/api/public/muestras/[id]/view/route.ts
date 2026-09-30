@@ -54,6 +54,19 @@ export async function POST(
       updatePayload.firstViewDevice = device;
     }
 
+    // CANCELACIÓN EN GOOGLE CLOUD TASKS:
+    // Si existía una tarea programada a 48h, se elimina inmediatamente porque el cliente ya abrió la propuesta
+    if (data.gcpFollowUpTaskName) {
+      try {
+        const { deletePostTask } = await import("../../../../../../lib/gcp-tasks");
+        await deletePostTask(data.gcpFollowUpTaskName);
+        console.log(`[VIEW MUESTRA] Tarea de seguimiento automático cancelada en Cloud Tasks: ${data.gcpFollowUpTaskName}`);
+      } catch (taskErr) {
+        console.warn("[VIEW MUESTRA] Error al cancelar tarea de Cloud Tasks:", taskErr);
+      }
+      updatePayload.gcpFollowUpTaskName = null;
+    }
+
     await demoRef.update(updatePayload);
 
     return NextResponse.json({ ok: true });
