@@ -100,6 +100,38 @@ const ADMIN_EMAILS = [
 ];
 
 const PUBLIC_APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://rrss.santisoft.cl";
+const EVOLUTION_URL = process.env.NEXT_PUBLIC_EVOLUTION_URL || "https://evoapi.grupofugas.cl";
+const EVOLUTION_INSTANCE = process.env.NEXT_PUBLIC_EVOLUTION_INSTANCE || "Santisoft";
+const EVOLUTION_API_KEY = process.env.NEXT_PUBLIC_EVOLUTION_API_KEY || "6833CC358FA4-42E4-8F45-E74D35CC85A7";
+const N8N_EVOAPI_WEBHOOK_URL = "https://n8n.santisoft.cl/webhook/evoapi";
+
+function buildWhatsAppCopy(
+  pName: string,
+  pBusiness: string,
+  pDishOrProduct: string,
+  pOffer: string,
+  demoId?: string
+) {
+  const namePart = pName.trim() ? `¡Hola ${pName.trim()}!` : "¡Hola!";
+  const businessPart = pBusiness.trim() ? ` para ${pBusiness.trim()}` : "";
+  const offerOrDish = pDishOrProduct.trim()
+    ? ` su especialidad "${pDishOrProduct.trim()}"${pOffer.trim() ? ` y la promo "${pOffer.trim()}"` : ""}`
+    : (pOffer.trim() ? ` destacando "${pOffer.trim()}"` : "");
+  const offerPart = offerOrDish ? ` destacando${offerOrDish}` : "";
+
+  const demoLink = demoId
+    ? `${PUBLIC_APP_URL}/m/${demoId}`
+    : `${PUBLIC_APP_URL}/m/[ID_DE_MUESTRA]`;
+
+  return `${namePart} 👋 Estuve revisando lo que hacen en tu marca y le pedí a nuestro equipo de agentes que diseñara esta propuesta visual y de video exclusiva${businessPart}${offerPart}:
+
+🚀 Puedes ver la muestra interactiva y el copy listo para publicar aquí:
+${demoLink}
+
+Diseñamos este contenido con su identidad para que veas la calidad y el impacto que tendrían sus redes semana a semana sin quitarte tiempo.
+
+¿Qué te parece el estilo?`;
+}
 
 export default function VendedoresPwaPage() {
   const router = useRouter();
@@ -170,6 +202,7 @@ export default function VendedoresPwaPage() {
   const [sendingWhatsAppId, setSendingWhatsAppId] = useState<string | null>(null);
   const [whatsAppSuccessMsg, setWhatsAppSuccessMsg] = useState("");
   const [whatsAppErrorMsg, setWhatsAppErrorMsg] = useState("");
+  const [attachImageToWhatsApp, setAttachImageToWhatsApp] = useState(false);
 
   // History State
   const [historyDemos, setHistoryDemos] = useState<ProspectDemo[]>([]);
@@ -318,29 +351,15 @@ export default function VendedoresPwaPage() {
 
   // 4. Actualizar mensaje de WhatsApp automáticamente
   useEffect(() => {
-    const namePart = prospectName.trim() ? `¡Hola ${prospectName.trim()}!` : "¡Hola!";
-    const businessPart = prospectBusiness.trim() ? ` para ${prospectBusiness.trim()}` : "";
-    const offerOrDish = dishOrProductName.trim()
-      ? ` su especialidad "${dishOrProductName.trim()}"${offerText.trim() ? ` y la promo "${offerText.trim()}"` : ""}`
-      : (offerText.trim() ? ` destacando "${offerText.trim()}"` : "");
-    const offerPart = offerOrDish ? ` destacando${offerOrDish}` : "";
-
-    const realImageUrl = generatedImageUrl?.startsWith("http") ? generatedImageUrl : null;
-    const demoLink = createdDemoId
-      ? `${PUBLIC_APP_URL}/m/${createdDemoId}`
-      : (realImageUrl || "[ENLACE_DE_MUESTRA]");
-
-    const defaultMsg = `${namePart} 👋 Estuve revisando lo que hacen en tu marca y le pedí a nuestro equipo de agentes que diseñara esta propuesta visual exclusiva${businessPart}${offerPart}:
-
-🚀 Puedes ver la muestra interactiva y el copy listo para publicar aquí:
-${demoLink}
-
-Diseñamos este contenido con su identidad para que veas la calidad y el impacto que tendrían sus redes semana a semana sin quitarte tiempo.
-
-¿Qué te parece el estilo?`;
-
+    const defaultMsg = buildWhatsAppCopy(
+      prospectName,
+      prospectBusiness,
+      dishOrProductName,
+      offerText,
+      createdDemoId
+    );
     setCustomWhatsappCopy(defaultMsg);
-  }, [prospectName, prospectBusiness, offerText, dishOrProductName, generatedImageUrl, createdDemoId]);
+  }, [prospectName, prospectBusiness, offerText, dishOrProductName, createdDemoId]);
 
   // 5. Filtro de estilos
   const filteredTemplates = allTemplates.filter((template) => {
@@ -637,13 +656,23 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
 
         if (saveRes.ok) {
           const saveJson = await saveRes.json();
-          savedDemoId = saveJson.id;
+          savedDemoId = saveJson.demoId || saveJson.id;
           setCreatedDemoId(savedDemoId);
 
           // Actualizar mensaje de WhatsApp con el link interactivo real
           const finalDemoLink = `${PUBLIC_APP_URL}/m/${savedDemoId}`;
-          const updatedMsg = customWhatsappCopy.replace(/https?:\/\/[^\s]+|\[ENLACE_DE_MUESTRA\]/g, finalDemoLink);
-          setCustomWhatsappCopy(updatedMsg);
+          let cleanWhatsappMsg = customWhatsappCopy
+            ? customWhatsappCopy
+                .replace(/https?:\/\/(?:res\.cloudinary\.com|firebasestorage\.googleapis\.com)[^\s]+/g, finalDemoLink)
+                .replace(/https?:\/\/[^\s]*\/m\/\[(?:ID_DE_MUESTRA|ENLACE_DE_MUESTRA)\]/g, finalDemoLink)
+                .replace(/\[(?:ID_DE_MUESTRA|ENLACE_DE_MUESTRA)\]/g, finalDemoLink)
+            : buildWhatsAppCopy(prospectName, prospectBusiness, dishOrProductName, offerText, savedDemoId);
+
+          if (!cleanWhatsappMsg.includes(finalDemoLink)) {
+            cleanWhatsappMsg = buildWhatsAppCopy(prospectName, prospectBusiness, dishOrProductName, offerText, savedDemoId);
+          }
+
+          setCustomWhatsappCopy(cleanWhatsappMsg);
 
           fetch("/api/admin/muestras", {
             method: "POST",
@@ -653,7 +682,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
             },
             body: JSON.stringify({
               id: savedDemoId,
-              whatsappMessage: updatedMsg,
+              whatsappMessage: cleanWhatsappMsg,
             }),
           }).catch(() => {});
         }
@@ -690,7 +719,28 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
       return;
     }
 
-    const messageToSend = overrideMsg || customWhatsappCopy;
+    let messageToSend = (overrideMsg || customWhatsappCopy || "").trim();
+
+    // SANITIZACIÓN ESTRICTA:
+    // Asegurar que NUNCA se envíe una URL directa de Cloudinary ni placeholders en el texto de WhatsApp.
+    // Siempre debe apuntar a la landing interactiva pública: https://rrss.santisoft.cl/m/${targetId}
+    if (targetId) {
+      const properLandingUrl = `${PUBLIC_APP_URL}/m/${targetId}`;
+      messageToSend = messageToSend
+        .replace(/https?:\/\/(?:res\.cloudinary\.com|firebasestorage\.googleapis\.com)[^\s]+/g, properLandingUrl)
+        .replace(/https?:\/\/[^\s]*\/m\/\[(?:ID_DE_MUESTRA|ENLACE_DE_MUESTRA)\]/g, properLandingUrl)
+        .replace(/\[(?:ID_DE_MUESTRA|ENLACE_DE_MUESTRA)\]/g, properLandingUrl);
+    }
+
+    if (!messageToSend && targetId) {
+      messageToSend = buildWhatsAppCopy(prospectName, prospectBusiness, dishOrProductName, offerText, targetId);
+    }
+
+    if (!messageToSend) {
+      alert("El mensaje de WhatsApp no puede estar vacío.");
+      return;
+    }
+
     setIsSendingWhatsApp(true);
     setSendingWhatsAppId(targetId || "current");
     setWhatsAppSuccessMsg("");
@@ -699,26 +749,108 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
     try {
       const token = await auth.currentUser?.getIdToken();
 
-      // Enviar a través de la API que conecta con Evolution API y notifica a n8n
-      const res = await fetch("/api/admin/whatsapp/send", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          phone: cleanPhone,
-          text: messageToSend,
-          mediaUrl: (canvasImageUrl || generatedImageUrl)?.startsWith("http") ? (canvasImageUrl || generatedImageUrl) : undefined,
-        }),
-      });
-
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(data.error || "No se pudo entregar el mensaje por WhatsApp");
+      // Solo adjuntar imagen si está habilitado y es una URL pública compatible (Cloudinary)
+      let targetMediaUrl: string | null = null;
+      if (attachImageToWhatsApp) {
+        const potentialImg = canvasImageUrl || generatedImageUrl;
+        if (potentialImg && typeof potentialImg === "string" && potentialImg.includes("cloudinary.com")) {
+          targetMediaUrl = potentialImg;
+        }
       }
 
-      // Actualizar estado a "enviada" en Firestore
+      console.log("[WhatsApp Vendedores] Enviando propuesta a WhatsApp:", { phone: cleanPhone, hasMedia: !!targetMediaUrl });
+
+      let delivered = false;
+
+      // 1. Intento primario: Envío directo desde el navegador (conexión directa vía CORS con Evolution API)
+      try {
+        console.log("[WhatsApp Vendedores] Intentando entrega directa vía Evolution API (CORS)...");
+        const endpoint = targetMediaUrl
+          ? `${EVOLUTION_URL}/message/sendMedia/${EVOLUTION_INSTANCE}`
+          : `${EVOLUTION_URL}/message/sendText/${EVOLUTION_INSTANCE}`;
+
+        const payload = targetMediaUrl
+          ? {
+              number: cleanPhone,
+              mediatype: "image",
+              mimetype: "image/jpeg",
+              caption: messageToSend,
+              media: targetMediaUrl,
+            }
+          : {
+              number: cleanPhone,
+              text: messageToSend,
+            };
+
+        const evoRes = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json; charset=utf-8",
+            apikey: EVOLUTION_API_KEY,
+          },
+          body: JSON.stringify(payload),
+          signal: AbortSignal.timeout(8000),
+        });
+
+        if (evoRes.ok) {
+          const evoData = await evoRes.json().catch(() => ({}));
+          console.log("[WhatsApp Vendedores] ✅ Entregado directamente por Evolution API:", evoData);
+          delivered = true;
+
+          // Registro asíncrono en backend y webhook n8n
+          fetch("/api/admin/whatsapp/send", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ phone: cleanPhone, text: messageToSend, logOnly: true }),
+          }).catch(() => {});
+        } else {
+          const errText = await evoRes.text().catch(() => "");
+          console.warn(`[WhatsApp Vendedores] Envío directo respondió ${evoRes.status}: ${errText}. Probando vía backend...`);
+        }
+      } catch (clientErr: any) {
+        console.warn("[WhatsApp Vendedores] Envío directo por navegador omitido:", clientErr.message, "Probando vía backend...");
+      }
+
+      // 2. Intento secundario: Si falló el envío directo, intentar vía endpoint del backend
+      if (!delivered) {
+        const res = await fetch("/api/admin/whatsapp/send", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            phone: cleanPhone,
+            text: messageToSend,
+            ...(targetMediaUrl ? { mediaUrl: targetMediaUrl, mediaType: "image" } : {}),
+          }),
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || data.details?.lastTextError || "No se pudo entregar el mensaje por WhatsApp");
+        }
+        delivered = true;
+      }
+
+      // 3. Notificación complementaria directa a webhook n8n
+      fetch(N8N_EVOAPI_WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+        body: JSON.stringify({
+          phone: cleanPhone,
+          number: cleanPhone,
+          text: messageToSend,
+          demoId: targetId || null,
+          demoUrl: targetId ? `${PUBLIC_APP_URL}/m/${targetId}` : null,
+          deliveryStatus: "sent",
+          deliveredMode: "vendedores_pwa",
+          timestamp: new Date().toISOString(),
+        }),
+        signal: AbortSignal.timeout(3000),
+      }).catch(() => {});
+
+      // Actualizar estado a "enviada" en Firestore y persistir el mensaje sanitizado
       if (targetId) {
         await fetch("/api/admin/muestras", {
           method: "POST",
@@ -729,12 +861,13 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
           body: JSON.stringify({
             id: targetId,
             status: "enviada",
+            whatsappMessage: messageToSend,
           }),
         });
 
         // Actualizar en el historial local
         setHistoryDemos((prev) =>
-          prev.map((d) => (d.id === targetId ? { ...d, status: "enviada" } : d))
+          prev.map((d) => (d.id === targetId ? { ...d, status: "enviada", whatsappMessage: messageToSend } : d))
         );
       }
 
@@ -928,7 +1061,24 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
     setCreatedDemoId(demo.id || "");
 
     if (demo.whatsappMessage) {
-      setCustomWhatsappCopy(demo.whatsappMessage);
+      const properLandingUrl = demo.id ? `${PUBLIC_APP_URL}/m/${demo.id}` : "";
+      const sanitized = properLandingUrl
+        ? demo.whatsappMessage
+            .replace(/https?:\/\/(?:res\.cloudinary\.com|firebasestorage\.googleapis\.com)[^\s]+/g, properLandingUrl)
+            .replace(/https?:\/\/[^\s]*\/m\/\[(?:ID_DE_MUESTRA|ENLACE_DE_MUESTRA)\]/g, properLandingUrl)
+            .replace(/\[(?:ID_DE_MUESTRA|ENLACE_DE_MUESTRA)\]/g, properLandingUrl)
+        : demo.whatsappMessage;
+      setCustomWhatsappCopy(sanitized);
+    } else if (demo.id) {
+      setCustomWhatsappCopy(
+        buildWhatsAppCopy(
+          demo.prospectName || "",
+          demo.prospectBusiness || "",
+          demo.dishOrProductName || "",
+          demo.offerText || "",
+          demo.id
+        )
+      );
     }
 
     setActiveTab("crear");
@@ -1645,6 +1795,22 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
                           </span>
                         )}
                       </div>
+
+                      {/* Checkbox para adjuntar archivo de imagen */}
+                      <label className="flex items-start gap-2.5 cursor-pointer text-xs text-slate-700 bg-white p-2.5 rounded-xl border border-emerald-200 hover:bg-emerald-50/50 transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={attachImageToWhatsApp}
+                          onChange={(e) => setAttachImageToWhatsApp(e.target.checked)}
+                          className="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer shrink-0"
+                        />
+                        <div className="text-[11px] leading-tight">
+                          <span className="font-bold text-slate-800 block">Adjuntar archivo de imagen</span>
+                          <span className="text-slate-500 font-normal">
+                            Desactivado (recomendado): WhatsApp genera la tarjeta interactiva de la landing con preview de video y copy.
+                          </span>
+                        </div>
+                      </label>
 
                       <button
                         type="button"
