@@ -516,6 +516,35 @@ export default function EstrategiaPage() {
         </div>
       </div>
 
+      {/* Indicador de Empresa de Prueba Activa (Admin) */}
+      {(activeProfile?.isTestProfile || (activeProfile?.id && activeProfile.id.startsWith('prof_test_'))) && (
+        <div className="bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/15 border-2 border-amber-300 p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-amber-950 animate-in fade-in">
+          <div className="flex items-center gap-3">
+            <span className="text-3xl p-2 bg-amber-100/80 rounded-xl">{activeProfile?.icon || '🧪'}</span>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-200 text-amber-900 border border-amber-300">
+                  🧪 Modo Prueba
+                </span>
+                <h4 className="text-sm font-black text-slate-900">
+                  Estrategia Piloto para &quot;{activeProfile?.name}&quot;
+                </h4>
+              </div>
+              <p className="text-xs text-slate-600 font-medium mt-0.5">
+                Rubro: <strong>{activeProfile?.rubro || 'General'}</strong> • Nuestros agentes redactarán los posts basándose en los {catalogoItems.length} productos y servicios de su catálogo.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/automatizacion-rrss/panel/catalogo"
+            className="px-4 py-2 bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 font-black text-xs rounded-xl transition-all shadow-xs shrink-0 flex items-center gap-1.5"
+          >
+            <span>📦 Ver / Editar Productos ({catalogoItems.length})</span>
+            <span>→</span>
+          </Link>
+        </div>
+      )}
+
       <div className="bg-white p-6 md:p-8 rounded-[32px] border-2 border-slate-100 shadow-xl shadow-slate-200/50 relative overflow-hidden">
           {userPlan === 'free' && !isUserAdmin(user?.email) && (
               <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex flex-col items-center justify-center p-8 text-center rounded-[32px]">

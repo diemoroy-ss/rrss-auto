@@ -76,6 +76,11 @@ export default function NetworkSwitcher() {
                             {/* Glow effect for active profile */}
                             {activeProfile.id === p.id && <div className="absolute inset-0 bg-white/20 animate-pulse mix-blend-overlay"></div>}
                             <span className="relative z-10">{p.icon || '🏢'}</span>
+                            {(p.isTestProfile || p.id.startsWith('prof_test_')) && (
+                              <span className="absolute top-3 right-3 z-20 bg-amber-400 text-amber-950 font-black text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider shadow">
+                                🧪 Demo
+                              </span>
+                            )}
                           </div>
                           <span className={`text-lg md:text-xl font-bold tracking-tight transition-colors line-clamp-1 max-w-[140px] md:max-w-[200px] text-center px-2 ${activeProfile.id === p.id ? 'text-white' : 'text-slate-400 group-hover:text-white'}`}>
                             {p.name}
