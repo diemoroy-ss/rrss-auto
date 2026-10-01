@@ -1,0 +1,1505 @@
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
+import { auth, storage } from "../../../../lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { useProfile, BusinessProfile, CatalogoItem } from "../../../../contexts/ProfileContext";
+import { HARDCODED_STYLES, PromptTemplate } from "../../../../lib/prompt-templates";
+import { TEST_COMPANY_TEMPLATES } from "../../../../lib/test-company-templates";
+import TestCompanyModal from "../../../../components/catalogo/TestCompanyModal";
+
+export default function LaboratorioPage() {
+  const [user, setUser] = useState<any>(null);
+  const [userToken, setUserToken] = useState("");
+  const [loadingUser, setLoadingUser] = useState(true);
+
+  const { activeProfile, updateActiveProfile, profiles, setActiveProfile, loadProfiles } = useProfile();
+
+  // Test Profiles Filter
+  const testProfiles = profiles.filter((p) => p.isTestProfile === true || p.id.startsWith("prof_test_"));
+
+  // Active Tab
+  const [activeTab, setActiveTab] = useState<"marca" | "catalogo" | "comandos" | "radar_estrategia">("marca");
+
+  // Notifications
+  const [successMsg, setSuccessMsg] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [showCreateModal, setShowCreateModal] = useState(false);
+
+  // Tab 1: Datos de Marca
+  const [brandForm, setBrandForm] = useState({
+    name: "",
+    icon: "🏢",
+    rubro: "",
+    businessDescription: "",
+    promotions: "",
+    website: "",
+    includeWebsiteInCopy: true,
+    email: "",
+    includeEmailInCopy: false,
+    phone: "",
+    includePhoneInCopy: true,
+    logoUrl: "",
+    alwaysIncludeLogo: false,
+    bannerStyle: "banner" as "banner" | "clean",
+  });
+  const [savingBrand, setSavingBrand] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+
+  // Tab 2: Catálogo
+  const [catalogItems, setCatalogItems] = useState<CatalogoItem[]>([]);
+  const [loadingCatalog, setLoadingCatalog] = useState(false);
+  const [showAddProductModal, setShowAddProductModal] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<CatalogoItem | null>(null);
+  const [productForm, setProductForm] = useState({
+    name: "",
+    description: "",
+    type: "producto" as "producto" | "servicio",
+    category: "",
+    price: "",
+    offerPrice: "",
+    imageUrl: "",
+    tags: "",
+    keepOriginalPhoto: true,
+    fontStyle: "bold_modern" as "script_handwritten" | "bold_modern" | "elegant_serif" | "clean_minimal",
+  });
+  const [uploadingProductImage, setUploadingProductImage] = useState(false);
+  const [savingProduct, setSavingProduct] = useState(false);
+  const productImageRef = useRef<HTMLInputElement>(null);
+
+  // Tab 3: Comandos de Agentes y Estilos
+  const [agentTone, setAgentTone] = useState("directo_cercano");
+  const [customAgentInstruction, setCustomAgentInstruction] = useState("");
+  const [selectedStyleIds, setSelectedStyleIds] = useState<string[]>([
+    "style-everyday-real",
+    "style-ads-hero-shot",
+  ]);
+  const [savingAgents, setSavingAgents] = useState(false);
+
+  // Tab 4: Radar de Nicho & Estrategia Visual
+  const [loadingRadar, setLoadingRadar] = useState(false);
+  const [radarData, setRadarData] = useState<any>(null);
+  const [strategyGoal, setStrategyGoal] = useState("ventas");
+  const [catalogUsage, setCatalogUsage] = useState<"all" | "mixed">("mixed");
+  const [generatingStrategy, setGeneratingStrategy] = useState(false);
+  const [strategyPosts, setStrategyPosts] = useState<any[]>([]);
+  const [savingToCalendar, setSavingToCalendar] = useState(false);
+  const [viewMode, setViewMode] = useState<"grid" | "mockup">("grid");
+
+  // Auth setup
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (u) => {
+      setUser(u);
+      if (u) {
+        try {
+          const token = await u.getIdToken();
+          setUserToken(token);
+        } catch (e) {
+          console.error("Error getting token", e);
+        }
+      }
+      setLoadingUser(false);
+    });
+    return () => unsub();
+  }, []);
+
+  const userEmail = (user?.email || "").toLowerCase().trim();
+  const isAdminUser = ["santisoftai@gmail.com", "diemoroy@gmail.com", "spalezcom@gmail.com", "admin@santisoft.cl"].includes(userEmail);
+
+  // Sincronizar formulario de marca al cambiar activeProfile
+  useEffect(() => {
+    if (activeProfile) {
+      setBrandForm({
+        name: activeProfile.name || "",
+        icon: activeProfile.icon || "🏢",
+        rubro: activeProfile.rubro || "",
+        businessDescription: activeProfile.businessDescription || "",
+        promotions: activeProfile.promotions || "",
+        website: activeProfile.website || "",
+        includeWebsiteInCopy: activeProfile.includeWebsiteInCopy !== false,
+        email: activeProfile.email || "",
+        includeEmailInCopy: activeProfile.includeEmailInCopy === true,
+        phone: activeProfile.phone || "",
+        includePhoneInCopy: activeProfile.includePhoneInCopy !== false,
+        logoUrl: activeProfile.logoUrl || "",
+        alwaysIncludeLogo: activeProfile.alwaysIncludeLogo === true,
+        bannerStyle: activeProfile.bannerStyle || "banner",
+      });
+
+      if (activeProfile.selectedPromptStyleIds && activeProfile.selectedPromptStyleIds.length > 0) {
+        setSelectedStyleIds(activeProfile.selectedPromptStyleIds);
+      }
+    }
+  }, [activeProfile]);
+
+  // Cargar catálogo cada vez que cambia el perfil activo
+  useEffect(() => {
+    if (user && activeProfile?.id) {
+      loadCatalog();
+    }
+  }, [user, activeProfile?.id]);
+
+  const loadCatalog = async () => {
+    if (!user || !activeProfile?.id) return;
+    setLoadingCatalog(true);
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch(`/api/catalogo?profileId=${activeProfile.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      setCatalogItems(data.items || []);
+    } catch (e) {
+      console.error("Error cargando catálogo en laboratorio:", e);
+    } finally {
+      setLoadingCatalog(false);
+    }
+  };
+
+  const showNotification = (msg: string, isError = false) => {
+    if (isError) {
+      setErrorMsg(msg);
+      setTimeout(() => setErrorMsg(""), 5000);
+    } else {
+      setSuccessMsg(msg);
+      setTimeout(() => setSuccessMsg(""), 4000);
+    }
+  };
+
+  // Guardar Marca
+  const handleSaveBrand = async () => {
+    setSavingBrand(true);
+    try {
+      await updateActiveProfile({
+        name: brandForm.name,
+        icon: brandForm.icon,
+        rubro: brandForm.rubro,
+        businessDescription: brandForm.businessDescription,
+        promotions: brandForm.promotions,
+        website: brandForm.website,
+        includeWebsiteInCopy: brandForm.includeWebsiteInCopy,
+        email: brandForm.email,
+        includeEmailInCopy: brandForm.includeEmailInCopy,
+        phone: brandForm.phone,
+        includePhoneInCopy: brandForm.includePhoneInCopy,
+        logoUrl: brandForm.logoUrl,
+        alwaysIncludeLogo: brandForm.alwaysIncludeLogo,
+        bannerStyle: brandForm.bannerStyle,
+      });
+      showNotification("¡Datos de marca de la empresa de prueba guardados con éxito!");
+    } catch (e: any) {
+      showNotification(e.message || "Error al guardar marca", true);
+    } finally {
+      setSavingBrand(false);
+    }
+  };
+
+  // Subir Logo
+  const handleUploadLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    setUploadingLogo(true);
+    try {
+      const storageRef = ref(storage, `users/${user.uid}/profiles/${activeProfile?.id || "demo"}/logo_${Date.now()}`);
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+      setBrandForm((prev) => ({ ...prev, logoUrl: url }));
+      await updateActiveProfile({ logoUrl: url });
+      showNotification("Logo de prueba subido y vinculado.");
+    } catch (err: any) {
+      showNotification("Error al subir el logo", true);
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
+  // Guardar / Crear Producto
+  const handleSaveProduct = async () => {
+    if (!productForm.name.trim() || !productForm.description.trim()) {
+      showNotification("El nombre y la descripción son obligatorios.", true);
+      return;
+    }
+    setSavingProduct(true);
+    try {
+      const token = await user.getIdToken();
+      const tagsArray = productForm.tags
+        ? productForm.tags.split(",").map((t) => t.trim()).filter(Boolean)
+        : [];
+
+      const payload = {
+        name: productForm.name.trim(),
+        description: productForm.description.trim(),
+        type: productForm.type,
+        category: productForm.category.trim() || null,
+        price: productForm.price.trim() || null,
+        offerPrice: productForm.offerPrice.trim() || null,
+        imageUrl: productForm.imageUrl.trim() || null,
+        tags: tagsArray,
+        profileId: activeProfile?.id || "default",
+        keepOriginalPhoto: productForm.keepOriginalPhoto,
+        fontStyle: productForm.fontStyle,
+        includePriceInCopy: true,
+      };
+
+      if (editingProduct) {
+        const res = await fetch("/api/catalogo", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ id: editingProduct.id, ...payload }),
+        });
+        if (!res.ok) throw new Error((await res.json()).error);
+        showNotification("Producto actualizado.");
+      } else {
+        const res = await fetch("/api/catalogo", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error((await res.json()).error);
+        showNotification("Producto agregado al catálogo de prueba.");
+      }
+
+      setShowAddProductModal(false);
+      setEditingProduct(null);
+      await loadCatalog();
+    } catch (e: any) {
+      showNotification(e.message || "Error al guardar producto", true);
+    } finally {
+      setSavingProduct(false);
+    }
+  };
+
+  const handleDeleteProduct = async (id: string) => {
+    if (!window.confirm("¿Eliminar este ítem del catálogo de prueba?")) return;
+    try {
+      const token = await user.getIdToken();
+      await fetch("/api/catalogo", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id }),
+      });
+      await loadCatalog();
+      showNotification("Ítem eliminado.");
+    } catch (e) {
+      showNotification("Error eliminando ítem", true);
+    }
+  };
+
+  // Guardar Comandos de Agentes
+  const handleSaveAgentCommands = async () => {
+    setSavingAgents(true);
+    try {
+      await updateActiveProfile({
+        selectedPromptStyleIds: selectedStyleIds,
+      });
+      showNotification("¡Directrices y estilos de agentes guardados para esta empresa!");
+    } catch (e: any) {
+      showNotification(e.message || "Error al guardar comandos", true);
+    } finally {
+      setSavingAgents(false);
+    }
+  };
+
+  // Ejecutar Radar de Nicho
+  const handleRunRadar = async () => {
+    if (!activeProfile?.rubro && !brandForm.rubro) {
+      showNotification("Por favor especifica el Rubro / Industria en la pestaña Datos de Marca.", true);
+      return;
+    }
+    setLoadingRadar(true);
+    try {
+      const token = await user.getIdToken();
+      const rubroActual = activeProfile?.rubro || brandForm.rubro;
+      const res = await fetch("/api/nicho/radar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          niche: rubroActual,
+          userId: user.uid,
+          businessId: activeProfile?.id || "demo",
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error al analizar radar");
+      setRadarData(data.analysis || data);
+      showNotification(`¡Radar de nicho analizado para ${rubroActual}!`);
+    } catch (e: any) {
+      showNotification(e.message || "Error en radar de nicho", true);
+    } finally {
+      setLoadingRadar(false);
+    }
+  };
+
+  // Generar Estrategia Visual de Prueba
+  const handleGenerateStrategy = async () => {
+    setGeneratingStrategy(true);
+    setStrategyPosts([]);
+    try {
+      const activePromotions = activeProfile?.promotions || brandForm.promotions;
+      const activeRubro = activeProfile?.rubro || brandForm.rubro;
+
+      const selectedStyles = HARDCODED_STYLES.filter((s) => selectedStyleIds.includes(s.id));
+
+      const res = await fetch("/api/ai/generate-strategy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          goal: strategyGoal,
+          goalName: strategyGoal === "ventas" ? "Ventas & Conversión" : "Autoridad & Alcance",
+          businessType: activeRubro,
+          expectations: customAgentInstruction || "Generar posts visuales impactantes con fotos reales y llamados a la acción claros.",
+          promotions: activePromotions,
+          nicheContext: radarData ? JSON.stringify(radarData.trends || radarData.summary || "") : "",
+          businessData: {
+            businessName: activeProfile?.name || brandForm.name,
+            phone: activeProfile?.phone || brandForm.phone,
+            website: activeProfile?.website || brandForm.website,
+            address: "Local Comercial",
+          },
+          userId: user.uid,
+          profileId: activeProfile?.id || "demo",
+          catalogUsage,
+          catalogoItems: catalogItems.map((item) => ({
+            id: item.id,
+            name: item.name,
+            description: item.description,
+            type: item.type,
+            price: item.price || null,
+            offerPrice: item.offerPrice || null,
+            imageUrl: item.imageUrl || null,
+            keepOriginalPhoto: item.keepOriginalPhoto !== false,
+            fontStyle: item.fontStyle || "bold_modern",
+            hasImage: Boolean(item.imageUrl && item.imageUrl.startsWith("http")),
+          })),
+          usePromptStyles: true,
+          selectedPromptStyles: selectedStyles,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error al generar estrategia");
+
+      setStrategyPosts(data.strategy || []);
+      showNotification(`¡Estrategia de prueba generada con ${data.strategy?.length || 0} publicaciones!`);
+    } catch (e: any) {
+      showNotification(e.message || "Error al generar la estrategia", true);
+    } finally {
+      setGeneratingStrategy(false);
+    }
+  };
+
+  // Guardar Posts en Calendario
+  const handleSaveToCalendar = async () => {
+    if (strategyPosts.length === 0) return;
+    setSavingToCalendar(true);
+    try {
+      const token = await user.getIdToken();
+      for (const post of strategyPosts) {
+        const scheduledDate = new Date();
+        scheduledDate.setDate(scheduledDate.getDate() + (post.dayOffset || 1));
+
+        await fetch("/api/generate-post", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            userId: user.uid,
+            profileId: activeProfile?.id || "demo",
+            text: `${post.content}\n\n${post.cta}`,
+            idea: post.hook,
+            type: post.format?.toLowerCase().includes("reel") ? "Reel" : "Post",
+            scheduledFor: scheduledDate.toISOString(),
+            status: "draft",
+            imageUrl: post.baseImageUrl || post.previewUrl || null,
+          }),
+        });
+      }
+      showNotification("¡Publicaciones de prueba guardadas en el calendario bajo esta empresa!");
+    } catch (e) {
+      showNotification("Error guardando publicaciones en calendario", true);
+    } finally {
+      setSavingToCalendar(false);
+    }
+  };
+
+  if (loadingUser) {
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center font-bold text-slate-400">
+        Cargando Laboratorio...
+      </div>
+    );
+  }
+
+  if (!isAdminUser) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center p-6 text-center max-w-md mx-auto">
+        <span className="text-6xl mb-4">🔒</span>
+        <h2 className="text-2xl font-black text-slate-900 mb-2">Acceso Restringido</h2>
+        <p className="text-slate-500 text-sm mb-6">
+          Esta herramienta es un laboratorio de pruebas visuales reservado exclusivamente para la administración.
+        </p>
+        <Link
+          href="/automatizacion-rrss/panel"
+          className="px-6 py-3 bg-indigo-600 text-white font-black rounded-xl text-sm"
+        >
+          Volver al Panel Principal
+        </Link>
+      </div>
+    );
+  }
+
+  const isCurrentTest = activeProfile?.isTestProfile === true || (activeProfile?.id && activeProfile.id.startsWith("prof_test_"));
+
+  return (
+    <div className="max-w-6xl mx-auto pb-16 space-y-8 animate-in fade-in duration-200">
+      
+      {/* ── TOP HEADER / HERO DEL LABORATORIO ── */}
+      <div className="bg-gradient-to-r from-slate-950 via-purple-950 to-slate-900 text-white p-6 sm:p-8 rounded-3xl border border-purple-800/40 shadow-xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 -mt-6 -mr-6 w-52 h-52 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative z-10">
+          <div>
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-400/30">
+                🧪 Modo Sandbox Aislado
+              </span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                Sin Redes Reales
+              </span>
+              <span className="text-xs text-slate-400 font-mono">santisoftai@gmail.com</span>
+            </div>
+            
+            <h1 className="text-2xl sm:text-3xl font-black text-white mt-2 tracking-tight">
+              Laboratorio de Pruebas & Empresas Demo
+            </h1>
+            <p className="text-slate-300 text-xs sm:text-sm font-medium mt-1 max-w-2xl leading-relaxed">
+              Configura marcas de prueba con fotos reales, calibra directrices de agentes, analiza radares de nicho y genera estrategias visuales para verificar cómo quedarán los posts antes de publicarlos en clientes reales.
+            </p>
+          </div>
+
+          {/* Selector de Empresa de Prueba Activa */}
+          <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10 flex flex-col gap-3 min-w-[280px] shrink-0">
+            <div className="text-[10px] font-black uppercase tracking-wider text-purple-300 flex items-center justify-between">
+              <span>Empresa Activa en el Lab:</span>
+              <span className="text-slate-400">{testProfiles.length} guardadas</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <select
+                value={activeProfile?.id || ""}
+                onChange={(e) => {
+                  if (e.target.value) setActiveProfile(e.target.value);
+                }}
+                className="flex-1 bg-slate-900 border border-purple-700/50 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-purple-400"
+              >
+                {testProfiles.length === 0 && <option value="">Sin empresas de prueba</option>}
+                {testProfiles.map((tp) => (
+                  <option key={tp.id} value={tp.id}>
+                    {tp.icon || "🏢"} {tp.name}
+                  </option>
+                ))}
+              </select>
+
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="px-3 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-black transition-all shadow-md shrink-0"
+                title="Crear nueva empresa de prueba"
+              >
+                + Nueva
+              </button>
+            </div>
+
+            {!isCurrentTest && (
+              <div className="text-[11px] text-amber-300 font-semibold bg-amber-500/10 p-2 rounded-lg border border-amber-500/20">
+                ⚠️ Actualmente tienes seleccionada tu cuenta principal. Selecciona o crea una empresa de prueba para trabajar en modo aislado.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Notificaciones */}
+      {successMsg && (
+        <div className="p-4 bg-emerald-50 border-2 border-emerald-200 text-emerald-800 text-xs font-bold rounded-2xl animate-in zoom-in-95">
+          ✅ {successMsg}
+        </div>
+      )}
+      {errorMsg && (
+        <div className="p-4 bg-rose-50 border-2 border-rose-200 text-rose-800 text-xs font-bold rounded-2xl animate-in zoom-in-95">
+          ⚠️ {errorMsg}
+        </div>
+      )}
+
+      {/* ── BARRA DE PESTAÑAS (4 PILARES) ── */}
+      <div className="flex items-center gap-2 border-b border-slate-200 pb-3 overflow-x-auto hide-scrollbar">
+        <button
+          onClick={() => setActiveTab("marca")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-black transition-all shrink-0 ${
+            activeTab === "marca"
+              ? "bg-purple-600 text-white shadow-md shadow-purple-600/30"
+              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+          }`}
+        >
+          <span>🏪</span>
+          <span>1. Datos de Marca</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("catalogo")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-black transition-all shrink-0 ${
+            activeTab === "catalogo"
+              ? "bg-purple-600 text-white shadow-md shadow-purple-600/30"
+              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+          }`}
+        >
+          <span>🛍️</span>
+          <span>2. Catálogo ({catalogItems.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("comandos")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-black transition-all shrink-0 ${
+            activeTab === "comandos"
+              ? "bg-purple-600 text-white shadow-md shadow-purple-600/30"
+              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+          }`}
+        >
+          <span>✨</span>
+          <span>3. Comandos de Agentes</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("radar_estrategia")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-black transition-all shrink-0 ${
+            activeTab === "radar_estrategia"
+              ? "bg-purple-600 text-white shadow-md shadow-purple-600/30"
+              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+          }`}
+        >
+          <span>🚀</span>
+          <span>4. Radar & Estrategia Visual</span>
+          {strategyPosts.length > 0 && (
+            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-white text-purple-700 font-bold">
+              {strategyPosts.length} posts
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* ──────────────────────────────────────────────────────────── */}
+      {/* TAB 1: DATOS DE MARCA (Sin Redes)                           */}
+      {/* ──────────────────────────────────────────────────────────── */}
+      {activeTab === "marca" && (
+        <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+          <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+            <div>
+              <h3 className="text-lg font-black text-slate-900">Identidad de Marca (Sin Redes Conectadas)</h3>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">
+                Datos base de la empresa que nuestros agentes tomarán en cuenta al redactar copys y montar composiciones.
+              </p>
+            </div>
+            <button
+              onClick={handleSaveBrand}
+              disabled={savingBrand}
+              className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-2"
+            >
+              <span>{savingBrand ? "Guardando..." : "💾 Guardar Marca"}</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Logo y Estampa */}
+            <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col items-center text-center">
+              <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-3">
+                Logo de la Empresa
+              </label>
+              <div className="w-28 h-28 bg-white rounded-2xl border-2 border-dashed border-purple-200 flex items-center justify-center overflow-hidden mb-3 relative shadow-inner">
+                {brandForm.logoUrl ? (
+                  <img src={brandForm.logoUrl} alt="Logo" className="w-full h-full object-contain p-2" />
+                ) : (
+                  <span className="text-4xl text-slate-300">🖼️</span>
+                )}
+                {uploadingLogo && (
+                  <div className="absolute inset-0 bg-white/80 flex items-center justify-center text-xs font-bold text-purple-600">
+                    Subiendo...
+                  </div>
+                )}
+              </div>
+
+              <input
+                type="file"
+                ref={logoInputRef}
+                onChange={handleUploadLogo}
+                accept="image/*"
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => logoInputRef.current?.click()}
+                disabled={uploadingLogo}
+                className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-xl transition-all shadow-xs"
+              >
+                {brandForm.logoUrl ? "Cambiar Logo" : "Subir Logo"}
+              </button>
+
+              <label className="mt-4 flex items-center gap-2 text-xs text-slate-700 font-bold cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={brandForm.alwaysIncludeLogo}
+                  onChange={(e) => setBrandForm({ ...brandForm, alwaysIncludeLogo: e.target.checked })}
+                  className="accent-purple-600"
+                />
+                <span>Estampar logo en posts</span>
+              </label>
+            </div>
+
+            {/* Campos Principales */}
+            <div className="md:col-span-2 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Nombre de la Empresa *</label>
+                  <input
+                    type="text"
+                    value={brandForm.name}
+                    onChange={(e) => setBrandForm({ ...brandForm, name: e.target.value })}
+                    placeholder="Ej: Hamburguesería La Fusión"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-purple-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Rubro / Industria *</label>
+                  <input
+                    type="text"
+                    value={brandForm.rubro}
+                    onChange={(e) => setBrandForm({ ...brandForm, rubro: e.target.value })}
+                    placeholder="Ej: Gastronomía & Hamburguesas Gourmet"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-purple-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Descripción del Negocio</label>
+                <textarea
+                  rows={3}
+                  value={brandForm.businessDescription}
+                  onChange={(e) => setBrandForm({ ...brandForm, businessDescription: e.target.value })}
+                  placeholder="Describe qué vende, cuál es la calidad de sus productos y a quién va dirigido."
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-purple-500 resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Promociones y Ofertas Frecuentes</label>
+                <input
+                  type="text"
+                  value={brandForm.promotions}
+                  onChange={(e) => setBrandForm({ ...brandForm, promotions: e.target.value })}
+                  placeholder="Ej: 2x1 martes en Smash Burgers, 20% descuento con retiro en local."
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-purple-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Contacto Simulado y Estilo de Banner */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100">
+            <div className="space-y-3">
+              <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">Datos de Contacto Simulados</h4>
+              
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={brandForm.phone}
+                  onChange={(e) => setBrandForm({ ...brandForm, phone: e.target.value })}
+                  placeholder="Teléfono / WhatsApp de prueba (+56 9...)"
+                  className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium"
+                />
+                <label className="flex items-center gap-1.5 text-[11px] font-bold text-slate-600 shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={brandForm.includePhoneInCopy}
+                    onChange={(e) => setBrandForm({ ...brandForm, includePhoneInCopy: e.target.checked })}
+                    className="accent-purple-600"
+                  />
+                  <span>En copy</span>
+                </label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={brandForm.website}
+                  onChange={(e) => setBrandForm({ ...brandForm, website: e.target.value })}
+                  placeholder="Sitio Web de prueba (https://...)"
+                  className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium"
+                />
+                <label className="flex items-center gap-1.5 text-[11px] font-bold text-slate-600 shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={brandForm.includeWebsiteInCopy}
+                    onChange={(e) => setBrandForm({ ...brandForm, includeWebsiteInCopy: e.target.checked })}
+                    className="accent-purple-600"
+                  />
+                  <span>En copy</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">Estilo Visual por Defecto</h4>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setBrandForm({ ...brandForm, bannerStyle: "banner" })}
+                  className={`p-3.5 rounded-2xl border-2 text-left transition-all ${
+                    brandForm.bannerStyle === "banner"
+                      ? "border-purple-600 bg-purple-50/60 shadow-xs"
+                      : "border-slate-200 hover:border-slate-300"
+                  }`}
+                >
+                  <span className="text-xl block mb-1">🏷️</span>
+                  <div className="text-xs font-black text-slate-900">Cartel Publicitario</div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">Texto y precio superpuesto con tipografía atractiva.</div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setBrandForm({ ...brandForm, bannerStyle: "clean" })}
+                  className={`p-3.5 rounded-2xl border-2 text-left transition-all ${
+                    brandForm.bannerStyle === "clean"
+                      ? "border-purple-600 bg-purple-50/60 shadow-xs"
+                      : "border-slate-200 hover:border-slate-300"
+                  }`}
+                >
+                  <span className="text-xl block mb-1">📸</span>
+                  <div className="text-xs font-black text-slate-900">Solo Fotografía Limpia</div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">Sin textos gráficos encima de la imagen.</div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ──────────────────────────────────────────────────────────── */}
+      {/* TAB 2: CATÁLOGO (Productos & Servicios)                     */}
+      {/* ──────────────────────────────────────────────────────────── */}
+      {activeTab === "catalogo" && (
+        <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+            <div>
+              <h3 className="text-lg font-black text-slate-900">
+                Productos & Servicios de Prueba ({catalogItems.length})
+              </h3>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">
+                Los productos cargados aquí son las referencias directas que nuestros agentes utilizarán para crear las publicaciones.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setEditingProduct(null);
+                setProductForm({
+                  name: "",
+                  description: "",
+                  type: "producto",
+                  category: "",
+                  price: "",
+                  offerPrice: "",
+                  imageUrl: "",
+                  tags: "",
+                  keepOriginalPhoto: true,
+                  fontStyle: "bold_modern",
+                });
+                setShowAddProductModal(true);
+              }}
+              className="px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-2 shrink-0"
+            >
+              <span>+ Agregar Producto / Servicio</span>
+            </button>
+          </div>
+
+          {loadingCatalog ? (
+            <div className="py-12 text-center text-xs font-bold text-slate-400">Cargando catálogo...</div>
+          ) : catalogItems.length === 0 ? (
+            <div className="text-center py-16 border-2 border-dashed border-slate-200 rounded-3xl">
+              <span className="text-4xl">📦</span>
+              <h4 className="text-sm font-bold text-slate-700 mt-2">Catálogo vacío</h4>
+              <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                Agrega productos con fotos reales, precios y ofertas para probar las estrategias de contenido.
+              </p>
+              <button
+                onClick={() => setShowAddProductModal(true)}
+                className="mt-4 px-4 py-2 bg-purple-600 text-white font-bold text-xs rounded-xl"
+              >
+                + Agregar Primer Ítem
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {catalogItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="rounded-2xl border-2 border-slate-100 hover:border-purple-200 bg-white overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
+                >
+                  <div>
+                    {/* Imagen con badges */}
+                    <div className="h-44 bg-slate-100 relative overflow-hidden group">
+                      {item.imageUrl ? (
+                        <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-3xl text-slate-300 font-black">
+                          {item.type === "servicio" ? "🛠️" : "📦"}
+                        </div>
+                      )}
+
+                      <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 flex-wrap">
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-slate-900/80 text-white backdrop-blur-xs">
+                          {item.type}
+                        </span>
+                        {item.keepOriginalPhoto && (
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-600 text-white shadow-xs">
+                            📸 Foto Real
+                          </span>
+                        )}
+                      </div>
+
+                      {item.offerPrice && (
+                        <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-600 text-white shadow-xs">
+                          Oferta
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Contenido */}
+                    <div className="p-4">
+                      <h4 className="text-sm font-black text-slate-900 line-clamp-1">{item.name}</h4>
+                      <p className="text-xs text-slate-500 font-medium mt-1 line-clamp-2 leading-relaxed">
+                        {item.description}
+                      </p>
+
+                      <div className="flex items-baseline gap-2 mt-3">
+                        {item.offerPrice ? (
+                          <>
+                            <span className="text-sm font-black text-emerald-600">{item.offerPrice}</span>
+                            <span className="text-xs text-slate-400 line-through font-bold">{item.price}</span>
+                          </>
+                        ) : (
+                          <span className="text-sm font-black text-slate-800">{item.price || "Sin precio"}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Acciones */}
+                  <div className="p-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">
+                      Tipografía: {item.fontStyle || "bold"}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => {
+                          setEditingProduct(item);
+                          setProductForm({
+                            name: item.name,
+                            description: item.description,
+                            type: item.type,
+                            category: item.category || "",
+                            price: item.price || "",
+                            offerPrice: item.offerPrice || "",
+                            imageUrl: item.imageUrl || "",
+                            tags: (item.tags || []).join(", "),
+                            keepOriginalPhoto: item.keepOriginalPhoto !== false,
+                            fontStyle: item.fontStyle || "bold_modern",
+                          });
+                          setShowAddProductModal(true);
+                        }}
+                        className="px-2.5 py-1 text-xs font-bold text-slate-600 hover:text-purple-600 hover:bg-white rounded-lg transition-all"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        onClick={() => handleDeleteProduct(item.id)}
+                        className="px-2.5 py-1 text-xs font-bold text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ──────────────────────────────────────────────────────────── */}
+      {/* TAB 3: COMANDOS DE AGENTES & ESTILOS VISUALES                */}
+      {/* ──────────────────────────────────────────────────────────── */}
+      {activeTab === "comandos" && (
+        <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+          <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+            <div>
+              <h3 className="text-lg font-black text-slate-900">Comandos & Estilos de Imagen para Agentes</h3>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">
+                Selecciona qué directrices de tono y qué estilos fotográficos utilizarán nuestros agentes para esta empresa.
+              </p>
+            </div>
+            <button
+              onClick={handleSaveAgentCommands}
+              disabled={savingAgents}
+              className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-black text-xs rounded-xl shadow-md transition-all"
+            >
+              <span>{savingAgents ? "Guardando..." : "💾 Guardar Comandos"}</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Tono y Ángulo */}
+            <div className="space-y-4">
+              <label className="block text-xs font-black text-slate-900 uppercase tracking-wider">
+                Tono de Voz de los Agentes
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { id: "directo_cercano", title: "Directo & Cercano (Tú a tú)", icon: "🤝", desc: "Humano, ágil y conversacional" },
+                  { id: "urgencia_oferta", title: "Promocional & Ofertas", icon: "💥", desc: "Alto impacto de precios y descuentos" },
+                  { id: "gourmet_elegante", title: "Elegante & Sensorial", icon: "🍷", desc: "Aspiracional, artesanal y detallista" },
+                  { id: "educativo_valor", title: "Educativo & Autoridad", icon: "💡", desc: "Tips, beneficios y resolución de dudas" },
+                ].map((tone) => (
+                  <button
+                    key={tone.id}
+                    type="button"
+                    onClick={() => setAgentTone(tone.id)}
+                    className={`p-3 rounded-2xl border-2 text-left transition-all ${
+                      agentTone === tone.id
+                        ? "border-purple-600 bg-purple-50/60 shadow-xs"
+                        : "border-slate-200 hover:border-slate-300"
+                    }`}
+                  >
+                    <span className="text-xl block mb-1">{tone.icon}</span>
+                    <div className="text-xs font-black text-slate-900">{tone.title}</div>
+                    <div className="text-[10px] text-slate-500 mt-0.5 leading-tight">{tone.desc}</div>
+                  </button>
+                ))}
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Directriz personalizada adicional para los agentes (Opcional)
+                </label>
+                <textarea
+                  rows={3}
+                  value={customAgentInstruction}
+                  onChange={(e) => setCustomAgentInstruction(e.target.value)}
+                  placeholder="Ej: Destacar siempre que el pan brioche es horneado todos los días y que la carne nunca se congela..."
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-purple-500 resize-none"
+                />
+              </div>
+            </div>
+
+            {/* Estilos Visuales de Imagen */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-black text-slate-900 uppercase tracking-wider">
+                  Estilos de Imagen Activos ({selectedStyleIds.length} seleccionados)
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setSelectedStyleIds(HARDCODED_STYLES.map((s) => s.id))}
+                  className="text-[11px] font-bold text-purple-600 hover:underline"
+                >
+                  Seleccionar todos
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[360px] overflow-y-auto pr-1">
+                {HARDCODED_STYLES.map((style) => {
+                  const isChecked = selectedStyleIds.includes(style.id);
+                  return (
+                    <div
+                      key={style.id}
+                      onClick={() => {
+                        setSelectedStyleIds((prev) =>
+                          isChecked ? prev.filter((id) => id !== style.id) : [...prev, style.id]
+                        );
+                      }}
+                      className={`p-3 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-2.5 ${
+                        isChecked
+                          ? "border-purple-600 bg-purple-50/50 shadow-xs"
+                          : "border-slate-100 hover:border-slate-200 bg-slate-50"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => {}}
+                        className="mt-0.5 accent-purple-600 rounded"
+                      />
+                      <div>
+                        <div className="text-xs font-black text-slate-900">{style.title}</div>
+                        <div className="text-[10px] text-slate-500 line-clamp-2 mt-0.5 leading-snug">
+                          {style.description}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ──────────────────────────────────────────────────────────── */}
+      {/* TAB 4: RADAR DE NICHO & ESTRATEGIA VISUAL                   */}
+      {/* ──────────────────────────────────────────────────────────── */}
+      {activeTab === "radar_estrategia" && (
+        <div className="space-y-8">
+          
+          {/* Radar de Nicho Widget */}
+          <div className="bg-gradient-to-r from-sky-500/10 via-indigo-500/10 to-purple-500/10 p-6 sm:p-8 rounded-3xl border-2 border-indigo-200/80 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl p-2 bg-indigo-100 rounded-2xl">📡</span>
+                <div>
+                  <h3 className="text-base font-black text-slate-900">Radar de Nicho para {brandForm.rubro || "tu rubro"}</h3>
+                  <p className="text-xs text-slate-600 font-medium mt-0.5">
+                    Descubre temas virales, dudas frecuentes y tendencias actuales en tu sector para incorporarlas a la estrategia.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleRunRadar}
+                disabled={loadingRadar}
+                className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs rounded-xl shadow-md transition-all shrink-0 flex items-center gap-2"
+              >
+                <span>{loadingRadar ? "Escaneando tendencias..." : "📡 Analizar Tendencias del Nicho"}</span>
+              </button>
+            </div>
+
+            {radarData && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-indigo-100 animate-in fade-in">
+                <div className="bg-white/90 p-4 rounded-2xl border border-indigo-100">
+                  <span className="text-[10px] font-black uppercase text-indigo-600 block mb-1">🔥 Tendencias Top</span>
+                  <div className="text-xs font-bold text-slate-800 space-y-1">
+                    {(radarData.trends || []).slice(0, 3).map((t: any, idx: number) => (
+                      <div key={idx} className="line-clamp-1">• {t.topic || t.title || t}</div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-white/90 p-4 rounded-2xl border border-indigo-100">
+                  <span className="text-[10px] font-black uppercase text-indigo-600 block mb-1">🎣 Ganchos Virales</span>
+                  <div className="text-xs font-bold text-slate-800 space-y-1">
+                    {(radarData.hooks || []).slice(0, 3).map((h: any, idx: number) => (
+                      <div key={idx} className="line-clamp-1">• &quot;{h.hook || h}&quot;</div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-white/90 p-4 rounded-2xl border border-indigo-100">
+                  <span className="text-[10px] font-black uppercase text-indigo-600 block mb-1">❓ Dudas Frecuentes</span>
+                  <div className="text-xs font-bold text-slate-800 space-y-1">
+                    {(radarData.questions || []).slice(0, 3).map((q: any, idx: number) => (
+                      <div key={idx} className="line-clamp-1">• {q.question || q}</div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Generador de Estrategia */}
+          <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+              <div>
+                <h3 className="text-lg font-black text-slate-900">Generar Estrategia Visual de Prueba</h3>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                  Nuestros agentes elaborarán publicaciones completas combinando el catálogo de la empresa con los estilos seleccionados.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleGenerateStrategy}
+                  disabled={generatingStrategy}
+                  className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-black text-xs rounded-xl shadow-lg shadow-purple-600/30 transition-all flex items-center gap-2"
+                >
+                  <span>{generatingStrategy ? "Generando posts con agentes..." : "🚀 Generar Estrategia Visual"}</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Objetivo de la Estrategia</label>
+                <select
+                  value={strategyGoal}
+                  onChange={(e) => setStrategyGoal(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800"
+                >
+                  <option value="ventas">💰 Ventas & Pedidos Directos</option>
+                  <option value="autoridad">🎙️ Autoridad de Marca & Posicionamiento</option>
+                  <option value="viralidad">🚀 Viralidad & Alcance Máximo</option>
+                  <option value="comunidad">❤️ Comunidad & Fidelización</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Enfoque del Catálogo</label>
+                <select
+                  value={catalogUsage}
+                  onChange={(e) => setCatalogUsage(e.target.value as any)}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800"
+                >
+                  <option value="mixed">🌟 Mixto (Combinar productos con contenido de valor del nicho)</option>
+                  <option value="all">🎯 Exclusivo (Todos los posts dedicados a productos del catálogo)</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Selector de Vista de Resultados */}
+            {strategyPosts.length > 0 && (
+              <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black text-slate-900">
+                    Previsualización ({strategyPosts.length} posts creados)
+                  </span>
+                  <div className="flex items-center bg-slate-100 rounded-xl p-1">
+                    <button
+                      onClick={() => setViewMode("grid")}
+                      className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                        viewMode === "grid" ? "bg-white text-slate-900 shadow-xs" : "text-slate-500"
+                      }`}
+                    >
+                      Grilla Detallada
+                    </button>
+                    <button
+                      onClick={() => setViewMode("mockup")}
+                      className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                        viewMode === "mockup" ? "bg-white text-slate-900 shadow-xs" : "text-slate-500"
+                      }`}
+                    >
+                      📱 Feed Celular
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleSaveToCalendar}
+                  disabled={savingToCalendar}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl transition-all shadow-md shadow-emerald-600/20 flex items-center gap-1.5"
+                >
+                  <span>{savingToCalendar ? "Guardando..." : "📅 Guardar en Calendario de Pruebas"}</span>
+                </button>
+              </div>
+            )}
+
+            {/* Grilla Detallada de Posts */}
+            {strategyPosts.length > 0 && viewMode === "grid" && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
+                {strategyPosts.map((post, idx) => (
+                  <div
+                    key={idx}
+                    className="rounded-3xl border-2 border-slate-100 bg-white p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
+                  >
+                    <div>
+                      {/* Cabecera del Post */}
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-100 text-purple-800">
+                          {post.format || "Post"}
+                        </span>
+                        <span className="text-[11px] font-bold text-slate-400">
+                          Día +{post.dayOffset} • {post.suggestedTime || "10:00"}
+                        </span>
+                      </div>
+
+                      {/* Hook & Copy */}
+                      <h4 className="text-sm font-black text-slate-900 mb-2 leading-tight">
+                        &quot;{post.hook}&quot;
+                      </h4>
+                      <p className="text-xs text-slate-600 font-medium whitespace-pre-line mb-3 leading-relaxed">
+                        {post.content}
+                      </p>
+
+                      <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-[11px] font-bold text-slate-700 mb-3">
+                        👉 {post.cta}
+                      </div>
+
+                      {/* Dirección visual / Foto del producto */}
+                      <div className="bg-purple-50/60 p-3 rounded-xl border border-purple-100">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-purple-700 block mb-1">
+                          🎨 Dirección Visual del Agente:
+                        </span>
+                        <p className="text-[11px] text-purple-900 font-medium italic">
+                          {post.imageDirection || post.visualStyle || "Fotografía de producto con composición publicitaria."}
+                        </p>
+
+                        {post.baseImageUrl && (
+                          <div className="mt-2.5 rounded-lg overflow-hidden border border-purple-200 h-28 bg-white relative">
+                            <img src={post.baseImageUrl} alt="Producto" className="w-full h-full object-cover" />
+                            <span className="absolute bottom-1 right-1 bg-black/70 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">
+                              Foto Real Vinculada
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between">
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(`${post.hook}\n\n${post.content}\n\n${post.cta}`);
+                          showNotification("Copy copiado al portapapeles.");
+                        }}
+                        className="text-xs font-bold text-purple-600 hover:text-purple-800 flex items-center gap-1"
+                      >
+                        <span>📋 Copiar Copy</span>
+                      </button>
+                      <span className="text-[10px] font-bold text-slate-400">Post #{idx + 1}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Vista Feed Mockup Celular */}
+            {strategyPosts.length > 0 && viewMode === "mockup" && (
+              <div className="flex justify-center py-6">
+                <div className="w-[360px] bg-slate-900 rounded-[3rem] p-3 shadow-2xl border-4 border-slate-800">
+                  <div className="bg-white rounded-[2.5rem] overflow-hidden min-h-[580px] flex flex-col">
+                    {/* Header Mock */}
+                    <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                      <div className="flex items-center gap-2">
+                        <span className="w-7 h-7 rounded-full bg-purple-600 text-white flex items-center justify-center text-xs font-black">
+                          {brandForm.icon || "🏢"}
+                        </span>
+                        <span className="text-xs font-black text-slate-900 truncate max-w-[150px]">
+                          {brandForm.name || "Marca Demo"}
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-bold text-slate-400">Feed Demo</span>
+                    </div>
+
+                    {/* Grilla 3 columnas estilo Instagram */}
+                    <div className="grid grid-cols-3 gap-1 p-1 bg-slate-100 flex-1">
+                      {strategyPosts.map((post, i) => (
+                        <div key={i} className="aspect-square bg-slate-200 relative group overflow-hidden">
+                          {post.baseImageUrl ? (
+                            <img src={post.baseImageUrl} alt="Post" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-purple-600 to-indigo-700 flex flex-col items-center justify-center p-2 text-center text-white">
+                              <span className="text-lg mb-1">{post.format === "Reel" ? "🎬" : "📸"}</span>
+                              <span className="text-[9px] font-bold line-clamp-2 leading-tight">
+                                {post.hook}
+                              </span>
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-2 text-center text-white text-[10px] font-bold">
+                            {post.cta}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL AGREGAR / EDITAR PRODUCTO EN EL CATÁLOGO ── */}
+      {showAddProductModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-3xl w-full max-w-lg p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <h3 className="text-base font-black text-slate-900">
+                {editingProduct ? "Editar Ítem de Catálogo" : "Nuevo Ítem en Catálogo de Prueba"}
+              </h3>
+              <button onClick={() => setShowAddProductModal(false)} className="text-slate-400 hover:text-slate-600 text-lg">
+                ✕
+              </button>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Nombre *</label>
+              <input
+                type="text"
+                value={productForm.name}
+                onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
+                placeholder="Ej: Hamburguesa Doble Cheddar"
+                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Tipo</label>
+                <select
+                  value={productForm.type}
+                  onChange={(e) => setProductForm({ ...productForm, type: e.target.value as any })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold"
+                >
+                  <option value="producto">Producto</option>
+                  <option value="servicio">Servicio</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Categoría</label>
+                <input
+                  type="text"
+                  value={productForm.category}
+                  onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
+                  placeholder="Ej: Especiales, Promos"
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Precio Normal</label>
+                <input
+                  type="text"
+                  value={productForm.price}
+                  onChange={(e) => setProductForm({ ...productForm, price: e.target.value })}
+                  placeholder="Ej: $8.990"
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Precio Oferta (Opcional)</label>
+                <input
+                  type="text"
+                  value={productForm.offerPrice}
+                  onChange={(e) => setProductForm({ ...productForm, offerPrice: e.target.value })}
+                  placeholder="Ej: $7.490"
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-emerald-600"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Descripción de Producto / Servicio *</label>
+              <textarea
+                rows={2}
+                value={productForm.description}
+                onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
+                placeholder="Ingredientes, detalles de preparación o beneficios que los agentes destacarán."
+                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium resize-none"
+              />
+            </div>
+
+            {/* Foto Real */}
+            <div className="space-y-2 p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
+              <label className="block text-xs font-bold text-slate-800">Foto Real del Producto</label>
+              
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={productForm.imageUrl}
+                  onChange={(e) => setProductForm({ ...productForm, imageUrl: e.target.value })}
+                  placeholder="https://... URL de foto o usa el botón"
+                  className="flex-1 px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-medium"
+                />
+                
+                <input
+                  type="file"
+                  ref={productImageRef}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file || !user) return;
+                    setUploadingProductImage(true);
+                    try {
+                      const storageRef = ref(storage, `users/${user.uid}/catalogo/${Date.now()}_${file.name}`);
+                      await uploadBytes(storageRef, file);
+                      const url = await getDownloadURL(storageRef);
+                      setProductForm((prev) => ({ ...prev, imageUrl: url }));
+                      showNotification("Foto de producto subida.");
+                    } catch (err) {
+                      showNotification("Error subiendo foto", true);
+                    } finally {
+                      setUploadingProductImage(false);
+                    }
+                  }}
+                  accept="image/*"
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => productImageRef.current?.click()}
+                  disabled={uploadingProductImage}
+                  className="px-3 py-1.5 bg-white border border-slate-300 font-bold text-xs rounded-xl hover:bg-slate-100 shrink-0"
+                >
+                  {uploadingProductImage ? "..." : "Subir Foto"}
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between pt-2">
+                <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={productForm.keepOriginalPhoto}
+                    onChange={(e) => setProductForm({ ...productForm, keepOriginalPhoto: e.target.checked })}
+                    className="accent-purple-600"
+                  />
+                  <span>Usar foto real intocable (nuestros agentes solo montan el texto)</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Tipografía */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Estilo Tipográfico Preferido</label>
+              <select
+                value={productForm.fontStyle}
+                onChange={(e) => setProductForm({ ...productForm, fontStyle: e.target.value as any })}
+                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800"
+              >
+                <option value="bold_modern">💥 Bold Promocional (Ofertas / Comida rápida / Rappi)</option>
+                <option value="script_handwritten">✍️ Cursiva Cálida (Cafeterías / Panaderías)</option>
+                <option value="elegant_serif">🍷 Elegante Serif (Gourmet / Salud / Estética)</option>
+                <option value="clean_minimal">⚡ Moderno Sans (Limpio y directo)</option>
+              </select>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setShowAddProductModal(false)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveProduct}
+                disabled={savingProduct || uploadingProductImage}
+                className="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-black text-xs rounded-xl shadow-md"
+              >
+                {savingProduct ? "Guardando..." : "Guardar Ítem"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para Crear Nueva Empresa de Prueba */}
+      <TestCompanyModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        userToken={userToken}
+        onCompanyCreated={async () => {
+          await loadCatalog();
+        }}
+      />
+    </div>
+  );
+}

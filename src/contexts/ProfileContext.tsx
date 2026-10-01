@@ -88,6 +88,8 @@ export type BusinessProfile = {
   menuDigitalEnabled?: boolean;
   menuTheme?: 'dark_modern' | 'warm_cafe' | 'fresh_bistro' | 'vibrant_street' | 'minimal_clean';
   isTestProfile?: boolean;
+  selectedPromptStyleIds?: string[];
+  savedRadarContext?: string;
   // Account lock: records which social account IDs have been used in a publish (non-business plan protection)
   accountLocks?: {
     facebook?: string;   // facebookPageId

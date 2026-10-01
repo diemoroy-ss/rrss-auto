@@ -226,7 +226,27 @@ function PanelLayoutContent({
                 </div>
               ))}
               {isAdminUser && (
-                <div className="pt-2 border-t border-slate-800">
+                <div className="pt-2 border-t border-slate-800 space-y-1.5">
+                  <Link
+                    href="/automatizacion-rrss/panel/laboratorio"
+                    className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition-all font-bold text-xs border ${
+                      pathname === "/automatizacion-rrss/panel/laboratorio"
+                        ? "bg-purple-900/60 text-white border-purple-500 shadow-md shadow-purple-950/40"
+                        : "bg-purple-950/40 text-purple-300 hover:bg-purple-900/50 hover:text-white border-purple-800/40"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">🧪</span>
+                      <div className="flex flex-col text-left">
+                        <span className="leading-tight font-black">Laboratorio Demo</span>
+                        <span className="text-[9px] text-purple-400 font-medium">Empresas de Prueba</span>
+                      </div>
+                    </div>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-black border border-purple-500/30">
+                      ADMIN
+                    </span>
+                  </Link>
+
                   <Link href="/automatizacion-rrss/panel/admin"
                     className="flex items-center justify-between px-3 py-2.5 rounded-xl transition-all font-bold text-xs bg-indigo-950/50 text-indigo-400 hover:bg-indigo-900/50 hover:text-white border border-indigo-800/30"
                   >
@@ -360,13 +380,27 @@ function PanelLayoutContent({
                   )}
 
                   {!isAdminRoute && isAdminUser && (
-                    <Link
-                      href="/automatizacion-rrss/panel/admin"
-                      className="flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm bg-indigo-950/80 text-indigo-300 border border-indigo-800/40 mt-1"
-                    >
-                      <span className="text-lg">👑</span>
-                      <span>Consola Admin</span>
-                    </Link>
+                    <div className="flex flex-col gap-2 mt-1">
+                      <Link
+                        href="/automatizacion-rrss/panel/laboratorio"
+                        className="flex items-center justify-between px-4 py-3 rounded-xl font-bold text-sm bg-purple-950/80 text-purple-300 border border-purple-800/40"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">🧪</span>
+                          <span>Laboratorio Demo (Empresas de Prueba)</span>
+                        </div>
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold border border-purple-500/30">
+                          ADMIN
+                        </span>
+                      </Link>
+                      <Link
+                        href="/automatizacion-rrss/panel/admin"
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-sm bg-indigo-950/80 text-indigo-300 border border-indigo-800/40"
+                      >
+                        <span className="text-lg">👑</span>
+                        <span>Consola Admin</span>
+                      </Link>
+                    </div>
                   )}
 
                   {isAdminRoute && (
