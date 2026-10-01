@@ -160,7 +160,15 @@ export interface MultiNetworkCopyParams {
   targetProfile?: any;
   networks?: string[];
   visualDirection?: string;
-  catalogoItem?: { name: string; description: string; imageUrl?: string | null } | null;
+  catalogoItem?: {
+    name: string;
+    description: string;
+    imageUrl?: string | null;
+    price?: string | null;
+    offerPrice?: string | null;
+    includePriceInCopy?: boolean;
+    category?: string | null;
+  } | null;
 }
 
 export interface NetworkCopiesResult {
@@ -198,8 +206,17 @@ export async function generateMultiNetworkCopiesWithAgent(params: MultiNetworkCo
     ? `\n\n**DATOS DE CONTACTO DE LA EMPRESA (OBLIGATORIO incluir en el cierre de Instagram, Facebook y LinkedIn):**\n${contactList.join('\n')}`
     : '';
 
+  let priceLine = '';
+  if (catalogoItem && catalogoItem.includePriceInCopy !== false) {
+    if (catalogoItem.offerPrice) {
+      priceLine = `\n- PRECIO PROMOCIONAL / OFERTA: "${catalogoItem.offerPrice}"${catalogoItem.price ? ` (Precio regular anterior: "${catalogoItem.price}")` : ''} -> OBLIGATORIO: Destaca este precio promocional u oferta especial en el copy y en el llamado a la acción.`;
+    } else if (catalogoItem.price) {
+      priceLine = `\n- PRECIO: "${catalogoItem.price}" -> Menciona el precio de forma clara y atractiva en el copy.`;
+    }
+  }
+
   const catalogoInstruction = catalogoItem 
-    ? `\n\n**PRODUCTO/SERVICIO A PROMOCIONAR:**\n- Nombre: "${catalogoItem.name}"\n- Descripción: "${catalogoItem.description}"\n(EL COPY DEBE GIRAR EN TORNO A ESTE PRODUCTO DE MANERA NATURAL. USA SUS CARACTERÍSTICAS PARA HACERLO PERSUASIVO.)`
+    ? `\n\n**PRODUCTO/SERVICIO A PROMOCIONAR:**\n- Nombre: "${catalogoItem.name}"\n- Descripción: "${catalogoItem.description}"${catalogoItem.category ? `\n- Categoría: "${catalogoItem.category}"` : ''}${priceLine}\n(EL COPY DEBE GIRAR EN TORNO A ESTE PRODUCTO DE MANERA NATURAL. USA SUS CARACTERÍSTICAS PARA HACERLO PERSUASIVO.)`
     : '';
 
   const sysInstruction = `Eres un estratega de contenido y Copywriter Senior especializado en optimización por plataforma para redes sociales.

@@ -535,7 +535,7 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
                     let resolvedBaseImage: string | undefined = undefined;
                     let resolvedProductName: string | undefined = post.productName || undefined;
                     let resolvedProductDesc: string | undefined = post.productDescription || undefined;
-                    let resolvedProductPrice: string | undefined = post.productPrice || undefined;
+                    let resolvedProductPrice: string | undefined = post.productOfferPrice || post.productPrice || undefined;
                     let resolvedKeepOriginalPhoto: boolean = Boolean(post.keepOriginalPhoto);
                     let resolvedFontStyle: any = post.fontStyle || "script_handwritten";
                     let imageSource: "uploaded_base" | "catalog_product" | "catalog_product_generated" | "business_description" = "business_description";
@@ -570,7 +570,7 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
                                 if (selectedItem) {
                                     resolvedProductName = selectedItem.name;
                                     resolvedProductDesc = selectedItem.description;
-                                    resolvedProductPrice = selectedItem.price || resolvedProductPrice;
+                                    resolvedProductPrice = selectedItem.offerPrice || selectedItem.price || resolvedProductPrice;
                                     if (selectedItem.keepOriginalPhoto !== undefined) {
                                         resolvedKeepOriginalPhoto = Boolean(selectedItem.keepOriginalPhoto);
                                     }

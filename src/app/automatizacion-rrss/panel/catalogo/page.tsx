@@ -11,7 +11,10 @@ const EMPTY_FORM: Omit<CatalogoItem, 'id' | 'createdAt' | 'active'> = {
   name: '',
   description: '',
   type: 'producto',
+  category: '',
   price: '',
+  offerPrice: '',
+  includePriceInCopy: true,
   imageUrl: '',
   tags: [],
   profileId: '',
@@ -77,6 +80,7 @@ export default function CatalogoPage() {
       profileId: activeProfile?.id || 'default',
       keepOriginalPhoto: true,
       fontStyle: 'script_handwritten',
+      includePriceInCopy: true,
     });
     setImageFile(null);
     setImagePreview('');
@@ -90,7 +94,10 @@ export default function CatalogoPage() {
       name: item.name,
       description: item.description,
       type: item.type,
+      category: item.category || '',
       price: item.price || '',
+      offerPrice: item.offerPrice || '',
+      includePriceInCopy: item.includePriceInCopy !== false,
       imageUrl: item.imageUrl || '',
       tags: item.tags || [],
       profileId: item.profileId,
@@ -191,19 +198,27 @@ export default function CatalogoPage() {
 
   return (
     <div className="max-w-5xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-black text-slate-900">Productos & Servicios</h1>
           <p className="text-slate-500 text-sm mt-1 font-medium">
             El catálogo de {activeProfile?.name || 'tu marca'} — las referencias que nuestros agentes usan al crear contenido.
           </p>
         </div>
-        <button
-          onClick={openCreate}
-          className="flex items-center gap-2 px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl transition-all shadow-lg shadow-indigo-500/30 text-sm"
-        >
-          + Agregar ítem
-        </button>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/automatizacion-rrss/panel/menu-qr"
+            className="flex items-center gap-2 px-4 py-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-2 border-emerald-200 font-black rounded-2xl transition-all text-sm shadow-xs"
+          >
+            <span>📱</span> Carta Menú & QR
+          </Link>
+          <button
+            onClick={openCreate}
+            className="flex items-center gap-2 px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl transition-all shadow-lg shadow-indigo-500/30 text-sm"
+          >
+            + Agregar ítem
+          </button>
+        </div>
       </div>
 
       {success && (
@@ -242,9 +257,16 @@ export default function CatalogoPage() {
                     {item.type === 'producto' ? '📦' : '⚙️'}
                   </div>
                 )}
-                <span className={`absolute top-3 left-3 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${item.type === 'producto' ? 'bg-blue-100 text-blue-700' : 'bg-violet-100 text-violet-700'}`}>
-                  {item.type}
-                </span>
+                <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 max-w-[70%]">
+                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-xs ${item.type === 'producto' ? 'bg-blue-600 text-white' : 'bg-violet-600 text-white'}`}>
+                    {item.type}
+                  </span>
+                  {item.category && (
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-white/90 backdrop-blur-sm text-slate-800 shadow-xs border border-white/50">
+                      {item.category}
+                    </span>
+                  )}
+                </div>
                 {item.keepOriginalPhoto !== false && item.imageUrl && (
                   <span className="absolute top-3 right-3 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-600 text-white shadow-xs flex items-center gap-1">
                     <span>📸</span> Foto Real
@@ -252,11 +274,30 @@ export default function CatalogoPage() {
                 )}
               </div>
               <div className="p-5">
-                <div className="flex items-start justify-between gap-2 mb-1">
+                <div className="flex items-start justify-between gap-2 mb-1.5">
                   <h3 className="font-black text-slate-900 text-base leading-tight">{item.name}</h3>
-                  {item.price && <span className="text-emerald-600 font-black text-sm whitespace-nowrap">{item.price}</span>}
+                  <div className="text-right">
+                    {item.offerPrice ? (
+                      <div className="flex flex-col items-end">
+                        <span className="text-rose-600 font-black text-sm whitespace-nowrap flex items-center gap-1">
+                          <span className="text-[9px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded font-black tracking-wider">PROMO</span>
+                          {item.offerPrice}
+                        </span>
+                        {item.price && (
+                          <span className="text-slate-400 text-xs line-through whitespace-nowrap">{item.price}</span>
+                        )}
+                      </div>
+                    ) : item.price ? (
+                      <span className="text-emerald-600 font-black text-sm whitespace-nowrap">{item.price}</span>
+                    ) : null}
+                  </div>
                 </div>
-                <p className="text-slate-500 text-xs font-medium line-clamp-2 mb-4">{item.description}</p>
+                <p className="text-slate-500 text-xs font-medium line-clamp-2 mb-3">{item.description}</p>
+                {item.includePriceInCopy && (item.price || item.offerPrice) && (
+                  <div className="mb-3 flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200/80 px-2.5 py-1 rounded-lg">
+                    <span>🏷️</span> Precio activo para copys de agentes
+                  </div>
+                )}
                 <div className="flex items-center gap-2">
                   <Link
                     href={`/automatizacion-rrss/panel/crear?catalogoId=${item.id}&catalogoName=${encodeURIComponent(item.name)}`}
@@ -334,7 +375,7 @@ export default function CatalogoPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                 <div>
                   <label className="block text-xs font-black text-slate-600 uppercase tracking-wider mb-1.5">Tipo *</label>
                   <select 
@@ -347,14 +388,72 @@ export default function CatalogoPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-black text-slate-600 uppercase tracking-wider mb-1.5">Precio (opcional)</label>
+                  <label className="block text-xs font-black text-slate-600 uppercase tracking-wider mb-1.5">Categoría (Carta / Menú)</label>
                   <input 
                     type="text" 
-                    value={form.price} 
-                    onChange={e => setForm({...form, price: e.target.value})}
-                    placeholder="Ej: $15.000 o Desde $10 USD"
+                    list="category-suggestions"
+                    value={form.category || ''} 
+                    onChange={e => setForm({...form, category: e.target.value})}
+                    placeholder="Ej: Cafetería, Sandwiches, Postres..."
                     className="w-full border-2 border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 placeholder-slate-400 outline-none transition-colors"
                   />
+                  <datalist id="category-suggestions">
+                    <option value="Cafetería" />
+                    <option value="Panadería & Pastelería" />
+                    <option value="Sandwiches & Hamburguesas" />
+                    <option value="Platos Principales" />
+                    <option value="Bebidas & Jugos" />
+                    <option value="Postres" />
+                    <option value="Promociones & Combos" />
+                    <option value="Servicios Destacados" />
+                  </datalist>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-xs font-black text-slate-600 uppercase tracking-wider mb-1.5">Precio Normal (opcional)</label>
+                  <input 
+                    type="text" 
+                    value={form.price || ''} 
+                    onChange={e => setForm({...form, price: e.target.value})}
+                    placeholder="Ej: $4.990 o $10 USD"
+                    className="w-full border-2 border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 placeholder-slate-400 outline-none transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-black text-slate-600 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                    <span>Precio Oferta / Promo</span>
+                    <span className="text-[10px] text-rose-600 font-black uppercase tracking-wider">Destacado</span>
+                  </label>
+                  <input 
+                    type="text" 
+                    value={form.offerPrice || ''} 
+                    onChange={e => setForm({...form, offerPrice: e.target.value})}
+                    placeholder="Ej: $3.990 o 2x1"
+                    className="w-full border-2 border-rose-200 focus:border-rose-500 rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 placeholder-slate-400 outline-none transition-colors bg-rose-50/20"
+                  />
+                </div>
+              </div>
+
+              {/* Opción de usar precios en publicaciones */}
+              <div className="mb-4 p-3.5 rounded-2xl border-2 border-amber-100 bg-amber-50/40">
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    id="includePriceInCopy"
+                    checked={form.includePriceInCopy !== false}
+                    onChange={(e) => setForm({ ...form, includePriceInCopy: e.target.checked })}
+                    className="mt-1 w-4 h-4 text-amber-600 rounded border-slate-300 focus:ring-amber-500 cursor-pointer"
+                  />
+                  <label htmlFor="includePriceInCopy" className="cursor-pointer">
+                    <span className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                      <span>🏷️</span> Incluir precio u oferta en la redacción de publicaciones
+                    </span>
+                    <p className="text-[11px] text-slate-500 font-medium mt-0.5 leading-snug">
+                      Nuestros agentes destacarán el precio o descuento en el texto y llamado a la acción al planificar o generar contenido sobre este ítem.
+                    </p>
+                  </label>
                 </div>
               </div>
 

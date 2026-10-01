@@ -97,7 +97,10 @@ export type CatalogoItem = {
   name: string;
   description: string;
   type: 'producto' | 'servicio';
+  category?: string;
   price?: string;
+  offerPrice?: string;
+  includePriceInCopy?: boolean;
   imageUrl?: string;
   tags?: string[];
   profileId: string;

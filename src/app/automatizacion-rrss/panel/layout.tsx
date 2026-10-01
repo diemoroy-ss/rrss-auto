@@ -104,6 +104,7 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
       title: "RECURSOS Y MARCA",
       items: [
         { href: "/automatizacion-rrss/panel/catalogo", label: "Productos / Servicios", icon: "🛍️", exact: false },
+        { href: "/automatizacion-rrss/panel/menu-qr", label: "Carta Menú & QR", icon: "📱", exact: false },
         { href: "/automatizacion-rrss/panel/biblioteca", label: "Biblioteca", icon: "🖼️", exact: false },
         { href: "/automatizacion-rrss/panel/configuracion", label: "Configuración de Marca", icon: "🏪", exact: false },
       ]
