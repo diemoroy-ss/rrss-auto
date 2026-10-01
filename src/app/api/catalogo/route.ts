@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
   try {
     const uid = await getUid(req);
     const body = await req.json();
-    const { name, description, type, price, imageUrl, tags, profileId } = body;
+    const { name, description, type, price, imageUrl, tags, profileId, keepOriginalPhoto, fontStyle } = body;
     if (!name || !description || !type || !profileId) {
       return NextResponse.json({ error: "name, description, type y profileId son requeridos" }, { status: 400 });
     }
@@ -58,6 +58,8 @@ export async function POST(req: NextRequest) {
       imageUrl: imageUrl || null,
       tags: tags || [],
       profileId,
+      keepOriginalPhoto: Boolean(keepOriginalPhoto),
+      fontStyle: fontStyle || 'script_handwritten',
       active: true,
       createdAt: new Date(),
     });
@@ -72,7 +74,7 @@ export async function PUT(req: NextRequest) {
   try {
     const uid = await getUid(req);
     const body = await req.json();
-    const { id, name, description, type, price, imageUrl, tags, active } = body;
+    const { id, name, description, type, price, imageUrl, tags, active, keepOriginalPhoto, fontStyle } = body;
     if (!id) return NextResponse.json({ error: "id es requerido" }, { status: 400 });
     const updates: Record<string, any> = {};
     if (name !== undefined) updates.name = name.trim();
@@ -82,6 +84,8 @@ export async function PUT(req: NextRequest) {
     if (imageUrl !== undefined) updates.imageUrl = imageUrl;
     if (tags !== undefined) updates.tags = tags;
     if (active !== undefined) updates.active = active;
+    if (keepOriginalPhoto !== undefined) updates.keepOriginalPhoto = Boolean(keepOriginalPhoto);
+    if (fontStyle !== undefined) updates.fontStyle = fontStyle;
     await catalogoRef(uid).doc(id).update(updates);
     return NextResponse.json({ success: true });
   } catch (err: any) {

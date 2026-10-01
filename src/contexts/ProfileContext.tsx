@@ -103,6 +103,10 @@ export type CatalogoItem = {
   profileId: string;
   active: boolean;
   createdAt?: any;
+  /** Si es true, nuestros agentes usan la foto original sin retocarla ni regenerarla (sólo texto publicitario encima) */
+  keepOriginalPhoto?: boolean;
+  /** Estilo tipográfico preferido para la sobreposición publicitaria */
+  fontStyle?: 'script_handwritten' | 'bold_modern' | 'elegant_serif' | 'clean_minimal';
 };
 
 

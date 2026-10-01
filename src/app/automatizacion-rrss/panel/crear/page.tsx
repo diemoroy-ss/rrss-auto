@@ -1155,6 +1155,9 @@ export default function RrssCreatePost() {
         baseImageUrl: selectedCatalogoItem?.imageUrl || null,
         catalogoId: selectedCatalogoItem?.id || null,
         catalogoName: selectedCatalogoItem?.name || null,
+        keepOriginalPhoto: selectedCatalogoItem ? (selectedCatalogoItem.keepOriginalPhoto !== false) : false,
+        fontStyle: selectedCatalogoItem?.fontStyle || "script_handwritten",
+        productPrice: selectedCatalogoItem?.price || null,
         // TikTok Direct Post settings
         tiktokPrivacyLevel: tiktokSettings.privacyLevel,
         tiktokAllowComment: tiktokSettings.allowComment,
@@ -1335,11 +1338,18 @@ export default function RrssCreatePost() {
                   ))}
                 </select>
                 {selectedCatalogoItem?.imageUrl && (
-                  <div className="mt-3 flex items-center gap-3">
-                    <img src={selectedCatalogoItem.imageUrl} alt={selectedCatalogoItem.name} className="w-14 h-14 object-cover rounded-xl border border-slate-200" />
-                    <div>
-                      <p className="text-xs font-black text-slate-800">{selectedCatalogoItem.name}</p>
-                      <p className="text-[11px] text-slate-400 font-medium line-clamp-2">{selectedCatalogoItem.description}</p>
+                  <div className="mt-3 flex items-center gap-3 p-3 bg-slate-50 border border-slate-200/80 rounded-xl">
+                    <img src={selectedCatalogoItem.imageUrl} alt={selectedCatalogoItem.name} className="w-14 h-14 object-cover rounded-xl border border-slate-200 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-xs font-black text-slate-800">{selectedCatalogoItem.name}</p>
+                        {selectedCatalogoItem.keepOriginalPhoto !== false && (
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+                            <span>📸</span> Foto Real Intacta
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-slate-400 font-medium line-clamp-2 mt-0.5">{selectedCatalogoItem.description}</p>
                     </div>
                   </div>
                 )}

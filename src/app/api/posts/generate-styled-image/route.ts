@@ -48,6 +48,9 @@ export async function POST(req: NextRequest) {
     let resolvedBaseImage: string | undefined = undefined;
     let resolvedProductName: string | undefined = post.productName || undefined;
     let resolvedProductDesc: string | undefined = post.productDescription || undefined;
+    let resolvedProductPrice: string | undefined = post.productPrice || undefined;
+    let resolvedKeepOriginalPhoto: boolean = Boolean(post.keepOriginalPhoto);
+    let resolvedFontStyle: any = post.fontStyle || "script_handwritten";
     let imageSource: "uploaded_base" | "catalog_product" | "catalog_product_generated" | "business_description" = "business_description";
     let sourceDescription = "Generada a partir de la descripción del negocio";
 
@@ -57,8 +60,8 @@ export async function POST(req: NextRequest) {
       resolvedBaseImage = candidateUploaded;
       imageSource = resolvedProductName ? "catalog_product" : "uploaded_base";
       sourceDescription = resolvedProductName 
-        ? `Generada usando la foto real de "${resolvedProductName}" de tu catálogo`
-        : "Generada usando la imagen base que subiste";
+        ? `Foto real de "${resolvedProductName}" de tu catálogo`
+        : "Imagen base subida";
     } else if (resolvedProductName) {
       // Producto del catálogo asignado pero SIN foto: nuestros agentes generan la foto desde cero
       imageSource = "catalog_product_generated";
@@ -89,10 +92,18 @@ export async function POST(req: NextRequest) {
           if (selectedItem) {
             resolvedProductName = selectedItem.name;
             resolvedProductDesc = selectedItem.description;
+            resolvedProductPrice = selectedItem.price || resolvedProductPrice;
+            if (selectedItem.keepOriginalPhoto !== undefined) {
+              resolvedKeepOriginalPhoto = Boolean(selectedItem.keepOriginalPhoto);
+            }
+            if (selectedItem.fontStyle) {
+              resolvedFontStyle = selectedItem.fontStyle;
+            }
+
             if (selectedItem.imageUrl && typeof selectedItem.imageUrl === "string" && selectedItem.imageUrl.startsWith("http")) {
               resolvedBaseImage = selectedItem.imageUrl;
               imageSource = "catalog_product";
-              sourceDescription = `Generada usando la foto de "${selectedItem.name}" de tu catálogo`;
+              sourceDescription = `Foto de "${selectedItem.name}" de tu catálogo`;
             } else {
               imageSource = "catalog_product_generated";
               sourceDescription = `Fotografía comercial generada desde cero para "${selectedItem.name}" con estilo visual`;
@@ -110,37 +121,59 @@ export async function POST(req: NextRequest) {
       sourceDescription = `Generada a partir de la descripción de tu negocio (${targetProfile.rubro || "General"})`;
     }
 
-    console.log(`[generate-styled-image] Post ${postId} - Nivel seleccionado: ${imageSource} (${sourceDescription})`);
+    console.log(`[generate-styled-image] Post ${postId} - Nivel seleccionado: ${imageSource} (${sourceDescription}) - Foto Real Intocable: ${resolvedKeepOriginalPhoto}`);
 
-    // 3. Generar la imagen con nuestros agentes
+    // 3. Generar la imagen con nuestros agentes o componer sobre la foto real intocable
     const isStory = post.type === "Historia" || post.type === "Story";
-    const productFocus = resolvedProductName 
-      ? `Producto/servicio protagonista: "${resolvedProductName}"${resolvedProductDesc ? ` (${resolvedProductDesc})` : ''}. ` 
-      : '';
-    const imagePromptIdea = post.imageDirection 
-      ? `${productFocus}${post.imageDirection}. Contexto del post: ${post.idea || post.text || "Fotografía promocional"}`
-      : `${productFocus}${post.idea || post.text || "Fotografía promocional profesional"}`;
+    let generatedImageUrl: string | null = null;
 
-    const generatedImageUrl = await generateImageWithAgent({
-      idea: imagePromptIdea,
-      rubro: targetProfile.rubro || "General",
-      businessName: targetProfile.name || targetProfile.businessName || "",
-      businessDescription: targetProfile.businessDescription || "",
-      promotions: targetProfile.promotions || "",
-      customOffer: post.customOffer || "",
-      productName: resolvedProductName,
-      productDescription: resolvedProductDesc,
-      bannerStyle: "clean", // Mantener la composición de imagen limpia y estilizada
-      aspectRatio: isStory ? "9:16" : "1:1",
-      logoPrompt: targetProfile.logoPrompt || "",
-      logoUrl: targetProfile.logoUrl || "",
-      userId: post.userId,
-      includeLogo: post.includeLogo ?? targetProfile.alwaysIncludeLogo ?? true,
-      promptTemplateId: effectiveStyleId || undefined,
-      visualStyle: effectiveStyleName || undefined,
-      baseImageUrl: resolvedBaseImage,
-      brandVisualIdentity: targetProfile.visualIdentity || undefined,
-    });
+    if (resolvedKeepOriginalPhoto && resolvedBaseImage) {
+      console.log(`[generate-styled-image] 📸 Modo Foto Real Intocable activo para "${resolvedProductName}". Componiendo tipografía publicitaria sobre la foto original...`);
+      const { composeRealProductBanner } = await import("../../../../lib/real-product-compositor");
+      generatedImageUrl = await composeRealProductBanner({
+        baseImageUrl: resolvedBaseImage,
+        productName: resolvedProductName || "Producto",
+        productDescription: resolvedProductDesc,
+        price: resolvedProductPrice,
+        idea: post.idea || post.text,
+        rubro: targetProfile.rubro || "Gastronomía",
+        businessName: targetProfile.name || targetProfile.businessName || "Mi Negocio",
+        fontStyle: resolvedFontStyle,
+        aspectRatio: isStory ? "9:16" : "1:1",
+        logoUrl: targetProfile.logoUrl || "",
+        userId: post.userId,
+        includeLogo: post.includeLogo ?? targetProfile.alwaysIncludeLogo ?? true,
+      });
+      sourceDescription = `Foto real de "${resolvedProductName}" con tipografía comercial (sin retoque de comida)`;
+    } else {
+      const productFocus = resolvedProductName 
+        ? `Producto/servicio protagonista: "${resolvedProductName}"${resolvedProductDesc ? ` (${resolvedProductDesc})` : ''}. ` 
+        : '';
+      const imagePromptIdea = post.imageDirection 
+        ? `${productFocus}${post.imageDirection}. Contexto del post: ${post.idea || post.text || "Fotografía promocional"}`
+        : `${productFocus}${post.idea || post.text || "Fotografía promocional profesional"}`;
+
+      generatedImageUrl = await generateImageWithAgent({
+        idea: imagePromptIdea,
+        rubro: targetProfile.rubro || "General",
+        businessName: targetProfile.name || targetProfile.businessName || "",
+        businessDescription: targetProfile.businessDescription || "",
+        promotions: targetProfile.promotions || "",
+        customOffer: post.customOffer || "",
+        productName: resolvedProductName,
+        productDescription: resolvedProductDesc,
+        bannerStyle: "clean", // Mantener la composición de imagen limpia y estilizada
+        aspectRatio: isStory ? "9:16" : "1:1",
+        logoPrompt: targetProfile.logoPrompt || "",
+        logoUrl: targetProfile.logoUrl || "",
+        userId: post.userId,
+        includeLogo: post.includeLogo ?? targetProfile.alwaysIncludeLogo ?? true,
+        promptTemplateId: effectiveStyleId || undefined,
+        visualStyle: effectiveStyleName || undefined,
+        baseImageUrl: resolvedBaseImage,
+        brandVisualIdentity: targetProfile.visualIdentity || undefined,
+      });
+    }
 
     if (!generatedImageUrl) {
       throw new Error("Nuestros agentes no pudieron generar la imagen en este momento.");

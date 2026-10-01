@@ -33,10 +33,11 @@ export default async function RenderPreviewPage(props: {
     return <div style={{ color: "red", padding: 20 }}>No se encontró el diseño con ID: {id}</div>;
   }
 
+  const isVertical = data.aspectRatio === "9:16";
   const W = 1080;
-  const H = 1080; // Podríamos hacerlo dinámico si soportamos historias
+  const H = isVertical ? 1920 : 1080;
 
-  const FONTS_URL = "https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Roboto:wght@400;700&family=Playfair+Display:wght@400;700&family=Bebas+Neue&family=Outfit:wght@400;700&display=swap";
+  const FONTS_URL = "https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Caveat:wght@600;700&family=Dancing+Script:wght@600;700&family=Montserrat:wght@400;700;900&family=Outfit:wght@400;700&family=Pacifico&family=Playfair+Display:ital,wght@0,700;1,700&family=Roboto:wght@400;700&display=swap";
 
   return (
     <>
@@ -69,6 +70,36 @@ export default async function RenderPreviewPage(props: {
             }} 
             alt="fondo" 
           />
+        )}
+
+        {/* Scrim / Degradados de Contraste para legibilidad de textos sobre la comida */}
+        {data.useScrim !== false && (
+          <>
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: isVertical ? "40%" : "45%",
+                background: "linear-gradient(to bottom, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.35) 60%, rgba(0,0,0,0) 100%)",
+                zIndex: 5,
+                pointerEvents: "none"
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                bottom: 0,
+                left: 0,
+                width: "100%",
+                height: isVertical ? "35%" : "35%",
+                background: "linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0) 100%)",
+                zIndex: 5,
+                pointerEvents: "none"
+              }}
+            />
+          </>
         )}
 
         {/* Capas de Texto */}

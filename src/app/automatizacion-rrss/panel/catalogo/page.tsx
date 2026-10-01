@@ -15,6 +15,8 @@ const EMPTY_FORM: Omit<CatalogoItem, 'id' | 'createdAt' | 'active'> = {
   imageUrl: '',
   tags: [],
   profileId: '',
+  keepOriginalPhoto: true,
+  fontStyle: 'script_handwritten',
 };
 
 export default function CatalogoPage() {
@@ -70,7 +72,12 @@ export default function CatalogoPage() {
 
   const openCreate = () => {
     setEditingItem(null);
-    setForm({ ...EMPTY_FORM, profileId: activeProfile?.id || 'default' });
+    setForm({
+      ...EMPTY_FORM,
+      profileId: activeProfile?.id || 'default',
+      keepOriginalPhoto: true,
+      fontStyle: 'script_handwritten',
+    });
     setImageFile(null);
     setImagePreview('');
     setError('');
@@ -87,6 +94,8 @@ export default function CatalogoPage() {
       imageUrl: item.imageUrl || '',
       tags: item.tags || [],
       profileId: item.profileId,
+      keepOriginalPhoto: item.keepOriginalPhoto !== false,
+      fontStyle: item.fontStyle || 'script_handwritten',
     });
     setImageFile(null);
     setImagePreview(item.imageUrl || '');
@@ -236,6 +245,11 @@ export default function CatalogoPage() {
                 <span className={`absolute top-3 left-3 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${item.type === 'producto' ? 'bg-blue-100 text-blue-700' : 'bg-violet-100 text-violet-700'}`}>
                   {item.type}
                 </span>
+                {item.keepOriginalPhoto !== false && item.imageUrl && (
+                  <span className="absolute top-3 right-3 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-600 text-white shadow-xs flex items-center gap-1">
+                    <span>📸</span> Foto Real
+                  </span>
+                )}
               </div>
               <div className="p-5">
                 <div className="flex items-start justify-between gap-2 mb-1">
@@ -342,6 +356,45 @@ export default function CatalogoPage() {
                     className="w-full border-2 border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 placeholder-slate-400 outline-none transition-colors"
                   />
                 </div>
+              </div>
+
+              {/* Opción de Foto Real Intocable vs Retoque IA */}
+              <div className="mb-5 p-4 rounded-2xl border-2 border-indigo-100 bg-indigo-50/40 space-y-3">
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    id="keepOriginalPhoto"
+                    checked={form.keepOriginalPhoto ?? true}
+                    onChange={(e) => setForm({ ...form, keepOriginalPhoto: e.target.checked })}
+                    className="mt-1 w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 cursor-pointer"
+                  />
+                  <label htmlFor="keepOriginalPhoto" className="cursor-pointer">
+                    <span className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                      <span>📸</span> Usar foto real intacta (Sin retoque de imagen)
+                    </span>
+                    <p className="text-[11px] text-slate-500 font-medium mt-0.5 leading-snug">
+                      Recomendado para comida, panadería y productos reales: nuestros agentes mantendrán tu fotografía original exacta y sólo superpondrán textos publicitarios, ofertas o precios.
+                    </p>
+                  </label>
+                </div>
+
+                {(form.keepOriginalPhoto ?? true) && (
+                  <div className="pt-2 border-t border-indigo-100/80">
+                    <label className="block text-[11px] font-black text-slate-700 uppercase tracking-wider mb-1.5">
+                      Estilo Tipográfico para Banners & Ofertas
+                    </label>
+                    <select
+                      value={form.fontStyle || 'script_handwritten'}
+                      onChange={(e) => setForm({ ...form, fontStyle: e.target.value as any })}
+                      className="w-full border-2 border-slate-200 focus:border-indigo-500 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 outline-none bg-white"
+                    >
+                      <option value="script_handwritten">✍️ Cursiva Cálida (Estilo Cafetería / Panadería / Buenos Días)</option>
+                      <option value="bold_modern">💥 Bold Promocional (Estilo Ofertas / $1.990 / Rappi)</option>
+                      <option value="elegant_serif">🍷 Elegante Serif (Estilo Gourmet / Carta)</option>
+                      <option value="clean_minimal">⚡ Moderno Sans (Limpio y directo)</option>
+                    </select>
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-3 mt-6">
