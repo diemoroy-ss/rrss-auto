@@ -33,6 +33,16 @@ export async function GET(
       isoDate = data.createdAt;
     }
 
+    let plans: Record<string, any> | null = null;
+    try {
+      const plansDoc = await adminDb.collection("system_config").doc("plans").get();
+      if (plansDoc.exists) {
+        plans = plansDoc.data() || null;
+      }
+    } catch (plansErr) {
+      console.warn("[API Public Muestras] Warning loading plans config:", plansErr);
+    }
+
     return NextResponse.json({
       success: true,
       demo: {
@@ -54,6 +64,7 @@ export async function GET(
         selectedStyleTitle: data.selectedStyleTitle || "Estándar Comercial",
         createdAt: isoDate,
       },
+      plans,
     });
   } catch (err: any) {
     console.error("[API Public Muestras Error]:", err);

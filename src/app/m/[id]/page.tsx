@@ -40,11 +40,166 @@ interface DemoData {
   createdAt?: any;
 }
 
+interface PlanConfig {
+  id: string;
+  name: string;
+  tagline: string;
+  price: number;
+  annualPrice?: number;
+  postsLimit: number;
+  videosLimit: number;
+  aiImagesLimit?: number;
+  aiVideosLimit?: number;
+  seoBlogsLimit?: number;
+  multiAccount?: boolean;
+  maxAccounts?: number;
+  isPopular?: boolean;
+  ctaText?: string;
+  features?: string[];
+}
+
+const DEFAULT_PLANS: Record<string, PlanConfig> = {
+  free: {
+    id: "free",
+    name: "Prueba Gratis",
+    tagline: "POR 10 DÍAS",
+    price: 0,
+    annualPrice: 0,
+    postsLimit: 5,
+    videosLimit: 0,
+    aiImagesLimit: 8,
+    aiVideosLimit: 0,
+    seoBlogsLimit: 0,
+    isPopular: false,
+    ctaText: "Probar 5 Posts Gratis",
+    features: [
+      "5 publicaciones automáticas por 10 días",
+      "8 imágenes con nuestros agentes",
+      "Todas las redes sociales (IG, FB, TT, YT, X)",
+      "1 perfil de marca",
+      "Sin tarjeta de crédito"
+    ]
+  },
+  starter: {
+    id: "starter",
+    name: "Starter",
+    tagline: "EMPIEZA A AUTOMATIZAR",
+    price: 24990,
+    annualPrice: 249900,
+    postsLimit: 20,
+    videosLimit: 2,
+    aiImagesLimit: 20,
+    aiVideosLimit: 2,
+    seoBlogsLimit: 0,
+    isPopular: false,
+    ctaText: "Comenzar Starter",
+    features: [
+      "20 publicaciones en redes al mes",
+      "2 videos para Reels / TikTok / Shorts al mes",
+      "20 imágenes con nuestros agentes al mes",
+      "Todas las redes sociales",
+      "1 perfil de marca"
+    ]
+  },
+  growth: {
+    id: "growth",
+    name: "Growth",
+    tagline: "ACELERA TU PRESENCIA",
+    price: 44990,
+    annualPrice: 449900,
+    postsLimit: 40,
+    videosLimit: 6,
+    aiImagesLimit: 40,
+    aiVideosLimit: 6,
+    seoBlogsLimit: 2,
+    isPopular: true,
+    ctaText: "Elegir Growth",
+    features: [
+      "40 publicaciones en redes al mes",
+      "6 videos con locución y guión al mes",
+      "40 imágenes con nuestros agentes al mes",
+      "2 artículos de Blog SEO/GEO al mes",
+      "WhatsApp Bot: revisión y aprobación de posts",
+      "Todas las redes sociales"
+    ]
+  },
+  pro: {
+    id: "pro",
+    name: "Pro",
+    tagline: "EL MÁS ELEGIDO",
+    price: 89990,
+    annualPrice: 899900,
+    postsLimit: 80,
+    videosLimit: 12,
+    aiImagesLimit: 80,
+    aiVideosLimit: 12,
+    seoBlogsLimit: 8,
+    isPopular: false,
+    ctaText: "Elegir Pro",
+    features: [
+      "80 publicaciones en redes al mes",
+      "12 videos con locución y guión al mes",
+      "80 imágenes con nuestros agentes al mes",
+      "8 artículos de Blog SEO/GEO al mes",
+      "WhatsApp Bot completo + Radar de Nicho",
+      "Meta Ads integrado"
+    ]
+  },
+  business: {
+    id: "business",
+    name: "Business",
+    tagline: "HASTA 3 CUENTAS",
+    price: 169990,
+    annualPrice: 1699900,
+    postsLimit: 200,
+    videosLimit: 30,
+    aiImagesLimit: 200,
+    aiVideosLimit: 30,
+    seoBlogsLimit: 20,
+    isPopular: false,
+    ctaText: "Elegir Business",
+    features: [
+      "200 publicaciones en redes al mes",
+      "30 videos con locución y guión al mes",
+      "200 imágenes con nuestros agentes al mes",
+      "20 artículos de Blog SEO/GEO al mes",
+      "WhatsApp Bot multi-marca",
+      "Hasta 3 marcas o cuentas independientes"
+    ]
+  }
+};
+
+const formatPrice = (price: number) => {
+  if (!price || price === 0) return "$0";
+  return new Intl.NumberFormat("es-CL", {
+    style: "currency",
+    currency: "CLP",
+    maximumFractionDigits: 0,
+  }).format(price);
+};
+
+const sanitizeFeature = (text: string) => {
+  if (!text) return "";
+  return text
+    .replace(/\bIA\b/g, "nuestros agentes")
+    .replace(/Inteligencia Artificial/gi, "agentes especializados");
+};
+
+const PLAN_DISPLAY_KEYS = ["free", "starter", "growth", "pro"] as const;
+
+const PLAN_META: Record<string, { defaultBadge: string; emoji: string; subtitle: string }> = {
+  free: { defaultBadge: "10 Días", emoji: "🎁", subtitle: "Comprueba la calidad en tus redes" },
+  starter: { defaultBadge: "Básico", emoji: "⚡", subtitle: "Constancia esencial mes a mes" },
+  growth: { defaultBadge: "Crecimiento", emoji: "🚀", subtitle: "El equilibrio perfecto de video y contenido" },
+  pro: { defaultBadge: "Avanzado", emoji: "👑", subtitle: "Máximo impacto con Meta Ads" },
+};
+
 export default function PublicProspectDemoPage({ params }: { params?: { id?: string } }) {
   const routeParams = useParams();
   const demoId = (typeof routeParams?.id === "string" ? routeParams.id : null) || params?.id || "";
 
   const [demo, setDemo] = useState<DemoData | null>(null);
+  const [plans, setPlans] = useState<Record<string, PlanConfig>>(DEFAULT_PLANS);
   const [loading, setLoading] = useState(true);
   const [activeMediaTab, setActiveMediaTab] = useState<"imagen" | "video">("imagen");
   const [copiedLink, setCopiedLink] = useState(false);
@@ -63,6 +218,9 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
           const apiData = await apiRes.json();
           if (apiData.success && apiData.demo) {
             setDemo(apiData.demo);
+            if (apiData.plans) {
+              setPlans(prev => ({ ...prev, ...apiData.plans }));
+            }
             // Si la muestra tiene video (generado o Remotion), darle protagonismo por defecto
             if (apiData.demo.remotionComposition || apiData.demo.generatedVideoUrl) {
               setActiveMediaTab("video");
@@ -78,7 +236,15 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
       // 2. Intento secundario: Fallback cliente directo
       try {
         const ref = doc(db, "admin_prospect_demos", demoId);
-        const snap = await getDoc(ref);
+        const [snap, plansSnap] = await Promise.all([
+          getDoc(ref),
+          getDoc(doc(db, "system_config", "plans")).catch(() => null)
+        ]);
+
+        if (plansSnap && plansSnap.exists()) {
+          setPlans(prev => ({ ...prev, ...(plansSnap.data() as Record<string, PlanConfig>) }));
+        }
+
         if (snap.exists()) {
           const data = snap.data();
           const d: DemoData = {
@@ -500,219 +666,155 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            
-            {/* PLAN 1: PRUEBA GRATUITA */}
-            <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs flex flex-col justify-between hover:shadow-md transition-shadow">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 uppercase">
-                    10 Días
-                  </span>
-                  <span className="text-xs">🎁</span>
-                </div>
-                <div>
-                  <h4 className="text-base font-black text-slate-900">Prueba Gratis</h4>
-                  <p className="text-[11px] text-slate-500 mt-0.5">Comprueba la calidad en tus redes</p>
-                </div>
-                <div className="pt-1">
-                  <span className="text-2xl font-black text-slate-900">$0</span>
-                  <span className="text-xs text-slate-500 ml-1">/ 10 días</span>
-                </div>
-                <ul className="text-xs text-slate-600 space-y-2 pt-2 border-t border-slate-100">
-                  <li className="flex items-start gap-2">
-                    <FaCheck className="text-emerald-500 text-xs shrink-0 mt-0.5" />
-                    <span><strong>5 posts</strong> automáticos listos</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <FaCheck className="text-emerald-500 text-xs shrink-0 mt-0.5" />
-                    <span>8 imágenes con tus agentes</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <FaCheck className="text-emerald-500 text-xs shrink-0 mt-0.5" />
-                    <span>Instagram y Facebook</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <FaCheck className="text-emerald-500 text-xs shrink-0 mt-0.5" />
-                    <span>Sin tarjeta de crédito</span>
-                  </li>
-                </ul>
-              </div>
+            {PLAN_DISPLAY_KEYS.map((key) => {
+              const plan = plans[key] || DEFAULT_PLANS[key];
+              if (!plan) return null;
 
-              <div className="pt-5">
-                <a
-                  href={`https://wa.me/${santisoftWhatsAppNumber}?text=${encodeURIComponent(
-                    `¡Hola Santisoft! Vi la propuesta para ${businessName} (Demo #${demoId.substring(0, 6)}) y me gustaría comenzar con la Prueba Gratuita de 5 publicaciones.`
-                  )}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="w-full py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-extrabold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              const isFree = plan.price === 0 || key === "free";
+              const isPopular = Boolean(plan.isPopular || key === "growth");
+              const priceFormatted = formatPrice(plan.price);
+              const meta = PLAN_META[key] || { defaultBadge: "Plan", emoji: "✨", subtitle: "" };
+              const badgeText = plan.tagline || meta.defaultBadge;
+
+              const featuresToDisplay: string[] =
+                plan.features && plan.features.length > 0
+                  ? plan.features.map(f => sanitizeFeature(f))
+                  : [
+                      `${plan.postsLimit || 0} publicaciones al mes`,
+                      plan.videosLimit ? `${plan.videosLimit} videos Reels / TikTok` : "Sin videos",
+                      `${plan.aiImagesLimit || plan.postsLimit || 0} imágenes con tus agentes`,
+                      plan.seoBlogsLimit ? `${plan.seoBlogsLimit} artículos Blog SEO al mes` : "Publicación automática",
+                    ];
+
+              const waText = isFree
+                ? `¡Hola Santisoft! Vi la propuesta para ${businessName} (Demo #${demoId.substring(0, 6)}) y me gustaría comenzar con la Prueba Gratuita de ${plan.postsLimit || 5} publicaciones.`
+                : `¡Hola Santisoft! Vi la propuesta para ${businessName} y me interesa activar el Plan ${plan.name} (${priceFormatted}/mes). ¿Cuáles son los siguientes pasos?`;
+
+              const waUrl = `https://wa.me/${santisoftWhatsAppNumber}?text=${encodeURIComponent(waText)}`;
+
+              return (
+                <div
+                  key={key}
+                  className={`bg-white rounded-3xl p-5 flex flex-col justify-between transition-all ${
+                    isPopular
+                      ? "border-2 border-indigo-600 shadow-xl relative ring-4 ring-indigo-500/10"
+                      : "border border-slate-200 shadow-xs hover:shadow-md"
+                  }`}
                 >
-                  <FaWhatsapp className="text-emerald-600 text-sm" />
-                  <span>Probar 5 Posts Gratis</span>
-                </a>
-              </div>
-            </div>
+                  {isPopular && (
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-black uppercase tracking-wider shadow-sm">
+                      ⭐ Más Recomendado
+                    </span>
+                  )}
 
-            {/* PLAN 2: STARTER */}
-            <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs flex flex-col justify-between hover:shadow-md transition-shadow">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 uppercase">
-                    Básico
-                  </span>
-                  <span className="text-xs">⚡</span>
-                </div>
-                <div>
-                  <h4 className="text-base font-black text-slate-900">Plan Starter</h4>
-                  <p className="text-[11px] text-slate-500 mt-0.5">Constancia esencial mes a mes</p>
-                </div>
-                <div className="pt-1">
-                  <span className="text-2xl font-black text-slate-900">$24.990</span>
-                  <span className="text-xs text-slate-500 ml-1">/ mes</span>
-                </div>
-                <ul className="text-xs text-slate-600 space-y-2 pt-2 border-t border-slate-100">
-                  <li className="flex items-start gap-2">
-                    <FaCheck className="text-emerald-500 text-xs shrink-0 mt-0.5" />
-                    <span><strong>20 publicaciones</strong> al mes</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <FaCheck className="text-emerald-500 text-xs shrink-0 mt-0.5" />
-                    <span><strong>2 videos</strong> Reels / TikTok</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <FaCheck className="text-emerald-500 text-xs shrink-0 mt-0.5" />
-                    <span>20 imágenes con tus agentes</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <FaCheck className="text-emerald-500 text-xs shrink-0 mt-0.5" />
-                    <span>Publicación automática</span>
-                  </li>
-                </ul>
-              </div>
+                  <div className={`space-y-3 ${isPopular ? "pt-1" : ""}`}>
+                    <div className="flex items-center justify-between">
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                          isPopular
+                            ? "bg-indigo-50 text-indigo-700 font-black"
+                            : "bg-slate-100 text-slate-700"
+                        }`}
+                      >
+                        {badgeText}
+                      </span>
+                      <span className="text-xs">{meta.emoji}</span>
+                    </div>
 
-              <div className="pt-5">
-                <a
-                  href={`https://wa.me/${santisoftWhatsAppNumber}?text=${encodeURIComponent(
-                    `¡Hola Santisoft! Vi la propuesta para ${businessName} y me interesa activar el Plan Starter ($24.990/mes). ¿Cuáles son los siguientes pasos?`
-                  )}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="w-full py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
-                >
-                  <FaWhatsapp className="text-emerald-400 text-sm" />
-                  <span>Elegir Starter ($24.990)</span>
-                </a>
-              </div>
-            </div>
+                    <div>
+                      <h4 className="text-base font-black text-slate-900">
+                        {key === "free" ? plan.name : `Plan ${plan.name}`}
+                      </h4>
+                      <p className="text-[11px] text-slate-500 mt-0.5">{meta.subtitle}</p>
+                    </div>
 
-            {/* PLAN 3: GROWTH (DESTACADO) */}
-            <div className="bg-white rounded-3xl p-5 border-2 border-indigo-600 shadow-xl flex flex-col justify-between relative ring-4 ring-indigo-500/10">
-              <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-black uppercase tracking-wider shadow-sm">
-                ⭐ Más Recomendado
-              </span>
-              <div className="space-y-3 pt-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 uppercase">
-                    Crecimiento
-                  </span>
-                  <span className="text-xs">🚀</span>
-                </div>
-                <div>
-                  <h4 className="text-base font-black text-slate-900">Plan Growth</h4>
-                  <p className="text-[11px] text-slate-500 mt-0.5">El equilibrio perfecto de video y contenido</p>
-                </div>
-                <div className="pt-1">
-                  <span className="text-2xl font-black text-indigo-600">$44.990</span>
-                  <span className="text-xs text-slate-500 ml-1">/ mes</span>
-                </div>
-                <ul className="text-xs text-slate-600 space-y-2 pt-2 border-t border-slate-100">
-                  <li className="flex items-start gap-2">
-                    <FaCheck className="text-emerald-500 text-xs shrink-0 mt-0.5" />
-                    <span><strong>40 publicaciones</strong> al mes</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <FaCheck className="text-emerald-500 text-xs shrink-0 mt-0.5" />
-                    <span><strong>6 videos con locución</strong> y guión</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <FaCheck className="text-emerald-500 text-xs shrink-0 mt-0.5" />
-                    <span><strong>Bot de WhatsApp</strong> (aprueba posts)</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <FaCheck className="text-emerald-500 text-xs shrink-0 mt-0.5" />
-                    <span>2 artículos Blog SEO al mes</span>
-                  </li>
-                </ul>
-              </div>
+                    <div className="pt-1">
+                      <span
+                        className={`text-2xl font-black ${
+                          isPopular ? "text-indigo-600" : "text-slate-900"
+                        }`}
+                      >
+                        {priceFormatted}
+                      </span>
+                      <span className="text-xs text-slate-500 ml-1">
+                        {isFree ? "/ 10 días" : "/ mes"}
+                      </span>
+                    </div>
 
-              <div className="pt-5">
-                <a
-                  href={`https://wa.me/${santisoftWhatsAppNumber}?text=${encodeURIComponent(
-                    `¡Hola Santisoft! Vi la propuesta para ${businessName} y me interesa activar el Plan Growth ($44.990/mes). ¿Cuáles son los siguientes pasos?`
-                  )}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/25 transition-all cursor-pointer"
-                >
-                  <FaWhatsapp className="text-emerald-300 text-sm" />
-                  <span>Elegir Growth ($44.990)</span>
-                </a>
-              </div>
-            </div>
+                    <ul className="text-xs text-slate-600 space-y-2 pt-2 border-t border-slate-100">
+                      {featuresToDisplay.map((feat, idx) => (
+                        <li key={idx} className="flex items-start gap-2">
+                          <FaCheck className="text-emerald-500 text-xs shrink-0 mt-0.5" />
+                          <span>{feat}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
 
-            {/* PLAN 4: PRO */}
-            <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs flex flex-col justify-between hover:shadow-md transition-shadow">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 uppercase">
-                    Avanzado
-                  </span>
-                  <span className="text-xs">👑</span>
+                  <div className="pt-5">
+                    <a
+                      href={waUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={`w-full py-2.5 px-3 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                        isPopular
+                          ? "bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-md shadow-indigo-600/25"
+                          : isFree
+                          ? "bg-slate-100 hover:bg-slate-200 text-slate-800"
+                          : "bg-slate-900 hover:bg-slate-800 text-white shadow-xs"
+                      }`}
+                    >
+                      <FaWhatsapp
+                        className={`text-sm ${
+                          isPopular
+                            ? "text-emerald-300"
+                            : isFree
+                            ? "text-emerald-600"
+                            : "text-emerald-400"
+                        }`}
+                      />
+                      <span>
+                        {isFree
+                          ? plan.ctaText || `Probar ${plan.postsLimit || 5} Posts Gratis`
+                          : `Elegir ${plan.name} (${priceFormatted})`}
+                      </span>
+                    </a>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="text-base font-black text-slate-900">Plan Pro</h4>
-                  <p className="text-[11px] text-slate-500 mt-0.5">Máximo impacto con Meta Ads</p>
-                </div>
-                <div className="pt-1">
-                  <span className="text-2xl font-black text-slate-900">$89.990</span>
-                  <span className="text-xs text-slate-500 ml-1">/ mes</span>
-                </div>
-                <ul className="text-xs text-slate-600 space-y-2 pt-2 border-t border-slate-100">
-                  <li className="flex items-start gap-2">
-                    <FaCheck className="text-emerald-500 text-xs shrink-0 mt-0.5" />
-                    <span><strong>80 publicaciones</strong> al mes</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <FaCheck className="text-emerald-500 text-xs shrink-0 mt-0.5" />
-                    <span><strong>12 videos</strong> con locución</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <FaCheck className="text-emerald-500 text-xs shrink-0 mt-0.5" />
-                    <span><strong>Meta Ads integrado</strong> + Radar</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <FaCheck className="text-emerald-500 text-xs shrink-0 mt-0.5" />
-                    <span>8 artículos Blog SEO al mes</span>
-                  </li>
-                </ul>
-              </div>
-
-              <div className="pt-5">
-                <a
-                  href={`https://wa.me/${santisoftWhatsAppNumber}?text=${encodeURIComponent(
-                    `¡Hola Santisoft! Vi la propuesta para ${businessName} y me interesa activar el Plan Pro ($89.990/mes). ¿Cuáles son los siguientes pasos?`
-                  )}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="w-full py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
-                >
-                  <FaWhatsapp className="text-emerald-400 text-sm" />
-                  <span>Elegir Pro ($89.990)</span>
-                </a>
-              </div>
-            </div>
-
+              );
+            })}
           </div>
+
+          {/* PLAN BUSINESS / MULTI-MARCA SI ESTÁ DISPONIBLE */}
+          {plans["business"] && (
+            <div className="mt-6 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-5 sm:p-7 text-white border border-indigo-900/50 shadow-xl flex flex-col md:flex-row items-center justify-between gap-5">
+              <div className="space-y-1.5 text-center md:text-left">
+                <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[11px] font-bold border border-indigo-500/30">
+                  <span>🏢</span>
+                  <span>¿Manejas más de una marca o sucursal?</span>
+                </div>
+                <h4 className="text-lg sm:text-xl font-black text-white">
+                  {plans["business"].name || "Plan Business"}: Hasta {plans["business"].maxAccounts || 3} marcas independientes
+                </h4>
+                <p className="text-xs sm:text-sm text-slate-300 max-w-xl">
+                  {plans["business"].postsLimit} publicaciones, {plans["business"].videosLimit} videos y soporte multimarca por {formatPrice(plans["business"].price)}/mes.
+                </p>
+              </div>
+              <div className="shrink-0 w-full md:w-auto">
+                <a
+                  href={`https://wa.me/${santisoftWhatsAppNumber}?text=${encodeURIComponent(
+                    `¡Hola Santisoft! Vi la propuesta para ${businessName} y me interesa consultar por el Plan Business multi-marca (${formatPrice(plans["business"].price)}/mes).`
+                  )}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-full md:w-auto px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-indigo-600/30 cursor-pointer"
+                >
+                  <FaWhatsapp className="text-emerald-400 text-base" />
+                  <span>Consultar Business ({formatPrice(plans["business"].price)})</span>
+                </a>
+              </div>
+            </div>
+          )}
         </section>
 
         {/* BENEFICIOS: CÓMO TRABAJAN NUESTROS AGENTES */}
@@ -753,7 +855,7 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
               </div>
               <h4 className="text-sm font-bold text-slate-900">Sin Costos de Agencia</h4>
               <p className="text-xs text-slate-600 leading-relaxed">
-                Planes transparentes en pesos chilenos desde $24.990/mes. Sin contratos de permanencia ni cobros sorpresa.
+                Planes transparentes en pesos chilenos desde {formatPrice(plans["starter"]?.price || 24990)}/mes. Sin contratos de permanencia ni cobros sorpresa.
               </p>
             </div>
           </div>
