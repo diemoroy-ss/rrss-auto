@@ -33,6 +33,28 @@ export async function GET(
     const profiles: any[] = userData.profiles || [];
     const profile = profiles.find((p: any) => p.id === targetProfileId) || profiles[0] || {};
 
+    const isMenuEnabled = profile.menuDigitalEnabled === true;
+
+    // Si la carta no ha sido habilitada por el dueño del local
+    if (!isMenuEnabled) {
+      return NextResponse.json({
+        success: true,
+        enabled: false,
+        message: "La carta digital de este comercio se encuentra inactiva o en preparación.",
+        business: {
+          name: profile.name || userData.company || userData.name || "Nuestra Carta",
+          rubro: profile.rubro || "Gastronomía & Servicios",
+          description: profile.businessDescription || "",
+          logoUrl: profile.logoUrl || null,
+          phone: profile.phone || userData.phone || null,
+          whatsapp: profile.phone || userData.phone || null,
+          instagramUsername: profile.instagramUsername || null,
+          website: profile.website || null,
+          address: profile.address || userData.address || null,
+        }
+      });
+    }
+
     // Obtener ítems del catálogo activos
     const catalogoSnap = await userDocRef
       .collection("catalogo")
@@ -74,6 +96,8 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
+      enabled: true,
+      theme: profile.menuTheme || "minimal_clean",
       business: {
         name: profile.name || userData.company || userData.name || "Nuestra Carta",
         rubro: profile.rubro || "Gastronomía & Servicios",

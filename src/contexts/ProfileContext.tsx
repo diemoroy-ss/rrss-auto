@@ -84,6 +84,9 @@ export type BusinessProfile = {
   alwaysIncludeLogo?: boolean;
   promotions?: string;        // Nivel 1: Promociones y ofertas permanentes/frecuentes del local
   bannerStyle?: 'banner' | 'clean'; // Estilo por defecto: 'banner' (cartel publicitario con textos) o 'clean' (solo foto)
+  // Carta Menú Digital & QR
+  menuDigitalEnabled?: boolean;
+  menuTheme?: 'dark_modern' | 'warm_cafe' | 'fresh_bistro' | 'vibrant_street' | 'minimal_clean';
   // Account lock: records which social account IDs have been used in a publish (non-business plan protection)
   accountLocks?: {
     facebook?: string;   // facebookPageId
@@ -118,6 +121,7 @@ type ProfileContextType = {
   profiles: BusinessProfile[];
   setActiveProfile: (profileId: string) => void;
   addProfile: (name: string, icon: string) => Promise<void>;
+  updateActiveProfile: (updates: Partial<BusinessProfile>) => Promise<void>;
   loadProfiles: () => Promise<void>;
   isBusiness: boolean;
   planConfig: any;
@@ -129,6 +133,7 @@ const ProfileContext = createContext<ProfileContextType>({
   profiles: [],
   setActiveProfile: () => {},
   addProfile: async () => {},
+  updateActiveProfile: async () => {},
   loadProfiles: async () => {},
   isBusiness: false,
   planConfig: null,
@@ -265,12 +270,33 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
      }
   };
 
+  const updateActiveProfile = async (updates: Partial<BusinessProfile>) => {
+    if (!auth.currentUser || !activeProfileState) return;
+    try {
+      const userDocRef = doc(db, "users", auth.currentUser.uid);
+      const userDoc = await getDoc(userDocRef);
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        const userProfiles: BusinessProfile[] = data.profiles || [];
+        const updatedProfiles = userProfiles.map((p) =>
+          p.id === activeProfileState.id ? { ...p, ...updates } : p
+        );
+        await updateDoc(userDocRef, { profiles: updatedProfiles });
+        await loadProfiles();
+      }
+    } catch (e) {
+      console.error("Error updating active profile", e);
+      throw e;
+    }
+  };
+
   return (
     <ProfileContext.Provider value={{ 
       activeProfile: activeProfileState, 
       profiles, 
       setActiveProfile, 
       addProfile, 
+      updateActiveProfile,
       loadProfiles, 
       isBusiness, 
       planConfig,

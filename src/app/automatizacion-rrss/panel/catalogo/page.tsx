@@ -36,7 +36,27 @@ export default function CatalogoPage() {
   const [imagePreview, setImagePreview] = useState<string>('');
   const [uploadingImage, setUploadingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { activeProfile } = useProfile();
+  const { activeProfile, updateActiveProfile } = useProfile();
+  const [togglingMenu, setTogglingMenu] = useState(false);
+
+  const isMenuEnabled = activeProfile?.menuDigitalEnabled === true;
+
+  const handleToggleMenuDigital = async (enable: boolean) => {
+    setTogglingMenu(true);
+    try {
+      await updateActiveProfile({ menuDigitalEnabled: enable });
+      setSuccess(
+        enable
+          ? "¡Carta Menú Digital habilitada con éxito! Ya puedes verla en el menú lateral."
+          : "Carta Menú Digital desactivada."
+      );
+      setTimeout(() => setSuccess(""), 4000);
+    } catch (e) {
+      setError("Error al actualizar la configuración de la carta digital.");
+    } finally {
+      setTogglingMenu(false);
+    }
+  };
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
@@ -206,18 +226,88 @@ export default function CatalogoPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Link
-            href="/automatizacion-rrss/panel/menu-qr"
-            className="flex items-center gap-2 px-4 py-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-2 border-emerald-200 font-black rounded-2xl transition-all text-sm shadow-xs"
-          >
-            <span>📱</span> Carta Menú & QR
-          </Link>
+          {isMenuEnabled && (
+            <Link
+              href="/automatizacion-rrss/panel/menu-qr"
+              className="flex items-center gap-2 px-4 py-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-2 border-emerald-200 font-black rounded-2xl transition-all text-sm shadow-xs"
+            >
+              <span>📱</span> Carta Menú & QR
+            </Link>
+          )}
           <button
             onClick={openCreate}
             className="flex items-center gap-2 px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl transition-all shadow-lg shadow-indigo-500/30 text-sm"
           >
             + Agregar ítem
           </button>
+        </div>
+      </div>
+
+      {/* ── Banner de Habilitación de Carta Menú Digital & QR ── */}
+      <div className={`mb-8 p-5 sm:p-6 rounded-3xl border-2 transition-all ${
+        isMenuEnabled 
+          ? "bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-indigo-500/10 border-emerald-200/80 shadow-sm"
+          : "bg-gradient-to-r from-indigo-50 via-white to-purple-50 border-indigo-100 shadow-sm"
+      }`}>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-4">
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0 shadow-sm ${
+              isMenuEnabled ? "bg-emerald-600 text-white" : "bg-indigo-600 text-white"
+            }`}>
+              {isMenuEnabled ? "📱" : "✨"}
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-base font-black text-slate-900">
+                  Carta Menú Digital & Código QR
+                </h3>
+                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                  isMenuEnabled ? "bg-emerald-100 text-emerald-800 border border-emerald-200" : "bg-slate-100 text-slate-600"
+                }`}>
+                  {isMenuEnabled ? "🟢 Habilitada" : "⚪ Opcional"}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 font-medium mt-1 max-w-2xl leading-relaxed">
+                {isMenuEnabled 
+                  ? "Tu carta digital está activa. Los clientes pueden escanear el código QR para ver tus productos, fotos reales, precios y hacer pedidos directo a WhatsApp."
+                  : "Muestra tus productos en una carta digital interactiva con fotos reales, precios y ofertas. Al activarla se habilitará la sección de Código QR y estilos visuales para tu local."}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-center">
+            {isMenuEnabled ? (
+              <>
+                <Link
+                  href="/automatizacion-rrss/panel/menu-qr"
+                  className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-xs transition-all shadow-md shadow-emerald-600/20 flex items-center gap-1.5"
+                >
+                  <span>📱 Diseñar Carta & QR</span>
+                  <span>→</span>
+                </Link>
+                <button
+                  onClick={() => handleToggleMenuDigital(false)}
+                  disabled={togglingMenu}
+                  className="px-3 py-2.5 bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-500 font-bold rounded-xl text-xs transition-all"
+                  title="Desactivar carta digital"
+                >
+                  {togglingMenu ? "..." : "Desactivar"}
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => handleToggleMenuDigital(true)}
+                disabled={togglingMenu}
+                className="px-5 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-black rounded-2xl text-xs transition-all shadow-lg shadow-indigo-600/25 flex items-center gap-2"
+              >
+                {togglingMenu ? (
+                  <><span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" /> Habilitando...</>
+                ) : (
+                  <><span>✨ Habilitar Carta Digital & QR</span></>
+                )}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

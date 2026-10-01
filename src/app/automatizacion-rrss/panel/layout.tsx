@@ -9,16 +9,14 @@ import InternalTour from "../../../components/InternalTour";
 import { doc, getDoc } from "firebase/firestore";
 import ProfileMenu from "../../../components/gastronomico/ProfileMenu";
 import NetworkSwitcher from "../../../components/NetworkSwitcher";
-import { ProfileProvider } from "../../../contexts/ProfileContext";
+import { ProfileProvider, useProfile } from "../../../contexts/ProfileContext";
 import LogoMark from "../../../components/LogoMark";
 
 export default function RrssPanelLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [userDoc, setUserDoc] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
@@ -48,13 +46,56 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
     return () => unsub();
   }, [router]);
 
+  if (loading) {
+    return <div className="min-h-screen bg-slate-50 flex items-center justify-center font-bold text-slate-400">Cargando Panel...</div>;
+  }
+
+  if (userDoc?.isDisabled) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
+        <div className="text-6xl mb-6">🔒</div>
+        <h1 className="text-3xl font-black text-slate-900 mb-4">Cuenta Suspendida</h1>
+        <p className="text-slate-500 max-w-md font-medium mb-8">
+          Tu acceso ha sido revocado por un administrador. Si crees que esto es un error, por favor contacta a soporte.
+        </p>
+        <ProfileMenu user={user} userDoc={userDoc} />
+      </div>
+    );
+  }
+
+  const userEmail = (user?.email || "").toLowerCase();
+  const isAdminUser = ["diemoroy@gmail.com", "spalezcom@gmail.com", "santisoftai@gmail.com"].includes(userEmail) || userDoc?.role === "admin";
+
+  return (
+    <ProfileProvider>
+      <PanelLayoutContent user={user} userDoc={userDoc} isAdminUser={isAdminUser}>
+        {children}
+      </PanelLayoutContent>
+    </ProfileProvider>
+  );
+}
+
+function PanelLayoutContent({
+  children,
+  user,
+  userDoc,
+  isAdminUser,
+}: {
+  children: React.ReactNode;
+  user: any;
+  userDoc: any;
+  isAdminUser: boolean;
+}) {
+  const pathname = usePathname();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const { activeProfile } = useProfile();
+
   // Close mobile nav when route changes
   useEffect(() => {
     setMobileNavOpen(false);
   }, [pathname]);
 
-  const userEmail = (user?.email || "").toLowerCase();
-  const isAdminUser = ["diemoroy@gmail.com", "spalezcom@gmail.com", "santisoftai@gmail.com"].includes(userEmail) || userDoc?.role === "admin";
+  const isMenuDigitalEnabled = activeProfile?.menuDigitalEnabled === true;
 
   const adminLinks = [
     { href: "/automatizacion-rrss/panel/admin", label: "Usuarios", icon: "👥", exact: true },
@@ -104,7 +145,7 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
       title: "RECURSOS Y MARCA",
       items: [
         { href: "/automatizacion-rrss/panel/catalogo", label: "Productos / Servicios", icon: "🛍️", exact: false },
-        { href: "/automatizacion-rrss/panel/menu-qr", label: "Carta Menú & QR", icon: "📱", exact: false },
+        ...(isMenuDigitalEnabled ? [{ href: "/automatizacion-rrss/panel/menu-qr", label: "Carta Menú & QR", icon: "📱", exact: false }] : []),
         { href: "/automatizacion-rrss/panel/biblioteca", label: "Biblioteca", icon: "🖼️", exact: false },
         { href: "/automatizacion-rrss/panel/configuracion", label: "Configuración de Marca", icon: "🏪", exact: false },
       ]
@@ -117,26 +158,8 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
   const activeLinks = isAdminRoute ? adminLinks : allLinks;
   const currentLink = activeLinks.find(l => l.exact ? pathname === l.href : pathname.startsWith(l.href));
 
-  if (loading) {
-    return <div className="min-h-screen bg-slate-50 flex items-center justify-center font-bold text-slate-400">Cargando Panel...</div>;
-  }
-
-  if (userDoc?.isDisabled) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
-        <div className="text-6xl mb-6">🔒</div>
-        <h1 className="text-3xl font-black text-slate-900 mb-4">Cuenta Suspendida</h1>
-        <p className="text-slate-500 max-w-md font-medium mb-8">
-          Tu acceso ha sido revocado por un administrador. Si crees que esto es un error, por favor contacta a soporte.
-        </p>
-        <ProfileMenu user={user} userDoc={userDoc} />
-      </div>
-    );
-  }
-
   return (
-    <ProfileProvider>
-      <div className="min-h-screen panel-grid-bg flex flex-col md:flex-row print:bg-white">
+    <div className="min-h-screen panel-grid-bg flex flex-col md:flex-row print:bg-white">
 
         {/* ========== SIDEBAR DESKTOP ========== */}
         {isAdminRoute ? (
@@ -381,6 +404,5 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
         </main>
 
       </div>
-    </ProfileProvider>
   );
 }
