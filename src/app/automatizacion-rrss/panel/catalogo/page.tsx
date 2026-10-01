@@ -6,7 +6,6 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { useProfile } from '../../../../contexts/ProfileContext';
 import type { CatalogoItem } from '../../../../contexts/ProfileContext';
 import Link from 'next/link';
-import TestCompanyModal from '../../../../components/catalogo/TestCompanyModal';
 
 const EMPTY_FORM: Omit<CatalogoItem, 'id' | 'createdAt' | 'active'> = {
   name: '',
@@ -31,22 +30,16 @@ export default function CatalogoPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [showTestModal, setShowTestModal] = useState(false);
-  const [userToken, setUserToken] = useState('');
   const [editingItem, setEditingItem] = useState<CatalogoItem | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
   const [uploadingImage, setUploadingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { activeProfile, updateActiveProfile, profiles, setActiveProfile, loadProfiles } = useProfile();
+  const { activeProfile, updateActiveProfile } = useProfile();
   const [togglingMenu, setTogglingMenu] = useState(false);
 
   const isMenuEnabled = activeProfile?.menuDigitalEnabled === true;
-  const userEmail = (user?.email || '').toLowerCase().trim();
-  const isAdminUser = ['santisoftai@gmail.com', 'diemoroy@gmail.com', 'spalezcom@gmail.com', 'admin@santisoft.cl'].includes(userEmail);
-  const isTestCompany = activeProfile?.isTestProfile === true || (activeProfile?.id && activeProfile.id.startsWith('prof_test_'));
-  const testProfiles = profiles.filter((p) => p.isTestProfile === true || p.id.startsWith('prof_test_'));
 
   const handleToggleMenuDigital = async (enable: boolean) => {
     setTogglingMenu(true);
@@ -241,21 +234,7 @@ export default function CatalogoPage() {
             El catálogo de {activeProfile?.name || 'tu marca'} — las referencias que nuestros agentes usan al crear contenido.
           </p>
         </div>
-        <div className="flex items-center gap-3 flex-wrap">
-          {isAdminUser && (
-            <button
-              onClick={() => setShowTestModal(true)}
-              className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-amber-500/10 via-purple-500/10 to-indigo-500/10 hover:from-amber-500/20 hover:to-indigo-500/20 text-slate-800 border-2 border-indigo-200/80 font-black rounded-2xl transition-all text-sm shadow-xs"
-              title="Crear o gestionar empresas de prueba"
-            >
-              <span>🧪</span> Empresas de Prueba
-              {testProfiles.length > 0 && (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-indigo-600 text-white">
-                  {testProfiles.length}
-                </span>
-              )}
-            </button>
-          )}
+        <div className="flex items-center gap-3">
           {isMenuEnabled && (
             <Link
               href="/automatizacion-rrss/panel/menu-qr"
@@ -272,120 +251,6 @@ export default function CatalogoPage() {
           </button>
         </div>
       </div>
-
-      {/* ── Banner: Modo Empresa de Prueba Activa ── */}
-      {isAdminUser && isTestCompany && (
-        <div className="mb-8 p-5 sm:p-6 rounded-3xl border-2 border-amber-300 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 shadow-sm animate-in fade-in">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div className="flex items-start gap-3.5">
-              <div className="w-12 h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center text-2xl shrink-0 shadow-md shadow-amber-500/30">
-                {activeProfile?.icon || '🧪'}
-              </div>
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-200 text-amber-900 border border-amber-300">
-                    🧪 Empresa de Prueba
-                  </span>
-                  <h3 className="text-base font-black text-slate-900">
-                    {activeProfile?.name}
-                  </h3>
-                  <span className="text-xs text-slate-500 font-bold">
-                    ({activeProfile?.rubro || 'Sin rubro'})
-                  </span>
-                </div>
-                <p className="text-xs text-slate-600 font-medium mt-1 max-w-2xl leading-relaxed">
-                  Estás gestionando el catálogo piloto de esta empresa. Los productos y fotos que subas aquí serán usados por nuestros agentes para diseñar su estrategia de contenidos.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 flex-wrap shrink-0">
-              <Link
-                href="/automatizacion-rrss/panel/estrategia"
-                className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-xl text-xs transition-all shadow-md shadow-indigo-600/20 flex items-center gap-1.5"
-              >
-                <span>🚀 Planificar Estrategia</span>
-                <span>→</span>
-              </Link>
-              <Link
-                href="/automatizacion-rrss/panel"
-                className="px-3.5 py-2.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 font-bold rounded-xl text-xs transition-all flex items-center gap-1"
-              >
-                <span>📅 Ver Posts</span>
-              </Link>
-              <button
-                onClick={() => setActiveProfile('default')}
-                className="px-3.5 py-2.5 bg-white hover:bg-slate-100 text-slate-500 font-bold rounded-xl text-xs transition-all border border-slate-200"
-                title="Volver a tu cuenta principal"
-              >
-                🏢 Cuenta Principal
-              </button>
-              <button
-                onClick={() => setShowTestModal(true)}
-                className="px-3 py-2.5 bg-amber-200 hover:bg-amber-300 text-amber-900 font-black rounded-xl text-xs transition-all"
-                title="Gestionar empresas de prueba"
-              >
-                ⚙️ Cambiar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Banner: Acceso Admin a Empresas de Prueba (si no está activa una de prueba) ── */}
-      {isAdminUser && !isTestCompany && (
-        <div className="mb-8 p-5 sm:p-6 rounded-3xl border-2 border-indigo-100 bg-gradient-to-r from-indigo-50/70 via-purple-50/50 to-white shadow-xs">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-start gap-3.5">
-              <div className="w-11 h-11 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-xl shrink-0 shadow-md shadow-indigo-600/30">
-                🧪
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-black text-slate-900">
-                    Modo Admin: Empresas de Prueba para Estrategias
-                  </h3>
-                  <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-indigo-100 text-indigo-700">
-                    santisoftai
-                  </span>
-                </div>
-                <p className="text-xs text-slate-500 font-medium mt-0.5 max-w-2xl leading-relaxed">
-                  Crea empresas piloto (gastronomía, estética, fitness, clínicas, etc.) con catálogos y fotos reales en 1 clic para probar la estrategia y ver cómo quedan los posts generados.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              {testProfiles.length > 0 && (
-                <select
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      setActiveProfile(e.target.value);
-                    }
-                  }}
-                  defaultValue=""
-                  className="px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:border-indigo-400"
-                >
-                  <option value="" disabled>
-                    Seleccionar Empresa ({testProfiles.length})...
-                  </option>
-                  {testProfiles.map((tp) => (
-                    <option key={tp.id} value={tp.id}>
-                      {tp.icon || '🏢'} {tp.name}
-                    </option>
-                  ))}
-                </select>
-              )}
-              <button
-                onClick={() => setShowTestModal(true)}
-                className="px-4 py-2.5 bg-slate-900 hover:bg-indigo-600 text-white font-black rounded-xl text-xs transition-all shadow-md shadow-slate-900/10 flex items-center gap-1.5"
-              >
-                <span>+ Crear Empresa de Prueba</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ── Banner de Habilitación de Carta Menú Digital & QR ── */}
       <div className={`mb-8 p-5 sm:p-6 rounded-3xl border-2 transition-all ${
@@ -753,18 +618,6 @@ export default function CatalogoPage() {
             </div>
           </div>
         </div>
-      )}
-
-      {/* Modal para Administrar y Crear Empresas de Prueba (Admin) */}
-      {isAdminUser && (
-        <TestCompanyModal
-          isOpen={showTestModal}
-          onClose={() => setShowTestModal(false)}
-          userToken={userToken}
-          onCompanyCreated={async () => {
-            await loadItems();
-          }}
-        />
       )}
 
     </div>

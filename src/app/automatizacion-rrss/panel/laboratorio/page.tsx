@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import QRCode from "qrcode";
 import { auth, storage } from "../../../../lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -9,6 +10,26 @@ import { useProfile, BusinessProfile, CatalogoItem } from "../../../../contexts/
 import { HARDCODED_STYLES, PromptTemplate } from "../../../../lib/prompt-templates";
 import { TEST_COMPANY_TEMPLATES } from "../../../../lib/test-company-templates";
 import TestCompanyModal from "../../../../components/catalogo/TestCompanyModal";
+import { 
+  MENU_THEMES, 
+  DEFAULT_MENU_THEME, 
+  MenuThemeId 
+} from "../../../../lib/menu-themes";
+import {
+  FaQrcode,
+  FaDownload,
+  FaExternalLinkAlt,
+  FaCopy,
+  FaCheck,
+  FaStore,
+  FaMobileAlt,
+  FaPalette,
+  FaCheckCircle,
+  FaRedo,
+  FaToggleOn,
+  FaToggleOff,
+  FaPrint
+} from "react-icons/fa";
 
 export default function LaboratorioPage() {
   const [user, setUser] = useState<any>(null);
@@ -21,12 +42,19 @@ export default function LaboratorioPage() {
   const testProfiles = profiles.filter((p) => p.isTestProfile === true || p.id.startsWith("prof_test_"));
 
   // Active Tab
-  const [activeTab, setActiveTab] = useState<"marca" | "catalogo" | "comandos" | "radar_estrategia">("marca");
+  const [activeTab, setActiveTab] = useState<"marca" | "catalogo" | "menu_qr" | "comandos" | "radar_estrategia">("marca");
 
   // Notifications
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
+
+  // Tab: Carta Menú Digital & QR
+  const [qrDataUrl, setQrDataUrl] = useState<string>("");
+  const [copiedQrLink, setCopiedQrLink] = useState(false);
+  const [iframeKey, setIframeKey] = useState(1);
+  const [savingMenuTheme, setSavingMenuTheme] = useState(false);
+  const [togglingMenuDigital, setTogglingMenuDigital] = useState(false);
 
   // Tab 1: Datos de Marca
   const [brandForm, setBrandForm] = useState({
@@ -168,6 +196,151 @@ export default function LaboratorioPage() {
       setTimeout(() => setSuccessMsg(""), 4000);
     }
   };
+
+  // Configuración de Carta Menú & QR para la Empresa de Prueba
+  const profileId = activeProfile?.id || "default";
+  const isMenuEnabled = activeProfile?.menuDigitalEnabled === true;
+  const currentMenuThemeId: MenuThemeId = (activeProfile?.menuTheme as MenuThemeId) || DEFAULT_MENU_THEME;
+
+  const menuIdentifier = user?.uid ? `${user.uid}___${profileId}` : "";
+  const publicMenuUrl = typeof window !== "undefined" && menuIdentifier
+    ? `${window.location.origin}/menu/${menuIdentifier}`
+    : menuIdentifier
+      ? `https://rrss.santisoft.cl/menu/${menuIdentifier}`
+      : "";
+
+  // Generar código QR para la carta digital de esta empresa
+  useEffect(() => {
+    if (!publicMenuUrl) return;
+
+    QRCode.toDataURL(publicMenuUrl, {
+      width: 800,
+      margin: 2,
+      errorCorrectionLevel: "H",
+      color: {
+        dark: "#0f172a",
+        light: "#ffffff",
+      },
+    })
+      .then((url) => setQrDataUrl(url))
+      .catch((err) => console.error("Error generating QR in Lab", err));
+  }, [publicMenuUrl]);
+
+  const handleToggleMenuDigital = async (enabled: boolean) => {
+    setTogglingMenuDigital(true);
+    try {
+      await updateActiveProfile({ menuDigitalEnabled: enabled });
+      setIframeKey((prev) => prev + 1);
+      showNotification(
+        enabled
+          ? "¡Carta Menú Digital habilitada para esta empresa de prueba!"
+          : "Carta Menú Digital pausada."
+      );
+    } catch (e: any) {
+      showNotification("Error al actualizar la carta digital.", true);
+    } finally {
+      setTogglingMenuDigital(false);
+    }
+  };
+
+  const handleSelectMenuTheme = async (themeId: MenuThemeId) => {
+    if (themeId === currentMenuThemeId) return;
+    setSavingMenuTheme(true);
+    try {
+      await updateActiveProfile({ menuTheme: themeId });
+      setIframeKey((prev) => prev + 1);
+      showNotification(`Tema "${MENU_THEMES[themeId].name}" aplicado a la carta digital.`);
+    } catch (e: any) {
+      showNotification("Error al guardar estilo de carta.", true);
+    } finally {
+      setSavingMenuTheme(false);
+    }
+  };
+
+  const copyQrLink = () => {
+    if (!publicMenuUrl) return;
+    navigator.clipboard.writeText(publicMenuUrl);
+    setCopiedQrLink(true);
+    showNotification("¡Enlace copiado al portapapeles!");
+    setTimeout(() => setCopiedQrLink(false), 2500);
+  };
+
+  const downloadQr = () => {
+    if (!qrDataUrl) return;
+    const a = document.createElement("a");
+    a.href = qrDataUrl;
+    const cleanName = (activeProfile?.name || "empresa-prueba")
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "-");
+    a.download = `qr-menu-${cleanName}.png`;
+    a.click();
+  };
+
+  const handlePrintTableTent = () => {
+    if (!qrDataUrl) return;
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Carta Menú QR - ${activeProfile?.name || "Empresa"}</title>
+          <style>
+            @page { size: auto; margin: 10mm; }
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              min-height: 90vh;
+              margin: 0;
+              background-color: #f8fafc;
+            }
+            .tent-card {
+              background: white;
+              border: 2px dashed #cbd5e1;
+              border-radius: 24px;
+              padding: 40px;
+              max-width: 360px;
+              text-align: center;
+              box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            }
+            .logo-placeholder { font-size: 40px; margin-bottom: 8px; }
+            h1 { font-size: 24px; font-weight: 900; margin: 0 0 6px 0; color: #0f172a; }
+            p.rubro { font-size: 13px; font-weight: 700; color: #64748b; margin: 0 0 24px 0; text-transform: uppercase; letter-spacing: 1px; }
+            .qr-wrapper { background: #f8fafc; padding: 16px; border-radius: 20px; border: 1px solid #e2e8f0; display: inline-block; margin-bottom: 20px; }
+            .qr-img { width: 220px; height: 220px; display: block; }
+            p.instruction { font-size: 15px; font-weight: 800; color: #1e293b; margin: 0 0 6px 0; }
+            p.sub-instruction { font-size: 11px; color: #64748b; margin: 0 0 16px 0; line-height: 1.4; }
+            .footer { font-size: 9px; font-weight: 800; color: #94a3b8; letter-spacing: 1.5px; text-transform: uppercase; }
+          </style>
+        </head>
+        <body>
+          <div class="tent-card">
+            <div class="logo-placeholder">${activeProfile?.icon || "🍽️"}</div>
+            <h1>${activeProfile?.name || "Nuestra Carta"}</h1>
+            <p class="rubro">${activeProfile?.rubro || "Gastronomía & Servicios"}</p>
+            <div class="qr-wrapper">
+              <img src="${qrDataUrl}" class="qr-img" />
+            </div>
+            <p class="instruction">📱 Escanea con tu cámara</p>
+            <p class="sub-instruction">Revisa nuestra carta completa con fotos, precios y promociones actualizadas</p>
+            <div class="footer">CARTA DIGITAL • SANTISOFT</div>
+          </div>
+          <script>
+            window.onload = function() {
+              window.print();
+            }
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
+  const itemsWithPrice = catalogItems.filter((i) => Boolean(i.price)).length;
+  const itemsWithOffer = catalogItems.filter((i) => Boolean(i.offerPrice)).length;
 
   // Guardar Marca
   const handleSaveBrand = async () => {
@@ -511,6 +684,29 @@ export default function LaboratorioPage() {
               </button>
             </div>
 
+            {isCurrentTest && (
+              <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-white/10">
+                <span className="text-purple-200 truncate font-medium">{activeProfile?.rubro || "Rubro no definido"}</span>
+                {isMenuEnabled ? (
+                  <button
+                    onClick={() => setActiveTab("menu_qr")}
+                    className="text-emerald-300 font-bold hover:underline flex items-center gap-1 shrink-0"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    Carta QR Activa
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setActiveTab("menu_qr")}
+                    className="text-slate-400 hover:text-white font-medium flex items-center gap-1 shrink-0"
+                  >
+                    <span>📱</span>
+                    Activar Carta QR
+                  </button>
+                )}
+              </div>
+            )}
+
             {!isCurrentTest && (
               <div className="text-[11px] text-amber-300 font-semibold bg-amber-500/10 p-2 rounded-lg border border-amber-500/20">
                 ⚠️ Actualmente tienes seleccionada tu cuenta principal. Selecciona o crea una empresa de prueba para trabajar en modo aislado.
@@ -532,7 +728,7 @@ export default function LaboratorioPage() {
         </div>
       )}
 
-      {/* ── BARRA DE PESTAÑAS (4 PILARES) ── */}
+      {/* ── BARRA DE PESTAÑAS (5 PILARES) ── */}
       <div className="flex items-center gap-2 border-b border-slate-200 pb-3 overflow-x-auto hide-scrollbar">
         <button
           onClick={() => setActiveTab("marca")}
@@ -559,6 +755,23 @@ export default function LaboratorioPage() {
         </button>
 
         <button
+          onClick={() => setActiveTab("menu_qr")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-black transition-all shrink-0 ${
+            activeTab === "menu_qr"
+              ? "bg-purple-600 text-white shadow-md shadow-purple-600/30"
+              : isMenuEnabled
+                ? "bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-300 font-black shadow-xs"
+                : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+          }`}
+        >
+          <span>📱</span>
+          <span>3. Carta Menú & QR</span>
+          {isMenuEnabled && (
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          )}
+        </button>
+
+        <button
           onClick={() => setActiveTab("comandos")}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-black transition-all shrink-0 ${
             activeTab === "comandos"
@@ -567,7 +780,7 @@ export default function LaboratorioPage() {
           }`}
         >
           <span>✨</span>
-          <span>3. Comandos de Agentes</span>
+          <span>4. Comandos de Agentes</span>
         </button>
 
         <button
@@ -579,7 +792,7 @@ export default function LaboratorioPage() {
           }`}
         >
           <span>🚀</span>
-          <span>4. Radar & Estrategia Visual</span>
+          <span>5. Radar & Estrategia Visual</span>
           {strategyPosts.length > 0 && (
             <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-white text-purple-700 font-bold">
               {strategyPosts.length} posts
@@ -799,27 +1012,43 @@ export default function LaboratorioPage() {
                 Los productos cargados aquí son las referencias directas que nuestros agentes utilizarán para crear las publicaciones.
               </p>
             </div>
-            <button
-              onClick={() => {
-                setEditingProduct(null);
-                setProductForm({
-                  name: "",
-                  description: "",
-                  type: "producto",
-                  category: "",
-                  price: "",
-                  offerPrice: "",
-                  imageUrl: "",
-                  tags: "",
-                  keepOriginalPhoto: true,
-                  fontStyle: "bold_modern",
-                });
-                setShowAddProductModal(true);
-              }}
-              className="px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-2 shrink-0"
-            >
-              <span>+ Agregar Producto / Servicio</span>
-            </button>
+            <div className="flex items-center gap-2 flex-wrap shrink-0">
+              <button
+                type="button"
+                onClick={() => setActiveTab("menu_qr")}
+                className={`px-3.5 py-2.5 rounded-xl font-black text-xs transition-all flex items-center gap-2 ${
+                  isMenuEnabled
+                    ? "bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-2 border-emerald-300 shadow-xs"
+                    : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
+                }`}
+                title="Ver Carta Menú Digital y Código QR de esta empresa"
+              >
+                <span>📱</span>
+                <span>Carta Menú & QR {isMenuEnabled ? "(Activo)" : ""}</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setEditingProduct(null);
+                  setProductForm({
+                    name: "",
+                    description: "",
+                    type: "producto",
+                    category: "",
+                    price: "",
+                    offerPrice: "",
+                    imageUrl: "",
+                    tags: "",
+                    keepOriginalPhoto: true,
+                    fontStyle: "bold_modern",
+                  });
+                  setShowAddProductModal(true);
+                }}
+                className="px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-2"
+              >
+                <span>+ Agregar Producto / Servicio</span>
+              </button>
+            </div>
           </div>
 
           {loadingCatalog ? (
@@ -829,14 +1058,22 @@ export default function LaboratorioPage() {
               <span className="text-4xl">📦</span>
               <h4 className="text-sm font-bold text-slate-700 mt-2">Catálogo vacío</h4>
               <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-                Agrega productos con fotos reales, precios y ofertas para probar las estrategias de contenido.
+                Agrega productos con fotos reales, precios y ofertas para probar las estrategias de contenido y tu carta menú digital.
               </p>
-              <button
-                onClick={() => setShowAddProductModal(true)}
-                className="mt-4 px-4 py-2 bg-purple-600 text-white font-bold text-xs rounded-xl"
-              >
-                + Agregar Primer Ítem
-              </button>
+              <div className="flex items-center justify-center gap-2 mt-4">
+                <button
+                  onClick={() => setShowAddProductModal(true)}
+                  className="px-4 py-2 bg-purple-600 text-white font-bold text-xs rounded-xl shadow-sm"
+                >
+                  + Agregar Primer Ítem
+                </button>
+                <button
+                  onClick={() => setActiveTab("menu_qr")}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl"
+                >
+                  📱 Configurar Carta Menú & QR
+                </button>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -937,7 +1174,365 @@ export default function LaboratorioPage() {
       )}
 
       {/* ──────────────────────────────────────────────────────────── */}
-      {/* TAB 3: COMANDOS DE AGENTES & ESTILOS VISUALES                */}
+      {/* TAB 3: CARTA MENÚ DIGITAL & CÓDIGO QR                        */}
+      {/* ──────────────────────────────────────────────────────────── */}
+      {activeTab === "menu_qr" && (
+        <div className="space-y-8 animate-in fade-in duration-200">
+          
+          {/* Top Control Banner: Estado y Acciones de la Carta */}
+          <div className={`p-6 sm:p-7 rounded-3xl border-2 transition-all ${
+            isMenuEnabled
+              ? "bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-indigo-500/10 border-emerald-300 shadow-sm"
+              : "bg-slate-50 border-slate-200"
+          }`}>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3.5">
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0 shadow-md ${
+                  isMenuEnabled ? "bg-emerald-600 text-white shadow-emerald-500/30" : "bg-slate-200 text-slate-500"
+                }`}>
+                  📱
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                      isMenuEnabled
+                        ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                        : "bg-slate-200 text-slate-700"
+                    }`}>
+                      {isMenuEnabled ? "🟢 Carta Digital Activa" : "⚪ Carta Digital Inactiva"}
+                    </span>
+                    <span className="text-xs font-bold text-slate-500">
+                      Empresa de Prueba: {activeProfile?.name || "Sin nombre"}
+                    </span>
+                  </div>
+                  <h3 className="text-base sm:text-lg font-black text-slate-900 mt-1">
+                    Carta Menú Digital con Código QR
+                  </h3>
+                  <p className="text-xs text-slate-600 font-medium max-w-2xl mt-0.5 leading-relaxed">
+                    {isMenuEnabled
+                      ? `Cualquier cliente que escanee el código QR o acceda al enlace verá la carta en vivo con tus ${catalogItems.length} productos, fotos reales, precios y ofertas.`
+                      : "Esta función permite a tus clientes escanear un código QR desde la mesa o vitrina para consultar el catálogo y hacer pedidos directos por WhatsApp."}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => handleToggleMenuDigital(!isMenuEnabled)}
+                  disabled={togglingMenuDigital}
+                  className={`px-5 py-3 rounded-2xl font-black text-xs transition-all shadow-md flex items-center gap-2 ${
+                    isMenuEnabled
+                      ? "bg-white hover:bg-rose-50 text-rose-700 border-2 border-rose-200"
+                      : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/25"
+                  }`}
+                >
+                  {isMenuEnabled ? (
+                    <>
+                      <FaToggleOn className="text-lg text-emerald-600" />
+                      <span>{togglingMenuDigital ? "Actualizando..." : "Pausar Carta Digital"}</span>
+                    </>
+                  ) : (
+                    <>
+                      <FaToggleOff className="text-lg opacity-70" />
+                      <span>{togglingMenuDigital ? "Activando..." : "✨ Activar Carta Menú Digital"}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Grid: Columna Izquierda (Controles + Temas) / Columna Derecha (Simulador Móvil) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            {/* Columna Izquierda (7 cols) */}
+            <div className="lg:col-span-7 space-y-6">
+              
+              {/* Tarjeta del Código QR y Enlace */}
+              <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-sm">
+                <div className="flex items-center justify-between gap-3 mb-6 pb-4 border-b border-slate-100">
+                  <div className="flex items-center gap-2.5">
+                    <span className="p-2 bg-purple-50 text-purple-600 rounded-xl text-lg font-black">
+                      <FaQrcode />
+                    </span>
+                    <div>
+                      <h4 className="text-sm font-black text-slate-900">
+                        Código QR de la Empresa de Prueba
+                      </h4>
+                      <p className="text-[11px] text-slate-500 font-medium">
+                        Listo para descargar en alta definición o probar escaneando con tu teléfono.
+                      </p>
+                    </div>
+                  </div>
+                  {publicMenuUrl && (
+                    <a
+                      href={publicMenuUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-3 py-1.5 bg-slate-100 hover:bg-purple-50 text-slate-700 hover:text-purple-700 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0"
+                    >
+                      <span>Abrir en nueva pestaña</span>
+                      <FaExternalLinkAlt className="text-[10px]" />
+                    </a>
+                  )}
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center gap-6">
+                  {/* Visualizador QR */}
+                  <div className="p-4 bg-slate-50 rounded-2xl border-2 border-dashed border-purple-200 flex flex-col items-center justify-center shrink-0 shadow-inner">
+                    {qrDataUrl ? (
+                      <img
+                        src={qrDataUrl}
+                        alt={`QR Carta ${activeProfile?.name}`}
+                        className="w-44 h-44 rounded-xl shadow-xs"
+                      />
+                    ) : (
+                      <div className="w-44 h-44 flex items-center justify-center text-xs text-slate-400 font-bold">
+                        Generando QR...
+                      </div>
+                    )}
+                    <span className="text-[10px] font-black uppercase text-slate-400 mt-2 tracking-wider">
+                      {activeProfile?.icon || "🍽️"} {activeProfile?.name || "Carta Demo"}
+                    </span>
+                  </div>
+
+                  {/* Acciones y Enlace Directo */}
+                  <div className="flex-1 space-y-4 w-full">
+                    <div>
+                      <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">
+                        Enlace Público de la Carta:
+                      </label>
+                      <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-xl border border-slate-200">
+                        <input
+                          type="text"
+                          readOnly
+                          value={publicMenuUrl}
+                          className="flex-1 bg-transparent text-xs font-bold text-slate-700 px-2 outline-none select-all truncate"
+                        />
+                        <button
+                          type="button"
+                          onClick={copyQrLink}
+                          className="px-3 py-2 bg-white hover:bg-slate-100 text-purple-700 font-black text-xs rounded-lg border border-slate-200 transition-all flex items-center gap-1.5 shrink-0 shadow-xs"
+                        >
+                          {copiedQrLink ? <FaCheck className="text-emerald-600" /> : <FaCopy />}
+                          <span>{copiedQrLink ? "Copiado" : "Copiar"}</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                      <button
+                        type="button"
+                        onClick={downloadQr}
+                        disabled={!qrDataUrl}
+                        className="w-full py-2.5 px-3 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-black text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-2"
+                      >
+                        <FaDownload />
+                        <span>Descargar PNG HD</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handlePrintTableTent}
+                        disabled={!qrDataUrl}
+                        className="w-full py-2.5 px-3 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white font-black text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-2"
+                      >
+                        <FaPrint />
+                        <span>Imprimir Mesa / Display</span>
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-3 pt-2 text-[11px] text-slate-500 font-medium">
+                      <span>🛍️ <b>{catalogItems.length}</b> productos</span>
+                      <span>•</span>
+                      <span>🏷️ <b>{itemsWithPrice}</b> con precio</span>
+                      <span>•</span>
+                      <span>💥 <b>{itemsWithOffer}</b> ofertas</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Selector de 5 Estilos y Fondos de Carta */}
+              <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-sm space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
+                  <div className="flex items-center gap-2.5">
+                    <span className="p-2 bg-indigo-50 text-indigo-600 rounded-xl text-lg font-black">
+                      <FaPalette />
+                    </span>
+                    <div>
+                      <h4 className="text-sm font-black text-slate-900">
+                        Estilos Visuales & Fondos de Carta
+                      </h4>
+                      <p className="text-[11px] text-slate-500 font-medium">
+                        Selecciona uno de los 5 ambientes predeterminados para personalizar la presentación.
+                      </p>
+                    </div>
+                  </div>
+                  {savingMenuTheme && (
+                    <span className="text-xs font-bold text-purple-600 flex items-center gap-1.5">
+                      <span className="w-3.5 h-3.5 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
+                      Aplicando estilo...
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+                  {(Object.values(MENU_THEMES) as typeof MENU_THEMES[MenuThemeId][]).map((theme) => {
+                    const isSelected = currentMenuThemeId === theme.id;
+                    return (
+                      <div
+                        key={theme.id}
+                        onClick={() => handleSelectMenuTheme(theme.id)}
+                        className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex flex-col justify-between group relative overflow-hidden ${
+                          isSelected
+                            ? "border-purple-600 bg-purple-50/40 shadow-sm ring-2 ring-purple-500/20"
+                            : "border-slate-200 hover:border-slate-300 bg-slate-50/50 hover:bg-white"
+                        }`}
+                      >
+                        <div>
+                          <div className="flex items-center justify-between gap-2 mb-2">
+                            <span className="text-2xl">{theme.emoji}</span>
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                className="w-4 h-4 rounded-full border border-black/10 shadow-xs"
+                                style={{ backgroundColor: theme.preview.bg }}
+                                title="Fondo"
+                              />
+                              <span
+                                className="w-4 h-4 rounded-full border border-black/10 shadow-xs"
+                                style={{ backgroundColor: theme.preview.accent }}
+                                title="Color de Acento"
+                              />
+                              <span
+                                className="w-4 h-4 rounded-full border border-black/10 shadow-xs"
+                                style={{ backgroundColor: theme.preview.card }}
+                                title="Tarjeta"
+                              />
+                            </div>
+                          </div>
+
+                          <h5 className="text-xs font-black text-slate-900 leading-tight">
+                            {theme.name}
+                          </h5>
+                          <p className="text-[11px] text-slate-500 font-medium mt-0.5 leading-snug">
+                            {theme.tagline}
+                          </p>
+
+                          <div className="text-[10px] text-slate-400 mt-2 font-semibold">
+                            <b>Recomendado:</b> {theme.recommendedFor}
+                          </div>
+                        </div>
+
+                        <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            {isSelected ? "Activo" : "Click para aplicar"}
+                          </span>
+                          {isSelected ? (
+                            <span className="px-2.5 py-0.5 rounded-full bg-purple-600 text-white font-black text-[10px] flex items-center gap-1 shadow-xs">
+                              <FaCheck className="text-[9px]" /> Seleccionado
+                            </span>
+                          ) : (
+                            <span className="text-[11px] font-bold text-purple-600 group-hover:underline">
+                              Seleccionar →
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Botón rápido para ir al Catálogo */}
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex items-center justify-between">
+                <div className="text-xs font-bold text-slate-700">
+                  ¿Quieres agregar más productos, platos, fotos o precios a esta carta?
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("catalogo")}
+                  className="px-3.5 py-2 bg-white hover:bg-slate-100 text-purple-700 font-black text-xs rounded-xl border border-slate-200 transition-all shrink-0"
+                >
+                  Ir al Catálogo ({catalogItems.length}) →
+                </button>
+              </div>
+
+            </div>
+
+            {/* Columna Derecha (5 cols): Simulador Móvil Interactivo */}
+            <div className="lg:col-span-5 flex flex-col items-center space-y-3">
+              <div className="w-full flex items-center justify-between px-2">
+                <div className="flex items-center gap-2">
+                  <FaMobileAlt className="text-purple-600" />
+                  <span className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                    Simulador Móvil en Vivo
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIframeKey((k) => k + 1)}
+                    className="p-1.5 text-slate-500 hover:text-purple-600 rounded-lg text-xs font-bold transition-all"
+                    title="Recargar vista previa"
+                  >
+                    <FaRedo className="text-xs" />
+                  </button>
+                  {publicMenuUrl && (
+                    <a
+                      href={publicMenuUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[11px] font-bold text-purple-600 hover:underline flex items-center gap-1"
+                    >
+                      <span>Pantalla completa</span>
+                      <FaExternalLinkAlt className="text-[9px]" />
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              {/* Marco de Smartphone */}
+              <div className="w-full max-w-[360px] bg-slate-950 rounded-[48px] p-3 shadow-2xl border-4 border-slate-800 relative">
+                {/* Dynamic Island / Notch */}
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 w-24 h-4 bg-slate-900 rounded-full z-20 flex items-center justify-center">
+                  <div className="w-2.5 h-2.5 rounded-full bg-slate-950 mr-2" />
+                  <div className="w-6 h-1 rounded-full bg-slate-950" />
+                </div>
+
+                {/* Pantalla con Iframe */}
+                <div className="w-full h-[620px] rounded-[40px] overflow-hidden bg-white relative">
+                  {publicMenuUrl ? (
+                    <iframe
+                      key={iframeKey}
+                      src={`${publicMenuUrl}?preview=${iframeKey}`}
+                      title={`Carta Digital ${activeProfile?.name}`}
+                      className="w-full h-full border-0 select-none"
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-slate-400 text-xs font-bold">
+                      Cargando vista previa...
+                    </div>
+                  )}
+                </div>
+
+                {/* Home Indicator */}
+                <div className="w-28 h-1 bg-slate-700 rounded-full mx-auto mt-2" />
+              </div>
+
+              <p className="text-[11px] text-slate-400 font-medium text-center max-w-xs leading-snug">
+                Así verán exactamente la carta tus clientes al escanear el código QR con cualquier teléfono móvil.
+              </p>
+            </div>
+
+          </div>
+
+        </div>
+      )}
+
+      {/* ──────────────────────────────────────────────────────────── */}
+      {/* TAB 4: COMANDOS DE AGENTES & ESTILOS VISUALES                */}
       {/* ──────────────────────────────────────────────────────────── */}
       {activeTab === "comandos" && (
         <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
@@ -1055,7 +1650,7 @@ export default function LaboratorioPage() {
       )}
 
       {/* ──────────────────────────────────────────────────────────── */}
-      {/* TAB 4: RADAR DE NICHO & ESTRATEGIA VISUAL                   */}
+      {/* TAB 5: RADAR DE NICHO & ESTRATEGIA VISUAL                   */}
       {/* ──────────────────────────────────────────────────────────── */}
       {activeTab === "radar_estrategia" && (
         <div className="space-y-8">
