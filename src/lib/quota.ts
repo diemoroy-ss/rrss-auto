@@ -153,3 +153,41 @@ export async function getAiPlanLimit(plan: string, type: 'image' | 'video' | 'bl
     };
     return fallbacks[planId]?.[type] ?? (type === 'image' ? 8 : 0);
 }
+
+/**
+ * Retorna el total de videos consumidos o programados este mes por el usuario.
+ * Evalúa tanto la colección ai_generations como los posts con formato Reel/Video.
+ */
+export async function getVideoQuotaUsage(userId: string): Promise<number> {
+    const firstDayOfMonth = new Date();
+    firstDayOfMonth.setDate(1);
+    firstDayOfMonth.setHours(0, 0, 0, 0);
+
+    try {
+        const [aiVideosUsed, postsSnap] = await Promise.all([
+            getAiGenerationUsage(userId, 'video').catch(() => 0),
+            getDocs(query(
+                collection(db, "social_posts"),
+                where("userId", "==", userId)
+            ))
+        ]);
+
+        let scheduledVideos = 0;
+        postsSnap.docs.forEach(d => {
+            const data = d.data();
+            const dateObj = data.scheduledFor?.toDate ? data.scheduledFor.toDate() : (data.createdAt?.toDate ? data.createdAt.toDate() : new Date());
+            if (dateObj >= firstDayOfMonth && ['published', 'processing', 'confirmed'].includes(data.status)) {
+                const t = (data.type || '').toLowerCase();
+                if (t.includes('reel') || t.includes('video')) {
+                    scheduledVideos += 1;
+                }
+            }
+        });
+
+        return Math.max(aiVideosUsed, scheduledVideos);
+    } catch (e) {
+        console.error("Error in getVideoQuotaUsage:", e);
+        return 0;
+    }
+}
+

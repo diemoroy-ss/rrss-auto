@@ -17,6 +17,9 @@ export const StrategyAnnotation = Annotation.Root({
   postsPerWeek: Annotation<number>({ reducer: (a, b) => b ?? a, default: () => 5 }),
   planId: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "pro" }),
   maxVideos: Annotation<number>({ reducer: (a, b) => b ?? a, default: () => 2 }),
+  remainingPosts: Annotation<number>({ reducer: (a, b) => b ?? a, default: () => 5 }),
+  remainingVideos: Annotation<number>({ reducer: (a, b) => b ?? a, default: () => 2 }),
+  remainingImages: Annotation<number>({ reducer: (a, b) => b ?? a, default: () => 8 }),
   analysis: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "" }),
   rawStrategy: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "" }),
   strategy: Annotation<any[]>({ reducer: (a, b) => b ?? a, default: () => [] }),
@@ -68,17 +71,29 @@ REGLAS Y MENTALIDAD DE BH-SKILLS PARA CRECIMIENTO ORGÁNICO:
 6. IMPORTANTE: NUNCA menciones que eres una IA o Inteligencia Artificial. Refiérete a ti mismo y a tus acciones como "nuestros agentes" o "nuestro equipo de agentes especializados". Tampoco hables de "lo que se puede hacer con IA".
 7. REGLA OBLIGATORIA DE CONTACTO: Siempre incluye de forma clara los datos de contacto de la empresa en el cierre o CTA del post (WhatsApp, Sitio Web, Correo o Ubicación).`;
 
-  let videoConstraintRule = "";
-  if (state.maxVideos <= 0) {
-    videoConstraintRule = `
-RESTRICCIÓN OBLIGATORIA DE FORMATO (PLAN ${state.planId.toUpperCase()}):
-- ESTÁ ESTRICTAMENTE PROHIBIDO generar publicaciones en formato 'Reel' o 'Video'.
-- Todos los formatos DEBEN ser 'Post Fijo', 'Carrusel' o 'Historia' con imágenes fotográficas. CERO videos.`;
+  let quotaConstraintRule = "";
+  if (state.maxVideos <= 0 || state.remainingVideos <= 0) {
+    quotaConstraintRule = `
+REGLAS OBLIGATORIAS DE CUOTAS Y FORMATO (PLAN ${state.planId.toUpperCase()}):
+1. Publicaciones: EXACTAMENTE ${state.postsPerWeek} publicaciones (saldo disponible del cliente: ${state.remainingPosts} posts este mes).
+2. RESTRICCIÓN ESTRICTA DE FORMATO - CERO VIDEOS:
+   - El cliente tiene 0 videos disponibles en su cuota de este mes (o su plan no incluye videos).
+   - ESTÁ TERMINANTEMENTE PROHIBIDO generar publicaciones en formato 'Reel' o 'Video'.
+   - El 100% de las publicaciones DEBEN ser 'Post Fijo', 'Carrusel' o 'Historia' con imágenes fotográficas. CERO videos.
+3. Cuota de Imágenes Fotográficas:
+   - Saldo disponible este mes: ${state.remainingImages} imágenes.
+   ${state.remainingImages < state.postsPerWeek ? `- ATENCIÓN A CUOTA DE IMÁGENES: El cliente tiene cuota ajustada de imágenes (${state.remainingImages} restantes). Si hay productos del catálogo con fotos reales registradas ([TIENE FOTO REAL DEL NEGOCIO]), dales MÁXIMA PRIORIDAD para optimizar el consumo de cuota de generación fotográfica.` : "- Diseña imágenes y carruseles atractivos alineados al rubro y a los estilos visuales seleccionados."}`;
   } else {
-    videoConstraintRule = `
-RESTRICCIÓN OBLIGATORIA DE FORMATO (PLAN ${state.planId.toUpperCase()}):
-- Máximo ${state.maxVideos} publicaciones pueden tener formato 'Reel' o 'Video'.
-- Las restantes publicaciones deben ser 'Post Fijo', 'Carrusel' o 'Historia' basados en imágenes.`;
+    quotaConstraintRule = `
+REGLAS OBLIGATORIAS DE CUOTAS Y FORMATO (PLAN ${state.planId.toUpperCase()}):
+1. Publicaciones: EXACTAMENTE ${state.postsPerWeek} publicaciones (saldo disponible del cliente: ${state.remainingPosts} posts este mes).
+2. Asignación y límite de Videos / Reels:
+   - Saldo de videos disponibles este mes: ${state.remainingVideos} video(s).
+   - Se permite un MÁXIMO de ${state.maxVideos} publicación(es) en formato 'Reel' o 'Video'.
+   - Las restantes (${Math.max(0, state.postsPerWeek - state.maxVideos)}) publicaciones DEBEN ser 'Post Fijo', 'Carrusel' o 'Historia' basados en imágenes fotográficas.
+3. Cuota de Imágenes Fotográficas:
+   - Saldo disponible este mes: ${state.remainingImages} imágenes.
+   ${state.remainingImages < state.postsPerWeek ? `- ATENCIÓN A CUOTA DE IMÁGENES: El cliente tiene cuota ajustada de imágenes (${state.remainingImages} restantes). Si hay productos del catálogo con fotos reales registradas ([TIENE FOTO REAL DEL NEGOCIO]), dales MÁXIMA PRIORIDAD para optimizar el consumo de cuota de generación fotográfica.` : "- Diseña imágenes y carruseles atractivos alineados al rubro y a los estilos visuales seleccionados."}`;
   }
 
   const stylesContext = state.promptStyles && state.promptStyles.length > 0
@@ -152,7 +167,7 @@ ${state.history}
 ${state.feedback ? `\n¡ATENCIÓN! El Agente Revisor rechazó tu última estrategia por el siguiente motivo:\n"${state.feedback}"\nCORRIGE Y MEJORA ESTA VERSIÓN PARA QUE SEA APROBADA.\n` : ""}
 
 ${rules}
-${videoConstraintRule}
+${quotaConstraintRule}
 
 REGLAS DE NEGOCIO:
 - Si la plataforma incluye 'TikTok' y el plan lo permite, el formato puede ser 'Reel' o 'Video'. Si el plan tiene 0 videos, enfócate en otras plataformas o formatos de foto/carrusel.
@@ -237,6 +252,11 @@ DEVUELVE ÚNICAMENTE EL OBJETO JSON LIMPIO. SIN MARKDOWN.`;
       }
       return item;
     });
+  }
+
+  // Asegurar que la cantidad de publicaciones no exceda postsPerWeek
+  if (strategy.length > state.postsPerWeek) {
+    strategy = strategy.slice(0, state.postsPerWeek);
   }
 
   return { strategy };
@@ -332,7 +352,10 @@ export async function runProfessionalStrategyWorkflow(
     planId: string = "pro",
     maxVideos: number = 2,
     catalogItems: any[] = [],
-    catalogUsage: string = "mixed"
+    catalogUsage: string = "mixed",
+    remainingPosts: number = 5,
+    remainingVideos: number = 2,
+    remainingImages: number = 8
 ) {
   const app = createStrategyWorkflow();
   const initialState = {
@@ -350,6 +373,9 @@ export async function runProfessionalStrategyWorkflow(
     postsPerWeek,
     planId,
     maxVideos,
+    remainingPosts,
+    remainingVideos,
+    remainingImages,
     analysis: "",
     rawStrategy: "",
     strategy: [],

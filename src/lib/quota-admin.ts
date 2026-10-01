@@ -80,8 +80,8 @@ export async function getAiPlanLimitAdmin(plan: string, type: 'image' | 'video' 
         const plansDoc = await adminDb.collection("system_config").doc("plans").get();
         if (plansDoc.exists) {
             const config = plansDoc.data() as any;
-            if (type === 'image') return config[planId]?.aiImagesLimit ?? 8;
-            if (type === 'video') return config[planId]?.aiVideosLimit ?? 0;
+            if (type === 'image') return config[planId]?.aiImagesLimit ?? config[planId]?.postsLimit ?? 8;
+            if (type === 'video') return config[planId]?.aiVideosLimit ?? config[planId]?.videosLimit ?? 0;
             if (type === 'blog') return config[planId]?.seoBlogsLimit ?? 0;
         }
     } catch (e) {
@@ -117,13 +117,51 @@ export async function getAiGenerationUsageAdmin(userId: string, type: 'image' | 
     let used = 0;
     snap.docs.forEach(d => {
         const data = d.data();
-        const dateObj = data.createdAt?.toDate ? data.createdAt.toDate() : new Date();
+        const dateObj = data.createdAt?.toDate ? data.createdAt.toDate() : (data.createdAt ? new Date(data.createdAt) : new Date());
         if (dateObj >= firstDayOfMonth) {
-            used += 1;
+            used += (data.count || 1);
         }
     });
 
     return used;
+}
+
+/**
+ * Retorna el total de videos consumidos o comprometidos este mes para un usuario:
+ * Considera el mayor valor entre generaciones de video registradas y publicaciones
+ * agendadas/publicadas con formato Reel o Video.
+ */
+export async function getVideoQuotaUsageAdmin(userId: string): Promise<number> {
+    if (!adminDb) return 0;
+    try {
+        const firstDayOfMonth = new Date();
+        firstDayOfMonth.setDate(1);
+        firstDayOfMonth.setHours(0, 0, 0, 0);
+
+        const [aiVideosUsed, postsSnap] = await Promise.all([
+            getAiGenerationUsageAdmin(userId, 'video').catch(() => 0),
+            adminDb.collection("social_posts")
+                .where("userId", "==", userId)
+                .get()
+        ]);
+
+        let scheduledVideos = 0;
+        postsSnap.docs.forEach(d => {
+            const data = d.data();
+            const dateObj = data.scheduledFor?.toDate ? data.scheduledFor.toDate() : (data.createdAt?.toDate ? data.createdAt.toDate() : new Date());
+            if (dateObj >= firstDayOfMonth && ['published', 'processing', 'confirmed'].includes(data.status)) {
+                const t = (data.type || '').toLowerCase();
+                if (t.includes('reel') || t.includes('video')) {
+                    scheduledVideos += 1;
+                }
+            }
+        });
+
+        return Math.max(aiVideosUsed, scheduledVideos);
+    } catch (err) {
+        console.error("Error in getVideoQuotaUsageAdmin:", err);
+        return 0;
+    }
 }
 
 export async function logAiGenerationAdmin(userId: string, profileId: string, type: 'image' | 'video' | 'blog', metadata: any = {}): Promise<void> {

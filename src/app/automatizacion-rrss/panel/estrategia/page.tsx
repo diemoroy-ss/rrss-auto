@@ -7,7 +7,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useProfile } from "../../../../contexts/ProfileContext";
-import { isUserAdmin } from "../../../../lib/quota";
+import { isUserAdmin, getPlanLimit, getVideoPlanLimit, getAiPlanLimit, getAiGenerationUsage, getVideoQuotaUsage, getQuotaUsage } from "../../../../lib/quota";
 import StatusModal from "../../../../components/StatusModal";
 import VoiceMic from "../../../../components/VoiceMic";
 import PromptStyleSelector from "../../../../components/strategy/PromptStyleSelector";
@@ -57,6 +57,12 @@ export default function EstrategiaPage() {
   const [selectedPromptStyles, setSelectedPromptStyles] = useState<PromptTemplate[]>([]);
   const [businessData, setBusinessData] = useState<any>({});
   const [postsThisMonth, setPostsThisMonth] = useState(0);
+  const [planLimit, setPlanLimit] = useState(20);
+  const [videoLimit, setVideoLimit] = useState(2);
+  const [videosThisMonth, setVideosThisMonth] = useState(0);
+  const [imageLimit, setImageLimit] = useState(20);
+  const [imagesThisMonth, setImagesThisMonth] = useState(0);
+  const [quotaInfo, setQuotaInfo] = useState<any>(null);
   const [hasNetworks, setHasNetworks] = useState(false);
   const [catalogoItems, setCatalogoItems] = useState<any[]>([]);
   const [catalogUsage, setCatalogUsage] = useState<'mixed' | 'all' | 'none'>('mixed');
@@ -167,22 +173,30 @@ export default function EstrategiaPage() {
               
               setHasNetworks(fbOK || igOK || ttOK || liOK);
               
-              // Calculate posts this month
-              const firstDayOfMonth = new Date();
-              firstDayOfMonth.setDate(1);
-              firstDayOfMonth.setHours(0, 0, 0, 0);
+              // Cargar cuotas y límites reales del plan y consumo
+              const plan = data.plan || "free";
+              const [pLimit, vLimit, iLimit, pUsed, vUsed, iUsed] = await Promise.all([
+                  getPlanLimit(plan, u.email),
+                  getVideoPlanLimit(plan, u.email),
+                  getAiPlanLimit(plan, 'image', u.email),
+                  getQuotaUsage(u.uid, activeProfile?.id || 'default'),
+                  getVideoQuotaUsage(u.uid),
+                  getAiGenerationUsage(u.uid, 'image')
+              ]);
 
-              const q = query(
+              setPlanLimit(pLimit);
+              setVideoLimit(vLimit);
+              setImageLimit(iLimit);
+              setPostsThisMonth(pUsed);
+              setVideosThisMonth(vUsed);
+              setImagesThisMonth(iUsed);
+
+              const qPosts = query(
                   collection(db, "social_posts"),
                   where("userId", "==", u.uid)
               );
-              
-              const querySnapshot = await getDocs(q);
+              const querySnapshot = await getDocs(qPosts);
               const allPosts = querySnapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
-              const count = allPosts.filter((d: any) => {
-                  return d.createdAt && d.createdAt.toDate && d.createdAt.toDate() >= firstDayOfMonth;
-              }).length;
-              setPostsThisMonth(count);
 
               const cont = getScheduleContinuityFromList(allPosts, activeProfile?.id, 10);
               setScheduleContinuityInfo(cont);
@@ -318,6 +332,9 @@ export default function EstrategiaPage() {
          }
          const data = await res.json();
          setStrategyResult(data.strategy);
+         if (data.quotaInfo) {
+             setQuotaInfo(data.quotaInfo);
+         }
 
          // Auto save entire JSON to history
          if (user) {
@@ -341,19 +358,25 @@ export default function EstrategiaPage() {
   const handleAcceptPlan = async () => {
     if (!strategyResult || !user) return;
     
-    let limit = 4;
-    if (userPlan === "pro") limit = 20;
-    if (userPlan === "business") limit = 150;
-    if (userPlan === "agency") limit = 999999;
-    
-    if (postsThisMonth + strategyResult.length > limit && !isUserAdmin(user?.email)) {
-       setError(`¡Límite Excedido! Tu plan permite ${limit} posts al mes. Ya tienes ${postsThisMonth} agendados y esta estrategia suma ${strategyResult.length}.`);
-       return;
+    const strategyVideos = (strategyResult || []).filter(p => {
+        const fmt = (p.format || '').toLowerCase();
+        return fmt.includes('reel') || fmt.includes('video');
+    }).length;
+
+    if (!isUserAdmin(user?.email)) {
+       if (postsThisMonth + strategyResult.length > planLimit) {
+          setError(`¡Límite de publicaciones alcanzado! Tu plan ${userPlan.toUpperCase()} permite ${planLimit} posts al mes. Ya tienes ${postsThisMonth} agendados o publicados y esta estrategia suma ${strategyResult.length}.`);
+          return;
+       }
+       if (videoLimit > 0 && (videosThisMonth + strategyVideos > videoLimit)) {
+          setError(`¡Límite de videos alcanzado! Tu plan ${userPlan.toUpperCase()} permite ${videoLimit} videos al mes. Ya tienes ${videosThisMonth} usados o agendados y esta estrategia suma ${strategyVideos} video(s).`);
+          return;
+       }
     }
 
     const activeId = activeProfile?.id || 'default';
     
-    // Phase 9: Check for previous AI strategy posts pending
+    // Phase 9: Check for previous strategy posts pending
     const qPendingAI = query(
         collection(db, "social_posts"),
         where("userId", "==", user.uid),
@@ -365,7 +388,7 @@ export default function EstrategiaPage() {
     const pendingAISnapshot = await getDocs(qPendingAI);
     
     if (pendingAISnapshot.size > 0) {
-        showModal("confirm", "Sustituir Estrategia", `Tienes ${pendingAISnapshot.size} posts sugeridos de tu estrategia AI anterior. Al aceptar esta nueva planificación, los anteriores serán descartados para evitar conflictos. ¿Deseas continuar?`, () => {
+        showModal("confirm", "Sustituir Estrategia", `Tienes ${pendingAISnapshot.size} posts sugeridos de tu estrategia anterior. Al aceptar esta nueva planificación, los anteriores serán descartados para evitar conflictos. ¿Deseas continuar?`, () => {
             setModal(prev => ({ ...prev, isOpen: false }));
             executeAcceptPlan(pendingAISnapshot);
         });
@@ -444,11 +467,53 @@ export default function EstrategiaPage() {
       <div>
         <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
           <span className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-2xl shadow-lg shadow-indigo-600/30 text-white">🚀</span>
-          Estrategia Digital AI
+          Estrategia de Contenidos con Agentes
         </h1>
         <p className="text-slate-500 font-medium mt-2 max-w-2xl leading-relaxed">
-          Selecciona tu objetivo principal y nuestra Inteligencia Artificial diseñará un plan de contenidos semanal a medida para tu negocio.
+          Selecciona tu objetivo principal y nuestro equipo de agentes especializados diseñará un plan táctico de publicaciones a medida para tu negocio.
         </p>
+      </div>
+
+      {/* Barra de Cuotas Disponibles del Plan */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-5 rounded-2xl border border-indigo-900/50 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-lg">
+            📊
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs uppercase font-black tracking-wider text-indigo-300">Plan {userPlan.toUpperCase()}</span>
+              {isUserAdmin(user?.email) && <span className="bg-emerald-500/20 text-emerald-300 text-[10px] font-black px-2 py-0.5 rounded-full border border-emerald-500/30">ADMIN</span>}
+            </div>
+            <p className="text-xs text-slate-300 font-medium">Cuotas disponibles este mes (nuestros agentes adaptarán la estrategia a tu saldo):</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
+          <div className="bg-white/10 backdrop-blur-sm border border-white/10 px-3.5 py-2 rounded-xl flex items-center gap-2.5">
+            <span className="text-base">📝</span>
+            <div className="text-left">
+              <div className="text-[10px] font-bold text-slate-300 uppercase">Posts Disponibles</div>
+              <div className="text-xs font-black text-white">{isUserAdmin(user?.email) ? 'Ilimitados' : `${Math.max(0, planLimit - postsThisMonth)} / ${planLimit}`}</div>
+            </div>
+          </div>
+
+          <div className="bg-white/10 backdrop-blur-sm border border-white/10 px-3.5 py-2 rounded-xl flex items-center gap-2.5">
+            <span className="text-base">🎬</span>
+            <div className="text-left">
+              <div className="text-[10px] font-bold text-slate-300 uppercase">Videos Disponibles</div>
+              <div className="text-xs font-black text-white">{isUserAdmin(user?.email) ? 'Ilimitados' : `${Math.max(0, videoLimit - videosThisMonth)} / ${videoLimit}`}</div>
+            </div>
+          </div>
+
+          <div className="bg-white/10 backdrop-blur-sm border border-white/10 px-3.5 py-2 rounded-xl flex items-center gap-2.5">
+            <span className="text-base">🖼️</span>
+            <div className="text-left">
+              <div className="text-[10px] font-bold text-slate-300 uppercase">Imágenes Disponibles</div>
+              <div className="text-xs font-black text-white">{isUserAdmin(user?.email) ? 'Ilimitadas' : `${Math.max(0, imageLimit - imagesThisMonth)} / ${imageLimit}`}</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="bg-white p-6 md:p-8 rounded-[32px] border-2 border-slate-100 shadow-xl shadow-slate-200/50 relative overflow-hidden">
@@ -456,7 +521,7 @@ export default function EstrategiaPage() {
               <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex flex-col items-center justify-center p-8 text-center rounded-[32px]">
                   <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center text-4xl mb-6 shadow-2xl border-4 border-slate-700">🔒</div>
                   <h3 className="text-3xl font-black text-white mb-3">Función Premium</h3>
-                  <p className="text-slate-200 font-medium max-w-md mb-8 leading-relaxed">El <strong className="text-white">Plan Free</strong> no cuenta con esta opción. Sube de nivel para desbloquear tu Estratega Digital AI y multiplicar tus resultados.</p>
+                  <p className="text-slate-200 font-medium max-w-md mb-8 leading-relaxed">El <strong className="text-white">Plan Free</strong> no cuenta con esta opción. Sube de nivel para desbloquear tu Estratega Digital con Agentes y multiplicar tus resultados.</p>
                   <Link href="/automatizacion-rrss/panel/planes" className="bg-indigo-600 hover:bg-indigo-500 text-white font-black py-4 px-10 rounded-2xl transition-all shadow-lg hover:shadow-indigo-500/50 hover:-translate-y-1">
                       Ver Planes Pro
                   </Link>
@@ -740,7 +805,7 @@ export default function EstrategiaPage() {
                         disabled={generating || !selectedGoal}
                         className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-black py-3 px-8 rounded-[24px] transition-all shadow-xl shadow-slate-900/20 hover:-translate-y-1 disabled:hover:translate-y-0 disabled:shadow-none flex items-center justify-center gap-3 text-sm"
                      >
-                         {generating ? <><div className="w-5 h-5 border-2 border-slate-400 border-t-white rounded-full animate-spin" /> Creando Plan...</> : 'Generar Estrategia AI 🧠'}
+                         {generating ? <><div className="w-5 h-5 border-2 border-slate-400 border-t-white rounded-full animate-spin" /> Diseñando Plan con Agentes...</> : 'Generar Estrategia con Agentes 🚀'}
                      </button>
                  )}
              </div>
@@ -757,10 +822,15 @@ export default function EstrategiaPage() {
                  <div className="flex items-center gap-5">
                      <span className="w-16 h-16 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-3xl flex items-center justify-center text-3xl shadow-sm border border-indigo-100">🎯</span>
                      <div>
-                        <h2 className="text-3xl font-black tracking-tight text-slate-900 mb-1">Plan Táctico Semanal</h2>
-                        <p className="text-indigo-600 font-bold tracking-widest text-xs uppercase flex items-center gap-2">
-                           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Generado para {goals.find(g => g.id === selectedGoal)?.title}
-                        </p>
+                        <h2 className="text-3xl font-black tracking-tight text-slate-900 mb-1">Plan Táctico de Contenidos</h2>
+                        <div className="flex items-center gap-3 flex-wrap">
+                           <p className="text-indigo-600 font-bold tracking-widest text-xs uppercase flex items-center gap-2">
+                              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Generado para {goals.find(g => g.id === selectedGoal)?.title}
+                           </p>
+                           <span className="bg-indigo-50 text-indigo-700 text-xs font-black px-3 py-1 rounded-full border border-indigo-200">
+                              Plan {userPlan.toUpperCase()}: {strategyResult.length} publicaciones ({strategyResult.filter(p => (p.format || '').toLowerCase().includes('reel') || (p.format || '').toLowerCase().includes('video')).length} videos, {strategyResult.filter(p => !(p.format || '').toLowerCase().includes('reel') && !(p.format || '').toLowerCase().includes('video')).length} con imagen)
+                           </span>
+                        </div>
                      </div>
                  </div>
                  <button

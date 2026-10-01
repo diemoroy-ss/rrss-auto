@@ -99,12 +99,14 @@ export async function POST(req: NextRequest) {
         : [];
 
     let userPlan = "pro";
+    let userEmail = "";
     // Si el usuario no seleccionó estilos manualmente en el generador, pero su perfil tiene un ADN de Identidad Visual configurado
     if (userId) {
         try {
             const userDoc = await adminDb.collection("users").doc(userId).get();
             const uData = userDoc.data() || {};
             userPlan = (uData.plan || "free").toLowerCase();
+            userEmail = uData.email || "";
 
             if (promptStylesToPass.length === 0) {
                 const profiles = uData.profiles || [];
@@ -131,25 +133,92 @@ export async function POST(req: NextRequest) {
         }
     }
 
-    // Calcular límites de publicaciones y videos según el plan
-    let effectivePosts = postsPerWeek || 5;
-    let maxVideos = 2;
+    // 1. Cargar cuotas reales y límites del usuario
+    const { 
+        getPlanLimitAdmin, 
+        getAiPlanLimitAdmin, 
+        getQuotaUsageAdmin, 
+        getAiGenerationUsageAdmin, 
+        getVideoQuotaUsageAdmin,
+        isAdminAdmin 
+    } = await import('../../../../lib/quota-admin');
 
-    if (userPlan === 'free') {
-        effectivePosts = 3; // 3 posts totales del período de prueba
-        maxVideos = 0;      // 0 videos
-    } else if (userPlan === 'starter') {
-        effectivePosts = Math.min(postsPerWeek || 3, 3); // 3 posts por semana (~12/mes)
-        maxVideos = 1;      // Máx 1 video por semana (~3/mes)
-    } else if (userPlan === 'pro') {
-        effectivePosts = Math.min(postsPerWeek || 5, 5); // 5 posts por semana (~20/mes)
-        maxVideos = 2;      // Máx 2 videos por semana (~8/mes)
-    } else if (userPlan === 'business') {
-        effectivePosts = Math.min(postsPerWeek || 15, 15); // ~15 posts por semana (~60/mes)
-        maxVideos = 4;      // Máx 4 videos por semana (~16/mes)
-    } else if (userPlan === 'agency') {
-        effectivePosts = Math.min(postsPerWeek || 50, 50); // ~50 posts por semana (~200/mes)
-        maxVideos = 10;     // Máx 10 videos por semana (~40/mes)
+    const isAdmin = isAdminAdmin(userEmail);
+
+    // 2. Límites según el plan configurado
+    const postsLimit = await getPlanLimitAdmin(userPlan, userEmail);
+    const videosLimit = await getAiPlanLimitAdmin(userPlan, 'video', userEmail);
+    const imagesLimit = await getAiPlanLimitAdmin(userPlan, 'image', userEmail);
+
+    // 3. Consumo actual acumulado del mes
+    const postsUsed = await getQuotaUsageAdmin(userId, profileId || 'default');
+    const videosUsed = await getVideoQuotaUsageAdmin(userId);
+    const imagesUsed = await getAiGenerationUsageAdmin(userId, 'image');
+
+    // 4. Cuotas pendientes / disponibles
+    const remainingPosts = isAdmin ? 999999 : Math.max(0, postsLimit - postsUsed);
+    const remainingVideos = isAdmin ? 999999 : Math.max(0, videosLimit - videosUsed);
+    const remainingImages = isAdmin ? 999999 : Math.max(0, imagesLimit - imagesUsed);
+
+    console.log(`[STRATEGY] Cuotas usuario ${userId} (${userPlan}): Posts ${postsUsed}/${postsLimit} (restan ${remainingPosts}), Videos ${videosUsed}/${videosLimit} (restan ${remainingVideos}), Imágenes ${imagesUsed}/${imagesLimit} (restan ${remainingImages})`);
+
+    // Validación: Si el usuario ya completó el 100% de sus publicaciones mensuales
+    if (!isAdmin && remainingPosts <= 0) {
+        return NextResponse.json({ 
+            error: `Has completado tu cuota de publicaciones de este mes (${postsUsed}/${postsLimit} posts). Puedes mejorar tu plan o esperar a tu próximo ciclo mensual para planificar nuevas publicaciones.` 
+        }, { status: 403 });
+    }
+
+    // 5. Pacing de publicaciones por estrategia según el plan, sin exceder el remanente mensual
+    let defaultPlanPosts = 5;
+    if (userPlan === 'free') defaultPlanPosts = 3;
+    else if (userPlan === 'starter') defaultPlanPosts = 3;
+    else if (userPlan === 'growth') defaultPlanPosts = 5;
+    else if (userPlan === 'pro' || userPlan === 'elite') defaultPlanPosts = 5;
+    else if (userPlan === 'business') defaultPlanPosts = 7;
+    else if (userPlan === 'agency') defaultPlanPosts = 10;
+
+    let effectivePosts = postsPerWeek ? Math.min(postsPerWeek, defaultPlanPosts * 2) : defaultPlanPosts;
+    // Topado estrictamente por las publicaciones restantes del usuario
+    effectivePosts = Math.min(effectivePosts, remainingPosts);
+    effectivePosts = Math.max(1, effectivePosts);
+
+    // 6. Asignación de Videos según plan y cuota pendiente real
+    let maxVideos = 0;
+    if (userPlan !== 'free' && remainingVideos > 0) {
+        let planMaxVideosPerStrategy = 1;
+        if (userPlan === 'starter') {
+            // Starter tiene 2 videos/mes. Si tiene saldo, asignamos 1 por semana/estrategia (o 2 si le quedan 2 y la estrategia es de 4+ posts)
+            planMaxVideosPerStrategy = effectivePosts >= 4 ? Math.min(remainingVideos, 2) : Math.min(remainingVideos, 1);
+        } else if (userPlan === 'growth') {
+            planMaxVideosPerStrategy = Math.min(remainingVideos, 2);
+        } else if (userPlan === 'pro' || userPlan === 'elite') {
+            planMaxVideosPerStrategy = Math.min(remainingVideos, 3);
+        } else if (userPlan === 'business') {
+            planMaxVideosPerStrategy = Math.min(remainingVideos, 5);
+        } else if (userPlan === 'agency') {
+            planMaxVideosPerStrategy = Math.min(remainingVideos, 10);
+        } else {
+            planMaxVideosPerStrategy = Math.min(remainingVideos, 2);
+        }
+        maxVideos = Math.min(planMaxVideosPerStrategy, effectivePosts);
+    } else {
+        maxVideos = 0; // Free o sin cuota de videos disponible
+    }
+
+    // 7. Consideración de Cuota de Imágenes
+    // Si la cuota de imágenes es reducida y no hay fotos reales de catálogo, ajustar posts para no exceder cuota
+    const catalogHasRealPhotos = (catalogoItems || []).some((item: any) => 
+        Boolean((item.hasImage || item.imageUrl) && typeof item.imageUrl === 'string' && item.imageUrl.startsWith('http'))
+    );
+
+    if (!isAdmin && remainingImages < (effectivePosts - maxVideos) && !catalogHasRealPhotos) {
+        const affordableImagePosts = Math.max(0, remainingImages);
+        const maxPossiblePosts = affordableImagePosts + maxVideos;
+        if (maxPossiblePosts < effectivePosts) {
+            console.log(`[STRATEGY] Ajustando posts de ${effectivePosts} a ${maxPossiblePosts} debido a cuota de imágenes (${remainingImages} restantes)`);
+            effectivePosts = Math.max(1, maxPossiblePosts);
+        }
     }
     
     const result = await runProfessionalStrategyWorkflow(
@@ -166,13 +235,30 @@ export async function POST(req: NextRequest) {
         userPlan,
         maxVideos,
         catalogoItems || [],
-        catalogUsage || "mixed"
+        catalogUsage || "mixed",
+        remainingPosts,
+        remainingVideos,
+        remainingImages
     );
 
-    console.log(`[STRATEGY] LangGraph Strategy generated successfully for plan ${userPlan} (posts: ${effectivePosts}, maxVideos: ${maxVideos}).`);
+    console.log(`[STRATEGY] LangGraph Strategy generated successfully for plan ${userPlan} (posts: ${effectivePosts}, maxVideos: ${maxVideos}, remPosts: ${remainingPosts}, remVideos: ${remainingVideos}, remImages: ${remainingImages}).`);
     return NextResponse.json({ 
         strategy: result.strategy,
-        analysis: result.analysis 
+        analysis: result.analysis,
+        quotaInfo: {
+            plan: userPlan,
+            postsLimit,
+            postsUsed,
+            remainingPosts,
+            videosLimit,
+            videosUsed,
+            remainingVideos,
+            imagesLimit,
+            imagesUsed,
+            remainingImages,
+            effectivePosts,
+            maxVideos
+        }
     });
   } catch (error: any) {
     console.error("[STRATEGY] Error generating strategy with LangGraph:", error);
