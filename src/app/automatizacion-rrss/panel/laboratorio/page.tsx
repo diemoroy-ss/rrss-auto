@@ -36,10 +36,45 @@ export default function LaboratorioPage() {
   const [userToken, setUserToken] = useState("");
   const [loadingUser, setLoadingUser] = useState(true);
 
-  const { activeProfile, updateActiveProfile, profiles, setActiveProfile, loadProfiles } = useProfile();
+  const { activeProfile, updateProfileById, profiles, setActiveProfile, loadProfiles } = useProfile();
 
   // Test Profiles Filter
   const testProfiles = profiles.filter((p) => p.isTestProfile === true || p.id.startsWith("prof_test_"));
+
+  // ID de la empresa de prueba seleccionada en el Laboratorio
+  const [selectedTestId, setSelectedTestId] = useState<string>("");
+
+  // Auto-seleccionar y mantener sincronizado el perfil de prueba
+  useEffect(() => {
+    if (testProfiles.length > 0) {
+      // Si el activeProfile actual de la app es un perfil de prueba y es diferente del selectedTestId, sincronizarlo
+      if (activeProfile && testProfiles.some((tp) => tp.id === activeProfile.id)) {
+        if (selectedTestId !== activeProfile.id) {
+          setSelectedTestId(activeProfile.id);
+          return;
+        }
+      }
+
+      const exists = testProfiles.some((tp) => tp.id === selectedTestId);
+      if (!selectedTestId || !exists) {
+        const firstTestId = testProfiles[0].id;
+        setSelectedTestId(firstTestId);
+        setActiveProfile(firstTestId);
+      }
+    }
+  }, [testProfiles, activeProfile?.id, selectedTestId]);
+
+  const currentTestProfile: BusinessProfile | null =
+    testProfiles.find((tp) => tp.id === selectedTestId) ||
+    (activeProfile && testProfiles.find((tp) => tp.id === activeProfile.id)) ||
+    (testProfiles.length > 0 ? testProfiles[0] : null);
+
+  const isCurrentTest = Boolean(currentTestProfile);
+
+  const handleSelectTestProfile = (id: string) => {
+    setSelectedTestId(id);
+    setActiveProfile(id);
+  };
 
   // Active Tab
   const [activeTab, setActiveTab] = useState<"marca" | "catalogo" | "menu_qr" | "comandos" | "radar_estrategia">("marca");
@@ -137,45 +172,66 @@ export default function LaboratorioPage() {
   const userEmail = (user?.email || "").toLowerCase().trim();
   const isAdminUser = ["santisoftai@gmail.com", "diemoroy@gmail.com", "spalezcom@gmail.com", "admin@santisoft.cl"].includes(userEmail);
 
-  // Sincronizar formulario de marca al cambiar activeProfile
+  // Sincronizar formulario de marca al cambiar la empresa de prueba activa
   useEffect(() => {
-    if (activeProfile) {
+    if (currentTestProfile) {
       setBrandForm({
-        name: activeProfile.name || "",
-        icon: activeProfile.icon || "🏢",
-        rubro: activeProfile.rubro || "",
-        businessDescription: activeProfile.businessDescription || "",
-        promotions: activeProfile.promotions || "",
-        website: activeProfile.website || "",
-        includeWebsiteInCopy: activeProfile.includeWebsiteInCopy !== false,
-        email: activeProfile.email || "",
-        includeEmailInCopy: activeProfile.includeEmailInCopy === true,
-        phone: activeProfile.phone || "",
-        includePhoneInCopy: activeProfile.includePhoneInCopy !== false,
-        logoUrl: activeProfile.logoUrl || "",
-        alwaysIncludeLogo: activeProfile.alwaysIncludeLogo === true,
-        bannerStyle: activeProfile.bannerStyle || "banner",
+        name: currentTestProfile.name || "",
+        icon: currentTestProfile.icon || "🏢",
+        rubro: currentTestProfile.rubro || "",
+        businessDescription: currentTestProfile.businessDescription || "",
+        promotions: currentTestProfile.promotions || "",
+        website: currentTestProfile.website || "",
+        includeWebsiteInCopy: currentTestProfile.includeWebsiteInCopy !== false,
+        email: currentTestProfile.email || "",
+        includeEmailInCopy: currentTestProfile.includeEmailInCopy === true,
+        phone: currentTestProfile.phone || "",
+        includePhoneInCopy: currentTestProfile.includePhoneInCopy !== false,
+        logoUrl: currentTestProfile.logoUrl || "",
+        alwaysIncludeLogo: currentTestProfile.alwaysIncludeLogo === true,
+        bannerStyle: currentTestProfile.bannerStyle || "banner",
       });
 
-      if (activeProfile.selectedPromptStyleIds && activeProfile.selectedPromptStyleIds.length > 0) {
-        setSelectedStyleIds(activeProfile.selectedPromptStyleIds);
+      if (currentTestProfile.selectedPromptStyleIds && currentTestProfile.selectedPromptStyleIds.length > 0) {
+        setSelectedStyleIds(currentTestProfile.selectedPromptStyleIds);
       }
+    } else {
+      setBrandForm({
+        name: "",
+        icon: "🏢",
+        rubro: "",
+        businessDescription: "",
+        promotions: "",
+        website: "",
+        includeWebsiteInCopy: true,
+        email: "",
+        includeEmailInCopy: false,
+        phone: "",
+        includePhoneInCopy: true,
+        logoUrl: "",
+        alwaysIncludeLogo: false,
+        bannerStyle: "banner",
+      });
+      setSelectedStyleIds(["style-everyday-real", "style-ads-hero-shot"]);
     }
-  }, [activeProfile]);
+  }, [currentTestProfile?.id]);
 
-  // Cargar catálogo cada vez que cambia el perfil activo
+  // Cargar catálogo cada vez que cambia el perfil de prueba
   useEffect(() => {
-    if (user && activeProfile?.id) {
-      loadCatalog();
+    if (user && currentTestProfile?.id) {
+      loadCatalog(currentTestProfile.id);
+    } else {
+      setCatalogItems([]);
     }
-  }, [user, activeProfile?.id]);
+  }, [user, currentTestProfile?.id]);
 
-  const loadCatalog = async () => {
-    if (!user || !activeProfile?.id) return;
+  const loadCatalog = async (overrideProfileId?: string) => {
+    const targetProfileId = overrideProfileId || currentTestProfile?.id;
+    if (!user || !targetProfileId) return;
     setLoadingCatalog(true);
     try {
       const token = await user.getIdToken();
-      const res = await fetch(`/api/catalogo?profileId=${activeProfile.id}`, {
+      const res = await fetch(`/api/catalogo?profileId=${targetProfileId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -198,11 +254,11 @@ export default function LaboratorioPage() {
   };
 
   // Configuración de Carta Menú & QR para la Empresa de Prueba
-  const profileId = activeProfile?.id || "default";
-  const isMenuEnabled = activeProfile?.menuDigitalEnabled === true;
-  const currentMenuThemeId: MenuThemeId = (activeProfile?.menuTheme as MenuThemeId) || DEFAULT_MENU_THEME;
+  const profileId = currentTestProfile?.id || "";
+  const isMenuEnabled = currentTestProfile?.menuDigitalEnabled === true;
+  const currentMenuThemeId: MenuThemeId = (currentTestProfile?.menuTheme as MenuThemeId) || DEFAULT_MENU_THEME;
 
-  const menuIdentifier = user?.uid ? `${user.uid}___${profileId}` : "";
+  const menuIdentifier = user?.uid && profileId ? `${user.uid}___${profileId}` : "";
   const publicMenuUrl = typeof window !== "undefined" && menuIdentifier
     ? `${window.location.origin}/menu/${menuIdentifier}`
     : menuIdentifier
@@ -227,9 +283,13 @@ export default function LaboratorioPage() {
   }, [publicMenuUrl]);
 
   const handleToggleMenuDigital = async (enabled: boolean) => {
+    if (!currentTestProfile?.id) {
+      showNotification("Selecciona una empresa de prueba primero.", true);
+      return;
+    }
     setTogglingMenuDigital(true);
     try {
-      await updateActiveProfile({ menuDigitalEnabled: enabled });
+      await updateProfileById(currentTestProfile.id, { menuDigitalEnabled: enabled });
       setIframeKey((prev) => prev + 1);
       showNotification(
         enabled
@@ -244,10 +304,10 @@ export default function LaboratorioPage() {
   };
 
   const handleSelectMenuTheme = async (themeId: MenuThemeId) => {
-    if (themeId === currentMenuThemeId) return;
+    if (!currentTestProfile?.id || themeId === currentMenuThemeId) return;
     setSavingMenuTheme(true);
     try {
-      await updateActiveProfile({ menuTheme: themeId });
+      await updateProfileById(currentTestProfile.id, { menuTheme: themeId });
       setIframeKey((prev) => prev + 1);
       showNotification(`Tema "${MENU_THEMES[themeId].name}" aplicado a la carta digital.`);
     } catch (e: any) {
@@ -269,7 +329,7 @@ export default function LaboratorioPage() {
     if (!qrDataUrl) return;
     const a = document.createElement("a");
     a.href = qrDataUrl;
-    const cleanName = (activeProfile?.name || "empresa-prueba")
+    const cleanName = (currentTestProfile?.name || "empresa-prueba")
       .toLowerCase()
       .replace(/[^a-z0-9]/g, "-");
     a.download = `qr-menu-${cleanName}.png`;
@@ -285,7 +345,7 @@ export default function LaboratorioPage() {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Carta Menú QR - ${activeProfile?.name || "Empresa"}</title>
+          <title>Carta Menú QR - ${currentTestProfile?.name || "Empresa"}</title>
           <style>
             @page { size: auto; margin: 10mm; }
             body {
@@ -318,9 +378,9 @@ export default function LaboratorioPage() {
         </head>
         <body>
           <div class="tent-card">
-            <div class="logo-placeholder">${activeProfile?.icon || "🍽️"}</div>
-            <h1>${activeProfile?.name || "Nuestra Carta"}</h1>
-            <p class="rubro">${activeProfile?.rubro || "Gastronomía & Servicios"}</p>
+            <div class="logo-placeholder">${currentTestProfile?.icon || "🍽️"}</div>
+            <h1>${currentTestProfile?.name || "Nuestra Carta"}</h1>
+            <p class="rubro">${currentTestProfile?.rubro || "Gastronomía & Servicios"}</p>
             <div class="qr-wrapper">
               <img src="${qrDataUrl}" class="qr-img" />
             </div>
@@ -344,9 +404,13 @@ export default function LaboratorioPage() {
 
   // Guardar Marca
   const handleSaveBrand = async () => {
+    if (!currentTestProfile?.id) {
+      showNotification("Selecciona o crea una empresa de prueba primero.", true);
+      return;
+    }
     setSavingBrand(true);
     try {
-      await updateActiveProfile({
+      await updateProfileById(currentTestProfile.id, {
         name: brandForm.name,
         icon: brandForm.icon,
         rubro: brandForm.rubro,
@@ -373,14 +437,14 @@ export default function LaboratorioPage() {
   // Subir Logo
   const handleUploadLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !user) return;
+    if (!file || !user || !currentTestProfile?.id) return;
     setUploadingLogo(true);
     try {
-      const storageRef = ref(storage, `users/${user.uid}/profiles/${activeProfile?.id || "demo"}/logo_${Date.now()}`);
+      const storageRef = ref(storage, `users/${user.uid}/profiles/${currentTestProfile.id}/logo_${Date.now()}`);
       await uploadBytes(storageRef, file);
       const url = await getDownloadURL(storageRef);
       setBrandForm((prev) => ({ ...prev, logoUrl: url }));
-      await updateActiveProfile({ logoUrl: url });
+      await updateProfileById(currentTestProfile.id, { logoUrl: url });
       showNotification("Logo de prueba subido y vinculado.");
     } catch (err: any) {
       showNotification("Error al subir el logo", true);
@@ -391,6 +455,10 @@ export default function LaboratorioPage() {
 
   // Guardar / Crear Producto
   const handleSaveProduct = async () => {
+    if (!currentTestProfile?.id) {
+      showNotification("Selecciona o crea una empresa de prueba primero.", true);
+      return;
+    }
     if (!productForm.name.trim() || !productForm.description.trim()) {
       showNotification("El nombre y la descripción son obligatorios.", true);
       return;
@@ -411,7 +479,7 @@ export default function LaboratorioPage() {
         offerPrice: productForm.offerPrice.trim() || null,
         imageUrl: productForm.imageUrl.trim() || null,
         tags: tagsArray,
-        profileId: activeProfile?.id || "default",
+        profileId: currentTestProfile.id,
         keepOriginalPhoto: productForm.keepOriginalPhoto,
         fontStyle: productForm.fontStyle,
         includePriceInCopy: true,
@@ -437,7 +505,7 @@ export default function LaboratorioPage() {
 
       setShowAddProductModal(false);
       setEditingProduct(null);
-      await loadCatalog();
+      await loadCatalog(currentTestProfile.id);
     } catch (e: any) {
       showNotification(e.message || "Error al guardar producto", true);
     } finally {
@@ -454,7 +522,7 @@ export default function LaboratorioPage() {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ id }),
       });
-      await loadCatalog();
+      await loadCatalog(currentTestProfile?.id);
       showNotification("Ítem eliminado.");
     } catch (e) {
       showNotification("Error eliminando ítem", true);
@@ -463,9 +531,13 @@ export default function LaboratorioPage() {
 
   // Guardar Comandos de Agentes
   const handleSaveAgentCommands = async () => {
+    if (!currentTestProfile?.id) {
+      showNotification("Selecciona una empresa de prueba primero.", true);
+      return;
+    }
     setSavingAgents(true);
     try {
-      await updateActiveProfile({
+      await updateProfileById(currentTestProfile.id, {
         selectedPromptStyleIds: selectedStyleIds,
       });
       showNotification("¡Directrices y estilos de agentes guardados para esta empresa!");
@@ -478,21 +550,21 @@ export default function LaboratorioPage() {
 
   // Ejecutar Radar de Nicho
   const handleRunRadar = async () => {
-    if (!activeProfile?.rubro && !brandForm.rubro) {
+    const rubroActual = currentTestProfile?.rubro || brandForm.rubro;
+    if (!rubroActual) {
       showNotification("Por favor especifica el Rubro / Industria en la pestaña Datos de Marca.", true);
       return;
     }
     setLoadingRadar(true);
     try {
       const token = await user.getIdToken();
-      const rubroActual = activeProfile?.rubro || brandForm.rubro;
       const res = await fetch("/api/nicho/radar", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           niche: rubroActual,
           userId: user.uid,
-          businessId: activeProfile?.id || "demo",
+          businessId: currentTestProfile?.id || "demo",
         }),
       });
       const data = await res.json();
@@ -511,8 +583,8 @@ export default function LaboratorioPage() {
     setGeneratingStrategy(true);
     setStrategyPosts([]);
     try {
-      const activePromotions = activeProfile?.promotions || brandForm.promotions;
-      const activeRubro = activeProfile?.rubro || brandForm.rubro;
+      const activePromotions = currentTestProfile?.promotions || brandForm.promotions;
+      const activeRubro = currentTestProfile?.rubro || brandForm.rubro;
 
       const selectedStyles = HARDCODED_STYLES.filter((s) => selectedStyleIds.includes(s.id));
 
@@ -527,13 +599,13 @@ export default function LaboratorioPage() {
           promotions: activePromotions,
           nicheContext: radarData ? JSON.stringify(radarData.trends || radarData.summary || "") : "",
           businessData: {
-            businessName: activeProfile?.name || brandForm.name,
-            phone: activeProfile?.phone || brandForm.phone,
-            website: activeProfile?.website || brandForm.website,
+            businessName: currentTestProfile?.name || brandForm.name,
+            phone: currentTestProfile?.phone || brandForm.phone,
+            website: currentTestProfile?.website || brandForm.website,
             address: "Local Comercial",
           },
           userId: user.uid,
-          profileId: activeProfile?.id || "demo",
+          profileId: currentTestProfile?.id || "demo",
           catalogUsage,
           catalogoItems: catalogItems.map((item) => ({
             id: item.id,
@@ -579,7 +651,7 @@ export default function LaboratorioPage() {
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify({
             userId: user.uid,
-            profileId: activeProfile?.id || "demo",
+            profileId: currentTestProfile?.id || "demo",
             text: `${post.content}\n\n${post.cta}`,
             idea: post.hook,
             type: post.format?.toLowerCase().includes("reel") ? "Reel" : "Post",
@@ -623,8 +695,6 @@ export default function LaboratorioPage() {
     );
   }
 
-  const isCurrentTest = activeProfile?.isTestProfile === true || (activeProfile?.id && activeProfile.id.startsWith("prof_test_"));
-
   return (
     <div className="max-w-6xl mx-auto pb-16 space-y-8 animate-in fade-in duration-200">
       
@@ -661,9 +731,9 @@ export default function LaboratorioPage() {
 
             <div className="flex items-center gap-2">
               <select
-                value={activeProfile?.id || ""}
+                value={currentTestProfile?.id || ""}
                 onChange={(e) => {
-                  if (e.target.value) setActiveProfile(e.target.value);
+                  if (e.target.value) handleSelectTestProfile(e.target.value);
                 }}
                 className="flex-1 bg-slate-900 border border-purple-700/50 rounded-xl px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-purple-400"
               >
@@ -686,7 +756,7 @@ export default function LaboratorioPage() {
 
             {isCurrentTest && (
               <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-white/10">
-                <span className="text-purple-200 truncate font-medium">{activeProfile?.rubro || "Rubro no definido"}</span>
+                <span className="text-purple-200 truncate font-medium">{currentTestProfile?.rubro || "Rubro no definido"}</span>
                 {isMenuEnabled ? (
                   <button
                     onClick={() => setActiveTab("menu_qr")}
@@ -709,7 +779,7 @@ export default function LaboratorioPage() {
 
             {!isCurrentTest && (
               <div className="text-[11px] text-amber-300 font-semibold bg-amber-500/10 p-2 rounded-lg border border-amber-500/20">
-                ⚠️ Actualmente tienes seleccionada tu cuenta principal. Selecciona o crea una empresa de prueba para trabajar en modo aislado.
+                ⚠️ No tienes empresas de prueba creadas. Haz clic en &quot;+ Nueva&quot; para crear tu primera empresa de prueba o usar una plantilla.
               </div>
             )}
           </div>
@@ -728,8 +798,31 @@ export default function LaboratorioPage() {
         </div>
       )}
 
-      {/* ── BARRA DE PESTAÑAS (5 PILARES) ── */}
-      <div className="flex items-center gap-2 border-b border-slate-200 pb-3 overflow-x-auto hide-scrollbar">
+      {/* Si no hay empresas de prueba creadas */}
+      {!isCurrentTest ? (
+        <div className="bg-white p-8 sm:p-12 rounded-3xl border-2 border-dashed border-purple-200 text-center space-y-4 shadow-sm animate-in fade-in">
+          <div className="w-16 h-16 bg-purple-50 text-purple-600 rounded-3xl flex items-center justify-center text-3xl mx-auto shadow-inner">
+            🧪
+          </div>
+          <h3 className="text-xl font-black text-slate-900">
+            Aún no tienes empresas de prueba creadas
+          </h3>
+          <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
+            El laboratorio te permite crear empresas ficticias (ej: Hamburgueserías, Cafeterías, Salones de Belleza) con fotos reales, cartas QR y catálogo completo para validar las estrategias de nuestros agentes antes de publicarlas.
+          </p>
+          <div className="pt-2">
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="px-6 py-3.5 bg-purple-600 hover:bg-purple-700 text-white font-black text-xs rounded-2xl shadow-lg shadow-purple-600/30 transition-all inline-flex items-center gap-2"
+            >
+              <span>+ Crear Primera Empresa de Prueba</span>
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* ── BARRA DE PESTAÑAS (5 PILARES) ── */}
+          <div className="flex items-center gap-2 border-b border-slate-200 pb-3 overflow-x-auto hide-scrollbar">
         <button
           onClick={() => setActiveTab("marca")}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-black transition-all shrink-0 ${
@@ -1202,7 +1295,7 @@ export default function LaboratorioPage() {
                       {isMenuEnabled ? "🟢 Carta Digital Activa" : "⚪ Carta Digital Inactiva"}
                     </span>
                     <span className="text-xs font-bold text-slate-500">
-                      Empresa de Prueba: {activeProfile?.name || "Sin nombre"}
+                      Empresa de Prueba: {currentTestProfile?.name || "Sin nombre"}
                     </span>
                   </div>
                   <h3 className="text-base sm:text-lg font-black text-slate-900 mt-1">
@@ -1284,7 +1377,7 @@ export default function LaboratorioPage() {
                     {qrDataUrl ? (
                       <img
                         src={qrDataUrl}
-                        alt={`QR Carta ${activeProfile?.name}`}
+                        alt={`QR Carta ${currentTestProfile?.name}`}
                         className="w-44 h-44 rounded-xl shadow-xs"
                       />
                     ) : (
@@ -1293,7 +1386,7 @@ export default function LaboratorioPage() {
                       </div>
                     )}
                     <span className="text-[10px] font-black uppercase text-slate-400 mt-2 tracking-wider">
-                      {activeProfile?.icon || "🍽️"} {activeProfile?.name || "Carta Demo"}
+                      {currentTestProfile?.icon || "🍽️"} {currentTestProfile?.name || "Carta Demo"}
                     </span>
                   </div>
 
@@ -1507,7 +1600,7 @@ export default function LaboratorioPage() {
                     <iframe
                       key={iframeKey}
                       src={`${publicMenuUrl}?preview=${iframeKey}`}
-                      title={`Carta Digital ${activeProfile?.name}`}
+                      title={`Carta Digital ${currentTestProfile?.name}`}
                       className="w-full h-full border-0 select-none"
                     />
                   ) : (
@@ -1907,6 +2000,8 @@ export default function LaboratorioPage() {
           </div>
         </div>
       )}
+        </>
+      )}
 
       {/* ── MODAL AGREGAR / EDITAR PRODUCTO EN EL CATÁLOGO ── */}
       {showAddProductModal && (
@@ -2092,6 +2187,7 @@ export default function LaboratorioPage() {
         onClose={() => setShowCreateModal(false)}
         userToken={userToken}
         onCompanyCreated={async () => {
+          await loadProfiles();
           await loadCatalog();
         }}
       />

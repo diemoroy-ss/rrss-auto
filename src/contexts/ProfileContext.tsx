@@ -125,6 +125,7 @@ type ProfileContextType = {
   setActiveProfile: (profileId: string) => void;
   addProfile: (name: string, icon: string) => Promise<void>;
   updateActiveProfile: (updates: Partial<BusinessProfile>) => Promise<void>;
+  updateProfileById: (profileId: string, updates: Partial<BusinessProfile>) => Promise<void>;
   loadProfiles: () => Promise<void>;
   isBusiness: boolean;
   planConfig: any;
@@ -137,6 +138,7 @@ const ProfileContext = createContext<ProfileContextType>({
   setActiveProfile: () => {},
   addProfile: async () => {},
   updateActiveProfile: async () => {},
+  updateProfileById: async () => {},
   loadProfiles: async () => {},
   isBusiness: false,
   planConfig: null,
@@ -293,6 +295,26 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const updateProfileById = async (profileId: string, updates: Partial<BusinessProfile>) => {
+    if (!auth.currentUser || !profileId) return;
+    try {
+      const userDocRef = doc(db, "users", auth.currentUser.uid);
+      const userDoc = await getDoc(userDocRef);
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        const userProfiles: BusinessProfile[] = data.profiles || [];
+        const updatedProfiles = userProfiles.map((p) =>
+          p.id === profileId ? { ...p, ...updates } : p
+        );
+        await updateDoc(userDocRef, { profiles: updatedProfiles });
+        await loadProfiles();
+      }
+    } catch (e) {
+      console.error("Error updating profile by id", e);
+      throw e;
+    }
+  };
+
   return (
     <ProfileContext.Provider value={{ 
       activeProfile: activeProfileState, 
@@ -300,6 +322,7 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
       setActiveProfile, 
       addProfile, 
       updateActiveProfile,
+      updateProfileById,
       loadProfiles, 
       isBusiness, 
       planConfig,

@@ -33,7 +33,20 @@ export async function GET(
     const profiles: any[] = userData.profiles || [];
     const profile = profiles.find((p: any) => p.id === targetProfileId) || profiles[0] || {};
 
-    const isMenuEnabled = profile.menuDigitalEnabled === true;
+    const isTestProfile = profile.isTestProfile === true || targetProfileId.startsWith("prof_test_");
+
+    const businessData = {
+      name: profile.name || (isTestProfile ? "Nuestra Carta" : (userData.company || userData.name || "Nuestra Carta")),
+      rubro: profile.rubro || "Gastronomía & Servicios",
+      description: profile.businessDescription || "",
+      logoUrl: profile.logoUrl || null,
+      phone: profile.phone || (isTestProfile ? null : (userData.phone || null)),
+      whatsapp: profile.phone || (isTestProfile ? null : (userData.phone || null)),
+      instagramUsername: profile.instagramUsername || null,
+      website: profile.website || null,
+      address: profile.address || (isTestProfile ? null : (userData.address || null)),
+      promotions: profile.promotions || null,
+    };
 
     // Si la carta no ha sido habilitada por el dueño del local
     if (!isMenuEnabled) {
@@ -41,17 +54,7 @@ export async function GET(
         success: true,
         enabled: false,
         message: "La carta digital de este comercio se encuentra inactiva o en preparación.",
-        business: {
-          name: profile.name || userData.company || userData.name || "Nuestra Carta",
-          rubro: profile.rubro || "Gastronomía & Servicios",
-          description: profile.businessDescription || "",
-          logoUrl: profile.logoUrl || null,
-          phone: profile.phone || userData.phone || null,
-          whatsapp: profile.phone || userData.phone || null,
-          instagramUsername: profile.instagramUsername || null,
-          website: profile.website || null,
-          address: profile.address || userData.address || null,
-        }
+        business: businessData,
       });
     }
 
@@ -79,8 +82,13 @@ export async function GET(
     });
 
     // Filtrar por el perfil correspondiente (si el usuario tiene múltiples marcas/locales)
-    if (profiles.length > 1 && targetProfileId !== "all") {
-      items = items.filter((item) => item.profileId === targetProfileId || !item.profileId);
+    if (targetProfileId && targetProfileId !== "all") {
+      if (isTestProfile) {
+        // En empresas de prueba, aislar estrictamente sólo los ítems de esta empresa demo
+        items = items.filter((item) => item.profileId === targetProfileId);
+      } else if (profiles.length > 1) {
+        items = items.filter((item) => item.profileId === targetProfileId || (!item.profileId && targetProfileId === "default"));
+      }
     }
 
     // Ordenar categorías: "Promociones", "Destacados" primero si existen, luego alfabéticamente
@@ -98,18 +106,7 @@ export async function GET(
       success: true,
       enabled: true,
       theme: profile.menuTheme || "minimal_clean",
-      business: {
-        name: profile.name || userData.company || userData.name || "Nuestra Carta",
-        rubro: profile.rubro || "Gastronomía & Servicios",
-        description: profile.businessDescription || "",
-        logoUrl: profile.logoUrl || null,
-        phone: profile.phone || userData.phone || null,
-        whatsapp: profile.phone || userData.phone || null,
-        instagramUsername: profile.instagramUsername || null,
-        website: profile.website || null,
-        address: profile.address || userData.address || null,
-        promotions: profile.promotions || null,
-      },
+      business: businessData,
       categories: allCategories,
       items,
     });
