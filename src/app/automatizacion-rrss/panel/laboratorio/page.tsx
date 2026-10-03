@@ -1022,7 +1022,7 @@ export default function LaboratorioPage() {
                   value={brandForm.phone}
                   onChange={(e) => setBrandForm({ ...brandForm, phone: e.target.value })}
                   placeholder="Teléfono / WhatsApp de prueba (+56 9...)"
-                  className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium"
+                  className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-purple-500 focus:bg-white"
                 />
                 <label className="flex items-center gap-1.5 text-[11px] font-bold text-slate-600 shrink-0">
                   <input
@@ -1041,7 +1041,7 @@ export default function LaboratorioPage() {
                   value={brandForm.website}
                   onChange={(e) => setBrandForm({ ...brandForm, website: e.target.value })}
                   placeholder="Sitio Web de prueba (https://...)"
-                  className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium"
+                  className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-purple-500 focus:bg-white"
                 />
                 <label className="flex items-center gap-1.5 text-[11px] font-bold text-slate-600 shrink-0">
                   <input
@@ -1684,7 +1684,7 @@ export default function LaboratorioPage() {
                   value={customAgentInstruction}
                   onChange={(e) => setCustomAgentInstruction(e.target.value)}
                   placeholder="Ej: Destacar siempre que el pan brioche es horneado todos los días y que la carne nunca se congela..."
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-purple-500 resize-none"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-purple-500 focus:bg-white resize-none"
                 />
               </div>
             </div>
@@ -2006,7 +2006,7 @@ export default function LaboratorioPage() {
       {/* ── MODAL AGREGAR / EDITAR PRODUCTO EN EL CATÁLOGO ── */}
       {showAddProductModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-3xl w-full max-w-lg p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-3xl w-full max-w-lg p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] overflow-y-auto text-slate-900">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100">
               <h3 className="text-base font-black text-slate-900">
                 {editingProduct ? "Editar Ítem de Catálogo" : "Nuevo Ítem en Catálogo de Prueba"}
@@ -2023,7 +2023,7 @@ export default function LaboratorioPage() {
                 value={productForm.name}
                 onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
                 placeholder="Ej: Hamburguesa Doble Cheddar"
-                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold"
+                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-purple-500 focus:bg-white"
               />
             </div>
 
@@ -2033,7 +2033,7 @@ export default function LaboratorioPage() {
                 <select
                   value={productForm.type}
                   onChange={(e) => setProductForm({ ...productForm, type: e.target.value as any })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-purple-500 focus:bg-white"
                 >
                   <option value="producto">Producto</option>
                   <option value="servicio">Servicio</option>
@@ -2047,7 +2047,7 @@ export default function LaboratorioPage() {
                   value={productForm.category}
                   onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
                   placeholder="Ej: Especiales, Promos"
-                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium"
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-purple-500 focus:bg-white"
                 />
               </div>
             </div>
@@ -2060,7 +2060,7 @@ export default function LaboratorioPage() {
                   value={productForm.price}
                   onChange={(e) => setProductForm({ ...productForm, price: e.target.value })}
                   placeholder="Ej: $8.990"
-                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800"
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-purple-500 focus:bg-white"
                 />
               </div>
 
@@ -2071,7 +2071,7 @@ export default function LaboratorioPage() {
                   value={productForm.offerPrice}
                   onChange={(e) => setProductForm({ ...productForm, offerPrice: e.target.value })}
                   placeholder="Ej: $7.490"
-                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-emerald-600"
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-emerald-600 placeholder:text-slate-400 focus:outline-none focus:border-purple-500 focus:bg-white"
                 />
               </div>
             </div>
@@ -2083,7 +2083,7 @@ export default function LaboratorioPage() {
                 value={productForm.description}
                 onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
                 placeholder="Ingredientes, detalles de preparación o beneficios que los agentes destacarán."
-                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium resize-none"
+                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-purple-500 focus:bg-white resize-none"
               />
             </div>
 
@@ -2097,7 +2097,7 @@ export default function LaboratorioPage() {
                   value={productForm.imageUrl}
                   onChange={(e) => setProductForm({ ...productForm, imageUrl: e.target.value })}
                   placeholder="https://... URL de foto o usa el botón"
-                  className="flex-1 px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-medium"
+                  className="flex-1 px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-purple-500"
                 />
                 
                 <input
@@ -2126,7 +2126,7 @@ export default function LaboratorioPage() {
                   type="button"
                   onClick={() => productImageRef.current?.click()}
                   disabled={uploadingProductImage}
-                  className="px-3 py-1.5 bg-white border border-slate-300 font-bold text-xs rounded-xl hover:bg-slate-100 shrink-0"
+                  className="px-3 py-1.5 bg-white border border-slate-300 font-bold text-xs text-slate-700 rounded-xl hover:bg-slate-100 shrink-0"
                 >
                   {uploadingProductImage ? "..." : "Subir Foto"}
                 </button>
@@ -2151,7 +2151,7 @@ export default function LaboratorioPage() {
               <select
                 value={productForm.fontStyle}
                 onChange={(e) => setProductForm({ ...productForm, fontStyle: e.target.value as any })}
-                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800"
+                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:border-purple-500 focus:bg-white"
               >
                 <option value="bold_modern">💥 Bold Promocional (Ofertas / Comida rápida / Rappi)</option>
                 <option value="script_handwritten">✍️ Cursiva Cálida (Cafeterías / Panaderías)</option>

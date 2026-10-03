@@ -55,6 +55,28 @@ body:has(.landing-page-root) {
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
+/* Asegurar que campos de texto y selects en superficies claras siempre tengan texto legible y oscuro */
+.bg-white input:not([type="checkbox"]):not([type="radio"]),
+.bg-white textarea,
+.bg-white select,
+.bg-slate-50 input:not([type="checkbox"]):not([type="radio"]),
+.bg-slate-50 textarea,
+.bg-slate-50 select,
+.bg-slate-100 input:not([type="checkbox"]):not([type="radio"]),
+.bg-slate-100 textarea,
+.bg-slate-100 select {
+  color: #0f172a;
+}
+
+.bg-white input::placeholder,
+.bg-white textarea::placeholder,
+.bg-slate-50 input::placeholder,
+.bg-slate-50 textarea::placeholder,
+.bg-slate-100 input::placeholder,
+.bg-slate-100 textarea::placeholder {
+  color: #94a3b8;
+}
+
 .font-display { font-family: 'Syne', sans-serif !important; }
 
 body:not(:has(.landing-page-root)) .eyebrow {

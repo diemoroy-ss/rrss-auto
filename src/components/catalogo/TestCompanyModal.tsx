@@ -421,7 +421,7 @@ export default function TestCompanyModal({
                   value={customName}
                   onChange={(e) => setCustomName(e.target.value)}
                   placeholder="Ej: Sushibar Tokio Fusión (Prueba)"
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-indigo-500 focus:bg-white"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:bg-white"
                 />
               </div>
 
@@ -435,7 +435,7 @@ export default function TestCompanyModal({
                     value={customRubro}
                     onChange={(e) => setCustomRubro(e.target.value)}
                     placeholder="Ej: Sushi Nikkei & Delivery"
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-indigo-500 focus:bg-white"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:bg-white"
                   />
                 </div>
                 <div>
@@ -447,7 +447,7 @@ export default function TestCompanyModal({
                     value={customPhone}
                     onChange={(e) => setCustomPhone(e.target.value)}
                     placeholder="+56 9 1234 5678"
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-indigo-500 focus:bg-white"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:bg-white"
                   />
                 </div>
               </div>
@@ -483,7 +483,7 @@ export default function TestCompanyModal({
                   value={customDesc}
                   onChange={(e) => setCustomDesc(e.target.value)}
                   placeholder="Ej: Rollos de autor con pesca fresca del día, salsas japonesas artesanales y despacho rápido a todo el sector oriente."
-                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-indigo-500 focus:bg-white resize-none"
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:bg-white resize-none"
                 />
               </div>
 
@@ -496,7 +496,7 @@ export default function TestCompanyModal({
                   value={customPromos}
                   onChange={(e) => setCustomPromos(e.target.value)}
                   placeholder="Ej: Envío gratis en compras sobre $20.000 y 20% OFF días jueves."
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-indigo-500 focus:bg-white"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:bg-white"
                 />
               </div>
 
