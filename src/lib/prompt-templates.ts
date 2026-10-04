@@ -139,6 +139,7 @@ export const promptCategories = [
   "Artísticos y Creativos",
   "Publicidad y Ads",
   "Editorial y Revista",
+  "Gastronomía & Carteles",
 ];
 
 export const HARDCODED_STYLES: PromptTemplate[] = [
@@ -1075,13 +1076,351 @@ The 360° rotation is the presentation method, not a product redesign.`,
     id: "style-food-ad-minimalist",
     title: "Póster Gastronómico Swiss & Behance (Food Ad)",
     description: "Publicidad gastronómica moderna estilo diseño suizo y Behance, con producto héroe flotante, tipografía grande de fondo, etiquetas redondeadas y composición editorial de app.",
-    category: "Publicidad y Ads",
+    category: "Gastronomía & Carteles",
     prompt: "[Nombre del Producto:ej. Vanilla Latte] STYLE & ART DIRECTION: Modern minimalist food advertising aesthetics, Swiss-style advertising composition, premium restaurant social media branding, editorial design for an FMCG campaign, visuals for startup food brands, Pinterest-style food poster aesthetics, playful geometric advertising structure, modern in-app branding style, minimalist luxury restaurant marketing. MAIN OBJECT: Hyper-realistic food hero of [Nombre del Producto:ej. Vanilla Latte] placed in the center of the composition using the reference image as the exact physical product, striking premium food photography design, floating or suspended presentation, realistic glossy textures, detailing of fresh ingredients, mouth-watering commercial presentation, studio-quality dish rendering, premium restaurant advertising campaign atmosphere. LAYOUT & COMPOSITION: Maintain the EXACT composition structure as sampled: large, rounded organic cream background centered on a vibrant full-color backdrop, large, lowercase type placed behind the protagonist and the hero's food object positioned in the center, overlapping, small branding/navigation strip aligned at the top, short editorial text block positioned on the left, floating rounded ingredient or flavor labels in the UI aligned vertically on the right, minimal decorative micro-icons, clean asymmetrical spacing, large breakout room, premium minimalist style hierarchy, social media poster composition. Typography: Large, bold typeface with rounded lowercase letters spelling '[Nombre del Producto:ej. vanilla latte]', modern geometric sans-serif font system, minimal supporting text, clear typography hierarchy for emerging brands, soft, rounded commercial lettering, large-scale typography treatment hidden behind objects. DEPTH AND LIGHT: Soft premium studio lighting, high-quality food highlights, realistic soft shadows, subtle glossy reflections, cinematic commercial lighting, highly detailed texture rendering, high-quality depth separation. ADDITIONAL DESIGN DETAILS: Rounded pill-shaped labels, small plus icons, minimal floating elements in the UI, app-like composition, fresh ingredient garnish, soft shadow blending, modern food delivery branding system, clean visuals, minimal geometric balance. COLOR PALETTE: [Color Primario de Marca:ej. light brown], cream/off-white, warm accent tones, high-contrast food colors, minimal black typography accents, a modern premium commercial palette. Quality: Ultra-high resolution, Behance-level food ad quality, 8k commercial rendering, Pinterest-style restaurant ad campaign design, premium FMCG branding aesthetics, professional art direction, high-quality editorial food poster.",
     previewUrl: "https://images.unsplash.com/photo-1517256064527-09c73fc73e38?w=500&q=80",
     imageRequirement: "required",
     isCommercialPoster: true,
     imageGenBehavior: "product",
     styleKeywords: "modern minimalist food advertising aesthetics, Swiss-style composition, food hero floating presentation, premium restaurant campaign, realistic glossy food textures, mouth-watering commercial food photography, soft studio lighting",
-  }
+  },
+  {
+    id: "style-food-combo-ad",
+    title: "Anuncio de Combo Promocional (Combo Ad)",
+    description: "Convierte la foto del plato principal en un combo publicitario completo con acompañamientos (papas, bebida, salsas), estética gastronómica premium, tipografía promocional y precio destacado.",
+    category: "Gastronomía & Carteles",
+    prompt: `Create a premium food advertising composition using the provided food image as the EXACT reference for the main dish.
+
+The ORIGINAL FOOD must remain visually faithful to the reference.
+
+PRESERVE:
+- exact appearance of the main food
+- ingredients
+- shape
+- proportions
+- colors
+- textures
+- cooking characteristics
+- toppings
+- sauces
+- presentation style
+
+Do NOT redesign, replace or invent the main food.
+
+TRANSFORMATION:
+Turn the original food image into a professional COMBO ADVERTISEMENT.
+
+Create a complete commercial combo around the original dish, adding complementary food or beverage elements that naturally fit the product category.
+
+Possible complementary elements may include:
+- fries
+- beverage
+- side dish
+- sauce
+- dessert
+- appropriate garnish
+
+Only add complementary elements when they are logically compatible with the original food.
+
+COMPOSITION:
+Create a vertical premium restaurant advertisement.
+
+Place the main dish prominently in the foreground.
+
+Arrange complementary products naturally around it with realistic scale and perspective.
+
+Use professional food photography:
+- appetizing lighting
+- realistic textures
+- natural shadows
+- controlled highlights
+- shallow depth of field
+- premium restaurant atmosphere
+
+Create an attractive commercial background appropriate to the type of food.
+
+GRAPHIC DESIGN:
+Include a clear promotional hierarchy.
+
+Suggested structure:
+- small "RESULTADO" badge
+- large product/combo name
+- short promotional tagline
+- concise description of the combo
+- price prominently displayed
+- CTA such as "ORDENA AHORA", "PRUÉBALO HOY" or equivalent
+
+Use elegant typography and strong visual hierarchy.
+
+Do not overcrowd the design.
+
+IMPORTANT:
+The original food must remain the visual hero.
+
+Any added food or beverage must look physically real and professionally photographed.
+
+The final result should look like a high-end restaurant social media advertisement, not an AI-generated image.
+
+If no price, restaurant name or promotional text is provided, use editable placeholder text rather than inventing business-specific information.`,
+    previewUrl: "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=500&q=80",
+    imageRequirement: "required",
+    isCommercialPoster: true,
+    imageGenBehavior: "product",
+    styleKeywords: "premium food advertising combo shot, faithful original dish hero in foreground, realistic complementary sides fries and beverage, appetizing restaurant lighting, promotional commercial layout with elegant typography and price badge",
+  },
+  {
+    id: "style-food-dish-launch",
+    title: "Lanzamiento de Nuevo Plato (Signature Dish Launch)",
+    description: "Campaña de lanzamiento y estreno para un nuevo plato de autor o menú gourmet, con iluminación sofisticada, badge de 'NUEVO EN NUESTRO MENÚ' y jerarquía editorial elegante.",
+    category: "Gastronomía & Carteles",
+    prompt: `Create a premium restaurant launch advertisement using the provided food image as the EXACT reference for the main dish.
+
+The ORIGINAL FOOD must remain visually faithful to the reference.
+
+PRESERVE:
+- exact dish identity
+- ingredients
+- shape
+- proportions
+- colors
+- textures
+- toppings
+- sauces
+- garnish
+- cooking characteristics
+- plating style
+
+Do NOT redesign or replace the dish.
+
+TRANSFORMATION:
+Transform the original food image into a sophisticated NEW DISH LAUNCH campaign.
+
+Make the dish look like a newly introduced signature item on a premium restaurant menu.
+
+Create an elegant food photography environment appropriate to the cuisine.
+
+Use:
+- premium natural lighting
+- realistic shadows
+- appetizing highlights
+- shallow depth of field
+- subtle environmental elements
+- sophisticated restaurant atmosphere
+
+Add subtle ingredients or decorative elements around the dish only when they naturally correspond to the original recipe.
+
+Do not add random ingredients.
+
+COMPOSITION:
+Use a vertical advertising format optimized for Instagram and social media.
+
+The dish should occupy the main visual area and remain clearly recognizable.
+
+Create strong visual hierarchy.
+
+GRAPHIC DESIGN:
+Include:
+- small "RESULTADO" badge
+- "NUEVO EN NUESTRO MENÚ" or equivalent
+- large dish name
+- short appetizing description
+- subtle supporting text
+- CTA such as "PRUÉBALO HOY"
+
+Typography should feel premium, elegant and appropriate for the cuisine.
+
+Use a sophisticated editorial food-advertising aesthetic.
+
+IMPORTANT:
+Do not invent a dish that differs from the original image.
+
+The original food is the source of truth.
+
+If the dish name, ingredients, price or restaurant information is not supplied, use clearly editable placeholder text instead of inventing factual information.
+
+The final result should look like a professional restaurant campaign introducing a new signature dish.`,
+    previewUrl: "https://images.unsplash.com/photo-1544025162-d76694265947?w=500&q=80",
+    imageRequirement: "required",
+    isCommercialPoster: true,
+    imageGenBehavior: "editorial",
+    styleKeywords: "premium restaurant new dish launch campaign, faithful original signature dish hero, sophisticated dining atmosphere, natural appetizing highlights, editorial advertising typography, 'NUEVO EN EL MENÚ' launch hierarchy",
+  },
+  {
+    id: "style-food-hero-poster",
+    title: "Póster Publicitario de Alto Impacto (Food Hero Poster)",
+    description: "Póster vertical dramático y cinematográfico donde el plato domina la escena con iluminación intensa, texturas hiper apetitosas, vapor realista y titulares audaces.",
+    category: "Gastronomía & Carteles",
+    prompt: `Create a high-impact premium FOOD POSTER using the provided food image as the EXACT reference for the main dish.
+
+The ORIGINAL FOOD must remain visually faithful to the reference.
+
+PRESERVE:
+- dish identity
+- ingredients
+- shape
+- proportions
+- colors
+- textures
+- toppings
+- sauces
+- garnish
+- cooking characteristics
+- original food appearance
+
+DO NOT redesign, replace, simplify or alter the main food.
+
+TRANSFORMATION:
+Turn the original food photograph into a dramatic restaurant promotional poster.
+
+Create an extremely appetizing hero-shot composition.
+
+The food should appear larger, more visually impressive and highly desirable while remaining realistic.
+
+Use professional food photography techniques:
+- dramatic lighting
+- strong highlights
+- realistic shadows
+- controlled contrast
+- shallow depth of field
+- appetizing textures
+- cinematic composition
+- realistic steam where appropriate
+
+Create a visually rich environment related to the food category.
+
+For example:
+- fresh ingredients around pizza
+- herbs and spices around pasta
+- fresh vegetables around burgers
+- appropriate ingredients around desserts
+
+Do not add ingredients that contradict the original dish.
+
+COMPOSITION:
+Vertical poster format.
+
+The food should dominate the composition.
+
+Create strong negative space for typography.
+
+GRAPHIC DESIGN:
+Use bold editorial typography.
+
+Suggested hierarchy:
+- large dish name
+- short emotional headline
+- supporting description
+- ingredient or quality highlights
+- CTA such as "ORDENA AHORA"
+
+Use typography that complements the food photography.
+
+The final poster should feel energetic, modern and highly suitable for Instagram advertising.
+
+IMPORTANT:
+The food remains the HERO.
+
+Do not allow typography or decorative elements to cover the important parts of the dish.
+
+The final result must look like a professionally designed restaurant advertising poster, not a generic AI image.
+
+If promotional information is not provided, use editable placeholders instead of inventing factual information.`,
+    previewUrl: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500&q=80",
+    imageRequirement: "required",
+    isCommercialPoster: true,
+    imageGenBehavior: "product",
+    styleKeywords: "high-impact dramatic food poster, faithful original dish dominant hero shot, cinematic lighting, appetizing sizzling textures, realistic steam, fresh category ingredients framing dish, bold modern editorial typography",
+  },
+  {
+    id: "style-food-menu-visual",
+    title: "Ficha Editorial de Carta & Menú (Menu Visual Board)",
+    description: "Diseño editorial refinado de carta/menú gastronómico con atributos destacados (ingredientes naturales, receta tradicional), precio, tipografía limpia y espacio despejado.",
+    category: "Gastronomía & Carteles",
+    prompt: `Create a premium RESTAURANT MENU VISUAL using the provided food image as the EXACT reference for the main dish.
+
+The ORIGINAL FOOD must remain visually faithful to the reference.
+
+PRESERVE:
+- exact dish identity
+- ingredients
+- shape
+- proportions
+- colors
+- textures
+- toppings
+- sauces
+- garnish
+- cooking characteristics
+- plating
+- original food appearance
+
+DO NOT redesign, replace or alter the main dish.
+
+TRANSFORMATION:
+Transform the original food image into a sophisticated restaurant MENU ITEM advertisement.
+
+The design should communicate:
+premium quality, authenticity, flavor and culinary craftsmanship.
+
+Create an elegant food photography environment appropriate to the cuisine.
+
+Use:
+- warm professional lighting
+- realistic shadows
+- premium food photography
+- subtle depth of field
+- sophisticated composition
+- natural ingredients as secondary visual elements
+
+Only include ingredients or decorative elements that are compatible with the original dish.
+
+COMPOSITION:
+Create a vertical premium menu-card composition.
+
+Place the dish prominently, preferably occupying the lower or central portion of the composition.
+
+Leave clean visual space for the menu typography.
+
+GRAPHIC DESIGN:
+Create a refined editorial menu design.
+
+Include:
+- large dish name
+- short descriptive subtitle
+- price
+- 3 or 4 concise product attributes
+- subtle icons when appropriate
+
+Example attributes:
+- INGREDIENTES NATURALES
+- RECETA TRADICIONAL
+- ESPECIAS SELECCIONADAS
+- SABOR INIGUALABLE
+
+Use elegant typography with strong hierarchy.
+
+The design should feel premium and suitable for:
+- restaurant menus
+- digital menu boards
+- Instagram
+- WhatsApp catalogs
+- food delivery promotions
+
+Avoid excessive graphic elements.
+
+IMPORTANT:
+The original dish is the source of truth.
+
+Do not invent ingredients, preparation methods or claims that are not provided.
+
+If dish name, price or attributes are not supplied, use editable placeholders.
+
+The final result should look like a professionally designed premium restaurant menu visual with realistic food photography.`,
+    previewUrl: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=500&q=80",
+    imageRequirement: "required",
+    isCommercialPoster: true,
+    imageGenBehavior: "product",
+    styleKeywords: "premium restaurant menu card visual, faithful original dish presentation, refined editorial layout, warm professional food photography, product attributes and price hierarchy, digital menu board aesthetic",
+  },
 ];
 

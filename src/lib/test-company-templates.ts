@@ -27,6 +27,7 @@ export interface TestCompanyTemplate {
   badge: string;
   color: string;
   sampleProducts: TestProductTemplate[];
+  recommendedStyles?: string[];
 }
 
 export const TEST_COMPANY_TEMPLATES: TestCompanyTemplate[] = [
@@ -43,6 +44,13 @@ export const TEST_COMPANY_TEMPLATES: TestCompanyTemplate[] = [
     menuTheme: 'dark_modern',
     badge: 'Gastronomía & Grill',
     color: 'from-amber-500 to-rose-600',
+    recommendedStyles: [
+      'style-food-combo-ad',
+      'style-food-hero-poster',
+      'style-food-dish-launch',
+      'style-food-menu-visual',
+      'style-food-ad-minimalist'
+    ],
     sampleProducts: [
       {
         name: 'Hamburguesa Trufada Doble Angus',
@@ -115,6 +123,13 @@ export const TEST_COMPANY_TEMPLATES: TestCompanyTemplate[] = [
     menuTheme: 'warm_cafe',
     badge: 'Cafetería & Brunch',
     color: 'from-amber-600 to-amber-900',
+    recommendedStyles: [
+      'style-food-menu-visual',
+      'style-food-dish-launch',
+      'style-food-ad-minimalist',
+      'style-food-combo-ad',
+      'style-food-hero-poster'
+    ],
     sampleProducts: [
       {
         name: 'Flat White Grano Huila Colombia',

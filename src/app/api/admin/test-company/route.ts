@@ -89,6 +89,14 @@ export async function POST(req: NextRequest) {
       menuTheme: menuTheme || 'dark_modern',
       bannerStyle: bannerStyle || 'banner',
       photoTreatment: photoTreatment || 'clean',
+      visualIdentity: {
+        styleMix: (Array.isArray(body.recommendedStyles) && body.recommendedStyles.length > 0
+          ? body.recommendedStyles
+          : ['style-food-combo-ad', 'style-food-hero-poster']
+        ).map((s: string) => ({ styleId: s, weight: 1 })),
+        lockStyle: false,
+      },
+      agentTone: 'directo_cercano',
       isTestProfile: true,
       createdAt: new Date().toISOString(),
     };
