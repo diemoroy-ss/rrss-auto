@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../../lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
-import { PromptTemplate, HARDCODED_STYLES, promptCategories } from "../../lib/prompt-templates";
+import { PromptTemplate, HARDCODED_STYLES, promptCategories, getPromptCategories } from "../../lib/prompt-templates";
 
 interface PromptStylePickerModalProps {
   isOpen: boolean;
@@ -69,15 +69,16 @@ export default function PromptStylePickerModal({
   if (!isOpen) return null;
 
   const filteredTemplates = templates.filter((tmpl) => {
+    const tmplCats = getPromptCategories(tmpl);
     const matchesCategory =
       selectedCategory === "all" ||
-      tmpl.category.toLowerCase().trim() === selectedCategory.toLowerCase().trim();
+      tmplCats.some(c => c.toLowerCase().trim() === selectedCategory.toLowerCase().trim());
 
     const matchesSearch =
       searchQuery.trim() === "" ||
       tmpl.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       tmpl.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tmpl.category.toLowerCase().includes(searchQuery.toLowerCase());
+      tmplCats.some(c => c.toLowerCase().includes(searchQuery.toLowerCase()));
 
     return matchesCategory && matchesSearch;
   });
@@ -143,8 +144,8 @@ export default function PromptStylePickerModal({
               Todos ({templates.length})
             </button>
             {promptCategories.map((cat) => {
-              const count = templates.filter(
-                (t) => t.category.toLowerCase().trim() === cat.toLowerCase().trim()
+              const count = templates.filter((t) =>
+                getPromptCategories(t).some(c => c.toLowerCase().trim() === cat.toLowerCase().trim())
               ).length;
               if (count === 0) return null;
               const isSelected = selectedCategory.toLowerCase().trim() === cat.toLowerCase().trim();
@@ -183,6 +184,7 @@ export default function PromptStylePickerModal({
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               {filteredTemplates.map((tmpl) => {
                 const isSelected = selectedTemplate?.id === tmpl.id;
+                const tmplCats = getPromptCategories(tmpl);
                 return (
                   <div
                     key={tmpl.id}
@@ -203,10 +205,19 @@ export default function PromptStylePickerModal({
                           (e.target as HTMLElement).style.display = "none";
                         }}
                       />
-                      {/* Badge Category */}
-                      <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md text-[9px] font-bold text-white uppercase tracking-wider">
-                        {tmpl.category}
-                      </span>
+                      {/* Badge Categories */}
+                      <div className="absolute top-2.5 left-2.5 flex flex-wrap gap-1 max-w-[70%]">
+                        {tmplCats.slice(0, 2).map(c => (
+                          <span key={c} className="px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md text-[9px] font-bold text-white uppercase tracking-wider">
+                            {c}
+                          </span>
+                        ))}
+                        {tmplCats.length > 2 && (
+                          <span className="px-1.5 py-0.5 rounded-md bg-black/60 backdrop-blur-md text-[9px] font-bold text-white">
+                            +{tmplCats.length - 2}
+                          </span>
+                        )}
+                      </div>
                       {tmpl.isCommercialPoster && (
                         <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-amber-500 text-[9px] font-bold text-white uppercase tracking-wider shadow-sm">
                           Cartel

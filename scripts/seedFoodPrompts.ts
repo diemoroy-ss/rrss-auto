@@ -31,6 +31,7 @@ async function seedFoodPrompts() {
         title: style.title,
         description: style.description,
         category: style.category,
+        categories: style.categories || [style.category],
         prompt: style.prompt,
         previewUrl: style.previewUrl,
         imageRequirement: style.imageRequirement,

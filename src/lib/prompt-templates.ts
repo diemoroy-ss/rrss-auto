@@ -6,6 +6,8 @@ export interface PromptTemplate {
   title: string;
   description: string;
   category: string;
+  /** Lista de múltiples categorías asignadas a este estilo */
+  categories?: string[];
   prompt: string;
   previewUrl: string;
   imageRequirement: ImageRequirement;
@@ -14,6 +16,22 @@ export interface PromptTemplate {
   imageGenBehavior?: ImageGenBehavior;
   /** English style keywords injected into the image prompt */
   styleKeywords?: string;
+}
+
+export function getPromptCategories(p?: { category?: string; categories?: string[] } | null): string[] {
+  if (!p) return ['General'];
+  const cats: string[] = [];
+  if (Array.isArray(p.categories)) {
+    p.categories.forEach(c => {
+      if (typeof c === 'string' && c.trim() && !cats.includes(c.trim())) {
+        cats.push(c.trim());
+      }
+    });
+  }
+  if (p.category && typeof p.category === 'string' && p.category.trim() && !cats.includes(p.category.trim())) {
+    cats.push(p.category.trim());
+  }
+  return cats.length > 0 ? cats : ['General'];
 }
 
 export interface StyleMix {
@@ -1077,6 +1095,7 @@ The 360° rotation is the presentation method, not a product redesign.`,
     title: "Póster Gastronómico Swiss & Behance (Food Ad)",
     description: "Publicidad gastronómica moderna estilo diseño suizo y Behance, con producto héroe flotante, tipografía grande de fondo, etiquetas redondeadas y composición editorial de app.",
     category: "Gastronomía & Carteles",
+    categories: ["Gastronomía & Carteles", "Publicidad y Ads", "Minimalista"],
     prompt: "[Nombre del Producto:ej. Vanilla Latte] STYLE & ART DIRECTION: Modern minimalist food advertising aesthetics, Swiss-style advertising composition, premium restaurant social media branding, editorial design for an FMCG campaign, visuals for startup food brands, Pinterest-style food poster aesthetics, playful geometric advertising structure, modern in-app branding style, minimalist luxury restaurant marketing. MAIN OBJECT: Hyper-realistic food hero of [Nombre del Producto:ej. Vanilla Latte] placed in the center of the composition using the reference image as the exact physical product, striking premium food photography design, floating or suspended presentation, realistic glossy textures, detailing of fresh ingredients, mouth-watering commercial presentation, studio-quality dish rendering, premium restaurant advertising campaign atmosphere. LAYOUT & COMPOSITION: Maintain the EXACT composition structure as sampled: large, rounded organic cream background centered on a vibrant full-color backdrop, large, lowercase type placed behind the protagonist and the hero's food object positioned in the center, overlapping, small branding/navigation strip aligned at the top, short editorial text block positioned on the left, floating rounded ingredient or flavor labels in the UI aligned vertically on the right, minimal decorative micro-icons, clean asymmetrical spacing, large breakout room, premium minimalist style hierarchy, social media poster composition. Typography: Large, bold typeface with rounded lowercase letters spelling '[Nombre del Producto:ej. vanilla latte]', modern geometric sans-serif font system, minimal supporting text, clear typography hierarchy for emerging brands, soft, rounded commercial lettering, large-scale typography treatment hidden behind objects. DEPTH AND LIGHT: Soft premium studio lighting, high-quality food highlights, realistic soft shadows, subtle glossy reflections, cinematic commercial lighting, highly detailed texture rendering, high-quality depth separation. ADDITIONAL DESIGN DETAILS: Rounded pill-shaped labels, small plus icons, minimal floating elements in the UI, app-like composition, fresh ingredient garnish, soft shadow blending, modern food delivery branding system, clean visuals, minimal geometric balance. COLOR PALETTE: [Color Primario de Marca:ej. light brown], cream/off-white, warm accent tones, high-contrast food colors, minimal black typography accents, a modern premium commercial palette. Quality: Ultra-high resolution, Behance-level food ad quality, 8k commercial rendering, Pinterest-style restaurant ad campaign design, premium FMCG branding aesthetics, professional art direction, high-quality editorial food poster.",
     previewUrl: "https://images.unsplash.com/photo-1517256064527-09c73fc73e38?w=500&q=80",
     imageRequirement: "required",
@@ -1089,6 +1108,7 @@ The 360° rotation is the presentation method, not a product redesign.`,
     title: "Anuncio de Combo Promocional (Combo Ad)",
     description: "Convierte la foto del plato principal en un combo publicitario completo con acompañamientos (papas, bebida, salsas), estética gastronómica premium, tipografía promocional y precio destacado.",
     category: "Gastronomía & Carteles",
+    categories: ["Gastronomía & Carteles", "Publicidad y Ads"],
     prompt: `Create a premium food advertising composition using the provided food image as the EXACT reference for the main dish.
 
 The ORIGINAL FOOD must remain visually faithful to the reference.
@@ -1173,6 +1193,7 @@ If no price, restaurant name or promotional text is provided, use editable place
     title: "Lanzamiento de Nuevo Plato (Signature Dish Launch)",
     description: "Campaña de lanzamiento y estreno para un nuevo plato de autor o menú gourmet, con iluminación sofisticada, badge de 'NUEVO EN NUESTRO MENÚ' y jerarquía editorial elegante.",
     category: "Gastronomía & Carteles",
+    categories: ["Gastronomía & Carteles", "Publicidad y Ads", "Editorial y Revista"],
     prompt: `Create a premium restaurant launch advertisement using the provided food image as the EXACT reference for the main dish.
 
 The ORIGINAL FOOD must remain visually faithful to the reference.
@@ -1250,6 +1271,7 @@ The final result should look like a professional restaurant campaign introducing
     title: "Póster Publicitario de Alto Impacto (Food Hero Poster)",
     description: "Póster vertical dramático y cinematográfico donde el plato domina la escena con iluminación intensa, texturas hiper apetitosas, vapor realista y titulares audaces.",
     category: "Gastronomía & Carteles",
+    categories: ["Gastronomía & Carteles", "Publicidad y Ads"],
     prompt: `Create a high-impact premium FOOD POSTER using the provided food image as the EXACT reference for the main dish.
 
 The ORIGINAL FOOD must remain visually faithful to the reference.
@@ -1336,6 +1358,7 @@ If promotional information is not provided, use editable placeholders instead of
     title: "Ficha Editorial de Carta & Menú (Menu Visual Board)",
     description: "Diseño editorial refinado de carta/menú gastronómico con atributos destacados (ingredientes naturales, receta tradicional), precio, tipografía limpia y espacio despejado.",
     category: "Gastronomía & Carteles",
+    categories: ["Gastronomía & Carteles", "Publicidad y Ads", "Producto (E-commerce)"],
     prompt: `Create a premium RESTAURANT MENU VISUAL using the provided food image as the EXACT reference for the main dish.
 
 The ORIGINAL FOOD must remain visually faithful to the reference.
@@ -1427,6 +1450,7 @@ The final result should look like a professionally designed premium restaurant m
     title: "Cafetería Lifestyle & Momentos (Café Lifestyle)",
     description: "Transforma tu café, bebida o pastelería en una escena cálida y aspiracional de cafetería: mesa de madera noble, luz natural suave, desenfoque bokeh y titulares emocionales.",
     category: "Gastronomía & Carteles",
+    categories: ["Gastronomía & Carteles", "Editorial y Revista", "Fotorealismo"],
     prompt: `Create a premium lifestyle advertising image using the provided food or beverage image as the EXACT reference for the main product.
 
 The ORIGINAL PRODUCT must remain visually identical.
@@ -1522,6 +1546,7 @@ Everything that was not explicitly requested to change must remain unchanged fro
     title: "Anuncio Delivery & Para Llevar (Food Delivery Ad)",
     description: "Publicidad de delivery de alto impacto: 'Tu comida favorita en tu casa', con packaging de delivery o takeaway complementario, beneficios clave (Rápido / Seguro / A tiempo) y CTA directo.",
     category: "Gastronomía & Carteles",
+    categories: ["Gastronomía & Carteles", "Publicidad y Ads"],
     prompt: `Create a premium FOOD DELIVERY advertisement using the provided food image as the EXACT reference for the main dish.
 
 The ORIGINAL FOOD must remain visually identical.
@@ -1618,6 +1643,7 @@ The delivery environment and advertising design are the transformation.`,
     title: "Oferta Especial & Descuento Flash (Special Offer Promo)",
     description: "Campaña promocional con sentido de urgencia y valor comercial: insignia de ¡OFERTA ESPECIAL!, bloques destacados de descuento (% o precio), vigencia limitada y llamado a la acción inmediato.",
     category: "Gastronomía & Carteles",
+    categories: ["Gastronomía & Carteles", "Publicidad y Ads"],
     prompt: `Create a high-impact PREMIUM FOOD PROMOTION using the provided food image as the EXACT reference for the main dish.
 
 The ORIGINAL FOOD must remain visually identical.
@@ -1711,6 +1737,7 @@ Only the promotional environment and graphic presentation should change.`,
     title: "Experiencia de Marca & Restaurante (Brand Experience Ad)",
     description: "Branding gastronómico de alto nivel que vende la experiencia completa del local: mesa servida elegante, vajilla cuidada, iluminación ambiental cálida y conceptos como 'Buenas Historias, Gran Comida'.",
     category: "Gastronomía & Carteles",
+    categories: ["Gastronomía & Carteles", "Publicidad y Ads", "Editorial y Revista"],
     prompt: `Create a premium RESTAURANT BRAND ADVERTISEMENT using the provided food image as the EXACT reference for the main dish.
 
 The ORIGINAL FOOD must remain visually identical.

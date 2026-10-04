@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../../lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
-import { PromptTemplate, HARDCODED_STYLES, promptCategories } from "../../lib/prompt-templates";
+import { PromptTemplate, HARDCODED_STYLES, promptCategories, getPromptCategories } from "../../lib/prompt-templates";
 
 interface PromptStyleSelectorProps {
   enabled: boolean;
@@ -95,12 +95,15 @@ export default function PromptStyleSelector({
 
   // Filter templates
   const filteredTemplates = templates.filter((tpl) => {
-    const matchesCategory = selectedCategory === "all" || tpl.category === selectedCategory;
+    const tplCats = getPromptCategories(tpl);
+    const matchesCategory =
+      selectedCategory === "all" ||
+      tplCats.some(c => c.toLowerCase().trim() === selectedCategory.toLowerCase().trim());
     const matchesSearch =
       !searchQuery.trim() ||
       tpl.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       tpl.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tpl.category.toLowerCase().includes(searchQuery.toLowerCase());
+      tplCats.some(c => c.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesCategory && matchesSearch;
   });
 
@@ -213,7 +216,9 @@ export default function PromptStyleSelector({
               Todos ({templates.length})
             </button>
             {promptCategories.map((cat) => {
-              const count = templates.filter((t) => t.category === cat).length;
+              const count = templates.filter((t) =>
+                getPromptCategories(t).some(c => c.toLowerCase().trim() === cat.toLowerCase().trim())
+              ).length;
               if (count === 0) return null;
               return (
                 <button
@@ -256,6 +261,7 @@ export default function PromptStyleSelector({
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 max-h-[360px] overflow-y-auto pr-1 p-1">
               {filteredTemplates.map((style) => {
                 const selected = isSelected(style.id);
+                const styleCats = getPromptCategories(style);
                 return (
                   <div
                     key={style.id}
@@ -294,11 +300,18 @@ export default function PromptStyleSelector({
                         </div>
                       </div>
 
-                      {/* Category Pill on Image */}
-                      <div className="absolute bottom-2 left-2">
-                        <span className="bg-slate-900/75 backdrop-blur-sm text-white text-[9px] font-bold px-2 py-0.5 rounded-md">
-                          {style.category}
-                        </span>
+                      {/* Category Pills on Image */}
+                      <div className="absolute bottom-2 left-2 flex flex-wrap gap-1 max-w-[80%]">
+                        {styleCats.slice(0, 2).map((c) => (
+                          <span key={c} className="bg-slate-900/75 backdrop-blur-sm text-white text-[9px] font-bold px-2 py-0.5 rounded-md">
+                            {c}
+                          </span>
+                        ))}
+                        {styleCats.length > 2 && (
+                          <span className="bg-slate-900/75 backdrop-blur-sm text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md">
+                            +{styleCats.length - 2}
+                          </span>
+                        )}
                       </div>
                     </div>
 

@@ -13,7 +13,8 @@ import {
   type ImageRequirement, 
   type PromptTemplate, 
   promptCategories, 
-  HARDCODED_STYLES 
+  HARDCODED_STYLES,
+  getPromptCategories 
 } from "../../../../lib/prompt-templates";
 
 export type { ImageRequirement, PromptTemplate };
@@ -25,10 +26,18 @@ export default function PromptsLibraryPage() {
   const [userDoc, setUserDoc] = useState<any>(null);
   const { activeProfile } = useProfile();
   
+  const [categoriesList, setCategoriesList] = useState<string[]>(promptCategories);
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [promptTemplates, setPromptTemplates] = useState<PromptTemplate[]>([]);
   const [loadingPrompts, setLoadingPrompts] = useState(true);
+
+  // Category Management Modal State
+  const [isManageCategoriesModalOpen, setIsManageCategoriesModalOpen] = useState(false);
+  const [newCategoryInput, setNewCategoryInput] = useState("");
+  const [editingCategoryName, setEditingCategoryName] = useState<string | null>(null);
+  const [editingCategoryNewValue, setEditingCategoryNewValue] = useState("");
+  const [quickNewCategory, setQuickNewCategory] = useState("");
 
   // Status Modal State (Reemplazo moderno de alerts y confirms)
   const [statusModal, setStatusModal] = useState<{
@@ -92,6 +101,7 @@ export default function PromptsLibraryPage() {
     title: "",
     description: "",
     category: promptCategories[0],
+    categories: [promptCategories[0]] as string[],
     prompt: "",
     imageRequirement: "optional" as ImageRequirement,
     isCommercialPoster: false,
@@ -162,6 +172,28 @@ export default function PromptsLibraryPage() {
     return () => unsub();
   }, []);
 
+  const fetchCategories = async (loadedPrompts?: PromptTemplate[]) => {
+    try {
+      const sysDoc = await getDoc(doc(db, "system_config", "prompt_categories"));
+      let list: string[] = [];
+      if (sysDoc.exists() && Array.isArray(sysDoc.data().categories)) {
+        list = sysDoc.data().categories.filter((c: any) => typeof c === "string" && c.trim());
+      }
+      
+      const combined = new Set<string>(list);
+      promptCategories.forEach(c => combined.add(c));
+      if (loadedPrompts) {
+        loadedPrompts.forEach(p => {
+          getPromptCategories(p).forEach(c => combined.add(c));
+        });
+      }
+      setCategoriesList(Array.from(combined));
+    } catch (e) {
+      console.warn("Error cargando categorías de Firestore, usando valores por defecto:", e);
+      setCategoriesList(promptCategories);
+    }
+  };
+
   const fetchPrompts = async () => {
     setLoadingPrompts(true);
     try {
@@ -191,6 +223,7 @@ export default function PromptsLibraryPage() {
       });
       
       setPromptTemplates(loaded);
+      await fetchCategories(loaded);
     } catch (e) {
       console.error("Error loading prompts", e);
     } finally {
@@ -198,22 +231,185 @@ export default function PromptsLibraryPage() {
     }
   };
 
+  const handleCreateCategory = async (name: string): Promise<string | null> => {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      showStatus("error", "Nombre requerido", "Ingresa un nombre para la nueva categoría.");
+      return null;
+    }
+    if (categoriesList.some(c => c.toLowerCase() === trimmed.toLowerCase())) {
+      showStatus("info", "Categoría existente", `La categoría "${trimmed}" ya existe en la lista.`);
+      return trimmed;
+    }
+
+    try {
+      const updatedList = [...categoriesList, trimmed];
+      setCategoriesList(updatedList);
+
+      await setDoc(doc(db, "system_config", "prompt_categories"), {
+        categories: updatedList,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+
+      showStatus("success", "Categoría Creada", `¡Categoría "${trimmed}" añadida exitosamente!`);
+      return trimmed;
+    } catch (e: any) {
+      console.error("Error al crear categoría:", e);
+      showStatus("error", "Error", "No se pudo crear la categoría: " + (e.message || "Error desconocido"));
+      return null;
+    }
+  };
+
+  const handleRenameCategory = async (oldName: string, newName: string) => {
+    const trimmed = newName.trim();
+    if (!trimmed || trimmed === oldName) return;
+
+    if (categoriesList.some(c => c.toLowerCase() === trimmed.toLowerCase() && c !== oldName)) {
+      showStatus("error", "Categoría duplicada", `Ya existe una categoría llamada "${trimmed}".`);
+      return;
+    }
+
+    try {
+      const updatedList = categoriesList.map(c => c === oldName ? trimmed : c);
+      setCategoriesList(updatedList);
+
+      await setDoc(doc(db, "system_config", "prompt_categories"), {
+        categories: updatedList,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+
+      // Actualizar en cascada todas las plantillas que tenían esa categoría
+      const updatedTemplates = promptTemplates.map(p => {
+        const pCats = getPromptCategories(p);
+        if (pCats.includes(oldName)) {
+          const newCats = pCats.map(c => c === oldName ? trimmed : c);
+          const newCat = p.category === oldName ? trimmed : p.category;
+          setDoc(doc(db, "prompt_library", p.id), {
+            categories: newCats,
+            category: newCat
+          }, { merge: true }).catch(err => console.error("Error updating prompt category in DB:", err));
+          return {
+            ...p,
+            categories: newCats,
+            category: newCat
+          };
+        }
+        return p;
+      });
+      setPromptTemplates(updatedTemplates);
+
+      if (activeCategory === oldName) {
+        setActiveCategory(trimmed);
+      }
+      if (adminForm.categories.includes(oldName)) {
+        setAdminForm(prev => ({
+          ...prev,
+          categories: prev.categories.map(c => c === oldName ? trimmed : c),
+          category: prev.category === oldName ? trimmed : prev.category
+        }));
+      }
+
+      showStatus("success", "Categoría Actualizada", `Se renombró "${oldName}" a "${trimmed}".`);
+    } catch (e: any) {
+      console.error("Error al renombrar categoría:", e);
+      showStatus("error", "Error", "No se pudo renombrar la categoría: " + (e.message || "Error desconocido"));
+    }
+  };
+
+  const handleDeleteCategory = (catName: string) => {
+    const count = promptTemplates.filter(p => getPromptCategories(p).includes(catName)).length;
+    showStatus(
+      "confirm",
+      "¿Eliminar Categoría?",
+      `¿Estás seguro de eliminar la categoría "${catName}"?${count > 0 ? ` Hay ${count} estilo(s) asociados a ella que se actualizarán.` : ""}`,
+      async () => {
+        try {
+          const updatedList = categoriesList.filter(c => c !== catName);
+          setCategoriesList(updatedList);
+
+          await setDoc(doc(db, "system_config", "prompt_categories"), {
+            categories: updatedList,
+            updatedAt: new Date().toISOString()
+          }, { merge: true });
+
+          // Desasociar de las plantillas
+          const updatedTemplates = promptTemplates.map(p => {
+            const pCats = getPromptCategories(p);
+            if (pCats.includes(catName)) {
+              let newCats = pCats.filter(c => c !== catName);
+              if (newCats.length === 0) newCats = ["General"];
+              const newCat = p.category === catName ? newCats[0] : p.category;
+              setDoc(doc(db, "prompt_library", p.id), {
+                categories: newCats,
+                category: newCat
+              }, { merge: true }).catch(err => console.error("Error updating prompt category in DB:", err));
+              return {
+                ...p,
+                categories: newCats,
+                category: newCat
+              };
+            }
+            return p;
+          });
+          setPromptTemplates(updatedTemplates);
+
+          if (activeCategory === catName) {
+            setActiveCategory("all");
+          }
+          setAdminForm(prev => {
+            let newCats = prev.categories.filter(c => c !== catName);
+            if (newCats.length === 0) newCats = [updatedList[0] || "General"];
+            return {
+              ...prev,
+              categories: newCats,
+              category: newCats[0]
+            };
+          });
+
+          showStatus("success", "Categoría Eliminada", `La categoría "${catName}" ha sido eliminada exitosamente.`);
+        } catch (e: any) {
+          console.error("Error al eliminar categoría:", e);
+          showStatus("error", "Error", "No se pudo eliminar la categoría: " + (e.message || "Error desconocido"));
+        }
+      }
+    );
+  };
+
+  const handleQuickAddCategory = async () => {
+    if (!quickNewCategory.trim()) return;
+    const added = await handleCreateCategory(quickNewCategory);
+    if (added) {
+      if (!adminForm.categories.includes(added)) {
+        setAdminForm(prev => ({
+          ...prev,
+          categories: [...prev.categories, added],
+          category: prev.categories[0] || added
+        }));
+      }
+      setQuickNewCategory("");
+    }
+  };
+
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = { all: promptTemplates.length };
-    promptCategories.forEach(cat => {
-      counts[cat] = promptTemplates.filter(p => p.category === cat).length;
+    categoriesList.forEach(cat => {
+      counts[cat] = promptTemplates.filter(p => 
+        getPromptCategories(p).some(c => c.toLowerCase().trim() === cat.toLowerCase().trim())
+      ).length;
     });
     return counts;
-  }, [promptTemplates]);
+  }, [promptTemplates, categoriesList]);
 
   const filteredPrompts = useMemo(() => {
     return promptTemplates.filter(p => {
-      const matchesCategory = activeCategory === "all" || p.category === activeCategory;
+      const pCats = getPromptCategories(p);
+      const matchesCategory = activeCategory === "all" || 
+        pCats.some(c => c.toLowerCase().trim() === activeCategory.toLowerCase().trim());
       const q = searchQuery.toLowerCase().trim();
       const matchesSearch = !q || 
         p.title.toLowerCase().includes(q) || 
         p.description.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q);
+        pCats.some(c => c.toLowerCase().includes(q));
       return matchesCategory && matchesSearch;
     });
   }, [promptTemplates, activeCategory, searchQuery]);
@@ -298,10 +494,12 @@ export default function PromptsLibraryPage() {
   const handleEditPrompt = (prompt: PromptTemplate) => {
     setEditingPromptId(prompt.id);
     setExistingPreviewUrl(prompt.previewUrl);
+    const cats = getPromptCategories(prompt);
     setAdminForm({
       title: prompt.title,
       description: prompt.description,
-      category: prompt.category,
+      category: prompt.category || cats[0] || "General",
+      categories: cats,
       prompt: prompt.prompt,
       imageRequirement: prompt.imageRequirement || "none",
       isCommercialPoster: prompt.isCommercialPoster || false
@@ -401,10 +599,12 @@ export default function PromptsLibraryPage() {
   const handleSetAsCover = async () => {
     if (!selectedPrompt || !generatedImage) return;
     try {
+      const cats = getPromptCategories(selectedPrompt);
       const promptData = {
         title: selectedPrompt.title,
         description: selectedPrompt.description,
-        category: selectedPrompt.category,
+        category: selectedPrompt.category || cats[0] || "General",
+        categories: cats,
         prompt: selectedPrompt.prompt,
         imageRequirement: selectedPrompt.imageRequirement,
         isCommercialPoster: selectedPrompt.isCommercialPoster || false,
@@ -498,10 +698,16 @@ export default function PromptsLibraryPage() {
       }
 
       // 2. Guardar en Firestore
+      const assignedCategories = adminForm.categories && adminForm.categories.length > 0
+        ? adminForm.categories
+        : [adminForm.category || "General"];
+      const primaryCategory = assignedCategories[0] || "General";
+
       const promptData = {
         title: adminForm.title,
         description: adminForm.description,
-        category: adminForm.category,
+        category: primaryCategory,
+        categories: assignedCategories,
         prompt: adminForm.prompt,
         imageRequirement: adminForm.imageRequirement,
         isCommercialPoster: adminForm.isCommercialPoster,
@@ -526,12 +732,13 @@ export default function PromptsLibraryPage() {
       setAdminForm({
         title: "",
         description: "",
-        category: promptCategories[0],
+        category: categoriesList[0] || promptCategories[0],
+        categories: [categoriesList[0] || promptCategories[0]],
         prompt: "",
         imageRequirement: "optional",
         isCommercialPoster: false
-
       });
+      setQuickNewCategory("");
     } catch (err: any) {
       console.error(err);
       setAdminError(err.message || "Error al crear la plantilla.");
@@ -552,12 +759,35 @@ export default function PromptsLibraryPage() {
           </p>
         </div>
         {isAdminUser && (
-          <button 
-            onClick={() => setIsAdminModalOpen(true)}
-            className="shrink-0 bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-slate-900/20 transition-all flex items-center gap-2"
-          >
-            + Añadir Nuevo Prompt
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <button 
+              onClick={() => setIsManageCategoriesModalOpen(true)}
+              className="shrink-0 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold py-3 px-5 rounded-xl shadow-sm transition-all flex items-center gap-2 text-sm"
+              title="Crear, renombrar y eliminar categorías"
+            >
+              🏷️ Gestionar Categorías
+            </button>
+            <button 
+              onClick={() => {
+                setEditingPromptId(null);
+                setExistingPreviewUrl(null);
+                setAdminBaseImageFile(null);
+                setAdminForm({
+                  title: "",
+                  description: "",
+                  category: categoriesList[0] || promptCategories[0],
+                  categories: [categoriesList[0] || promptCategories[0]],
+                  prompt: "",
+                  imageRequirement: "optional",
+                  isCommercialPoster: false
+                });
+                setIsAdminModalOpen(true);
+              }}
+              className="shrink-0 bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-slate-900/20 transition-all flex items-center gap-2 text-sm"
+            >
+              + Añadir Nuevo Prompt
+            </button>
+          </div>
         )}
       </div>
 
@@ -606,7 +836,7 @@ export default function PromptsLibraryPage() {
             </span>
           </button>
 
-          {promptCategories.map(cat => {
+          {categoriesList.map(cat => {
             const count = categoryCounts[cat] || 0;
             const isSelected = activeCategory === cat;
             return (
@@ -665,9 +895,20 @@ export default function PromptsLibraryPage() {
                 {/* Barra de etiquetas y acciones */}
                 <div className="flex items-center justify-between gap-2 mb-3">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="bg-indigo-50 border border-indigo-100 text-indigo-700 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg">
-                      {prompt.category}
-                    </span>
+                    {getPromptCategories(prompt).map(cat => (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveCategory(cat);
+                        }}
+                        className="bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/80 text-indigo-700 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-lg transition-colors cursor-pointer"
+                        title={`Filtrar por categoría "${cat}"`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
                     {prompt.imageRequirement === 'required' && (
                       <span className="bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-1" title="Requiere subir imagen base">
                         📷 Requiere Base
@@ -918,8 +1159,8 @@ export default function PromptsLibraryPage() {
             </div>
 
             <div className="p-6 md:p-8 space-y-5">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2 sm:col-span-1">
+              <div className="space-y-4">
+                <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1.5">Título del Prompt</label>
                   <input 
                     type="text" 
@@ -929,15 +1170,73 @@ export default function PromptsLibraryPage() {
                     placeholder="Ej. Fotorealismo Producto"
                   />
                 </div>
-                <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Categoría</label>
-                  <select 
-                    value={adminForm.category}
-                    onChange={(e) => setAdminForm({...adminForm, category: e.target.value})}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 focus:outline-none focus:border-indigo-500"
-                  >
-                    {promptCategories.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-bold text-slate-700">
+                      Categorías Asignadas <span className="text-indigo-600 font-extrabold">({adminForm.categories.length} seleccionada{adminForm.categories.length === 1 ? "" : "s"})</span>
+                    </label>
+                    <span className="text-[11px] text-slate-400">Puedes seleccionar más de una</span>
+                  </div>
+
+                  {/* Chips interactivos de categorías */}
+                  <div className="flex flex-wrap gap-1.5 p-3 bg-slate-50 border border-slate-200 rounded-xl max-h-36 overflow-y-auto">
+                    {categoriesList.map(cat => {
+                      const isSelected = adminForm.categories.includes(cat);
+                      return (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => {
+                            let nextCats: string[];
+                            if (isSelected) {
+                              if (adminForm.categories.length <= 1) return; // Mantener al menos una
+                              nextCats = adminForm.categories.filter(c => c !== cat);
+                            } else {
+                              nextCats = [...adminForm.categories, cat];
+                            }
+                            setAdminForm({
+                              ...adminForm,
+                              categories: nextCats,
+                              category: nextCats[0] || "General"
+                            });
+                          }}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                            isSelected
+                              ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-300'
+                              : 'bg-white text-slate-700 hover:bg-slate-200 border border-slate-200'
+                          }`}
+                        >
+                          <span>{isSelected ? "✓" : "+"}</span>
+                          <span>{cat}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Input rápido para crear y seleccionar una nueva categoría al instante */}
+                  <div className="mt-2 flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={quickNewCategory}
+                      onChange={(e) => setQuickNewCategory(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleQuickAddCategory();
+                        }
+                      }}
+                      placeholder="+ Nueva categoría rápida..."
+                      className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-700 focus:outline-none focus:border-indigo-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleQuickAddCategory}
+                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-colors whitespace-nowrap"
+                    >
+                      + Añadir y Asignar
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -1194,6 +1493,188 @@ export default function PromptsLibraryPage() {
                   <span>✨</span> Usar esta Plantilla
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================
+          MODAL DE GESTIÓN DE CATEGORÍAS (ADMIN)
+          ========================================================= */}
+      {isManageCategoriesModalOpen && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div className="flex items-center gap-2.5">
+                <span className="text-2xl">🏷️</span>
+                <div>
+                  <h3 className="text-lg font-black text-slate-900">
+                    Gestionar Categorías
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Crea, renombra o elimina categorías para los estilos de imágenes.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setIsManageCategoriesModalOpen(false);
+                  setEditingCategoryName(null);
+                  setNewCategoryInput("");
+                }}
+                className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center font-bold text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 space-y-5 overflow-y-auto flex-1">
+              {/* Crear nueva categoría */}
+              <div className="bg-indigo-50/60 border border-indigo-100 rounded-2xl p-4 space-y-2">
+                <label className="block text-xs font-bold text-indigo-950">
+                  Nueva Categoría
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newCategoryInput}
+                    onChange={(e) => setNewCategoryInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        if (newCategoryInput.trim()) {
+                          handleCreateCategory(newCategoryInput.trim());
+                          setNewCategoryInput("");
+                        }
+                      }
+                    }}
+                    placeholder="Ej. Carteles de Oferta, Moda, Mascotas..."
+                    className="flex-1 bg-white border border-indigo-200 rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (newCategoryInput.trim()) {
+                        handleCreateCategory(newCategoryInput.trim());
+                        setNewCategoryInput("");
+                      }
+                    }}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all shadow-sm shadow-indigo-200 whitespace-nowrap"
+                  >
+                    + Crear
+                  </button>
+                </div>
+              </div>
+
+              {/* Lista de categorías existentes */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-500 px-1">
+                  <span>Categorías Existentes ({categoriesList.length})</span>
+                  <span>Estilos Asociados</span>
+                </div>
+
+                <div className="divide-y divide-slate-100 border border-slate-200 rounded-2xl bg-white overflow-hidden max-h-80 overflow-y-auto">
+                  {categoriesList.map((cat) => {
+                    const count = promptTemplates.filter((p) =>
+                      getPromptCategories(p).includes(cat)
+                    ).length;
+                    const isEditingThis = editingCategoryName === cat;
+
+                    return (
+                      <div
+                        key={cat}
+                        className="p-3 flex items-center justify-between gap-3 hover:bg-slate-50/70 transition-colors"
+                      >
+                        {isEditingThis ? (
+                          <div className="flex-1 flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={editingCategoryNewValue}
+                              onChange={(e) => setEditingCategoryNewValue(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  handleRenameCategory(cat, editingCategoryNewValue);
+                                  setEditingCategoryName(null);
+                                } else if (e.key === "Escape") {
+                                  setEditingCategoryName(null);
+                                }
+                              }}
+                              autoFocus
+                              className="flex-1 bg-white border border-indigo-400 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-800 focus:outline-none ring-2 ring-indigo-100"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleRenameCategory(cat, editingCategoryNewValue);
+                                setEditingCategoryName(null);
+                              }}
+                              className="px-2.5 py-1 bg-indigo-600 text-white rounded-lg text-[11px] font-bold hover:bg-indigo-700"
+                            >
+                              ✓ Guardar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingCategoryName(null)}
+                              className="px-2 py-1 bg-slate-100 text-slate-600 rounded-lg text-[11px] font-bold hover:bg-slate-200"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="text-xs font-bold text-slate-800 truncate">
+                                {cat}
+                              </span>
+                              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200/60">
+                                {count} {count === 1 ? "estilo" : "estilos"}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingCategoryName(cat);
+                                  setEditingCategoryNewValue(cat);
+                                }}
+                                className="p-1.5 hover:bg-indigo-50 text-slate-500 hover:text-indigo-600 rounded-lg transition-colors text-xs"
+                                title={`Renombrar "${cat}"`}
+                              >
+                                ✏️
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteCategory(cat)}
+                                className="p-1.5 hover:bg-rose-50 text-slate-500 hover:text-rose-600 rounded-lg transition-colors text-xs"
+                                title={`Eliminar categoría "${cat}"`}
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsManageCategoriesModalOpen(false);
+                  setEditingCategoryName(null);
+                  setNewCategoryInput("");
+                }}
+                className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition-all"
+              >
+                Cerrar
+              </button>
             </div>
           </div>
         </div>

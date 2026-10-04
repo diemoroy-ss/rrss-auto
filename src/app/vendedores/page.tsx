@@ -8,7 +8,7 @@ import { auth, db, storage } from "../../lib/firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc, collection, getDocs } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { HARDCODED_STYLES, promptCategories, PromptTemplate } from "../../lib/prompt-templates";
+import { HARDCODED_STYLES, promptCategories, PromptTemplate, getPromptCategories } from "../../lib/prompt-templates";
 import { createButterflyRender, compositeImageClient, BadgeStyle } from "../../lib/image-compositor";
 import { removeLogoBackground } from "../../lib/logo-bg-remover";
 import LogoMark from "../../components/LogoMark";
@@ -461,7 +461,7 @@ export default function VendedoresPwaPage() {
 
   // 5. Filtro de estilos
   const filteredTemplates = allTemplates.filter((template) => {
-    const matchCategory = selectedCategory === "Todas" || template.category === selectedCategory;
+    const matchCategory = selectedCategory === "Todas" || getPromptCategories(template).includes(selectedCategory);
     const matchSearch =
       searchTerm.trim() === "" ||
       template.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
