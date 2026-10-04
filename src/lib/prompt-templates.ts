@@ -1422,5 +1422,397 @@ The final result should look like a professionally designed premium restaurant m
     imageGenBehavior: "product",
     styleKeywords: "premium restaurant menu card visual, faithful original dish presentation, refined editorial layout, warm professional food photography, product attributes and price hierarchy, digital menu board aesthetic",
   },
+  {
+    id: "style-food-cafe-lifestyle",
+    title: "Cafetería Lifestyle & Momentos (Café Lifestyle)",
+    description: "Transforma tu café, bebida o pastelería en una escena cálida y aspiracional de cafetería: mesa de madera noble, luz natural suave, desenfoque bokeh y titulares emocionales.",
+    category: "Gastronomía & Carteles",
+    prompt: `Create a premium lifestyle advertising image using the provided food or beverage image as the EXACT reference for the main product.
+
+The ORIGINAL PRODUCT must remain visually identical.
+
+PRESERVE ABSOLUTELY:
+- exact product identity
+- shape
+- proportions
+- colors
+- textures
+- ingredients
+- toppings
+- presentation
+- packaging
+- logos
+- labels
+- original food characteristics
+
+DO NOT redesign, replace, reinterpret or modify the original product.
+
+TRANSFORMATION:
+Transform the original image into a warm, elegant and aspirational CAFÉ LIFESTYLE advertisement.
+
+Create an inviting environment that communicates:
+- comfort
+- relaxation
+- quality
+- good moments
+- warmth
+- sophistication
+- everyday enjoyment
+
+ENVIRONMENT:
+Automatically adapt the environment to the product.
+
+For coffee:
+- elegant café table
+- warm wood
+- soft natural light
+- subtle plants
+- pastries when appropriate
+- cozy background
+- realistic café atmosphere
+
+For other compatible beverages or bakery products, adapt the environment naturally without adding unrelated elements.
+
+PHOTOGRAPHY:
+Use premium lifestyle food photography.
+
+Create:
+- warm natural lighting
+- realistic shadows
+- shallow depth of field
+- beautiful bokeh
+- realistic reflections
+- appetizing textures
+- sophisticated composition
+
+The original product must remain the visual hero.
+
+GRAPHIC DESIGN:
+Create an elegant vertical social-media advertisement.
+
+Include a strong emotional headline related to the experience of enjoying the product.
+
+Suggested hierarchy:
+- product/lifestyle headline
+- short emotional phrase
+- subtle supporting message
+- small CTA when appropriate
+
+Use elegant editorial typography.
+
+Do not cover the main product.
+
+IMPORTANT:
+Do not invent factual claims about the business, product or ingredients.
+
+If text is not provided, use editable placeholder text.
+
+The final image must look like a professional lifestyle campaign for a premium café or food brand.
+
+ABSOLUTE RULE:
+Everything that was not explicitly requested to change must remain unchanged from the original image.`,
+    previewUrl: "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=500&q=80",
+    imageRequirement: "required",
+    isCommercialPoster: true,
+    imageGenBehavior: "editorial",
+    styleKeywords: "premium cafe lifestyle advertising photography, faithful original drink or pastry hero on elegant wooden table, warm natural sunlight, soft bokeh background, cozy coffee shop atmosphere, emotional editorial typography",
+  },
+  {
+    id: "style-food-delivery-ad",
+    title: "Anuncio Delivery & Para Llevar (Food Delivery Ad)",
+    description: "Publicidad de delivery de alto impacto: 'Tu comida favorita en tu casa', con packaging de delivery o takeaway complementario, beneficios clave (Rápido / Seguro / A tiempo) y CTA directo.",
+    category: "Gastronomía & Carteles",
+    prompt: `Create a premium FOOD DELIVERY advertisement using the provided food image as the EXACT reference for the main dish.
+
+The ORIGINAL FOOD must remain visually identical.
+
+PRESERVE ABSOLUTELY:
+- exact dish identity
+- ingredients
+- shape
+- proportions
+- colors
+- textures
+- toppings
+- sauces
+- garnish
+- cooking characteristics
+- packaging if present
+- logos and labels
+
+DO NOT redesign, replace, simplify or modify the original food.
+
+TRANSFORMATION:
+Transform the original food image into a high-impact DELIVERY ADVERTISEMENT.
+
+The visual concept should communicate:
+
+"Your favorite food delivered to your home."
+
+Create a realistic delivery environment around the original dish.
+
+Possible supporting elements:
+- branded or generic food delivery packaging
+- takeaway box
+- beverage
+- fries or appropriate side
+- delivery bag
+- subtle delivery-related visual elements
+
+Only add elements that are logically compatible with the original food.
+
+Do NOT let additional elements dominate the composition.
+
+COMPOSITION:
+Create a vertical social-media advertisement.
+
+The original dish must be the main visual hero.
+
+Create a visually strong foreground and a slightly blurred restaurant/home-delivery background.
+
+PHOTOGRAPHY:
+Use premium commercial food photography:
+- appetizing lighting
+- realistic shadows
+- warm highlights
+- realistic textures
+- shallow depth of field
+- cinematic depth
+- professional restaurant advertising aesthetic
+
+GRAPHIC DESIGN:
+Create strong promotional hierarchy.
+
+Suggested elements:
+- "TU COMIDA FAVORITA EN TU CASA"
+- short benefit statement
+- delivery benefits such as:
+  RAPIDO / SEGURO / A TIEMPO
+- restaurant or brand name
+- CTA such as "¡ORDENA AHORA!"
+
+Use bold, highly readable typography.
+
+Use icons only when they add value.
+
+Do not cover important parts of the food.
+
+IMPORTANT:
+Do not invent delivery times, prices, platforms, restaurant names or guarantees unless they are provided.
+
+Use editable placeholders for missing information.
+
+The final result must look like a professional restaurant delivery campaign suitable for Instagram, Facebook, WhatsApp and digital advertising.
+
+ABSOLUTE RULE:
+The original food remains unchanged.
+The delivery environment and advertising design are the transformation.`,
+    previewUrl: "https://images.unsplash.com/photo-1526367790999-0150786686a2?w=500&q=80",
+    imageRequirement: "required",
+    isCommercialPoster: true,
+    imageGenBehavior: "product",
+    styleKeywords: "premium food delivery advertising poster, faithful original dish in foreground, takeaway packaging and delivery elements in background, 'TU COMIDA FAVORITA EN TU CASA' header, bold delivery promo typography",
+  },
+  {
+    id: "style-food-special-offer",
+    title: "Oferta Especial & Descuento Flash (Special Offer Promo)",
+    description: "Campaña promocional con sentido de urgencia y valor comercial: insignia de ¡OFERTA ESPECIAL!, bloques destacados de descuento (% o precio), vigencia limitada y llamado a la acción inmediato.",
+    category: "Gastronomía & Carteles",
+    prompt: `Create a high-impact PREMIUM FOOD PROMOTION using the provided food image as the EXACT reference for the main dish.
+
+The ORIGINAL FOOD must remain visually identical.
+
+PRESERVE ABSOLUTELY:
+- exact dish identity
+- ingredients
+- shape
+- proportions
+- colors
+- textures
+- toppings
+- sauces
+- garnish
+- cooking characteristics
+- plating
+- logos
+- labels
+
+DO NOT redesign, replace, reinterpret or modify the original food.
+
+TRANSFORMATION:
+Transform the original food image into a LIMITED-TIME SPECIAL OFFER advertisement.
+
+The visual communication must immediately communicate:
+- promotion
+- value
+- urgency
+- appetite
+- limited availability
+
+The dish must remain the main visual hero.
+
+Create a premium restaurant advertising environment appropriate to the original food.
+
+PHOTOGRAPHY:
+Use dramatic but realistic commercial food photography.
+
+Enhance:
+- appetizing highlights
+- food texture
+- depth
+- contrast
+- realistic shadows
+- premium presentation
+
+Do not artificially change the appearance of the food.
+
+GRAPHIC DESIGN:
+Create a strong promotional hierarchy.
+
+Include space for:
+- "¡OFERTA ESPECIAL!"
+- discount percentage or promotional value
+- product/dish name
+- promotional condition
+- limited-time message
+- CTA such as "¡ORDENA AHORA!"
+
+Examples of editable promotional information:
+"20% DE DESCUENTO"
+"POR TIEMPO LIMITADO"
+"SOLO HOY"
+"EN TODA LA PASTA"
+
+IMPORTANT:
+Never invent the actual discount, price, validity period or promotional conditions.
+
+If this information is not supplied, use clearly editable placeholders such as:
+"[DESCUENTO]"
+"[PRECIO]"
+"[VIGENCIA]"
+
+Use bold, highly readable typography.
+
+Use visual elements such as badges, ribbons or highlighted price blocks when appropriate, but avoid excessive clutter.
+
+The final result should look like a professional restaurant promotion designed for social media advertising.
+
+ABSOLUTE RULE:
+The original dish is the source of truth.
+Only the promotional environment and graphic presentation should change.`,
+    previewUrl: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=500&q=80",
+    imageRequirement: "required",
+    isCommercialPoster: true,
+    imageGenBehavior: "product",
+    styleKeywords: "dramatic commercial food promotion poster, faithful original dish hero, 'OFERTA ESPECIAL' promotional badge, bold discount percentage and price blocks, sense of urgency and high appetite appeal",
+  },
+  {
+    id: "style-food-brand-experience",
+    title: "Experiencia de Marca & Restaurante (Brand Experience Ad)",
+    description: "Branding gastronómico de alto nivel que vende la experiencia completa del local: mesa servida elegante, vajilla cuidada, iluminación ambiental cálida y conceptos como 'Buenas Historias, Gran Comida'.",
+    category: "Gastronomía & Carteles",
+    prompt: `Create a premium RESTAURANT BRAND ADVERTISEMENT using the provided food image as the EXACT reference for the main dish.
+
+The ORIGINAL FOOD must remain visually identical.
+
+PRESERVE ABSOLUTELY:
+- exact dish identity
+- ingredients
+- shape
+- proportions
+- colors
+- textures
+- toppings
+- sauces
+- garnish
+- cooking characteristics
+- plating
+- logos
+- labels
+- packaging if present
+
+DO NOT redesign, replace, reinterpret or modify the original food.
+
+TRANSFORMATION:
+Transform the original food photograph into a sophisticated RESTAURANT BRAND ADVERTISEMENT.
+
+The objective is not only to sell the dish, but to communicate the restaurant's overall experience.
+
+The visual should communicate:
+- quality
+- flavor
+- trust
+- hospitality
+- memorable experiences
+- premium culinary experience
+
+ENVIRONMENT:
+Create an elegant restaurant atmosphere appropriate to the cuisine.
+
+Automatically adapt the environment according to the original food.
+
+Possible elements:
+- elegant dining table
+- sophisticated tableware
+- wine or beverage when appropriate
+- subtle candles
+- natural ingredients
+- restaurant ambience
+- warm architectural background
+- soft decorative lighting
+
+Only include elements that naturally fit the dish and cuisine.
+
+Do not create an unrealistic or overcrowded scene.
+
+PHOTOGRAPHY:
+Use high-end restaurant advertising photography.
+
+Create:
+- cinematic lighting
+- realistic shadows
+- controlled highlights
+- natural depth of field
+- realistic food textures
+- premium atmosphere
+- sophisticated composition
+
+The original dish must remain the visual hero.
+
+GRAPHIC DESIGN:
+Create a vertical premium social-media advertisement.
+
+Use strong but elegant typography.
+
+Suggested hierarchy:
+- restaurant headline
+- emotional brand statement
+- supporting message
+- restaurant name
+- CTA such as "VISÍTANOS HOY"
+
+Optional supporting concepts:
+- "BUENA COMIDA"
+- "GRANDES HISTORIAS"
+- "EXPERIENCIAS QUE QUIERES VOLVER A VIVIR"
+
+Do not invent specific restaurant claims unless provided.
+
+If restaurant name, address, website, price or other information is not provided, use editable placeholders.
+
+The final image should look like a professional campaign created by a high-end restaurant marketing agency.
+
+ABSOLUTE RULE:
+The original dish is the source of truth.
+
+Everything not explicitly requested to change must remain unchanged.
+
+The restaurant environment and graphic design enhance the product; they must never replace or distort it.`,
+    previewUrl: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=500&q=80",
+    imageRequirement: "required",
+    isCommercialPoster: true,
+    imageGenBehavior: "editorial",
+    styleKeywords: "high-end restaurant branding advertisement, faithful signature dish hero on elegant restaurant dining table, candlelit warm architectural background, premium hospitality vibe, sophisticated editorial branding typography",
+  },
 ];
 

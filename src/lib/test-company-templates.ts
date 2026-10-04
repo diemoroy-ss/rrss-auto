@@ -46,8 +46,11 @@ export const TEST_COMPANY_TEMPLATES: TestCompanyTemplate[] = [
     color: 'from-amber-500 to-rose-600',
     recommendedStyles: [
       'style-food-combo-ad',
+      'style-food-delivery-ad',
+      'style-food-special-offer',
       'style-food-hero-poster',
       'style-food-dish-launch',
+      'style-food-brand-experience',
       'style-food-menu-visual',
       'style-food-ad-minimalist'
     ],
@@ -124,10 +127,13 @@ export const TEST_COMPANY_TEMPLATES: TestCompanyTemplate[] = [
     badge: 'Cafetería & Brunch',
     color: 'from-amber-600 to-amber-900',
     recommendedStyles: [
+      'style-food-cafe-lifestyle',
+      'style-food-brand-experience',
+      'style-food-special-offer',
       'style-food-menu-visual',
       'style-food-dish-launch',
+      'style-food-delivery-ad',
       'style-food-ad-minimalist',
-      'style-food-combo-ad',
       'style-food-hero-poster'
     ],
     sampleProducts: [

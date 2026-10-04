@@ -13,6 +13,10 @@ async function seedFoodPrompts() {
     "style-food-hero-poster",
     "style-food-menu-visual",
     "style-food-ad-minimalist",
+    "style-food-cafe-lifestyle",
+    "style-food-delivery-ad",
+    "style-food-special-offer",
+    "style-food-brand-experience",
   ];
 
   const stylesToSeed = HARDCODED_STYLES.filter((s) => targetIds.includes(s.id));
