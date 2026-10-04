@@ -113,19 +113,10 @@ export default function PublicMenuPage() {
     return raw;
   }, [business]);
 
-  const getWhatsAppItemUrl = (item: MenuItem) => {
-    if (!cleanPhone) return null;
-    const priceText = item.offerPrice ? `en oferta a ${item.offerPrice}` : item.price ? `(${item.price})` : "";
-    const text = encodeURIComponent(
-      `¡Hola! Estuve viendo su carta digital y me gustaría pedir o consultar por: *${item.name}* ${priceText}. ¿Tienen disponibilidad?`
-    );
-    return `https://wa.me/${cleanPhone}?text=${text}`;
-  };
-
   const getGeneralWhatsAppUrl = () => {
     if (!cleanPhone) return null;
     const text = encodeURIComponent(
-      `¡Hola! Estoy viendo su carta digital y quisiera hacer un pedido o consulta.`
+      `¡Hola! Estoy viendo su carta digital y quisiera hacer una consulta.`
     );
     return `https://wa.me/${cleanPhone}?text=${text}`;
   };
@@ -219,7 +210,7 @@ export default function PublicMenuPage() {
   }
 
   return (
-    <div className={`min-h-screen ${t.pageBg} pb-28 transition-colors duration-300`}>
+    <div className={`min-h-screen ${t.pageBg} pb-16 transition-colors duration-300`}>
       {/* Top Banner / Cover */}
       <div className={`relative ${t.heroGradient} pt-8 pb-14 px-4 sm:px-6 shadow-xl`}>
         <div className="max-w-2xl mx-auto">
@@ -253,14 +244,14 @@ export default function PublicMenuPage() {
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <h1 className={`text-2xl sm:text-3xl font-black ${t.heroText} leading-tight truncate`}>
+              <h1 className={`text-xl sm:text-2xl md:text-3xl font-black ${t.heroText} leading-snug break-words`}>
                 {business.name}
               </h1>
               <p className={`text-xs sm:text-sm font-semibold mt-0.5 ${t.heroSubtext}`}>
                 {business.rubro}
               </p>
               {business.address && (
-                <p className="text-white/70 text-xs flex items-center gap-1.5 mt-1 truncate">
+                <p className="text-white/70 text-xs flex items-center gap-1.5 mt-1 break-words">
                   <FaMapMarkerAlt className="shrink-0 text-rose-400" />
                   <span>{business.address}</span>
                 </p>
@@ -275,18 +266,8 @@ export default function PublicMenuPage() {
             </p>
           )}
 
-          {/* Action Chips: Instagram, Website, WhatsApp */}
+          {/* Action Chips: Instagram, Website */}
           <div className="flex flex-wrap items-center gap-2 mt-4">
-            {cleanPhone && (
-              <a
-                href={getGeneralWhatsAppUrl() || "#"}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs transition-all shadow-md active:scale-95"
-              >
-                <FaWhatsapp className="text-sm" /> WhatsApp Directo
-              </a>
-            )}
             {business.instagramUsername && (
               <a
                 href={`https://instagram.com/${business.instagramUsername.replace('@', '')}`}
@@ -506,44 +487,30 @@ export default function PublicMenuPage() {
                       </p>
                     </div>
 
-                    {/* Price and CTA */}
+                    {/* Price */}
                     <div className={`flex items-center justify-between gap-3 mt-4 pt-3 border-t ${t.dividerColor}`}>
-                      {/* Price Section */}
                       <div>
                         {hasOffer ? (
                           <div className="flex flex-col">
-                            <span className={`text-lg leading-none flex items-center gap-1.5 ${t.offerPriceColor}`}>
+                            <span className={`text-lg font-black leading-none flex items-center gap-1.5 ${t.offerPriceColor}`}>
                               {item.offerPrice}
                             </span>
                             {item.price && (
-                              <span className="opacity-60 text-xs font-semibold line-through mt-0.5">
+                              <span className="opacity-60 text-xs font-medium line-through mt-0.5">
                                 Antes {item.price}
                               </span>
                             )}
                           </div>
                         ) : item.price ? (
-                          <span className={`text-base sm:text-lg leading-none ${t.priceColor}`}>
+                          <span className={`text-base sm:text-lg font-black leading-none ${t.priceColor}`}>
                             {item.price}
                           </span>
                         ) : (
                           <span className="opacity-60 text-xs font-semibold">
-                            Consultar precio
+                            Consultar en mesa
                           </span>
                         )}
                       </div>
-
-                      {/* WhatsApp Order Button */}
-                      {cleanPhone && (
-                        <a
-                          href={getWhatsAppItemUrl(item) || "#"}
-                          target="_blank"
-                          rel="noreferrer"
-                          className={`inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-xs font-black transition-all shadow-sm active:scale-95 ${t.ctaButton}`}
-                        >
-                          <FaWhatsapp className="text-sm" />
-                          <span>Pedir</span>
-                        </a>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -570,26 +537,6 @@ export default function PublicMenuPage() {
           </p>
         </div>
       </div>
-
-      {/* Floating Bottom Bar for Mobile Contact */}
-      {cleanPhone && (
-        <div className="fixed bottom-4 inset-x-4 max-w-md mx-auto z-40">
-          <a
-            href={getGeneralWhatsAppUrl() || "#"}
-            target="_blank"
-            rel="noreferrer"
-            className={`flex items-center justify-between px-5 py-3.5 rounded-2xl transition-all transform active:scale-95 ${t.floatingBar}`}
-          >
-            <div className="flex items-center gap-2.5">
-              <FaWhatsapp className="text-xl" />
-              <span>¿Quieres ordenar o consultar algo?</span>
-            </div>
-            <span className="bg-black/20 text-current px-2.5 py-1 rounded-xl text-xs font-black">
-              Escríbenos
-            </span>
-          </a>
-        </div>
-      )}
 
       {/* Image Modal for Fullscreen View */}
       {selectedItemForModal && (
@@ -632,20 +579,9 @@ export default function PublicMenuPage() {
                   ) : null}
                 </div>
               </div>
-              <p className={`text-sm font-medium leading-relaxed mb-6 ${t.descColor}`}>
+              <p className={`text-sm font-medium leading-relaxed ${t.descColor}`}>
                 {selectedItemForModal.description}
               </p>
-              {cleanPhone && (
-                <a
-                  href={getWhatsAppItemUrl(selectedItemForModal) || "#"}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={`w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 text-sm transition-all ${t.ctaButton}`}
-                >
-                  <FaWhatsapp className="text-lg" />
-                  <span>Pedir este producto por WhatsApp</span>
-                </a>
-              )}
             </div>
           </div>
         </div>
