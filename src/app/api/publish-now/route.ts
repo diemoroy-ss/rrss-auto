@@ -536,7 +536,9 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
                     let resolvedProductName: string | undefined = post.productName || undefined;
                     let resolvedProductDesc: string | undefined = post.productDescription || undefined;
                     let resolvedProductPrice: string | undefined = post.productOfferPrice || post.productPrice || undefined;
-                    let resolvedKeepOriginalPhoto: boolean = Boolean(post.keepOriginalPhoto);
+                    let resolvedKeepOriginalPhoto: boolean = post.keepOriginalPhoto !== undefined
+                        ? Boolean(post.keepOriginalPhoto)
+                        : (targetProfile?.photoTreatment !== 'agent');
                     let resolvedFontStyle: any = post.fontStyle || "script_handwritten";
                     let imageSource: "uploaded_base" | "catalog_product" | "catalog_product_generated" | "business_description" = "business_description";
 
@@ -594,24 +596,30 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
                     }
 
                     let generatedImageUrl: string | null = null;
+                    const isBannerMode = ((targetProfile?.bannerStyle as any) || 'banner') === 'banner';
 
                     if (resolvedKeepOriginalPhoto && resolvedBaseImage) {
-                        console.log(`[publishInBackground] 📸 Modo Foto Real Intocable activo para "${resolvedProductName}". Componiendo tipografía sobre foto original...`);
-                        const { composeRealProductBanner } = await import("../../../lib/real-product-compositor");
-                        generatedImageUrl = await composeRealProductBanner({
-                            baseImageUrl: resolvedBaseImage,
-                            productName: resolvedProductName || "Producto",
-                            productDescription: resolvedProductDesc,
-                            price: resolvedProductPrice,
-                            idea: post.idea || caption,
-                            rubro: targetProfile?.rubro || "Gastronomía",
-                            businessName: targetProfile?.name || targetProfile?.businessName || "Mi Negocio",
-                            fontStyle: resolvedFontStyle,
-                            aspectRatio: isStory ? "9:16" : "1:1",
-                            logoUrl: targetProfile?.logoUrl || "",
-                            userId: creds.uid,
-                            includeLogo: post.includeLogo === true || (post.includeLogo !== false && targetProfile?.alwaysIncludeLogo === true),
-                        });
+                        if (isBannerMode) {
+                            console.log(`[publishInBackground] 📸 Modo Foto Real + Cartel Publicitario activo para "${resolvedProductName}". Componiendo tipografía sobre foto original...`);
+                            const { composeRealProductBanner } = await import("../../../lib/real-product-compositor");
+                            generatedImageUrl = await composeRealProductBanner({
+                                baseImageUrl: resolvedBaseImage,
+                                productName: resolvedProductName || "Producto",
+                                productDescription: resolvedProductDesc,
+                                price: resolvedProductPrice,
+                                idea: post.idea || caption,
+                                rubro: targetProfile?.rubro || "Gastronomía",
+                                businessName: targetProfile?.name || targetProfile?.businessName || "Mi Negocio",
+                                fontStyle: resolvedFontStyle,
+                                aspectRatio: isStory ? "9:16" : "1:1",
+                                logoUrl: targetProfile?.logoUrl || "",
+                                userId: creds.uid,
+                                includeLogo: post.includeLogo === true || (post.includeLogo !== false && targetProfile?.alwaysIncludeLogo === true),
+                            });
+                        } else {
+                            console.log(`[publishInBackground] 📸 Modo Foto Real Limpia (Sin Cartel) para "${resolvedProductName}". Usando foto original directa.`);
+                            generatedImageUrl = resolvedBaseImage;
+                        }
                     } else {
                         const productFocus = resolvedProductName 
                             ? `Producto/servicio protagonista: "${resolvedProductName}"${resolvedProductDesc ? ` (${resolvedProductDesc})` : ''}. ` 

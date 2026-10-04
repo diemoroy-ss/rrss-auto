@@ -57,6 +57,8 @@ export async function POST(req: NextRequest) {
       website,
       menuDigitalEnabled,
       menuTheme,
+      bannerStyle,
+      photoTreatment,
       sampleProducts = [],
     } = body;
 
@@ -85,6 +87,8 @@ export async function POST(req: NextRequest) {
       website: website?.trim() || '',
       menuDigitalEnabled: menuDigitalEnabled !== false,
       menuTheme: menuTheme || 'dark_modern',
+      bannerStyle: bannerStyle || 'banner',
+      photoTreatment: photoTreatment || 'clean',
       isTestProfile: true,
       createdAt: new Date().toISOString(),
     };
@@ -108,6 +112,7 @@ export async function POST(req: NextRequest) {
           description: prod.description?.trim() || '',
           type: prod.type || 'producto',
           category: prod.category?.trim() || null,
+          subcategory: prod.subcategory?.trim() || null,
           price: prod.price?.trim() || null,
           offerPrice: prod.offerPrice?.trim() || null,
           includePriceInCopy: prod.includePriceInCopy !== false,

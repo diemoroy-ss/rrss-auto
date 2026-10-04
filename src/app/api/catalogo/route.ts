@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
   try {
     const uid = await getUid(req);
     const body = await req.json();
-    const { name, description, type, category, price, offerPrice, includePriceInCopy, imageUrl, tags, profileId, keepOriginalPhoto, fontStyle } = body;
+    const { name, description, type, category, subcategory, price, offerPrice, includePriceInCopy, imageUrl, tags, profileId, keepOriginalPhoto, fontStyle } = body;
     if (!name || !description || !type || !profileId) {
       return NextResponse.json({ error: "name, description, type y profileId son requeridos" }, { status: 400 });
     }
@@ -55,6 +55,7 @@ export async function POST(req: NextRequest) {
       description: description.trim(),
       type,
       category: category?.trim() || null,
+      subcategory: subcategory?.trim() || null,
       price: price?.trim() || null,
       offerPrice: offerPrice?.trim() || null,
       includePriceInCopy: includePriceInCopy !== false,
@@ -77,13 +78,14 @@ export async function PUT(req: NextRequest) {
   try {
     const uid = await getUid(req);
     const body = await req.json();
-    const { id, name, description, type, category, price, offerPrice, includePriceInCopy, imageUrl, tags, active, keepOriginalPhoto, fontStyle } = body;
+    const { id, name, description, type, category, subcategory, price, offerPrice, includePriceInCopy, imageUrl, tags, active, keepOriginalPhoto, fontStyle } = body;
     if (!id) return NextResponse.json({ error: "id es requerido" }, { status: 400 });
     const updates: Record<string, any> = {};
     if (name !== undefined) updates.name = name.trim();
     if (description !== undefined) updates.description = description.trim();
     if (type !== undefined) updates.type = type;
     if (category !== undefined) updates.category = category?.trim() || null;
+    if (subcategory !== undefined) updates.subcategory = subcategory?.trim() || null;
     if (price !== undefined) updates.price = price?.trim() || null;
     if (offerPrice !== undefined) updates.offerPrice = offerPrice?.trim() || null;
     if (includePriceInCopy !== undefined) updates.includePriceInCopy = Boolean(includePriceInCopy);

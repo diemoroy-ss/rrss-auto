@@ -396,6 +396,7 @@ function ConfigContent() {
   const [alwaysIncludeLogo, setAlwaysIncludeLogo] = useState(false);
   const [promotions, setPromotions] = useState("");
   const [bannerStyle, setBannerStyle] = useState<'banner' | 'clean'>("banner");
+  const [photoTreatment, setPhotoTreatment] = useState<'clean' | 'agent'>("clean");
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isAnalyzingLogo, setIsAnalyzingLogo] = useState(false);
 
@@ -434,6 +435,7 @@ function ConfigContent() {
       if (activeProfile.businessDescription !== businessDescription) setBusinessDescription(activeProfile.businessDescription || "");
       if (activeProfile.promotions !== promotions) setPromotions(activeProfile.promotions || "");
       if (activeProfile.bannerStyle && activeProfile.bannerStyle !== bannerStyle) setBannerStyle(activeProfile.bannerStyle);
+      if (activeProfile.photoTreatment && activeProfile.photoTreatment !== photoTreatment) setPhotoTreatment(activeProfile.photoTreatment);
       
       if (activeProfile.includeWebsiteInCopy !== undefined && activeProfile.includeWebsiteInCopy !== includeWebsiteInCopy) setIncludeWebsiteInCopy(activeProfile.includeWebsiteInCopy);
       if (activeProfile.includeEmailInCopy !== undefined && activeProfile.includeEmailInCopy !== includeEmailInCopy) setIncludeEmailInCopy(activeProfile.includeEmailInCopy);
@@ -606,6 +608,7 @@ function ConfigContent() {
                 alwaysIncludeLogo,
                 promotions,
                 bannerStyle,
+                photoTreatment,
                 visualIdentity
              } : p
           );
@@ -1080,6 +1083,7 @@ function ConfigContent() {
               includePhoneInCopy={includePhoneInCopy}
               promotions={promotions}
               bannerStyle={bannerStyle}
+              photoTreatment={photoTreatment}
               setWebsite={setWebsite}
               setIncludeWebsiteInCopy={setIncludeWebsiteInCopy}
               setEmail={setEmail}
@@ -1088,6 +1092,7 @@ function ConfigContent() {
               setIncludePhoneInCopy={setIncludePhoneInCopy}
               setPromotions={setPromotions}
               setBannerStyle={setBannerStyle}
+              setPhotoTreatment={setPhotoTreatment}
             />
           )}
           <div className="sticky bottom-6 z-50 flex justify-end">

@@ -49,7 +49,9 @@ export async function POST(req: NextRequest) {
     let resolvedProductName: string | undefined = post.productName || undefined;
     let resolvedProductDesc: string | undefined = post.productDescription || undefined;
     let resolvedProductPrice: string | undefined = post.productOfferPrice || post.productPrice || undefined;
-    let resolvedKeepOriginalPhoto: boolean = Boolean(post.keepOriginalPhoto);
+    let resolvedKeepOriginalPhoto: boolean = post.keepOriginalPhoto !== undefined
+      ? Boolean(post.keepOriginalPhoto)
+      : (targetProfile?.photoTreatment !== 'agent');
     let resolvedFontStyle: any = post.fontStyle || "script_handwritten";
     let imageSource: "uploaded_base" | "catalog_product" | "catalog_product_generated" | "business_description" = "business_description";
     let sourceDescription = "Generada a partir de la descripción del negocio";
@@ -127,24 +129,32 @@ export async function POST(req: NextRequest) {
     const isStory = post.type === "Historia" || post.type === "Story";
     let generatedImageUrl: string | null = null;
 
+    const isBannerMode = ((targetProfile.bannerStyle as any) || 'banner') === 'banner';
+
     if (resolvedKeepOriginalPhoto && resolvedBaseImage) {
-      console.log(`[generate-styled-image] 📸 Modo Foto Real Intocable activo para "${resolvedProductName}". Componiendo tipografía publicitaria sobre la foto original...`);
-      const { composeRealProductBanner } = await import("../../../../lib/real-product-compositor");
-      generatedImageUrl = await composeRealProductBanner({
-        baseImageUrl: resolvedBaseImage,
-        productName: resolvedProductName || "Producto",
-        productDescription: resolvedProductDesc,
-        price: resolvedProductPrice,
-        idea: post.idea || post.text,
-        rubro: targetProfile.rubro || "Gastronomía",
-        businessName: targetProfile.name || targetProfile.businessName || "Mi Negocio",
-        fontStyle: resolvedFontStyle,
-        aspectRatio: isStory ? "9:16" : "1:1",
-        logoUrl: targetProfile.logoUrl || "",
-        userId: post.userId,
-        includeLogo: post.includeLogo ?? targetProfile.alwaysIncludeLogo ?? true,
-      });
-      sourceDescription = `Foto real de "${resolvedProductName}" con tipografía comercial (sin retoque de comida)`;
+      if (isBannerMode) {
+        console.log(`[generate-styled-image] 📸 Modo Foto Real + Cartel Publicitario activo para "${resolvedProductName}". Componiendo tipografía publicitaria sobre la foto original...`);
+        const { composeRealProductBanner } = await import("../../../../lib/real-product-compositor");
+        generatedImageUrl = await composeRealProductBanner({
+          baseImageUrl: resolvedBaseImage,
+          productName: resolvedProductName || "Producto",
+          productDescription: resolvedProductDesc,
+          price: resolvedProductPrice,
+          idea: post.idea || post.text,
+          rubro: targetProfile.rubro || "Gastronomía",
+          businessName: targetProfile.name || targetProfile.businessName || "Mi Negocio",
+          fontStyle: resolvedFontStyle,
+          aspectRatio: isStory ? "9:16" : "1:1",
+          logoUrl: targetProfile.logoUrl || "",
+          userId: post.userId,
+          includeLogo: post.includeLogo ?? targetProfile.alwaysIncludeLogo ?? true,
+        });
+        sourceDescription = `Foto real de "${resolvedProductName}" con tipografía comercial (sin retoque de comida)`;
+      } else {
+        console.log(`[generate-styled-image] 📸 Modo Foto Real Limpia (Sin Cartel) para "${resolvedProductName}".`);
+        generatedImageUrl = resolvedBaseImage;
+        sourceDescription = `Foto real limpia de "${resolvedProductName}" sin textos gráficos superpuestos`;
+      }
     } else {
       const productFocus = resolvedProductName 
         ? `Producto/servicio protagonista: "${resolvedProductName}"${resolvedProductDesc ? ` (${resolvedProductDesc})` : ''}. ` 

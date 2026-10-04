@@ -7,6 +7,7 @@ interface TabContactoProps {
   phone: string; includePhoneInCopy: boolean;
   promotions: string;
   bannerStyle: 'banner' | 'clean';
+  photoTreatment: 'clean' | 'agent';
   setWebsite: (v: string) => void;
   setIncludeWebsiteInCopy: (v: boolean) => void;
   setEmail: (v: string) => void;
@@ -15,13 +16,14 @@ interface TabContactoProps {
   setIncludePhoneInCopy: (v: boolean) => void;
   setPromotions: (v: string) => void;
   setBannerStyle: (v: 'banner' | 'clean') => void;
+  setPhotoTreatment: (v: 'clean' | 'agent') => void;
 }
 
 export default function TabContacto({
   website, includeWebsiteInCopy, email, includeEmailInCopy,
-  phone, includePhoneInCopy, promotions, bannerStyle,
+  phone, includePhoneInCopy, promotions, bannerStyle, photoTreatment,
   setWebsite, setIncludeWebsiteInCopy, setEmail, setIncludeEmailInCopy,
-  setPhone, setIncludePhoneInCopy, setPromotions, setBannerStyle,
+  setPhone, setIncludePhoneInCopy, setPromotions, setBannerStyle, setPhotoTreatment,
 }: TabContactoProps) {
   return (
     <div className="space-y-8">
@@ -121,23 +123,72 @@ export default function TabContacto({
           <textarea value={promotions} onChange={(e) => setPromotions(e.target.value)} placeholder={"Ejemplo:\n• Jueves 2x1 en hamburguesas\n• Combo Burger + Bebida a $8.990\n• 20% descuento primera visita por WhatsApp"} rows={4} className="w-full bg-slate-50 border-2 border-amber-200/60 px-5 py-3 rounded-2xl focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500/60 outline-none text-sm font-bold transition-all text-slate-700 resize-none shadow-sm" />
           <p className="text-[11px] text-slate-500 font-medium mt-2">💡 <strong>Tip:</strong> Incluye días de la semana, precios, combos o regalos para incentivar la venta directa.</p>
         </div>
-        <div className="pt-6 border-t border-amber-200/40">
-          <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">🎨 Formato Visual de tus Publicaciones:</label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <label onClick={() => setBannerStyle('banner')} className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-3 ${bannerStyle === 'banner' ? 'bg-white border-amber-500 shadow-md shadow-amber-500/10' : 'bg-white/60 border-slate-200/70 hover:bg-white'}`}>
-              <input type="radio" name="bannerStyle" checked={bannerStyle === 'banner'} onChange={() => setBannerStyle('banner')} className="mt-1 accent-amber-600" />
-              <div>
-                <p className="text-xs font-black text-slate-900">🏷️ Cartel Publicitario Comercial (Recomendado)</p>
-                <p className="text-[11px] text-slate-500 mt-0.5">Estampa titulares llamativos, badges de oferta y tu logo sobre la foto para vender más rápido.</p>
-              </div>
-            </label>
-            <label onClick={() => setBannerStyle('clean')} className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-3 ${bannerStyle === 'clean' ? 'bg-white border-amber-500 shadow-md shadow-amber-500/10' : 'bg-white/60 border-slate-200/70 hover:bg-white'}`}>
-              <input type="radio" name="bannerStyle" checked={bannerStyle === 'clean'} onChange={() => setBannerStyle('clean')} className="mt-1 accent-amber-600" />
-              <div>
-                <p className="text-xs font-black text-slate-900">🖼️ Solo Fotografía Limpia</p>
-                <p className="text-[11px] text-slate-500 mt-0.5">Genera únicamente la foto realista del producto o servicio sin textos encima.</p>
-              </div>
-            </label>
+        <div className="pt-6 border-t border-amber-200/40 space-y-6">
+          <div>
+            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">🎨 Formato Visual por Defecto (2 Configuraciones Clave):</label>
+            <p className="text-xs text-slate-500 font-medium">Define cómo deben componer nuestros agentes las imágenes de tus productos y servicios:</p>
+          </div>
+
+          {/* 1. Diferenciación: Cartel Publicitario */}
+          <div className="space-y-2">
+            <span className="text-xs font-bold text-slate-800">1. ¿Lleva formato de Cartel Publicitario?</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label onClick={() => setBannerStyle('banner')} className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-3 ${bannerStyle === 'banner' ? 'bg-white border-amber-500 shadow-md shadow-amber-500/10' : 'bg-white/60 border-slate-200/70 hover:bg-white'}`}>
+                <input type="radio" name="bannerStyle" checked={bannerStyle === 'banner'} onChange={() => setBannerStyle('banner')} className="mt-1 accent-amber-600" />
+                <div>
+                  <p className="text-xs font-black text-slate-900">🏷️ Cartel Publicitario (Sí)</p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">Estampa titulares llamativos, ganchos de oferta y precios con tipografía atractiva sobre la foto.</p>
+                </div>
+              </label>
+              <label onClick={() => setBannerStyle('clean')} className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-3 ${bannerStyle === 'clean' ? 'bg-white border-amber-500 shadow-md shadow-amber-500/10' : 'bg-white/60 border-slate-200/70 hover:bg-white'}`}>
+                <input type="radio" name="bannerStyle" checked={bannerStyle === 'clean'} onChange={() => setBannerStyle('clean')} className="mt-1 accent-amber-600" />
+                <div>
+                  <p className="text-xs font-black text-slate-900">🖼️ Post Estándar (No)</p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">Mantiene la imagen limpia sin textos gráficos ni precios superpuestos encima de la imagen.</p>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          {/* 2. Diferenciación: Fotografía Limpia vs Agentes */}
+          <div className="space-y-2">
+            <span className="text-xs font-bold text-slate-800">2. ¿Tratamiento de Fotografía / Imagen Base?</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label onClick={() => setPhotoTreatment('clean')} className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-3 ${photoTreatment === 'clean' ? 'bg-white border-amber-500 shadow-md shadow-amber-500/10' : 'bg-white/60 border-slate-200/70 hover:bg-white'}`}>
+                <input type="radio" name="photoTreatment" checked={photoTreatment === 'clean'} onChange={() => setPhotoTreatment('clean')} className="mt-1 accent-amber-600" />
+                <div>
+                  <p className="text-xs font-black text-slate-900">📸 Fotografía Limpia / Real</p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">Respeta fielmente la foto real del producto o servicio de tu catálogo sin alterarla.</p>
+                </div>
+              </label>
+              <label onClick={() => setPhotoTreatment('agent')} className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-3 ${photoTreatment === 'agent' ? 'bg-white border-amber-500 shadow-md shadow-amber-500/10' : 'bg-white/60 border-slate-200/70 hover:bg-white'}`}>
+                <input type="radio" name="photoTreatment" checked={photoTreatment === 'agent'} onChange={() => setPhotoTreatment('agent')} className="mt-1 accent-amber-600" />
+                <div>
+                  <p className="text-xs font-black text-slate-900">✨ Ajustada por Nuestros Agentes</p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">Nuestros agentes ambientan y estilizan la composición visual según la identidad de tu marca.</p>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          {/* Resumen explicativo */}
+          <div className="p-4 rounded-2xl bg-amber-50/60 border border-amber-200/80 text-xs flex items-start gap-3 shadow-xs">
+            <span className="text-lg shrink-0">💡</span>
+            <p className="text-slate-700 font-medium leading-relaxed">
+              <strong className="text-amber-900 font-black">Composición resultante: </strong>
+              {bannerStyle === "banner" && photoTreatment === "clean" && (
+                "A la fotografía limpia y real de tu producto se le agregarán los textos comerciales y precios superpuestos con tipografía atractiva."
+              )}
+              {bannerStyle === "banner" && photoTreatment === "agent" && (
+                "Nuestros agentes ajustarán la ambientación y el estilo visual de la imagen, y sobre esa composición se estamparán los textos comerciales y precios."
+              )}
+              {bannerStyle === "clean" && photoTreatment === "clean" && (
+                "Se utilizará únicamente la fotografía limpia y real de tu producto, sin ningún texto gráfico encima."
+              )}
+              {bannerStyle === "clean" && photoTreatment === "agent" && (
+                "Nuestros agentes generarán la composición visual ambientada para tu marca, sin textos gráficos encima."
+              )}
+            </p>
           </div>
         </div>
       </div>

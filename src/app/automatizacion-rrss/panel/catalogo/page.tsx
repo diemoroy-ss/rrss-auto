@@ -12,6 +12,7 @@ const EMPTY_FORM: Omit<CatalogoItem, 'id' | 'createdAt' | 'active'> = {
   description: '',
   type: 'producto',
   category: '',
+  subcategory: '',
   price: '',
   offerPrice: '',
   includePriceInCopy: true,
@@ -124,6 +125,7 @@ export default function CatalogoPage() {
       description: item.description,
       type: item.type,
       category: item.category || '',
+      subcategory: item.subcategory || '',
       price: item.price || '',
       offerPrice: item.offerPrice || '',
       includePriceInCopy: item.includePriceInCopy !== false,
@@ -365,6 +367,11 @@ export default function CatalogoPage() {
                       {item.category}
                     </span>
                   )}
+                  {item.subcategory && (
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 shadow-xs border border-slate-200">
+                      ↳ {item.subcategory}
+                    </span>
+                  )}
                 </div>
                 {item.keepOriginalPhoto !== false && item.imageUrl && (
                   <span className="absolute top-3 right-3 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-600 text-white shadow-xs flex items-center gap-1">
@@ -474,7 +481,7 @@ export default function CatalogoPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                 <div>
                   <label className="block text-xs font-black text-slate-600 uppercase tracking-wider mb-1.5">Tipo *</label>
                   <select 
@@ -487,13 +494,13 @@ export default function CatalogoPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-black text-slate-600 uppercase tracking-wider mb-1.5">Categoría (Carta / Menú)</label>
+                  <label className="block text-xs font-black text-slate-600 uppercase tracking-wider mb-1.5">Categoría (Principal)</label>
                   <input 
                     type="text" 
                     list="category-suggestions"
                     value={form.category || ''} 
                     onChange={e => setForm({...form, category: e.target.value})}
-                    placeholder="Ej: Cafetería, Sandwiches, Postres..."
+                    placeholder="Ej: Cafetería, Hamburguesas..."
                     className="w-full border-2 border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 placeholder-slate-400 outline-none transition-colors"
                   />
                   <datalist id="category-suggestions">
@@ -506,6 +513,16 @@ export default function CatalogoPage() {
                     <option value="Promociones & Combos" />
                     <option value="Servicios Destacados" />
                   </datalist>
+                </div>
+                <div>
+                  <label className="block text-xs font-black text-slate-600 uppercase tracking-wider mb-1.5">Subcategoría (Opcional)</label>
+                  <input 
+                    type="text" 
+                    value={form.subcategory || ''} 
+                    onChange={e => setForm({...form, subcategory: e.target.value})}
+                    placeholder="Ej: Smash Burgers, Calientes..."
+                    className="w-full border-2 border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 placeholder-slate-400 outline-none transition-colors"
+                  />
                 </div>
               </div>
 

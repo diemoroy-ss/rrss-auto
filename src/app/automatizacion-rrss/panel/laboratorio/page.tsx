@@ -107,6 +107,7 @@ export default function LaboratorioPage() {
     logoUrl: "",
     alwaysIncludeLogo: false,
     bannerStyle: "banner" as "banner" | "clean",
+    photoTreatment: "clean" as "clean" | "agent",
   });
   const [savingBrand, setSavingBrand] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -122,6 +123,7 @@ export default function LaboratorioPage() {
     description: "",
     type: "producto" as "producto" | "servicio",
     category: "",
+    subcategory: "",
     price: "",
     offerPrice: "",
     imageUrl: "",
@@ -190,6 +192,7 @@ export default function LaboratorioPage() {
         logoUrl: currentTestProfile.logoUrl || "",
         alwaysIncludeLogo: currentTestProfile.alwaysIncludeLogo === true,
         bannerStyle: currentTestProfile.bannerStyle || "banner",
+        photoTreatment: (currentTestProfile.photoTreatment as any) || "clean",
       });
 
       if (currentTestProfile.selectedPromptStyleIds && currentTestProfile.selectedPromptStyleIds.length > 0) {
@@ -211,6 +214,7 @@ export default function LaboratorioPage() {
         logoUrl: "",
         alwaysIncludeLogo: false,
         bannerStyle: "banner",
+        photoTreatment: "clean",
       });
       setSelectedStyleIds(["style-everyday-real", "style-ads-hero-shot"]);
     }
@@ -425,6 +429,7 @@ export default function LaboratorioPage() {
         logoUrl: brandForm.logoUrl,
         alwaysIncludeLogo: brandForm.alwaysIncludeLogo,
         bannerStyle: brandForm.bannerStyle,
+        photoTreatment: brandForm.photoTreatment,
       });
       showNotification("¡Datos de marca de la empresa de prueba guardados con éxito!");
     } catch (e: any) {
@@ -475,6 +480,7 @@ export default function LaboratorioPage() {
         description: productForm.description.trim(),
         type: productForm.type,
         category: productForm.category.trim() || null,
+        subcategory: productForm.subcategory.trim() || null,
         price: productForm.price.trim() || null,
         offerPrice: productForm.offerPrice.trim() || null,
         imageUrl: productForm.imageUrl.trim() || null,
@@ -1055,36 +1061,128 @@ export default function LaboratorioPage() {
               </div>
             </div>
 
-            <div className="space-y-3">
-              <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">Estilo Visual por Defecto</h4>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setBrandForm({ ...brandForm, bannerStyle: "banner" })}
-                  className={`p-3.5 rounded-2xl border-2 text-left transition-all ${
-                    brandForm.bannerStyle === "banner"
-                      ? "border-purple-600 bg-purple-50/60 shadow-xs"
-                      : "border-slate-200 hover:border-slate-300"
-                  }`}
-                >
-                  <span className="text-xl block mb-1">🏷️</span>
-                  <div className="text-xs font-black text-slate-900">Cartel Publicitario</div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">Texto y precio superpuesto con tipografía atractiva.</div>
-                </button>
+            <div className="space-y-4 pt-3 border-t border-slate-100">
+              <div>
+                <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                  Estilo Visual por Defecto (2 Diferenciaciones Clave)
+                </h4>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Define cómo deben componer nuestros agentes las imágenes de tus productos y publicaciones:
+                </p>
+              </div>
 
-                <button
-                  type="button"
-                  onClick={() => setBrandForm({ ...brandForm, bannerStyle: "clean" })}
-                  className={`p-3.5 rounded-2xl border-2 text-left transition-all ${
-                    brandForm.bannerStyle === "clean"
-                      ? "border-purple-600 bg-purple-50/60 shadow-xs"
-                      : "border-slate-200 hover:border-slate-300"
-                  }`}
-                >
-                  <span className="text-xl block mb-1">📸</span>
-                  <div className="text-xs font-black text-slate-900">Solo Fotografía Limpia</div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">Sin textos gráficos encima de la imagen.</div>
-                </button>
+              {/* 1. Diferenciación: ¿Es Cartel Publicitario o no? */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-800">1. ¿Lleva formato de Cartel Publicitario?</span>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-purple-600">
+                    {brandForm.bannerStyle === "banner" ? "Con Textos y Precios" : "Sin Textos Superpuestos"}
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setBrandForm({ ...brandForm, bannerStyle: "banner" })}
+                    className={`p-3.5 rounded-2xl border-2 text-left transition-all flex items-start gap-3 ${
+                      brandForm.bannerStyle === "banner"
+                        ? "border-purple-600 bg-purple-50/70 shadow-xs"
+                        : "border-slate-200 hover:border-slate-300 bg-white"
+                    }`}
+                  >
+                    <span className="text-2xl shrink-0 mt-0.5">🏷️</span>
+                    <div>
+                      <div className="text-xs font-black text-slate-900">Cartel Publicitario (Sí)</div>
+                      <div className="text-[11px] text-slate-600 mt-0.5 font-medium leading-snug">
+                        Lleva textos comerciales, titulares atractivos y precios destacados con tipografía llamativa.
+                      </div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setBrandForm({ ...brandForm, bannerStyle: "clean" })}
+                    className={`p-3.5 rounded-2xl border-2 text-left transition-all flex items-start gap-3 ${
+                      brandForm.bannerStyle === "clean"
+                        ? "border-purple-600 bg-purple-50/70 shadow-xs"
+                        : "border-slate-200 hover:border-slate-300 bg-white"
+                    }`}
+                  >
+                    <span className="text-2xl shrink-0 mt-0.5">🖼️</span>
+                    <div>
+                      <div className="text-xs font-black text-slate-900">Post Estándar (No)</div>
+                      <div className="text-[11px] text-slate-600 mt-0.5 font-medium leading-snug">
+                        Imagen limpia sin textos gráficos ni precios superpuestos encima de la imagen.
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* 2. Diferenciación: ¿Fotografía Limpia o Ajustada por nuestros Agentes? */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-800">2. ¿Tratamiento de Fotografía / Imagen Base?</span>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-purple-600">
+                    {brandForm.photoTreatment === "clean" ? "Foto Real Limpia" : "Ajustada por Nuestros Agentes"}
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setBrandForm({ ...brandForm, photoTreatment: "clean" })}
+                    className={`p-3.5 rounded-2xl border-2 text-left transition-all flex items-start gap-3 ${
+                      brandForm.photoTreatment === "clean"
+                        ? "border-purple-600 bg-purple-50/70 shadow-xs"
+                        : "border-slate-200 hover:border-slate-300 bg-white"
+                    }`}
+                  >
+                    <span className="text-2xl shrink-0 mt-0.5">📸</span>
+                    <div>
+                      <div className="text-xs font-black text-slate-900">Fotografía Limpia / Real</div>
+                      <div className="text-[11px] text-slate-600 mt-0.5 font-medium leading-snug">
+                        Respeta fielmente la foto original del producto o servicio sin alteraciones de fondo ni reemplazos.
+                      </div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setBrandForm({ ...brandForm, photoTreatment: "agent" })}
+                    className={`p-3.5 rounded-2xl border-2 text-left transition-all flex items-start gap-3 ${
+                      brandForm.photoTreatment === "agent"
+                        ? "border-purple-600 bg-purple-50/70 shadow-xs"
+                        : "border-slate-200 hover:border-slate-300 bg-white"
+                    }`}
+                  >
+                    <span className="text-2xl shrink-0 mt-0.5">✨</span>
+                    <div>
+                      <div className="text-xs font-black text-slate-900">Ajustada por Nuestros Agentes</div>
+                      <div className="text-[11px] text-slate-600 mt-0.5 font-medium leading-snug">
+                        Nuestros agentes ajustan la composición, el fondo y ambientan la escena según el estilo visual.
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Banner explicativo del resultado combinado */}
+              <div className="p-3.5 rounded-2xl bg-purple-50/50 border border-purple-200/80 text-xs flex items-start gap-3 shadow-xs">
+                <span className="text-lg shrink-0">💡</span>
+                <p className="text-slate-700 font-medium leading-relaxed">
+                  <strong className="text-purple-900 font-black">Composición resultante: </strong>
+                  {brandForm.bannerStyle === "banner" && brandForm.photoTreatment === "clean" && (
+                    "A la fotografía limpia y real de tu producto se le agregarán los textos comerciales y precios superpuestos con tipografía atractiva."
+                  )}
+                  {brandForm.bannerStyle === "banner" && brandForm.photoTreatment === "agent" && (
+                    "Nuestros agentes ajustarán la ambientación y el estilo visual de la imagen, y sobre esa composición se estamparán los textos comerciales y precios."
+                  )}
+                  {brandForm.bannerStyle === "clean" && brandForm.photoTreatment === "clean" && (
+                    "Se utilizará únicamente la fotografía limpia y real de tu producto, sin ningún texto gráfico encima."
+                  )}
+                  {brandForm.bannerStyle === "clean" && brandForm.photoTreatment === "agent" && (
+                    "Nuestros agentes generarán la composición visual ambientada para tu marca, sin textos gráficos encima."
+                  )}
+                </p>
               </div>
             </div>
           </div>
@@ -1128,6 +1226,7 @@ export default function LaboratorioPage() {
                     description: "",
                     type: "producto",
                     category: "",
+                    subcategory: "",
                     price: "",
                     offerPrice: "",
                     imageUrl: "",
@@ -1207,7 +1306,22 @@ export default function LaboratorioPage() {
                     {/* Contenido */}
                     <div className="p-4">
                       <h4 className="text-sm font-black text-slate-900 line-clamp-1">{item.name}</h4>
-                      <p className="text-xs text-slate-500 font-medium mt-1 line-clamp-2 leading-relaxed">
+                      
+                      {/* Categorías y Subcategorías */}
+                      <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                        {item.category && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200/60">
+                            📁 {item.category}
+                          </span>
+                        )}
+                        {item.subcategory && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200">
+                            ↳ {item.subcategory}
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="text-xs text-slate-500 font-medium mt-1.5 line-clamp-2 leading-relaxed">
                         {item.description}
                       </p>
 
@@ -1238,6 +1352,7 @@ export default function LaboratorioPage() {
                             description: item.description,
                             type: item.type,
                             category: item.category || "",
+                            subcategory: item.subcategory || "",
                             price: item.price || "",
                             offerPrice: item.offerPrice || "",
                             imageUrl: item.imageUrl || "",
@@ -2027,9 +2142,9 @@ export default function LaboratorioPage() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Tipo</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Tipo *</label>
                 <select
                   value={productForm.type}
                   onChange={(e) => setProductForm({ ...productForm, type: e.target.value as any })}
@@ -2046,7 +2161,18 @@ export default function LaboratorioPage() {
                   type="text"
                   value={productForm.category}
                   onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
-                  placeholder="Ej: Especiales, Promos"
+                  placeholder="Ej: Hamburguesas, Cafetería"
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-purple-500 focus:bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Subcategoría (Opcional)</label>
+                <input
+                  type="text"
+                  value={productForm.subcategory}
+                  onChange={(e) => setProductForm({ ...productForm, subcategory: e.target.value })}
+                  placeholder="Ej: Smash Burgers, Calientes"
                   className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-purple-500 focus:bg-white"
                 />
               </div>

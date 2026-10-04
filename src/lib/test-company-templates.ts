@@ -3,6 +3,7 @@ export interface TestProductTemplate {
   description: string;
   type: 'producto' | 'servicio';
   category: string;
+  subcategory?: string;
   price: string;
   offerPrice?: string;
   includePriceInCopy: boolean;
@@ -47,7 +48,8 @@ export const TEST_COMPANY_TEMPLATES: TestCompanyTemplate[] = [
         name: 'Hamburguesa Trufada Doble Angus',
         description: 'Doble carne Angus madurada (300g), queso cheddar fundido, cebolla caramelizada al bourbon y mayonesa trufada en pan brioche artesanal.',
         type: 'producto',
-        category: 'Hamburguesas Especiales',
+        category: 'Hamburguesas',
+        subcategory: 'Especiales Gourmet',
         price: '$8.990',
         offerPrice: '$7.490',
         includePriceInCopy: true,
@@ -61,6 +63,7 @@ export const TEST_COMPANY_TEMPLATES: TestCompanyTemplate[] = [
         description: 'Papas rústicas cortadas a mano con doble fritura crujiente, bañadas en salsa cheddar casera y lluvia de tocino ahumado crocante.',
         type: 'producto',
         category: 'Acompañamientos',
+        subcategory: 'Papas & Snacks',
         price: '$4.500',
         offerPrice: '',
         includePriceInCopy: true,
@@ -73,7 +76,8 @@ export const TEST_COMPANY_TEMPLATES: TestCompanyTemplate[] = [
         name: 'Promo Pareja Doble Smash + Bebidas',
         description: '2 Hamburguesas Smash dobles con queso americano fundido + porción grande de papas rústicas + 2 latas de bebida a elección.',
         type: 'producto',
-        category: 'Promos & Combos',
+        category: 'Hamburguesas',
+        subcategory: 'Promos & Combos',
         price: '$14.990',
         offerPrice: '$12.990',
         includePriceInCopy: true,
@@ -86,7 +90,8 @@ export const TEST_COMPANY_TEMPLATES: TestCompanyTemplate[] = [
         name: 'Cerveza IPA Artesanal Doble Lúpulo (500cc)',
         description: 'Cerveza artesanal fresca de barril, amargor medio-alto con notas aromáticas cítricas a maracuyá y pomelo rosado.',
         type: 'producto',
-        category: 'Cervezas & Bebidas',
+        category: 'Bebidas',
+        subcategory: 'Cervezas de Barril',
         price: '$3.800',
         offerPrice: '',
         includePriceInCopy: true,

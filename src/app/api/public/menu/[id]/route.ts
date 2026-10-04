@@ -84,6 +84,7 @@ export async function GET(
           description: data.description || "",
           type: data.type || "producto",
           category: (data.category && data.category.trim()) || "Destacados",
+          subcategory: (data.subcategory && data.subcategory.trim()) || null,
           price: data.price || null,
           offerPrice: data.offerPrice || null,
           imageUrl: data.imageUrl || null,

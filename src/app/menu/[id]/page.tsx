@@ -24,6 +24,7 @@ interface MenuItem {
   description: string;
   type: string;
   category: string;
+  subcategory?: string | null;
   price: string | null;
   offerPrice: string | null;
   imageUrl: string | null;
@@ -57,6 +58,7 @@ export default function PublicMenuPage() {
   const [items, setItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>("TODOS");
+  const [activeSubcategory, setActiveSubcategory] = useState<string>("TODAS");
   const [searchQuery, setSearchQuery] = useState("");
   const [copiedLink, setCopiedLink] = useState(false);
   const [selectedItemForModal, setSelectedItemForModal] = useState<MenuItem | null>(null);
@@ -128,18 +130,32 @@ export default function PublicMenuPage() {
     return `https://wa.me/${cleanPhone}?text=${text}`;
   };
 
+  const availableSubcategories = useMemo(() => {
+    const relevantItems = activeCategory === "TODOS"
+      ? items
+      : items.filter((i) => (i.category || "Destacados").toLowerCase() === activeCategory.toLowerCase());
+    const subs = Array.from(
+      new Set(relevantItems.map((i) => i.subcategory).filter(Boolean) as string[])
+    );
+    return subs.sort((a, b) => a.localeCompare(b));
+  }, [items, activeCategory]);
+
   const filteredItems = useMemo(() => {
     return items.filter((item) => {
       const matchesCategory =
-        activeCategory === "TODOS" || item.category.toLowerCase() === activeCategory.toLowerCase();
+        activeCategory === "TODOS" || (item.category || "Destacados").toLowerCase() === activeCategory.toLowerCase();
+      const matchesSubcategory =
+        activeSubcategory === "TODAS" ||
+        (item.subcategory && item.subcategory.toLowerCase() === activeSubcategory.toLowerCase());
       const matchesQuery =
         !searchQuery.trim() ||
         item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.category.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesCategory && matchesQuery;
+        item.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (item.subcategory && item.subcategory.toLowerCase().includes(searchQuery.toLowerCase()));
+      return matchesCategory && matchesSubcategory && matchesQuery;
     });
-  }, [items, activeCategory, searchQuery]);
+  }, [items, activeCategory, activeSubcategory, searchQuery]);
 
   // Estilos del tema seleccionado
   const theme = MENU_THEMES[themeId] || MENU_THEMES.minimal_clean;
@@ -324,7 +340,10 @@ export default function PublicMenuPage() {
           {/* Category Tabs Pill Bar */}
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
             <button
-              onClick={() => setActiveCategory("TODOS")}
+              onClick={() => {
+                setActiveCategory("TODOS");
+                setActiveSubcategory("TODAS");
+              }}
               className={`px-4 py-2 rounded-2xl text-xs font-black transition-all shrink-0 shadow-xs ${
                 activeCategory === "TODOS" ? t.categoryActive : t.categoryInactive
               }`}
@@ -332,13 +351,16 @@ export default function PublicMenuPage() {
               Todos ({items.length})
             </button>
             {categories.map((cat) => {
-              const count = items.filter((i) => i.category === cat).length;
+              const count = items.filter((i) => (i.category || "Destacados").toLowerCase() === cat.toLowerCase()).length;
               const isActive = activeCategory.toLowerCase() === cat.toLowerCase();
               const isPromo = cat.toLowerCase().includes("promo") || cat.toLowerCase().includes("oferta");
               return (
                 <button
                   key={cat}
-                  onClick={() => setActiveCategory(cat)}
+                  onClick={() => {
+                    setActiveCategory(cat);
+                    setActiveSubcategory("TODAS");
+                  }}
                   className={`px-4 py-2 rounded-2xl text-xs font-black transition-all shrink-0 flex items-center gap-1.5 shadow-xs ${
                     isActive
                       ? isPromo ? t.categoryPromoActive : t.categoryActive
@@ -352,6 +374,40 @@ export default function PublicMenuPage() {
               );
             })}
           </div>
+
+          {/* Subcategory Pills Bar (si la categoría activa o la carta tienen subcategorías) */}
+          {availableSubcategories.length > 0 && (
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1.5 px-0.5 -mt-1 bg-black/5 dark:bg-white/5 rounded-2xl p-1 backdrop-blur-xs">
+              <button
+                onClick={() => setActiveSubcategory("TODAS")}
+                className={`px-3 py-1 rounded-xl text-[11px] font-black transition-all shrink-0 ${
+                  activeSubcategory === "TODAS"
+                    ? "bg-slate-900 text-white shadow-xs"
+                    : "bg-white/80 hover:bg-white text-slate-700 border border-slate-200/80"
+                }`}
+              >
+                Todas las subcategorías
+              </button>
+              {availableSubcategories.map((sub) => {
+                const isSelected = activeSubcategory.toLowerCase() === sub.toLowerCase();
+                const subCount = (activeCategory === "TODOS" ? items : items.filter(i => (i.category || "Destacados").toLowerCase() === activeCategory.toLowerCase())).filter(i => (i.subcategory || '').toLowerCase() === sub.toLowerCase()).length;
+                return (
+                  <button
+                    key={sub}
+                    onClick={() => setActiveSubcategory(sub)}
+                    className={`px-3 py-1 rounded-xl text-[11px] font-black transition-all shrink-0 flex items-center gap-1 ${
+                      isSelected
+                        ? "bg-slate-900 text-white shadow-xs"
+                        : "bg-white/80 hover:bg-white text-slate-700 border border-slate-200/80"
+                    }`}
+                  >
+                    <span>{sub}</span>
+                    <span className="text-[9px] opacity-75">({subCount})</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Promotions Highlight Callout */}
@@ -429,6 +485,11 @@ export default function PublicMenuPage() {
                         <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${t.categoryTag}`}>
                           {item.category}
                         </span>
+                        {item.subcategory && (
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-500/10 text-slate-700 dark:text-slate-300 border border-slate-500/20">
+                            ↳ {item.subcategory}
+                          </span>
+                        )}
                         {item.type === 'servicio' && (
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-500/20 text-violet-300 border border-violet-500/30">
                             Servicio

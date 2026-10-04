@@ -83,7 +83,8 @@ export type BusinessProfile = {
   includePhoneInCopy?: boolean;
   alwaysIncludeLogo?: boolean;
   promotions?: string;        // Nivel 1: Promociones y ofertas permanentes/frecuentes del local
-  bannerStyle?: 'banner' | 'clean'; // Estilo por defecto: 'banner' (cartel publicitario con textos) o 'clean' (solo foto)
+  bannerStyle?: 'banner' | 'clean'; // Formato: 'banner' (cartel publicitario con textos) o 'clean' (sin textos superpuestos)
+  photoTreatment?: 'clean' | 'agent'; // Tratamiento de foto: 'clean' (fotografía limpia/real de producto) o 'agent' (ajustada por nuestros agentes)
   // Carta Menú Digital & QR
   menuDigitalEnabled?: boolean;
   menuTheme?: 'dark_modern' | 'warm_cafe' | 'fresh_bistro' | 'vibrant_street' | 'minimal_clean';
@@ -104,6 +105,7 @@ export type CatalogoItem = {
   description: string;
   type: 'producto' | 'servicio';
   category?: string;
+  subcategory?: string;
   price?: string;
   offerPrice?: string;
   includePriceInCopy?: boolean;
@@ -112,7 +114,7 @@ export type CatalogoItem = {
   profileId: string;
   active: boolean;
   createdAt?: any;
-  /** Si es true, nuestros agentes usan la foto original sin retocarla ni regenerarla (sólo texto publicitario encima) */
+  /** Si es true, nuestros agentes usan la foto original sin retocarla ni regenerarla */
   keepOriginalPhoto?: boolean;
   /** Estilo tipográfico preferido para la sobreposición publicitaria */
   fontStyle?: 'script_handwritten' | 'bold_modern' | 'elegant_serif' | 'clean_minimal';
