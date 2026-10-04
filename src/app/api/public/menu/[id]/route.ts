@@ -13,11 +13,12 @@ export async function GET(
       return NextResponse.json({ error: "ID de menú no proporcionado" }, { status: 400 });
     }
 
-    let uid = id;
+    const decodedId = decodeURIComponent(id);
+    let uid = decodedId;
     let targetProfileId = "default";
 
-    if (id.includes("___")) {
-      const parts = id.split("___");
+    if (decodedId.includes("___")) {
+      const parts = decodedId.split("___");
       uid = parts[0];
       targetProfileId = parts[1];
     }
@@ -31,9 +32,15 @@ export async function GET(
 
     const userData = userSnap.data() || {};
     const profiles: any[] = userData.profiles || [];
-    const profile = profiles.find((p: any) => p.id === targetProfileId) || profiles[0] || {};
+    const isTestProfile = targetProfileId.startsWith("prof_test_");
 
-    const isTestProfile = profile.isTestProfile === true || targetProfileId.startsWith("prof_test_");
+    let profile = profiles.find((p: any) => p.id === targetProfileId);
+    if (!profile) {
+      if (isTestProfile) {
+        return NextResponse.json({ error: "Empresa de prueba no encontrada" }, { status: 404 });
+      }
+      profile = profiles[0] || {};
+    }
 
     const businessData = {
       name: profile.name || (isTestProfile ? "Nuestra Carta" : (userData.company || userData.name || "Nuestra Carta")),
@@ -48,6 +55,11 @@ export async function GET(
       promotions: profile.promotions || null,
     };
 
+    // Determinar si la carta digital está habilitada
+    const isMenuEnabled = isTestProfile
+      ? profile.menuDigitalEnabled !== false
+      : (profile.menuDigitalEnabled === true || userData.menuDigitalEnabled === true);
+
     // Si la carta no ha sido habilitada por el dueño del local
     if (!isMenuEnabled) {
       return NextResponse.json({
@@ -58,28 +70,30 @@ export async function GET(
       });
     }
 
-    // Obtener ítems del catálogo activos
+    // Obtener ítems del catálogo
     const catalogoSnap = await userDocRef
       .collection("catalogo")
-      .where("active", "==", true)
       .get();
 
-    let items = catalogoSnap.docs.map((doc) => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        name: data.name || "",
-        description: data.description || "",
-        type: data.type || "producto",
-        category: (data.category && data.category.trim()) || "Destacados",
-        price: data.price || null,
-        offerPrice: data.offerPrice || null,
-        imageUrl: data.imageUrl || null,
-        profileId: data.profileId || "default",
-        keepOriginalPhoto: data.keepOriginalPhoto !== false,
-        createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : data.createdAt || null,
-      };
-    });
+    let items = catalogoSnap.docs
+      .map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          name: data.name || "",
+          description: data.description || "",
+          type: data.type || "producto",
+          category: (data.category && data.category.trim()) || "Destacados",
+          price: data.price || null,
+          offerPrice: data.offerPrice || null,
+          imageUrl: data.imageUrl || null,
+          profileId: data.profileId || "default",
+          active: data.active !== false,
+          keepOriginalPhoto: data.keepOriginalPhoto !== false,
+          createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : data.createdAt || null,
+        };
+      })
+      .filter((item) => item.active);
 
     // Filtrar por el perfil correspondiente (si el usuario tiene múltiples marcas/locales)
     if (targetProfileId && targetProfileId !== "all") {
