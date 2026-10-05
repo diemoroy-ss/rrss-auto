@@ -402,6 +402,29 @@ ${stylesContext}`;
 
         if (pub.type === "carrusel") {
           // Generar 3 slides para carrusel
+          let coverUrl = "";
+          if (hasCatalogRealPhoto) {
+            try {
+              console.log(`[Lab Generar Muestra] 🦋 Componiendo portada de carrusel con Butterfly Social para: ${prodName}`);
+              const { composeRealProductBanner } = await import("../../../../lib/real-product-compositor");
+              coverUrl = await composeRealProductBanner({
+                baseImageUrl: catalogMatch.imageUrl,
+                productName: prodName,
+                productDescription: catalogMatch.description || pub.title,
+                price: pub.productPrice || catalogMatch.price || "",
+                idea: pub.hook || pub.title,
+                rubro,
+                businessName,
+                aspectRatio: "1:1",
+                userId,
+                includeLogo: true,
+              });
+            } catch (bErr) {
+              console.warn("[Lab Generar Muestra] Error en Butterfly para portada de carrusel, usando foto directa:", bErr);
+              coverUrl = catalogMatch.imageUrl;
+            }
+          }
+
           const slidePrompts: string[] = Array.isArray(pub.carouselPrompts) && pub.carouselPrompts.length >= 3
             ? pub.carouselPrompts
             : [
@@ -410,9 +433,11 @@ ${stylesContext}`;
                 `${promptEnglish}, complete delicious meal combo with beverage and sides, promotional showcase`,
               ];
 
-          const slideUrls = await Promise.all(
-            slidePrompts.slice(0, 3).map((sp) => generateSingleImage(sp, rubro, prodName, "1:1"))
-          );
+          const slideUrls = await Promise.all([
+            coverUrl ? Promise.resolve(coverUrl) : generateSingleImage(slidePrompts[0], rubro, prodName, "1:1"),
+            generateSingleImage(slidePrompts[1], rubro, prodName, "1:1"),
+            generateSingleImage(slidePrompts[2], rubro, prodName, "1:1"),
+          ]);
 
           return {
             ...pub,
@@ -422,8 +447,32 @@ ${stylesContext}`;
           };
         } else if (pub.type === "reel") {
           // Generar visual vertical 9:16 para reel
-          const reelPrompt = `${promptEnglish}, cinematic vertical framing, 9:16 aspect ratio, dramatic motion blur, studio lighting`;
-          const reelImageUrl = await generateSingleImage(reelPrompt, rubro, prodName, "9:16");
+          let reelImageUrl = "";
+          if (hasCatalogRealPhoto) {
+            try {
+              console.log(`[Lab Generar Muestra] 🦋 Componiendo portada vertical Reel con Butterfly Social para: ${prodName}`);
+              const { composeRealProductBanner } = await import("../../../../lib/real-product-compositor");
+              reelImageUrl = await composeRealProductBanner({
+                baseImageUrl: catalogMatch.imageUrl,
+                productName: prodName,
+                productDescription: catalogMatch.description || pub.title,
+                price: pub.productPrice || catalogMatch.price || "",
+                idea: pub.hook || pub.title,
+                rubro,
+                businessName,
+                aspectRatio: "9:16",
+                userId,
+                includeLogo: true,
+              });
+            } catch (bErr) {
+              console.warn("[Lab Generar Muestra] Error en Butterfly para Reel vertical, fallback a generador:", bErr);
+            }
+          }
+
+          if (!reelImageUrl) {
+            const reelPrompt = `${promptEnglish}, cinematic vertical framing, 9:16 aspect ratio, dramatic motion blur, studio lighting`;
+            reelImageUrl = await generateSingleImage(reelPrompt, rubro, prodName, "9:16");
+          }
 
           return {
             ...pub,
@@ -434,8 +483,26 @@ ${stylesContext}`;
         } else {
           // Post estándar 1:1
           let finalImgUrl = "";
-          if (hasCatalogRealPhoto && !isCommercialPoster) {
-            finalImgUrl = catalogMatch.imageUrl;
+          if (hasCatalogRealPhoto) {
+            try {
+              console.log(`[Lab Generar Muestra] 🦋 Componiendo post 1:1 con Butterfly Social para foto real: ${prodName}`);
+              const { composeRealProductBanner } = await import("../../../../lib/real-product-compositor");
+              finalImgUrl = await composeRealProductBanner({
+                baseImageUrl: catalogMatch.imageUrl,
+                productName: prodName,
+                productDescription: catalogMatch.description || pub.title,
+                price: pub.productPrice || catalogMatch.price || "",
+                idea: pub.hook || pub.title,
+                rubro,
+                businessName,
+                aspectRatio: "1:1",
+                userId,
+                includeLogo: true,
+              });
+            } catch (bErr) {
+              console.warn("[Lab Generar Muestra] Error en Butterfly para post 1:1, usando foto directa:", bErr);
+              finalImgUrl = catalogMatch.imageUrl;
+            }
           } else {
             finalImgUrl = await generateSingleImage(promptEnglish, rubro, prodName, "1:1");
           }
