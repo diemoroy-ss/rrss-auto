@@ -20,6 +20,28 @@ const RemotionReelPlayer = dynamic(() => import("../../../components/video/Remot
   ),
 });
 
+export interface PublicationItem {
+  id: string;
+  type: "post" | "carrusel" | "reel";
+  title?: string;
+  dishOrProductName?: string;
+  productPrice?: string;
+  hook?: string;
+  copy?: string;
+  cta?: string;
+  visualStyleTitle?: string;
+  imageUrl?: string;
+  carouselImages?: string[];
+  videoUrl?: string;
+  remotionComposition?: any;
+  reelScript?: {
+    hook3s?: string;
+    body?: string;
+    cta?: string;
+  };
+  isCommercialPoster?: boolean;
+}
+
 interface DemoData {
   id: string;
   prospectName?: string;
@@ -38,6 +60,7 @@ interface DemoData {
   logoUrl?: string;
   selectedStyleTitle?: string;
   createdAt?: any;
+  publications?: PublicationItem[];
 }
 
 interface PlanConfig {
@@ -204,6 +227,8 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
   const [activeMediaTab, setActiveMediaTab] = useState<"imagen" | "video">("imagen");
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedCaption, setCopiedCaption] = useState(false);
+  const [selectedPubIndex, setSelectedPubIndex] = useState(0);
+  const [activeCarouselSlide, setActiveCarouselSlide] = useState(0);
 
   useEffect(() => {
     if (!demoId) {
@@ -264,6 +289,7 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
             videoPromptEnglish: data.videoPromptEnglish || "",
             logoUrl: data.logoUrl || "",
             selectedStyleTitle: data.selectedStyleTitle || "Estándar Comercial",
+            publications: Array.isArray(data.publications) ? data.publications : [],
           };
           setDemo(d);
           // Si tiene video, activar tab video por defecto
@@ -422,233 +448,594 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
           )}
         </section>
 
-        {/* Switcher de Formatos (Video Reel vs Diseño Gráfico) */}
-        {hasImage && hasVideo && (
-          <div className="flex justify-center">
-            <div className="inline-flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200 shadow-inner gap-1">
-              <button
-                type="button"
-                onClick={() => setActiveMediaTab("video")}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
-                  activeMediaTab === "video"
-                    ? "bg-white text-indigo-700 shadow-sm border border-slate-200/60 font-black"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                <FaVideo className="text-sm" />
-                <span>Video Reel Animado</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200/80 font-bold">
-                  9:16
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveMediaTab("imagen")}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
-                  activeMediaTab === "imagen"
-                    ? "bg-white text-indigo-700 shadow-sm border border-slate-200/60 font-black"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                <FaImage className="text-sm" />
-                <span>Diseño Publicitario</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 font-bold">
-                  Feed 1:1
-                </span>
-              </button>
-            </div>
-          </div>
-        )}
+        {/* SI LA MUESTRA TIENE MÚLTIPLES PUBLICACIONES (POST, CARRUSEL, REEL) */}
+        {demo.publications && demo.publications.length > 0 ? (
+          (() => {
+            const currentPub = demo.publications[selectedPubIndex] || demo.publications[0];
+            const isCarousel = currentPub.type === "carrusel";
+            const isReel = currentPub.type === "reel";
+            const isPost = currentPub.type === "post";
+            const slides = isCarousel
+              ? (currentPub.carouselImages && currentPub.carouselImages.length > 0
+                  ? currentPub.carouselImages
+                  : [currentPub.imageUrl || demo.generatedImageUrl].filter(Boolean))
+              : [];
 
-        {/* ZONA DE VISUALIZACIÓN MULTIMEDIA */}
-        <section className="bg-white border border-slate-200/90 rounded-3xl p-4 sm:p-8 shadow-xs space-y-6">
-          
-          {/* FORMATO 1: IMAGEN DE DISEÑO */}
-          {activeMediaTab === "imagen" && hasImage && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between text-xs text-slate-500 px-1">
-                <span className="flex items-center gap-1.5 font-bold text-slate-800">
-                  <span>🎨</span> Formato Cuadrado 1:1 (Feed Instagram &amp; Facebook)
-                </span>
-                <span className="font-mono text-[11px] text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-2.5 py-1 rounded-lg font-semibold">
-                  Estilo: {demo.selectedStyleTitle}
-                </span>
-              </div>
+            return (
+              <div className="space-y-6">
+                {/* SELECTOR DE PUBLICACIONES (PILLS CON ICONOS) */}
+                <div className="bg-white border border-slate-200/90 rounded-3xl p-4 sm:p-6 shadow-xs space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                      <span>✨</span> Propuestas de Publicaciones ({demo.publications.length})
+                    </span>
+                    <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-200/80">
+                      Haz clic en cada una para ver su formato y copy
+                    </span>
+                  </div>
 
-              <div className="relative max-w-lg mx-auto aspect-square rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shadow-xl group">
-                <img
-                  src={demo.generatedImageUrl}
-                  alt={`Muestra para ${demo.prospectBusiness}`}
-                  className="w-full h-full object-cover"
-                />
-
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-4">
-                  <span className="text-[11px] font-bold text-white bg-black/60 backdrop-blur-md px-3 py-1 rounded-lg">
-                    {demo.prospectBusiness}
-                  </span>
-                  <a
-                    href={demo.generatedImageUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="px-3.5 py-1.5 rounded-xl bg-white text-slate-900 text-xs font-bold hover:bg-slate-100 shadow-lg cursor-pointer"
-                  >
-                    Ver HD
-                  </a>
+                  <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-1 no-scrollbar">
+                    {demo.publications.map((pub, idx) => (
+                      <button
+                        key={pub.id || idx}
+                        type="button"
+                        onClick={() => {
+                          setSelectedPubIndex(idx);
+                          setActiveCarouselSlide(0);
+                        }}
+                        className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 border cursor-pointer ${
+                          selectedPubIndex === idx
+                            ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-600/25 border-transparent font-black scale-102"
+                            : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
+                        }`}
+                      >
+                        <span className="text-sm">
+                          {pub.type === "carrusel" ? "🎠" : pub.type === "reel" ? "🎬" : "📸"}
+                        </span>
+                        <span>
+                          {pub.type === "carrusel"
+                            ? `Carrusel #${idx + 1}`
+                            : pub.type === "reel"
+                            ? `Reel #${idx + 1}`
+                            : `Post #${idx + 1}`}
+                        </span>
+                        {pub.dishOrProductName && (
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium truncate max-w-[120px] ${
+                            selectedPubIndex === idx ? "bg-white/20 text-white" : "bg-slate-200/80 text-slate-700"
+                          }`}>
+                            {pub.dishOrProductName}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
                 </div>
+
+                {/* ZONA DE VISUALIZACIÓN MULTIMEDIA SEGÚN EL TIPO */}
+                <section className="bg-white border border-slate-200/90 rounded-3xl p-4 sm:p-8 shadow-xs space-y-6">
+                  {/* CABECERA DEL FORMATO ACTIVO */}
+                  <div className="flex flex-wrap items-center justify-between text-xs text-slate-500 px-1 gap-2 border-b border-slate-100 pb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">
+                        {isCarousel ? "🎠" : isReel ? "🎬" : "📸"}
+                      </span>
+                      <div>
+                        <span className="font-extrabold text-slate-900 text-sm block">
+                          {isCarousel
+                            ? "Carrusel Multidiapositiva (3 Slides)"
+                            : isReel
+                            ? "Video Reel Vertical (Formato 9:16)"
+                            : "Post Fijo Cuadrado (Feed 1:1)"}
+                        </span>
+                        <span className="text-[11px] text-slate-500 font-normal">
+                          {currentPub.title || currentPub.dishOrProductName || `Publicación #${selectedPubIndex + 1}`}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {currentPub.productPrice && (
+                        <span className="font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-xl text-xs">
+                          {currentPub.productPrice}
+                        </span>
+                      )}
+                      {currentPub.visualStyleTitle && (
+                        <span className="font-mono text-[11px] text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-2.5 py-1 rounded-xl font-semibold">
+                          Estilo: {currentPub.visualStyleTitle}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 1. VISTA DE POST ESTÁNDAR 1:1 */}
+                  {isPost && (
+                    <div className="space-y-4">
+                      <div className="relative max-w-lg mx-auto aspect-square rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shadow-xl group">
+                        <img
+                          src={currentPub.imageUrl || demo.generatedImageUrl}
+                          alt={currentPub.title || "Post"}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-4">
+                          <span className="text-[11px] font-bold text-white bg-black/60 backdrop-blur-md px-3 py-1 rounded-lg">
+                            {demo.prospectBusiness}
+                          </span>
+                          <a
+                            href={currentPub.imageUrl || demo.generatedImageUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-3.5 py-1.5 rounded-xl bg-white text-slate-900 text-xs font-bold hover:bg-slate-100 shadow-lg cursor-pointer"
+                          >
+                            Ver HD
+                          </a>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-center pt-2">
+                        <a
+                          href={currentPub.imageUrl || demo.generatedImageUrl}
+                          download={`post_${selectedPubIndex + 1}_${demo.prospectBusiness}.jpg`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-xs font-bold text-white shadow-md flex items-center gap-2 transition-all active:scale-95 cursor-pointer"
+                        >
+                          <span>⬇️</span> Descargar Diseño en Alta Resolución
+                        </a>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 2. VISTA DE CARRUSEL MULTIDIAPOSITIVA */}
+                  {isCarousel && slides.length > 0 && (
+                    <div className="space-y-4">
+                      <div className="relative max-w-lg mx-auto aspect-square rounded-2xl overflow-hidden bg-slate-900 border border-slate-200 shadow-xl group">
+                        <img
+                          src={slides[activeCarouselSlide]}
+                          alt={`Slide ${activeCarouselSlide + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+
+                        {/* Botón Slide Anterior */}
+                        {slides.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => setActiveCarouselSlide((prev) => (prev > 0 ? prev - 1 : slides.length - 1))}
+                            className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center font-bold text-sm backdrop-blur-xs transition-all shadow-md cursor-pointer"
+                          >
+                            ‹
+                          </button>
+                        )}
+
+                        {/* Botón Slide Siguiente */}
+                        {slides.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => setActiveCarouselSlide((prev) => (prev < slides.length - 1 ? prev + 1 : 0))}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center font-bold text-sm backdrop-blur-xs transition-all shadow-md cursor-pointer"
+                          >
+                            ›
+                          </button>
+                        )}
+
+                        {/* Badge indicador de Slide actual */}
+                        <div className="absolute top-3 right-3 bg-black/70 backdrop-blur-md text-white text-[10px] font-black px-2.5 py-1 rounded-full border border-white/20">
+                          Slide {activeCarouselSlide + 1} de {slides.length}
+                        </div>
+
+                        {/* Puntos de navegación en la parte inferior */}
+                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-black/50 backdrop-blur-md px-3 py-1 rounded-full">
+                          {slides.map((_, sIdx) => (
+                            <button
+                              key={sIdx}
+                              type="button"
+                              onClick={() => setActiveCarouselSlide(sIdx)}
+                              className={`w-2 h-2 rounded-full transition-all cursor-pointer ${
+                                activeCarouselSlide === sIdx ? "bg-white scale-125" : "bg-white/40 hover:bg-white/70"
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Miniaturas de las diapositivas para navegación rápida */}
+                      {slides.length > 1 && (
+                        <div className="flex items-center justify-center gap-2 pt-1">
+                          {slides.map((sUrl, sIdx) => (
+                            <button
+                              key={sIdx}
+                              type="button"
+                              onClick={() => setActiveCarouselSlide(sIdx)}
+                              className={`w-14 h-14 rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
+                                activeCarouselSlide === sIdx
+                                  ? "border-indigo-600 ring-2 ring-indigo-500/30 scale-105"
+                                  : "border-slate-200 opacity-60 hover:opacity-100"
+                              }`}
+                            >
+                              <img src={sUrl} alt={`Thumb ${sIdx + 1}`} className="w-full h-full object-cover" />
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-center gap-3 pt-2">
+                        <a
+                          href={slides[activeCarouselSlide]}
+                          download={`carrusel_slide_${activeCarouselSlide + 1}_${demo.prospectBusiness}.jpg`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-xs font-bold text-white shadow-md flex items-center gap-2 transition-all active:scale-95 cursor-pointer"
+                        >
+                          <span>⬇️</span> Descargar Diapositiva #{activeCarouselSlide + 1}
+                        </a>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 3. VISTA DE REEL VERTICAL 9:16 */}
+                  {isReel && (
+                    <div className="space-y-6">
+                      <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+                        {/* Video o Frame 9:16 */}
+                        <div className="w-full max-w-[280px] aspect-[9/16] rounded-3xl overflow-hidden bg-black border-2 border-slate-200 shadow-2xl relative group shrink-0">
+                          {currentPub.videoUrl ? (
+                            <video
+                              src={currentPub.videoUrl}
+                              controls
+                              playsInline
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <>
+                              <img
+                                src={currentPub.imageUrl || demo.generatedImageUrl}
+                                alt="Reel Preview"
+                                className="w-full h-full object-cover"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-between p-4">
+                                <span className="self-start text-[10px] font-black uppercase tracking-wider bg-black/60 text-white backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20">
+                                  Reel 9:16
+                                </span>
+                                <div className="space-y-1">
+                                  <span className="text-white text-xs font-black block leading-tight">
+                                    {currentPub.hook || "Video Reel Planificado"}
+                                  </span>
+                                  <span className="text-[10px] text-slate-300 font-medium">
+                                    {demo.prospectBusiness}
+                                  </span>
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
+
+                        {/* Desglose de Guión Técnico de Grabación */}
+                        <div className="w-full max-w-md bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-3 text-left">
+                          <span className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-200 pb-2">
+                            <span>🎬</span> Guión Técnico del Reel
+                          </span>
+
+                          <div className="space-y-2 text-xs">
+                            <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                              <span className="text-[10px] font-black text-rose-600 uppercase tracking-wider block">
+                                ⏱️ 0-3 Segundos · Gancho de Retención:
+                              </span>
+                              <p className="text-slate-800 font-bold italic">
+                                &quot;{currentPub.reelScript?.hook3s || currentPub.hook || "Mira esto antes de pedir..."}&quot;
+                              </p>
+                            </div>
+
+                            <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                              <span className="text-[10px] font-black text-indigo-600 uppercase tracking-wider block">
+                                ⏱️ 3-15 Segundos · Desarrollo & Demostración:
+                              </span>
+                              <p className="text-slate-700 font-medium leading-relaxed">
+                                {currentPub.reelScript?.body || "Tomas en movimiento mostrando la preparación fresca y los ingredientes de primera calidad."}
+                              </p>
+                            </div>
+
+                            <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
+                              <span className="text-[10px] font-black text-emerald-600 uppercase tracking-wider block">
+                                ⏱️ 15-25 Segundos · Llamado a la Acción (CTA):
+                              </span>
+                              <p className="text-slate-700 font-bold">
+                                {currentPub.reelScript?.cta || currentPub.cta || "Comenta o contáctanos por WhatsApp para pedir el tuyo hoy."}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </section>
+
+                {/* PROPUESTA DE COPY ESPECÍFICO PARA ESTA PUBLICACIÓN */}
+                <section className="bg-white border border-indigo-100/90 rounded-3xl p-6 sm:p-8 shadow-xs space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center text-lg">
+                        <FaPenNib />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-base sm:text-lg font-black text-slate-900">
+                            Copy Sugerido para {isCarousel ? "Carrusel" : isReel ? "Reel" : "Post"} #{selectedPubIndex + 1}
+                          </h3>
+                          {currentPub.dishOrProductName && (
+                            <span className="hidden sm:inline-block text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              {currentPub.dishOrProductName}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-500">
+                          Redactado por nuestros agentes para conectar con tu audiencia y generar ventas directas
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleCopyCaption(currentPub.copy)}
+                      className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold flex items-center gap-2 transition-all shadow-sm shadow-indigo-600/20 active:scale-95 cursor-pointer"
+                    >
+                      {copiedCaption ? <FaCheck className="text-white" /> : <FaCopy />}
+                      <span>{copiedCaption ? "¡Copy Copiado!" : "Copiar Texto"}</span>
+                    </button>
+                  </div>
+
+                  {currentPub.hook && (
+                    <div className="p-3 bg-purple-50/70 rounded-xl border border-purple-100 text-xs">
+                      <span className="text-[10px] font-black uppercase text-purple-700 block mb-0.5">
+                        🎣 Gancho de Entrada:
+                      </span>
+                      <p className="font-bold text-purple-950">&quot;{currentPub.hook}&quot;</p>
+                    </div>
+                  )}
+
+                  <div className="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap leading-relaxed select-all font-sans font-medium">
+                    {currentPub.copy || demo.generatedPostCaption}
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between text-[11px] text-slate-500 pt-1 gap-2">
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                      Listo para copiar y publicar en tus redes oficiales
+                    </span>
+                    <span className="text-indigo-600 font-bold">100% Personalizado por nuestros agentes</span>
+                  </div>
+                </section>
               </div>
-
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-                <a
-                  href={demo.generatedImageUrl}
-                  download={`propuesta_${demo.prospectBusiness}.jpg`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-xs font-bold text-white shadow-md flex items-center gap-2 transition-all active:scale-95 cursor-pointer"
-                >
-                  <span>⬇️</span> Descargar Diseño en Alta Resolución
-                </a>
-
-                {hasVideo && (
+            );
+          })()
+        ) : (
+          /* MODO COMPATIBILIDAD CON MUESTRAS ANTIGUAS (1 SOLA IMAGEN / VIDEO) */
+          <>
+            {/* Switcher de Formatos (Video Reel vs Diseño Gráfico) */}
+            {hasImage && hasVideo && (
+              <div className="flex justify-center">
+                <div className="inline-flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200 shadow-inner gap-1">
                   <button
                     type="button"
                     onClick={() => setActiveMediaTab("video")}
-                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-extrabold shadow-md flex items-center gap-2 transition-all active:scale-95 cursor-pointer"
+                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                      activeMediaTab === "video"
+                        ? "bg-white text-indigo-700 shadow-sm border border-slate-200/60 font-black"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
                   >
-                    <FaVideo />
-                    <span>Ver en Video Reel (9:16) →</span>
+                    <FaVideo className="text-sm" />
+                    <span>Video Reel Animado</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200/80 font-bold">
+                      9:16
+                    </span>
                   </button>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* FORMATO 2: VIDEO REEL */}
-          {(activeMediaTab === "video" || !hasImage) && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between text-xs text-slate-500 px-1">
-                <span className="flex items-center gap-1.5 font-bold text-slate-800">
-                  <span>🎬</span> Formato Vertical 9:16 (Reel, TikTok &amp; Estados de WhatsApp)
-                </span>
-                {demo.videoStyleTitle && (
-                  <span className="font-mono text-[11px] text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-2.5 py-1 rounded-lg font-semibold">
-                    {demo.videoStyleTitle}
-                  </span>
-                )}
-              </div>
-
-              {demo.remotionComposition ? (
-                <div className="flex justify-center">
-                  <div className="w-full max-w-[340px]">
-                    <RemotionReelPlayer
-                      composition={demo.remotionComposition}
-                      companyName={demo.prospectBusiness}
-                      companyLogoUrl={demo.logoUrl}
-                    />
-                  </div>
-                </div>
-              ) : demo.generatedVideoUrl ? (
-                <div className="max-w-[340px] mx-auto aspect-[9/16] rounded-3xl overflow-hidden bg-black border border-slate-200 shadow-xl">
-                  <video
-                    src={demo.generatedVideoUrl}
-                    controls
-                    playsInline
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              ) : (
-                <div className="text-center py-12 space-y-3 bg-indigo-50/30 rounded-2xl border border-indigo-100/60 p-6">
-                  <div className="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-600 mx-auto flex items-center justify-center text-xl">
-                    🎬
-                  </div>
-                  <h4 className="text-sm font-bold text-slate-800">Video en preparación</h4>
-                  <p className="text-xs text-slate-500 max-w-xs mx-auto">
-                    Nuestros agentes están estructurando el guión y las escenas de video para este negocio.
-                  </p>
-                </div>
-              )}
-
-              {hasImage && (
-                <div className="flex justify-center pt-2">
                   <button
                     type="button"
                     onClick={() => setActiveMediaTab("imagen")}
-                    className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer"
+                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                      activeMediaTab === "imagen"
+                        ? "bg-white text-indigo-700 shadow-sm border border-slate-200/60 font-black"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
                   >
-                    <FaImage className="text-indigo-600" />
-                    <span>Ver también versión Diseño Gráfico (Feed 1:1) →</span>
+                    <FaImage className="text-sm" />
+                    <span>Diseño Publicitario</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 font-bold">
+                      Feed 1:1
+                    </span>
                   </button>
                 </div>
-              )}
-
-              {demo.videoPromptEnglish && (
-                <div className="max-w-lg mx-auto bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs space-y-1.5 text-left">
-                  <div className="flex items-center justify-between text-[11px] font-bold text-indigo-700">
-                    <span>✨ Dirección Cinematográfica Planificada</span>
-                    <span className="font-mono text-[10px] text-slate-500">24 FPS · 9:16</span>
-                  </div>
-                  <p className="text-[11px] text-slate-600 leading-relaxed font-mono">
-                    {demo.videoPromptEnglish}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-
-        </section>
-        
-        {/* PROPUESTA DE COPY PARA REDES SOCIALES (REDACTADO POR NUESTROS AGENTES) */}
-        {demo.generatedPostCaption && (
-          <section className="bg-white border border-indigo-100/90 rounded-3xl p-6 sm:p-8 shadow-xs space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center text-lg">
-                  <FaPenNib />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-base sm:text-lg font-black text-slate-900">
-                      Copy Sugerido para tus Redes
-                    </h3>
-                    {demo.dishOrProductName && (
-                      <span className="hidden sm:inline-block text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        {demo.dishOrProductName}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-slate-500">
-                    Redactado por nuestros agentes para conectar con tu audiencia y generar ventas directas
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleCopyCaption}
-                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold flex items-center gap-2 transition-all shadow-sm shadow-indigo-600/20 active:scale-95 cursor-pointer"
-              >
-                {copiedCaption ? <FaCheck className="text-white" /> : <FaCopy />}
-                <span>{copiedCaption ? "¡Copy Copiado!" : "Copiar Texto"}</span>
-              </button>
-            </div>
-
-            {demo.dishOrProductName && (
-              <div className="sm:hidden inline-block text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                Plato / Producto: {demo.dishOrProductName}
               </div>
             )}
 
-            <div className="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap leading-relaxed select-all font-sans font-medium">
-              {demo.generatedPostCaption}
-            </div>
+            {/* ZONA DE VISUALIZACIÓN MULTIMEDIA */}
+            <section className="bg-white border border-slate-200/90 rounded-3xl p-4 sm:p-8 shadow-xs space-y-6">
+              {/* FORMATO 1: IMAGEN DE DISEÑO */}
+              {activeMediaTab === "imagen" && hasImage && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between text-xs text-slate-500 px-1">
+                    <span className="flex items-center gap-1.5 font-bold text-slate-800">
+                      <span>🎨</span> Formato Cuadrado 1:1 (Feed Instagram &amp; Facebook)
+                    </span>
+                    <span className="font-mono text-[11px] text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-2.5 py-1 rounded-lg font-semibold">
+                      Estilo: {demo.selectedStyleTitle}
+                    </span>
+                  </div>
 
-            <div className="flex flex-wrap items-center justify-between text-[11px] text-slate-500 pt-1 gap-2">
-              <span className="flex items-center gap-1.5 font-medium">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                Formato listo para copiar y pegar en Instagram, Facebook o WhatsApp
-              </span>
-              <span className="text-indigo-600 font-bold">100% Personalizado por nuestros agentes</span>
-            </div>
-          </section>
+                  <div className="relative max-w-lg mx-auto aspect-square rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shadow-xl group">
+                    <img
+                      src={demo.generatedImageUrl}
+                      alt={`Muestra para ${demo.prospectBusiness}`}
+                      className="w-full h-full object-cover"
+                    />
+
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-4">
+                      <span className="text-[11px] font-bold text-white bg-black/60 backdrop-blur-md px-3 py-1 rounded-lg">
+                        {demo.prospectBusiness}
+                      </span>
+                      <a
+                        href={demo.generatedImageUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-3.5 py-1.5 rounded-xl bg-white text-slate-900 text-xs font-bold hover:bg-slate-100 shadow-lg cursor-pointer"
+                      >
+                        Ver HD
+                      </a>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+                    <a
+                      href={demo.generatedImageUrl}
+                      download={`propuesta_${demo.prospectBusiness}.jpg`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-xs font-bold text-white shadow-md flex items-center gap-2 transition-all active:scale-95 cursor-pointer"
+                    >
+                      <span>⬇️</span> Descargar Diseño en Alta Resolución
+                    </a>
+
+                    {hasVideo && (
+                      <button
+                        type="button"
+                        onClick={() => setActiveMediaTab("video")}
+                        className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-extrabold shadow-md flex items-center gap-2 transition-all active:scale-95 cursor-pointer"
+                      >
+                        <FaVideo />
+                        <span>Ver en Video Reel (9:16) →</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* FORMATO 2: VIDEO REEL */}
+              {(activeMediaTab === "video" || !hasImage) && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between text-xs text-slate-500 px-1">
+                    <span className="flex items-center gap-1.5 font-bold text-slate-800">
+                      <span>🎬</span> Formato Vertical 9:16 (Reel, TikTok &amp; Estados de WhatsApp)
+                    </span>
+                    {demo.videoStyleTitle && (
+                      <span className="font-mono text-[11px] text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-2.5 py-1 rounded-lg font-semibold">
+                        {demo.videoStyleTitle}
+                      </span>
+                    )}
+                  </div>
+
+                  {demo.remotionComposition ? (
+                    <div className="flex justify-center">
+                      <div className="w-full max-w-[340px]">
+                        <RemotionReelPlayer
+                          composition={demo.remotionComposition}
+                          companyName={demo.prospectBusiness}
+                          companyLogoUrl={demo.logoUrl}
+                        />
+                      </div>
+                    </div>
+                  ) : demo.generatedVideoUrl ? (
+                    <div className="max-w-[340px] mx-auto aspect-[9/16] rounded-3xl overflow-hidden bg-black border border-slate-200 shadow-xl">
+                      <video
+                        src={demo.generatedVideoUrl}
+                        controls
+                        playsInline
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 space-y-3 bg-indigo-50/30 rounded-2xl border border-indigo-100/60 p-6">
+                      <div className="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-600 mx-auto flex items-center justify-center text-xl">
+                        🎬
+                      </div>
+                      <h4 className="text-sm font-bold text-slate-800">Video en preparación</h4>
+                      <p className="text-xs text-slate-500 max-w-xs mx-auto">
+                        Nuestros agentes están estructurando el guión y las escenas de video para este negocio.
+                      </p>
+                    </div>
+                  )}
+
+                  {hasImage && (
+                    <div className="flex justify-center pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setActiveMediaTab("imagen")}
+                        className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer"
+                      >
+                        <FaImage className="text-indigo-600" />
+                        <span>Ver también versión Diseño Gráfico (Feed 1:1) →</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {demo.videoPromptEnglish && (
+                    <div className="max-w-lg mx-auto bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs space-y-1.5 text-left">
+                      <div className="flex items-center justify-between text-[11px] font-bold text-indigo-700">
+                        <span>✨ Dirección Cinematográfica Planificada</span>
+                        <span className="font-mono text-[10px] text-slate-500">24 FPS · 9:16</span>
+                      </div>
+                      <p className="text-[11px] text-slate-600 leading-relaxed font-mono">
+                        {demo.videoPromptEnglish}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </section>
+            
+            {/* PROPUESTA DE COPY PARA REDES SOCIALES (REDACTADO POR NUESTROS AGENTES) */}
+            {demo.generatedPostCaption && (
+              <section className="bg-white border border-indigo-100/90 rounded-3xl p-6 sm:p-8 shadow-xs space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center text-lg">
+                      <FaPenNib />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-base sm:text-lg font-black text-slate-900">
+                          Copy Sugerido para tus Redes
+                        </h3>
+                        {demo.dishOrProductName && (
+                          <span className="hidden sm:inline-block text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            {demo.dishOrProductName}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500">
+                        Redactado por nuestros agentes para conectar con tu audiencia y generar ventas directas
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleCopyCaption}
+                    className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold flex items-center gap-2 transition-all shadow-sm shadow-indigo-600/20 active:scale-95 cursor-pointer"
+                  >
+                    {copiedCaption ? <FaCheck className="text-white" /> : <FaCopy />}
+                    <span>{copiedCaption ? "¡Copy Copiado!" : "Copiar Texto"}</span>
+                  </button>
+                </div>
+
+                {demo.dishOrProductName && (
+                  <div className="sm:hidden inline-block text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    Plato / Producto: {demo.dishOrProductName}
+                  </div>
+                )}
+
+                <div className="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap leading-relaxed select-all font-sans font-medium">
+                  {demo.generatedPostCaption}
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between text-[11px] text-slate-500 pt-1 gap-2">
+                  <span className="flex items-center gap-1.5 font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    Formato listo para copiar y pegar en Instagram, Facebook o WhatsApp
+                  </span>
+                  <span className="text-indigo-600 font-bold">100% Personalizado por nuestros agentes</span>
+                </div>
+              </section>
+            )}
+          </>
         )}
 
         {/* SECCIÓN DE PLANES Y TARIFAS DISPONIBLES */}

@@ -63,6 +63,7 @@ export async function GET(
         logoUrl: data.logoUrl || "",
         selectedStyleTitle: data.selectedStyleTitle || "Estándar Comercial",
         createdAt: isoDate,
+        publications: Array.isArray(data.publications) ? data.publications : [],
       },
       plans,
     });

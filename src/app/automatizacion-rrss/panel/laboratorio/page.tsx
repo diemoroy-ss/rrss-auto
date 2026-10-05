@@ -31,7 +31,8 @@ import {
   FaRedo,
   FaToggleOn,
   FaToggleOff,
-  FaPrint
+  FaPrint,
+  FaWhatsapp
 } from "react-icons/fa";
 
 export default function LaboratorioPage() {
@@ -160,6 +161,25 @@ export default function LaboratorioPage() {
   const [selectedCatalogItemIds, setSelectedCatalogItemIds] = useState<string[]>([]);
   const [labSelectedStyles, setLabSelectedStyles] = useState<PromptTemplate[]>([]);
   const [usePromptStyles, setUsePromptStyles] = useState<boolean>(true);
+
+  // Estados para Configuración de Muestra para Cliente (Radar de Nicho)
+  const [postsToGenerate, setPostsToGenerate] = useState<number>(3); // Mínimo 1, Máximo 5
+  const [selectedPostFormats, setSelectedPostFormats] = useState<("post" | "carrusel" | "reel")[]>([
+    "post",
+    "carrusel",
+    "reel",
+  ]);
+  const [generatingMuestra, setGeneratingMuestra] = useState(false);
+  const [generatedMuestraResult, setGeneratedMuestraResult] = useState<{
+    demoId: string;
+    publicDemoUrl: string;
+    whatsappUrl: string;
+    whatsappMessage: string;
+    publications: any[];
+  } | null>(null);
+  const [editableWhatsappMessage, setEditableWhatsappMessage] = useState("");
+  const [copiedMuestraLink, setCopiedMuestraLink] = useState(false);
+  const [copiedWhatsappText, setCopiedWhatsappText] = useState(false);
 
 
   // Auth setup
@@ -687,6 +707,93 @@ export default function LaboratorioPage() {
       showNotification(e.message || "Error al generar la estrategia", true);
     } finally {
       setGeneratingStrategy(false);
+    }
+  };
+
+  // Generar Muestra para Cliente con Imágenes y Link de WhatsApp
+  const handleGenerateMuestraForClient = async () => {
+    if (selectedPostFormats.length === 0) {
+      showNotification("Selecciona al menos un formato de publicación (Post, Carrusel o Reel).", true);
+      return;
+    }
+    setGeneratingMuestra(true);
+    setGeneratedMuestraResult(null);
+
+    try {
+      const activeRubro = currentTestProfile?.rubro || brandForm.rubro || "Comercio Local";
+      const activeName = currentTestProfile?.name || brandForm.name || "Mi Negocio";
+      const activePhone = currentTestProfile?.phone || brandForm.phone || "";
+      const activeWebsite = currentTestProfile?.website || brandForm.website || "";
+
+      const selectedStyles = labSelectedStyles.length > 0
+        ? labSelectedStyles
+        : HARDCODED_STYLES.filter((s) => selectedStyleIds.includes(s.id));
+
+      const filteredCatalog = catalogItems.filter((item) => selectedCatalogItemIds.includes(item.id));
+
+      const token = userToken || (user ? await user.getIdToken() : "");
+
+      const res = await fetch("/api/laboratorio/generar-muestra", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          postsCount: postsToGenerate,
+          allowedTypes: selectedPostFormats,
+          businessName: activeName,
+          rubro: activeRubro,
+          phone: activePhone,
+          website: activeWebsite,
+          catalogItems: filteredCatalog.map((item) => ({
+            id: item.id,
+            name: item.name,
+            description: item.description,
+            type: item.type,
+            price: item.price || null,
+            offerPrice: item.offerPrice || null,
+            imageUrl: item.imageUrl || null,
+            keepOriginalPhoto: item.keepOriginalPhoto !== false,
+          })),
+          catalogUsage,
+          selectedStyles: usePromptStyles ? selectedStyles : [],
+          isCommercialPoster: isCommercialPosterOnly,
+          agentTone,
+          customAgentInstruction,
+          nicheContext: radarData ? JSON.stringify(radarData.trends || radarData.summary || "") : "",
+          userId: user?.uid || "anon",
+          profileId: currentTestProfile?.id || "demo",
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error al generar la muestra para el cliente");
+
+      setGeneratedMuestraResult(data);
+      setEditableWhatsappMessage(data.whatsappMessage || "");
+
+      // También mapear a strategyPosts para que se reflejen en la previsualización inferior
+      if (Array.isArray(data.publications) && data.publications.length > 0) {
+        setStrategyPosts(
+          data.publications.map((p: any, idx: number) => ({
+            format: p.type === "carrusel" ? "Carrusel" : p.type === "reel" ? "Reel" : "Post",
+            hook: p.hook || p.title || "Publicación sugerida",
+            content: p.copy || "",
+            cta: p.cta || "Contáctanos",
+            dayOffset: idx,
+            suggestedTime: "11:00",
+            baseImageUrl: p.imageUrl || null,
+            imageDirection: p.visualStyleTitle ? `Estilo: ${p.visualStyleTitle}` : "Diseño comercial con agentes",
+          }))
+        );
+      }
+
+      showNotification(`¡Muestra de ${data.publications?.length || postsToGenerate} publicaciones lista para WhatsApp!`);
+    } catch (err: any) {
+      showNotification(err.message || "Error al generar la muestra para el cliente.", true);
+    } finally {
+      setGeneratingMuestra(false);
     }
   };
 
@@ -1998,6 +2105,237 @@ export default function LaboratorioPage() {
                 isCommercialPosterOnly={isCommercialPosterOnly}
                 onToggleCommercialPosterOnly={setIsCommercialPosterOnly}
               />
+            </div>
+
+            {/* ── SECCIÓN PRINCIPAL: CONFIGURACIÓN DE PUBLICACIONES & LANDING DE MUESTRA PARA CLIENTE ── */}
+            <div className="bg-gradient-to-br from-indigo-50/70 via-purple-50/40 to-white p-6 rounded-3xl border-2 border-indigo-200/80 shadow-sm space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-indigo-100 pb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">🚀</span>
+                    <h4 className="text-base font-black text-slate-900">
+                      Generar Muestra para Cliente con Enlace de WhatsApp
+                    </h4>
+                  </div>
+                  <p className="text-xs text-slate-600 font-medium mt-0.5">
+                    Define la cantidad de publicaciones (1 a 5) y los formatos a incluir. Nuestros agentes diseñarán las imágenes, redactarán los copys correspondientes y crearán la landing para el cliente.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleGenerateMuestraForClient}
+                  disabled={generatingMuestra || generatingStrategy}
+                  className="px-6 py-3.5 bg-gradient-to-r from-purple-600 via-indigo-600 to-emerald-600 hover:from-purple-700 hover:to-emerald-700 text-white font-black text-xs rounded-2xl shadow-lg shadow-indigo-600/25 transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 disabled:opacity-50"
+                >
+                  {generatingMuestra ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>Generando publicaciones con agentes...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>✨ Generar {postsToGenerate} {postsToGenerate === 1 ? "Publicación" : "Publicaciones"} &amp; Landing</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* 1. Selector de Cantidad de Publicaciones (Mínimo 1, Máximo 5) */}
+                <div className="space-y-3 bg-white p-4 rounded-2xl border border-indigo-100 shadow-2xs">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                      1. Cantidad de Publicaciones
+                    </label>
+                    <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-200">
+                      Mín 1 · Máx 5
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {[1, 2, 3, 4, 5].map((num) => (
+                      <button
+                        key={num}
+                        type="button"
+                        onClick={() => setPostsToGenerate(num)}
+                        className={`flex-1 py-3 rounded-xl font-black text-sm transition-all flex items-center justify-center border cursor-pointer ${
+                          postsToGenerate === num
+                            ? "bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-600/30 scale-102"
+                            : "bg-slate-50 text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-100"
+                        }`}
+                      >
+                        {num}
+                      </button>
+                    ))}
+                  </div>
+
+                  <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
+                    Nuestros agentes generarán {postsToGenerate} {postsToGenerate === 1 ? "publicación individual" : "publicaciones completas"} con fotografía publicitaria real o cartel comercial y copy para cada formato.
+                  </p>
+                </div>
+
+                {/* 2. Selector de Tipos de Publicaciones (Checkboxes: Post, Carrusel, Reel) */}
+                <div className="space-y-3 bg-white p-4 rounded-2xl border border-indigo-100 shadow-2xs">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                      2. Tipos de Publicaciones (Marca con check)
+                    </label>
+                    <span className="text-[11px] font-bold text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200">
+                      {selectedPostFormats.length} seleccionados
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { id: "post" as const, label: "Post Feed", icon: "📸", desc: "Imagen 1:1" },
+                      { id: "carrusel" as const, label: "Carrusel", icon: "🎠", desc: "3 Slides" },
+                      { id: "reel" as const, label: "Reel 9:16", icon: "🎬", desc: "Guión + Video" },
+                    ].map((fmt) => {
+                      const isChecked = selectedPostFormats.includes(fmt.id);
+                      return (
+                        <button
+                          key={fmt.id}
+                          type="button"
+                          onClick={() => {
+                            if (isChecked) {
+                              if (selectedPostFormats.length > 1) {
+                                setSelectedPostFormats((prev) => prev.filter((f) => f !== fmt.id));
+                              } else {
+                                showNotification("Debes mantener al menos un tipo de publicación seleccionado.", true);
+                              }
+                            } else {
+                              setSelectedPostFormats((prev) => [...prev, fmt.id]);
+                            }
+                          }}
+                          className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                            isChecked
+                              ? "bg-purple-50/60 border-purple-500 shadow-2xs ring-2 ring-purple-500/20"
+                              : "bg-slate-50 border-slate-200 opacity-60 hover:opacity-100"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-base">{fmt.icon}</span>
+                            <span className={`w-4 h-4 rounded-md flex items-center justify-center text-[10px] font-black ${
+                              isChecked ? "bg-purple-600 text-white" : "border border-slate-300 text-transparent"
+                            }`}>
+                              ✓
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-xs font-black text-slate-900 block leading-tight">{fmt.label}</span>
+                            <span className="text-[10px] text-slate-500 font-medium">{fmt.desc}</span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
+                    Las {postsToGenerate} publicaciones se distribuirán exclusivamente entre los formatos que marques con check.
+                  </p>
+                </div>
+              </div>
+
+              {/* RESULTADO: TARJETA DE LANDING DE MUESTRA GENERADA & WHATSAPP */}
+              {generatedMuestraResult && (
+                <div className="bg-emerald-50/90 border-2 border-emerald-300 rounded-3xl p-5 sm:p-6 space-y-4 shadow-sm animate-in fade-in">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-emerald-200 pb-3">
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center text-xl shadow-md shadow-emerald-600/30">
+                        ✨
+                      </span>
+                      <div>
+                        <h4 className="text-sm font-black text-slate-900">
+                          ¡Muestra Lista con {generatedMuestraResult.publications?.length || postsToGenerate} Publicaciones!
+                        </h4>
+                        <p className="text-xs text-emerald-800 font-medium">
+                          La landing interactiva y el mensaje de WhatsApp han sido preparados con éxito.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <a
+                        href={generatedMuestraResult.publicDemoUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-800 font-black text-xs border border-emerald-300 shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                      >
+                        <span>👁️</span> Abrir Landing de Muestra
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(generatedMuestraResult.publicDemoUrl);
+                          setCopiedMuestraLink(true);
+                          setTimeout(() => setCopiedMuestraLink(false), 2500);
+                          showNotification("Enlace de muestra copiado.");
+                        }}
+                        className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                      >
+                        <span>{copiedMuestraLink ? "✓ Copiado" : "📋 Copiar Enlace"}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Enlace en texto visible */}
+                  <div className="flex items-center gap-2 bg-white p-3 rounded-xl border border-emerald-200 text-xs">
+                    <span className="text-emerald-700 font-bold shrink-0">🔗 Enlace Público:</span>
+                    <input
+                      type="text"
+                      readOnly
+                      value={generatedMuestraResult.publicDemoUrl}
+                      className="w-full bg-transparent font-mono text-[11px] text-slate-700 outline-none select-all"
+                    />
+                  </div>
+
+                  {/* Módulo de Envío por WhatsApp */}
+                  <div className="space-y-2.5 bg-white/70 p-4 rounded-2xl border border-emerald-200">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                        <FaWhatsapp className="text-emerald-600 text-base" />
+                        <span>Mensaje para Enviar por WhatsApp:</span>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(editableWhatsappMessage);
+                          setCopiedWhatsappText(true);
+                          setTimeout(() => setCopiedWhatsappText(false), 2500);
+                          showNotification("Mensaje de WhatsApp copiado.");
+                        }}
+                        className="text-xs text-emerald-700 hover:text-emerald-800 font-bold flex items-center gap-1 cursor-pointer"
+                      >
+                        <span>{copiedWhatsappText ? "✓ Copiado" : "📋 Copiar Mensaje"}</span>
+                      </button>
+                    </div>
+
+                    <textarea
+                      rows={5}
+                      value={editableWhatsappMessage}
+                      onChange={(e) => setEditableWhatsappMessage(e.target.value)}
+                      className="w-full p-3 bg-white border border-emerald-200 rounded-xl text-xs text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 leading-relaxed resize-none"
+                    />
+
+                    <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                      <p className="text-[11px] text-emerald-900 font-medium">
+                        💡 Redactado en tono directo y natural sin mención de IA, destacando el trabajo de nuestros agentes.
+                      </p>
+
+                      <a
+                        href={`https://wa.me/${(currentTestProfile?.phone || brandForm.phone || "").replace(/[\s\+\-\(\)]/g, "")}?text=${encodeURIComponent(editableWhatsappMessage)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow-md shadow-emerald-600/30 flex items-center gap-2 transition-all cursor-pointer"
+                      >
+                        <FaWhatsapp className="text-base" />
+                        <span>Enviar por WhatsApp al Cliente</span>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Selector de Vista de Resultados */}
