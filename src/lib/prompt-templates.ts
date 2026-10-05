@@ -1106,179 +1106,203 @@ The 360° rotation is the presentation method, not a product redesign.`,
   {
     id: "style-food-combo-ad",
     title: "Anuncio de Combo Promocional (Combo Ad)",
-    description: "Convierte tu plato en un combo publicitario completo con acompañamientos (papas, bebida), titular en mayúsculas, badge de contenido, precio destacado en amarillo y CTA.",
+    description: "Convierte tu plato en un combo publicitario completo con acompañamientos (papas, bebida), titular en mayúsculas, badge de contenido, precio destacado en amarillo y CTA, con espacio negativo superior para no tapar la comida.",
     category: "Gastronomía & Carteles",
     categories: ["Gastronomía & Carteles", "Publicidad y Ads"],
-    prompt: `Commercial food advertising poster layout for social media. High-end commercial food photography featuring [Nombre del Plato Principal:ej. una hamburguesa gourmet con queso fundido y tocino crujiente], accompanied by crispy golden french fries and a tall glass of cold soda with ice cubes and condensation drops, arranged on a dark rustic wooden table in a warm atmospheric pub setting.
+    prompt: `Commercial food advertising poster layout for social media with strict two-tier composition.
+COMPOSITION & SPATIAL HIERARCHY:
+- LOWER 55%-60%: High-end commercial food photography featuring [Nombre del Plato Principal:ej. una hamburguesa gourmet con queso fundido y tocino crujiente], accompanied by crispy golden french fries and a tall glass of cold soda with ice cubes and condensation drops, arranged cleanly on a dark rustic wooden table in a warm atmospheric pub setting. The food dish is 100% unobstructed, glistening, and mouth-watering.
+- UPPER 40%-45%: Clean, dark, moody atmospheric negative space (copyspace) with subtle soft rising steam and vignette, reserved exclusively for advertising typography.
 
 GRAPHIC DESIGN & ON-IMAGE TYPOGRAPHY (MANDATORY RENDERED TEXT):
-The poster composition MUST include crisp, sharp, legible commercial advertising typography overlaid directly onto the image:
-- Top Headline: Large bold white uppercase typography prominently centered reading "[Nombre del Combo:ej. COMBO BURGER]"
+STRICT PLACEMENT AND NEGATIVE RULE: All rendered typography, headlines, subtitles, badges, prices, and stickers MUST be located strictly within the upper dark negative space (copyspace) or upper side margins. Typography and stickers MUST NEVER overlap, touch, obscure, or cover the food dish, burger, fries, or drink. The dish remains 100% clean, unobstructed, and appetizing in the lower half of the frame.
+- Top Headline: Large bold white uppercase typography prominently centered in the upper dark negative space reading "[Nombre del Combo:ej. COMBO BURGER]"
 - Subtitle Bar: Clean uppercase tagline in a subtle underline frame reading "[Subtítulo o Eslogan:ej. EL PLAN PERFECTO]"
-- Content Badge: Circular dark badge with white text reading "[Contenido del Combo:ej. BURGER + PAPAS + BEBIDA]"
-- Highlighted Price Tag: High-contrast bright yellow ribbon sticker in the lower section with bold black numbers reading "[Precio:ej. $24.900]"
-- Call to Action: Rounded promotional sticker or button reading "[Texto CTA:ej. ¡ORDENA AHORA!]"
+- Content Badge: Circular dark badge with white text floating in the upper-left margin reading "[Contenido del Combo:ej. BURGER + PAPAS + BEBIDA]"
+- Highlighted Price Tag: High-contrast bright yellow ribbon sticker floating cleanly in the upper-right corner with bold black numbers reading "[Precio:ej. $24.900]"
+- Call to Action: Compact rounded promotional pill sticker reading "[Texto CTA:ej. ¡ORDENA AHORA!]" positioned cleanly at the bottom edge without touching the food plate.
 
-All rendered typography must be sharp, high contrast, perfectly legible and stylized like a real restaurant advertising poster. App-like commercial social media poster composition, 8k resolution, professional food photography.`,
+All rendered typography must be sharp, high contrast, perfectly legible and stylized like a real restaurant advertising poster. Food hero is 100% visible and delicious below, 8k resolution, professional commercial food photography.`,
     previewUrl: "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=500&q=80",
     imageRequirement: "required",
     isCommercialPoster: true,
     imageGenBehavior: "product",
-    styleKeywords: "commercial food combo advertising poster, bold crisp on-image typography text overlay 'COMBO BURGER', subtitle 'EL PLAN PERFECTO', circular badge 'BURGER + PAPAS + BEBIDA', vibrant yellow price badge '$24.900', CTA sticker '¡ORDENA AHORA!', mouth-watering burger with fries and cold soda on rustic dark table",
+    styleKeywords: "commercial food combo advertising poster, two-tier layout, upper 40% dark copyspace for bold crisp on-image typography 'COMBO BURGER', subtitle 'EL PLAN PERFECTO', circular badge 'BURGER + PAPAS + BEBIDA', vibrant yellow price badge '$24.900' in upper corner, compact CTA sticker '¡ORDENA AHORA!', mouth-watering burger with fries and cold soda 100% unobstructed in lower 60% on dark table, text never overlaps food",
   },
   {
     id: "style-food-dish-launch",
     title: "Lanzamiento de Nuevo Plato (Signature Dish Launch)",
-    description: "Campaña de lanzamiento para un nuevo plato de autor: kicker 'NUEVO EN NUESTRO MENÚ', gran titular del plato, subtítulo de sabor, 3 badges de beneficios con iconos y botón '¡PRUÉBALO HOY!'.",
+    description: "Campaña de lanzamiento para un nuevo plato de autor: kicker 'NUEVO EN NUESTRO MENÚ', gran titular del plato, subtítulo de sabor, 3 badges de beneficios con iconos y botón '¡PRUÉBALO HOY!', con cabecera oscura superior.",
     category: "Gastronomía & Carteles",
     categories: ["Gastronomía & Carteles", "Publicidad y Ads", "Editorial y Revista"],
-    prompt: `Premium commercial restaurant launch advertisement poster. High-end culinary photography of [Nombre del Plato:ej. Pollo al Curry cremoso con arroz basmati y pan naan recién horneado], served in a rustic ceramic bowl with fresh herb garnishes and delicate rising steam, soft overhead botanical leaves framing the composition, warm ambient lighting in an authentic restaurant.
+    prompt: `Premium commercial restaurant launch advertisement poster with clear two-tier layout hierarchy.
+COMPOSITION & SPATIAL HIERARCHY:
+- LOWER 55%-60%: High-end culinary photography of [Nombre del Plato:ej. Pollo al Curry cremoso con arroz basmati y pan naan recién horneado], served in a rustic ceramic bowl with fresh herb garnishes and delicate rising steam, completely unobstructed and glistening on a dark wooden table in an authentic restaurant setting.
+- UPPER 40%-45%: Clean, dark, elegant atmospheric negative space with subtle botanical framing, reserved exclusively for editorial typography and brand elements.
 
 GRAPHIC DESIGN & ON-IMAGE TYPOGRAPHY (MANDATORY RENDERED TEXT):
-The vertical poster MUST feature elegant, legible editorial advertising typography rendered directly on the image canvas:
+STRICT PLACEMENT AND NEGATIVE RULE: All typography and badges MUST be placed strictly in the upper dark negative space header. Text must NEVER overlap, touch, cover, or obscure the food, bowl, or ingredients.
 - Top Kicker: Small centered uppercase typography at the top reading "[Encabezado Superior:ej. NUEVO EN NUESTRO MENÚ]"
-- Main Dish Headline: Large, imposing serif typography reading "[Nombre del Plato:ej. POLLO AL CURRY]"
-- Flavor Descriptor: Neat spaced descriptive subtitle reading "[Descripción de Sabor:ej. CREMOSO. AUTÉNTICO. DELICIOSO.]"
-- Feature Attribute Badges: Three clean minimalist icon badges at bottom reading "[Beneficio 1:ej. INGREDIENTES NATURALES]", "[Beneficio 2:ej. RECETA AUTÉNTICA]", and "[Beneficio 3:ej. UN SABOR INOLVIDABLE]"
-- Bottom CTA Button: Warm golden-amber rounded pill button with bold dark text reading "[Texto CTA:ej. ¡PRUÉBALO HOY!]"
+- Main Dish Headline: Large, imposing serif typography centered in the upper negative space reading "[Nombre del Plato:ej. POLLO AL CURRY]"
+- Flavor Descriptor: Neat spaced descriptive subtitle under the headline reading "[Descripción de Sabor:ej. CREMOSO. AUTÉNTICO. DELICIOSO.]"
+- Feature Attribute Badges: Three clean minimalist icon badges positioned in the upper section reading "[Beneficio 1:ej. INGREDIENTES NATURALES]", "[Beneficio 2:ej. RECETA AUTÉNTICA]", and "[Beneficio 3:ej. UN SABOR INOLVIDABLE]"
+- Bottom CTA Button: Warm golden-amber rounded pill button with bold dark text reading "[Texto CTA:ej. ¡PRUÉBALO HOY!]" at the very bottom margin, clear of the food.
 
-Seamless graphic design layout, crisp legible typography, mouth-watering gourmet dish hero, editorial restaurant campaign aesthetic, 8k resolution.`,
+Seamless graphic design layout, crisp legible typography in the upper copyspace, mouth-watering gourmet dish hero clean and unobstructed below, editorial restaurant campaign aesthetic, 8k resolution.`,
     previewUrl: "https://images.unsplash.com/photo-1544025162-d76694265947?w=500&q=80",
     imageRequirement: "required",
     isCommercialPoster: true,
     imageGenBehavior: "editorial",
-    styleKeywords: "restaurant signature dish launch poster, crisp on-image typography text overlay 'NUEVO EN NUESTRO MENÚ', bold dish title 'POLLO AL CURRY', subtitle 'CREMOSO. AUTÉNTICO. DELICIOSO.', feature badges 'INGREDIENTES NATURALES' and 'RECETA AUTÉNTICA', amber CTA button '¡PRUÉBALO HOY!', gourmet bowl presentation with steam",
+    styleKeywords: "restaurant signature dish launch poster, two-tier composition, crisp on-image typography in upper 40% copyspace 'NUEVO EN NUESTRO MENÚ', bold dish title 'POLLO AL CURRY', subtitle 'CREMOSO. AUTÉNTICO. DELICIOSO.', feature badges 'INGREDIENTES NATURALES' and 'RECETA AUTÉNTICA', amber CTA button '¡PRUÉBALO HOY!', gourmet bowl presentation 100% unobstructed in lower 60%, text never covers food",
   },
   {
     id: "style-food-hero-poster",
     title: "Póster Publicitario de Alto Impacto (Food Hero Poster)",
-    description: "Póster vertical dramático y cinematográfico con acción apetitosa: titular grande mixto imprenta/cursiva, frase de calidad lateral y sticker circular llamativo de '¡ORDENA AHORA!'.",
+    description: "Póster vertical dramático y cinematográfico con acción apetitosa: titular grande en zona superior oscura, frase de calidad lateral y sticker circular llamativo sin tapar el plato.",
     category: "Gastronomía & Carteles",
     categories: ["Gastronomía & Carteles", "Publicidad y Ads"],
-    prompt: `Dramatic high-impact commercial food advertising poster. Dynamic action photography hero shot of [Nombre del Plato:ej. Pizza Artesanal Napolitana recién horneada], featuring an irresistible cheese pull with melted stringy mozzarella stretching upwards, fresh basil leaves and ripe cherry tomatoes floating dynamically around the slice, dark moody restaurant background with dramatic warm rim lighting.
+    prompt: `Dramatic high-impact commercial food advertising poster with dynamic vertical composition.
+COMPOSITION & SPATIAL HIERARCHY:
+- LOWER 55%-60%: Dynamic action photography hero shot of [Nombre del Plato:ej. Pizza Artesanal Napolitana recién horneada], featuring an irresistible cheese pull with melted stringy mozzarella stretching upwards, fresh basil leaves and ripe cherry tomatoes floating dynamically, 100% visible, delicious, and unobstructed.
+- UPPER 40%-45%: Dark moody restaurant background with dramatic warm rim lighting, designed as clean negative space (copyspace) for bold typography.
 
 GRAPHIC DESIGN & ON-IMAGE TYPOGRAPHY (MANDATORY RENDERED TEXT):
-The poster composition MUST include bold, stylized commercial typography rendered directly onto the graphic:
-- Giant Dish Headline: Large bold serif/sans uppercase typography for "[Nombre del Plato:ej. PIZZA]" combined with fluid, dynamic cursive script for "[Palabra de Impacto:ej. Irresistible]"
-- Left Quality Tagline: Clean vertical text block reading "[Lema de Calidad:ej. INGREDIENTES FRESCOS. SABOR PERFECTO.]"
-- Circular CTA Sticker: High-contrast round yellow badge sticker positioned near the food with bold dark text reading "[Texto Sticker CTA:ej. ¡ORDENA AHORA!]"
+STRICT PLACEMENT AND NEGATIVE RULE: Typography and stickers MUST sit exclusively in the upper dark negative space or top side margin. Text and badges MUST NEVER overlap, touch, or obscure the main food item or cheese pull.
+- Giant Dish Headline: Large bold serif/sans uppercase typography for "[Nombre del Plato:ej. PIZZA]" combined with fluid, dynamic cursive script for "[Palabra de Impacto:ej. Irresistible]", rendered boldly in the upper dark negative space.
+- Left Quality Tagline: Clean vertical text block in the upper-left margin reading "[Lema de Calidad:ej. INGREDIENTES FRESCOS. SABOR PERFECTO.]"
+- Circular CTA Sticker: High-contrast round yellow badge sticker floating in the upper-right corner with bold dark text reading "[Texto Sticker CTA:ej. ¡ORDENA AHORA!]"
 
-Cinematic restaurant advertising aesthetics, high-energy composition, crisp typography overlay, glistening appetizing textures, 8k resolution.`,
+Cinematic restaurant advertising aesthetics, high-energy composition, crisp typography overlay in top copyspace, glistening appetizing textures 100% unobstructed below, 8k resolution.`,
     previewUrl: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500&q=80",
     imageRequirement: "required",
     isCommercialPoster: true,
     imageGenBehavior: "product",
-    styleKeywords: "dramatic action food advertising poster, on-image typography with bold header 'PIZZA' and script 'Irresistible', side copy 'INGREDIENTES FRESCOS. SABOR PERFECTO.', circular yellow sticker '¡ORDENA AHORA!', dynamic melted cheese pull, dark moody cinematic lighting",
+    styleKeywords: "dramatic action food advertising poster, two-tier layout, on-image typography in upper 40% copyspace with bold header 'PIZZA' and script 'Irresistible', side copy 'INGREDIENTES FRESCOS. SABOR PERFECTO.', circular yellow sticker '¡ORDENA AHORA!' in upper corner, dynamic melted cheese pull 100% unobstructed in lower 60%, dark moody cinematic lighting, text never covers food",
   },
   {
     id: "style-food-menu-visual",
     title: "Ficha Editorial de Carta & Menú (Menu Visual Board)",
-    description: "Diseño editorial refinado de carta y menú gastronómico: nombre en cursiva elegante, subtítulo descriptivo, precio grande en destaque, badges con iconos y presentación tradicional.",
+    description: "Diseño editorial refinado de carta y menú gastronómico: nombre en cursiva elegante, subtítulo descriptivo, precio grande en destaque en cabecera superior y plato completamente visible.",
     category: "Gastronomía & Carteles",
     categories: ["Gastronomía & Carteles", "Publicidad y Ads", "Producto (E-commerce)"],
-    prompt: `Refined editorial restaurant menu visual board. Premium commercial food photography of [Nombre del Plato:ej. Biryani de Arroz Especiado con Pollo], served in an authentic ornate metal bowl with aromatic spices, fresh coriander garnish, and traditional tableware in a warm, softly blurred culinary setting.
+    prompt: `Refined editorial restaurant menu visual board with balanced vertical hierarchy.
+COMPOSITION & SPATIAL HIERARCHY:
+- LOWER 55%-60%: Premium commercial food photography of [Nombre del Plato:ej. Biryani de Arroz Especiado con Pollo], served in an authentic ornate metal bowl with aromatic spices, fresh coriander garnish, and traditional tableware, completely unobstructed in a softly blurred culinary setting.
+- UPPER 40%-45%: Warm, softly blurred dark culinary negative space providing ample clean copyspace for elegant menu typography and pricing.
 
 GRAPHIC DESIGN & ON-IMAGE TYPOGRAPHY (MANDATORY RENDERED TEXT):
-The vertical layout MUST feature elegant, legible restaurant menu typography overlaid directly on the poster:
+STRICT PLACEMENT AND NEGATIVE RULE: All menu typography MUST be positioned in the upper dark negative space. Text must NEVER overlap, cover, or touch the food bowl, rice, or plate.
 - Calligraphic Signature Title: Large, fluid elegant script typography at the top reading "[Nombre en Cursiva:ej. Biryani]"
 - Subtitle: Clean geometric uppercase text reading "[Subtítulo del Plato:ej. ARROZ ESPECIADO CON POLLO]"
 - Tradition Tagline: Delicate italic sentence reading "[Lema Tradicional:ej. Tradición en cada bocado]"
-- Prominent Price Tag: Large bold price typography in clear contrasting numerals reading "[Precio:ej. $29.900]"
-- Feature Attribute Badges: Three neatly stacked minimalist icon badges reading "[Atributo 1:ej. ESPECIAS NATURALES]", "[Atributo 2:ej. RECETA TRADICIONAL]", and "[Atributo 3:ej. SABOR INOLVIDABLE]"
+- Prominent Price Tag: Large bold price typography in clear contrasting numerals floating in the upper-right corner reading "[Precio:ej. $29.900]"
+- Feature Attribute Badges: Three neatly stacked minimalist icon badges in the upper section reading "[Atributo 1:ej. ESPECIAS NATURALES]", "[Atributo 2:ej. RECETA TRADICIONAL]", and "[Atributo 3:ej. SABOR INOLVIDABLE]"
 
-Sophisticated editorial menu card composition, generous negative space, refined luxury dining vibe, crisp rendered lettering, 8k resolution.`,
+Sophisticated editorial menu card composition, generous upper negative space for text, unobstructed authentic gourmet presentation below, 8k resolution.`,
     previewUrl: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=500&q=80",
     imageRequirement: "required",
     isCommercialPoster: true,
     imageGenBehavior: "product",
-    styleKeywords: "editorial restaurant menu board poster, crisp on-image typography with calligraphic script 'Biryani', uppercase subtitle 'ARROZ ESPECIADO CON POLLO', bold price '$29.900', attribute badges 'ESPECIAS NATURALES' and 'RECETA TRADICIONAL', authentic traditional gourmet presentation",
+    styleKeywords: "editorial restaurant menu board poster, two-tier composition, crisp on-image typography in upper 40% copyspace with calligraphic script 'Biryani', uppercase subtitle 'ARROZ ESPECIADO CON POLLO', bold price '$29.900' in upper corner, attribute badges 'ESPECIAS NATURALES' and 'RECETA TRADICIONAL', authentic traditional gourmet presentation 100% unobstructed in lower 60%, text never covers food",
   },
   {
     id: "style-food-cafe-lifestyle",
     title: "Cafetería Lifestyle & Momentos (Café Lifestyle)",
-    description: "Cartel cálido y aspiracional de cafetería: titular emocional 'BUEN CAFÉ DÍAS MÁS LINDOS', subtítulo en cursiva con corazón, frase lateral de pausa y badges de café de especialidad.",
+    description: "Cartel cálido y aspiracional de cafetería: titular emocional en espacio superior, subtítulo en cursiva con corazón y taza con arte latte completamente despejada abajo.",
     category: "Gastronomía & Carteles",
     categories: ["Gastronomía & Carteles", "Editorial y Revista", "Fotorealismo"],
-    prompt: `Cozy and aspirational café lifestyle commercial advertising poster. Atmospheric commercial photography of [Bebida o Producto:ej. una taza de café cappuccino artesanal con arte latte en taza de cerámica rústica], paired with a golden flaky croissant, resting on a warm wooden coffee table in soft natural morning sunlight with blurred café plants in the background.
+    prompt: `Cozy and aspirational café lifestyle commercial advertising poster with balanced two-tier composition.
+COMPOSITION & SPATIAL HIERARCHY:
+- LOWER 55%-60%: Atmospheric commercial photography of [Bebida o Producto:ej. una taza de café cappuccino artesanal con arte latte en taza de cerámica rústica], paired with a golden flaky croissant, resting on a warm wooden coffee table in soft natural morning sunlight with blurred café plants in the background, 100% unobstructed.
+- UPPER 40%-45%: Warm, soft, atmospheric negative space with softly blurred café background, reserved for lifestyle typography.
 
 GRAPHIC DESIGN & ON-IMAGE TYPOGRAPHY (MANDATORY RENDERED TEXT):
-The poster MUST feature warm, elegant editorial lifestyle typography rendered cleanly over the image:
-- Main Headline: Large stylized white typography combining bold and serif lettering reading "[Titular Emocional:ej. BUEN CAFÉ DÍAS MÁS LINDOS]"
+STRICT PLACEMENT AND NEGATIVE RULE: All typography MUST be rendered in the upper negative space. Text must NEVER cover, overlap, or touch the coffee cup, latte art, or croissant.
+- Main Headline: Large stylized white typography combining bold and serif lettering in the upper area reading "[Titular Emocional:ej. BUEN CAFÉ DÍAS MÁS LINDOS]"
 - Emotional Subtitle: Elegant script cursive text with heart icon reading "[Subtítulo Cercano:ej. Un momento para ti ♡]"
-- Side Rhythm Tagline: Minimalist spaced uppercase typography reading "[Frase de Ritmo:ej. PAUSA. DISFRUTA. REPITE.]"
-- Bottom Icon Badges: Three minimalist line-art icon badges aligned horizontally at the bottom reading "[Insignia 1:ej. CAFÉ DE ESPECIALIDAD]", "[Insignia 2:ej. BUENOS MOMENTOS]", and "[Insignia 3:ej. SIEMPRE UNA BUENA IDEA]"
+- Side Rhythm Tagline: Minimalist spaced uppercase typography in the upper-left margin reading "[Frase de Ritmo:ej. PAUSA. DISFRUTA. REPITE.]"
+- Bottom Icon Badges: Three minimalist line-art icon badges aligned horizontally at the upper or lower edge reading "[Insignia 1:ej. CAFÉ DE ESPECIALIDAD]", "[Insignia 2:ej. BUENOS MOMENTOS]", and "[Insignia 3:ej. SIEMPRE UNA BUENA IDEA]"
 
-Artistic aesthetic coffee shop campaign layout, soft organic tones, crisp legible lettering, inviting cozy atmosphere, 8k resolution.`,
+Artistic aesthetic coffee shop campaign layout, soft organic tones, crisp legible lettering in upper copyspace, unobstructed appetizing beverage below, 8k resolution.`,
     previewUrl: "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=500&q=80",
     imageRequirement: "required",
     isCommercialPoster: true,
     imageGenBehavior: "editorial",
-    styleKeywords: "warm cafe lifestyle advertising poster, crisp on-image typography 'BUEN CAFÉ DÍAS MÁS LINDOS', cursive script 'Un momento para ti', side text 'PAUSA. DISFRUTA. REPITE.', icon badges 'CAFÉ DE ESPECIALIDAD' and 'BUENOS MOMENTOS', latte art with croissant on wooden table",
+    styleKeywords: "warm cafe lifestyle advertising poster, two-tier layout, crisp on-image typography in upper 40% copyspace 'BUEN CAFÉ DÍAS MÁS LINDOS', cursive script 'Un momento para ti', side text 'PAUSA. DISFRUTA. REPITE.', icon badges 'CAFÉ DE ESPECIALIDAD' and 'BUENOS MOMENTOS', latte art with croissant 100% unobstructed on wooden table below, text never covers cup",
   },
   {
     id: "style-food-delivery-ad",
     title: "Anuncio Delivery & Para Llevar (Food Delivery Ad)",
-    description: "Publicidad de delivery de alto impacto: titular 'TU COMIDA FAVORITA EN TU CASA', badges con iconos (Rápido, Seguro, A tiempo), bolsa kraft con logo y botón amarillo '¡ORDENA AHORA! ->'.",
+    description: "Publicidad de delivery de alto impacto: titular en cabecera oscura superior, badges de servicio (Rápido, Seguro, A tiempo) y comida para llevar 100% visible abajo.",
     category: "Gastronomía & Carteles",
     categories: ["Gastronomía & Carteles", "Publicidad y Ads"],
-    prompt: `High-impact commercial food delivery advertising poster. Tempting commercial photography of [Plato Principal:ej. una hamburguesa doble con queso derretido y tocino], accompanied by golden french fries in a takeout carton and a cold drink with straw, next to a branded brown kraft paper delivery bag with a round stamp logo reading "[Nombre en Bolsa:ej. TASTY BITES]", dark restaurant backdrop with warm ambient lights.
+    prompt: `High-impact commercial food delivery advertising poster with clean two-zone composition.
+COMPOSITION & SPATIAL HIERARCHY:
+- LOWER 55%-60%: Tempting commercial photography of [Plato Principal:ej. una hamburguesa doble con queso derretido y tocino], accompanied by golden french fries in a takeout carton and a cold drink with straw, next to a branded brown kraft paper delivery bag with a round stamp logo reading "[Nombre en Bolsa:ej. TASTY BITES]", fully visible on a dark rustic surface.
+- UPPER 40%-45%: Dark moody restaurant backdrop with warm ambient lights, designed as clean negative space (copyspace) for promotional typography.
 
 GRAPHIC DESIGN & ON-IMAGE TYPOGRAPHY (MANDATORY RENDERED TEXT):
-The poster MUST showcase bold, high-converting promotional delivery typography rendered directly on the image:
-- Top Headline: Large condensed bold typography with crisp white and yellow lettering reading "[Titular de Delivery:ej. TU COMIDA FAVORITA EN TU CASA]"
-- Delivery Feature Badges: Three clean icon badges beneath the headline reading "[Beneficio 1:ej. RÁPIDO]", "[Beneficio 2:ej. SEGURO]", and "[Beneficio 3:ej. A TIEMPO]"
-- Promotional CTA Button: Bright yellow rounded rectangular button with arrow reading "[Texto Botón CTA:ej. ¡ORDENA AHORA! ->]"
-- Bottom Footer Tagline: Clean modern text at bottom right reading "[Lema Secundario:ej. COMIDA REAL EN CUALQUIER LUGAR]"
+STRICT PLACEMENT AND NEGATIVE RULE: All promotional text MUST be positioned strictly in the upper negative space header. Text must NEVER overlap, cover, or obscure the food, burger, fries, or drink.
+- Top Headline: Large condensed bold typography with crisp white and yellow lettering in the upper negative space reading "[Titular de Delivery:ej. TU COMIDA FAVORITA EN TU CASA]"
+- Delivery Feature Badges: Three clean icon badges positioned directly beneath the headline in the upper zone reading "[Beneficio 1:ej. RÁPIDO]", "[Beneficio 2:ej. SEGURO]", and "[Beneficio 3:ej. A TIEMPO]"
+- Promotional CTA Button: Bright yellow rounded rectangular button with arrow reading "[Texto Botón CTA:ej. ¡ORDENA AHORA! ->]" floating in the upper right or bottom edge without touching the food.
+- Bottom Footer Tagline: Clean modern text at bottom right margin reading "[Lema Secundario:ej. COMIDA REAL EN CUALQUIER LUGAR]"
 
-High-energy commercial delivery ad design, perfectly readable bold fonts, irresistible food hero presentation, 8k resolution.`,
+High-energy commercial delivery ad design, perfectly readable bold fonts in upper copyspace, irresistible food hero 100% unobstructed below, 8k resolution.`,
     previewUrl: "https://images.unsplash.com/photo-1526367790999-0150786686a2?w=500&q=80",
     imageRequirement: "required",
     isCommercialPoster: true,
     imageGenBehavior: "product",
-    styleKeywords: "commercial food delivery poster, bold on-image typography 'TU COMIDA FAVORITA EN TU CASA', icon badges 'RÁPIDO', 'SEGURO', 'A TIEMPO', kraft paper delivery bag with logo, yellow CTA button '¡ORDENA AHORA! ->', footer tagline 'COMIDA REAL EN CUALQUIER LUGAR'",
+    styleKeywords: "commercial food delivery poster, two-tier layout, bold on-image typography in upper 40% copyspace 'TU COMIDA FAVORITA EN TU CASA', icon badges 'RÁPIDO', 'SEGURO', 'A TIEMPO', kraft paper delivery bag with logo, yellow CTA button '¡ORDENA AHORA! ->', footer tagline 'COMIDA REAL EN CUALQUIER LUGAR', food hero 100% unobstructed in lower 60%, text never covers food",
   },
   {
     id: "style-food-special-offer",
     title: "Oferta Especial & Descuento Flash (Special Offer Promo)",
-    description: "Cartel promocional de alta urgencia: titular '¡OFERTA ESPECIAL!', badge de tiempo limitado, porcentaje de descuento gigante (ej. '20% DE DESCUENTO'), categoría y botón '¡ORDENA AHORA! ->'.",
+    description: "Cartel promocional de alta urgencia: titular '¡OFERTA ESPECIAL!', descuento gigante en cabecera superior y plato gourmet completamente despejado abajo.",
     category: "Gastronomía & Carteles",
     categories: ["Gastronomía & Carteles", "Publicidad y Ads"],
-    prompt: `Limited-time restaurant promotional advertisement poster. Appetizing commercial food photography of [Plato en Promoción:ej. un plato abundante de pasta fettuccine con salsa cremosa de champiñones y queso parmesano], presented in a ceramic bowl on a rustic dining table with fresh herbs and warm ambient restaurant lighting.
+    prompt: `Limited-time restaurant promotional advertisement poster with split vertical layout.
+COMPOSITION & SPATIAL HIERARCHY:
+- LOWER 55%-60%: Appetizing commercial food photography of [Plato en Promoción:ej. un plato abundante de pasta fettuccine con salsa cremosa de champiñones y queso parmesano], presented in a ceramic bowl on a rustic dining table with fresh herbs, completely unobstructed and glistening.
+- UPPER 40%-45%: Dark, rich, atmospheric restaurant background dedicated exclusively to high-urgency promotional typography.
 
 GRAPHIC DESIGN & ON-IMAGE TYPOGRAPHY (MANDATORY RENDERED TEXT):
-The poster MUST integrate prominent, high-converting commercial promotional typography rendered directly onto the graphic:
+STRICT PLACEMENT AND NEGATIVE RULE: All promotional typography MUST be located exclusively in the upper dark negative space. Text must NEVER overlap, touch, cover, or obscure the food, pasta, bowl, or plate.
 - Top Promo Headline: Bold high-energy typography at top reading "[Titular Promocional:ej. ¡OFERTA ESPECIAL!]"
 - Urgency Badge: Minimalist clock icon with text reading "[Vigencia o Urgencia:ej. POR TIEMPO LIMITADO]"
-- Giant Discount Callout: Massive, highly visible bold typography reading "[Descuento Destacado:ej. 20% DE DESCUENTO]"
-- Category Pill Badge: High-contrast rounded pill banner reading "[Categoría o Producto:ej. EN TODA LA PASTA]"
-- Bottom CTA Button: Bright yellow rounded rectangle button with arrow reading "[Texto Botón CTA:ej. ¡ORDENA AHORA! ->]"
+- Giant Discount Callout: Massive, highly visible bold typography in the upper center reading "[Descuento Destacado:ej. 20% DE DESCUENTO]"
+- Category Pill Badge: High-contrast rounded pill banner below the discount reading "[Categoría o Producto:ej. EN TODA LA PASTA]"
+- Bottom CTA Button: Bright yellow rounded rectangle button with arrow reading "[Texto Botón CTA:ej. ¡ORDENA AHORA! ->]" placed at the bottom edge away from the plate.
 
-High-conversion promotional social media ad design, crisp legible typography, mouth-watering gourmet dish hero, 8k resolution.`,
+High-conversion promotional social media ad design, crisp legible typography in upper negative space, mouth-watering gourmet dish hero completely clean below, 8k resolution.`,
     previewUrl: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=500&q=80",
     imageRequirement: "required",
     isCommercialPoster: true,
     imageGenBehavior: "product",
-    styleKeywords: "promotional discount food ad poster, on-image typography '¡OFERTA ESPECIAL!', clock badge 'POR TIEMPO LIMITADO', massive discount text '20% DE DESCUENTO', pill banner 'EN TODA LA PASTA', yellow CTA button '¡ORDENA AHORA! ->', gourmet pasta dish hero",
+    styleKeywords: "promotional discount food ad poster, two-tier layout, on-image typography in upper 40% copyspace '¡OFERTA ESPECIAL!', clock badge 'POR TIEMPO LIMITADO', massive discount text '20% DE DESCUENTO', pill banner 'EN TODA LA PASTA', yellow CTA button '¡ORDENA AHORA! ->', gourmet pasta dish hero 100% unobstructed in lower 60%, text never covers food",
   },
   {
     id: "style-food-brand-experience",
     title: "Experiencia de Marca & Restaurante (Brand Experience Ad)",
-    description: "Branding gastronómico de prestigio: titular 'BUENA COMIDA MEJORES MOMENTOS', badges laterales con iconos de marca e historias, copa de vino y botón '¡VISÍTANOS HOY! ->'.",
+    description: "Branding gastronómico de prestigio: titular 'BUENA COMIDA MEJORES MOMENTOS' en cabecera oscura superior y plato principal gourmet con copa de vino 100% visible abajo.",
     category: "Gastronomía & Carteles",
     categories: ["Gastronomía & Carteles", "Publicidad y Ads", "Editorial y Revista"],
-    prompt: `High-end restaurant branding and dining experience advertisement poster. Stunning commercial food photography of [Plato Principal Gourmet:ej. un bife de lomo a la parrilla con papas doradas y reducción de vino tinto], served on an elegant dark ceramic plate next to a glass of red wine on a candlelit dining table, sophisticated restaurant interior in the background with warm romantic lighting.
+    prompt: `High-end restaurant branding and dining experience advertisement poster with clean visual hierarchy.
+COMPOSITION & SPATIAL HIERARCHY:
+- LOWER 55%-60%: Stunning commercial food photography of [Plato Principal Gourmet:ej. un bife de lomo a la parrilla con papas doradas y reducción de vino tinto], served on an elegant dark ceramic plate next to a glass of red wine on a candlelit dining table, 100% unobstructed and glistening.
+- UPPER 40%-45%: Sophisticated, dark romantic restaurant ambiance with warm candlelight bokeh, reserved entirely for prestigious brand typography.
 
 GRAPHIC DESIGN & ON-IMAGE TYPOGRAPHY (MANDATORY RENDERED TEXT):
-The vertical poster MUST showcase prestigious restaurant branding typography rendered seamlessly on the image:
-- Main Headline: Striking bold condensed typography in white and golden amber reading "[Titular de Experiencia:ej. BUENA COMIDA MEJORES MOMENTOS]"
-- Side Brand Stack: Three elegant minimalist icon badges on the right side reading "[Nombre del Restaurante:ej. TU RESTAURANTE]", "[Pilar de Calidad:ej. BUENA COMIDA GRANDES HISTORIAS]", and "[Pilar de Experiencia:ej. EXPERIENCIAS QUE HACEN VOLVER]"
-- Action Button: Prominent rounded yellow CTA button at bottom reading "[Texto Botón CTA:ej. ¡VISÍTANOS HOY! ->]"
+STRICT PLACEMENT AND NEGATIVE RULE: All typography MUST be rendered strictly in the upper dark negative space. Text must NEVER overlap, cover, or touch the steak, plate, or wine glass.
+- Main Headline: Striking bold condensed typography in white and golden amber positioned in the upper dark area reading "[Titular de Experiencia:ej. BUENA COMIDA MEJORES MOMENTOS]"
+- Brand Stack: Three elegant minimalist icon badges floating in the upper right reading "[Nombre del Restaurante:ej. TU RESTAURANTE]", "[Pilar de Calidad:ej. BUENA COMIDA GRANDES HISTORIAS]", and "[Pilar de Experiencia:ej. EXPERIENCIAS QUE HACEN VOLVER]"
+- Action Button: Prominent rounded yellow CTA button at bottom margin reading "[Texto Botón CTA:ej. ¡VISÍTANOS HOY! ->]"
 
-Luxury culinary marketing aesthetic, sharp legible typography, seductive candlelit restaurant atmosphere, appetizing gourmet plating, 8k resolution.`,
+Luxury culinary marketing aesthetic, sharp legible typography in upper copyspace, appetizing gourmet plating unobstructed in the lower half, 8k resolution.`,
     previewUrl: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=500&q=80",
     imageRequirement: "required",
     isCommercialPoster: true,
     imageGenBehavior: "editorial",
-    styleKeywords: "high-end restaurant branding ad poster, on-image typography 'BUENA COMIDA MEJORES MOMENTOS', stacked badges 'TU RESTAURANTE', 'BUENA COMIDA GRANDES HISTORIAS', 'EXPERIENCIAS QUE HACEN VOLVER', yellow CTA button '¡VISÍTANOS HOY! ->', steak and red wine candlelit ambiance",
+    styleKeywords: "high-end restaurant branding ad poster, two-tier layout, on-image typography in upper 40% copyspace 'BUENA COMIDA MEJORES MOMENTOS', stacked badges 'TU RESTAURANTE', 'BUENA COMIDA GRANDES HISTORIAS', 'EXPERIENCIAS QUE HACEN VOLVER', yellow CTA button '¡VISÍTANOS HOY! ->', steak and red wine candlelit ambiance 100% unobstructed in lower 60%, text never covers food",
   },
 ];

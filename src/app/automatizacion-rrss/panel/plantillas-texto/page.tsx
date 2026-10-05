@@ -390,60 +390,71 @@ export default function PlantillasTextoPage() {
                     className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90"
                   />
 
-                  {/* Degradado Scrim Superior & Inferior */}
-                  <div className="absolute inset-0 bg-gradient-to-b from-black/75 via-transparent to-black/85 pointer-events-none" />
+                  {/* Degradados Scrim: Superior para cabecera tipográfica y sutil inferior para CTA */}
+                  <div className="absolute inset-x-0 top-0 h-[45%] bg-gradient-to-b from-black/90 via-black/60 to-transparent pointer-events-none" />
+                  <div className="absolute inset-x-0 bottom-0 h-[25%] bg-gradient-to-t from-black/85 via-black/30 to-transparent pointer-events-none" />
 
-                  {/* Capas Tipográficas Renderizadas */}
-                  <div className="absolute inset-0 p-5 flex flex-col justify-between z-10 text-center">
-                    {/* Badge Superior */}
-                    <div className="flex justify-center">
+                  {/* Badge de Precio Flotante en la esquina superior derecha */}
+                  {renderedPrice && (
+                    <div className="absolute top-3 right-3 z-20">
                       <span
-                        className="px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider shadow-md"
+                        className="px-2.5 py-1 rounded-lg text-[11px] font-black tracking-wide shadow-lg border border-black/20"
                         style={{
-                          backgroundColor: template.badgeBgColor,
-                          color: template.badgeTextColor,
+                          backgroundColor: template.priceBgColor || "#fbbf24",
+                          color: template.priceTextColor || "#0f172a",
                         }}
                       >
-                        {template.badgeText}
+                        {renderedPrice}
                       </span>
                     </div>
+                  )}
 
-                    {/* Centro: Titular + Subtítulo */}
-                    <div className="space-y-1.5 my-auto px-2">
+                  {/* Capas Tipográficas Renderizadas: Cabecera superior y CTA inferior (El centro queda 100% limpio para la comida) */}
+                  <div className="absolute inset-0 p-3.5 flex flex-col justify-between z-10 text-center pointer-events-none">
+                    {/* Zona Superior (Cabecera): Badge + Titular + Subtítulo */}
+                    <div className="space-y-1 pt-1 px-1">
+                      {/* Badge Superior Centrado */}
+                      <div className="flex justify-center mb-1">
+                        <span
+                          className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider shadow-md border border-white/10"
+                          style={{
+                            backgroundColor: template.badgeBgColor,
+                            color: template.badgeTextColor,
+                          }}
+                        >
+                          {template.badgeText}
+                        </span>
+                      </div>
+
+                      {/* Titular Principal en la cabecera */}
                       <h3
-                        className={`font-black leading-tight drop-shadow-md text-center ${
+                        className={`font-black leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] text-center px-1 ${
                           template.headlineFont === "script_handwritten"
-                            ? "font-serif italic text-2xl"
+                            ? "font-serif italic text-xl"
                             : template.headlineFont === "elegant_serif"
-                            ? "font-serif text-xl"
-                            : "font-sans uppercase text-xl"
+                            ? "font-serif text-lg tracking-wide"
+                            : "font-sans uppercase text-lg tracking-tight"
                         }`}
                         style={{ color: template.headlineColor }}
                       >
                         {renderedTitle}
                       </h3>
+
+                      {/* Subtítulo descriptivo */}
                       {renderedSub && (
-                        <p className="text-white/90 text-[11px] font-medium leading-snug drop-shadow line-clamp-2">
+                        <p className="text-white/95 text-[10px] font-semibold tracking-wide leading-tight drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)] line-clamp-1 px-2">
                           {renderedSub}
                         </p>
                       )}
                     </div>
 
-                    {/* Inferior: Precio + Botón CTA */}
-                    <div className="flex flex-col items-center gap-2 pt-2">
-                      {renderedPrice && (
-                        <span
-                          className="px-3 py-0.5 rounded-lg text-xs font-black tracking-wide shadow"
-                          style={{
-                            backgroundColor: template.priceBgColor || "#fbbf24",
-                            color: template.priceTextColor || "#0f172a",
-                          }}
-                        >
-                          {renderedPrice}
-                        </span>
-                      )}
+                    {/* Zona Central (Espacio Libre): La comida/producto se ve 100% despejada */}
+                    <div className="flex-1" />
+
+                    {/* Zona Inferior: Botón CTA compacto en el borde inferior */}
+                    <div className="pb-1 px-2 flex justify-center">
                       <div
-                        className="w-full py-1.5 px-4 rounded-xl text-xs font-black tracking-wider uppercase text-center shadow-md truncate"
+                        className="px-4 py-1.5 rounded-full text-[10px] font-black tracking-wider uppercase text-center shadow-lg truncate max-w-[200px] border border-black/10"
                         style={{
                           backgroundColor: template.ctaBgColor,
                           color: template.ctaTextColor,
@@ -551,31 +562,48 @@ export default function PlantillasTextoPage() {
                     alt="Foto Real"
                     className="absolute inset-0 w-full h-full object-cover"
                   />
-                  {/* Scrim */}
-                  <div className="absolute inset-0 bg-gradient-to-b from-black/75 via-transparent to-black/85 pointer-events-none" />
+                  {/* Scrim Superior e Inferior */}
+                  <div className="absolute inset-x-0 top-0 h-[45%] bg-gradient-to-b from-black/90 via-black/60 to-transparent pointer-events-none" />
+                  <div className="absolute inset-x-0 bottom-0 h-[25%] bg-gradient-to-t from-black/85 via-black/30 to-transparent pointer-events-none" />
 
-                  {/* Render Tipográfico */}
-                  <div className="absolute inset-0 p-5 flex flex-col justify-between text-center z-10">
-                    <div className="flex justify-center">
+                  {/* Badge de Precio Flotante en la esquina superior derecha */}
+                  {testPrice && (
+                    <div className="absolute top-4 right-4 z-20">
                       <span
-                        className="px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-wider shadow-md"
+                        className="px-3 py-1 rounded-xl text-xs font-black tracking-wide shadow-lg border border-black/20"
                         style={{
-                          backgroundColor: testingTemplate.badgeBgColor,
-                          color: testingTemplate.badgeTextColor,
+                          backgroundColor: testingTemplate.priceBgColor || "#fbbf24",
+                          color: testingTemplate.priceTextColor || "#0f172a",
                         }}
                       >
-                        {testingTemplate.badgeText}
+                        {testPrice}
                       </span>
                     </div>
+                  )}
 
-                    <div className="space-y-1.5 my-auto px-2">
+                  {/* Capas Tipográficas Renderizadas: Cabecera superior y CTA inferior */}
+                  <div className="absolute inset-0 p-4 flex flex-col justify-between text-center z-10 pointer-events-none">
+                    {/* Zona Superior (Cabecera): Badge + Titular + Subtítulo */}
+                    <div className="space-y-1.5 pt-1 px-1">
+                      <div className="flex justify-center mb-1">
+                        <span
+                          className="px-3 py-0.5 rounded-full text-xs font-black uppercase tracking-wider shadow-md border border-white/10"
+                          style={{
+                            backgroundColor: testingTemplate.badgeBgColor,
+                            color: testingTemplate.badgeTextColor,
+                          }}
+                        >
+                          {testingTemplate.badgeText}
+                        </span>
+                      </div>
+
                       <h4
-                        className={`font-black leading-tight drop-shadow-md text-center ${
+                        className={`font-black leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] text-center px-1 ${
                           testingTemplate.headlineFont === "script_handwritten"
-                            ? "font-serif italic text-3xl"
+                            ? "font-serif italic text-2xl"
                             : testingTemplate.headlineFont === "elegant_serif"
-                            ? "font-serif text-2xl"
-                            : "font-sans uppercase text-2xl"
+                            ? "font-serif text-xl tracking-wide"
+                            : "font-sans uppercase text-xl tracking-tight"
                         }`}
                         style={{ color: testingTemplate.headlineColor }}
                       >
@@ -583,8 +611,9 @@ export default function PlantillasTextoPage() {
                           productName: testProductName || "Nombre del Plato",
                         })}
                       </h4>
+
                       {testingTemplate.subheadlinePattern && (
-                        <p className="text-white/90 text-xs font-medium leading-snug drop-shadow">
+                        <p className="text-white/95 text-xs font-semibold tracking-wide drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)] line-clamp-1 px-2">
                           {formatTemplateText(testingTemplate.subheadlinePattern, {
                             productName: testProductName,
                             price: testPrice,
@@ -593,20 +622,13 @@ export default function PlantillasTextoPage() {
                       )}
                     </div>
 
-                    <div className="flex flex-col items-center gap-2 pt-2">
-                      {testPrice && (
-                        <span
-                          className="px-3.5 py-1 rounded-lg text-sm font-black tracking-wide shadow-md"
-                          style={{
-                            backgroundColor: testingTemplate.priceBgColor || "#fbbf24",
-                            color: testingTemplate.priceTextColor || "#0f172a",
-                          }}
-                        >
-                          {testPrice}
-                        </span>
-                      )}
+                    {/* Espacio Central Libre para la comida */}
+                    <div className="flex-1" />
+
+                    {/* Zona Inferior: Botón CTA compacto */}
+                    <div className="pb-1 px-3 flex justify-center">
                       <div
-                        className="w-full py-2 px-4 rounded-xl text-xs font-black tracking-wider uppercase text-center shadow-lg truncate"
+                        className="px-5 py-2 rounded-full text-xs font-black tracking-wider uppercase text-center shadow-lg truncate max-w-[220px] border border-black/10"
                         style={{
                           backgroundColor: testingTemplate.ctaBgColor,
                           color: testingTemplate.ctaTextColor,

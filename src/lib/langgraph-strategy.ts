@@ -163,10 +163,10 @@ REGLA ESTRICTA DE IMÁGENES TIPO CARTEL COMERCIAL ACTIVADA:
    - Incluye el PRECIO u OFERTA claramente visible en la propuesta del diseño.
    - Integra un titular comercial o badge persuasivo (ej. "¡NUEVO!", "RESULTADO", "PROMO DE LA SEMANA", "OFERTA ESPECIAL").
    - Llamado a la acción (CTA) directo para incentivar la compra inmediata o reserva.
-   - Tipografía publicitaria atractiva sin sobrecargar el diseño.
+   - JERARQUÍA ESPACIAL OBLIGATORIA (DOS NIVELES): En el diseño, la comida o producto héroe debe ubicarse de manera limpia y apetitosa en el tercio o mitad INFERIOR (55%-60%). Los textos, titulares, badges y precios DEBEN ubicarse estrictamente en la parte SUPERIOR (espacio negativo/copyspace). NUNCA colocar tipografía ni botones encima de la comida o producto para no taparlo.
 3. En cada objeto de publicación del JSON, incluye obligatoriamente:
    "isCommercialPoster": true
-4. En "imageDirection", instruye explícitamente a nuestros agentes para componer un Cartel Publicitario Comercial de alto impacto que incorpore el producto/servicio, su precio visible, titular comercial y CTA atractivo con tipografía cuidada.\n\n`
+4. En "imageDirection", instruye explícitamente a nuestros agentes para componer un Cartel Publicitario Comercial de dos niveles: plato/producto limpio en la mitad inferior y tipografía/precio en la cabecera superior sin tapar la comida.\n\n`
     : "";
 
   const prompt = `Eres un Social Media Planner experto, entrenado con los mejores frameworks de crecimiento (BH Skills). 

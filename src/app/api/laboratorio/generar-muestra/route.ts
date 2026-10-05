@@ -307,12 +307,12 @@ ${stylesContext}`;
         cta: phone ? `Escríbenos directamente al WhatsApp ${phone}` : "Contáctanos y haz tu pedido hoy",
         visualStyleTitle: isCommercialPoster ? "Cartel Comercial de Alto Impacto" : "Fotografía Gastronómica & Publicitaria",
         imagePromptEnglish: isCommercialPoster
-          ? `Commercial advertising poster for ${prodName}, bold crisp on-image typography text overlay reading "${prodName.toUpperCase()}", highlighted yellow price badge "${prodPrice || '$24.900'}", circular badge, yellow CTA button "¡ORDENA AHORA!", appetizing hero food photography, warm restaurant lighting, 8k resolution`
+          ? `Commercial food advertising poster layout for ${prodName}, strict two-tier composition: mouth-watering hero food dish positioned cleanly in LOWER 55%-60% of frame resting on a dark rustic table, UPPER 40%-45% features clean dark atmospheric negative space (copyspace) with bold crisp on-image typography text overlay reading "${prodName.toUpperCase()}", highlighted yellow price badge "${prodPrice || '$24.900'}" in upper corner, compact yellow CTA button "¡ORDENA AHORA!", STRICT RULE: all typography and text overlays must stay strictly in the upper negative space and NEVER overlap, touch or obscure the food dish, warm restaurant lighting, 8k resolution`
           : `Professional commercial advertising food photography of ${prodName}, appetizing warm lighting, rustic restaurant atmosphere, high-end plating, ultra-detailed 8k.`,
         carouselPrompts: assignedType === "carrusel" ? (isCommercialPoster ? [
-          `Commercial poster cover for ${prodName}, bold on-image typography headline "${prodName.toUpperCase()}", advertising layout`,
-          `Detailed macro close-up of fresh textures and ingredients of ${prodName}, promotional badge "INGREDIENTES FRESCOS"`,
-          `Complete meal combo spread for ${prodName} with beverage and sides, vibrant yellow price badge "${prodPrice || '$24.900'}" and CTA button "¡ORDENA AHORA!"`
+          `Commercial poster cover for ${prodName}, two-tier composition, clean dark upper copyspace with bold on-image typography headline "${prodName.toUpperCase()}", food hero clean and unobstructed in lower 60%, advertising layout`,
+          `Detailed macro close-up of fresh textures and ingredients of ${prodName}, promotional badge "INGREDIENTES FRESCOS" in upper corner`,
+          `Complete meal combo spread for ${prodName} with beverage and sides on dark rustic table, vibrant yellow price badge "${prodPrice || '$24.900'}" in top margin and compact CTA button "¡ORDENA AHORA!" at bottom edge clear of food`
         ] : [
           `Appetizing hero shot of ${prodName}, rustic table setting`,
           `Detailed macro close-up of fresh textures and ingredients of ${prodName}`,
@@ -401,10 +401,10 @@ ${stylesContext}`;
         let promptEnglish = pub.imagePromptEnglish || "";
         if (!promptEnglish) {
           promptEnglish = isCommercialPoster
-            ? `Commercial food advertising poster layout for ${prodName}, bold crisp typography text overlay reading "${prodName.toUpperCase()}", highlighted yellow price badge "${pub.productPrice || '$24.900'}", rounded yellow CTA button "¡ORDENA AHORA!", gourmet hero food presentation, warm restaurant lighting, 8k resolution`
+            ? `Commercial food advertising poster layout for ${prodName}, two-tier composition: mouth-watering hero food dish positioned cleanly in LOWER 55%-60% of frame, UPPER 40%-45% features clean dark atmospheric negative space (copyspace) with bold crisp typography text overlay reading "${prodName.toUpperCase()}", highlighted yellow price badge "${pub.productPrice || '$24.900'}" in upper corner, rounded yellow CTA button "¡ORDENA AHORA!", STRICT RULE: all rendered text overlays must stay strictly in the upper negative space and NEVER overlap, touch or obscure the food dish, warm restaurant lighting, 8k resolution`
             : `Professional commercial advertising food photography of ${prodName}, gourmet restaurant plating, dramatic warm lighting, 8k resolution, photorealistic, no watermarks`;
         } else if (isCommercialPoster && !promptEnglish.toLowerCase().includes("typography") && !promptEnglish.toLowerCase().includes("text overlay")) {
-          promptEnglish = `Commercial advertising poster graphic design, bold crisp typography text overlay reading "${prodName.toUpperCase()}", price badge "${pub.productPrice || '$24.900'}", yellow CTA button "¡ORDENA AHORA!", ${promptEnglish}`;
+          promptEnglish = `Commercial advertising poster graphic design, two-tier composition with dark upper copyspace, bold crisp typography text overlay reading "${prodName.toUpperCase()}", price badge "${pub.productPrice || '$24.900'}" in upper margin, compact CTA button "¡ORDENA AHORA!", STRICT RULE: typography must never overlap or cover the food hero in lower half, ${promptEnglish}`;
         }
 
         if (pub.type === "carrusel") {

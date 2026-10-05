@@ -97,11 +97,11 @@ export async function composeRealProductBanner(params: RealProductBannerParams):
       // 1. Badge Superior
       {
         x: 50,
-        y: isVertical ? 15 : 12,
+        y: isVertical ? 12 : 10,
         text: bannerCopy.badgeText,
         color: bannerCopy.badgeTextColor,
         font: "Montserrat, sans-serif",
-        size: isVertical ? 24 : 22,
+        size: isVertical ? 24 : 20,
         isBold: true,
         backgroundColor: bannerCopy.badgeBgColor || "#fbbf24",
         isPill: true,
@@ -111,13 +111,13 @@ export async function composeRealProductBanner(params: RealProductBannerParams):
       // 2. Titular Principal (con fuente seleccionada: Cursiva, Bold, etc.)
       {
         x: 50,
-        y: isVertical ? 25 : 22,
+        y: isVertical ? 21 : 19,
         text: isScript
           ? capitalizeWords(bannerCopy.mainHeadline)
           : bannerCopy.mainHeadline,
         color: isScript ? "#ffffff" : bannerCopy.headlineColor,
         font: selectedFont,
-        size: isScript ? (isVertical ? 76 : 64) : (isVertical ? 68 : 58),
+        size: isScript ? (isVertical ? 72 : 56) : (isVertical ? 64 : 52),
         isBold: true,
         isItalic: fontStyle === "elegant_serif",
         backgroundColor: "transparent",
@@ -127,11 +127,11 @@ export async function composeRealProductBanner(params: RealProductBannerParams):
       // 3. Beneficio / Detalle del Plato o Precio
       {
         x: 50,
-        y: isVertical ? 35 : 32,
+        y: isVertical ? 29 : 27,
         text: bannerCopy.benefitText,
         color: bannerCopy.benefitTextColor,
         font: "Montserrat, sans-serif",
-        size: isVertical ? 24 : 20,
+        size: isVertical ? 22 : 18,
         isBold: true,
         backgroundColor: bannerCopy.benefitBgColor || "rgba(15, 23, 42, 0.85)",
         isPill: true,
@@ -140,11 +140,11 @@ export async function composeRealProductBanner(params: RealProductBannerParams):
       // 4. Barra Inferior de Ubicación / CTA
       {
         x: 50,
-        y: isVertical ? 92 : 92,
+        y: isVertical ? 93 : 93,
         text: bannerCopy.ctaText,
         color: "#ffffff",
         font: "Montserrat, sans-serif",
-        size: isVertical ? 22 : 19,
+        size: isVertical ? 22 : 18,
         isBold: true,
         backgroundColor: "rgba(15, 23, 42, 0.88)",
         isPill: true,
