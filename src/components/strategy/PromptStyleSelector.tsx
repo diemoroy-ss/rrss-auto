@@ -27,6 +27,7 @@ export default function PromptStyleSelector({
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [internalCommercialPosterOnly, setInternalCommercialPosterOnly] = useState(false);
+  const [modalPreview, setModalPreview] = useState<PromptTemplate | null>(null);
 
   const isCommercialModeActive = onToggleCommercialPosterOnly !== undefined
     ? Boolean(isCommercialPosterOnly)
@@ -391,8 +392,23 @@ export default function PromptStyleSelector({
                         </div>
                       </div>
 
+                      {/* Botón de Zoom / Ver Preview grande en hover */}
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-2 z-10 pointer-events-none">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setModalPreview(style);
+                          }}
+                          className="pointer-events-auto px-2.5 py-1.5 bg-white/95 hover:bg-white text-slate-900 font-black text-[10px] rounded-xl shadow-lg flex items-center gap-1 transition-transform active:scale-95"
+                        >
+                          <span>👁️</span>
+                          <span>Ver Preview</span>
+                        </button>
+                      </div>
+
                       {/* Category Pills on Image */}
-                      <div className="absolute bottom-2 left-2 flex flex-wrap gap-1 max-w-[80%]">
+                      <div className="absolute bottom-2 left-2 flex flex-wrap gap-1 max-w-[80%] z-10">
                         {styleCats.slice(0, 2).map((c) => (
                           <span key={c} className="bg-slate-900/75 backdrop-blur-sm text-white text-[9px] font-bold px-2 py-0.5 rounded-md">
                             {c}
@@ -407,7 +423,7 @@ export default function PromptStyleSelector({
                     </div>
 
                     {/* Card Content */}
-                    <div className="p-2.5 flex-1 flex flex-col justify-between">
+                    <div className="p-2.5 flex-1 flex flex-col justify-between space-y-1.5">
                       <div>
                         <h4
                           className={`text-xs font-black line-clamp-1 ${
@@ -421,12 +437,141 @@ export default function PromptStyleSelector({
                           {style.description}
                         </p>
                       </div>
+
+                      <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-[10px]">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setModalPreview(style);
+                          }}
+                          className="text-indigo-600 hover:text-indigo-800 font-bold hover:underline flex items-center gap-1"
+                        >
+                          <span>👁️</span>
+                          <span>Detalle</span>
+                        </button>
+                        <span className={`font-black ${selected ? "text-indigo-700" : "text-slate-400"}`}>
+                          {selected ? "✓ Activo" : "+ Activar"}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 );
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Modal de Vista Previa Detallada del Estilo */}
+      {modalPreview && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 animate-in fade-in"
+          onClick={() => setModalPreview(null)}
+        >
+          <div 
+            className="bg-white rounded-3xl max-w-2xl w-full max-h-[92vh] overflow-hidden shadow-2xl border border-slate-200 flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/70">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">✨</span>
+                <div>
+                  <h3 className="text-base font-black text-slate-900">{modalPreview.title}</h3>
+                  <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                    {modalPreview.isCommercialPoster && (
+                      <span className="bg-amber-100 text-amber-800 text-[10px] font-black px-2 py-0.5 rounded-full border border-amber-300 flex items-center gap-1">
+                        <span>🏷️</span>
+                        <span>Cartel Comercial</span>
+                      </span>
+                    )}
+                    {getPromptCategories(modalPreview).map((c) => (
+                      <span key={c} className="bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                        {c}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setModalPreview(null)}
+                className="w-8 h-8 rounded-full bg-slate-200/70 hover:bg-slate-300 text-slate-700 flex items-center justify-center font-bold text-sm transition-all"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto space-y-4">
+              {/* Imagen de Preview */}
+              <div className="w-full max-h-[420px] bg-slate-950 rounded-2xl overflow-hidden flex items-center justify-center border border-slate-800 shadow-inner">
+                {modalPreview.previewUrl ? (
+                  <img
+                    src={modalPreview.previewUrl}
+                    alt={modalPreview.title}
+                    className="max-h-[420px] w-full object-contain"
+                  />
+                ) : (
+                  <div className="p-12 text-center text-slate-400">
+                    <span className="text-4xl block mb-2">🎨</span>
+                    <p className="text-xs font-semibold">Sin imagen de muestra directa.</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Descripción */}
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-2">
+                <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                  Descripción & Propósito del Estilo
+                </h4>
+                <p className="text-xs text-slate-700 leading-relaxed font-medium">
+                  {modalPreview.description}
+                </p>
+
+                {modalPreview.prompt && (
+                  <div className="pt-2 border-t border-slate-200">
+                    <span className="text-[10px] font-black uppercase text-slate-400 block mb-1">
+                      Directriz de Generación para Agentes:
+                    </span>
+                    <p className="text-[11px] font-mono text-slate-600 bg-white p-2.5 rounded-xl border border-slate-200 line-clamp-4 overflow-hidden">
+                      {modalPreview.prompt}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/70">
+              <button
+                type="button"
+                onClick={() => {
+                  toggleStyle(modalPreview);
+                }}
+                className={`px-4 py-2.5 text-xs font-black rounded-xl transition-all flex items-center gap-2 ${
+                  isSelected(modalPreview.id)
+                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 hover:bg-indigo-700"
+                    : "bg-slate-900 text-white hover:bg-slate-800"
+                }`}
+              >
+                <span>
+                  {isSelected(modalPreview.id)
+                    ? "✓ Estilo Seleccionado (Click para quitar)"
+                    : "+ Seleccionar este Estilo"}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setModalPreview(null)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

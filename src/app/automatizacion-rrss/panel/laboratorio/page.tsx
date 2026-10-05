@@ -80,7 +80,7 @@ export default function LaboratorioPage() {
   };
 
   // Active Tab
-  const [activeTab, setActiveTab] = useState<"marca" | "catalogo" | "menu_qr" | "comandos" | "radar_estrategia">("marca");
+  const [activeTab, setActiveTab] = useState<"marca" | "catalogo" | "menu_qr" | "radar_estrategia">("marca");
 
   // Notifications
   const [successMsg, setSuccessMsg] = useState("");
@@ -161,50 +161,6 @@ export default function LaboratorioPage() {
   const [labSelectedStyles, setLabSelectedStyles] = useState<PromptTemplate[]>([]);
   const [usePromptStyles, setUsePromptStyles] = useState<boolean>(true);
 
-  // Tab 4 Comandos de Agentes: Explorador con categorías, buscador y preview
-  const [availableStyles, setAvailableStyles] = useState<PromptTemplate[]>(HARDCODED_STYLES);
-  const [stylesCategory, setStylesCategory] = useState<string>("all");
-  const [stylesSearch, setStylesSearch] = useState<string>("");
-  const [stylesCommercialOnly, setStylesCommercialOnly] = useState<boolean>(false);
-  const [previewModalStyle, setPreviewModalStyle] = useState<PromptTemplate | null>(null);
-
-  // Cargar biblioteca de Firestore combinada con HARDCODED_STYLES
-  useEffect(() => {
-    let isMounted = true;
-    async function loadAllStyles() {
-      try {
-        const snap = await getDocs(collection(db, "prompt_library"));
-        const loaded: PromptTemplate[] = [];
-        const dbIds = new Set<string>();
-
-        snap.forEach((doc) => {
-          const data = doc.data();
-          dbIds.add(doc.id);
-          const hasValidTitle = typeof data.title === "string" && data.title.trim().length > 0;
-          const hasValidPrompt = typeof data.prompt === "string" && data.prompt.trim().length > 0;
-          if (!data.isDeleted && hasValidTitle && hasValidPrompt) {
-            loaded.push({ id: doc.id, ...data } as PromptTemplate);
-          }
-        });
-
-        HARDCODED_STYLES.forEach((style) => {
-          if (!dbIds.has(style.id) && style.title && style.title.trim() && style.prompt && style.prompt.trim()) {
-            loaded.push(style);
-          }
-        });
-
-        if (isMounted) {
-          setAvailableStyles(loaded);
-        }
-      } catch (err) {
-        console.warn("No se pudo cargar prompt_library de Firestore en Laboratorio:", err);
-      }
-    }
-    loadAllStyles();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   // Auth setup
   useEffect(() => {
@@ -498,6 +454,29 @@ export default function LaboratorioPage() {
       showNotification(e.message || "Error al guardar marca", true);
     } finally {
       setSavingBrand(false);
+    }
+  };
+
+  // Actualizar Estilo Visual por Defecto (Cartel Comercial y Tratamiento Fotográfico)
+  const handleUpdateVisualSettings = async (
+    newBannerStyle: "banner" | "clean",
+    newPhotoTreatment: "clean" | "agent"
+  ) => {
+    setBrandForm((prev) => ({
+      ...prev,
+      bannerStyle: newBannerStyle,
+      photoTreatment: newPhotoTreatment,
+    }));
+    if (currentTestProfile?.id) {
+      try {
+        await updateProfileById(currentTestProfile.id, {
+          bannerStyle: newBannerStyle,
+          photoTreatment: newPhotoTreatment,
+        });
+        showNotification("Estilo visual por defecto actualizado para el catálogo.");
+      } catch (e: any) {
+        showNotification("Error actualizando estilo visual", true);
+      }
     }
   };
 
@@ -895,78 +874,66 @@ export default function LaboratorioPage() {
         </div>
       ) : (
         <>
-          {/* ── BARRA DE PESTAÑAS (5 PILARES) ── */}
+          {/* ── BARRA DE PESTAÑAS (4 PILARES) ── */}
           <div className="flex items-center gap-2 border-b border-slate-200 pb-3 overflow-x-auto hide-scrollbar">
-        <button
-          onClick={() => setActiveTab("marca")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-black transition-all shrink-0 ${
-            activeTab === "marca"
-              ? "bg-purple-600 text-white shadow-md shadow-purple-600/30"
-              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
-          }`}
-        >
-          <span>🏪</span>
-          <span>1. Datos de Marca</span>
-        </button>
+            <button
+              onClick={() => setActiveTab("marca")}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-black transition-all shrink-0 ${
+                activeTab === "marca"
+                  ? "bg-purple-600 text-white shadow-md shadow-purple-600/30"
+                  : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+              }`}
+            >
+              <span>🏪</span>
+              <span>1. Datos de Marca</span>
+            </button>
 
-        <button
-          onClick={() => setActiveTab("catalogo")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-black transition-all shrink-0 ${
-            activeTab === "catalogo"
-              ? "bg-purple-600 text-white shadow-md shadow-purple-600/30"
-              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
-          }`}
-        >
-          <span>🛍️</span>
-          <span>2. Catálogo ({catalogItems.length})</span>
-        </button>
+            <button
+              onClick={() => setActiveTab("catalogo")}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-black transition-all shrink-0 ${
+                activeTab === "catalogo"
+                  ? "bg-purple-600 text-white shadow-md shadow-purple-600/30"
+                  : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+              }`}
+            >
+              <span>🛍️</span>
+              <span>2. Catálogo ({catalogItems.length})</span>
+            </button>
 
-        <button
-          onClick={() => setActiveTab("menu_qr")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-black transition-all shrink-0 ${
-            activeTab === "menu_qr"
-              ? "bg-purple-600 text-white shadow-md shadow-purple-600/30"
-              : isMenuEnabled
-                ? "bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-300 font-black shadow-xs"
-                : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
-          }`}
-        >
-          <span>📱</span>
-          <span>3. Carta Menú & QR</span>
-          {isMenuEnabled && (
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          )}
-        </button>
+            <button
+              onClick={() => setActiveTab("menu_qr")}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-black transition-all shrink-0 ${
+                activeTab === "menu_qr"
+                  ? "bg-purple-600 text-white shadow-md shadow-purple-600/30"
+                  : isMenuEnabled
+                    ? "bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-300 font-black shadow-xs"
+                    : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+              }`}
+            >
+              <span>📱</span>
+              <span>3. Carta Menú & QR</span>
+              {isMenuEnabled && (
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              )}
+            </button>
 
-        <button
-          onClick={() => setActiveTab("comandos")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-black transition-all shrink-0 ${
-            activeTab === "comandos"
-              ? "bg-purple-600 text-white shadow-md shadow-purple-600/30"
-              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
-          }`}
-        >
-          <span>✨</span>
-          <span>4. Comandos de Agentes</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab("radar_estrategia")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-black transition-all shrink-0 ${
-            activeTab === "radar_estrategia"
-              ? "bg-purple-600 text-white shadow-md shadow-purple-600/30"
-              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
-          }`}
-        >
-          <span>🚀</span>
-          <span>5. Radar & Estrategia Visual</span>
-          {strategyPosts.length > 0 && (
-            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-white text-purple-700 font-bold">
-              {strategyPosts.length} posts
-            </span>
-          )}
-        </button>
-      </div>
+            <button
+              onClick={() => setActiveTab("radar_estrategia")}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-black transition-all shrink-0 ${
+                activeTab === "radar_estrategia"
+                  ? "bg-purple-600 text-white shadow-md shadow-purple-600/30"
+                  : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+              }`}
+            >
+              <span>🚀</span>
+              <span>4. Radar & Estrategia Visual</span>
+              {strategyPosts.length > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-white text-purple-700 font-bold">
+                  {strategyPosts.length} posts
+                </span>
+              )}
+            </button>
+          </div>
 
       {/* ──────────────────────────────────────────────────────────── */}
       {/* TAB 1: DATOS DE MARCA (Sin Redes)                           */}
@@ -1085,172 +1052,75 @@ export default function LaboratorioPage() {
             </div>
           </div>
 
-          {/* Contacto Simulado y Estilo de Banner */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100">
-            <div className="space-y-3">
-              <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">Datos de Contacto Simulados</h4>
-              
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={brandForm.phone}
-                  onChange={(e) => setBrandForm({ ...brandForm, phone: e.target.value })}
-                  placeholder="Teléfono / WhatsApp de prueba (+56 9...)"
-                  className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-purple-500 focus:bg-white"
-                />
-                <label className="flex items-center gap-1.5 text-[11px] font-bold text-slate-600 shrink-0">
+          {/* Contacto Simulado */}
+          <div className="pt-4 border-t border-slate-100 space-y-3">
+            <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">Datos de Contacto Simulados</h4>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-1">
+                <label className="block text-[11px] font-bold text-slate-700">Teléfono / WhatsApp</label>
+                <div className="flex items-center gap-2">
                   <input
-                    type="checkbox"
-                    checked={brandForm.includePhoneInCopy}
-                    onChange={(e) => setBrandForm({ ...brandForm, includePhoneInCopy: e.target.checked })}
-                    className="accent-purple-600"
+                    type="text"
+                    value={brandForm.phone}
+                    onChange={(e) => setBrandForm({ ...brandForm, phone: e.target.value })}
+                    placeholder="+56 9..."
+                    className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-purple-500 focus:bg-white"
                   />
-                  <span>En copy</span>
-                </label>
+                  <label className="flex items-center gap-1.5 text-[11px] font-bold text-slate-600 shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={brandForm.includePhoneInCopy}
+                      onChange={(e) => setBrandForm({ ...brandForm, includePhoneInCopy: e.target.checked })}
+                      className="accent-purple-600"
+                    />
+                    <span>En copy</span>
+                  </label>
+                </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={brandForm.website}
-                  onChange={(e) => setBrandForm({ ...brandForm, website: e.target.value })}
-                  placeholder="Sitio Web de prueba (https://...)"
-                  className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-purple-500 focus:bg-white"
-                />
-                <label className="flex items-center gap-1.5 text-[11px] font-bold text-slate-600 shrink-0">
+              <div className="space-y-1">
+                <label className="block text-[11px] font-bold text-slate-700">Sitio Web</label>
+                <div className="flex items-center gap-2">
                   <input
-                    type="checkbox"
-                    checked={brandForm.includeWebsiteInCopy}
-                    onChange={(e) => setBrandForm({ ...brandForm, includeWebsiteInCopy: e.target.checked })}
-                    className="accent-purple-600"
+                    type="text"
+                    value={brandForm.website}
+                    onChange={(e) => setBrandForm({ ...brandForm, website: e.target.value })}
+                    placeholder="https://..."
+                    className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-purple-500 focus:bg-white"
                   />
-                  <span>En copy</span>
-                </label>
-              </div>
-            </div>
-
-            <div className="space-y-4 pt-3 border-t border-slate-100">
-              <div>
-                <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">
-                  Estilo Visual por Defecto (2 Diferenciaciones Clave)
-                </h4>
-                <p className="text-[11px] text-slate-500 mt-0.5">
-                  Define cómo deben componer nuestros agentes las imágenes de tus productos y publicaciones:
-                </p>
-              </div>
-
-              {/* 1. Diferenciación: ¿Es Cartel Publicitario o no? */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-800">1. ¿Lleva formato de Cartel Publicitario?</span>
-                  <span className="text-[10px] font-black uppercase tracking-wider text-purple-600">
-                    {brandForm.bannerStyle === "banner" ? "Con Textos y Precios" : "Sin Textos Superpuestos"}
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setBrandForm({ ...brandForm, bannerStyle: "banner" })}
-                    className={`p-3.5 rounded-2xl border-2 text-left transition-all flex items-start gap-3 ${
-                      brandForm.bannerStyle === "banner"
-                        ? "border-purple-600 bg-purple-50/70 shadow-xs"
-                        : "border-slate-200 hover:border-slate-300 bg-white"
-                    }`}
-                  >
-                    <span className="text-2xl shrink-0 mt-0.5">🏷️</span>
-                    <div>
-                      <div className="text-xs font-black text-slate-900">Cartel Publicitario (Sí)</div>
-                      <div className="text-[11px] text-slate-600 mt-0.5 font-medium leading-snug">
-                        Lleva textos comerciales, titulares atractivos y precios destacados con tipografía llamativa.
-                      </div>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setBrandForm({ ...brandForm, bannerStyle: "clean" })}
-                    className={`p-3.5 rounded-2xl border-2 text-left transition-all flex items-start gap-3 ${
-                      brandForm.bannerStyle === "clean"
-                        ? "border-purple-600 bg-purple-50/70 shadow-xs"
-                        : "border-slate-200 hover:border-slate-300 bg-white"
-                    }`}
-                  >
-                    <span className="text-2xl shrink-0 mt-0.5">🖼️</span>
-                    <div>
-                      <div className="text-xs font-black text-slate-900">Post Estándar (No)</div>
-                      <div className="text-[11px] text-slate-600 mt-0.5 font-medium leading-snug">
-                        Imagen limpia sin textos gráficos ni precios superpuestos encima de la imagen.
-                      </div>
-                    </div>
-                  </button>
+                  <label className="flex items-center gap-1.5 text-[11px] font-bold text-slate-600 shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={brandForm.includeWebsiteInCopy}
+                      onChange={(e) => setBrandForm({ ...brandForm, includeWebsiteInCopy: e.target.checked })}
+                      className="accent-purple-600"
+                    />
+                    <span>En copy</span>
+                  </label>
                 </div>
               </div>
 
-              {/* 2. Diferenciación: ¿Fotografía Limpia o Ajustada por nuestros Agentes? */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-800">2. ¿Tratamiento de Fotografía / Imagen Base?</span>
-                  <span className="text-[10px] font-black uppercase tracking-wider text-purple-600">
-                    {brandForm.photoTreatment === "clean" ? "Foto Real Limpia" : "Ajustada por Nuestros Agentes"}
-                  </span>
+              <div className="space-y-1">
+                <label className="block text-[11px] font-bold text-slate-700">Email de Contacto</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="email"
+                    value={brandForm.email}
+                    onChange={(e) => setBrandForm({ ...brandForm, email: e.target.value })}
+                    placeholder="contacto@..."
+                    className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-purple-500 focus:bg-white"
+                  />
+                  <label className="flex items-center gap-1.5 text-[11px] font-bold text-slate-600 shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={brandForm.includeEmailInCopy}
+                      onChange={(e) => setBrandForm({ ...brandForm, includeEmailInCopy: e.target.checked })}
+                      className="accent-purple-600"
+                    />
+                    <span>En copy</span>
+                  </label>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setBrandForm({ ...brandForm, photoTreatment: "clean" })}
-                    className={`p-3.5 rounded-2xl border-2 text-left transition-all flex items-start gap-3 ${
-                      brandForm.photoTreatment === "clean"
-                        ? "border-purple-600 bg-purple-50/70 shadow-xs"
-                        : "border-slate-200 hover:border-slate-300 bg-white"
-                    }`}
-                  >
-                    <span className="text-2xl shrink-0 mt-0.5">📸</span>
-                    <div>
-                      <div className="text-xs font-black text-slate-900">Fotografía Limpia / Real</div>
-                      <div className="text-[11px] text-slate-600 mt-0.5 font-medium leading-snug">
-                        Respeta fielmente la foto original del producto o servicio sin alteraciones de fondo ni reemplazos.
-                      </div>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setBrandForm({ ...brandForm, photoTreatment: "agent" })}
-                    className={`p-3.5 rounded-2xl border-2 text-left transition-all flex items-start gap-3 ${
-                      brandForm.photoTreatment === "agent"
-                        ? "border-purple-600 bg-purple-50/70 shadow-xs"
-                        : "border-slate-200 hover:border-slate-300 bg-white"
-                    }`}
-                  >
-                    <span className="text-2xl shrink-0 mt-0.5">✨</span>
-                    <div>
-                      <div className="text-xs font-black text-slate-900">Ajustada por Nuestros Agentes</div>
-                      <div className="text-[11px] text-slate-600 mt-0.5 font-medium leading-snug">
-                        Nuestros agentes ajustan la composición, el fondo y ambientan la escena según el estilo visual.
-                      </div>
-                    </div>
-                  </button>
-                </div>
-              </div>
-
-              {/* Banner explicativo del resultado combinado */}
-              <div className="p-3.5 rounded-2xl bg-purple-50/50 border border-purple-200/80 text-xs flex items-start gap-3 shadow-xs">
-                <span className="text-lg shrink-0">💡</span>
-                <p className="text-slate-700 font-medium leading-relaxed">
-                  <strong className="text-purple-900 font-black">Composición resultante: </strong>
-                  {brandForm.bannerStyle === "banner" && brandForm.photoTreatment === "clean" && (
-                    "A la fotografía limpia y real de tu producto se le agregarán los textos comerciales y precios superpuestos con tipografía atractiva."
-                  )}
-                  {brandForm.bannerStyle === "banner" && brandForm.photoTreatment === "agent" && (
-                    "Nuestros agentes ajustarán la ambientación y el estilo visual de la imagen, y sobre esa composición se estamparán los textos comerciales y precios."
-                  )}
-                  {brandForm.bannerStyle === "clean" && brandForm.photoTreatment === "clean" && (
-                    "Se utilizará únicamente la fotografía limpia y real de tu producto, sin ningún texto gráfico encima."
-                  )}
-                  {brandForm.bannerStyle === "clean" && brandForm.photoTreatment === "agent" && (
-                    "Nuestros agentes generarán la composición visual ambientada para tu marca, sin textos gráficos encima."
-                  )}
-                </p>
               </div>
             </div>
           </div>
@@ -1308,6 +1178,137 @@ export default function LaboratorioPage() {
               >
                 <span>+ Agregar Producto / Servicio</span>
               </button>
+            </div>
+          </div>
+
+          {/* ESTILO VISUAL POR DEFECTO PARA EL CATÁLOGO (2 DIFERENCIACIONES CLAVE) */}
+          <div className="bg-slate-50/70 p-5 rounded-2xl border border-slate-200/80 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                  <span>🎨</span>
+                  <span>Estilo Visual por Defecto (2 Diferenciaciones Clave)</span>
+                </h4>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Define cómo deben componer nuestros agentes las imágenes de tus productos y servicios:
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* 1. Diferenciación: ¿Es Cartel Publicitario o no? */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-800">1. ¿Lleva formato de Cartel Publicitario?</span>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-purple-600">
+                    {brandForm.bannerStyle === "banner" ? "Con Textos y Precios" : "Sin Textos Superpuestos"}
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => handleUpdateVisualSettings("banner", brandForm.photoTreatment)}
+                    className={`p-3.5 rounded-2xl border-2 text-left transition-all flex items-start gap-3 ${
+                      brandForm.bannerStyle === "banner"
+                        ? "border-purple-600 bg-purple-50/70 shadow-xs ring-1 ring-purple-500/20"
+                        : "border-slate-200 hover:border-slate-300 bg-white"
+                    }`}
+                  >
+                    <span className="text-2xl shrink-0 mt-0.5">🏷️</span>
+                    <div>
+                      <div className="text-xs font-black text-slate-900">Cartel Publicitario (Sí)</div>
+                      <div className="text-[11px] text-slate-600 mt-0.5 font-medium leading-snug">
+                        Lleva textos comerciales, titulares atractivos y precios destacados con tipografía llamativa.
+                      </div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleUpdateVisualSettings("clean", brandForm.photoTreatment)}
+                    className={`p-3.5 rounded-2xl border-2 text-left transition-all flex items-start gap-3 ${
+                      brandForm.bannerStyle === "clean"
+                        ? "border-purple-600 bg-purple-50/70 shadow-xs ring-1 ring-purple-500/20"
+                        : "border-slate-200 hover:border-slate-300 bg-white"
+                    }`}
+                  >
+                    <span className="text-2xl shrink-0 mt-0.5">🖼️</span>
+                    <div>
+                      <div className="text-xs font-black text-slate-900">Post Estándar (No)</div>
+                      <div className="text-[11px] text-slate-600 mt-0.5 font-medium leading-snug">
+                        Imagen limpia sin textos gráficos ni precios superpuestos encima de la imagen.
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* 2. Diferenciación: ¿Fotografía Limpia o Ajustada por nuestros Agentes? */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-800">2. ¿Tratamiento de Fotografía / Imagen Base?</span>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-purple-600">
+                    {brandForm.photoTreatment === "clean" ? "Foto Real Limpia" : "Ajustada por Nuestros Agentes"}
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => handleUpdateVisualSettings(brandForm.bannerStyle, "clean")}
+                    className={`p-3.5 rounded-2xl border-2 text-left transition-all flex items-start gap-3 ${
+                      brandForm.photoTreatment === "clean"
+                        ? "border-purple-600 bg-purple-50/70 shadow-xs ring-1 ring-purple-500/20"
+                        : "border-slate-200 hover:border-slate-300 bg-white"
+                    }`}
+                  >
+                    <span className="text-2xl shrink-0 mt-0.5">📸</span>
+                    <div>
+                      <div className="text-xs font-black text-slate-900">Fotografía Limpia / Real</div>
+                      <div className="text-[11px] text-slate-600 mt-0.5 font-medium leading-snug">
+                        Respeta fielmente la foto original del producto o servicio sin alteraciones de fondo ni reemplazos.
+                      </div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleUpdateVisualSettings(brandForm.bannerStyle, "agent")}
+                    className={`p-3.5 rounded-2xl border-2 text-left transition-all flex items-start gap-3 ${
+                      brandForm.photoTreatment === "agent"
+                        ? "border-purple-600 bg-purple-50/70 shadow-xs ring-1 ring-purple-500/20"
+                        : "border-slate-200 hover:border-slate-300 bg-white"
+                    }`}
+                  >
+                    <span className="text-2xl shrink-0 mt-0.5">✨</span>
+                    <div>
+                      <div className="text-xs font-black text-slate-900">Ajustada por Nuestros Agentes</div>
+                      <div className="text-[11px] text-slate-600 mt-0.5 font-medium leading-snug">
+                        Nuestros agentes ajustan la composición, el fondo y ambientan la escena según el estilo visual.
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Banner explicativo del resultado combinado */}
+            <div className="p-3.5 rounded-2xl bg-purple-50/50 border border-purple-200/80 text-xs flex items-start gap-3 shadow-xs">
+              <span className="text-lg shrink-0">💡</span>
+              <p className="text-slate-700 font-medium leading-relaxed">
+                <strong className="text-purple-900 font-black">Composición resultante: </strong>
+                {brandForm.bannerStyle === "banner" && brandForm.photoTreatment === "clean" && (
+                  "A la fotografía limpia y real de tu producto se le agregarán los textos comerciales y precios superpuestos con tipografía atractiva."
+                )}
+                {brandForm.bannerStyle === "banner" && brandForm.photoTreatment === "agent" && (
+                  "Nuestros agentes ajustarán la ambientación y el estilo visual de la imagen, y sobre esa composición se estamparán los textos comerciales y precios."
+                )}
+                {brandForm.bannerStyle === "clean" && brandForm.photoTreatment === "clean" && (
+                  "Se utilizará únicamente la fotografía limpia y real de tu producto, sin ningún texto gráfico encima."
+                )}
+                {brandForm.bannerStyle === "clean" && brandForm.photoTreatment === "agent" && (
+                  "Nuestros agentes generarán la composición visual ambientada para tu marca, sin textos gráficos encima."
+                )}
+              </p>
             </div>
           </div>
 
@@ -1808,417 +1809,7 @@ export default function LaboratorioPage() {
       )}
 
       {/* ──────────────────────────────────────────────────────────── */}
-      {/* TAB 4: COMANDOS DE AGENTES & ESTILOS VISUALES                */}
-      {/* ──────────────────────────────────────────────────────────── */}
-      {activeTab === "comandos" && (() => {
-        const filteredTab4Styles = availableStyles.filter((tpl) => {
-          if (stylesCommercialOnly && !tpl.isCommercialPoster) return false;
-          if (stylesCategory !== "all") {
-            const cats = getPromptCategories(tpl);
-            if (!cats.some((c) => c.toLowerCase().trim() === stylesCategory.toLowerCase().trim())) {
-              return false;
-            }
-          }
-          if (stylesSearch.trim()) {
-            const q = stylesSearch.toLowerCase();
-            const matchTitle = (tpl.title || "").toLowerCase().includes(q);
-            const matchDesc = (tpl.description || "").toLowerCase().includes(q);
-            const matchCat = getPromptCategories(tpl).some((c) => c.toLowerCase().includes(q));
-            if (!matchTitle && !matchDesc && !matchCat) return false;
-          }
-          return true;
-        });
-
-        const commercialCount = availableStyles.filter((s) => s.isCommercialPoster).length;
-
-        const handleSelectFiltered = () => {
-          const idsToAdd = filteredTab4Styles.map((s) => s.id);
-          setSelectedStyleIds((prev) => Array.from(new Set([...prev, ...idsToAdd])));
-        };
-
-        const handleDeselectFiltered = () => {
-          const idsToRemove = new Set(filteredTab4Styles.map((s) => s.id));
-          setSelectedStyleIds((prev) => prev.filter((id) => !idsToRemove.has(id)));
-        };
-
-        return (
-          <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-8">
-            {/* Cabecera de la Pestaña */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">🤖</span>
-                  <h3 className="text-lg font-black text-slate-900">Comandos & Estilos Visuales para Agentes</h3>
-                  <span className="text-[11px] font-black text-purple-700 bg-purple-50 border border-purple-200 px-2.5 py-0.5 rounded-full">
-                    {selectedStyleIds.length} {selectedStyleIds.length === 1 ? "estilo activo" : "estilos activos"}
-                  </span>
-                </div>
-                <p className="text-xs text-slate-500 font-medium mt-1">
-                  Configura el tono de voz y los estilos fotográficos o carteles publicitarios que nuestros agentes usarán para esta empresa.
-                </p>
-              </div>
-              <button
-                onClick={handleSaveAgentCommands}
-                disabled={savingAgents}
-                className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-black text-xs rounded-xl shadow-md transition-all shrink-0 flex items-center justify-center gap-2"
-              >
-                <span>{savingAgents ? "Guardando..." : "💾 Guardar Comandos"}</span>
-              </button>
-            </div>
-
-            {/* SECCIÓN 1: TONO DE VOZ Y DIRECTRIZ PERSONALIZADA */}
-            <div className="bg-slate-50/70 p-5 rounded-2xl border border-slate-200/80 space-y-4">
-              <div className="flex items-center gap-2">
-                <span className="text-base">🎙️</span>
-                <label className="text-xs font-black text-slate-900 uppercase tracking-wider">
-                  Tono de Voz y Comunicación de los Agentes
-                </label>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="grid grid-cols-2 gap-2.5">
-                  {[
-                    { id: "directo_cercano", title: "Directo & Cercano (Tú a tú)", icon: "🤝", desc: "Humano, ágil y conversacional" },
-                    { id: "urgencia_oferta", title: "Promocional & Ofertas", icon: "💥", desc: "Alto impacto de precios y descuentos" },
-                    { id: "gourmet_elegante", title: "Elegante & Sensorial", icon: "🍷", desc: "Aspiracional, artesanal y detallista" },
-                    { id: "educativo_valor", title: "Educativo & Autoridad", icon: "💡", desc: "Tips, beneficios y resolución de dudas" },
-                  ].map((tone) => (
-                    <button
-                      key={tone.id}
-                      type="button"
-                      onClick={() => setAgentTone(tone.id)}
-                      className={`p-3 rounded-2xl border-2 text-left transition-all bg-white ${
-                        agentTone === tone.id
-                          ? "border-purple-600 bg-purple-50/70 shadow-xs ring-1 ring-purple-500/20"
-                          : "border-slate-200 hover:border-slate-300"
-                      }`}
-                    >
-                      <span className="text-xl block mb-1">{tone.icon}</span>
-                      <div className="text-xs font-black text-slate-900">{tone.title}</div>
-                      <div className="text-[10px] text-slate-500 mt-0.5 leading-tight">{tone.desc}</div>
-                    </button>
-                  ))}
-                </div>
-
-                <div className="flex flex-col justify-between">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Directriz personalizada adicional para los agentes (Opcional)
-                    </label>
-                    <textarea
-                      rows={4}
-                      value={customAgentInstruction}
-                      onChange={(e) => setCustomAgentInstruction(e.target.value)}
-                      placeholder="Ej: Destacar siempre que el pan brioche es horneado todos los días y que la carne nunca se congela..."
-                      className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 resize-none"
-                    />
-                  </div>
-                  <p className="text-[11px] text-slate-400 mt-1">
-                    Esta instrucción complementará las directrices base que usan nuestros agentes al redactar copys e imágenes.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* SECCIÓN 2: BIBLIOTECA VISUAL CON CATEGORÍAS Y PREVIEW */}
-            <div className="space-y-4 pt-2">
-              {/* Barra superior de controles */}
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-base">🎨</span>
-                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-wider">
-                      Biblioteca de Estilos Visuales ({availableStyles.length} disponibles)
-                    </h4>
-                  </div>
-                  <p className="text-xs text-slate-500 font-medium mt-0.5">
-                    Filtra por categoría, busca por concepto o revisa la vista previa de cada estilo antes de activarlo.
-                  </p>
-                </div>
-
-                <div className="flex items-center flex-wrap gap-2 text-xs">
-                  <button
-                    type="button"
-                    onClick={handleSelectFiltered}
-                    className="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold rounded-xl border border-purple-200 transition-all"
-                  >
-                    ✓ Activar mostrados ({filteredTab4Styles.length})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleDeselectFiltered}
-                    className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-all"
-                  >
-                    Deseleccionar mostrados
-                  </button>
-                  {selectedStyleIds.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setSelectedStyleIds([])}
-                      className="px-3 py-1.5 text-rose-600 hover:bg-rose-50 font-bold rounded-xl transition-all"
-                    >
-                      Limpiar todo
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Filtros: Buscador + Toggle Carteles Comerciales */}
-              <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-                <div className="sm:col-span-8 relative">
-                  <input
-                    type="text"
-                    value={stylesSearch}
-                    onChange={(e) => setStylesSearch(e.target.value)}
-                    placeholder="🔍 Buscar por nombre, categoría o concepto visual..."
-                    className="w-full pl-3.5 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-purple-500 focus:bg-white transition-all"
-                  />
-                  {stylesSearch && (
-                    <button
-                      type="button"
-                      onClick={() => setStylesSearch("")}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
-
-                <div className="sm:col-span-4 flex items-center">
-                  <button
-                    type="button"
-                    onClick={() => setStylesCommercialOnly(!stylesCommercialOnly)}
-                    className={`w-full py-2 px-3 rounded-xl border-2 text-xs font-black flex items-center justify-center gap-1.5 transition-all ${
-                      stylesCommercialOnly
-                        ? "border-amber-500 bg-amber-50 text-amber-900 shadow-xs"
-                        : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
-                    }`}
-                  >
-                    <span>🏷️</span>
-                    <span>Solo Carteles Comerciales</span>
-                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-800 font-bold ml-1">
-                      {commercialCount}
-                    </span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Category Pills */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs scrollbar-none">
-                <button
-                  type="button"
-                  onClick={() => setStylesCategory("all")}
-                  className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all ${
-                    stylesCategory === "all"
-                      ? "bg-slate-900 text-white shadow-xs"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                  }`}
-                >
-                  Todos ({availableStyles.length})
-                </button>
-                {promptCategories.map((cat) => {
-                  const count = availableStyles.filter((t) =>
-                    getPromptCategories(t).some((c) => c.toLowerCase().trim() === cat.toLowerCase().trim())
-                  ).length;
-                  if (count === 0) return null;
-                  return (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => setStylesCategory(cat)}
-                      className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all flex items-center gap-1 ${
-                        stylesCategory === cat
-                          ? "bg-purple-600 text-white shadow-xs"
-                          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                      }`}
-                    >
-                      <span>{cat}</span>
-                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
-                        stylesCategory === cat ? "bg-purple-700 text-white" : "bg-slate-200 text-slate-700"
-                      }`}>
-                        {count}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Grid de Estilos con Preview */}
-              {filteredTab4Styles.length === 0 ? (
-                <div className="p-12 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-300 space-y-2">
-                  <span className="text-3xl block">🔍</span>
-                  <p className="text-xs font-bold text-slate-600">
-                    No se encontraron estilos para "{stylesSearch || stylesCategory}".
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setStylesSearch("");
-                      setStylesCategory("all");
-                      setStylesCommercialOnly(false);
-                    }}
-                    className="text-xs font-bold text-purple-600 hover:underline"
-                  >
-                    Restablecer filtros de búsqueda
-                  </button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4 max-h-[560px] overflow-y-auto pr-1 p-1">
-                  {filteredTab4Styles.map((style) => {
-                    const isChecked = selectedStyleIds.includes(style.id);
-                    const cats = getPromptCategories(style);
-
-                    return (
-                      <div
-                        key={style.id}
-                        className={`group rounded-2xl border-2 transition-all flex flex-col overflow-hidden bg-white ${
-                          isChecked
-                            ? "border-purple-600 bg-purple-50/25 shadow-md shadow-purple-500/10 ring-2 ring-purple-500/20"
-                            : "border-slate-200 hover:border-slate-300 hover:shadow-xs"
-                        }`}
-                      >
-                        {/* Thumbnail con imagen real y acciones */}
-                        <div className="relative aspect-[4/3] w-full bg-slate-100 overflow-hidden cursor-pointer"
-                          onClick={() => {
-                            setSelectedStyleIds((prev) =>
-                              isChecked ? prev.filter((id) => id !== style.id) : [...prev, style.id]
-                            );
-                          }}
-                        >
-                          {style.previewUrl ? (
-                            <img
-                              src={style.previewUrl}
-                              alt={style.title}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                              loading="lazy"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-slate-400">
-                              <span className="text-3xl">🎨</span>
-                              <span className="text-[10px] font-bold mt-1">Sin vista previa</span>
-                            </div>
-                          )}
-
-                          {/* Badge Cartel Comercial */}
-                          {style.isCommercialPoster && (
-                            <div className="absolute top-2 left-2 z-10">
-                              <span className="bg-amber-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm border border-amber-400 flex items-center gap-1">
-                                <span>🏷️</span>
-                                <span>CARTEL</span>
-                              </span>
-                            </div>
-                          )}
-
-                          {/* Checkbox overlay en esquina superior derecha */}
-                          <div className="absolute top-2 right-2 z-10">
-                            <div
-                              className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all ${
-                                isChecked
-                                  ? "bg-purple-600 text-white shadow-md shadow-purple-600/40 scale-105"
-                                  : "bg-black/40 backdrop-blur-xs text-transparent hover:bg-black/60 border border-white/40"
-                              }`}
-                            >
-                              <span className="text-xs font-black">✓</span>
-                            </div>
-                          </div>
-
-                          {/* Botón de Zoom / Ver Preview grande en hover */}
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-2 z-10 pointer-events-none">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setPreviewModalStyle(style);
-                              }}
-                              className="pointer-events-auto px-3 py-1.5 bg-white/95 hover:bg-white text-slate-900 font-black text-[11px] rounded-xl shadow-lg flex items-center gap-1.5 transition-transform active:scale-95"
-                            >
-                              <span>👁️</span>
-                              <span>Ver Preview</span>
-                            </button>
-                          </div>
-
-                          {/* Categorías al pie de la foto */}
-                          <div className="absolute bottom-2 left-2 flex flex-wrap gap-1 max-w-[85%] z-10">
-                            {cats.slice(0, 2).map((c) => (
-                              <span
-                                key={c}
-                                className="bg-slate-900/80 backdrop-blur-xs text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md"
-                              >
-                                {c}
-                              </span>
-                            ))}
-                            {cats.length > 2 && (
-                              <span className="bg-slate-900/80 backdrop-blur-xs text-white text-[9px] font-bold px-1 py-0.5 rounded-md">
-                                +{cats.length - 2}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Contenido de la tarjeta */}
-                        <div className="p-3 flex-1 flex flex-col justify-between space-y-2">
-                          <div>
-                            <h4
-                              className={`text-xs font-black line-clamp-1 cursor-pointer ${
-                                isChecked ? "text-purple-950" : "text-slate-900"
-                              }`}
-                              title={style.title}
-                              onClick={() => {
-                                setSelectedStyleIds((prev) =>
-                                  isChecked ? prev.filter((id) => id !== style.id) : [...prev, style.id]
-                                );
-                              }}
-                            >
-                              {style.title}
-                            </h4>
-                            <p className="text-[10px] text-slate-500 line-clamp-2 mt-0.5 font-medium leading-snug">
-                              {style.description}
-                            </p>
-                          </div>
-
-                          {/* Acciones de la tarjeta */}
-                          <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-[11px]">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setPreviewModalStyle(style);
-                              }}
-                              className="text-purple-600 hover:text-purple-800 font-bold hover:underline flex items-center gap-1"
-                            >
-                              <span>👁️</span>
-                              <span>Detalle</span>
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSelectedStyleIds((prev) =>
-                                  isChecked ? prev.filter((id) => id !== style.id) : [...prev, style.id]
-                                );
-                              }}
-                              className={`font-black text-[10px] px-2 py-0.5 rounded-lg transition-all ${
-                                isChecked
-                                  ? "bg-purple-100 text-purple-800"
-                                  : "text-slate-500 hover:text-slate-700 hover:bg-slate-100"
-                              }`}
-                            >
-                              {isChecked ? "Activo" : "+ Activar"}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      })()}
-
-      {/* ──────────────────────────────────────────────────────────── */}
-      {/* TAB 5: RADAR DE NICHO & ESTRATEGIA VISUAL                   */}
+      {/* TAB 4: RADAR DE NICHO & ESTRATEGIA VISUAL                   */}
       {/* ──────────────────────────────────────────────────────────── */}
       {activeTab === "radar_estrategia" && (
         <div className="space-y-8">
@@ -2294,6 +1885,64 @@ export default function LaboratorioPage() {
                 >
                   <span>{generatingStrategy ? "Generando posts con agentes..." : "🚀 Generar Estrategia Visual"}</span>
                 </button>
+              </div>
+            </div>
+
+            {/* TONO DE VOZ Y DIRECTRICES DE LOS AGENTES */}
+            <div className="bg-slate-50/70 p-4 sm:p-5 rounded-2xl border border-slate-200/80 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <span className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                    <span>🎙️</span>
+                    <span>Tono de Voz & Directrices de los Agentes</span>
+                  </span>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Define la personalidad y detalles clave que nuestros agentes plasmarán en los copys de la estrategia.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSaveAgentCommands}
+                  disabled={savingAgents}
+                  className="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs rounded-xl border border-purple-200 transition-all self-start sm:self-auto flex items-center gap-1 shadow-xs shrink-0"
+                >
+                  <span>{savingAgents ? "Guardando..." : "💾 Guardar Directrices"}</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { id: "directo_cercano", title: "Directo & Cercano", icon: "🤝" },
+                    { id: "urgencia_oferta", title: "Promocional & Ofertas", icon: "💥" },
+                    { id: "gourmet_elegante", title: "Elegante & Sensorial", icon: "🍷" },
+                    { id: "educativo_valor", title: "Educativo & Autoridad", icon: "💡" },
+                  ].map((tone) => (
+                    <button
+                      key={tone.id}
+                      type="button"
+                      onClick={() => setAgentTone(tone.id)}
+                      className={`p-2.5 rounded-xl border-2 text-left transition-all bg-white flex items-center gap-2 ${
+                        agentTone === tone.id
+                          ? "border-purple-600 bg-purple-50/70 shadow-xs ring-1 ring-purple-500/20 font-bold text-purple-950"
+                          : "border-slate-200 hover:border-slate-300 text-slate-700"
+                      }`}
+                    >
+                      <span className="text-lg shrink-0">{tone.icon}</span>
+                      <span className="text-xs">{tone.title}</span>
+                    </button>
+                  ))}
+                </div>
+
+                <div>
+                  <textarea
+                    rows={2}
+                    value={customAgentInstruction}
+                    onChange={(e) => setCustomAgentInstruction(e.target.value)}
+                    placeholder="Directriz personalizada para los agentes (ej: destacar que el pan es horneado diario y la carne fresca)..."
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-purple-500 resize-none h-full"
+                  />
+                </div>
               </div>
             </div>
 
@@ -2692,122 +2341,6 @@ export default function LaboratorioPage() {
           </div>
         </div>
       )}
-
-      {/* Modal de Vista Previa Detallada de Estilo */}
-      {previewModalStyle && (
-        <div 
-          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 animate-in fade-in"
-          onClick={() => setPreviewModalStyle(null)}
-        >
-          <div 
-            className="bg-white rounded-3xl max-w-2xl w-full max-h-[92vh] overflow-hidden shadow-2xl border border-slate-200 flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/70">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">✨</span>
-                <div>
-                  <h3 className="text-base font-black text-slate-900">{previewModalStyle.title}</h3>
-                  <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                    {previewModalStyle.isCommercialPoster && (
-                      <span className="bg-amber-100 text-amber-800 text-[10px] font-black px-2 py-0.5 rounded-full border border-amber-300 flex items-center gap-1">
-                        <span>🏷️</span>
-                        <span>Cartel Comercial</span>
-                      </span>
-                    )}
-                    {getPromptCategories(previewModalStyle).map((c) => (
-                      <span key={c} className="bg-purple-100 text-purple-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                        {c}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setPreviewModalStyle(null)}
-                className="w-8 h-8 rounded-full bg-slate-200/70 hover:bg-slate-300 text-slate-700 flex items-center justify-center font-bold text-sm transition-all"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="p-6 overflow-y-auto space-y-4">
-              {/* Imagen de Preview */}
-              <div className="w-full max-h-[420px] bg-slate-950 rounded-2xl overflow-hidden flex items-center justify-center border border-slate-800 shadow-inner">
-                {previewModalStyle.previewUrl ? (
-                  <img
-                    src={previewModalStyle.previewUrl}
-                    alt={previewModalStyle.title}
-                    className="max-h-[420px] w-full object-contain"
-                  />
-                ) : (
-                  <div className="p-12 text-center text-slate-400">
-                    <span className="text-4xl block mb-2">🎨</span>
-                    <p className="text-xs font-semibold">Sin imagen de muestra directa.</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Descripción */}
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-2">
-                <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">
-                  Descripción & Propósito del Estilo
-                </h4>
-                <p className="text-xs text-slate-700 leading-relaxed font-medium">
-                  {previewModalStyle.description}
-                </p>
-
-                {previewModalStyle.prompt && (
-                  <div className="pt-2 border-t border-slate-200">
-                    <span className="text-[10px] font-black uppercase text-slate-400 block mb-1">
-                      Directriz de Generación para Agentes:
-                    </span>
-                    <p className="text-[11px] font-mono text-slate-600 bg-white p-2.5 rounded-xl border border-slate-200 line-clamp-4 overflow-hidden">
-                      {previewModalStyle.prompt}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/70">
-              <button
-                type="button"
-                onClick={() => {
-                  const isChecked = selectedStyleIds.includes(previewModalStyle.id);
-                  setSelectedStyleIds((prev) =>
-                    isChecked ? prev.filter((id) => id !== previewModalStyle.id) : [...prev, previewModalStyle.id]
-                  );
-                }}
-                className={`px-4 py-2.5 text-xs font-black rounded-xl transition-all flex items-center gap-2 ${
-                  selectedStyleIds.includes(previewModalStyle.id)
-                    ? "bg-purple-600 text-white shadow-md shadow-purple-600/30 hover:bg-purple-700"
-                    : "bg-slate-900 text-white hover:bg-slate-800"
-                }`}
-              >
-                <span>
-                  {selectedStyleIds.includes(previewModalStyle.id)
-                    ? "✓ Estilo Activo para la Empresa (Click para quitar)"
-                    : "+ Activar este Estilo para los Agentes"}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPreviewModalStyle(null)}
-                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl"
-              >
-                Cerrar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Modal para Crear Nueva Empresa de Prueba */}
       <TestCompanyModal
         isOpen={showCreateModal}
