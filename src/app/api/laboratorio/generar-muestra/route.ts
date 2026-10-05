@@ -22,6 +22,13 @@ interface GenerateMuestraPayload {
   nicheContext?: string;
   userId?: string;
   profileId?: string;
+  prospectName?: string;
+  offerText?: string;
+  dishOrProductName?: string;
+  sellerName?: string;
+  sellerEmail?: string;
+  logoUrl?: string;
+  baseImageUrl?: string;
 }
 
 // Genera una imagen vía n8n con fallback inmediato a Flux
@@ -522,20 +529,23 @@ ${stylesContext}`;
 
     const newDemoData: any = {
       prospectBusiness: businessName,
-      prospectName: businessName,
+      prospectName: body.prospectName || businessName,
       prospectPhone: phone || "",
       rubro,
+      offerText: body.offerText || "",
+      dishOrProductName: body.dishOrProductName || finalPublications[0]?.dishOrProductName || businessName,
       status: "generada",
       createdBy: userId,
-      sellerName: "Laboratorio de Pruebas",
-      sellerEmail: "laboratorio@santisoft.cl",
+      sellerName: body.sellerName || "Equipo Comercial",
+      sellerEmail: body.sellerEmail || "vendedores@santisoft.cl",
       createdAt: new Date(),
       publications: finalPublications,
       strategy: parsedStrategy,
-      dishOrProductName: finalPublications[0]?.dishOrProductName || businessName,
       generatedImageUrl: finalPublications[0]?.imageUrl || "",
       generatedPostCaption: finalPublications[0]?.copy || "",
       selectedStyleTitle: finalPublications[0]?.visualStyleTitle || "Personalizado",
+      logoUrl: body.logoUrl || null,
+      baseImageUrl: body.baseImageUrl || null,
     };
 
     let demoId = "";

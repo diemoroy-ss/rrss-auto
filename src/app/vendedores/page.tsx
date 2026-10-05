@@ -83,6 +83,8 @@ interface ProspectDemo {
   outcome?: "nuevo" | "enviado" | "visto" | "interesado" | "cerrado" | "descartado";
   lastFollowUpAt?: string;
   followUpCount?: number;
+  publications?: any[];
+  strategy?: any;
 }
 
 const COMMON_NICHES = [
@@ -274,6 +276,30 @@ export default function VendedoresPwaPage() {
   const [customWhatsappCopy, setCustomWhatsappCopy] = useState("");
   const [copySuccess, setCopySuccess] = useState(false);
   const [copyPostSuccess, setCopyPostSuccess] = useState(false);
+
+  // Novedades de Laboratorio: Cantidad de Posts, Formatos, Precios y Estrategia
+  const [postsCount, setPostsCount] = useState<number>(3); // 1 a 5
+  const [allowedTypes, setAllowedTypes] = useState<("post" | "carrusel" | "reel")[]>([
+    "post",
+    "carrusel",
+    "reel",
+  ]);
+  const [isCommercialPoster, setIsCommercialPoster] = useState<boolean>(true);
+  const [productPrice, setProductPrice] = useState<string>("");
+  const [generatedPublications, setGeneratedPublications] = useState<any[]>([]);
+  const [generatedStrategy, setGeneratedStrategy] = useState<any>(null);
+  const [selectedPreviewPubIndex, setSelectedPreviewPubIndex] = useState<number>(0);
+
+  const handleToggleType = (type: "post" | "carrusel" | "reel") => {
+    setAllowedTypes((prev) => {
+      if (prev.includes(type)) {
+        if (prev.length === 1) return prev;
+        return prev.filter((t) => t !== type);
+      } else {
+        return [...prev, type];
+      }
+    });
+  };
 
   // Step 4b: Video Generation State
   const [generatedVideoUrl, setGeneratedVideoUrl] = useState("");
@@ -521,15 +547,20 @@ export default function VendedoresPwaPage() {
     }
   };
 
-  // 8. GENERAR MUESTRA CON AGENTES
+  // 8. GENERAR MUESTRA CON AGENTES (Integrado con Laboratorio Multi-Publicación)
   const handleGenerateSample = async () => {
     if (!prospectBusiness.trim()) {
       alert("Por favor indica al menos el nombre del negocio o marca del prospecto.");
       return;
     }
 
+    if (allowedTypes.length === 0) {
+      alert("Selecciona al menos un formato de publicación (Post, Carrusel o Reel).");
+      return;
+    }
+
     setIsGenerating(true);
-    setGeneratingStep("Preparando assets y datos...");
+    setGeneratingStep("Preparando assets y conectando con nuestros agentes...");
 
     try {
       let uploadedBaseImageUrl = baseImagePreview;
@@ -537,7 +568,7 @@ export default function VendedoresPwaPage() {
 
       // 1. Subir imagen base si existe
       if (baseImageFile && currentUser?.uid) {
-        setGeneratingStep("Subiendo foto de producto...");
+        setGeneratingStep("Subiendo foto real de producto...");
         const baseRef = ref(storage, `admin_demos/base_${Date.now()}_${baseImageFile.name}`);
         const snap = await uploadBytes(baseRef, baseImageFile);
         uploadedBaseImageUrl = await getDownloadURL(snap.ref);
@@ -563,232 +594,93 @@ export default function VendedoresPwaPage() {
         }
       }
 
-      // 3. Obtener o generar imagen base
-      let rawBaseUrl = uploadedBaseImageUrl;
-      if (!rawBaseUrl) {
-        setGeneratingStep(`Fotografiando "${dishOrProductName.trim() || rubro}" con nuestros agentes...`);
-        try {
-          const token = await auth.currentUser?.getIdToken();
-          const genRes = await fetch("/api/admin/muestras/generate-image", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
+      // 3. Preparar ítems de catálogo con foto real si se subió
+      const catalogItems = uploadedBaseImageUrl
+        ? [
+            {
+              name: dishOrProductName.trim() || prospectBusiness.trim(),
+              description: offerText.trim() || "",
+              price: productPrice.trim() || "",
+              imageUrl: uploadedBaseImageUrl,
+              hasRealPhoto: true,
             },
-            body: JSON.stringify({
-              dishOrProductName: dishOrProductName.trim(),
-              rubro: rubro || "Gastronomía",
-              businessName: prospectBusiness.trim(),
-              offerText: offerText.trim(),
-              styleId: selectedTemplate?.id || null,
-              styleTitle: selectedTemplate?.title || null,
-              styleKeywords: selectedTemplate?.styleKeywords || null,
-              stylePrompt: selectedTemplate?.prompt || null,
-            }),
-          });
+          ]
+        : [];
 
-          if (genRes.ok) {
-            const genData = await genRes.json();
-            if (genData.imageUrl?.startsWith("http")) {
-              rawBaseUrl = genData.imageUrl;
-            }
-          }
-        } catch (genErr) {
-          console.warn("Error generando imagen base:", genErr);
-        }
+      // 4. Preparar estilos seleccionados
+      const selectedStyles = selectedTemplate ? [selectedTemplate] : [];
 
-        // Fallback
-        if (!rawBaseUrl) {
-          const fallbackSeed = Math.floor(Math.random() * 100000);
-          const dishPart = dishOrProductName.trim() ? `${dishOrProductName.trim()}, ` : "";
-          const promptQuery = encodeURIComponent(`${dishPart}${rubro} commercial food advertising photography high quality professional lighting`);
-          rawBaseUrl = `https://image.pollinations.ai/prompt/${promptQuery}?width=1080&height=1080&model=flux&nologo=true&seed=${fallbackSeed}`;
-        }
-      } else if (selectedTemplate?.prompt && rawBaseUrl?.startsWith("http")) {
-        setGeneratingStep(`Aplicando estilo "${selectedTemplate.title}" con nuestros agentes...`);
-        try {
-          let promptEN = selectedTemplate.prompt;
-          if (dishOrProductName.trim()) {
-            promptEN = promptEN
-              .replace(/\[Producto:[^\]]+\]/gi, dishOrProductName.trim())
-              .replace(/\[Nombre del Producto:[^\]]+\]/gi, dishOrProductName.trim())
-              .replace(/\[Objeto:[^\]]+\]/gi, dishOrProductName.trim());
-          }
-          if (prospectBusiness.trim()) {
-            promptEN = promptEN.replace(/\[Marca o industria:[^\]]+\]/gi, prospectBusiness.trim());
-          }
+      // 5. Teléfono formateado
+      const phoneToSave = prospectPhone.trim()
+        ? `${countryCode}${prospectPhone.trim().replace(/^0+/, "")}`
+        : "";
 
-          const styleRes = await fetch("/api/ai/generate-from-prompt", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              promptText: promptEN,
-              baseImageUrl: rawBaseUrl,
-              templateId: selectedTemplate.id,
-              isCommercialPoster: true,
-            }),
-          });
+      setGeneratingStep(
+        `Nuestros agentes están diseñando ${postsCount} ${
+          postsCount === 1 ? "publicación" : "publicaciones"
+        } y la estrategia comercial...`
+      );
 
-          if (styleRes.ok) {
-            const styleData = await styleRes.json();
-            if (styleData.imageUrl && styleData.imageUrl.startsWith("http")) {
-              rawBaseUrl = styleData.imageUrl;
-            }
-          }
-        } catch (styleErr) {
-          console.warn("Fallo estilizando imagen:", styleErr);
-        }
-      }
-
-      setGeneratedImageUrl(rawBaseUrl);
-
-      // 4. Composición con Logo y Sello
-      setGeneratingStep("Componiendo flyer publicitario con logo y sello...");
-      const effectiveLogo = (removeLogoBg && cleanedLogoUrl) ? cleanedLogoUrl : (uploadedLogoUrl || "");
-
-      let clientCanvasDataUrl = "";
-      try {
-        clientCanvasDataUrl = await compositeImageClient({
-          baseImageUrl: rawBaseUrl,
-          logoUrl: effectiveLogo,
-          logoPosition,
-          logoSize: 100,
-          logoTransparent: removeLogoBg,
-          offerText: offerText.trim(),
-          badgeCustomText: badgeCustomText.trim(),
-          badgeStyle,
-          dishOrProductName: dishOrProductName.trim(),
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch("/api/laboratorio/generar-muestra", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          postsCount,
+          allowedTypes,
           businessName: prospectBusiness.trim(),
-          includeSantisoftWatermark: true,
-        });
-        setCanvasImageUrl(clientCanvasDataUrl);
-      } catch (canvasErr) {
-        console.warn("Canvas compositing fallback a base:", canvasErr);
-        setCanvasImageUrl(rawBaseUrl);
-      }
-
-      // 5. Butterfly Render para vista dinámica
-      let butterflyUrlResult = "";
-      try {
-        const renderResult = await createButterflyRender({
-          baseImageUrl: rawBaseUrl,
-          logoUrl: effectiveLogo,
-          logoPosition,
-          logoSize: 100,
-          logoTransparent: removeLogoBg,
-          offerText: offerText.trim(),
-          badgeCustomText: badgeCustomText.trim(),
-          badgeStyle,
+          prospectName: prospectName.trim() || prospectBusiness.trim(),
+          phone: phoneToSave,
+          rubro,
           dishOrProductName: dishOrProductName.trim(),
-          businessName: prospectBusiness.trim(),
+          offerText: offerText.trim(),
+          productPrice: productPrice.trim(),
+          isCommercialPoster,
+          catalogItems,
+          selectedStyles,
+          logoUrl: uploadedLogoUrl || "",
+          baseImageUrl: uploadedBaseImageUrl || "",
+          sellerName: currentUser?.displayName || currentUser?.email?.split("@")[0] || "Equipo Comercial",
+          sellerEmail: currentUser?.email || "vendedores@santisoft.cl",
           userId: currentUser?.uid || "vendedor",
-          includeSantisoftWatermark: true,
-        });
-        butterflyUrlResult = renderResult.butterflyUrl;
-        setButterflyUrl(butterflyUrlResult);
-      } catch (bErr) {
-        console.warn("Butterfly render skipped:", bErr);
+        }),
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || "No se pudo generar la muestra con nuestros agentes.");
       }
 
-      // 6. Redacción de Copy con Agentes
-      setGeneratingStep("Redactando copy persuasivo y llamada a la acción...");
-      let newPostCaption = "";
-      try {
-        const copyRes = await fetch("/api/ai/prospect-copy", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            businessName: prospectBusiness.trim(),
-            rubro,
-            dishOrProductName: dishOrProductName.trim(),
-            offerText: offerText.trim(),
-            phone: prospectPhone.trim(),
-          }),
-        });
-        if (copyRes.ok) {
-          const copyData = await copyRes.json();
-          newPostCaption = copyData.caption || "";
-          setGeneratedPostCaption(newPostCaption);
-        }
-      } catch (copyErr) {
-        console.warn("Error redactando copy:", copyErr);
+      const data = await res.json();
+      if (!data.success && !data.demoId) {
+        throw new Error(data.error || "Error al generar la propuesta.");
       }
 
-      // 7. Guardar en Base de Datos vía API
-      setGeneratingStep("Creando enlace de muestra interactiva...");
-      const finalImageToSave = clientCanvasDataUrl || rawBaseUrl || butterflyUrlResult;
-      const phoneToSave = prospectPhone.trim() ? `${countryCode}${prospectPhone.trim().replace(/^0+/, "")}` : "";
+      const savedDemoId = data.demoId;
+      setCreatedDemoId(savedDemoId);
+      setGeneratedPublications(data.publications || []);
+      setGeneratedStrategy(data.strategy || null);
+      setSelectedPreviewPubIndex(0);
 
-      let savedDemoId = "";
-      try {
-        const token = await auth.currentUser?.getIdToken();
-        const saveRes = await fetch("/api/admin/muestras", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            prospectName: prospectName.trim(),
-            prospectBusiness: prospectBusiness.trim(),
-            prospectPhone: phoneToSave,
-            rubro,
-            offerText: offerText.trim(),
-            badgeCustomText: badgeCustomText.trim() || null,
-            badgeStyle,
-            dishOrProductName: dishOrProductName.trim() || null,
-            generatedPostCaption: newPostCaption || null,
-            baseImageUrl: uploadedBaseImageUrl || null,
-            logoUrl: uploadedLogoUrl || null,
-            logoPosition,
-            logoSize: 100,
-            logoTransparent: removeLogoBg,
-            selectedStyleId: selectedTemplate?.id || null,
-            selectedStyleTitle: selectedTemplate?.title || null,
-            generatedImageUrl: rawBaseUrl,
-            canvasImageUrl: clientCanvasDataUrl || rawBaseUrl,
-            butterflyUrl: butterflyUrlResult || null,
-            status: "generada",
-          }),
-        });
+      const firstPub = data.publications?.[0];
+      const mainImg = firstPub?.imageUrl || uploadedBaseImageUrl || "";
+      setGeneratedImageUrl(mainImg);
+      setCanvasImageUrl(mainImg);
+      setGeneratedPostCaption(firstPub?.copy || "");
 
-        if (saveRes.ok) {
-          const saveJson = await saveRes.json();
-          savedDemoId = saveJson.demoId || saveJson.id;
-          setCreatedDemoId(savedDemoId);
+      // Mensaje de WhatsApp sanitizado
+      const whatsappMsg =
+        data.whatsappMessage ||
+        buildWhatsAppCopy(prospectName, prospectBusiness, dishOrProductName, offerText, savedDemoId);
+      setCustomWhatsappCopy(whatsappMsg);
 
-          // Actualizar mensaje de WhatsApp con el link interactivo real
-          const finalDemoLink = `${PUBLIC_APP_URL}/m/${savedDemoId}`;
-          let cleanWhatsappMsg = customWhatsappCopy
-            ? customWhatsappCopy
-                .replace(/https?:\/\/(?:res\.cloudinary\.com|firebasestorage\.googleapis\.com)[^\s]+/g, finalDemoLink)
-                .replace(/https?:\/\/[^\s]*\/m\/\[(?:ID_DE_MUESTRA|ENLACE_DE_MUESTRA)\]/g, finalDemoLink)
-                .replace(/\[(?:ID_DE_MUESTRA|ENLACE_DE_MUESTRA)\]/g, finalDemoLink)
-            : buildWhatsAppCopy(prospectName, prospectBusiness, dishOrProductName, offerText, savedDemoId);
+      // Recargar historial para reflejar la nueva muestra en tiempo real
+      loadHistory();
 
-          if (!cleanWhatsappMsg.includes(finalDemoLink)) {
-            cleanWhatsappMsg = buildWhatsAppCopy(prospectName, prospectBusiness, dishOrProductName, offerText, savedDemoId);
-          }
-
-          setCustomWhatsappCopy(cleanWhatsappMsg);
-
-          fetch("/api/admin/muestras", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              id: savedDemoId,
-              whatsappMessage: cleanWhatsappMsg,
-            }),
-          }).catch(() => {});
-        }
-      } catch (saveErr) {
-        console.error("Error guardando demo:", saveErr);
-      }
-
-      // Scroll abajo hacia el resultado
+      // Desplazamiento suave hacia la sección de resultados
       if (typeof window !== "undefined") {
         setTimeout(() => {
           const previewEl = document.getElementById("resultado-generacion");
@@ -798,7 +690,7 @@ export default function VendedoresPwaPage() {
         }, 300);
       }
     } catch (err: any) {
-      console.error("Error generando muestra:", err);
+      console.error("Error generando muestra con agentes:", err);
       alert(`Hubo un problema al generar la muestra: ${err.message}`);
     } finally {
       setIsGenerating(false);
@@ -1660,6 +1552,19 @@ export default function VendedoresPwaPage() {
 
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                    Precio del Producto / Plato (Opcional)
+                  </label>
+                  <input
+                    type="text"
+                    value={productPrice}
+                    onChange={(e) => setProductPrice(e.target.value)}
+                    placeholder="Ej. $8.990 o $12.500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition-all font-medium"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
                     Oferta, Promo o Gancho (Opcional)
                   </label>
                   <input
@@ -1669,6 +1574,126 @@ export default function VendedoresPwaPage() {
                     placeholder="Ej. 20% Dto los jueves o 2x1"
                     className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition-all font-medium"
                   />
+                </div>
+              </div>
+
+              {/* CONFIGURACIÓN AVANZADA DE LABORATORIO: CANTIDAD Y FORMATOS */}
+              <div className="mt-6 pt-5 border-t border-slate-100 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xs font-black uppercase tracking-wider text-indigo-700 flex items-center gap-1.5">
+                      <span>⚡ Configuración de la Propuesta (Laboratorio)</span>
+                    </h3>
+                    <p className="text-[11px] text-slate-500">
+                      Nuestros agentes diseñarán las publicaciones y armarán la estrategia completa para el prospecto.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Selector de Cantidad de Publicaciones */}
+                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-black text-slate-800 uppercase tracking-wider">
+                        Cantidad de Posts:
+                      </label>
+                      <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200">
+                        {postsCount} {postsCount === 1 ? "publicación" : "publicaciones"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      {[1, 2, 3, 4, 5].map((num) => (
+                        <button
+                          key={num}
+                          type="button"
+                          onClick={() => setPostsCount(num)}
+                          className={`flex-1 py-2 rounded-xl font-black text-xs transition-all border cursor-pointer ${
+                            postsCount === num
+                              ? "bg-indigo-600 text-white border-indigo-600 shadow-sm shadow-indigo-600/30 scale-102"
+                              : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
+                          }`}
+                        >
+                          {num}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-slate-400">
+                      Recomendado: 3 publicaciones (1 Post, 1 Carrusel y 1 Reel).
+                    </p>
+                  </div>
+
+                  {/* Selector de Formatos de Publicaciones */}
+                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-black text-slate-800 uppercase tracking-wider">
+                        Formatos a Incluir:
+                      </label>
+                      <span className="text-[10px] font-black text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200">
+                        {allowedTypes.length} activos
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {[
+                        { id: "post" as const, label: "Post", icon: "📸", sub: "1:1" },
+                        { id: "carrusel" as const, label: "Carrusel", icon: "🎠", sub: "3 Slides" },
+                        { id: "reel" as const, label: "Reel", icon: "🎬", sub: "9:16" },
+                      ].map((fmt) => {
+                        const isChecked = allowedTypes.includes(fmt.id);
+                        return (
+                          <button
+                            key={fmt.id}
+                            type="button"
+                            onClick={() => handleToggleType(fmt.id)}
+                            className={`p-2 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                              isChecked
+                                ? "bg-white border-purple-500 shadow-xs ring-1 ring-purple-500/30"
+                                : "bg-slate-100 border-slate-200 opacity-60 hover:opacity-90"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs">{fmt.icon}</span>
+                              <span className={`text-[10px] font-black ${isChecked ? "text-purple-600" : "text-transparent"}`}>
+                                ✓
+                              </span>
+                            </div>
+                            <div className="mt-1">
+                              <span className="text-[11px] font-bold text-slate-800 block leading-tight">{fmt.label}</span>
+                              <span className="text-[9px] text-slate-400">{fmt.sub}</span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Toggle de Cartel Comercial */}
+                <div
+                  onClick={() => setIsCommercialPoster(!isCommercialPoster)}
+                  className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
+                    isCommercialPoster
+                      ? "bg-indigo-50/60 border-indigo-300"
+                      : "bg-slate-50 border-slate-200"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl">🏷️</span>
+                    <div>
+                      <p className="text-xs font-black text-slate-900 leading-tight">
+                        Diseñar como Cartel Comercial con Tipografía Integrada
+                      </p>
+                      <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
+                        {isCommercialPoster
+                          ? "Activo: Si subes foto real, se preserva 100% y se integran tipografías de oferta y sellos. Si no, se genera cartel comercial completo."
+                          : "Inactivo: Generación de fotografía de producto limpia sin tipografías impresas en la imagen."}
+                      </p>
+                    </div>
+                  </div>
+                  <div className={`w-10 h-6 flex items-center rounded-full p-1 duration-300 cursor-pointer shrink-0 ${
+                    isCommercialPoster ? "bg-indigo-600 justify-end" : "bg-slate-300 justify-start"
+                  }`}>
+                    <div className="bg-white w-4 h-4 rounded-full shadow-md transform transition-all" />
+                  </div>
                 </div>
               </div>
             </section>
@@ -1985,7 +2010,7 @@ export default function VendedoresPwaPage() {
                 type="button"
                 disabled={isGenerating || !prospectBusiness.trim()}
                 onClick={handleGenerateSample}
-                className="w-full py-4 px-6 rounded-3xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-base shadow-lg shadow-indigo-600/25 transition-all transform active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+                className="w-full py-4 px-6 rounded-3xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-base shadow-lg shadow-indigo-600/25 transition-all transform active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 cursor-pointer"
               >
                 {isGenerating ? (
                   <>
@@ -1995,189 +2020,396 @@ export default function VendedoresPwaPage() {
                 ) : (
                   <>
                     <FaMagic className="text-lg text-yellow-300" />
-                    <span>Generar Muestra con Agentes</span>
+                    <span>
+                      ✨ Generar {postsCount} {postsCount === 1 ? "Publicación" : "Publicaciones"} y Estrategia con Agentes
+                    </span>
                   </>
                 )}
               </button>
             </div>
 
             {/* RESULTADO DE GENERACIÓN */}
-            {(canvasImageUrl || generatedImageUrl) && (
-              <section
-                id="resultado-generacion"
-                className="bg-white border-2 border-indigo-100 rounded-3xl p-5 sm:p-7 shadow-xl space-y-6 animate-in fade-in slide-in-from-bottom-6 duration-300"
-              >
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">🎉</span>
-                    <h3 className="text-base sm:text-lg font-black text-slate-900">
-                      Muestra Lista para Enviar
-                    </h3>
-                  </div>
-                  {createdDemoId && (
-                    <span className="text-[10px] font-bold uppercase px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">
-                      ID: {createdDemoId.slice(0, 8)}
-                    </span>
-                  )}
-                </div>
+            {(canvasImageUrl || generatedImageUrl || generatedPublications.length > 0) && (() => {
+              const activePub = (generatedPublications && generatedPublications.length > 0)
+                ? (generatedPublications[selectedPreviewPubIndex] || generatedPublications[0])
+                : null;
+              const activeImg = activePub?.imageUrl || canvasImageUrl || generatedImageUrl || baseImagePreview || "";
+              const activeCopy = activePub?.copy || generatedPostCaption || "";
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-                  {/* IMAGEN GENERADA */}
-                  <div className="space-y-3">
-                    <div className="aspect-square relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 shadow-sm">
-                      <img
-                        src={canvasImageUrl || generatedImageUrl || baseImagePreview || ""}
-                        alt="Flyer Muestra"
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          const target = e.currentTarget;
-                          if (generatedImageUrl && target.src !== generatedImageUrl) {
-                            target.src = generatedImageUrl;
-                          } else if (baseImagePreview && target.src !== baseImagePreview) {
-                            target.src = baseImagePreview;
-                          }
-                        }}
-                      />
-                    </div>
-
-                    <div className="flex gap-2">
-                      {createdDemoId && (
-                        <a
-                          href={`${PUBLIC_APP_URL}/m/${createdDemoId}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="flex-1 py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-xs font-bold text-center text-slate-700 transition-colors flex items-center justify-center gap-1.5"
-                        >
-                          <FaEye className="text-indigo-600" /> Ver Landing Pública
-                        </a>
-                      )}
-                      {createdDemoId && (
-                        <button
-                          type="button"
-                          onClick={() => handleCopyDemoLink(createdDemoId)}
-                          className="py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-xs font-bold text-slate-700 transition-colors flex items-center justify-center gap-1.5"
-                        >
-                          <FaCopy className="text-indigo-600" />
-                          {copySuccess ? "¡Copiado!" : "Copiar Enlace"}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* COPY Y ENVÍO POR WHATSAPP */}
-                  <div className="space-y-4">
-                    {/* ENVIAR WHATSAPP BOTÓN AUTOMATIZADO CON EVOLUTION Y N8N */}
-                    <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1.5">
-                          <FaWhatsapp className="text-emerald-600 text-base" /> Envío Directo al Prospecto
-                        </span>
-                        {fullPhoneForPreview && (
-                          <span className="text-xs font-bold text-emerald-700 font-mono">
-                            {fullPhoneForPreview}
-                          </span>
-                        )}
+              return (
+                <section
+                  id="resultado-generacion"
+                  className="bg-white border-2 border-indigo-100 rounded-3xl p-5 sm:p-7 shadow-xl space-y-6 animate-in fade-in slide-in-from-bottom-6 duration-300"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">🎉</span>
+                      <div>
+                        <h3 className="text-base sm:text-lg font-black text-slate-900">
+                          {generatedPublications.length > 1
+                            ? `Propuesta con ${generatedPublications.length} Publicaciones y Estrategia`
+                            : "Muestra Lista para Enviar"}
+                        </h3>
+                        <p className="text-xs text-slate-500">
+                          Diseñada por nuestros agentes con identidad comercial lista para cerrar al prospecto.
+                        </p>
                       </div>
+                    </div>
+                    {createdDemoId && (
+                      <span className="text-[10px] font-bold uppercase px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 self-start sm:self-auto">
+                        ID: {createdDemoId.slice(0, 8)}
+                      </span>
+                    )}
+                  </div>
 
-                      {/* Checkbox para adjuntar archivo de imagen */}
-                      <label className="flex items-start gap-2.5 cursor-pointer text-xs text-slate-700 bg-white p-2.5 rounded-xl border border-emerald-200 hover:bg-emerald-50/50 transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={attachImageToWhatsApp}
-                          onChange={(e) => setAttachImageToWhatsApp(e.target.checked)}
-                          className="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer shrink-0"
-                        />
-                        <div className="text-[11px] leading-tight">
-                          <span className="font-bold text-slate-800 block">Adjuntar archivo de imagen</span>
-                          <span className="text-slate-500 font-normal">
-                            Desactivado (recomendado): WhatsApp genera la tarjeta interactiva de la landing con preview de video y copy.
-                          </span>
-                        </div>
+                  {/* SELECTOR DE PUBLICACIONES SI HAY MÁS DE 1 */}
+                  {generatedPublications.length > 1 && (
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 block">
+                        Selecciona la publicación a previsualizar:
                       </label>
-
-                      <button
-                        type="button"
-                        onClick={() => handleSendWhatsApp()}
-                        disabled={isSendingWhatsApp}
-                        className="w-full py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-black text-sm shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 transform active:scale-[0.99] transition-all cursor-pointer"
-                      >
-                        {isSendingWhatsApp ? (
-                          <>
-                            <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                            <span>Enviando por WhatsApp mediante Agentes y n8n...</span>
-                          </>
-                        ) : (
-                          <>
-                            <FaWhatsapp className="text-lg" />
-                            <span>Enviar Propuesta por WhatsApp</span>
-                          </>
-                        )}
-                      </button>
-
-                      {whatsAppSuccessMsg && (
-                        <div className="p-3 bg-emerald-100/90 border border-emerald-300 rounded-xl text-xs font-bold text-emerald-800 flex items-center gap-2 animate-in fade-in">
-                          <FaCheck className="text-emerald-600 shrink-0 text-sm" />
-                          <span>{whatsAppSuccessMsg}</span>
-                        </div>
-                      )}
-
-                      {whatsAppErrorMsg && (
-                        <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 space-y-1.5 animate-in fade-in">
-                          <div className="font-bold flex items-center gap-1.5">
-                            <span>⚠️ {whatsAppErrorMsg}</span>
-                          </div>
-                          <p className="text-[11px] text-slate-600">
-                            Puedes abrir WhatsApp Web o tu aplicación móvil directamente para enviarlo:
-                          </p>
-                          {fullPhoneForPreview && (
-                            <a
-                              href={`https://wa.me/${fullPhoneForPreview.replace("+", "")}?text=${encodeURIComponent(customWhatsappCopy)}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:underline"
+                      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                        {generatedPublications.map((pub, idx) => {
+                          const isSel = selectedPreviewPubIndex === idx;
+                          const icon = pub.type === "reel" ? "🎬" : pub.type === "carrusel" ? "🎠" : "📸";
+                          const label = pub.type === "reel" ? "Reel 9:16" : pub.type === "carrusel" ? "Carrusel" : "Post 1:1";
+                          return (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => setSelectedPreviewPubIndex(idx)}
+                              className={`px-3.5 py-2 rounded-2xl text-xs font-black transition-all border flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+                                isSel
+                                  ? "bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-600/25 scale-102"
+                                  : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                              }`}
                             >
-                              <FaWhatsapp /> Abrir en WhatsApp Web / App
-                            </a>
+                              <span>{icon}</span>
+                              <span>#{idx + 1} {label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                    {/* IMAGEN / VISUAL GENERADO */}
+                    <div className="space-y-3">
+                      {/* Formato Reel: 9:16 o Carrusel/Post: 1:1 */}
+                      {activePub?.type === "reel" ? (
+                        <div className="max-w-[280px] mx-auto aspect-[9/16] relative rounded-3xl overflow-hidden border border-slate-200 bg-slate-950 shadow-lg">
+                          <img
+                            src={activeImg}
+                            alt={activePub?.title || "Reel 9:16"}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              const target = e.currentTarget;
+                              if (generatedImageUrl && target.src !== generatedImageUrl) {
+                                target.src = generatedImageUrl;
+                              }
+                            }}
+                          />
+                          <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-md text-[10px] font-black text-white flex items-center gap-1.5 border border-white/10">
+                            <span>🎬</span> Reel Vertical 9:16
+                          </div>
+                          {activePub?.visualStyleTitle && (
+                            <div className="absolute bottom-3 left-3 right-3 px-2.5 py-1 rounded-xl bg-black/75 backdrop-blur-md text-[10px] font-bold text-slate-200 border border-white/10 truncate">
+                              🎨 {activePub.visualStyleTitle}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="aspect-square relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 shadow-sm">
+                          <img
+                            src={activeImg}
+                            alt="Flyer Muestra"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              const target = e.currentTarget;
+                              if (generatedImageUrl && target.src !== generatedImageUrl) {
+                                target.src = generatedImageUrl;
+                              } else if (baseImagePreview && target.src !== baseImagePreview) {
+                                target.src = baseImagePreview;
+                              }
+                            }}
+                          />
+                          {activePub?.type === "carrusel" && (
+                            <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-purple-900/80 backdrop-blur-md text-[10px] font-black text-white flex items-center gap-1.5 border border-purple-400/30">
+                              <span>🎠</span> Carrusel (3 Slides)
+                            </div>
+                          )}
+                          {activePub?.visualStyleTitle && activePub?.type !== "carrusel" && (
+                            <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-[10px] font-black text-white flex items-center gap-1">
+                              <span>🎨</span> {activePub.visualStyleTitle}
+                            </div>
                           )}
                         </div>
                       )}
-                    </div>
 
-                    {/* MENSAJE DE WHATSAPP EDITABLE */}
-                    <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                        Mensaje a Enviar por WhatsApp:
-                      </label>
-                      <textarea
-                        rows={6}
-                        value={customWhatsappCopy}
-                        onChange={(e) => setCustomWhatsappCopy(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3.5 text-xs text-slate-800 focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 font-sans leading-relaxed"
-                      />
-                    </div>
+                      {/* Miniaturas de Carrusel si existen */}
+                      {activePub?.type === "carrusel" && activePub?.carouselImages && activePub.carouselImages.length > 1 && (
+                        <div className="grid grid-cols-3 gap-2 pt-1">
+                          {activePub.carouselImages.map((slideImg: string, sIdx: number) => (
+                            <div key={sIdx} className="aspect-square rounded-xl overflow-hidden border border-slate-200 bg-slate-100 relative shadow-2xs">
+                              <img src={slideImg} alt={`Slide ${sIdx + 1}`} className="w-full h-full object-cover" />
+                              <span className="absolute bottom-1 right-1 bg-black/70 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md">
+                                #{sIdx + 1}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
 
-                    {/* COPY REDACTADO PARA EL POST */}
-                    {generatedPostCaption && (
-                      <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600">
-                            📝 Copy de Publicación Redactado por Agentes
-                          </span>
+                      {/* Guión Técnico de Reel si existe */}
+                      {activePub?.type === "reel" && activePub?.reelScript && (
+                        <div className="p-3.5 rounded-2xl bg-purple-50/70 border border-purple-200 text-xs space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="font-black text-purple-900 uppercase text-[10px] tracking-wider flex items-center gap-1">
+                              <span>🎬</span> Guión Técnico del Reel
+                            </span>
+                            <span className="text-[10px] font-bold text-purple-700 bg-white px-2 py-0.5 rounded-md border border-purple-200">
+                              0-30 seg
+                            </span>
+                          </div>
+                          {activePub.reelScript.hook3s && (
+                            <div>
+                              <span className="text-[10px] font-black text-purple-800 uppercase block">⚡ Hook (0-3 seg):</span>
+                              <p className="text-slate-800 italic font-medium text-[11px] mt-0.5">"{activePub.reelScript.hook3s}"</p>
+                            </div>
+                          )}
+                          {activePub.reelScript.body && (
+                            <div>
+                              <span className="text-[10px] font-black text-purple-800 uppercase block">🗣️ Desarrollo:</span>
+                              <p className="text-slate-700 font-medium text-[11px] mt-0.5">{activePub.reelScript.body}</p>
+                            </div>
+                          )}
+                          {activePub.reelScript.cta && (
+                            <div>
+                              <span className="text-[10px] font-black text-purple-800 uppercase block">📢 Llamada a la Acción (CTA):</span>
+                              <p className="text-emerald-700 font-bold text-[11px] mt-0.5">{activePub.reelScript.cta}</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="flex gap-2">
+                        {createdDemoId && (
+                          <a
+                            href={`${PUBLIC_APP_URL}/m/${createdDemoId}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex-1 py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-xs font-bold text-center text-slate-700 transition-colors flex items-center justify-center gap-1.5"
+                          >
+                            <FaEye className="text-indigo-600" /> Ver Landing Pública
+                          </a>
+                        )}
+                        {createdDemoId && (
                           <button
                             type="button"
-                            onClick={handleCopyPostCaption}
-                            className="text-xs text-indigo-600 font-bold hover:underline flex items-center gap-1"
+                            onClick={() => handleCopyDemoLink(createdDemoId)}
+                            className="py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-xs font-bold text-slate-700 transition-colors flex items-center justify-center gap-1.5"
                           >
-                            <FaCopy /> {copyPostSuccess ? "¡Copiado!" : "Copiar"}
+                            <FaCopy className="text-indigo-600" />
+                            {copySuccess ? "¡Copiado!" : "Copiar Enlace"}
                           </button>
-                        </div>
-                        <p className="text-xs text-slate-700 line-clamp-3 whitespace-pre-wrap italic">
-                          {generatedPostCaption}
-                        </p>
+                        )}
                       </div>
-                    )}
+                    </div>
+
+                    {/* COPY Y ENVÍO POR WHATSAPP */}
+                    <div className="space-y-4">
+                      {/* ENVIAR WHATSAPP BOTÓN AUTOMATIZADO CON EVOLUTION Y N8N */}
+                      <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1.5">
+                            <FaWhatsapp className="text-emerald-600 text-base" /> Envío Directo al Prospecto
+                          </span>
+                          {fullPhoneForPreview && (
+                            <span className="text-xs font-bold text-emerald-700 font-mono">
+                              {fullPhoneForPreview}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Checkbox para adjuntar archivo de imagen */}
+                        <label className="flex items-start gap-2.5 cursor-pointer text-xs text-slate-700 bg-white p-2.5 rounded-xl border border-emerald-200 hover:bg-emerald-50/50 transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={attachImageToWhatsApp}
+                            onChange={(e) => setAttachImageToWhatsApp(e.target.checked)}
+                            className="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer shrink-0"
+                          />
+                          <div className="text-[11px] leading-tight">
+                            <span className="font-bold text-slate-800 block">Adjuntar archivo de imagen</span>
+                            <span className="text-slate-500 font-normal">
+                              Desactivado (recomendado): WhatsApp genera la tarjeta interactiva de la landing con preview de video, publicaciones y copy.
+                            </span>
+                          </div>
+                        </label>
+
+                        <button
+                          type="button"
+                          onClick={() => handleSendWhatsApp()}
+                          disabled={isSendingWhatsApp}
+                          className="w-full py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-black text-sm shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 transform active:scale-[0.99] transition-all cursor-pointer"
+                        >
+                          {isSendingWhatsApp ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                              <span>Enviando por WhatsApp mediante Agentes y n8n...</span>
+                            </>
+                          ) : (
+                            <>
+                              <FaWhatsapp className="text-lg" />
+                              <span>Enviar Propuesta por WhatsApp</span>
+                            </>
+                          )}
+                        </button>
+
+                        {whatsAppSuccessMsg && (
+                          <div className="p-3 bg-emerald-100/90 border border-emerald-300 rounded-xl text-xs font-bold text-emerald-800 flex items-center gap-2 animate-in fade-in">
+                            <FaCheck className="text-emerald-600 shrink-0 text-sm" />
+                            <span>{whatsAppSuccessMsg}</span>
+                          </div>
+                        )}
+
+                        {whatsAppErrorMsg && (
+                          <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 space-y-1.5 animate-in fade-in">
+                            <div className="font-bold flex items-center gap-1.5">
+                              <span>⚠️ {whatsAppErrorMsg}</span>
+                            </div>
+                            <p className="text-[11px] text-slate-600">
+                              Puedes abrir WhatsApp Web o tu aplicación móvil directamente para enviarlo:
+                            </p>
+                            {fullPhoneForPreview && (
+                              <a
+                                href={`https://wa.me/${fullPhoneForPreview.replace("+", "")}?text=${encodeURIComponent(customWhatsappCopy)}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:underline"
+                              >
+                                <FaWhatsapp /> Abrir en WhatsApp Web / App
+                              </a>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* MENSAJE DE WHATSAPP EDITABLE */}
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                          Mensaje a Enviar por WhatsApp:
+                        </label>
+                        <textarea
+                          rows={6}
+                          value={customWhatsappCopy}
+                          onChange={(e) => setCustomWhatsappCopy(e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3.5 text-xs text-slate-800 focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 font-sans leading-relaxed"
+                        />
+                      </div>
+
+                      {/* COPY REDACTADO PARA EL POST ACTIVO */}
+                      {activeCopy && (
+                        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1">
+                              📝 Copy de Publicación #{selectedPreviewPubIndex + 1} ({activePub?.type ? activePub.type.toUpperCase() : "POST"})
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(activeCopy);
+                                setCopyPostSuccess(true);
+                                setTimeout(() => setCopyPostSuccess(false), 2000);
+                              }}
+                              className="text-xs text-indigo-600 font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                            >
+                              <FaCopy /> {copyPostSuccess ? "¡Copiado!" : "Copiar"}
+                            </button>
+                          </div>
+                          {activePub?.hook && (
+                            <div className="text-[11px] font-bold text-indigo-700 bg-indigo-50/70 p-2 rounded-xl border border-indigo-100">
+                              🎯 Gancho: {activePub.hook}
+                            </div>
+                          )}
+                          <p className="text-xs text-slate-700 line-clamp-4 whitespace-pre-wrap italic">
+                            {activeCopy}
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
+
+                  {/* RESUMEN DE ESTRATEGIA SEMANAL CREADA POR NUESTROS AGENTES */}
+                  {generatedStrategy && (
+                    <div className="p-5 rounded-3xl bg-gradient-to-br from-indigo-50/70 via-purple-50/40 to-white border border-indigo-200/80 space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-indigo-100 pb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">📊</span>
+                          <div>
+                            <h4 className="text-sm font-black text-slate-900">
+                              Estrategia Semanal Diseñada por Nuestros Agentes
+                            </h4>
+                            <p className="text-[11px] text-slate-500">
+                              Planificación de contenidos con objetivos claros para captar y retener audiencia.
+                            </p>
+                          </div>
+                        </div>
+                        {generatedStrategy.targetAudience && (
+                          <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-800 self-start sm:self-auto">
+                            🎯 {generatedStrategy.targetAudience}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Pilares de Contenido */}
+                      {generatedStrategy.pillars && generatedStrategy.pillars.length > 0 && (
+                        <div className="space-y-1.5">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 block">
+                            Pilares de Contenido:
+                          </span>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                            {generatedStrategy.pillars.map((pillar: any, pIdx: number) => (
+                              <div key={pIdx} className="bg-white p-3 rounded-2xl border border-indigo-100 shadow-2xs">
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-xs font-black text-slate-900">{pillar.name}</span>
+                                  <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
+                                    {pillar.percentage}%
+                                  </span>
+                                </div>
+                                <p className="text-[11px] text-slate-500 line-clamp-2 leading-snug">
+                                  {pillar.description}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Horarios y Días de Publicación */}
+                      {generatedStrategy.schedulePlan && generatedStrategy.schedulePlan.length > 0 && (
+                        <div className="space-y-1.5 pt-1">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 block">
+                            Plan de Publicación Recomendado:
+                          </span>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            {generatedStrategy.schedulePlan.map((item: any, sIdx: number) => (
+                              <div key={sIdx} className="bg-white p-2.5 rounded-xl border border-slate-200 text-xs">
+                                <div className="flex items-center justify-between font-bold text-slate-800 mb-0.5">
+                                  <span>{item.day} {item.time ? `· ${item.time}` : ""}</span>
+                                  <span className="text-[9px] text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded uppercase font-black">
+                                    {item.format}
+                                  </span>
+                                </div>
+                                <p className="text-[10px] text-slate-500 truncate">{item.hook || item.objective}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                 {/* SECCIÓN 5: GENERADOR DE VIDEO REEL PUBLICITARIO (9:16) */}
                 <div className="pt-6 border-t border-slate-100 space-y-4">
@@ -2325,7 +2557,8 @@ export default function VendedoresPwaPage() {
                   </div>
                 </div>
               </section>
-            )}
+            );
+          })()}
           </div>
         ) : (
           /* PESTAÑA: MIS MUESTRAS (HISTORIAL DEL VENDEDOR) */
@@ -2589,6 +2822,11 @@ export default function VendedoresPwaPage() {
                               <p className="text-[11px] text-indigo-600 font-bold truncate mt-0.5">
                                 ⭐ {demo.dishOrProductName}
                               </p>
+                            )}
+                            {demo.publications && demo.publications.length > 0 && (
+                              <span className="text-[10px] text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-md font-bold inline-flex items-center gap-1 mt-1">
+                                <span>⚡ {demo.publications.length} {demo.publications.length === 1 ? "publicación" : "publicaciones"}</span>
+                              </span>
                             )}
                             {demo.generatedVideoUrl && (
                               <span className="text-[10px] text-purple-700 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-md font-bold inline-flex items-center gap-1 mt-1">
