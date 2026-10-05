@@ -1947,27 +1947,36 @@ export default function LaboratorioPage() {
                 <div className="bg-white/90 p-4 rounded-2xl border border-indigo-100">
                   <span className="text-[10px] font-black uppercase text-indigo-600 block mb-1">🔥 Tendencias Top</span>
                   <div className="text-xs font-bold text-slate-800 space-y-1">
-                    {(radarData.trends || []).slice(0, 3).map((t: any, idx: number) => (
-                      <div key={idx} className="line-clamp-1">• {t.topic || t.title || t}</div>
-                    ))}
+                    {(radarData.trends || []).slice(0, 3).map((t: any, idx: number) => {
+                      const text = typeof t === "string" ? t : (t?.title || t?.topic || t?.description || "Tendencia del sector");
+                      return (
+                        <div key={idx} className="line-clamp-1">• {text}</div>
+                      );
+                    })}
                   </div>
                 </div>
 
                 <div className="bg-white/90 p-4 rounded-2xl border border-indigo-100">
                   <span className="text-[10px] font-black uppercase text-indigo-600 block mb-1">🎣 Ganchos Virales</span>
                   <div className="text-xs font-bold text-slate-800 space-y-1">
-                    {(radarData.hooks || []).slice(0, 3).map((h: any, idx: number) => (
-                      <div key={idx} className="line-clamp-1">• &quot;{h.hook || h}&quot;</div>
-                    ))}
+                    {(radarData.hooks || radarData.highRetentionHooks || []).slice(0, 3).map((h: any, idx: number) => {
+                      const text = typeof h === "string" ? h : (h?.hookText || h?.hook || h?.title || h?.explanation || "Gancho viral");
+                      return (
+                        <div key={idx} className="line-clamp-1">• &quot;{text}&quot;</div>
+                      );
+                    })}
                   </div>
                 </div>
 
                 <div className="bg-white/90 p-4 rounded-2xl border border-indigo-100">
                   <span className="text-[10px] font-black uppercase text-indigo-600 block mb-1">❓ Dudas Frecuentes</span>
                   <div className="text-xs font-bold text-slate-800 space-y-1">
-                    {(radarData.questions || []).slice(0, 3).map((q: any, idx: number) => (
-                      <div key={idx} className="line-clamp-1">• {q.question || q}</div>
-                    ))}
+                    {(radarData.audienceQuestions || radarData.questions || []).slice(0, 3).map((q: any, idx: number) => {
+                      const text = typeof q === "string" ? q : (q?.question || q?.questionText || q?.context || "Duda frecuente");
+                      return (
+                        <div key={idx} className="line-clamp-1">• {text}</div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>

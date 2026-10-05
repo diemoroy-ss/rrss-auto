@@ -18,6 +18,9 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "Muestras",
   },
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
   icons: {
     apple: "/apple-touch-icon-vendedores.png",
     icon: [

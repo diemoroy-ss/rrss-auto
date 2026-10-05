@@ -53,6 +53,9 @@ export const metadata: Metadata = {
     statusBarStyle: 'default',
     title: 'Santisoft RRSS',
   },
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
   openGraph: {
     title: 'Santisoft | Redes & Contenido - Automatización Inteligente',
     description: 'Generación automática de contenido persuasivo, calendarios estratégicos y posicionamiento GEO en IA.',
