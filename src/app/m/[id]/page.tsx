@@ -20,6 +20,31 @@ const RemotionReelPlayer = dynamic(() => import("../../../components/video/Remot
   ),
 });
 
+export interface StrategyPillar {
+  name: string;
+  description: string;
+  percentage: number;
+  icon?: string;
+}
+
+export interface StrategyScheduleItem {
+  day: string;
+  time: string;
+  format: "post" | "carrusel" | "reel";
+  objective: string;
+  hook: string;
+  linkedPublicationId?: string;
+}
+
+export interface DemoStrategy {
+  objective?: string;
+  targetAudience?: string;
+  toneAndVoice?: string;
+  pillars?: StrategyPillar[];
+  schedulePlan?: StrategyScheduleItem[];
+  nicheOpportunities?: string[];
+}
+
 export interface PublicationItem {
   id: string;
   type: "post" | "carrusel" | "reel";
@@ -61,6 +86,7 @@ interface DemoData {
   selectedStyleTitle?: string;
   createdAt?: any;
   publications?: PublicationItem[];
+  strategy?: DemoStrategy;
 }
 
 interface PlanConfig {
@@ -223,6 +249,7 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
 
   const [demo, setDemo] = useState<DemoData | null>(null);
   const [plans, setPlans] = useState<Record<string, PlanConfig>>(DEFAULT_PLANS);
+  const [isAnnual, setIsAnnual] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeMediaTab, setActiveMediaTab] = useState<"imagen" | "video">("imagen");
   const [copiedLink, setCopiedLink] = useState(false);
@@ -238,7 +265,10 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
     async function fetchDemo() {
       // 1. Intento primario: API pública de servidor con Admin SDK (garantiza permisos sin importar auth)
       try {
-        const apiRes = await fetch(`/api/public/muestras/${encodeURIComponent(demoId)}`);
+        const apiRes = await fetch(`/api/public/muestras/${encodeURIComponent(demoId)}`, {
+          cache: "no-store",
+          headers: { "Cache-Control": "no-cache" }
+        });
         if (apiRes.ok) {
           const apiData = await apiRes.json();
           if (apiData.success && apiData.demo) {
@@ -290,6 +320,7 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
             logoUrl: data.logoUrl || "",
             selectedStyleTitle: data.selectedStyleTitle || "Estándar Comercial",
             publications: Array.isArray(data.publications) ? data.publications : [],
+            strategy: data.strategy || null,
           };
           setDemo(d);
           // Si tiene video, activar tab video por defecto
@@ -463,51 +494,143 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
 
             return (
               <div className="space-y-6">
-                {/* SELECTOR DE PUBLICACIONES (PILLS CON ICONOS) */}
-                <div className="bg-white border border-slate-200/90 rounded-3xl p-4 sm:p-6 shadow-xs space-y-3">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-                      <span>✨</span> Propuestas de Publicaciones ({demo.publications.length})
-                    </span>
-                    <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-200/80">
-                      Haz clic en cada una para ver su formato y copy
+                {/* 1. MOSAICO / GRILLA DE TODAS LAS PUBLICACIONES GENERADAS */}
+                <div className="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-7 shadow-xs space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                    <div>
+                      <h2 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
+                        <span>✨</span> Publicaciones Diseñadas para {demo.prospectBusiness} ({demo.publications.length})
+                      </h2>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Propuestas listas para tus redes. Haz clic en cualquiera para abrir su visualización y copy completo.
+                      </p>
+                    </div>
+                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+                      {demo.publications.length} de {demo.publications.length} Disponibles
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-1 no-scrollbar">
-                    {demo.publications.map((pub, idx) => (
-                      <button
-                        key={pub.id || idx}
-                        type="button"
-                        onClick={() => {
-                          setSelectedPubIndex(idx);
-                          setActiveCarouselSlide(0);
-                        }}
-                        className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 border cursor-pointer ${
-                          selectedPubIndex === idx
-                            ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-600/25 border-transparent font-black scale-102"
-                            : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
-                        }`}
-                      >
-                        <span className="text-sm">
-                          {pub.type === "carrusel" ? "🎠" : pub.type === "reel" ? "🎬" : "📸"}
-                        </span>
-                        <span>
-                          {pub.type === "carrusel"
-                            ? `Carrusel #${idx + 1}`
-                            : pub.type === "reel"
-                            ? `Reel #${idx + 1}`
-                            : `Post #${idx + 1}`}
-                        </span>
-                        {pub.dishOrProductName && (
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium truncate max-w-[120px] ${
-                            selectedPubIndex === idx ? "bg-white/20 text-white" : "bg-slate-200/80 text-slate-700"
-                          }`}>
-                            {pub.dishOrProductName}
-                          </span>
-                        )}
-                      </button>
-                    ))}
+                  {/* Tarjetas resumen de cada publicación */}
+                  <div className={`grid gap-4 ${
+                    demo.publications.length === 1
+                      ? "grid-cols-1 max-w-md mx-auto"
+                      : demo.publications.length === 2
+                      ? "grid-cols-1 md:grid-cols-2"
+                      : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+                  }`}>
+                    {demo.publications.map((pub, idx) => {
+                      const isSelected = selectedPubIndex === idx;
+                      const pubThumb = pub.type === "carrusel" && pub.carouselImages?.length
+                        ? pub.carouselImages[0]
+                        : pub.imageUrl || demo.generatedImageUrl;
+
+                      return (
+                        <div
+                          key={pub.id || idx}
+                          onClick={() => {
+                            setSelectedPubIndex(idx);
+                            setActiveCarouselSlide(0);
+                            const el = document.getElementById("visor-detalle");
+                            if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                          }}
+                          className={`group rounded-2xl border-2 p-3.5 transition-all cursor-pointer flex flex-col justify-between ${
+                            isSelected
+                              ? "border-indigo-600 bg-indigo-50/40 shadow-lg ring-2 ring-indigo-500/20"
+                              : "border-slate-200 bg-slate-50 hover:border-indigo-300 hover:bg-white shadow-xs"
+                          }`}
+                        >
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg flex items-center gap-1 ${
+                                isSelected ? "bg-indigo-600 text-white" : "bg-slate-200 text-slate-700"
+                              }`}>
+                                <span>{pub.type === "carrusel" ? "🎠" : pub.type === "reel" ? "🎬" : "📸"}</span>
+                                <span>{pub.type === "carrusel" ? "Carrusel (3 Slides)" : pub.type === "reel" ? "Reel (9:16)" : "Post Feed (1:1)"}</span>
+                              </span>
+                              <span className="text-xs font-black text-slate-400">
+                                #{idx + 1}
+                              </span>
+                            </div>
+
+                            <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-slate-900 border border-slate-200 shadow-inner">
+                              <img
+                                src={pubThumb}
+                                alt={pub.title || "Post"}
+                                className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300"
+                              />
+                              {pub.productPrice && (
+                                <div className="absolute bottom-2 left-2 bg-black/75 backdrop-blur-md text-emerald-400 font-black text-xs px-2.5 py-0.5 rounded-lg border border-white/20">
+                                  {pub.productPrice}
+                                </div>
+                              )}
+                              {pub.type === "carrusel" && (
+                                <div className="absolute top-2 right-2 bg-black/75 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded-md">
+                                  3 Slides
+                                </div>
+                              )}
+                            </div>
+
+                            <div>
+                              <h3 className="font-extrabold text-sm text-slate-900 line-clamp-1 group-hover:text-indigo-600 transition-colors">
+                                {pub.dishOrProductName || pub.title || `Publicación #${idx + 1}`}
+                              </h3>
+                              {pub.hook && (
+                                <p className="text-xs text-slate-600 italic line-clamp-2 mt-1 leading-snug">
+                                  &quot;{pub.hook}&quot;
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="pt-3 border-t border-slate-200/70 mt-3 flex items-center justify-between text-xs">
+                            <span className={`font-bold flex items-center gap-1 ${
+                              isSelected ? "text-indigo-600" : "text-slate-500 group-hover:text-indigo-600"
+                            }`}>
+                              {isSelected ? "✓ Seleccionado abajo" : "Ver detalle y copy →"}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-mono">
+                              {pub.type}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 2. VISOR INTERACTIVO EN DETALLE */}
+                <div id="visor-detalle" className="scroll-mt-24 space-y-3">
+                  <div className="flex items-center justify-between gap-2 bg-white border border-slate-200/90 rounded-2xl p-3 px-4 shadow-xs">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedPubIndex((prev) => (prev > 0 ? prev - 1 : demo.publications!.length - 1));
+                        setActiveCarouselSlide(0);
+                      }}
+                      disabled={demo.publications.length <= 1}
+                      className="px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-40 cursor-pointer flex items-center gap-1"
+                    >
+                      ← Anterior
+                    </button>
+                    <div className="text-center">
+                      <span className="text-xs font-black text-slate-900 block">
+                        Inspeccionando Publicación {selectedPubIndex + 1} de {demo.publications.length}
+                      </span>
+                      <span className="text-[10px] text-indigo-600 font-bold truncate max-w-[200px] sm:max-w-md inline-block">
+                        {currentPub.dishOrProductName || currentPub.title}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedPubIndex((prev) => (prev < demo.publications!.length - 1 ? prev + 1 : 0));
+                        setActiveCarouselSlide(0);
+                      }}
+                      disabled={demo.publications.length <= 1}
+                      className="px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-40 cursor-pointer flex items-center gap-1"
+                    >
+                      Siguiente →
+                    </button>
                   </div>
                 </div>
 
@@ -1038,7 +1161,145 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
           </>
         )}
 
-        {/* SECCIÓN DE PLANES Y TARIFAS DISPONIBLES */}
+        {/* SECCIÓN: ESTRATEGIA & PLANIFICACIÓN DE CONTENIDO PROPUESTA */}
+        {demo.strategy && (
+          <section className="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-xs space-y-6">
+            <div className="space-y-1.5 border-b border-slate-100 pb-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="px-3 py-1 rounded-full text-[11px] font-black tracking-wider uppercase bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700 border border-indigo-200/80 flex items-center gap-1.5">
+                  <span>📊</span> Estrategia &amp; Planificación de Contenido
+                </span>
+                <span className="text-xs text-slate-400 font-semibold">
+                  Estructurada por nuestros agentes especializados
+                </span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                Planificación Estratégica para {demo.prospectBusiness}
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">
+                Nuestros agentes analizaron el rubro de {demo.rubro.toLowerCase()} para diseñar esta hoja de ruta de contenidos orientada a captar clientes, transmitir autoridad y activar pedidos recurrentes.
+              </p>
+            </div>
+
+            {/* Diagnóstico & Enfoque de Marca */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 rounded-2xl bg-indigo-50/60 border border-indigo-100 space-y-1">
+                <span className="text-[10px] font-black uppercase tracking-wider text-indigo-700 flex items-center gap-1">
+                  <span>🎯</span> Objetivo Comercial
+                </span>
+                <p className="text-xs text-slate-800 font-bold leading-relaxed">
+                  {demo.strategy.objective || `Maximizar visibilidad local y activar ventas en ${demo.rubro}.`}
+                </p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-purple-50/60 border border-purple-100 space-y-1">
+                <span className="text-[10px] font-black uppercase tracking-wider text-purple-700 flex items-center gap-1">
+                  <span>👥</span> Audiencia Ideal
+                </span>
+                <p className="text-xs text-slate-800 font-medium leading-relaxed">
+                  {demo.strategy.targetAudience || `Público local interesado en ${demo.rubro.toLowerCase()} que busca calidad y excelente experiencia.`}
+                </p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-emerald-50/60 border border-emerald-100 space-y-1">
+                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 flex items-center gap-1">
+                  <span>🗣️</span> Tono &amp; Voz
+                </span>
+                <p className="text-xs text-slate-800 font-medium leading-relaxed">
+                  {demo.strategy.toneAndVoice || "Cercano, conversacional ('tú a tú'), directo, persuasivo y antojable."}
+                </p>
+              </div>
+            </div>
+
+            {/* Pilares de Contenido */}
+            {demo.strategy.pillars && demo.strategy.pillars.length > 0 && (
+              <div className="space-y-3 pt-2">
+                <h3 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                  <span>🧱</span> Pilares de Contenido Estratégico
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {demo.strategy.pillars.map((pillar, pIdx) => (
+                    <div key={pIdx} className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-base">{pillar.icon || "📌"}</span>
+                        <span className="text-xs font-black text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-lg">
+                          {pillar.percentage}%
+                        </span>
+                      </div>
+                      <h4 className="font-extrabold text-xs text-slate-900">{pillar.name}</h4>
+                      <p className="text-[11px] text-slate-600 leading-relaxed font-normal">
+                        {pillar.description}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Parrilla / Calendario Semanal Propuesto */}
+            {demo.strategy.schedulePlan && demo.strategy.schedulePlan.length > 0 && (
+              <div className="space-y-3 pt-2">
+                <h3 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                  <span>🗓️</span> Calendario &amp; Distribución de las Publicaciones
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border border-slate-200 rounded-2xl overflow-hidden">
+                    <thead className="bg-slate-100 text-slate-700 font-black text-[10px] uppercase tracking-wider">
+                      <tr>
+                        <th className="p-3">Día y Horario</th>
+                        <th className="p-3">Formato</th>
+                        <th className="p-3">Objetivo Comercial</th>
+                        <th className="p-3">Gancho Utilizado</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 bg-white text-slate-700">
+                      {demo.strategy.schedulePlan.map((item, idx) => (
+                        <tr key={idx} className="hover:bg-slate-50/70 transition-colors">
+                          <td className="p-3 font-bold text-slate-900 whitespace-nowrap">
+                            <span className="block">{item.day}</span>
+                            <span className="text-[10px] text-slate-500 font-normal">{item.time}</span>
+                          </td>
+                          <td className="p-3 whitespace-nowrap">
+                            <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase bg-slate-100 text-slate-700 border border-slate-200">
+                              {item.format === "carrusel" ? "🎠 Carrusel" : item.format === "reel" ? "🎬 Reel" : "📸 Post Feed"}
+                            </span>
+                          </td>
+                          <td className="p-3 font-medium text-slate-800">
+                            {item.objective}
+                          </td>
+                          <td className="p-3 text-slate-600 italic">
+                            &quot;{item.hook}&quot;
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Oportunidades de Nicho Detectadas */}
+            {demo.strategy.nicheOpportunities && demo.strategy.nicheOpportunities.length > 0 && (
+              <div className="pt-2">
+                <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 space-y-2">
+                  <h4 className="text-[11px] font-black uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
+                    <span>💡</span> Oportunidades Detectadas por Nuestros Agentes en tu Rubro
+                  </h4>
+                  <ul className="text-xs text-amber-950 space-y-1.5 pl-1">
+                    {demo.strategy.nicheOpportunities.map((opp, idx) => (
+                      <li key={idx} className="flex items-start gap-2">
+                        <span className="text-amber-600 font-bold mt-0.5">•</span>
+                        <span className="leading-relaxed">{opp}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* SECCIÓN DE PLANES Y TARIFAS DISPONIBLES (100% DINÁMICO DESDE BD) */}
         <section id="planes" className="space-y-6 pt-2 scroll-mt-20">
           <div className="text-center space-y-2">
             <span className="px-3 py-1 rounded-full text-[11px] font-black tracking-wider uppercase bg-indigo-50 text-indigo-700 border border-indigo-200/80">
@@ -1048,8 +1309,35 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
               Elige el plan ideal para {demo.prospectBusiness}
             </h3>
             <p className="text-xs sm:text-sm text-slate-500 max-w-xl mx-auto">
-              Planes transparentes en pesos chilenos, sin contratos forzosos ni comisiones ocultas. Cancela o cambia de plan cuando quieras.
+              Planes transparentes en pesos chilenos actualizados desde nuestra plataforma, sin contratos forzosos. Cancela o cambia de plan cuando quieras.
             </p>
+
+            {/* Switcher de Facturación Mensual vs Anual */}
+            <div className="flex items-center justify-center gap-2 bg-slate-100 p-1.5 rounded-2xl w-fit mx-auto mt-4">
+              <button
+                type="button"
+                onClick={() => setIsAnnual(false)}
+                className={`px-5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                  !isAnnual ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                Pago Mensual
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsAnnual(true)}
+                className={`px-5 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 cursor-pointer ${
+                  isAnnual ? "bg-indigo-600 text-white shadow-md" : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                Pago Anual
+                <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                  isAnnual ? "bg-indigo-500 text-white font-extrabold" : "bg-emerald-100 text-emerald-700 font-bold"
+                }`}>
+                  -16% Ahorro
+                </span>
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1058,14 +1346,20 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
               if (!plan) return null;
 
               const isFree = plan.price === 0 || key === "free";
-              const isPopular = Boolean(plan.isPopular || key === "growth");
-              const priceFormatted = formatPrice(plan.price);
+              const isPopular = Boolean(plan.isPopular);
+
+              // Cálculo dinámico de precio según Facturación Mensual vs Anual
+              const fullAnnualPrice = plan.annualPrice || Math.round((plan.price * 12) * 0.84);
+              const monthlyEquivalentPrice = isFree ? 0 : (isAnnual ? Math.round(fullAnnualPrice / 12) : plan.price);
+              const priceFormatted = formatPrice(monthlyEquivalentPrice);
+              const fullAnnualFormatted = formatPrice(fullAnnualPrice);
+
               const meta = PLAN_META[key] || { defaultBadge: "Plan", emoji: "✨", subtitle: "" };
               const badgeText = plan.tagline || meta.defaultBadge;
 
               const featuresToDisplay: string[] =
                 plan.features && plan.features.length > 0
-                  ? plan.features.map(f => sanitizeFeature(f))
+                  ? plan.features.map((f) => sanitizeFeature(f))
                   : [
                       `${plan.postsLimit || 0} publicaciones al mes`,
                       plan.videosLimit ? `${plan.videosLimit} videos Reels / TikTok` : "Sin videos",
@@ -1073,9 +1367,12 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
                       plan.seoBlogsLimit ? `${plan.seoBlogsLimit} artículos Blog SEO al mes` : "Publicación automática",
                     ];
 
+              const billingCycleText = isFree ? "Prueba Gratuita" : (isAnnual ? "Plan Anual con descuento" : "Plan Mensual");
+              const waPriceText = isFree ? "Gratis por 10 días" : (isAnnual ? `${priceFormatted}/mes (Facturación Anual ${fullAnnualFormatted})` : `${priceFormatted}/mes`);
+
               const waText = isFree
                 ? `¡Hola Santisoft! Vi la propuesta para ${businessName} (Demo #${demoId.substring(0, 6)}) y me gustaría comenzar con la Prueba Gratuita de ${plan.postsLimit || 5} publicaciones.`
-                : `¡Hola Santisoft! Vi la propuesta para ${businessName} y me interesa activar el Plan ${plan.name} (${priceFormatted}/mes). ¿Cuáles son los siguientes pasos?`;
+                : `¡Hola Santisoft! Vi la propuesta para ${businessName} y me interesa activar el Plan ${plan.name} en ${billingCycleText} (${waPriceText}). ¿Cuáles son los siguientes pasos?`;
 
               const waUrl = `https://wa.me/${santisoftWhatsAppNumber}?text=${encodeURIComponent(waText)}`;
 
@@ -1126,6 +1423,11 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
                       <span className="text-xs text-slate-500 ml-1">
                         {isFree ? "/ 10 días" : "/ mes"}
                       </span>
+                      {isAnnual && !isFree && (
+                        <p className="text-[10px] text-emerald-600 font-bold mt-1">
+                          Facturado anualmente: {fullAnnualFormatted}/año
+                        </p>
+                      )}
                     </div>
 
                     <ul className="text-xs text-slate-600 space-y-2 pt-2 border-t border-slate-100">
@@ -1172,36 +1474,90 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
             })}
           </div>
 
-          {/* PLAN BUSINESS / MULTI-MARCA SI ESTÁ DISPONIBLE */}
-          {plans["business"] && (
-            <div className="mt-6 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-5 sm:p-7 text-white border border-indigo-900/50 shadow-xl flex flex-col md:flex-row items-center justify-between gap-5">
-              <div className="space-y-1.5 text-center md:text-left">
-                <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[11px] font-bold border border-indigo-500/30">
-                  <span>🏢</span>
-                  <span>¿Manejas más de una marca o sucursal?</span>
+          {/* PLAN BUSINESS Y PLAN AGENCY (MULTIMARCA Y ESCALA) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+            {plans["business"] && (
+              <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-5 sm:p-6 text-white border border-indigo-900/50 shadow-xl flex flex-col justify-between gap-4">
+                <div className="space-y-2">
+                  <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[11px] font-bold border border-indigo-500/30">
+                    <span>🏢</span>
+                    <span>{plans["business"].tagline || "HASTA 3 CUENTAS"}</span>
+                  </div>
+                  <h4 className="text-lg font-black text-white">
+                    {plans["business"].name || "Plan Business"}: Hasta {plans["business"].maxAccounts || 3} marcas
+                  </h4>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    {plans["business"].postsLimit} publicaciones, {plans["business"].videosLimit} videos y WhatsApp Bot multimarca.
+                  </p>
+                  <div className="pt-1">
+                    <span className="text-2xl font-black text-white">
+                      {formatPrice(isAnnual ? Math.round((plans["business"].annualPrice || plans["business"].price * 10) / 12) : plans["business"].price)}
+                    </span>
+                    <span className="text-xs text-slate-400 ml-1">/ mes</span>
+                    {isAnnual && plans["business"].annualPrice && (
+                      <p className="text-[10px] text-emerald-400 font-bold mt-0.5">
+                        {formatPrice(plans["business"].annualPrice)} / año (Ahorro anual)
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <h4 className="text-lg sm:text-xl font-black text-white">
-                  {plans["business"].name || "Plan Business"}: Hasta {plans["business"].maxAccounts || 3} marcas independientes
-                </h4>
-                <p className="text-xs sm:text-sm text-slate-300 max-w-xl">
-                  {plans["business"].postsLimit} publicaciones, {plans["business"].videosLimit} videos y soporte multimarca por {formatPrice(plans["business"].price)}/mes.
-                </p>
+                <div>
+                  <a
+                    href={`https://wa.me/${santisoftWhatsAppNumber}?text=${encodeURIComponent(
+                      `¡Hola Santisoft! Vi la propuesta para ${businessName} y me interesa consultar por el Plan Business multi-marca (${formatPrice(plans["business"].price)}/mes).`
+                    )}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-indigo-600/30 cursor-pointer"
+                  >
+                    <FaWhatsapp className="text-emerald-400 text-sm" />
+                    <span>Consultar Plan Business</span>
+                  </a>
+                </div>
               </div>
-              <div className="shrink-0 w-full md:w-auto">
-                <a
-                  href={`https://wa.me/${santisoftWhatsAppNumber}?text=${encodeURIComponent(
-                    `¡Hola Santisoft! Vi la propuesta para ${businessName} y me interesa consultar por el Plan Business multi-marca (${formatPrice(plans["business"].price)}/mes).`
-                  )}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="w-full md:w-auto px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-indigo-600/30 cursor-pointer"
-                >
-                  <FaWhatsapp className="text-emerald-400 text-base" />
-                  <span>Consultar Business ({formatPrice(plans["business"].price)})</span>
-                </a>
+            )}
+
+            {plans["agency"] && (
+              <div className="bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 rounded-3xl p-5 sm:p-6 text-white border border-purple-900/50 shadow-xl flex flex-col justify-between gap-4">
+                <div className="space-y-2">
+                  <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-purple-500/20 text-purple-300 text-[11px] font-bold border border-purple-500/30">
+                    <span>👑</span>
+                    <span>{plans["agency"].tagline || "HASTA 15 CUENTAS"}</span>
+                  </div>
+                  <h4 className="text-lg font-black text-white">
+                    {plans["agency"].name || "Plan Agency"}: Hasta {plans["agency"].maxAccounts || 15} marcas o clientes
+                  </h4>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    Publicaciones ilimitadas, {plans["agency"].videosLimit} videos y soporte de ejecutivos dedicados para agencias.
+                  </p>
+                  <div className="pt-1">
+                    <span className="text-2xl font-black text-white">
+                      {formatPrice(isAnnual ? Math.round((plans["agency"].annualPrice || plans["agency"].price * 10) / 12) : plans["agency"].price)}
+                    </span>
+                    <span className="text-xs text-slate-400 ml-1">/ mes</span>
+                    {isAnnual && plans["agency"].annualPrice && (
+                      <p className="text-[10px] text-emerald-400 font-bold mt-0.5">
+                        {formatPrice(plans["agency"].annualPrice)} / año (Ahorro anual)
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <a
+                    href={`https://wa.me/${santisoftWhatsAppNumber}?text=${encodeURIComponent(
+                      `¡Hola Santisoft! Vi la propuesta para ${businessName} y me interesa consultar por el Plan Agency (${formatPrice(plans["agency"].price)}/mes).`
+                    )}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-full py-2.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-purple-600/30 cursor-pointer"
+                  >
+                    <FaWhatsapp className="text-emerald-400 text-sm" />
+                    <span>Consultar Plan Agency</span>
+                  </a>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </section>
 
         {/* BENEFICIOS: CÓMO TRABAJAN NUESTROS AGENTES */}

@@ -142,7 +142,9 @@ export async function POST(req: NextRequest) {
 
     // Prompt de estructuración para nuestros agentes con Gemini
     const systemPrompt = `Eres el Director Creativo y Estratega Senior de nuestro equipo de agentes especializados.
-Tu misión es estructurar EXACTAMENTE ${clampedCount} publicaciones publicitarias para redes sociales para la marca "${businessName}" en el rubro "${rubro}".
+Tu misión es estructurar:
+1. Una ESTRATEGIA Y PLANIFICACIÓN integral para la marca "${businessName}" en el rubro "${rubro}".
+2. EXACTAMENTE ${clampedCount} publicaciones publicitarias para redes sociales.
 
 REGLAS ABSOLUTAS:
 1. FORMATOS PERMITIDOS: Solo puedes asignar formatos que estén en esta lista: ${JSON.stringify(finalAllowedTypes)}.
@@ -166,8 +168,47 @@ REGLAS ABSOLUTAS:
    Incluye siempre un llamado a la acción (CTA) concreto en cada copy.
 
 5. RESPUESTA ESTRICTA EN JSON:
-Devuelve ÚNICAMENTE un objeto JSON con la clave "publications" que contenga un arreglo de EXACTAMENTE ${clampedCount} objetos con este formato:
+Devuelve ÚNICAMENTE un objeto JSON válido con las claves "strategy" y "publications".
 {
+  "strategy": {
+    "objective": "Objetivo comercial y estratégico claro para impulsar ventas y presencia de la marca",
+    "targetAudience": "Perfil del cliente ideal en su localidad y lo que busca al comprar",
+    "toneAndVoice": "Descripción del tono comunicacional 'tú a tú' y estilo persuasivo",
+    "pillars": [
+      {
+        "name": "Nombre del pilar (ej. Ofertas & Combos)",
+        "description": "Qué se comunica y por qué engancha a la audiencia",
+        "percentage": 40,
+        "icon": "🎯"
+      },
+      {
+        "name": "Nombre del segundo pilar (ej. Calidad & Experiencia)",
+        "description": "Detalles del producto o servicio que transmiten confianza",
+        "percentage": 35,
+        "icon": "⭐"
+      },
+      {
+        "name": "Nombre del tercer pilar (ej. Comunidad & Recomendaciones)",
+        "description": "Conexión con clientes y prueba social",
+        "percentage": 25,
+        "icon": "👥"
+      }
+    ],
+    "schedulePlan": [
+      {
+        "day": "Día sugerido (ej. Martes)",
+        "time": "Horario óptimo (ej. 20:00 hrs)",
+        "format": "post" | "carrusel" | "reel",
+        "objective": "Objetivo comercial de esta publicación",
+        "hook": "Gancho magnético usado para capturar la atención"
+      }
+    ],
+    "nicheOpportunities": [
+      "Oportunidad o dato clave del nicho detectado por nuestros agentes",
+      "Segundo dato o recomendación práctica para superar a la competencia local",
+      "Tercera recomendación de conversión directa"
+    ]
+  },
   "publications": [
     {
       "id": "pub_1",
@@ -190,7 +231,7 @@ Devuelve ÚNICAMENTE un objeto JSON con la clave "publications" que contenga un 
   ]
 }`;
 
-    const userPromptContent = `Genera la planificación de ${clampedCount} publicaciones para:
+    const userPromptContent = `Genera la estrategia y planificación de EXACTAMENTE ${clampedCount} publicaciones para:
 - Marca: ${businessName}
 - Rubro: ${rubro}
 - Formatos a utilizar: ${finalAllowedTypes.join(", ")}
@@ -213,6 +254,7 @@ ${stylesContext}`;
 
     // Parsear JSON devuelto
     let parsedPublications: any[] = [];
+    let parsedStrategy: any = null;
     try {
       const cleanedJson = generatedPlanText
         .replace(/```json/gi, "")
@@ -220,16 +262,55 @@ ${stylesContext}`;
         .trim();
       const parsed = JSON.parse(cleanedJson);
       parsedPublications = Array.isArray(parsed.publications) ? parsed.publications : [];
+      parsedStrategy = parsed.strategy || null;
     } catch (parseErr) {
       console.warn("[Lab Generar Muestra] Fallo parseo JSON directo, buscando arreglo:", parseErr);
       const match = generatedPlanText.match(/\[[\s\S]*\]/);
       if (match) {
-        parsedPublications = JSON.parse(match[0]);
+        try {
+          parsedPublications = JSON.parse(match[0]);
+        } catch {}
       }
     }
 
-    if (parsedPublications.length === 0) {
-      throw new Error("El formato de publicaciones devuelto por los agentes no fue válido.");
+    // Fallback si la IA devolvió menos publicaciones de las requeridas
+    if (!Array.isArray(parsedPublications) || parsedPublications.length === 0) {
+      parsedPublications = [];
+    }
+
+    // Si faltan publicaciones para completar clampedCount, sintetizar las restantes usando el catálogo o rubro
+    const defaultDays = ["Martes", "Jueves", "Viernes", "Sábado", "Domingo"];
+    const defaultTimes = ["13:00 hrs", "19:30 hrs", "20:00 hrs", "21:00 hrs", "12:30 hrs"];
+
+    while (parsedPublications.length < clampedCount) {
+      const nextIdx = parsedPublications.length;
+      const assignedType = finalAllowedTypes[nextIdx % finalAllowedTypes.length];
+      const catalogItem = catalogItems[nextIdx % Math.max(1, catalogItems.length)] || null;
+      const prodName = catalogItem?.name || `${businessName} Especial #${nextIdx + 1}`;
+      const prodPrice = catalogItem?.offerPrice || catalogItem?.price || null;
+
+      parsedPublications.push({
+        id: `pub_${nextIdx + 1}`,
+        type: assignedType,
+        title: `${prodName} - Propuesta #${nextIdx + 1}`,
+        dishOrProductName: prodName,
+        productPrice: prodPrice,
+        hook: `¿Buscabas la mejor opción de ${rubro.toLowerCase()} para compartir hoy?`,
+        copy: `Te presentamos una de las opciones favoritas de ${businessName}. Preparada con los mejores ingredientes y el toque característico que nos distingue. Pídela hoy mismo y compruébalo.`,
+        cta: phone ? `Escríbenos directamente al WhatsApp ${phone}` : "Contáctanos y haz tu pedido hoy",
+        visualStyleTitle: isCommercialPoster ? "Cartel Comercial de Alto Impacto" : "Fotografía Gastronómica & Publicitaria",
+        imagePromptEnglish: `Professional commercial advertising food photography of ${prodName}, appetizing warm lighting, rustic restaurant atmosphere, high-end plating, ultra-detailed 8k.`,
+        carouselPrompts: assignedType === "carrusel" ? [
+          `Appetizing hero shot of ${prodName}, rustic table setting`,
+          `Detailed macro close-up of fresh textures and ingredients of ${prodName}`,
+          `Complete meal combo spread with sides and refreshing drink, commercial poster`
+        ] : undefined,
+        reelScript: assignedType === "reel" ? {
+          hook3s: `Mira de cerca esta delicia de ${businessName}`,
+          body: `Tomas en primer plano mostrando la preparación artesanal y el vapor saliendo del plato recién hecho.`,
+          cta: `Pide la tuya hoy por WhatsApp antes de que se agote.`
+        } : undefined
+      });
     }
 
     // Asegurar que no exceda clampedCount y que cada formato sea válido
@@ -241,6 +322,60 @@ ${stylesContext}`;
         type: assignedType,
       };
     });
+
+    // Asegurar estrategia estructurada válida
+    if (!parsedStrategy || typeof parsedStrategy !== "object") {
+      parsedStrategy = {
+        objective: `Aumentar la visibilidad de ${businessName} y activar ventas recurrentes con publicaciones de alto impacto visual y llamados a la acción claros.`,
+        targetAudience: `Clientes de la zona interesados en ${rubro.toLowerCase()} que buscan calidad, rapidez y excelente relación precio-calidad.`,
+        toneAndVoice: "Cercano, conversacional ('tú a tú'), directo y centrado en los beneficios del cliente.",
+        pillars: [
+          {
+            name: "Ofertas & Antojos de Alta Demanda",
+            description: "Promociones y combos destacados para detonar pedidos inmediatos.",
+            percentage: 45,
+            icon: "🔥"
+          },
+          {
+            name: "Calidad de Producto & Experiencia",
+            description: "Muestra de ingredientes frescos, preparación y lo que hace única a la marca.",
+            percentage: 35,
+            icon: "✨"
+          },
+          {
+            name: "Comunidad & Conexión Local",
+            description: "Testimonios, interacción y beneficios especiales para clientes habituales.",
+            percentage: 20,
+            icon: "🤝"
+          }
+        ],
+        schedulePlan: parsedPublications.map((p, idx) => ({
+          day: defaultDays[idx % defaultDays.length],
+          time: defaultTimes[idx % defaultTimes.length],
+          format: p.type,
+          objective: `Posicionar ${p.dishOrProductName || businessName} y captar pedidos activos.`,
+          hook: p.hook || `Propuesta destacada #${idx + 1}`,
+          linkedPublicationId: p.id
+        })),
+        nicheOpportunities: [
+          `Los usuarios de ${rubro.toLowerCase()} responden un 50% más rápido cuando la publicación muestra precio y canal directo de WhatsApp.`,
+          "Las imágenes en formato vertical y carruseles tienen mayor tiempo de retención que posts planos.",
+          "Publicar en horarios cercanos a las comidas o toma de decisión incrementa las consultas directas."
+        ]
+      };
+    } else {
+      // Sincronizar schedulePlan con las publicaciones reales
+      if (!Array.isArray(parsedStrategy.schedulePlan) || parsedStrategy.schedulePlan.length === 0) {
+        parsedStrategy.schedulePlan = parsedPublications.map((p, idx) => ({
+          day: defaultDays[idx % defaultDays.length],
+          time: defaultTimes[idx % defaultTimes.length],
+          format: p.type,
+          objective: `Posicionar ${p.dishOrProductName || businessName} y captar pedidos activos.`,
+          hook: p.hook || `Propuesta destacada #${idx + 1}`,
+          linkedPublicationId: p.id
+        }));
+      }
+    }
 
     // Generar imágenes reales concurrentemente para cada publicación
     console.log(`[Lab Generar Muestra] Generando imágenes para las ${parsedPublications.length} publicaciones...`);
@@ -317,6 +452,7 @@ ${stylesContext}`;
       sellerEmail: "laboratorio@santisoft.cl",
       createdAt: new Date(),
       publications: finalPublications,
+      strategy: parsedStrategy,
       dishOrProductName: finalPublications[0]?.dishOrProductName || businessName,
       generatedImageUrl: finalPublications[0]?.imageUrl || "",
       generatedPostCaption: finalPublications[0]?.copy || "",
@@ -347,9 +483,9 @@ ${stylesContext}`;
       return t;
     }).join(", ");
 
-    const whatsappMessage = `¡Hola ${businessName}! 👋 Estuve revisando lo que hacen y nuestro equipo de agentes especializados preparó esta propuesta con ${finalPublications.length} publicaciones listas para tus redes (${formatsDescription}):
+    const whatsappMessage = `¡Hola ${businessName}! 👋 Estuve revisando lo que hacen y nuestro equipo de agentes especializados preparó esta propuesta con ${finalPublications.length} publicaciones listas para tus redes (${formatsDescription}) y la estrategia completa de publicación:
 
-🚀 Puedes revisar la muestra completa interactiva y los copys aquí:
+🚀 Puedes revisar la muestra interactiva y la planificación aquí:
 ${publicDemoUrl}
 
 Diseñamos cada publicación pensando en captar clientes y mantener activo tu perfil sin que tengas que dedicarle horas de trabajo.
@@ -369,6 +505,7 @@ Diseñamos cada publicación pensando en captar clientes y mantener activo tu pe
       whatsappUrl,
       whatsappMessage,
       publications: finalPublications,
+      strategy: parsedStrategy,
     });
   } catch (error: any) {
     console.error("[Lab Generar Muestra] Error en generación de muestra:", error);

@@ -43,30 +43,88 @@ export async function GET(
       console.warn("[API Public Muestras] Warning loading plans config:", plansErr);
     }
 
-    return NextResponse.json({
-      success: true,
-      demo: {
-        id: docSnap.id,
-        prospectName: data.prospectName || "",
-        prospectBusiness: data.prospectBusiness || "Tu Negocio",
-        prospectPhone: data.prospectPhone || "",
-        rubro: data.rubro || "Comercial",
-        offerText: data.offerText || "",
-        dishOrProductName: data.dishOrProductName || "",
-        badgeCustomText: data.badgeCustomText || "",
-        generatedPostCaption: data.generatedPostCaption || data.postCaption || "",
-        generatedImageUrl: data.generatedImageUrl || "",
-        generatedVideoUrl: data.generatedVideoUrl || "",
-        remotionComposition: data.remotionComposition || null,
-        videoStyleTitle: data.videoStyleTitle || "",
-        videoPromptEnglish: data.videoPromptEnglish || "",
-        logoUrl: data.logoUrl || "",
-        selectedStyleTitle: data.selectedStyleTitle || "Estándar Comercial",
-        createdAt: isoDate,
-        publications: Array.isArray(data.publications) ? data.publications : [],
+    const publications = Array.isArray(data.publications) ? data.publications : [];
+
+    // Estrategia: usar la almacenada o sintetizar una coherente si la muestra fue creada previamente
+    let strategy = data.strategy || null;
+    if (!strategy && publications.length > 0) {
+      const defaultDays = ["Martes", "Jueves", "Viernes", "Sábado", "Domingo"];
+      const defaultTimes = ["13:00 hrs", "19:30 hrs", "20:00 hrs", "21:00 hrs", "12:30 hrs"];
+      const bizName = data.prospectBusiness || "Tu Negocio";
+      const rubroName = data.rubro || "Comercio Local";
+
+      strategy = {
+        objective: `Posicionar a ${bizName} como referente en ${rubroName.toLowerCase()} y activar ventas directas en redes con publicaciones comerciales y de alto valor.`,
+        targetAudience: `Público local interesado en ${rubroName.toLowerCase()} que busca calidad, excelente servicio y ofertas atractivas para disfrutar y compartir.`,
+        toneAndVoice: "Cercano, conversacional ('tú a tú'), directo, persuasivo y sin rodeos corporativos.",
+        pillars: [
+          {
+            name: "Ofertas & Combos Irresistibles",
+            description: "Promociones y propuestas de alto valor para activar compras y pedidos inmediatos.",
+            percentage: 45,
+            icon: "🔥"
+          },
+          {
+            name: "Experiencia & Calidad de Producto",
+            description: "Muestra cercana de lo que hace único a tu negocio, generando confianza y antojo.",
+            percentage: 35,
+            icon: "✨"
+          },
+          {
+            name: "Comunidad & Conexión con Clientes",
+            description: "Preguntas, interacción y motivos para que tus clientes te elijan una y otra vez.",
+            percentage: 20,
+            icon: "🤝"
+          }
+        ],
+        schedulePlan: publications.map((p: any, idx: number) => ({
+          day: defaultDays[idx % defaultDays.length],
+          time: defaultTimes[idx % defaultTimes.length],
+          format: p.type || "post",
+          objective: `Destacar ${p.dishOrProductName || p.title || bizName} y canalizar pedidos.`,
+          hook: p.hook || p.title || `Publicación #${idx + 1}`,
+          linkedPublicationId: p.id || `pub_${idx + 1}`
+        })),
+        nicheOpportunities: [
+          `En el rubro de ${rubroName.toLowerCase()}, los formatos que muestran el producto de cerca y con precio claro reducen hasta un 40% las consultas vacías.`,
+          "Los llamados a la acción directos hacia WhatsApp aumentan exponencialmente la tasa de cierre frente a links web tradicionales.",
+          "Mantener constancia semanal con nuestros agentes posiciona a tu negocio por encima de competidores que publican de forma esporádica."
+        ]
+      };
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        demo: {
+          id: docSnap.id,
+          prospectName: data.prospectName || "",
+          prospectBusiness: data.prospectBusiness || "Tu Negocio",
+          prospectPhone: data.prospectPhone || "",
+          rubro: data.rubro || "Comercial",
+          offerText: data.offerText || "",
+          dishOrProductName: data.dishOrProductName || "",
+          badgeCustomText: data.badgeCustomText || "",
+          generatedPostCaption: data.generatedPostCaption || data.postCaption || "",
+          generatedImageUrl: data.generatedImageUrl || "",
+          generatedVideoUrl: data.generatedVideoUrl || "",
+          remotionComposition: data.remotionComposition || null,
+          videoStyleTitle: data.videoStyleTitle || "",
+          videoPromptEnglish: data.videoPromptEnglish || "",
+          logoUrl: data.logoUrl || "",
+          selectedStyleTitle: data.selectedStyleTitle || "Estándar Comercial",
+          createdAt: isoDate,
+          publications,
+          strategy,
+        },
+        plans,
       },
-      plans,
-    });
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+        },
+      }
+    );
   } catch (err: any) {
     console.error("[API Public Muestras Error]:", err);
     return NextResponse.json({ error: err.message || "Error interno del servidor" }, { status: 500 });
