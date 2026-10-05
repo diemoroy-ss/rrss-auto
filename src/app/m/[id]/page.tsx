@@ -256,6 +256,36 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
   const [copiedCaption, setCopiedCaption] = useState(false);
   const [selectedPubIndex, setSelectedPubIndex] = useState(0);
   const [activeCarouselSlide, setActiveCarouselSlide] = useState(0);
+  const [lightboxData, setLightboxData] = useState<{
+    isOpen: boolean;
+    url: string;
+    title?: string;
+    subtitle?: string;
+    price?: string;
+    badge?: string;
+    isPoster?: boolean;
+  } | null>(null);
+  const [imageFitMode, setImageFitMode] = useState<"contain" | "cover">("contain");
+
+  const openLightbox = (imgUrl: string, pub?: any) => {
+    setLightboxData({
+      isOpen: true,
+      url: imgUrl,
+      title: pub?.dishOrProductName || pub?.title || demo?.dishOrProductName || demo?.prospectBusiness,
+      subtitle: pub?.hook || demo?.offerText,
+      price: pub?.productPrice,
+      badge: (pub?.isCommercialPoster || pub?.visualStyleTitle?.toLowerCase().includes("poster") || pub?.visualStyleTitle?.toLowerCase().includes("combo") || pub?.visualStyleTitle?.toLowerCase().includes("lanzamiento")) ? "Cartel con Texto" : undefined,
+      isPoster: Boolean(pub?.isCommercialPoster || pub?.visualStyleTitle?.toLowerCase().includes("poster")),
+    });
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setLightboxData(null);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   useEffect(() => {
     if (!demoId) {
@@ -552,20 +582,25 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
                               </span>
                             </div>
 
-                            <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-slate-900 border border-slate-200 shadow-inner">
+                            <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-slate-950 border border-slate-200 shadow-inner flex items-center justify-center">
                               <img
                                 src={pubThumb}
                                 alt={pub.title || "Post"}
                                 className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300"
                               />
                               {pub.productPrice && (
-                                <div className="absolute bottom-2 left-2 bg-black/75 backdrop-blur-md text-emerald-400 font-black text-xs px-2.5 py-0.5 rounded-lg border border-white/20">
+                                <div className="absolute top-2 left-2 bg-black/80 backdrop-blur-md text-emerald-400 font-black text-xs px-2.5 py-0.5 rounded-lg border border-white/20 shadow-md">
                                   {pub.productPrice}
                                 </div>
                               )}
                               {pub.type === "carrusel" && (
-                                <div className="absolute top-2 right-2 bg-black/75 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded-md">
+                                <div className="absolute top-2 right-2 bg-black/80 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded-md border border-white/20 shadow-md">
                                   3 Slides
+                                </div>
+                              )}
+                              {(pub.isCommercialPoster || pub.visualStyleTitle?.toLowerCase().includes("poster") || pub.visualStyleTitle?.toLowerCase().includes("combo") || pub.visualStyleTitle?.toLowerCase().includes("lanzamiento")) && (
+                                <div className="absolute bottom-2 inset-x-2 bg-slate-950/85 backdrop-blur-md text-amber-300 text-[10px] font-black py-0.5 px-2 rounded-lg text-center truncate border border-amber-500/30 shadow-md">
+                                  🏷️ Cartel con Texto &amp; Precio
                                 </div>
                               )}
                             </div>
@@ -673,28 +708,62 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
                   {/* 1. VISTA DE POST ESTÁNDAR 1:1 */}
                   {isPost && (
                     <div className="space-y-4">
-                      <div className="relative max-w-lg mx-auto aspect-square rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shadow-xl group">
-                        <img
-                          src={currentPub.imageUrl || demo.generatedImageUrl}
-                          alt={currentPub.title || "Post"}
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-4">
-                          <span className="text-[11px] font-bold text-white bg-black/60 backdrop-blur-md px-3 py-1 rounded-lg">
-                            {demo.prospectBusiness}
-                          </span>
-                          <a
-                            href={currentPub.imageUrl || demo.generatedImageUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="px-3.5 py-1.5 rounded-xl bg-white text-slate-900 text-xs font-bold hover:bg-slate-100 shadow-lg cursor-pointer"
+                      {/* Control superior de encuadre y zoom */}
+                      <div className="flex items-center justify-between text-xs px-1">
+                        <div className="flex items-center gap-2">
+                          {(currentPub.isCommercialPoster || currentPub.visualStyleTitle?.toLowerCase().includes("poster") || currentPub.visualStyleTitle?.toLowerCase().includes("combo") || currentPub.visualStyleTitle?.toLowerCase().includes("lanzamiento")) && (
+                            <span className="px-2.5 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-700 border border-amber-500/30 flex items-center gap-1">
+                              <span>🏷️</span> Cartel con Tipografía &amp; Precio
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setImageFitMode(prev => prev === "contain" ? "cover" : "contain")}
+                            className="px-2.5 py-1 rounded-lg border border-slate-200 text-[11px] font-bold text-slate-600 hover:bg-slate-50 transition-colors flex items-center gap-1 cursor-pointer"
+                            title="Alternar entre ver la imagen completa o recortada al marco"
                           >
-                            Ver HD
-                          </a>
+                            <span>{imageFitMode === "contain" ? "🔲 Llenar marco" : "👁️ Ver completo"}</span>
+                          </button>
                         </div>
                       </div>
 
-                      <div className="flex justify-center pt-2">
+                      <div
+                        onClick={() => openLightbox(currentPub.imageUrl || demo.generatedImageUrl, currentPub)}
+                        className="relative max-w-lg mx-auto aspect-square rounded-2xl overflow-hidden bg-slate-950 border border-slate-200 shadow-xl group cursor-pointer flex items-center justify-center select-none"
+                      >
+                        <img
+                          src={currentPub.imageUrl || demo.generatedImageUrl}
+                          alt={currentPub.title || "Post"}
+                          className={`w-full h-full transition-transform duration-300 ${
+                            imageFitMode === "contain" ? "object-contain" : "object-cover"
+                          }`}
+                        />
+
+                        {/* Badge sutil flotante en la esquina superior para ampliar */}
+                        <div className="absolute top-3 right-3 flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
+                          <span className="px-3 py-1.5 rounded-xl bg-black/75 backdrop-blur-md text-white text-xs font-bold border border-white/20 shadow-md flex items-center gap-1.5">
+                            <span>🔍</span> Toca para Ampliar
+                          </span>
+                        </div>
+
+                        {/* Indicador de empresa discreto en esquina inferior */}
+                        <div className="absolute bottom-3 left-3 pointer-events-none">
+                          <span className="text-[10px] font-bold text-white/90 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg">
+                            {demo.prospectBusiness}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => openLightbox(currentPub.imageUrl || demo.generatedImageUrl, currentPub)}
+                          className="px-4 py-2.5 rounded-xl border border-slate-300 hover:border-slate-400 bg-white hover:bg-slate-50 text-xs font-bold text-slate-800 shadow-xs flex items-center gap-2 transition-all cursor-pointer"
+                        >
+                          <span>🔍</span> Inspeccionar a Pantalla Completa
+                        </button>
                         <a
                           href={currentPub.imageUrl || demo.generatedImageUrl}
                           download={`post_${selectedPubIndex + 1}_${demo.prospectBusiness}.jpg`}
@@ -711,19 +780,41 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
                   {/* 2. VISTA DE CARRUSEL MULTIDIAPOSITIVA */}
                   {isCarousel && slides.length > 0 && (
                     <div className="space-y-4">
-                      <div className="relative max-w-lg mx-auto aspect-square rounded-2xl overflow-hidden bg-slate-900 border border-slate-200 shadow-xl group">
+                      {/* Control superior */}
+                      <div className="flex items-center justify-between text-xs px-1">
+                        <span className="text-[11px] font-bold text-slate-500">
+                          Desliza o usa las miniaturas para ver las {slides.length} diapositivas
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setImageFitMode(prev => prev === "contain" ? "cover" : "contain")}
+                          className="px-2.5 py-1 rounded-lg border border-slate-200 text-[11px] font-bold text-slate-600 hover:bg-slate-50 transition-colors flex items-center gap-1 cursor-pointer"
+                        >
+                          <span>{imageFitMode === "contain" ? "🔲 Llenar marco" : "👁️ Ver completo"}</span>
+                        </button>
+                      </div>
+
+                      <div
+                        onClick={() => openLightbox(slides[activeCarouselSlide], { ...currentPub, title: `${currentPub.dishOrProductName || currentPub.title || "Carrusel"} · Slide ${activeCarouselSlide + 1}` })}
+                        className="relative max-w-lg mx-auto aspect-square rounded-2xl overflow-hidden bg-slate-950 border border-slate-200 shadow-xl group cursor-pointer flex items-center justify-center select-none"
+                      >
                         <img
                           src={slides[activeCarouselSlide]}
                           alt={`Slide ${activeCarouselSlide + 1}`}
-                          className="w-full h-full object-cover"
+                          className={`w-full h-full transition-transform duration-300 ${
+                            imageFitMode === "contain" ? "object-contain" : "object-cover"
+                          }`}
                         />
 
                         {/* Botón Slide Anterior */}
                         {slides.length > 1 && (
                           <button
                             type="button"
-                            onClick={() => setActiveCarouselSlide((prev) => (prev > 0 ? prev - 1 : slides.length - 1))}
-                            className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center font-bold text-sm backdrop-blur-xs transition-all shadow-md cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveCarouselSlide((prev) => (prev > 0 ? prev - 1 : slides.length - 1));
+                            }}
+                            className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center font-bold text-sm backdrop-blur-xs transition-all shadow-md cursor-pointer z-10"
                           >
                             ‹
                           </button>
@@ -733,54 +824,72 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
                         {slides.length > 1 && (
                           <button
                             type="button"
-                            onClick={() => setActiveCarouselSlide((prev) => (prev < slides.length - 1 ? prev + 1 : 0))}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center font-bold text-sm backdrop-blur-xs transition-all shadow-md cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveCarouselSlide((prev) => (prev < slides.length - 1 ? prev + 1 : 0));
+                            }}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center font-bold text-sm backdrop-blur-xs transition-all shadow-md cursor-pointer z-10"
                           >
                             ›
                           </button>
                         )}
 
                         {/* Badge indicador de Slide actual */}
-                        <div className="absolute top-3 right-3 bg-black/70 backdrop-blur-md text-white text-[10px] font-black px-2.5 py-1 rounded-full border border-white/20">
+                        <div className="absolute top-3 left-3 bg-black/75 backdrop-blur-md text-white text-[10px] font-black px-2.5 py-1 rounded-full border border-white/20">
                           Slide {activeCarouselSlide + 1} de {slides.length}
                         </div>
 
-                        {/* Puntos de navegación en la parte inferior */}
-                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-black/50 backdrop-blur-md px-3 py-1 rounded-full">
+                        {/* Botón Ampliar */}
+                        <div className="absolute top-3 right-3">
+                          <span className="px-2.5 py-1 rounded-xl bg-black/75 backdrop-blur-md text-white text-[11px] font-bold border border-white/20 shadow-md flex items-center gap-1">
+                            🔍 Toca para Ampliar
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Miniaturas de las diapositivas y puntos abajo (fuera de la foto para no tapar los textos) */}
+                      <div className="flex flex-col items-center gap-2 pt-1">
+                        {slides.length > 1 && (
+                          <div className="flex items-center gap-2">
+                            {slides.map((sUrl, sIdx) => (
+                              <button
+                                key={sIdx}
+                                type="button"
+                                onClick={() => setActiveCarouselSlide(sIdx)}
+                                className={`w-14 h-14 rounded-xl overflow-hidden border-2 transition-all cursor-pointer bg-slate-900 ${
+                                  activeCarouselSlide === sIdx
+                                    ? "border-indigo-600 ring-2 ring-indigo-500/30 scale-105"
+                                    : "border-slate-200 opacity-60 hover:opacity-100"
+                                }`}
+                              >
+                                <img src={sUrl} alt={`Thumb ${sIdx + 1}`} className="w-full h-full object-cover" />
+                              </button>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-1.5 pt-1">
                           {slides.map((_, sIdx) => (
                             <button
                               key={sIdx}
                               type="button"
                               onClick={() => setActiveCarouselSlide(sIdx)}
-                              className={`w-2 h-2 rounded-full transition-all cursor-pointer ${
-                                activeCarouselSlide === sIdx ? "bg-white scale-125" : "bg-white/40 hover:bg-white/70"
+                              className={`w-2.5 h-2.5 rounded-full transition-all cursor-pointer ${
+                                activeCarouselSlide === sIdx ? "bg-indigo-600 scale-125" : "bg-slate-300 hover:bg-slate-400"
                               }`}
                             />
                           ))}
                         </div>
                       </div>
 
-                      {/* Miniaturas de las diapositivas para navegación rápida */}
-                      {slides.length > 1 && (
-                        <div className="flex items-center justify-center gap-2 pt-1">
-                          {slides.map((sUrl, sIdx) => (
-                            <button
-                              key={sIdx}
-                              type="button"
-                              onClick={() => setActiveCarouselSlide(sIdx)}
-                              className={`w-14 h-14 rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
-                                activeCarouselSlide === sIdx
-                                  ? "border-indigo-600 ring-2 ring-indigo-500/30 scale-105"
-                                  : "border-slate-200 opacity-60 hover:opacity-100"
-                              }`}
-                            >
-                              <img src={sUrl} alt={`Thumb ${sIdx + 1}`} className="w-full h-full object-cover" />
-                            </button>
-                          ))}
-                        </div>
-                      )}
-
-                      <div className="flex items-center justify-center gap-3 pt-2">
+                      <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => openLightbox(slides[activeCarouselSlide], { ...currentPub, title: `${currentPub.dishOrProductName || currentPub.title || "Carrusel"} · Slide ${activeCarouselSlide + 1}` })}
+                          className="px-4 py-2.5 rounded-xl border border-slate-300 hover:border-slate-400 bg-white hover:bg-slate-50 text-xs font-bold text-slate-800 shadow-xs flex items-center gap-2 transition-all cursor-pointer"
+                        >
+                          <span>🔍</span> Inspeccionar Slide Completo
+                        </button>
                         <a
                           href={slides[activeCarouselSlide]}
                           download={`carrusel_slide_${activeCarouselSlide + 1}_${demo.prospectBusiness}.jpg`}
@@ -799,7 +908,16 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
                     <div className="space-y-6">
                       <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
                         {/* Video o Frame 9:16 */}
-                        <div className="w-full max-w-[280px] aspect-[9/16] rounded-3xl overflow-hidden bg-black border-2 border-slate-200 shadow-2xl relative group shrink-0">
+                        <div
+                          onClick={() => {
+                            if (!currentPub.videoUrl) {
+                              openLightbox(currentPub.imageUrl || demo.generatedImageUrl, currentPub);
+                            }
+                          }}
+                          className={`w-full max-w-[280px] aspect-[9/16] rounded-3xl overflow-hidden bg-black border-2 border-slate-200 shadow-2xl relative group shrink-0 ${
+                            !currentPub.videoUrl ? "cursor-pointer select-none" : ""
+                          }`}
+                        >
                           {currentPub.videoUrl ? (
                             <video
                               src={currentPub.videoUrl}
@@ -814,18 +932,19 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
                                 alt="Reel Preview"
                                 className="w-full h-full object-cover"
                               />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-between p-4">
-                                <span className="self-start text-[10px] font-black uppercase tracking-wider bg-black/60 text-white backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20">
-                                  Reel 9:16
+                              {/* Header sutil sin oscurecer los textos publicitarios de la foto */}
+                              <div className="absolute top-3 inset-x-3 flex items-center justify-between">
+                                <span className="text-[10px] font-black uppercase tracking-wider bg-black/75 text-white backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20">
+                                  🎬 Reel 9:16
                                 </span>
-                                <div className="space-y-1">
-                                  <span className="text-white text-xs font-black block leading-tight">
-                                    {currentPub.hook || "Video Reel Planificado"}
-                                  </span>
-                                  <span className="text-[10px] text-slate-300 font-medium">
-                                    {demo.prospectBusiness}
-                                  </span>
-                                </div>
+                                <span className="text-[10px] font-bold bg-black/75 text-white backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20">
+                                  🔍 Toca para Ampliar
+                                </span>
+                              </div>
+                              <div className="absolute bottom-3 left-3 pointer-events-none">
+                                <span className="text-[10px] font-bold text-white/90 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg">
+                                  {demo.prospectBusiness}
+                                </span>
                               </div>
                             </>
                           )}
@@ -984,25 +1103,26 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
                     </span>
                   </div>
 
-                  <div className="relative max-w-lg mx-auto aspect-square rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shadow-xl group">
+                  <div
+                    onClick={() => openLightbox(demo.generatedImageUrl, { id: "single", type: "post", title: demo.dishOrProductName || demo.prospectBusiness })}
+                    className="relative max-w-lg mx-auto aspect-square rounded-2xl overflow-hidden bg-slate-950 border border-slate-200 shadow-xl group cursor-pointer flex items-center justify-center select-none"
+                  >
                     <img
                       src={demo.generatedImageUrl}
                       alt={`Muestra para ${demo.prospectBusiness}`}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
                     />
 
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-between p-4">
-                      <span className="text-[11px] font-bold text-white bg-black/60 backdrop-blur-md px-3 py-1 rounded-lg">
+                    <div className="absolute top-3 right-3 flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
+                      <span className="px-3 py-1.5 rounded-xl bg-black/75 backdrop-blur-md text-white text-xs font-bold border border-white/20 shadow-md flex items-center gap-1.5">
+                        <span>🔍</span> Toca para Ampliar
+                      </span>
+                    </div>
+
+                    <div className="absolute bottom-3 left-3 pointer-events-none">
+                      <span className="text-[10px] font-bold text-white/90 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg">
                         {demo.prospectBusiness}
                       </span>
-                      <a
-                        href={demo.generatedImageUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="px-3.5 py-1.5 rounded-xl bg-white text-slate-900 text-xs font-bold hover:bg-slate-100 shadow-lg cursor-pointer"
-                      >
-                        Ver HD
-                      </a>
                     </div>
                   </div>
 
@@ -1637,6 +1757,87 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
           </div>
         </div>
       </footer>
+
+      {/* MODAL LIGHTBOX: INSPECCIÓN DE ALTA RESOLUCIÓN Y DETALLES */}
+      {lightboxData && lightboxData.isOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-md p-3 sm:p-6 animate-fadeIn"
+          onClick={() => setLightboxData(null)}
+        >
+          <div
+            className="relative max-w-5xl w-full max-h-[96vh] flex flex-col items-center justify-center gap-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Barra superior de controles */}
+            <div className="w-full flex items-center justify-between py-1.5 px-3 text-white bg-slate-900/80 backdrop-blur-md rounded-2xl border border-white/10">
+              <div className="flex items-center gap-2 truncate pr-2">
+                {lightboxData.badge && (
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500 text-slate-950">
+                    {lightboxData.badge}
+                  </span>
+                )}
+                <span className="font-extrabold text-xs sm:text-sm truncate">
+                  {lightboxData.title}
+                </span>
+                {lightboxData.price && (
+                  <span className="text-xs font-black text-emerald-400 bg-emerald-950/70 border border-emerald-500/40 px-2.5 py-0.5 rounded-lg">
+                    {lightboxData.price}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <a
+                  href={lightboxData.url}
+                  download={`diseño_${demo.prospectBusiness || "propuesta"}.jpg`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span>⬇️</span> <span className="hidden sm:inline">Descargar Original</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setLightboxData(null)}
+                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center font-bold text-base transition-all cursor-pointer"
+                  title="Cerrar (Esc)"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Contenedor de la Imagen: Ajuste perfecto al 100% sin recortes */}
+            <div className="relative w-full flex items-center justify-center max-h-[78vh] overflow-hidden rounded-2xl bg-slate-950 border border-white/10 p-2 shadow-2xl">
+              <img
+                src={lightboxData.url}
+                alt={lightboxData.title || "Diseño en Alta Resolución"}
+                className="max-h-[75vh] w-auto max-w-full object-contain rounded-xl select-none"
+              />
+            </div>
+
+            {/* Barra inferior de información y CTA */}
+            <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-2 px-2 text-xs text-slate-300">
+              <span className="text-[11px] text-slate-400 text-center sm:text-left">
+                ✨ Diseño de alta resolución con tipografía publicitaria nítida y composición para captar clientes.
+              </span>
+              <a
+                href={`https://wa.me/${santisoftWhatsAppNumber}?text=${encodeURIComponent(
+                  `¡Hola Santisoft! Me gustó la publicación de "${lightboxData.title || demo.prospectBusiness}" (${lightboxData.price || ""}) que prepararon sus agentes para ${demo.prospectBusiness}. ¿Podemos coordinar para publicarla en mis redes?`
+                )}`}
+                target="_blank"
+                rel="noreferrer"
+                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold flex items-center gap-2 shadow-lg transition-all active:scale-95 text-xs cursor-pointer"
+              >
+                <FaWhatsapp className="text-sm" />
+                <span>Pedir esta Publicación por WhatsApp</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
