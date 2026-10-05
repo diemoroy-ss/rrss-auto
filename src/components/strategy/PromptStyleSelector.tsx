@@ -10,18 +10,43 @@ interface PromptStyleSelectorProps {
   onToggleEnabled: (enabled: boolean) => void;
   selectedStyles: PromptTemplate[];
   onChangeSelectedStyles: (styles: PromptTemplate[]) => void;
+  isCommercialPosterOnly?: boolean;
+  onToggleCommercialPosterOnly?: (isCommercial: boolean) => void;
 }
 
 export default function PromptStyleSelector({
   enabled,
   onToggleEnabled,
   selectedStyles,
-  onChangeSelectedStyles
+  onChangeSelectedStyles,
+  isCommercialPosterOnly,
+  onToggleCommercialPosterOnly
 }: PromptStyleSelectorProps) {
   const [templates, setTemplates] = useState<PromptTemplate[]>(HARDCODED_STYLES);
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [internalCommercialPosterOnly, setInternalCommercialPosterOnly] = useState(false);
+
+  const isCommercialModeActive = onToggleCommercialPosterOnly !== undefined
+    ? Boolean(isCommercialPosterOnly)
+    : internalCommercialPosterOnly;
+
+  const handleSetCommercialPosterOnly = (val: boolean) => {
+    if (onToggleCommercialPosterOnly) {
+      onToggleCommercialPosterOnly(val);
+    } else {
+      setInternalCommercialPosterOnly(val);
+    }
+
+    if (val) {
+      const commercialTemplates = templates.filter((t) => t.isCommercialPoster);
+      const currentlyHasCommercial = selectedStyles.some((s) => s.isCommercialPoster);
+      if (!currentlyHasCommercial && commercialTemplates.length > 0) {
+        onChangeSelectedStyles(commercialTemplates.slice(0, 3));
+      }
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -93,8 +118,13 @@ export default function PromptStyleSelector({
     onChangeSelectedStyles([]);
   };
 
+  const commercialCount = templates.filter((t) => t.isCommercialPoster).length;
+
   // Filter templates
   const filteredTemplates = templates.filter((tpl) => {
+    const matchCommercial = isCommercialModeActive ? Boolean(tpl.isCommercialPoster) : true;
+    if (!matchCommercial) return false;
+
     const tplCats = getPromptCategories(tpl);
     const matchesCategory =
       selectedCategory === "all" ||
@@ -159,6 +189,57 @@ export default function PromptStyleSelector({
       {/* Expanded Grid & Filters when enabled */}
       {enabled && (
         <div className="pt-3 border-t border-slate-100 space-y-4 animate-in fade-in duration-300">
+          {/* CONSULTA: Cartel Comercial vs Todos los estilos */}
+          <div className="p-4 rounded-2xl border-2 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-indigo-500/10 border-amber-200/80 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-base">🏷️</span>
+                  <h4 className="text-xs sm:text-sm font-black text-slate-900">
+                    ¿Planificar con imágenes tipo Cartel Comercial?
+                  </h4>
+                </div>
+                <p className="text-[11px] text-slate-600 font-medium mt-0.5">
+                  Los carteles comerciales destacan precio, titular de oferta y llamado a la acción (CTA) directo para incentivar la venta inmediata.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => handleSetCommercialPosterOnly(true)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 ${
+                    isCommercialModeActive
+                      ? "bg-amber-600 text-white shadow-md shadow-amber-600/30 ring-2 ring-amber-500"
+                      : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
+                  }`}
+                >
+                  <span>🏷️</span>
+                  <span>Solo Carteles ({commercialCount})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSetCommercialPosterOnly(false)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 ${
+                    !isCommercialModeActive
+                      ? "bg-slate-900 text-white shadow-md shadow-slate-900/20"
+                      : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
+                  }`}
+                >
+                  <span>📷</span>
+                  <span>Ver Todos ({templates.length})</span>
+                </button>
+              </div>
+            </div>
+            {isCommercialModeActive && (
+              <div className="mt-2.5 pt-2 border-t border-amber-200/60 flex items-center gap-2 text-[11px] font-bold text-amber-900">
+                <span>✨</span>
+                <span>
+                  Filtro activo: Nuestros agentes desplegarán únicamente estilos de nuestra biblioteca marcados como Cartel Comercial para que los posts incluyan precios y ofertas visuales.
+                </span>
+              </div>
+            )}
+          </div>
+
           {/* Controls Bar: Search & Category Filter */}
           <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
             {/* Search Input */}
@@ -284,6 +365,16 @@ export default function PromptStyleSelector({
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-slate-300 text-2xl font-black">
                           🎨
+                        </div>
+                      )}
+
+                      {/* Commercial poster badge */}
+                      {style.isCommercialPoster && (
+                        <div className="absolute top-2 left-2 z-10">
+                          <span className="bg-amber-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm flex items-center gap-1 border border-amber-400">
+                            <span>🏷️</span>
+                            <span>CARTEL</span>
+                          </span>
                         </div>
                       )}
 

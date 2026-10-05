@@ -11,6 +11,7 @@ import { isUserAdmin, getPlanLimit, getVideoPlanLimit, getAiPlanLimit, getAiGene
 import StatusModal from "../../../../components/StatusModal";
 import VoiceMic from "../../../../components/VoiceMic";
 import PromptStyleSelector from "../../../../components/strategy/PromptStyleSelector";
+import PlanProductsSelector from "../../../../components/strategy/PlanProductsSelector";
 import { PromptTemplate } from "../../../../lib/prompt-templates";
 import { appendContactInfo } from "../../../../lib/contact-helper";
 import { getScheduleContinuityFromList, ScheduleContinuityResult } from "../../../../lib/schedule-continuity";
@@ -34,6 +35,12 @@ interface StrategyPost {
   promptTemplateId?: string;
   previewUrl?: string;
   imageDirection?: string;
+  productId?: string;
+  productName?: string;
+  productDescription?: string;
+  baseImageUrl?: string;
+  hasProductImage?: boolean;
+  isCommercialPoster?: boolean;
 }
 
 export default function EstrategiaPage() {
@@ -65,7 +72,10 @@ export default function EstrategiaPage() {
   const [quotaInfo, setQuotaInfo] = useState<any>(null);
   const [hasNetworks, setHasNetworks] = useState(false);
   const [catalogoItems, setCatalogoItems] = useState<any[]>([]);
+  const [selectedCatalogItemIds, setSelectedCatalogItemIds] = useState<string[]>([]);
+  const [loadingCatalog, setLoadingCatalog] = useState<boolean>(false);
   const [catalogUsage, setCatalogUsage] = useState<'mixed' | 'all' | 'none'>('mixed');
+  const [isCommercialPosterOnly, setIsCommercialPosterOnly] = useState<boolean>(false);
   
   // Fecha y hora de inicio de la planificación
   const [startDate, setStartDate] = useState<string>(() => {
@@ -259,15 +269,20 @@ export default function EstrategiaPage() {
           }
 
           // Load catalog items for context
+          setLoadingCatalog(true);
           try {
               const token = await u.getIdToken();
               const catRes = await fetch(`/api/catalogo?profileId=${activeProfile?.id || 'default'}`, {
                   headers: { Authorization: `Bearer ${token}` },
               });
               const catData = await catRes.json();
-              setCatalogoItems(catData.items || []);
+              const items = catData.items || [];
+              setCatalogoItems(items);
+              setSelectedCatalogItemIds(items.map((i: any) => i.id));
           } catch (cErr) {
               console.warn("No se pudo cargar el catálogo:", cErr);
+          } finally {
+              setLoadingCatalog(false);
           }
 
         } catch (e) {
@@ -293,6 +308,10 @@ export default function EstrategiaPage() {
              ? (activeProfile?.promotions || "")
              : (customPromotions || activeProfile?.promotions || "");
 
+         const itemsToUse = catalogUsage === 'none'
+             ? []
+             : catalogoItems.filter((item: any) => selectedCatalogItemIds.includes(item.id));
+
          const res = await fetch("/api/ai/generate-strategy", {
              method: "POST",
              headers: { "Content-Type": "application/json" },
@@ -307,17 +326,19 @@ export default function EstrategiaPage() {
                  userId: user?.uid,
                  profileId: activeProfile?.id || 'default',
                  catalogUsage,
-                 catalogoItems: catalogoItems.map((item: any) => ({
+                 catalogoItems: itemsToUse.map((item: any) => ({
                      id: item.id,
                      name: item.name,
                      description: item.description,
                      type: item.type,
                      price: item.price || null,
+                     offerPrice: item.offerPrice || null,
                      imageUrl: item.imageUrl || null,
                      hasImage: Boolean(item.imageUrl && typeof item.imageUrl === 'string' && item.imageUrl.startsWith('http'))
                   })),
                  usePromptStyles,
                  selectedPromptStyles: usePromptStyles ? selectedPromptStyles : [],
+                 isCommercialPoster: isCommercialPosterOnly,
                  connectedPlatforms: {
                      facebook: !!activeProfile?.facebookToken_enc,
                      instagram: !!activeProfile?.instagramToken_enc,
@@ -436,7 +457,8 @@ export default function EstrategiaPage() {
                 productName: post.productName || null,
                 productDescription: post.productDescription || null,
                 baseImageUrl: post.baseImageUrl || null,
-                hasProductImage: Boolean(post.baseImageUrl)
+                hasProductImage: Boolean(post.baseImageUrl),
+                isCommercialPoster: Boolean(post.isCommercialPoster ?? isCommercialPosterOnly)
             });
 
             try {
@@ -737,6 +759,20 @@ export default function EstrategiaPage() {
                       <span className="text-[10px] text-slate-500 pl-5">Planificación libre, enfocada en branding o contenido general.</span>
                     </label>
                   </div>
+
+                  {/* SELECCIÓN DE PRODUCTOS Y SERVICIOS ESPECÍFICOS PARA ESTA PLANIFICACIÓN */}
+                  {catalogUsage !== 'none' && (
+                    <div className="pt-2 border-t border-slate-100">
+                      <PlanProductsSelector
+                        items={catalogoItems}
+                        selectedItemIds={selectedCatalogItemIds}
+                        onChangeSelectedIds={setSelectedCatalogItemIds}
+                        loading={loadingCatalog}
+                        title="Selecciona qué Productos o Servicios incluir en este Plan"
+                        subtitle="Nuestros agentes generarán publicaciones destacando específicamente los ítems seleccionados."
+                      />
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -746,6 +782,8 @@ export default function EstrategiaPage() {
                 onToggleEnabled={setUsePromptStyles}
                 selectedStyles={selectedPromptStyles}
                 onChangeSelectedStyles={setSelectedPromptStyles}
+                isCommercialPosterOnly={isCommercialPosterOnly}
+                onToggleCommercialPosterOnly={setIsCommercialPosterOnly}
               />
 
               {/* FECHA Y HORA DE INICIO DE LA PLANIFICACIÓN */}

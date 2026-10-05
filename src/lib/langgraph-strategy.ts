@@ -20,6 +20,7 @@ export const StrategyAnnotation = Annotation.Root({
   remainingPosts: Annotation<number>({ reducer: (a, b) => b ?? a, default: () => 5 }),
   remainingVideos: Annotation<number>({ reducer: (a, b) => b ?? a, default: () => 2 }),
   remainingImages: Annotation<number>({ reducer: (a, b) => b ?? a, default: () => 8 }),
+  isCommercialPoster: Annotation<boolean>({ reducer: (a, b) => b ?? a, default: () => false }),
   analysis: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "" }),
   rawStrategy: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "" }),
   strategy: Annotation<any[]>({ reducer: (a, b) => b ?? a, default: () => [] }),
@@ -153,13 +154,28 @@ ${state.catalogUsage === "all"
     ? `\nDATOS DE CONTACTO OFICIALES DE LA EMPRESA (OBLIGATORIO: Integra estos canales en el contenido o CTA de los posts):\n${contactLines.join('\n')}\n\n`
     : "";
 
+  const commercialPosterRule = state.isCommercialPoster
+    ? `
+REGLA ESTRICTA DE IMÁGENES TIPO CARTEL COMERCIAL ACTIVADA:
+1. Esta estrategia fue configurada para usar IMÁGENES TIPO CARTEL COMERCIAL.
+2. Cada publicación de imagen ('Post Fijo', 'Carrusel' o 'Historia') DEBE concebirse como un anuncio publicitario directo de alta conversión:
+   - Destaca el producto o servicio asignado con tipografía publicitaria atractiva y jerarquía clara.
+   - Incluye el PRECIO u OFERTA claramente visible en la propuesta del diseño.
+   - Integra un titular comercial o badge persuasivo (ej. "¡NUEVO!", "RESULTADO", "PROMO DE LA SEMANA", "OFERTA ESPECIAL").
+   - Llamado a la acción (CTA) directo para incentivar la compra inmediata o reserva.
+   - Tipografía publicitaria atractiva sin sobrecargar el diseño.
+3. En cada objeto de publicación del JSON, incluye obligatoriamente:
+   "isCommercialPoster": true
+4. En "imageDirection", instruye explícitamente a nuestros agentes para componer un Cartel Publicitario Comercial de alto impacto que incorpore el producto/servicio, su precio visible, titular comercial y CTA atractivo con tipografía cuidada.\n\n`
+    : "";
+
   const prompt = `Eres un Social Media Planner experto, entrenado con los mejores frameworks de crecimiento (BH Skills). 
 Basándote en el siguiente análisis, genera un plan táctico de publicaciones.
 
 ANÁLISIS ESTRATÉGICO:
 ${state.analysis}
 
-${contactContext}${catalogInstruction}${state.promotions ? `PROMOCIONES Y OFERTAS CLAVE DEL NEGOCIO (Incluye estas promociones, precios o combos reales en los ganchos y copys comerciales):\n"${state.promotions}"\n\n` : ""}${state.nicheContext ? `CONTEXTO DEL RADAR DE NICHO (Últimos 30 días):\n${state.nicheContext}\n\n` : ""}${stylesContext}
+${contactContext}${catalogInstruction}${commercialPosterRule}${state.promotions ? `PROMOCIONES Y OFERTAS CLAVE DEL NEGOCIO (Incluye estas promociones, precios o combos reales en los ganchos y copys comerciales):\n"${state.promotions}"\n\n` : ""}${state.nicheContext ? `CONTEXTO DEL RADAR DE NICHO (Últimos 30 días):\n${state.nicheContext}\n\n` : ""}${stylesContext}
 
 HISTORIAL DE POSTS Y RENDIMIENTO (Analiza esto para replicar qué formatos/ideas tuvieron más likes/alcance, y descarta lo que no sirvió):
 ${state.history}
@@ -186,7 +202,8 @@ DEBES GENERAR UNA ESTRUCTURA DE JSON válida que contenga un arreglo 'strategy' 
   "productName": "Nombre exacto del producto o servicio si aplica (o null)",
   "productDescription": "Descripción breve del producto o servicio (o null)",
   "baseImageUrl": "URL de la foto si el producto tiene foto real, o null si no tiene",
-  "hasProductImage": true o false${state.promptStyles && state.promptStyles.length > 0 ? `,\n  "visualStyle": "Nombre del estilo asignado",\n  "promptTemplateId": "ID del estilo asignado",\n  "previewUrl": "URL de preview del estilo",\n  "imageDirection": "Instrucción de imagen aplicando el estilo y destacando el producto"` : ""}
+  "hasProductImage": true o false,
+  "isCommercialPoster": ${state.isCommercialPoster ? "true" : "false"}${state.promptStyles && state.promptStyles.length > 0 ? `,\n  "visualStyle": "Nombre del estilo asignado",\n  "promptTemplateId": "ID del estilo asignado",\n  "previewUrl": "URL de preview del estilo",\n  "imageDirection": "Instrucción de imagen aplicando el estilo y destacando el producto"` : ""}
 }
 
 GENERA EXACTAMENTE ${state.postsPerWeek} PUBLICACIONES DISTRIBUIDAS EN LOS PRÓXIMOS DÍAS.
@@ -213,6 +230,7 @@ REGLAS A VALIDAR:
 4. El texto de 'hook' y 'cta' debe ser profesional y persuasivo.
 5. CONSERVA INTACTOS los campos de producto si están presentes: 'productId', 'productName', 'productDescription', 'baseImageUrl', 'hasProductImage'.
 6. CONSERVA INTACTOS los campos de estilo visual: 'visualStyle', 'promptTemplateId', 'previewUrl', 'imageDirection'.
+7. CONSERVA INTACTO el campo 'isCommercialPoster' (booleano) si está presente.
 
 DEVUELVE ÚNICAMENTE EL OBJETO JSON LIMPIO. SIN MARKDOWN.`;
 
@@ -231,6 +249,14 @@ DEVUELVE ÚNICAMENTE EL OBJETO JSON LIMPIO. SIN MARKDOWN.`;
         const objRaw = JSON.parse(cleanRaw);
         strategy = objRaw.strategy || [];
       } catch (e2) {}
+  }
+
+  // Garantizar flag isCommercialPoster si fue solicitado
+  if (state.isCommercialPoster) {
+    strategy = strategy.map(item => ({
+      ...item,
+      isCommercialPoster: true
+    }));
   }
 
   // Post-procesamiento estricto de seguridad de límites de video
@@ -355,7 +381,8 @@ export async function runProfessionalStrategyWorkflow(
     catalogUsage: string = "mixed",
     remainingPosts: number = 5,
     remainingVideos: number = 2,
-    remainingImages: number = 8
+    remainingImages: number = 8,
+    isCommercialPoster: boolean = false
 ) {
   const app = createStrategyWorkflow();
   const initialState = {
@@ -376,6 +403,7 @@ export async function runProfessionalStrategyWorkflow(
     remainingPosts,
     remainingVideos,
     remainingImages,
+    isCommercialPoster: Boolean(isCommercialPoster),
     analysis: "",
     rawStrategy: "",
     strategy: [],

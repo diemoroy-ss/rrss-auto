@@ -19,7 +19,8 @@ export async function POST(req: NextRequest) {
       catalogoItems, 
       catalogUsage,
       selectedPromptStyles,
-      usePromptStyles
+      usePromptStyles,
+      isCommercialPoster
     } = await req.json();
 
     if (!goal) {
@@ -238,7 +239,8 @@ export async function POST(req: NextRequest) {
         catalogUsage || "mixed",
         remainingPosts,
         remainingVideos,
-        remainingImages
+        remainingImages,
+        Boolean(isCommercialPoster)
     );
 
     console.log(`[STRATEGY] LangGraph Strategy generated successfully for plan ${userPlan} (posts: ${effectivePosts}, maxVideos: ${maxVideos}, remPosts: ${remainingPosts}, remVideos: ${remainingVideos}, remImages: ${remainingImages}).`);

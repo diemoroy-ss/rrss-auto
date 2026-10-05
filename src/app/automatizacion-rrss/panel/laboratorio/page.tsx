@@ -10,6 +10,8 @@ import { useProfile, BusinessProfile, CatalogoItem } from "../../../../contexts/
 import { HARDCODED_STYLES, PromptTemplate } from "../../../../lib/prompt-templates";
 import { TEST_COMPANY_TEMPLATES } from "../../../../lib/test-company-templates";
 import TestCompanyModal from "../../../../components/catalogo/TestCompanyModal";
+import PromptStyleSelector from "../../../../components/strategy/PromptStyleSelector";
+import PlanProductsSelector from "../../../../components/strategy/PlanProductsSelector";
 import { 
   MENU_THEMES, 
   DEFAULT_MENU_THEME, 
@@ -153,6 +155,10 @@ export default function LaboratorioPage() {
   const [strategyPosts, setStrategyPosts] = useState<any[]>([]);
   const [savingToCalendar, setSavingToCalendar] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "mockup">("grid");
+  const [isCommercialPosterOnly, setIsCommercialPosterOnly] = useState<boolean>(false);
+  const [selectedCatalogItemIds, setSelectedCatalogItemIds] = useState<string[]>([]);
+  const [labSelectedStyles, setLabSelectedStyles] = useState<PromptTemplate[]>([]);
+  const [usePromptStyles, setUsePromptStyles] = useState<boolean>(true);
 
   // Auth setup
   useEffect(() => {
@@ -239,7 +245,9 @@ export default function LaboratorioPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      setCatalogItems(data.items || []);
+      const items = data.items || [];
+      setCatalogItems(items);
+      setSelectedCatalogItemIds(items.map((i: any) => i.id));
     } catch (e) {
       console.error("Error cargando catálogo en laboratorio:", e);
     } finally {
@@ -592,7 +600,11 @@ export default function LaboratorioPage() {
       const activePromotions = currentTestProfile?.promotions || brandForm.promotions;
       const activeRubro = currentTestProfile?.rubro || brandForm.rubro;
 
-      const selectedStyles = HARDCODED_STYLES.filter((s) => selectedStyleIds.includes(s.id));
+      const selectedStyles = labSelectedStyles.length > 0
+        ? labSelectedStyles
+        : HARDCODED_STYLES.filter((s) => selectedStyleIds.includes(s.id));
+
+      const filteredCatalog = catalogItems.filter(item => selectedCatalogItemIds.includes(item.id));
 
       const res = await fetch("/api/ai/generate-strategy", {
         method: "POST",
@@ -613,7 +625,7 @@ export default function LaboratorioPage() {
           userId: user.uid,
           profileId: currentTestProfile?.id || "demo",
           catalogUsage,
-          catalogoItems: catalogItems.map((item) => ({
+          catalogoItems: filteredCatalog.map((item) => ({
             id: item.id,
             name: item.name,
             description: item.description,
@@ -625,8 +637,9 @@ export default function LaboratorioPage() {
             fontStyle: item.fontStyle || "bold_modern",
             hasImage: Boolean(item.imageUrl && item.imageUrl.startsWith("http")),
           })),
-          usePromptStyles: true,
-          selectedPromptStyles: selectedStyles,
+          usePromptStyles,
+          selectedPromptStyles: usePromptStyles ? selectedStyles : [],
+          isCommercialPoster: isCommercialPosterOnly,
         }),
       });
 
@@ -1963,6 +1976,32 @@ export default function LaboratorioPage() {
                   <option value="all">🎯 Exclusivo (Todos los posts dedicados a productos del catálogo)</option>
                 </select>
               </div>
+            </div>
+
+            {/* SELECCIÓN DE PRODUCTOS Y SERVICIOS PARA LA ESTRATEGIA DEL LAB */}
+            {catalogItems.length > 0 && (
+              <div className="pt-2">
+                <PlanProductsSelector
+                  items={catalogItems}
+                  selectedItemIds={selectedCatalogItemIds}
+                  onChangeSelectedIds={setSelectedCatalogItemIds}
+                  loading={loadingCatalog}
+                  title="Productos y Servicios para esta Planificación Demo"
+                  subtitle="Elige qué ítems del catálogo de esta empresa de prueba serán destacados por nuestros agentes."
+                />
+              </div>
+            )}
+
+            {/* INTEGRACIÓN DE ESTILOS VISUALES */}
+            <div className="pt-2">
+              <PromptStyleSelector
+                enabled={usePromptStyles}
+                onToggleEnabled={setUsePromptStyles}
+                selectedStyles={labSelectedStyles}
+                onChangeSelectedStyles={setLabSelectedStyles}
+                isCommercialPosterOnly={isCommercialPosterOnly}
+                onToggleCommercialPosterOnly={setIsCommercialPosterOnly}
+              />
             </div>
 
             {/* Selector de Vista de Resultados */}

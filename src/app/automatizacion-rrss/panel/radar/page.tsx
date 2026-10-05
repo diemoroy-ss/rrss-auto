@@ -7,6 +7,7 @@ import { doc, getDoc, collection, addDoc, query, where, getDocs, orderBy } from 
 import { useProfile } from "../../../../contexts/ProfileContext";
 import { useRouter } from "next/navigation";
 import PromptStyleSelector from "../../../../components/strategy/PromptStyleSelector";
+import PlanProductsSelector from "../../../../components/strategy/PlanProductsSelector";
 import { PromptTemplate } from "../../../../lib/prompt-templates";
 import { appendContactInfo } from "../../../../lib/contact-helper";
 import StatusModal from "../../../../components/StatusModal";
@@ -54,6 +55,10 @@ export default function NicheRadarPage() {
   const [strategyExpectations, setStrategyExpectations] = useState<string>("");
   const [usePromptStyles, setUsePromptStyles] = useState<boolean>(false);
   const [selectedPromptStyles, setSelectedPromptStyles] = useState<PromptTemplate[]>([]);
+  const [isCommercialPosterOnly, setIsCommercialPosterOnly] = useState<boolean>(false);
+  const [radarCatalogItems, setRadarCatalogItems] = useState<any[]>([]);
+  const [selectedCatalogItemIds, setSelectedCatalogItemIds] = useState<string[]>([]);
+  const [loadingRadarCatalog, setLoadingRadarCatalog] = useState<boolean>(false);
   const [startDate, setStartDate] = useState<string>(() => {
     const d = new Date();
     if (d.getHours() >= 18) d.setDate(d.getDate() + 1);
@@ -330,6 +335,29 @@ export default function NicheRadarPage() {
     }
   }, [activeProfile]);
 
+  // Cargar catálogo de productos/servicios del perfil activo
+  useEffect(() => {
+    async function loadRadarCatalog() {
+      if (!user || !activeProfile?.id) return;
+      setLoadingRadarCatalog(true);
+      try {
+        const token = await user.getIdToken();
+        const res = await fetch(`/api/catalogo?profileId=${activeProfile.id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        const items = data.items || [];
+        setRadarCatalogItems(items);
+        setSelectedCatalogItemIds(items.map((i: any) => i.id));
+      } catch (e) {
+        console.warn("Error cargando catálogo en radar:", e);
+      } finally {
+        setLoadingRadarCatalog(false);
+      }
+    }
+    loadRadarCatalog();
+  }, [user, activeProfile?.id]);
+
   // Cargar análisis previo si existe
   useEffect(() => {
     async function loadInitialData() {
@@ -568,8 +596,20 @@ export default function NicheRadarPage() {
           postsPerWeek: isRunningTestMode ? 5 : postsPerWeek,
           usePromptStyles,
           selectedPromptStyles: usePromptStyles ? selectedPromptStyles : [],
-          catalogoItems: isRunningTestMode ? testProducts : undefined,
-          catalogUsage: isRunningTestMode && testProducts.length > 0 ? "all" : undefined
+          isCommercialPoster: isCommercialPosterOnly,
+          catalogoItems: (isRunningTestMode ? testProducts : radarCatalogItems.filter(p => selectedCatalogItemIds.includes(p.id))).map((item: any) => ({
+            id: item.id,
+            name: item.name,
+            description: item.description,
+            type: item.type,
+            price: item.price || null,
+            offerPrice: item.offerPrice || null,
+            imageUrl: item.imageUrl || null,
+            hasImage: Boolean(item.imageUrl && typeof item.imageUrl === 'string' && item.imageUrl.startsWith('http'))
+          })),
+          catalogUsage: isRunningTestMode 
+            ? (testProducts.length > 0 ? "all" : undefined)
+            : (selectedCatalogItemIds.length > 0 ? "mixed" : undefined)
         })
       });
 
@@ -644,7 +684,13 @@ export default function NicheRadarPage() {
               visualStyle: post.visualStyle || null,
               promptTemplateId: post.promptTemplateId || null,
               previewUrl: post.previewUrl || null,
-              imageDirection: post.imageDirection || null
+              imageDirection: post.imageDirection || null,
+              productId: post.productId || null,
+              productName: post.productName || null,
+              productDescription: post.productDescription || null,
+              baseImageUrl: post.baseImageUrl || null,
+              hasProductImage: Boolean(post.baseImageUrl),
+              isCommercialPoster: Boolean(post.isCommercialPoster ?? isCommercialPosterOnly)
           });
 
           try {
@@ -1435,12 +1481,26 @@ export default function NicheRadarPage() {
                   />
               </div>
 
+              {/* SELECCIÓN DE PRODUCTOS Y SERVICIOS PARA LA PLANIFICACIÓN DEL RADAR */}
+              {!isTestMode && radarCatalogItems.length > 0 && (
+                <PlanProductsSelector
+                  items={radarCatalogItems}
+                  selectedItemIds={selectedCatalogItemIds}
+                  onChangeSelectedIds={setSelectedCatalogItemIds}
+                  loading={loadingRadarCatalog}
+                  title="Productos y Servicios para esta Planificación"
+                  subtitle="Elige qué productos o servicios de tu catálogo integrarán nuestros agentes en el calendario."
+                />
+              )}
+
               {/* INTEGRACIÓN DE ESTILOS VISUALES DE PROMPTS IA */}
               <PromptStyleSelector
                 enabled={usePromptStyles}
                 onToggleEnabled={setUsePromptStyles}
                 selectedStyles={selectedPromptStyles}
                 onChangeSelectedStyles={setSelectedPromptStyles}
+                isCommercialPosterOnly={isCommercialPosterOnly}
+                onToggleCommercialPosterOnly={setIsCommercialPosterOnly}
               />
 
               {/* FECHA Y HORA DE INICIO DE LA PLANIFICACIÓN */}
