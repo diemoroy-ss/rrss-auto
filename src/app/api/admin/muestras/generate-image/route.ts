@@ -56,11 +56,13 @@ export async function POST(req: Request) {
     // 1. Resolver estilo visual si se proporcionó un ID
     let effectiveKeywords = styleKeywords || "";
     let effectiveStyleTitle = styleTitle || "";
+    let isCommercial = Boolean(body.isCommercialPoster);
     if (styleId) {
       const foundTemplate = HARDCODED_STYLES.find((t) => t.id === styleId);
       if (foundTemplate) {
         effectiveKeywords = effectiveKeywords || foundTemplate.styleKeywords || "";
         effectiveStyleTitle = effectiveStyleTitle || foundTemplate.title || "";
+        if (foundTemplate.isCommercialPoster) isCommercial = true;
       }
     }
 
@@ -77,7 +79,8 @@ CRITICAL RULES:
    - Place in a sophisticated, realistic commercial setting (e.g. high-end restaurant table with soft bokeh background, warm cinematic lighting, shallow depth of field).
 3. STYLE & FINISH:
    ${effectiveKeywords ? `Incorporate visual cues from style "${effectiveStyleTitle}": ${effectiveKeywords}.` : 'Shot on 85mm f/1.4 lens, natural dramatic lighting, rich appetizing colors, crisp details, commercial food magazine quality.'}
-4. NO TEXT: Do NOT generate or include any text, letters, slogans, or watermarks. Pure photography only.
+4. ON-IMAGE TEXT & DESIGN:
+   ${isCommercial ? `This is a COMMERCIAL POSTER design. The prompt MUST explicitly instruct the image generator to render crisp, bold, stylized advertising typography directly onto the poster canvas: large bold headline text in quotes (e.g. "${(targetProduct || 'COMBO').toUpperCase()}"), bright yellow price badge or discount sticker (e.g. "${offerText || '$24.900'}"), and a clear call-to-action button (e.g. "¡ORDENA AHORA!" or "¡PRUÉBALO HOY!").` : 'NO TEXT: Do NOT generate or include any text, letters, slogans, or watermarks. Pure photography only.'}
 5. FORMAT: Output ONLY the plain text English prompt in continuous narrative prose. No quotes, no markdown, no bullet points.`;
 
     const userPrompt = `Generate the commercial advertising photo prompt for:
@@ -93,7 +96,9 @@ ${offerText ? `- Campaign Focus: ${offerText}` : ""}`;
     } catch (genErr: any) {
       console.warn("[Admin Muestras Gen Image] Error generando prompt con Gemini, usando prompt estructurado directo:", genErr);
       const dishDesc = targetProduct || `specialty of ${targetRubro}`;
-      englishPrompt = `A stunning Michelin star restaurant commercial photography of authentic ${dishDesc}, gourmet presentation on a ceramic plate, perfectly cooked ingredients with mouth-watering glossy texture, fresh garnish, warm ambient restaurant lighting in background with soft bokeh, shot on 85mm lens f/1.4, 8k resolution, professional food advertising photography, no text.`;
+      englishPrompt = isCommercial
+        ? `Commercial food advertising poster layout for ${dishDesc}, bold crisp typography text overlay reading "${dishDesc.toUpperCase()}", bright yellow price badge "${offerText || '$24.900'}", CTA button "¡ORDENA AHORA!", gourmet presentation, warm restaurant lighting, 8k resolution`
+        : `A stunning Michelin star restaurant commercial photography of authentic ${dishDesc}, gourmet presentation on a ceramic plate, perfectly cooked ingredients with mouth-watering glossy texture, fresh garnish, warm ambient restaurant lighting in background with soft bokeh, shot on 85mm lens f/1.4, 8k resolution, professional food advertising photography, no text.`;
     }
 
     console.log(`[Admin Muestras Gen Image] Prompt generado para "${targetProduct || targetRubro}":`, englishPrompt);

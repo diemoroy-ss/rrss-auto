@@ -159,8 +159,8 @@ REGLAS ABSOLUTAS:
    - CERO frases robóticas ("en el vertiginoso mundo", "descubre", "sumérgete", "en conclusión").
    - NUNCA menciones "IA" o "Inteligencia Artificial". Refiérete siempre a "nuestros agentes" o "nuestro equipo de agentes especializados".
 
-3. CARTEL COMERCIAL:
-   ${isCommercialPoster ? "Esta planificación está configurada con imágenes tipo Cartel Comercial. Cada publicación debe concebirse con tipografía publicitaria atractiva, precio u oferta destacada, titular comercial y CTA llamativo." : "Estilo fotográfico cuidado y apetitoso, centrado en el producto o servicio."}
+3. CARTEL COMERCIAL & TEXTOS EN IMAGEN:
+   ${isCommercialPoster ? "Esta planificación está configurada con imágenes tipo CARTEL COMERCIAL. Es MANDATORIO que cada 'imagePromptEnglish' sea un prompt de cartel publicitario que ordene al generador de imagen renderizar tipografía publicitaria visible, nítida y legible integrada en la composición (commercial poster graphic design with crisp on-image typography text overlay): titular en mayúsculas entre comillas (ej: 'COMBO BURGER' o 'NUEVO EN EL MENÚ'), subtítulo de sabor, badge de ingredientes o beneficios, precio destacado con signo $ (ej: '$24.900') y botón o sticker con llamado a la acción (ej: '¡ORDENA AHORA!' o '¡PRUÉBALO HOY!')." : "Estilo fotográfico cuidado y apetitoso, centrado en el producto o servicio."}
 
 4. CONTACTO Y LLAMADO A LA ACCIÓN:
    ${phone ? `- WhatsApp de contacto: ${phone}` : ""}
@@ -299,12 +299,18 @@ ${stylesContext}`;
         copy: `Te presentamos una de las opciones favoritas de ${businessName}. Preparada con los mejores ingredientes y el toque característico que nos distingue. Pídela hoy mismo y compruébalo.`,
         cta: phone ? `Escríbenos directamente al WhatsApp ${phone}` : "Contáctanos y haz tu pedido hoy",
         visualStyleTitle: isCommercialPoster ? "Cartel Comercial de Alto Impacto" : "Fotografía Gastronómica & Publicitaria",
-        imagePromptEnglish: `Professional commercial advertising food photography of ${prodName}, appetizing warm lighting, rustic restaurant atmosphere, high-end plating, ultra-detailed 8k.`,
-        carouselPrompts: assignedType === "carrusel" ? [
+        imagePromptEnglish: isCommercialPoster
+          ? `Commercial advertising poster for ${prodName}, bold crisp on-image typography text overlay reading "${prodName.toUpperCase()}", highlighted yellow price badge "${prodPrice || '$24.900'}", circular badge, yellow CTA button "¡ORDENA AHORA!", appetizing hero food photography, warm restaurant lighting, 8k resolution`
+          : `Professional commercial advertising food photography of ${prodName}, appetizing warm lighting, rustic restaurant atmosphere, high-end plating, ultra-detailed 8k.`,
+        carouselPrompts: assignedType === "carrusel" ? (isCommercialPoster ? [
+          `Commercial poster cover for ${prodName}, bold on-image typography headline "${prodName.toUpperCase()}", advertising layout`,
+          `Detailed macro close-up of fresh textures and ingredients of ${prodName}, promotional badge "INGREDIENTES FRESCOS"`,
+          `Complete meal combo spread for ${prodName} with beverage and sides, vibrant yellow price badge "${prodPrice || '$24.900'}" and CTA button "¡ORDENA AHORA!"`
+        ] : [
           `Appetizing hero shot of ${prodName}, rustic table setting`,
           `Detailed macro close-up of fresh textures and ingredients of ${prodName}`,
           `Complete meal combo spread with sides and refreshing drink, commercial poster`
-        ] : undefined,
+        ]) : undefined,
         reelScript: assignedType === "reel" ? {
           hook3s: `Mira de cerca esta delicia de ${businessName}`,
           body: `Tomas en primer plano mostrando la preparación artesanal y el vapor saliendo del plato recién hecho.`,
@@ -385,8 +391,14 @@ ${stylesContext}`;
         const catalogMatch = catalogItems.find((it) => it.name?.toLowerCase() === prodName.toLowerCase() || it.id === pub.productId);
         const hasCatalogRealPhoto = catalogMatch?.imageUrl && catalogMatch.imageUrl.startsWith("http");
 
-        const promptEnglish = pub.imagePromptEnglish ||
-          `Professional commercial advertising food photography of ${prodName}, gourmet restaurant plating, dramatic warm lighting, 8k resolution, photorealistic, no watermarks`;
+        let promptEnglish = pub.imagePromptEnglish || "";
+        if (!promptEnglish) {
+          promptEnglish = isCommercialPoster
+            ? `Commercial food advertising poster layout for ${prodName}, bold crisp typography text overlay reading "${prodName.toUpperCase()}", highlighted yellow price badge "${pub.productPrice || '$24.900'}", rounded yellow CTA button "¡ORDENA AHORA!", gourmet hero food presentation, warm restaurant lighting, 8k resolution`
+            : `Professional commercial advertising food photography of ${prodName}, gourmet restaurant plating, dramatic warm lighting, 8k resolution, photorealistic, no watermarks`;
+        } else if (isCommercialPoster && !promptEnglish.toLowerCase().includes("typography") && !promptEnglish.toLowerCase().includes("text overlay")) {
+          promptEnglish = `Commercial advertising poster graphic design, bold crisp typography text overlay reading "${prodName.toUpperCase()}", price badge "${pub.productPrice || '$24.900'}", yellow CTA button "¡ORDENA AHORA!", ${promptEnglish}`;
+        }
 
         if (pub.type === "carrusel") {
           // Generar 3 slides para carrusel
