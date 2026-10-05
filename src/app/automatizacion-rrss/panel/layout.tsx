@@ -145,6 +145,7 @@ function PanelLayoutContent({
       title: "RECURSOS Y MARCA",
       items: [
         { href: "/automatizacion-rrss/panel/catalogo", label: "Productos / Servicios", icon: "🛍️", exact: false },
+        { href: "/automatizacion-rrss/panel/plantillas-texto", label: "Plantillas de Texto", icon: "🏷️", exact: false },
         ...(isMenuDigitalEnabled ? [{ href: "/automatizacion-rrss/panel/menu-qr", label: "Carta Menú & QR", icon: "📱", exact: false }] : []),
         { href: "/automatizacion-rrss/panel/biblioteca", label: "Biblioteca", icon: "🖼️", exact: false },
         { href: "/automatizacion-rrss/panel/configuracion", label: "Configuración de Marca", icon: "🏪", exact: false },

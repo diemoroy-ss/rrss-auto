@@ -256,6 +256,12 @@ export default function RrssCreatePost() {
   const catalogoIdParam = searchParams.get("catalogoId");
   const catalogoNameParam = searchParams.get("catalogoName");
   const promptIdParam = searchParams.get("promptId") || searchParams.get("templatePromptId") || searchParams.get("styleId");
+  const textTemplateIdParam = searchParams.get("textTemplateId");
+  const baseImageUrlParam = searchParams.get("baseImageUrl");
+  const badgeTextParam = searchParams.get("badgeText");
+  const productNameParam = searchParams.get("productName");
+  const priceParam = searchParams.get("price");
+  const textTemplateNameParam = searchParams.get("textTemplateName");
 
   useEffect(() => {
     if (promptIdParam) {
@@ -317,6 +323,37 @@ export default function RrssCreatePost() {
       setPreviewSlides([{ url: decodedUrl, copy: "" }]);
     }
   }, [templateUrlParam, hideAIParam, openEditorParam]);
+
+  useEffect(() => {
+    if (baseImageUrlParam) {
+      setCreationMode('manual');
+      const decodedUrl = decodeURIComponent(baseImageUrlParam);
+      const tempTmpl: UserTemplate = {
+        id: "temp-text-template",
+        url: decodedUrl,
+        type: 'image',
+        createdAt: new Date()
+      };
+      setSelectedTemplate(tempTmpl);
+      setPreviewSlides([{ url: decodedUrl, copy: "" }]);
+    }
+    if (productNameParam) {
+      const decodedName = decodeURIComponent(productNameParam);
+      setIdea((prev) => prev || decodedName);
+    }
+    if (textTemplateIdParam || badgeTextParam || priceParam) {
+      setPosterConfig((prev) => ({
+        ...prev,
+        enabled: true,
+        includeMainText: !!productNameParam,
+        mainText: productNameParam ? decodeURIComponent(productNameParam) : prev.mainText,
+        includePrice: !!priceParam,
+        priceText: priceParam ? decodeURIComponent(priceParam) : prev.priceText,
+        sloganText: badgeTextParam ? decodeURIComponent(badgeTextParam) : prev.sloganText,
+        includeSlogan: !!badgeTextParam,
+      }));
+    }
+  }, [baseImageUrlParam, productNameParam, textTemplateIdParam, badgeTextParam, priceParam]);
 
   useEffect(() => {
     // Si venimos de la biblioteca y seleccionamos "Postear" (hideAI=true pero no openEditor)
