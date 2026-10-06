@@ -13,18 +13,100 @@ const WA_MSG = encodeURIComponent(
   "¡Hola Santisoft! Vi la página de cómo funciona su equipo de agentes para redes y quiero ver una muestra para mi negocio."
 );
 
+type ImageOrigin = "real" | "generated";
 type StyleKey = "split" | "gourmet" | "recipe";
 type ScenarioKey = "aprobar" | "urgente" | "metricas";
+type PromptCategory = "all" | "gastronomia" | "cafe" | "fastfood" | "retail";
+
+interface PromptStyleCard {
+  id: string;
+  name: string;
+  category: "gastronomia" | "cafe" | "fastfood" | "retail";
+  tag: string;
+  description: string;
+  lightingMood: string;
+  recommendedFor: string;
+  bgUrl: string;
+}
+
+const PROMPT_GALLERY: PromptStyleCard[] = [
+  {
+    id: "gourmet-moody",
+    name: "Gourmet de Autor (Dark & Moody)",
+    category: "gastronomia",
+    tag: "Alta Cocina",
+    description: "Iluminación rasante tenue, contrastes cálidos y fondos oscuros que resaltan la textura y brillo de la comida.",
+    lightingMood: "Luz lateral suave con penumbra de fondo",
+    recommendedFor: "Restaurantes de autor, carnes premium, pescados y vinos",
+    bgUrl: "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    id: "street-food-vibrant",
+    name: "Street Food & Alto Contraste",
+    category: "fastfood",
+    tag: "Comida Rápida & Burgers",
+    description: "Primeros planos jugosos con queso derretido, colores intensos y fondos con ligero desenfoque urbano.",
+    lightingMood: "Luz cenital cálida de alto impacto",
+    recommendedFor: "Hamburgueserías, pizzerías, sándwiches y locales nocturnos",
+    bgUrl: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    id: "rustico-artesanal",
+    name: "Rústico Tradición (Bodegón)",
+    category: "gastronomia",
+    tag: "Artesanal",
+    description: "Maderas nobles, harina espolvoreada, manteles de lino e ingredientes frescos crudos alrededor del plato.",
+    lightingMood: "Luz de ventana difusa y natural",
+    recommendedFor: "Pastas frescas, panaderías, trattorias y empanadas",
+    bgUrl: "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    id: "cafe-editorial",
+    name: "Editorial Brunch & Especialidad",
+    category: "cafe",
+    tag: "Cafetería & Brunch",
+    description: "Fondos claros y neutros, luz matutina natural, sombras suaves y estética limpia estilo revista gastronómica.",
+    lightingMood: "Luz natural diurna sobre madera clara",
+    recommendedFor: "Cafés de especialidad, pastelerías, desayunos y brunch",
+    bgUrl: "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    id: "splash-action",
+    name: "Splash & Acción de Estudio",
+    category: "fastfood",
+    tag: "Dinamismo",
+    description: "Captura de alta velocidad: salsas cayendo, queso estirándose o ingredientes flotando con máxima nitidez.",
+    lightingMood: "Flash estroboscópico de estudio",
+    recommendedFor: "Promociones agresivas, cócteles, jugos y lanzamientos",
+    bgUrl: "https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    id: "flat-lay-cenital",
+    name: "Cenital Flat-Lay Comercial",
+    category: "gastronomia",
+    tag: "Mesa Completa",
+    description: "Vista perpendicular desde arriba de 90°. Orden simétrico con espacio despejado para tablas de precios y combos.",
+    lightingMood: "Iluminación pareja sin sombras duras",
+    recommendedFor: "Combos familiares, tablas de picoteo, sushi y menús ejecutivos",
+    bgUrl: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80",
+  },
+];
 
 export default function ComoFuncionaPage() {
-  // Estado para el visor interactivo de fotos reales con arte comercial
+  // Origen de la imagen: Real vs Generada por agentes
+  const [imageOrigin, setImageOrigin] = useState<ImageOrigin>("real");
+
+  // Estilo visual de la composición en el visor
   const [selectedStyle, setSelectedStyle] = useState<StyleKey>("split");
   const [showOriginal, setShowOriginal] = useState(false);
 
-  // Estado para el simulador de WhatsApp
+  // Filtro de la galería de prompts
+  const [activePromptCat, setActivePromptCat] = useState<PromptCategory>("all");
+
+  // Simulador de WhatsApp
   const [activeScenario, setActiveScenario] = useState<ScenarioKey>("aprobar");
 
-  // Estado para el formulario de muestra express
+  // Formulario express de muestra
   const [businessName, setBusinessName] = useState("");
   const [businessRubro, setBusinessRubro] = useState("Hamburguesería / Fast Food");
   const [contactPhone, setContactPhone] = useState("");
@@ -42,7 +124,7 @@ export default function ComoFuncionaPage() {
           }
         });
       },
-      { threshold: 0.1 }
+      { threshold: 0.08 }
     );
 
     const elements = document.querySelectorAll("[data-reveal]");
@@ -67,7 +149,7 @@ export default function ComoFuncionaPage() {
           rubro: businessRubro,
           telefono: contactPhone,
           email: contactEmail || `${businessName.toLowerCase().replace(/\s+/g, "")}@contacto.temporal`,
-          mensaje: `Solicitud de muestra comercial interactiva para ${businessName} (Rubro: ${businessRubro}). Teléfono WhatsApp: ${contactPhone}`,
+          mensaje: `Solicitud de muestra comercial para ${businessName} (Rubro: ${businessRubro}). WhatsApp: ${contactPhone}`,
         }),
       });
 
@@ -77,6 +159,11 @@ export default function ComoFuncionaPage() {
       setFormStatus("error");
     }
   };
+
+  const filteredPrompts =
+    activePromptCat === "all"
+      ? PROMPT_GALLERY
+      : PROMPT_GALLERY.filter((p) => p.category === activePromptCat);
 
   return (
     <div className="landing-page-root relative overflow-x-hidden min-h-screen">
@@ -93,24 +180,24 @@ export default function ComoFuncionaPage() {
       {/* ── NAVEGACIÓN PRINCIPAL ── */}
       <BrandHeader />
 
-      {/* ── 1. HERO COMERCIAL ── */}
+      {/* ── 1. HERO COMERCIAL (ALTO CONTRASTE CLARO/OSCURO) ── */}
       <section className="hero pt-12 pb-20">
         <div className="wrap">
           <div className="text-center max-w-4xl mx-auto" data-reveal>
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-semibold uppercase tracking-wider mb-6">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-600 dark:text-orange-400 text-xs font-semibold uppercase tracking-wider mb-6">
               <span>🚀</span> Tu equipo de marketing trabajando 24/7
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-100 leading-tight mb-6">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100 leading-tight mb-6">
               Gestionamos las redes de tu negocio, atraemos clientes y publicamos{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-300">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-amber-500 dark:from-orange-400 dark:to-amber-300">
                 todos los días por ti.
               </span>
             </h1>
 
-            <p className="text-lg sm:text-xl text-slate-300 leading-relaxed max-w-3xl mx-auto mb-10">
+            <p className="text-lg sm:text-xl text-slate-600 dark:text-slate-300 leading-relaxed max-w-3xl mx-auto mb-10">
               Nuestros agentes especializados investigan qué busca tu cliente, arman tu calendario del mes,
-              visten tus fotos reales con cartelería comercial de alto impacto y publican automáticamente en
+              visten tus fotos con cartelería comercial de alto impacto y publican automáticamente en
               Instagram, Facebook, TikTok y Google. <strong>Tú solo apruebas desde WhatsApp en 10 segundos.</strong>
             </p>
 
@@ -127,22 +214,22 @@ export default function ComoFuncionaPage() {
                 href={`https://wa.me/${WA_NUMBER}?text=${WA_MSG}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full sm:w-auto px-7 py-4 rounded-xl bg-slate-800/90 hover:bg-slate-700/90 border border-slate-700 text-slate-100 font-semibold text-base transition-all text-center flex items-center justify-center gap-2"
+                className="w-full sm:w-auto px-7 py-4 rounded-xl bg-white dark:bg-slate-800/90 hover:bg-slate-50 dark:hover:bg-slate-700/90 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 font-semibold text-base transition-all text-center flex items-center justify-center gap-2 shadow-sm"
               >
                 <span>💬</span> Chatear por WhatsApp
               </a>
             </div>
 
-            {/* Badges de confianza */}
-            <div className="flex flex-wrap items-center justify-center gap-6 mt-10 text-xs text-slate-400">
+            {/* Badges de confianza con alto contraste */}
+            <div className="flex flex-wrap items-center justify-center gap-6 mt-10 text-xs text-slate-600 dark:text-slate-400">
               <span className="flex items-center gap-1.5">
-                <span className="text-emerald-400 font-bold">✓</span> Sin contratos forzosos
+                <span className="text-emerald-500 font-bold">✓</span> Sin contratos forzosos
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="text-emerald-400 font-bold">✓</span> Respeta tus fotos reales
+                <span className="text-emerald-500 font-bold">✓</span> Fotos reales o generadas
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="text-emerald-400 font-bold">✓</span> Control 100% desde WhatsApp
+                <span className="text-emerald-500 font-bold">✓</span> Control 100% desde WhatsApp
               </span>
             </div>
           </div>
@@ -150,14 +237,16 @@ export default function ComoFuncionaPage() {
       </section>
 
       {/* ── 2. EL DOLOR REAL DEL CLIENTE ── */}
-      <section className="py-20 border-t border-slate-800/80 bg-slate-900/40">
+      <section className="py-20 border-t border-slate-200 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-900/40">
         <div className="wrap">
           <div className="text-center max-w-3xl mx-auto mb-16" data-reveal>
-            <span className="eyebrow text-orange-400">La realidad del día a día</span>
-            <h2 className="text-3xl sm:text-4xl font-bold text-slate-100 mt-2">
+            <span className="eyebrow text-orange-600 dark:text-orange-400 font-bold text-xs uppercase tracking-wider">
+              La realidad del día a día
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-slate-100 mt-2">
               Llevar un negocio ya es bastante trabajo como para además ser creador de contenido.
             </h2>
-            <p className="text-slate-400 mt-4 text-base">
+            <p className="text-slate-600 dark:text-slate-300 mt-4 text-base">
               Hablamos a diario con dueños de restaurantes, tiendas y profesionales. Casi todos se enfrentan a
               las mismas 3 frustraciones:
             </p>
@@ -165,58 +254,58 @@ export default function ComoFuncionaPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8" data-reveal>
             {/* Tarjeta 1 */}
-            <div className="p-8 rounded-2xl bg-slate-800/50 border border-slate-700/60 flex flex-col justify-between">
+            <div className="p-8 rounded-2xl bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 shadow-sm dark:shadow-none flex flex-col justify-between">
               <div>
-                <div className="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center justify-center text-2xl mb-6">
+                <div className="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 flex items-center justify-center text-2xl mb-6">
                   ⏳
                 </div>
-                <h3 className="text-xl font-bold text-slate-100 mb-3">
+                <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-3">
                   &quot;No me da el tiempo para pensar qué publicar&quot;
                 </h3>
-                <p className="text-slate-300 text-sm leading-relaxed">
+                <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">
                   Terminas tu jornada agotado. Quieres subir algo a redes, pero te quedas en blanco frente al celular,
                   lo pospones para mañana y tu cuenta pasa semanas en silencio perdiendo clientes.
                 </p>
               </div>
-              <div className="mt-6 pt-4 border-t border-slate-700/50 text-xs text-red-400/90 font-medium">
+              <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700/50 text-xs text-red-600 dark:text-red-400 font-medium">
                 ✕ Resultado: Tus competidores se quedan con la atención de tu zona.
               </div>
             </div>
 
             {/* Tarjeta 2 */}
-            <div className="p-8 rounded-2xl bg-slate-800/50 border border-slate-700/60 flex flex-col justify-between">
+            <div className="p-8 rounded-2xl bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 shadow-sm dark:shadow-none flex flex-col justify-between">
               <div>
-                <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-2xl mb-6">
+                <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center text-2xl mb-6">
                   💸
                 </div>
-                <h3 className="text-xl font-bold text-slate-100 mb-3">
+                <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-3">
                   &quot;Las agencias tradicionales cobran caro y demoran días&quot;
                 </h3>
-                <p className="text-slate-300 text-sm leading-relaxed">
+                <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">
                   Te cobran cientos de miles de pesos cada mes por un par de posts genéricos. Pides una promoción urgente
                   para este fin de semana y tardan 5 días en responderte un correo.
                 </p>
               </div>
-              <div className="mt-6 pt-4 border-t border-slate-700/50 text-xs text-amber-400/90 font-medium">
+              <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700/50 text-xs text-amber-600 dark:text-amber-400 font-medium">
                 ✕ Resultado: Pagar caro por un servicio lento y poco flexible.
               </div>
             </div>
 
             {/* Tarjeta 3 */}
-            <div className="p-8 rounded-2xl bg-slate-800/50 border border-slate-700/60 flex flex-col justify-between">
+            <div className="p-8 rounded-2xl bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 shadow-sm dark:shadow-none flex flex-col justify-between">
               <div>
-                <div className="w-12 h-12 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-400 flex items-center justify-center text-2xl mb-6">
+                <div className="w-12 h-12 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-500 flex items-center justify-center text-2xl mb-6">
                   📸
                 </div>
-                <h3 className="text-xl font-bold text-slate-100 mb-3">
+                <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-3">
                   &quot;Saco fotos pero no se ven como las de marcas grandes&quot;
                 </h3>
-                <p className="text-slate-300 text-sm leading-relaxed">
+                <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">
                   Tu producto es delicioso o de excelente calidad, pero una foto suelta en el celular se ve fría,
                   sin precios destacados, sin llamados a la acción y sin el diseño que invita a comprar.
                 </p>
               </div>
-              <div className="mt-6 pt-4 border-t border-slate-700/50 text-xs text-orange-400/90 font-medium">
+              <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700/50 text-xs text-orange-600 dark:text-orange-400 font-medium">
                 ✕ Resultado: Fotos caseras que no transmiten el verdadero valor de tu marca.
               </div>
             </div>
@@ -225,14 +314,16 @@ export default function ComoFuncionaPage() {
       </section>
 
       {/* ── 3. CÓMO LO HACEMOS (LOS 4 PASOS) ── */}
-      <section className="py-24 border-t border-slate-800/80">
+      <section className="py-24 border-t border-slate-200 dark:border-slate-800/80">
         <div className="wrap">
           <div className="text-center max-w-3xl mx-auto mb-20" data-reveal>
-            <span className="eyebrow text-orange-400">Cómo trabaja nuestro equipo</span>
-            <h2 className="text-3xl sm:text-4xl font-bold text-slate-100 mt-2">
+            <span className="eyebrow text-orange-600 dark:text-orange-400 font-bold text-xs uppercase tracking-wider">
+              Cómo trabaja nuestro equipo
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-slate-100 mt-2">
               Un flujo simple y continuo para que tu marca nunca pare de vender.
             </h2>
-            <p className="text-slate-400 mt-4 text-base">
+            <p className="text-slate-600 dark:text-slate-300 mt-4 text-base">
               Nuestros agentes especializados se reparten el trabajo tal como lo haría una agencia de primer nivel,
               pero en minutos y a una fracción del costo.
             </p>
@@ -240,257 +331,319 @@ export default function ComoFuncionaPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8" data-reveal>
             {/* Paso 1 */}
-            <div className="relative p-7 rounded-2xl bg-slate-800/40 border border-slate-700/60 flex flex-col">
-              <div className="text-xs font-mono font-bold text-orange-400 mb-3 tracking-widest">PASO 01</div>
-              <div className="w-12 h-12 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-400 flex items-center justify-center text-2xl mb-5">
+            <div className="relative p-7 rounded-2xl bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 shadow-sm dark:shadow-none flex flex-col">
+              <div className="text-xs font-mono font-bold text-orange-600 dark:text-orange-400 mb-3 tracking-widest">PASO 01</div>
+              <div className="w-12 h-12 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-500 flex items-center justify-center text-2xl mb-5">
                 📡
               </div>
-              <h3 className="text-lg font-bold text-slate-100 mb-2">Radar de Nicho</h3>
-              <p className="text-slate-300 text-sm leading-relaxed">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-2">Radar de Nicho</h3>
+              <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">
                 Nuestros agentes escanean las preguntas frecuentes, dudas y platos más buscados en tu rubro y ciudad.
                 No adivinamos: creamos contenido que la gente ya quiere ver.
               </p>
-              <div className="mt-6 pt-4 border-t border-slate-700/40 text-xs text-slate-400 flex items-center gap-1.5">
-                <span className="text-emerald-400 font-bold">✓</span> Temas con demanda real
+              <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700/40 text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                <span className="text-emerald-500 font-bold">✓</span> Temas con demanda real
               </div>
             </div>
 
             {/* Paso 2 */}
-            <div className="relative p-7 rounded-2xl bg-slate-800/40 border border-slate-700/60 flex flex-col">
-              <div className="text-xs font-mono font-bold text-orange-400 mb-3 tracking-widest">PASO 02</div>
-              <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center text-2xl mb-5">
+            <div className="relative p-7 rounded-2xl bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 shadow-sm dark:shadow-none flex flex-col">
+              <div className="text-xs font-mono font-bold text-orange-600 dark:text-orange-400 mb-3 tracking-widest">PASO 02</div>
+              <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-500 flex items-center justify-center text-2xl mb-5">
                 📅
               </div>
-              <h3 className="text-lg font-bold text-slate-100 mb-2">Estrategia Mensual</h3>
-              <p className="text-slate-300 text-sm leading-relaxed">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-2">Estrategia Mensual</h3>
+              <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">
                 Armamos un calendario balanceado con 4 pilares: combos de venta directa, platos de autor, secretos de
                 cocina para ganar autoridad y videos cortos de gran alcance.
               </p>
-              <div className="mt-6 pt-4 border-t border-slate-700/40 text-xs text-slate-400 flex items-center gap-1.5">
-                <span className="text-emerald-400 font-bold">✓</span> 30 días planificados
+              <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700/40 text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                <span className="text-emerald-500 font-bold">✓</span> 30 días planificados
               </div>
             </div>
 
             {/* Paso 3 */}
-            <div className="relative p-7 rounded-2xl bg-slate-800/40 border border-slate-700/60 flex flex-col">
-              <div className="text-xs font-mono font-bold text-orange-400 mb-3 tracking-widest">PASO 03</div>
-              <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center text-2xl mb-5">
+            <div className="relative p-7 rounded-2xl bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 shadow-sm dark:shadow-none flex flex-col">
+              <div className="text-xs font-mono font-bold text-orange-600 dark:text-orange-400 mb-3 tracking-widest">PASO 03</div>
+              <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-500 flex items-center justify-center text-2xl mb-5">
                 🎨
               </div>
-              <h3 className="text-lg font-bold text-slate-100 mb-2">Dirección de Arte</h3>
-              <p className="text-slate-300 text-sm leading-relaxed">
-                Nuestros agentes examinan tu foto real y le colocan carteles comerciales, precios destacados, botones
-                y listas de ingredientes sin tocar ni tapar tu comida.
+              <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-2">Dirección de Arte</h3>
+              <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">
+                Nuestros agentes examinan el encuadre y estampan carteles comerciales, precios destacados y botones
+                <strong> directamente sobre la imagen</strong>, sin tapar ni deformar tu comida.
               </p>
-              <div className="mt-6 pt-4 border-t border-slate-700/40 text-xs text-slate-400 flex items-center gap-1.5">
-                <span className="text-emerald-400 font-bold">✓</span> Tu plato queda impecable
+              <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700/40 text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                <span className="text-emerald-500 font-bold">✓</span> Tu plato queda impecable
               </div>
             </div>
 
             {/* Paso 4 */}
-            <div className="relative p-7 rounded-2xl bg-slate-800/40 border border-slate-700/60 flex flex-col">
-              <div className="text-xs font-mono font-bold text-orange-400 mb-3 tracking-widest">PASO 04</div>
-              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center text-2xl mb-5">
+            <div className="relative p-7 rounded-2xl bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 shadow-sm dark:shadow-none flex flex-col">
+              <div className="text-xs font-mono font-bold text-orange-600 dark:text-orange-400 mb-3 tracking-widest">PASO 04</div>
+              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center text-2xl mb-5">
                 🚀
               </div>
-              <h3 className="text-lg font-bold text-slate-100 mb-2">Publicación Automática</h3>
-              <p className="text-slate-300 text-sm leading-relaxed">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-2">Publicación Automática</h3>
+              <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">
                 Tus piezas se publican solas en Instagram, Facebook, TikTok y Google Maps en el mejor horario.
                 Tú recibes un mensaje en WhatsApp y apruebas con 1 toque.
               </p>
-              <div className="mt-6 pt-4 border-t border-slate-700/40 text-xs text-slate-400 flex items-center gap-1.5">
-                <span className="text-emerald-400 font-bold">✓</span> Cero tiempo perdido
+              <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700/40 text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                <span className="text-emerald-500 font-bold">✓</span> Cero tiempo perdido
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── 4. RESPETO TOTAL A TU PRODUCTO REAL (INTERACTIVO) ── */}
-      <section className="py-24 border-t border-slate-800/80 bg-slate-900/60">
+      {/* ── 4. RESPETO TOTAL A TU PRODUCTO: FOTOS REALES O CREADAS POR AGENTES (SIN CARDS TAPANDO) ── */}
+      <section className="py-24 border-t border-slate-200 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-900/60">
         <div className="wrap">
           <div className="text-center max-w-3xl mx-auto mb-16" data-reveal>
-            <span className="eyebrow text-orange-400">El gran diferencial</span>
-            <h2 className="text-3xl sm:text-4xl font-bold text-slate-100 mt-2">
-              Tus fotos reales, convertidas en carteles comerciales de primer nivel.
+            <span className="eyebrow text-orange-600 dark:text-orange-400 font-bold text-xs uppercase tracking-wider">
+              El gran diferencial visual
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-slate-100 mt-2">
+              El texto directo sobre la imagen. La comida es siempre la protagonista.
             </h2>
-            <p className="text-slate-300 mt-4 text-base">
-              No inventamos comida artificial ni deformamos tus platos. Nuestros agentes toman la foto que tú
-              tomas con tu teléfono y la transforman con tipografía publicitaria nítida.
+            <p className="text-slate-600 dark:text-slate-300 mt-4 text-base">
+              Nada de cajas oscuras que tapen tu comida. Nuestros agentes estampan tipografía publicitaria nítida
+              directamente sobre el espacio libre de la foto, ya sea una foto real tomada con tu teléfono o una imagen
+              creada por ellos mismos.
             </p>
 
-            {/* Pestañas de Estilos */}
-            <div className="inline-flex p-1.5 rounded-xl bg-slate-800/90 border border-slate-700 mt-8 gap-2">
+            {/* Selector de Origen: Foto Real vs Creada por Agentes */}
+            <div className="flex flex-wrap items-center justify-center gap-3 mt-8">
               <button
-                onClick={() => setSelectedStyle("split")}
-                className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
-                  selectedStyle === "split"
-                    ? "bg-orange-500 text-white shadow-md shadow-orange-500/20"
-                    : "text-slate-300 hover:text-white"
+                onClick={() => {
+                  setImageOrigin("real");
+                  setShowOriginal(false);
+                }}
+                className={`px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2 border ${
+                  imageOrigin === "real"
+                    ? "bg-orange-500 text-white border-orange-500 shadow-lg shadow-orange-500/25"
+                    : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:border-orange-400"
                 }`}
               >
-                🍔 Split Comercial (Combo &amp; Precio)
+                <span>📸</span> Fotos Reales de tu Catálogo
+              </button>
+
+              <button
+                onClick={() => {
+                  setImageOrigin("generated");
+                  setShowOriginal(false);
+                }}
+                className={`px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2 border ${
+                  imageOrigin === "generated"
+                    ? "bg-orange-500 text-white border-orange-500 shadow-lg shadow-orange-500/25"
+                    : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:border-orange-400"
+                }`}
+              >
+                <span>🎨</span> Imágenes Creadas por Nuestros Agentes
+              </button>
+            </div>
+
+            {/* Pestañas de Estilos */}
+            <div className="inline-flex p-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 mt-5 gap-2 shadow-sm">
+              <button
+                onClick={() => setSelectedStyle("split")}
+                className={`px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
+                  selectedStyle === "split"
+                    ? "bg-orange-500 text-white shadow-sm"
+                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                }`}
+              >
+                🍔 Split Comercial (Combo)
               </button>
               <button
                 onClick={() => setSelectedStyle("gourmet")}
-                className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
+                className={`px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
                   selectedStyle === "gourmet"
-                    ? "bg-orange-500 text-white shadow-md shadow-orange-500/20"
-                    : "text-slate-300 hover:text-white"
+                    ? "bg-orange-500 text-white shadow-sm"
+                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
                 }`}
               >
-                🍷 Encabezado Gourmet (Plato de Autor)
+                🍷 Encabezado Gourmet
               </button>
               <button
                 onClick={() => setSelectedStyle("recipe")}
-                className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
+                className={`px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
                   selectedStyle === "recipe"
-                    ? "bg-orange-500 text-white shadow-md shadow-orange-500/20"
-                    : "text-slate-300 hover:text-white"
+                    ? "bg-orange-500 text-white shadow-sm"
+                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
                 }`}
               >
-                🥗 Ficha con Ingredientes (Receta)
+                🥗 Ficha de Cocina
               </button>
             </div>
           </div>
 
           {/* Comparador Interactivo */}
-          <div className="max-w-4xl mx-auto bg-slate-800/40 rounded-3xl border border-slate-700/80 p-6 sm:p-10 shadow-2xl" data-reveal>
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 pb-6 border-b border-slate-700/60">
+          <div className="max-w-4xl mx-auto bg-white dark:bg-slate-800/40 rounded-3xl border border-slate-200 dark:border-slate-700/80 p-6 sm:p-10 shadow-xl dark:shadow-2xl" data-reveal>
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 pb-6 border-b border-slate-200 dark:border-slate-700/60">
               <div>
-                <span className="text-xs font-mono font-bold text-orange-400 uppercase tracking-wider">
-                  {selectedStyle === "split" && "Ideal para promociones, combos y lanzamientos"}
+                <span className="text-xs font-mono font-bold text-orange-600 dark:text-orange-400 uppercase tracking-wider">
+                  {imageOrigin === "real" ? "Foto Real del Cliente" : "Generación Fotográfica de Nuestros Agentes"}
+                  {" · "}
+                  {selectedStyle === "split" && "Ideal para combos, promociones y delivery"}
                   {selectedStyle === "gourmet" && "Ideal para destacar la alta cocina y platos estrella"}
                   {selectedStyle === "recipe" && "Ideal para educar, generar interacción y guardados"}
                 </span>
-                <h3 className="text-xl font-bold text-slate-100 mt-1">
-                  {selectedStyle === "split" && "Split Lateral: Producto a la derecha, cartel y precio a la izquierda"}
-                  {selectedStyle === "gourmet" && "Encabezado Superior: Cabecera limpia sobre mantel rústico"}
-                  {selectedStyle === "recipe" && "Ficha de Cocina: Tira con ingredientes clave identificados"}
+                <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mt-1">
+                  {imageOrigin === "real" ? (
+                    selectedStyle === "split"
+                      ? "Split Lateral: Plato real a la derecha, texto publicitario a la izquierda"
+                      : selectedStyle === "gourmet"
+                      ? "Encabezado Superior: Cabecera estampada directamente sobre la foto sin tapar la comida"
+                      : "Ficha de Cocina: Tira de ingredientes identificados directamente sobre la mesa"
+                  ) : (
+                    selectedStyle === "split"
+                      ? "Estudio Fotográfico: Imagen creada desde cero con espacio asimétrico para la oferta"
+                      : selectedStyle === "gourmet"
+                      ? "Bodegón de Autor: Escena generada con iluminación rasante de restaurante"
+                      : "Flat-Lay Cenital: Mesa completa con vista cenital limpia para recetas"
+                  )}
                 </h3>
               </div>
 
-              {/* Botón Switch: Original vs Arte */}
-              <div className="flex items-center gap-3 bg-slate-900/80 px-4 py-2 rounded-xl border border-slate-700">
-                <span className="text-xs text-slate-400 font-medium">Foto de celular</span>
-                <button
-                  onClick={() => setShowOriginal((prev) => !prev)}
-                  className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors duration-200 ease-in-out ${
-                    !showOriginal ? "bg-orange-500" : "bg-slate-700"
-                  }`}
-                  aria-label="Alternar vista original"
-                >
-                  <div
-                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${
-                      !showOriginal ? "translate-x-6" : "translate-x-0"
+              {/* Botón Switch: Original vs Arte (visible solo si es foto real) */}
+              {imageOrigin === "real" && (
+                <div className="flex items-center gap-3 bg-slate-100 dark:bg-slate-900/80 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">Foto cruda</span>
+                  <button
+                    onClick={() => setShowOriginal((prev) => !prev)}
+                    className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors duration-200 ease-in-out ${
+                      !showOriginal ? "bg-orange-500" : "bg-slate-400 dark:bg-slate-700"
                     }`}
-                  />
-                </button>
-                <span className="text-xs text-orange-400 font-bold">Con Arte de Agentes</span>
-              </div>
+                    aria-label="Alternar vista original"
+                  >
+                    <div
+                      className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${
+                        !showOriginal ? "translate-x-6" : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                  <span className="text-xs text-orange-600 dark:text-orange-400 font-bold">Con Arte Directo</span>
+                </div>
+              )}
             </div>
 
-            {/* Simulación Gráfica de la Pieza */}
-            <div className="relative aspect-square max-w-[500px] mx-auto rounded-2xl overflow-hidden shadow-2xl border border-slate-700/70 bg-stone-950 flex flex-col justify-between p-6">
-              {/* Fondo simulado de plato real */}
+            {/* Contenedor del Cartel: TEXTO DIRECTO SOBRE LA IMAGEN (SIN CARDS QUE TAPEN EL PLATO) */}
+            <div className="relative aspect-square max-w-[500px] mx-auto rounded-2xl overflow-hidden shadow-2xl border border-slate-300 dark:border-slate-700/70 bg-stone-950 flex flex-col justify-between p-7 select-none">
+              {/* Imagen de fondo (Foto Real vs Generada por Agentes) */}
               <div
                 className="absolute inset-0 bg-cover bg-center transition-all duration-300"
                 style={{
                   backgroundImage:
-                    selectedStyle === "split"
-                      ? "radial-gradient(circle at 75% 50%, rgba(255,107,0,0.2) 0%, rgba(15,23,42,0.95) 75%), url('https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=1000&q=80')"
+                    imageOrigin === "real"
+                      ? selectedStyle === "split"
+                        ? "linear-gradient(to right, rgba(10,15,25,0.92) 0%, rgba(10,15,25,0.7) 45%, rgba(0,0,0,0.15) 80%), url('https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=1000&q=80')"
+                        : selectedStyle === "gourmet"
+                        ? "linear-gradient(to bottom, rgba(10,15,25,0.88) 0%, rgba(10,15,25,0.2) 40%, rgba(10,15,25,0.85) 100%), url('https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1000&q=80')"
+                        : "linear-gradient(to bottom, rgba(10,15,25,0.85) 0%, rgba(0,0,0,0.1) 45%, rgba(10,15,25,0.88) 100%), url('https://images.unsplash.com/photo-1473093295043-cdd812d0e601?auto=format&fit=crop&w=1000&q=80')"
+                      : selectedStyle === "split"
+                      ? "linear-gradient(to right, rgba(10,15,25,0.94) 0%, rgba(10,15,25,0.65) 48%, rgba(0,0,0,0.1) 85%), url('https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=1000&q=80')"
                       : selectedStyle === "gourmet"
-                      ? "radial-gradient(circle at 50% 60%, rgba(255,107,0,0.15) 0%, rgba(15,23,42,0.9) 75%), url('https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1000&q=80')"
-                      : "radial-gradient(circle at 50% 50%, rgba(255,107,0,0.15) 0%, rgba(15,23,42,0.9) 75%), url('https://images.unsplash.com/photo-1473093295043-cdd812d0e601?auto=format&fit=crop&w=1000&q=80')",
+                      ? "linear-gradient(to bottom, rgba(10,15,25,0.9) 0%, rgba(10,15,25,0.15) 45%, rgba(10,15,25,0.8) 100%), url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1000&q=80')"
+                      : "linear-gradient(to bottom, rgba(10,15,25,0.85) 0%, rgba(0,0,0,0.1) 45%, rgba(10,15,25,0.88) 100%), url('https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1000&q=80')",
                   filter: showOriginal ? "none" : "contrast(1.05) saturate(1.1)",
                 }}
               />
 
-              {/* Si está en modo original, mostramos marca de agua de foto cruda */}
+              {/* Modo foto cruda de celular */}
               {showOriginal ? (
-                <div className="relative z-10 m-auto bg-black/70 backdrop-blur-md px-6 py-4 rounded-xl border border-white/10 text-center">
-                  <span className="text-2xl mb-1 block">📱</span>
-                  <p className="text-sm font-bold text-white">Foto original tomada con tu celular</p>
-                  <p className="text-xs text-slate-300 mt-1">Sin diseño, sin precio visible ni llamada a la acción.</p>
+                <div className="relative z-10 m-auto bg-black/75 backdrop-blur-md px-6 py-4 rounded-xl border border-white/20 text-center">
+                  <span className="text-3xl mb-2 block">📱</span>
+                  <p className="text-base font-bold text-white">Foto original tomada con tu celular</p>
+                  <p className="text-xs text-slate-300 mt-1">Sin tipografía, sin precios destacados ni llamado a la acción.</p>
                 </div>
               ) : (
                 <>
-                  {/* ESTILO SPLIT COMERCIAL */}
+                  {/* 1. SPLIT COMERCIAL: TEXTO DIRECTO SOBRE EL LADO IZQUIERDO */}
                   {selectedStyle === "split" && (
                     <div className="relative z-10 w-full h-full flex flex-col justify-between">
-                      <div className="w-1/2 pr-3 space-y-2">
-                        <span className="inline-block px-2.5 py-1 rounded bg-orange-600 text-white font-extrabold text-[11px] tracking-wider uppercase">
+                      <div className="w-[52%] space-y-2">
+                        <span className="inline-block px-2.5 py-1 rounded bg-orange-600 text-white font-extrabold text-[10px] tracking-wider uppercase shadow-md">
                           🔥 COMBO IMPERDIBLE
                         </span>
-                        <p className="text-xs font-serif italic text-amber-200">
-                          Edición Especial de la Casa
+                        <p className="text-xs font-serif italic text-amber-300 drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
+                          {imageOrigin === "real" ? "Edición Especial de la Casa" : "Creado por Nuestros Agentes"}
                         </p>
-                        <h4 className="text-2xl font-black text-white leading-tight uppercase drop-shadow-md">
+                        <h4 className="text-2xl sm:text-3xl font-black text-white leading-tight uppercase drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]">
                           Doble Cheddar &amp; Papas
                         </h4>
-                        <p className="text-xs text-slate-200 line-clamp-2">
+                        <p className="text-xs text-slate-200 line-clamp-2 drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)]">
                           Carne angus smash, queso fundido y papas rústicas con salsa especial.
                         </p>
                       </div>
 
-                      <div className="w-1/2 pr-3 flex items-center justify-between pt-4">
+                      <div className="w-[52%] flex items-end justify-between pt-4">
                         <div>
-                          <span className="text-[10px] text-slate-300 uppercase block font-bold">Por solo</span>
-                          <span className="text-2xl font-black text-amber-300 drop-shadow">$8.990</span>
+                          <span className="text-[10px] text-slate-300 uppercase block font-bold drop-shadow">Por solo</span>
+                          <span className="text-2xl sm:text-3xl font-black text-amber-300 drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
+                            $8.990
+                          </span>
                         </div>
-                        <span className="px-3 py-1.5 bg-white text-stone-900 rounded-lg text-xs font-black shadow-lg">
+                        <span className="px-3.5 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs font-black shadow-xl shadow-orange-500/40">
                           Pide Aquí ➔
                         </span>
                       </div>
                     </div>
                   )}
 
-                  {/* ESTILO ENCABEZADO GOURMET */}
+                  {/* 2. ENCABEZADO GOURMET: TEXTO DIRECTO ARRIBA (SIN CARD TAPANDO EL PLATO) */}
                   {selectedStyle === "gourmet" && (
                     <div className="relative z-10 w-full h-full flex flex-col justify-between text-center">
-                      <div className="bg-stone-900/85 backdrop-blur-md p-4 rounded-2xl border border-stone-700/80 max-w-sm mx-auto shadow-2xl">
-                        <span className="text-[10px] font-bold text-orange-400 uppercase tracking-widest block mb-1">
+                      <div className="space-y-1.5 pt-2">
+                        <span className="text-[11px] font-extrabold text-amber-300 uppercase tracking-widest block drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]">
                           ⭐ RECOMENDACIÓN DEL CHEF
                         </span>
-                        <h4 className="text-xl font-extrabold text-white">
-                          Salmón Sellado en Mantequilla
+                        <h4 className="text-2xl sm:text-3xl font-black text-white drop-shadow-[0_3px_10px_rgba(0,0,0,0.95)]">
+                          {imageOrigin === "real" ? "Salmón a las Finas Hierbas" : "Costillar Glaseado al Romero"}
                         </h4>
-                        <p className="text-xs text-stone-300 mt-1">
-                          Acompañado de papas doradas al romero y reducción de cítricos.
+                        <p className="text-xs text-amber-100 max-w-sm mx-auto drop-shadow-[0_2px_5px_rgba(0,0,0,0.95)]">
+                          Sellado en mantequilla clarificada con reducción de cítricos y papas doradas.
                         </p>
                       </div>
 
-                      <div className="flex items-center justify-center gap-3">
-                        <span className="px-4 py-2 bg-orange-500 text-white text-xs font-bold rounded-xl shadow-lg">
-                          Reserva tu mesa por WhatsApp
+                      <div className="pb-1">
+                        <span className="inline-block px-5 py-2.5 bg-orange-500 text-white text-xs font-bold rounded-xl shadow-2xl shadow-orange-500/40 transform hover:scale-105 transition-all">
+                          Reserva tu mesa por WhatsApp ➔
                         </span>
                       </div>
                     </div>
                   )}
 
-                  {/* ESTILO FICHA CON INGREDIENTES */}
+                  {/* 3. FICHA CON INGREDIENTES: TEXTO ARRIBA Y TIRA FLOTANTE DIRECTA */}
                   {selectedStyle === "recipe" && (
                     <div className="relative z-10 w-full h-full flex flex-col justify-between">
-                      <div className="bg-stone-900/80 backdrop-blur-md p-3 rounded-xl border border-stone-700 max-w-xs">
-                        <span className="text-[10px] font-bold text-amber-300 uppercase">
+                      <div className="pt-2">
+                        <span className="text-[10px] font-extrabold text-amber-300 uppercase tracking-wider block drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]">
                           🥗 RECETA DE NUESTRA COCINA
                         </span>
-                        <h4 className="text-lg font-bold text-white">Pasta al Pesto Di Basilico</h4>
+                        <h4 className="text-2xl font-black text-white drop-shadow-[0_3px_8px_rgba(0,0,0,0.95)]">
+                          {imageOrigin === "real" ? "Pasta al Pesto Di Basilico" : "Ramen Tradicional de Autor"}
+                        </h4>
                       </div>
 
-                      {/* Tira de ingredientes */}
-                      <div className="bg-stone-950/90 backdrop-blur-md p-3 rounded-2xl border border-stone-800 flex items-center justify-around gap-2 text-center">
-                        <div className="text-[11px] text-slate-200">
-                          <span className="text-base block">🧄</span> Ajo Chilote
+                      {/* Tira de ingredientes flotando DIRECTAMENTE sobre la foto (sin card sólida que tape) */}
+                      <div className="grid grid-cols-4 gap-2 pt-2">
+                        <div className="text-center p-2 rounded-xl bg-black/40 backdrop-blur-sm border border-white/20 text-white shadow-lg">
+                          <span className="text-base block">🧄</span>
+                          <span className="text-[10px] font-bold block mt-0.5">Ajo Chilote</span>
                         </div>
-                        <div className="text-[11px] text-slate-200">
-                          <span className="text-base block">🫒</span> Oliva Virgen
+                        <div className="text-center p-2 rounded-xl bg-black/40 backdrop-blur-sm border border-white/20 text-white shadow-lg">
+                          <span className="text-base block">🫒</span>
+                          <span className="text-[10px] font-bold block mt-0.5">Oliva Virgen</span>
                         </div>
-                        <div className="text-[11px] text-slate-200">
-                          <span className="text-base block">🌿</span> Albahaca
+                        <div className="text-center p-2 rounded-xl bg-black/40 backdrop-blur-sm border border-white/20 text-white shadow-lg">
+                          <span className="text-base block">🌿</span>
+                          <span className="text-[10px] font-bold block mt-0.5">Albahaca</span>
                         </div>
-                        <div className="text-[11px] text-slate-200">
-                          <span className="text-base block">🧀</span> Parmesano
+                        <div className="text-center p-2 rounded-xl bg-black/40 backdrop-blur-sm border border-white/20 text-white shadow-lg">
+                          <span className="text-base block">🧀</span>
+                          <span className="text-[10px] font-bold block mt-0.5">Parmesano</span>
                         </div>
                       </div>
                     </div>
@@ -500,63 +653,193 @@ export default function ComoFuncionaPage() {
             </div>
 
             {/* Explicación de nuestros agentes */}
-            <div className="mt-6 p-4 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center gap-3 text-xs sm:text-sm text-slate-200">
+            <div className="mt-6 p-4 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center gap-3 text-xs sm:text-sm text-slate-800 dark:text-slate-200">
               <span className="text-xl">✨</span>
               <span>
-                <strong>Decisión de Nuestros Agentes:</strong> Inspeccionan el encuadre de tu foto, identifican el
-                espacio libre sin comida y montan el diseño con tipografía vectorial nítida en español.
+                <strong>Decisión de Nuestros Agentes:</strong> Los textos se montan directamente sobre el espacio
+                despejado de la imagen usando tipografía vectorial publicitaria, sombras suaves y jerarquía comercial.
+                El plato nunca queda tapado.
               </span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── 5. REELS Y VIDEOS DINÁMICOS ── */}
-      <section className="py-24 border-t border-slate-800/80">
+      {/* ── 5. GALERÍA DE PROMPTS Y ESTILOS VISUALES DISPONIBLES (NUEVA SECCIÓN) ── */}
+      <section className="py-24 border-t border-slate-200 dark:border-slate-800/80">
+        <div className="wrap">
+          <div className="text-center max-w-3xl mx-auto mb-16" data-reveal>
+            <span className="eyebrow text-orange-600 dark:text-orange-400 font-bold text-xs uppercase tracking-wider">
+              Identidad de marca a tu medida
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-slate-100 mt-2">
+              Nuestra Galería de Estilos Visuales &amp; Prompts Listos para Usar.
+            </h2>
+            <p className="text-slate-600 dark:text-slate-300 mt-4 text-base">
+              Cada negocio tiene una vibra única. Nuestros agentes cuentan con una amplia biblioteca de estilos
+              fotográficos calibrados para que todas tus publicaciones se vean profesionales y consistentes con tu marca.
+            </p>
+
+            {/* Filtros de la Galería */}
+            <div className="flex flex-wrap items-center justify-center gap-2 mt-8">
+              <button
+                onClick={() => setActivePromptCat("all")}
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all border ${
+                  activePromptCat === "all"
+                    ? "bg-orange-500 text-white border-orange-500 shadow-md"
+                    : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:border-orange-400"
+                }`}
+              >
+                Todos los Estilos
+              </button>
+              <button
+                onClick={() => setActivePromptCat("gastronomia")}
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all border ${
+                  activePromptCat === "gastronomia"
+                    ? "bg-orange-500 text-white border-orange-500 shadow-md"
+                    : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:border-orange-400"
+                }`}
+              >
+                🍽️ Restaurantes &amp; Cocina
+              </button>
+              <button
+                onClick={() => setActivePromptCat("fastfood")}
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all border ${
+                  activePromptCat === "fastfood"
+                    ? "bg-orange-500 text-white border-orange-500 shadow-md"
+                    : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:border-orange-400"
+                }`}
+              >
+                🍔 Fast Food &amp; Burgers
+              </button>
+              <button
+                onClick={() => setActivePromptCat("cafe")}
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all border ${
+                  activePromptCat === "cafe"
+                    ? "bg-orange-500 text-white border-orange-500 shadow-md"
+                    : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:border-orange-400"
+                }`}
+              >
+                ☕ Cafetería &amp; Brunch
+              </button>
+            </div>
+          </div>
+
+          {/* Cuadrícula de Tarjetas de Estilos Visuales */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" data-reveal>
+            {filteredPrompts.map((style) => (
+              <div
+                key={style.id}
+                className="group relative rounded-2xl overflow-hidden bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/70 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col"
+              >
+                {/* Cabecera con imagen del estilo */}
+                <div className="relative h-48 w-full overflow-hidden bg-slate-900">
+                  <div
+                    className="absolute inset-0 bg-cover bg-center group-hover:scale-105 transition-transform duration-500"
+                    style={{ backgroundImage: `url('${style.bgUrl}')` }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent" />
+
+                  <span className="absolute top-3 left-3 px-2.5 py-1 rounded-md bg-orange-600/90 text-white text-[10px] font-extrabold uppercase tracking-wider backdrop-blur-sm">
+                    {style.tag}
+                  </span>
+                </div>
+
+                {/* Contenido de la tarjeta */}
+                <div className="p-6 flex-1 flex flex-col justify-between">
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-2">
+                      {style.name}
+                    </h3>
+                    <p className="text-slate-600 dark:text-slate-300 text-xs leading-relaxed mb-4">
+                      {style.description}
+                    </p>
+
+                    <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-700/60 text-xs">
+                      <div>
+                        <span className="text-slate-400 font-semibold block text-[11px] uppercase">Iluminación:</span>
+                        <span className="text-slate-700 dark:text-slate-200">{style.lightingMood}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 font-semibold block text-[11px] uppercase">Recomendado para:</span>
+                        <span className="text-slate-700 dark:text-slate-200 font-medium">{style.recommendedFor}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 pt-3 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between text-xs">
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                      <span>✓</span> Listo en 1 clic
+                    </span>
+                    <a
+                      href="#muestra-gratis"
+                      className="text-orange-600 dark:text-orange-400 font-bold hover:underline"
+                    >
+                      Probar en tu marca ➔
+                    </a>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center mt-12" data-reveal>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              ¿Tienes un estilo o colores corporativos específicos? Nuestros agentes pueden calibrar y fijar la
+              <strong> paleta visual exacta</strong> de tu marca.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 6. REELS Y VIDEOS DINÁMICOS ── */}
+      <section className="py-24 border-t border-slate-200 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-900/40">
         <div className="wrap">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center" data-reveal>
             <div>
-              <span className="eyebrow text-orange-400">Formato vertical de alto alcance</span>
-              <h2 className="text-3xl sm:text-4xl font-bold text-slate-100 mt-2 leading-tight">
+              <span className="eyebrow text-orange-600 dark:text-orange-400 font-bold text-xs uppercase tracking-wider">
+                Formato vertical de alto alcance
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-slate-100 mt-2 leading-tight">
                 Reels, TikToks y Shorts que atrapan a tu cliente en los primeros 3 segundos.
               </h2>
-              <p className="text-slate-300 mt-4 text-base leading-relaxed">
+              <p className="text-slate-600 dark:text-slate-300 mt-4 text-base leading-relaxed">
                 El video vertical es el formato con mayor crecimiento y alcance orgánico. Nuestros agentes redactan
                 guiones con fórmulas probadas de retención, animan el contenido y dejan cada video listo para publicar.
               </p>
 
               <div className="space-y-4 mt-8">
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-orange-500/20 text-orange-400 flex items-center justify-center font-bold text-sm shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-orange-500/20 text-orange-600 dark:text-orange-400 flex items-center justify-center font-bold text-sm shrink-0">
                     1
                   </div>
                   <div>
-                    <h4 className="text-base font-bold text-slate-100">El Gancho (Primeros 3 seg)</h4>
-                    <p className="text-xs sm:text-sm text-slate-400">
+                    <h4 className="text-base font-bold text-slate-900 dark:text-slate-100">El Gancho (Primeros 3 seg)</h4>
+                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
                       Una frase contundente que frena el scroll y despierta el apetito o la curiosidad de inmediato.
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-orange-500/20 text-orange-400 flex items-center justify-center font-bold text-sm shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-orange-500/20 text-orange-600 dark:text-orange-400 flex items-center justify-center font-bold text-sm shrink-0">
                     2
                   </div>
                   <div>
-                    <h4 className="text-base font-bold text-slate-100">Desarrollo Dinámico</h4>
-                    <p className="text-xs sm:text-sm text-slate-400">
+                    <h4 className="text-base font-bold text-slate-900 dark:text-slate-100">Desarrollo Dinámico</h4>
+                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
                       Muestra tu plato o servicio en acción, con subtítulos llamativos y ritmo visual moderno.
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-orange-500/20 text-orange-400 flex items-center justify-center font-bold text-sm shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-orange-500/20 text-orange-600 dark:text-orange-400 flex items-center justify-center font-bold text-sm shrink-0">
                     3
                   </div>
                   <div>
-                    <h4 className="text-base font-bold text-slate-100">Llamado a la Acción Directo</h4>
-                    <p className="text-xs sm:text-sm text-slate-400">
+                    <h4 className="text-base font-bold text-slate-900 dark:text-slate-100">Llamado a la Acción Directo</h4>
+                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
                       Indica con claridad cómo pedir por WhatsApp o visitar tu local hoy mismo.
                     </p>
                   </div>
@@ -594,27 +877,29 @@ export default function ComoFuncionaPage() {
         </div>
       </section>
 
-      {/* ── 6. COMANDO POR WHATSAPP ── */}
-      <section className="py-24 border-t border-slate-800/80 bg-slate-900/40">
+      {/* ── 7. COMANDO POR WHATSAPP ── */}
+      <section className="py-24 border-t border-slate-200 dark:border-slate-800/80">
         <div className="wrap">
           <div className="text-center max-w-3xl mx-auto mb-16" data-reveal>
-            <span className="eyebrow text-emerald-400">Control total desde tu bolsillo</span>
-            <h2 className="text-3xl sm:text-4xl font-bold text-slate-100 mt-2">
+            <span className="eyebrow text-emerald-600 dark:text-emerald-400 font-bold text-xs uppercase tracking-wider">
+              Control total desde tu bolsillo
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-slate-100 mt-2">
               Sin computadoras ni paneles difíciles: manejas tu agencia desde WhatsApp.
             </h2>
-            <p className="text-slate-400 mt-4 text-base">
+            <p className="text-slate-600 dark:text-slate-300 mt-4 text-base">
               No tienes que aprender a usar ningún programa complicado. Todo te llega a la app que ya tienes en el
               bolsillo todos los días.
             </p>
 
             {/* Pestañas de Escenarios */}
-            <div className="inline-flex p-1.5 rounded-xl bg-slate-800 border border-slate-700 mt-8 gap-2">
+            <div className="inline-flex p-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 mt-8 gap-2 shadow-sm">
               <button
                 onClick={() => setActiveScenario("aprobar")}
                 className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
                   activeScenario === "aprobar"
                     ? "bg-emerald-600 text-white shadow-md"
-                    : "text-slate-300 hover:text-white"
+                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
                 }`}
               >
                 1. Aprobar Posts Semanales
@@ -624,7 +909,7 @@ export default function ComoFuncionaPage() {
                 className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
                   activeScenario === "urgente"
                     ? "bg-emerald-600 text-white shadow-md"
-                    : "text-slate-300 hover:text-white"
+                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
                 }`}
               >
                 2. Crear Promo Urgente al Vuelo
@@ -634,7 +919,7 @@ export default function ComoFuncionaPage() {
                 className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
                   activeScenario === "metricas"
                     ? "bg-emerald-600 text-white shadow-md"
-                    : "text-slate-300 hover:text-white"
+                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
                 }`}
               >
                 3. Resumen y Rendimiento
@@ -719,68 +1004,72 @@ export default function ComoFuncionaPage() {
         </div>
       </section>
 
-      {/* ── 7. MULTICANAL 360° ── */}
-      <section className="py-24 border-t border-slate-800/80">
+      {/* ── 8. MULTICANAL 360° ── */}
+      <section className="py-24 border-t border-slate-200 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-900/40">
         <div className="wrap">
           <div className="text-center max-w-3xl mx-auto mb-16" data-reveal>
-            <span className="eyebrow text-orange-400">Distribución sincronizada</span>
-            <h2 className="text-3xl sm:text-4xl font-bold text-slate-100 mt-2">
+            <span className="eyebrow text-orange-600 dark:text-orange-400 font-bold text-xs uppercase tracking-wider">
+              Distribución sincronizada
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-slate-100 mt-2">
               Tu marca activa donde tus clientes están buscando hoy.
             </h2>
-            <p className="text-slate-400 mt-4 text-base">
+            <p className="text-slate-600 dark:text-slate-300 mt-4 text-base">
               Con un solo clic, tu contenido se adapta y se publica en todas las plataformas principales sin esfuerzo.
             </p>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-center" data-reveal>
-            <div className="p-5 rounded-2xl bg-slate-800/40 border border-slate-700/60">
+            <div className="p-5 rounded-2xl bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 shadow-sm dark:shadow-none">
               <span className="text-3xl block mb-2">📸</span>
-              <h4 className="font-bold text-slate-100 text-sm">Instagram</h4>
-              <p className="text-xs text-slate-400 mt-1">Feed, Stories y Reels</p>
+              <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm">Instagram</h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Feed, Stories y Reels</p>
             </div>
 
-            <div className="p-5 rounded-2xl bg-slate-800/40 border border-slate-700/60">
+            <div className="p-5 rounded-2xl bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 shadow-sm dark:shadow-none">
               <span className="text-3xl block mb-2">👥</span>
-              <h4 className="font-bold text-slate-100 text-sm">Facebook</h4>
-              <p className="text-xs text-slate-400 mt-1">Página y grupos</p>
+              <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm">Facebook</h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Página y grupos</p>
             </div>
 
-            <div className="p-5 rounded-2xl bg-slate-800/40 border border-slate-700/60">
+            <div className="p-5 rounded-2xl bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 shadow-sm dark:shadow-none">
               <span className="text-3xl block mb-2">🎵</span>
-              <h4 className="font-bold text-slate-100 text-sm">TikTok</h4>
-              <p className="text-xs text-slate-400 mt-1">Videos con audio en tendencia</p>
+              <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm">TikTok</h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Videos en tendencia</p>
             </div>
 
-            <div className="p-5 rounded-2xl bg-slate-800/40 border border-slate-700/60">
+            <div className="p-5 rounded-2xl bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 shadow-sm dark:shadow-none">
               <span className="text-3xl block mb-2">📍</span>
-              <h4 className="font-bold text-slate-100 text-sm">Google Maps</h4>
-              <p className="text-xs text-slate-400 mt-1">Ficha de negocio local</p>
+              <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm">Google Maps</h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Ficha de negocio local</p>
             </div>
 
-            <div className="p-5 rounded-2xl bg-slate-800/40 border border-slate-700/60">
+            <div className="p-5 rounded-2xl bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 shadow-sm dark:shadow-none">
               <span className="text-3xl block mb-2">▶️</span>
-              <h4 className="font-bold text-slate-100 text-sm">YouTube</h4>
-              <p className="text-xs text-slate-400 mt-1">Shorts verticales</p>
+              <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm">YouTube</h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Shorts verticales</p>
             </div>
 
-            <div className="p-5 rounded-2xl bg-slate-800/40 border border-slate-700/60">
+            <div className="p-5 rounded-2xl bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 shadow-sm dark:shadow-none">
               <span className="text-3xl block mb-2">✍️</span>
-              <h4 className="font-bold text-slate-100 text-sm">Blog &amp; SEO</h4>
-              <p className="text-xs text-slate-400 mt-1">Artículos para Google</p>
+              <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm">Blog &amp; SEO</h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Artículos para Google</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── 8. TABLA COMPARATIVA ── */}
-      <section className="py-24 border-t border-slate-800/80 bg-slate-900/60">
+      {/* ── 9. TABLA COMPARATIVA DIRECTA ── */}
+      <section className="py-24 border-t border-slate-200 dark:border-slate-800/80 bg-white dark:bg-slate-900/60">
         <div className="wrap">
           <div className="text-center max-w-3xl mx-auto mb-16" data-reveal>
-            <span className="eyebrow text-orange-400">Comparativa directa</span>
-            <h2 className="text-3xl sm:text-4xl font-bold text-slate-100 mt-2">
+            <span className="eyebrow text-orange-600 dark:text-orange-400 font-bold text-xs uppercase tracking-wider">
+              Comparativa directa
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-slate-100 mt-2">
               ¿Por qué somos la opción más inteligente para tu negocio?
             </h2>
-            <p className="text-slate-400 mt-4 text-base">
+            <p className="text-slate-600 dark:text-slate-300 mt-4 text-base">
               Mira la diferencia real entre contratar una agencia clásica, agotarte haciéndolo tú mismo o activar a
               nuestros agentes.
             </p>
@@ -789,51 +1078,51 @@ export default function ComoFuncionaPage() {
           <div className="overflow-x-auto" data-reveal>
             <table className="w-full text-left border-collapse min-w-[640px] text-sm">
               <thead>
-                <tr className="border-b border-slate-700 text-slate-400 uppercase text-xs">
+                <tr className="border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 uppercase text-xs">
                   <th className="py-4 px-6 font-bold">Criterio</th>
-                  <th className="py-4 px-6 font-bold text-red-400">Agencia Tradicional</th>
-                  <th className="py-4 px-6 font-bold text-amber-400">Hacerlo Tú Mismo</th>
-                  <th className="py-4 px-6 font-bold text-emerald-400 bg-orange-500/10 rounded-t-xl">
+                  <th className="py-4 px-6 font-bold text-red-600 dark:text-red-400">Agencia Tradicional</th>
+                  <th className="py-4 px-6 font-bold text-amber-600 dark:text-amber-400">Hacerlo Tú Mismo</th>
+                  <th className="py-4 px-6 font-bold text-emerald-600 dark:text-emerald-400 bg-orange-500/10 rounded-t-xl">
                     Con Nuestros Agentes ⭐
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800 text-slate-300">
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
                 <tr>
-                  <td className="py-4 px-6 font-bold text-white">Costo mensual</td>
-                  <td className="py-4 px-6 text-red-300">$500 a $1.500 USD</td>
-                  <td className="py-4 px-6 text-amber-300">Tu tiempo libre (invaluable)</td>
-                  <td className="py-4 px-6 font-bold text-emerald-400 bg-orange-500/10">
+                  <td className="py-4 px-6 font-bold text-slate-900 dark:text-white">Costo mensual</td>
+                  <td className="py-4 px-6 text-red-600 dark:text-red-300">$500 a $1.500 USD</td>
+                  <td className="py-4 px-6 text-amber-600 dark:text-amber-300">Tu tiempo libre (invaluable)</td>
+                  <td className="py-4 px-6 font-bold text-emerald-600 dark:text-emerald-400 bg-orange-500/10">
                     Desde $24.990 CLP / mes
                   </td>
                 </tr>
                 <tr>
-                  <td className="py-4 px-6 font-bold text-white">Tiempo de entrega</td>
+                  <td className="py-4 px-6 font-bold text-slate-900 dark:text-white">Tiempo de entrega</td>
                   <td className="py-4 px-6">5 a 10 días hábiles</td>
                   <td className="py-4 px-6">Cuando tengas 2 horas libres</td>
-                  <td className="py-4 px-6 font-bold text-emerald-400 bg-orange-500/10">Minutos (24/7)</td>
+                  <td className="py-4 px-6 font-bold text-emerald-600 dark:text-emerald-400 bg-orange-500/10">Minutos (24/7)</td>
                 </tr>
                 <tr>
-                  <td className="py-4 px-6 font-bold text-white">Tus fotos reales</td>
+                  <td className="py-4 px-6 font-bold text-slate-900 dark:text-white">Tus fotos reales</td>
                   <td className="py-4 px-6">Piden sesiones caras de fotos</td>
                   <td className="py-4 px-6">Fotos sueltas sin diseño ni precio</td>
-                  <td className="py-4 px-6 font-bold text-emerald-400 bg-orange-500/10">
-                    Vestidas con cartelería profesional
+                  <td className="py-4 px-6 font-bold text-emerald-600 dark:text-emerald-400 bg-orange-500/10">
+                    Vestidas con cartelería profesional directa
                   </td>
                 </tr>
                 <tr>
-                  <td className="py-4 px-6 font-bold text-white">Aprobación y control</td>
+                  <td className="py-4 px-6 font-bold text-slate-900 dark:text-white">Aprobación y control</td>
                   <td className="py-4 px-6">Mails interminables y reuniones</td>
                   <td className="py-4 px-6">Sin planificación fija</td>
-                  <td className="py-4 px-6 font-bold text-emerald-400 bg-orange-500/10">
+                  <td className="py-4 px-6 font-bold text-emerald-600 dark:text-emerald-400 bg-orange-500/10">
                     En 1 toque desde WhatsApp
                   </td>
                 </tr>
                 <tr>
-                  <td className="py-4 px-6 font-bold text-white">Publicación</td>
+                  <td className="py-4 px-6 font-bold text-slate-900 dark:text-white">Publicación</td>
                   <td className="py-4 px-6">Solo Instagram y Facebook</td>
                   <td className="py-4 px-6">Una sola red por falta de tiempo</td>
-                  <td className="py-4 px-6 font-bold text-emerald-400 bg-orange-500/10">
+                  <td className="py-4 px-6 font-bold text-emerald-600 dark:text-emerald-400 bg-orange-500/10">
                     Instagram, TikTok, Google, FB y Blog
                   </td>
                 </tr>
@@ -843,16 +1132,18 @@ export default function ComoFuncionaPage() {
         </div>
       </section>
 
-      {/* ── 9. DOBLE LLAMADO A LA ACCIÓN (FORMULARIO EXPRESS + WHATSAPP) ── */}
-      <section id="muestra-gratis" className="py-24 border-t border-slate-800/80">
+      {/* ── 10. DOBLE LLAMADO A LA ACCIÓN (FORMULARIO EXPRESS + WHATSAPP) ── */}
+      <section id="muestra-gratis" className="py-24 border-t border-slate-200 dark:border-slate-800/80">
         <div className="wrap">
-          <div className="max-w-4xl mx-auto rounded-3xl bg-gradient-to-b from-slate-800/80 to-slate-900 border border-slate-700 p-8 sm:p-14 shadow-2xl" data-reveal>
+          <div className="max-w-4xl mx-auto rounded-3xl bg-white dark:bg-gradient-to-b dark:from-slate-800/80 dark:to-slate-900 border border-slate-200 dark:border-slate-700 p-8 sm:p-14 shadow-2xl" data-reveal>
             <div className="text-center max-w-2xl mx-auto mb-10">
-              <span className="eyebrow text-orange-400">Pruébalo sin costo</span>
-              <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-100 mt-2">
+              <span className="eyebrow text-orange-600 dark:text-orange-400 font-bold text-xs uppercase tracking-wider">
+                Pruébalo sin costo
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-slate-100 mt-2">
                 Mira cómo se vería tu negocio hoy mismo, sin pagar nada.
               </h2>
-              <p className="text-slate-300 mt-3 text-base">
+              <p className="text-slate-600 dark:text-slate-300 mt-3 text-base">
                 Déjanos el nombre de tu negocio y te preparamos una <strong>muestra gratuita y personalizada</strong> con
                 publicaciones y estrategia real en menos de lo que imaginas.
               </p>
@@ -861,8 +1152,8 @@ export default function ComoFuncionaPage() {
             {formStatus === "success" ? (
               <div className="p-8 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-center max-w-lg mx-auto">
                 <span className="text-4xl block mb-2">🎉</span>
-                <h3 className="text-xl font-bold text-white mb-2">¡Solicitud recibida con éxito!</h3>
-                <p className="text-slate-300 text-sm mb-6">
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">¡Solicitud recibida con éxito!</h3>
+                <p className="text-slate-600 dark:text-slate-300 text-sm mb-6">
                   Nuestros agentes ya están preparando la muestra comercial para <strong>{businessName}</strong>. Te
                   escribiremos al WhatsApp <strong>{contactPhone}</strong> con tu propuesta lista.
                 </p>
@@ -872,7 +1163,7 @@ export default function ComoFuncionaPage() {
                   )}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm transition-all"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm transition-all shadow-md"
                 >
                   <span>💬</span> Abrir WhatsApp de Inmediato
                 </a>
@@ -880,7 +1171,7 @@ export default function ComoFuncionaPage() {
             ) : (
               <form onSubmit={handleSampleSubmit} className="max-w-xl mx-auto space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 uppercase mb-1.5">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">
                     Nombre de tu Negocio / Local *
                   </label>
                   <input
@@ -889,19 +1180,19 @@ export default function ComoFuncionaPage() {
                     value={businessName}
                     onChange={(e) => setBusinessName(e.target.value)}
                     placeholder="Ej. Pizzería Donatello / Burger House"
-                    className="w-full px-4 py-3.5 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 text-sm"
+                    className="w-full px-4 py-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-orange-500 text-sm"
                   />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-300 uppercase mb-1.5">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">
                       Rubro Comercial *
                     </label>
                     <select
                       value={businessRubro}
                       onChange={(e) => setBusinessRubro(e.target.value)}
-                      className="w-full px-4 py-3.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:border-orange-500 text-sm"
+                      className="w-full px-4 py-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-orange-500 text-sm"
                     >
                       <option>Hamburguesería / Fast Food</option>
                       <option>Pizzería / Trattoria</option>
@@ -915,7 +1206,7 @@ export default function ComoFuncionaPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-300 uppercase mb-1.5">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">
                       Teléfono WhatsApp *
                     </label>
                     <input
@@ -924,13 +1215,13 @@ export default function ComoFuncionaPage() {
                       value={contactPhone}
                       onChange={(e) => setContactPhone(e.target.value)}
                       placeholder="+56 9 1234 5678"
-                      className="w-full px-4 py-3.5 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 text-sm"
+                      className="w-full px-4 py-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-orange-500 text-sm"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 uppercase mb-1.5">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">
                     Correo Electrónico (Opcional)
                   </label>
                   <input
@@ -938,12 +1229,12 @@ export default function ComoFuncionaPage() {
                     value={contactEmail}
                     onChange={(e) => setContactEmail(e.target.value)}
                     placeholder="tucorreo@negocio.com"
-                    className="w-full px-4 py-3.5 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 text-sm"
+                    className="w-full px-4 py-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-orange-500 text-sm"
                   />
                 </div>
 
                 {formStatus === "error" && (
-                  <p className="text-red-400 text-xs">
+                  <p className="text-red-500 dark:text-red-400 text-xs">
                     Hubo un problema enviando tus datos. Puedes escribirnos directo al WhatsApp de abajo.
                   </p>
                 )}
@@ -958,9 +1249,9 @@ export default function ComoFuncionaPage() {
 
                 {/* Separador O */}
                 <div className="flex items-center gap-3 my-6">
-                  <div className="flex-1 h-px bg-slate-700" />
-                  <span className="text-xs uppercase font-bold text-slate-500">O también puedes</span>
-                  <div className="flex-1 h-px bg-slate-700" />
+                  <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+                  <span className="text-xs uppercase font-bold text-slate-400 dark:text-slate-500">O también puedes</span>
+                  <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
                 </div>
 
                 {/* Botón directo de WhatsApp Comercial */}
@@ -975,7 +1266,7 @@ export default function ComoFuncionaPage() {
               </form>
             )}
 
-            <div className="mt-8 text-center text-xs text-slate-400">
+            <div className="mt-8 text-center text-xs text-slate-500 dark:text-slate-400">
               🔒 Tus datos son confidenciales y solo los usaremos para enviarte tu propuesta de muestra. Sin spam.
             </div>
           </div>
