@@ -13,14 +13,15 @@ const WA_MSG = encodeURIComponent(
 );
 
 type ImageOrigin = "real" | "generated";
-type StyleKey = "split" | "gourmet" | "recipe";
+type BusinessSector = "gastronomia" | "retail" | "belleza" | "fitness";
 type ScenarioKey = "aprobar" | "urgente" | "metricas";
-type PromptCategory = "all" | "gastronomia" | "cafe" | "fastfood";
+type PromptCategory = "all" | "gastronomia" | "retail" | "belleza" | "servicios";
+type ReelNiche = "gastronomia" | "retail" | "belleza" | "fitness";
 
 interface PromptStyleCard {
   id: string;
   name: string;
-  category: "gastronomia" | "cafe" | "fastfood";
+  category: "gastronomia" | "retail" | "belleza" | "servicios";
   tag: string;
   description: string;
   lightingMood: string;
@@ -33,61 +34,81 @@ const PROMPT_GALLERY: PromptStyleCard[] = [
     id: "gourmet-moody",
     name: "Gourmet de Autor (Dark & Moody)",
     category: "gastronomia",
-    tag: "Alta Cocina",
+    tag: "Alta Cocina & Bares",
     description: "Iluminación rasante tenue, contrastes cálidos y fondos oscuros que resaltan la textura y brillo de la comida.",
     lightingMood: "Luz lateral suave con penumbra de fondo",
-    recommendedFor: "Restaurantes de autor, carnes premium, pescados y vinos",
+    recommendedFor: "Restaurantes de autor, carnes premium, bares de cócteles y vinos",
     bgUrl: "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80",
   },
   {
     id: "street-food-vibrant",
     name: "Street Food & Alto Contraste",
-    category: "fastfood",
+    category: "gastronomia",
     tag: "Comida Rápida & Burgers",
     description: "Primeros planos jugosos con queso derretido, colores intensos y fondos con ligero desenfoque urbano.",
     lightingMood: "Luz cenital cálida de alto impacto",
-    recommendedFor: "Hamburgueserías, pizzerías, sándwiches y locales nocturnos",
+    recommendedFor: "Hamburgueserías, pizzerías, sándwiches, sushi y locales nocturnos",
     bgUrl: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80",
   },
   {
-    id: "rustico-artesanal",
-    name: "Rústico Tradición (Bodegón)",
-    category: "gastronomia",
-    tag: "Artesanal",
-    description: "Maderas nobles, harina espolvoreada, manteles de lino e ingredientes frescos crudos alrededor del plato.",
-    lightingMood: "Luz de ventana difusa y natural",
-    recommendedFor: "Pastas frescas, panaderías, trattorias y empanadas",
-    bgUrl: "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?auto=format&fit=crop&w=800&q=80",
+    id: "retail-studio-podio",
+    name: "Retail Studio & Podio Minimalista",
+    category: "retail",
+    tag: "Productos & Calzado",
+    description: "Fondo neutro pulido, iluminación difusa de estudio y sombras suaves que destacan materiales y acabados del producto.",
+    lightingMood: "Luz de estudio difusa sin brillos molestos",
+    recommendedFor: "Zapatillas, relojes, tecnología, accesorios, perfumería y regalos",
+    bgUrl: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80",
   },
   {
-    id: "cafe-editorial",
-    name: "Editorial Brunch & Especialidad",
-    category: "cafe",
-    tag: "Cafetería & Brunch",
-    description: "Fondos claros y neutros, luz matutina natural, sombras suaves y estética limpia estilo revista gastronómica.",
-    lightingMood: "Luz natural diurna sobre madera clara",
-    recommendedFor: "Cafés de especialidad, pastelerías, desayunos y brunch",
-    bgUrl: "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=800&q=80",
+    id: "boutique-street-style",
+    name: "Boutique & Street Style Urbano",
+    category: "retail",
+    tag: "Moda & Ropa",
+    description: "Estilo editorial con luz natural de calle, percheros cuidados y atmósfera de tienda exclusiva con estilo.",
+    lightingMood: "Luz natural diurna y tonos orgánicos",
+    recommendedFor: "Tiendas de ropa, boutiques, calzado, óptica y accesorios de vestir",
+    bgUrl: "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&w=800&q=80",
   },
   {
-    id: "splash-action",
-    name: "Splash & Acción de Estudio",
-    category: "fastfood",
-    tag: "Dinamismo",
-    description: "Captura de alta velocidad: salsas cayendo, queso estirándose o ingredientes flotando con máxima nitidez.",
-    lightingMood: "Flash estroboscópico de estudio",
-    recommendedFor: "Promociones agresivas, cócteles, jugos y lanzamientos",
-    bgUrl: "https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=800&q=80",
+    id: "clean-aesthetic-glow",
+    name: "Clean Aesthetic & Glow Natural",
+    category: "belleza",
+    tag: "Estética & Cuidado",
+    description: "Tonos claros, luz cálida envolvente, gotas frescas y sensación de bienestar, higiene y pureza absoluta.",
+    lightingMood: "Softbox envolvente con rebote blanco",
+    recommendedFor: "Centros de estética, spas, tratamientos faciales, cosmética y uñas",
+    bgUrl: "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=800&q=80",
   },
   {
-    id: "flat-lay-cenital",
-    name: "Cenital Flat-Lay Comercial",
-    category: "gastronomia",
-    tag: "Mesa Completa",
-    description: "Vista perpendicular desde arriba de 90°. Orden simétrico con espacio despejado para tablas de precios y combos.",
-    lightingMood: "Iluminación pareja sin sombras duras",
-    recommendedFor: "Combos familiares, tablas de picoteo, sushi y menús ejecutivos",
-    bgUrl: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80",
+    id: "vintage-barber-studio",
+    name: "Vintage Barber & Gentleman Studio",
+    category: "belleza",
+    tag: "Barbería & Peluquería",
+    description: "Maderas nobles, cuero, detalles metálicos y luz focal de corte clásico y moderno de alta precisión.",
+    lightingMood: "Luz focal cálida sobre texturas oscuras",
+    recommendedFor: "Barberías, salones de peinado, tatuajes y cuidado masculino",
+    bgUrl: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    id: "high-energy-fitness",
+    name: "High Energy & Fuerza Deportiva",
+    category: "servicios",
+    tag: "Gimnasios & Crossfit",
+    description: "Contraste dramático, sombras marcadas, atmósfera deportiva y enfoque en rendimiento, pesas y motivación.",
+    lightingMood: "Contraluz rasante con destellos de neón",
+    recommendedFor: "Gimnasios, box de crossfit, academias de artes marciales y entrenadores",
+    bgUrl: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    id: "clinica-confianza-clean",
+    name: "Clínica de Confianza & Salud Clean",
+    category: "servicios",
+    tag: "Salud, Dental & Profesionales",
+    description: "Blancos luminosos, luz suave no invasiva y atmósfera de alta tecnología, serenidad y máximo profesionalismo.",
+    lightingMood: "Iluminación diurna pareja y cristalina",
+    recommendedFor: "Clínicas dentales, centros médicos, kinesiología, ópticas y veterinarias",
+    bgUrl: "https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&w=800&q=80",
   },
 ];
 
@@ -95,19 +116,22 @@ export default function ComoFuncionaPage() {
   // Origen de la imagen: Real vs Generada por agentes
   const [imageOrigin, setImageOrigin] = useState<ImageOrigin>("real");
 
-  // Estilo visual de la composición en el visor
-  const [selectedStyle, setSelectedStyle] = useState<StyleKey>("split");
+  // Rubro seleccionado en el showroom interactivo
+  const [selectedSector, setSelectedSector] = useState<BusinessSector>("gastronomia");
   const [showOriginal, setShowOriginal] = useState(false);
 
   // Filtro de la galería de prompts
   const [activePromptCat, setActivePromptCat] = useState<PromptCategory>("all");
+
+  // Niche en el selector de Reels
+  const [activeReelNiche, setActiveReelNiche] = useState<ReelNiche>("gastronomia");
 
   // Simulador de WhatsApp
   const [activeScenario, setActiveScenario] = useState<ScenarioKey>("aprobar");
 
   // Formulario express de muestra
   const [businessName, setBusinessName] = useState("");
-  const [businessRubro, setBusinessRubro] = useState("Hamburguesería / Fast Food");
+  const [businessRubro, setBusinessRubro] = useState("Tienda de Ropa, Calzado o Moda");
   const [contactPhone, setContactPhone] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const [formStatus, setFormStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
@@ -164,6 +188,116 @@ export default function ComoFuncionaPage() {
       ? PROMPT_GALLERY
       : PROMPT_GALLERY.filter((p) => p.category === activePromptCat);
 
+  // Configuración de imagen y copy del showroom según rubro
+  const sectorData = {
+    gastronomia: {
+      name: "Gastronomía & Comida",
+      icon: "🍔",
+      badge: "Restaurantes · Fast Food · Cafés",
+      tagReal: "🔥 COMBO IMPERDIBLE",
+      subReal: "Edición Especial de la Casa",
+      titleReal: "Doble Cheddar & Papas",
+      descReal: "Carne angus smash, queso fundido y papas rústicas con salsa especial.",
+      priceReal: "$8.990",
+      ctaReal: "Pide Aquí ➔",
+      imgReal: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=1000&q=80",
+
+      tagGen: "⭐ RECOMENDACIÓN DEL CHEF",
+      subGen: "Creado por Nuestros Agentes",
+      titleGen: "Salmón a las Finas Hierbas",
+      descGen: "Sellado en mantequilla clarificada con reducción de cítricos y papas doradas.",
+      priceGen: "$14.990",
+      ctaGen: "Reserva tu Mesa ➔",
+      imgGen: "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1000&q=80",
+    },
+    retail: {
+      name: "Tiendas & Retail",
+      icon: "👟",
+      badge: "Ropa · Zapatillas · Accesorios · Hogar",
+      tagReal: "⚡ NUEVA TEMPORADA",
+      subReal: "Stock Limitado en Tienda",
+      titleReal: "Urban Retro Sneakers",
+      descReal: "Suela ergonómica amortiguada, lona respirable y acabado de alta resistencia.",
+      priceReal: "30% OFF · $39.990",
+      ctaReal: "Comprar al WhatsApp ➔",
+      imgReal: "https://images.unsplash.com/photo-1552346154-21d32810aba3?auto=format&fit=crop&w=1000&q=80",
+
+      tagGen: "✨ EDICIÓN DE AUTOR",
+      subGen: "Catálogo de Nuestros Agentes",
+      titleGen: "Minimalist Silver Watch",
+      descGen: "Cristal de zafiro pulido, correa de cuero genuino y maquinaria de precisión.",
+      priceGen: "$49.990",
+      ctaGen: "Ver Catálogo Completo ➔",
+      imgGen: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=1000&q=80",
+    },
+    belleza: {
+      name: "Estética & Belleza",
+      icon: "💈",
+      badge: "Barberías · Salones · Spas · Uñas",
+      tagReal: "💈 PACK SEMANAL",
+      subReal: "Agenda de Martes a Jueves",
+      titleReal: "Corte Degradé + Barba",
+      descReal: "Incluye perfilado navaja, toalla caliente y loción tónica de eucalipto.",
+      priceReal: "$16.990",
+      ctaReal: "Reservar Turno ➔",
+      imgReal: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1000&q=80",
+
+      tagGen: "🌸 BIENESTAR Y CUIDADO",
+      subGen: "Diseñado por Nuestros Agentes",
+      titleGen: "Limpieza Facial Glow",
+      descGen: "Hidratación profunda con ácido hialurónico, exfoliación suave y máscara botánica.",
+      priceGen: "$28.990",
+      ctaGen: "Agendar Sesión ➔",
+      imgGen: "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=1000&q=80",
+    },
+    fitness: {
+      name: "Fitness, Salud & Servicios",
+      icon: "⚡",
+      badge: "Gimnasios · Clínicas · Talleres · Oficios",
+      tagReal: "💪 PLAN TRANSFORMACIÓN",
+      subReal: "Cupos Disponibles de Mes",
+      titleReal: "Pase Libre Trimestral",
+      descReal: "Acceso total a máquinas, peso libre, clases dirigidas y evaluación física periódica.",
+      priceReal: "Matrícula $0 · $34.990/mes",
+      ctaReal: "Empezar Hoy ➔",
+      imgReal: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1000&q=80",
+
+      tagGen: "⭐ SALUD DENTAL PREVENTIVA",
+      subGen: "Propuesta de Nuestros Agentes",
+      titleGen: "Evaluación + Limpieza Pro",
+      descGen: "Diagnóstico clínico integral con cámara intraoral, destartraje y pulido profiláctico.",
+      priceGen: "$24.990",
+      ctaGen: "Pedir Hora Médica ➔",
+      imgGen: "https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&w=1000&q=80",
+    },
+  };
+
+  const currentSector = sectorData[selectedSector];
+
+  // Reels scripts por rubro
+  const reelHooks: Record<ReelNiche, { tag: string; hook: string; bg: string }> = {
+    gastronomia: {
+      tag: "● REEL GASTRONOMÍA",
+      hook: '"Si buscas una hamburguesa que realmente chorree queso en Santiago, tienes que ver esto..."',
+      bg: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80",
+    },
+    retail: {
+      tag: "● REEL MODA & RETAIL",
+      hook: '"3 prendas esenciales que combinan con absolutamente todo y no sabías que necesitabas..."',
+      bg: "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&w=800&q=80",
+    },
+    belleza: {
+      tag: "● REEL ESTÉTICA & BARBERÍA",
+      hook: '"El cambio de look que rejuvenece 5 años y todos nos están pidiendo esta semana..."',
+      bg: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=800&q=80",
+    },
+    fitness: {
+      tag: "● REEL FITNESS & SALUD",
+      hook: '"El único hábito diario que necesitas si pasas más de 6 horas sentado frente al computador..."',
+      bg: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=800&q=80",
+    },
+  };
+
   return (
     <div className="landing-page-root relative overflow-x-hidden min-h-screen">
       <PageTracker page="como-funciona" />
@@ -179,7 +313,7 @@ export default function ComoFuncionaPage() {
       {/* ── NAVEGACIÓN PRINCIPAL ── */}
       <BrandHeader />
 
-      {/* ── 1. HERO COMERCIAL (100% CONTRASTE NATIVO) ── */}
+      {/* ── 1. HERO COMERCIAL UNIVERSAL (MULTI-RUBRO) ── */}
       <section className="hero pt-14 pb-20 border-b" style={{ borderColor: "var(--line)" }}>
         <div className="wrap">
           <div className="text-center max-w-4xl mx-auto" data-reveal>
@@ -198,13 +332,40 @@ export default function ComoFuncionaPage() {
             </h1>
 
             <p
-              className="text-lg sm:text-xl leading-relaxed max-w-3xl mx-auto mb-10"
+              className="text-lg sm:text-xl leading-relaxed max-w-3xl mx-auto mb-8"
               style={{ color: "var(--ink-dim)" }}
             >
               Nuestros agentes especializados investigan qué busca tu cliente, arman tu calendario del mes,
-              visten tus fotos con cartelería comercial de alto impacto y publican automáticamente en
-              Instagram, Facebook, TikTok y Google. <strong>Tú solo apruebas desde WhatsApp en 10 segundos.</strong>
+              visten las fotos de tus productos o servicios con cartelería comercial de alto impacto y publican
+              automáticamente en Instagram, Facebook, TikTok y Google. <strong>Tú solo apruebas desde WhatsApp en 10 segundos.</strong>
             </p>
+
+            {/* Rubros de Negocios Compatibles */}
+            <div className="flex flex-wrap items-center justify-center gap-2 max-w-2xl mx-auto mb-10">
+              <span className="text-xs font-bold uppercase mr-1" style={{ color: "var(--ink-faint)" }}>
+                Diseñado para:
+              </span>
+              {[
+                "🛍️ Tiendas & Retail",
+                "🍽️ Restaurantes & Cafés",
+                "💈 Salones & Barberías",
+                "🏋️ Gimnasios & Fitness",
+                "🩺 Clínicas & Salud",
+                "🔧 Talleres & Servicios",
+              ].map((pill) => (
+                <span
+                  key={pill}
+                  className="px-3 py-1 rounded-lg text-xs font-semibold border shadow-sm"
+                  style={{
+                    background: "var(--panel)",
+                    borderColor: "var(--line)",
+                    color: "var(--ink)",
+                  }}
+                >
+                  {pill}
+                </span>
+              ))}
+            </div>
 
             {/* Doble CTA Hero */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-xl mx-auto">
@@ -239,17 +400,17 @@ export default function ComoFuncionaPage() {
                 <span className="text-emerald-500 font-bold">✓</span> Sin contratos forzosos
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="text-emerald-500 font-bold">✓</span> Fotos reales o generadas
+                <span className="text-emerald-500 font-bold">✓</span> Fotos reales de tu local o catálogo
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="text-emerald-500 font-bold">✓</span> Control 100% desde WhatsApp
+                <span className="text-emerald-500 font-bold">✓</span> Control 100% desde tu WhatsApp
               </span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── 2. EL DOLOR REAL DEL CLIENTE (FONDO TRANSPARENTE, SIN BANDAS GRISES) ── */}
+      {/* ── 2. EL DOLOR REAL DEL CLIENTE (CUALQUIER LOCAL COMERCIAL) ── */}
       <section className="py-24 border-b" style={{ borderColor: "var(--line)" }}>
         <div className="wrap">
           <div className="text-center max-w-3xl mx-auto mb-16" data-reveal>
@@ -260,8 +421,8 @@ export default function ComoFuncionaPage() {
               Llevar un negocio ya es bastante trabajo como para además ser creador de contenido.
             </h2>
             <p className="mt-4 text-base" style={{ color: "var(--ink-dim)" }}>
-              Hablamos a diario con dueños de restaurantes, tiendas y profesionales. Casi todos se enfrentan a
-              las mismas 3 frustraciones:
+              Hablamos a diario con dueños de tiendas de ropa, restaurantes, centros de estética, gimnasios, clínicas
+              y talleres. Todos enfrentan las mismas 3 frustraciones:
             </p>
           </div>
 
@@ -276,18 +437,18 @@ export default function ComoFuncionaPage() {
                   ⏳
                 </div>
                 <h3 className="text-xl font-bold mb-3" style={{ color: "var(--ink)" }}>
-                  &quot;No me da el tiempo para pensar qué publicar&quot;
+                  &quot;¿A qué hora diseño si estoy atendiendo clientes?&quot;
                 </h3>
                 <p className="text-sm leading-relaxed" style={{ color: "var(--ink-dim)" }}>
                   Terminas tu jornada agotado. Quieres subir algo a redes, pero te quedas en blanco frente al celular,
-                  lo pospones para mañana y tu cuenta pasa semanas en silencio perdiendo clientes.
+                  lo pospones para mañana y tu cuenta pasa semanas en silencio perdiendo clientes frente a los que sí publican.
                 </p>
               </div>
               <div
                 className="mt-6 pt-4 border-t text-xs text-red-500 font-medium"
                 style={{ borderColor: "var(--line)" }}
               >
-                ✕ Resultado: Tus competidores se quedan con la atención de tu zona.
+                ✕ Resultado: Tus competidores locales se quedan con la atención y las ventas.
               </div>
             </div>
 
@@ -304,15 +465,15 @@ export default function ComoFuncionaPage() {
                   &quot;Las agencias tradicionales cobran caro y demoran días&quot;
                 </h3>
                 <p className="text-sm leading-relaxed" style={{ color: "var(--ink-dim)" }}>
-                  Te cobran cientos de miles de pesos cada mes por un par de posts genéricos. Pides una promoción urgente
-                  para este fin de semana y tardan 5 días en responderte un correo.
+                  Te cobran cientos de miles de pesos cada mes por un par de publicaciones genéricas. Pides una promoción
+                  urgente para liquidar stock este fin de semana y tardan 5 días en responderte un correo.
                 </p>
               </div>
               <div
                 className="mt-6 pt-4 border-t text-xs text-amber-500 font-medium"
                 style={{ borderColor: "var(--line)" }}
               >
-                ✕ Resultado: Pagar caro por un servicio lento y poco flexible.
+                ✕ Resultado: Pagar caro por un servicio lento, rígido y poco conectado con tu local.
               </div>
             </div>
 
@@ -329,22 +490,22 @@ export default function ComoFuncionaPage() {
                   &quot;Saco fotos pero no se ven como las de marcas grandes&quot;
                 </h3>
                 <p className="text-sm leading-relaxed" style={{ color: "var(--ink-dim)" }}>
-                  Tu producto es delicioso o de excelente calidad, pero una foto suelta en el celular se ve fría,
-                  sin precios destacados, sin llamados a la acción y sin el diseño que invita a comprar.
+                  Tu producto, prenda, plato o servicio es de excelente calidad, pero una foto suelta en el celular se ve
+                  fría, sin precios claros, sin llamados a la acción y sin el diseño comercial que invita a comprar.
                 </p>
               </div>
               <div
                 className="mt-6 pt-4 border-t text-xs text-orange-500 font-medium"
                 style={{ borderColor: "var(--line)" }}
               >
-                ✕ Resultado: Fotos caseras que no transmiten el verdadero valor de tu marca.
+                ✕ Resultado: Fotos caseras que no transmiten el verdadero valor de tu negocio.
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── 3. CÓMO LO HACEMOS (LOS 4 PASOS) ── */}
+      {/* ── 3. CÓMO LO HACEMOS (LOS 4 PASOS PARA CUALQUIER RUBRO) ── */}
       <section className="py-24 border-b" style={{ borderColor: "var(--line)" }}>
         <div className="wrap">
           <div className="text-center max-w-3xl mx-auto mb-20" data-reveal>
@@ -352,11 +513,11 @@ export default function ComoFuncionaPage() {
               Cómo trabaja nuestro equipo
             </span>
             <h2 className="text-3xl sm:text-4xl font-bold mt-2" style={{ color: "var(--ink)" }}>
-              Un flujo simple y continuo para que tu marca nunca pare de vender.
+              Un flujo simple y continuo para que tu negocio nunca pare de vender.
             </h2>
             <p className="mt-4 text-base" style={{ color: "var(--ink-dim)" }}>
               Nuestros agentes especializados se reparten el trabajo tal como lo haría una agencia de primer nivel,
-              pero en minutos y a una fracción del costo.
+              pero en minutos y adaptados al rubro específico de tu local.
             </p>
           </div>
 
@@ -375,15 +536,16 @@ export default function ComoFuncionaPage() {
                   Radar de Nicho
                 </h3>
                 <p className="text-sm leading-relaxed" style={{ color: "var(--ink-dim)" }}>
-                  Nuestros agentes escanean las preguntas frecuentes, dudas y platos más buscados en tu rubro y ciudad.
-                  No adivinamos: creamos contenido que la gente ya quiere ver.
+                  Nuestros agentes escanean las preguntas frecuentes, precios, ofertas y tendencias de tu rubro en tu
+                  comuna o ciudad. Ya sea que vendas comida, ropa, servicios de estética o planes fitness, detectamos qué
+                  quiere tu público.
                 </p>
               </div>
               <div
                 className="mt-6 pt-4 border-t text-xs flex items-center gap-1.5"
                 style={{ borderColor: "var(--line)", color: "var(--ink-dim)" }}
               >
-                <span className="text-emerald-500 font-bold">✓</span> Temas con demanda real
+                <span className="text-emerald-500 font-bold">✓</span> Temas con demanda comercial real
               </div>
             </div>
 
@@ -401,8 +563,8 @@ export default function ComoFuncionaPage() {
                   Estrategia Mensual
                 </h3>
                 <p className="text-sm leading-relaxed" style={{ color: "var(--ink-dim)" }}>
-                  Armamos un calendario balanceado con 4 pilares: combos de venta directa, platos de autor, secretos de
-                  cocina para ganar autoridad y videos cortos de gran alcance.
+                  Armamos un calendario con 4 pilares: ofertas directas y liquidaciones, productos o servicios estrella,
+                  consejos y demostraciones para generar confianza, y videos de alto alcance orgánico.
                 </p>
               </div>
               <div
@@ -427,15 +589,16 @@ export default function ComoFuncionaPage() {
                   Dirección de Arte
                 </h3>
                 <p className="text-sm leading-relaxed" style={{ color: "var(--ink-dim)" }}>
-                  Nuestros agentes examinan el encuadre y estampan carteles comerciales, precios destacados y botones
-                  <strong> directamente sobre la imagen</strong>, sin tapar ni deformar tu comida.
+                  Nuestros agentes examinan el encuadre de la foto de tu producto, prenda o servicio y estampan carteles
+                  comerciales, precios y llamados a la acción <strong>directamente sobre la imagen</strong>, sin tapar ni
+                  deformar lo que vendes.
                 </p>
               </div>
               <div
                 className="mt-6 pt-4 border-t text-xs flex items-center gap-1.5"
                 style={{ borderColor: "var(--line)", color: "var(--ink-dim)" }}
               >
-                <span className="text-emerald-500 font-bold">✓</span> Tu plato queda impecable
+                <span className="text-emerald-500 font-bold">✓</span> Tu producto queda impecable
               </div>
             </div>
 
@@ -453,8 +616,8 @@ export default function ComoFuncionaPage() {
                   Publicación Automática
                 </h3>
                 <p className="text-sm leading-relaxed" style={{ color: "var(--ink-dim)" }}>
-                  Tus piezas se publican solas en Instagram, Facebook, TikTok y Google Maps en el mejor horario.
-                  Tú recibes un mensaje en WhatsApp y apruebas con 1 toque.
+                  Tus piezas se publican solas en Instagram, Facebook, TikTok y Google Maps en el mejor horario comercial.
+                  Tú recibes un mensaje en WhatsApp y apruebas con 1 solo toque.
                 </p>
               </div>
               <div
@@ -468,7 +631,7 @@ export default function ComoFuncionaPage() {
         </div>
       </section>
 
-      {/* ── 4. RESPETO TOTAL A TU PRODUCTO: FOTOS REALES O CREADAS POR AGENTES (TEXTO DIRECTO S/CARD) ── */}
+      {/* ── 4. SHOWROOM INTERACTIVO MULTI-RUBRO (FOTOS REALES VS CREADAS POR AGENTES) ── */}
       <section className="py-24 border-b" style={{ borderColor: "var(--line)" }}>
         <div className="wrap">
           <div className="text-center max-w-3xl mx-auto mb-16" data-reveal>
@@ -476,29 +639,59 @@ export default function ComoFuncionaPage() {
               El gran diferencial visual
             </span>
             <h2 className="text-3xl sm:text-4xl font-bold mt-2" style={{ color: "var(--ink)" }}>
-              El texto directo sobre la imagen. La comida es siempre la protagonista.
+              El texto directo sobre la imagen. Tu producto o servicio siempre es el protagonista.
             </h2>
             <p className="mt-4 text-base" style={{ color: "var(--ink-dim)" }}>
-              Nada de cajas oscuras que tapen tu comida. Nuestros agentes estampan tipografía publicitaria nítida
-              directamente sobre el espacio libre de la foto, ya sea una foto real tomada con tu teléfono o una imagen
-              creada por ellos mismos.
+              Cero plantillas genéricas con cajas oscuras que tapen lo que vendes. Nuestros agentes estampan tipografía
+              publicitaria nítida directamente sobre el espacio libre de la foto, ya sea una foto real tomada con tu
+              teléfono o una imagen de catálogo creada por ellos mismos.
             </p>
 
+            {/* Selector de Rubros Comerciales */}
+            <div className="flex flex-wrap items-center justify-center gap-2 mt-8">
+              {(
+                [
+                  { key: "gastronomia", label: "🍔 Gastronomía & Comida" },
+                  { key: "retail", label: "👟 Tiendas & Retail" },
+                  { key: "belleza", label: "💈 Estética & Belleza" },
+                  { key: "fitness", label: "⚡ Fitness & Salud" },
+                ] as const
+              ).map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => {
+                    setSelectedSector(tab.key);
+                    setShowOriginal(false);
+                  }}
+                  className="px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all border shadow-sm"
+                  style={{
+                    background: selectedSector === tab.key ? "var(--signal)" : "var(--panel)",
+                    color: selectedSector === tab.key ? "#FFFFFF" : "var(--ink)",
+                    borderColor: selectedSector === tab.key ? "var(--signal)" : "var(--line)",
+                  }}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
             {/* Selector de Origen: Foto Real vs Creada por Agentes */}
-            <div className="flex flex-wrap items-center justify-center gap-3 mt-8">
+            <div className="flex flex-wrap items-center justify-center gap-3 mt-4">
               <button
                 onClick={() => {
                   setImageOrigin("real");
                   setShowOriginal(false);
                 }}
-                className="px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2 border"
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all border ${
+                  imageOrigin === "real" ? "shadow-sm font-bold" : ""
+                }`}
                 style={{
-                  background: imageOrigin === "real" ? "var(--signal)" : "var(--panel)",
-                  color: imageOrigin === "real" ? "#FFFFFF" : "var(--ink)",
+                  background: imageOrigin === "real" ? "var(--panel-2)" : "var(--panel)",
                   borderColor: imageOrigin === "real" ? "var(--signal)" : "var(--line)",
+                  color: imageOrigin === "real" ? "var(--signal)" : "var(--ink-dim)",
                 }}
               >
-                <span>📸</span> Fotos Reales de tu Catálogo
+                📸 Fotos Reales de tu Catálogo / Local
               </button>
 
               <button
@@ -506,59 +699,21 @@ export default function ComoFuncionaPage() {
                   setImageOrigin("generated");
                   setShowOriginal(false);
                 }}
-                className="px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2 border"
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all border ${
+                  imageOrigin === "generated" ? "shadow-sm font-bold" : ""
+                }`}
                 style={{
-                  background: imageOrigin === "generated" ? "var(--signal)" : "var(--panel)",
-                  color: imageOrigin === "generated" ? "#FFFFFF" : "var(--ink)",
+                  background: imageOrigin === "generated" ? "var(--panel-2)" : "var(--panel)",
                   borderColor: imageOrigin === "generated" ? "var(--signal)" : "var(--line)",
+                  color: imageOrigin === "generated" ? "var(--signal)" : "var(--ink-dim)",
                 }}
               >
-                <span>🎨</span> Imágenes Creadas por Nuestros Agentes
-              </button>
-            </div>
-
-            {/* Pestañas de Estilos */}
-            <div
-              className="inline-flex p-1.5 rounded-xl border mt-5 gap-2 shadow-sm"
-              style={{ background: "var(--panel)", borderColor: "var(--line)" }}
-            >
-              <button
-                onClick={() => setSelectedStyle("split")}
-                className={`px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
-                  selectedStyle === "split"
-                    ? "bg-orange-500 text-white shadow-sm"
-                    : "hover:text-orange-500"
-                }`}
-                style={{ color: selectedStyle === "split" ? "#FFFFFF" : "var(--ink-dim)" }}
-              >
-                🍔 Split Comercial (Combo)
-              </button>
-              <button
-                onClick={() => setSelectedStyle("gourmet")}
-                className={`px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
-                  selectedStyle === "gourmet"
-                    ? "bg-orange-500 text-white shadow-sm"
-                    : "hover:text-orange-500"
-                }`}
-                style={{ color: selectedStyle === "gourmet" ? "#FFFFFF" : "var(--ink-dim)" }}
-              >
-                🍷 Encabezado Gourmet
-              </button>
-              <button
-                onClick={() => setSelectedStyle("recipe")}
-                className={`px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
-                  selectedStyle === "recipe"
-                    ? "bg-orange-500 text-white shadow-sm"
-                    : "hover:text-orange-500"
-                }`}
-                style={{ color: selectedStyle === "recipe" ? "#FFFFFF" : "var(--ink-dim)" }}
-              >
-                🥗 Ficha de Cocina
+                🎨 Imágenes Creadas por Nuestros Agentes
               </button>
             </div>
           </div>
 
-          {/* Comparador Interactivo */}
+          {/* Comparador Interactivo del Rubro Seleccionado */}
           <div
             className="max-w-4xl mx-auto rounded-3xl border p-6 sm:p-10 shadow-xl"
             style={{ background: "var(--panel)", borderColor: "var(--line)" }}
@@ -570,37 +725,23 @@ export default function ComoFuncionaPage() {
             >
               <div>
                 <span className="text-xs font-mono font-bold text-orange-500 uppercase tracking-wider">
-                  {imageOrigin === "real" ? "Foto Real del Cliente" : "Generación Fotográfica de Nuestros Agentes"}
-                  {" · "}
-                  {selectedStyle === "split" && "Ideal para combos, promociones y delivery"}
-                  {selectedStyle === "gourmet" && "Ideal para destacar la alta cocina y platos estrella"}
-                  {selectedStyle === "recipe" && "Ideal para educar, generar interacción y guardados"}
+                  {currentSector.icon} {currentSector.name} · {currentSector.badge}
                 </span>
                 <h3 className="text-xl font-bold mt-1" style={{ color: "var(--ink)" }}>
-                  {imageOrigin === "real" ? (
-                    selectedStyle === "split"
-                      ? "Split Lateral: Plato real a la derecha, texto publicitario a la izquierda"
-                      : selectedStyle === "gourmet"
-                      ? "Encabezado Superior: Cabecera estampada directamente sobre la foto sin tapar la comida"
-                      : "Ficha de Cocina: Tira de ingredientes identificados directamente sobre la mesa"
-                  ) : (
-                    selectedStyle === "split"
-                      ? "Estudio Fotográfico: Imagen creada desde cero con espacio asimétrico para la oferta"
-                      : selectedStyle === "gourmet"
-                      ? "Bodegón de Autor: Escena generada con iluminación rasante de restaurante"
-                      : "Flat-Lay Cenital: Mesa completa con vista cenital limpia para recetas"
-                  )}
+                  {imageOrigin === "real"
+                    ? `Foto Real del Negocio con Tipografía Directa de Nuestros Agentes`
+                    : `Generación de Catálogo Fotográfico por Nuestros Agentes`}
                 </h3>
               </div>
 
               {/* Botón Switch: Original vs Arte (visible solo si es foto real) */}
               {imageOrigin === "real" && (
                 <div
-                  className="flex items-center gap-3 px-4 py-2 rounded-xl border"
+                  className="flex items-center gap-3 px-4 py-2 rounded-xl border shrink-0"
                   style={{ background: "var(--panel-2)", borderColor: "var(--line)" }}
                 >
                   <span className="text-xs font-medium" style={{ color: "var(--ink-dim)" }}>
-                    Foto cruda
+                    Foto cruda de celular
                   </span>
                   <button
                     onClick={() => setShowOriginal((prev) => !prev)}
@@ -620,24 +761,15 @@ export default function ComoFuncionaPage() {
               )}
             </div>
 
-            {/* Contenedor del Cartel: TEXTO DIRECTO SOBRE LA IMAGEN (SIN CARDS QUE TAPEN EL PLATO) */}
+            {/* Contenedor del Cartel: TEXTO DIRECTO SOBRE LA IMAGEN (SIN CARDS QUE TAPEN EL PRODUCTO) */}
             <div className="relative aspect-square max-w-[500px] mx-auto rounded-2xl overflow-hidden shadow-2xl border border-stone-800 bg-stone-950 flex flex-col justify-between p-7 select-none">
-              {/* Imagen de fondo (Foto Real vs Generada por Agentes) */}
+              {/* Imagen de fondo */}
               <div
                 className="absolute inset-0 bg-cover bg-center transition-all duration-300"
                 style={{
-                  backgroundImage:
-                    imageOrigin === "real"
-                      ? selectedStyle === "split"
-                        ? "linear-gradient(to right, rgba(10,15,25,0.92) 0%, rgba(10,15,25,0.7) 45%, rgba(0,0,0,0.15) 80%), url('https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=1000&q=80')"
-                        : selectedStyle === "gourmet"
-                        ? "linear-gradient(to bottom, rgba(10,15,25,0.88) 0%, rgba(10,15,25,0.2) 40%, rgba(10,15,25,0.85) 100%), url('https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1000&q=80')"
-                        : "linear-gradient(to bottom, rgba(10,15,25,0.85) 0%, rgba(0,0,0,0.1) 45%, rgba(10,15,25,0.88) 100%), url('https://images.unsplash.com/photo-1473093295043-cdd812d0e601?auto=format&fit=crop&w=1000&q=80')"
-                      : selectedStyle === "split"
-                      ? "linear-gradient(to right, rgba(10,15,25,0.94) 0%, rgba(10,15,25,0.65) 48%, rgba(0,0,0,0.1) 85%), url('https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&w=1000&q=80')"
-                      : selectedStyle === "gourmet"
-                      ? "linear-gradient(to bottom, rgba(10,15,25,0.9) 0%, rgba(10,15,25,0.15) 45%, rgba(10,15,25,0.8) 100%), url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1000&q=80')"
-                      : "linear-gradient(to bottom, rgba(10,15,25,0.85) 0%, rgba(0,0,0,0.1) 45%, rgba(10,15,25,0.88) 100%), url('https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1000&q=80')",
+                  backgroundImage: `linear-gradient(to right, rgba(10,15,25,0.92) 0%, rgba(10,15,25,0.65) 48%, rgba(0,0,0,0.1) 85%), url('${
+                    imageOrigin === "real" ? currentSector.imgReal : currentSector.imgGen
+                  }')`,
                   filter: showOriginal ? "none" : "contrast(1.05) saturate(1.1)",
                 }}
               />
@@ -650,96 +782,35 @@ export default function ComoFuncionaPage() {
                   <p className="text-xs text-slate-300 mt-1">Sin tipografía, sin precios destacados ni llamado a la acción.</p>
                 </div>
               ) : (
-                <>
-                  {/* 1. SPLIT COMERCIAL: TEXTO DIRECTO SOBRE EL LADO IZQUIERDO */}
-                  {selectedStyle === "split" && (
-                    <div className="relative z-10 w-full h-full flex flex-col justify-between">
-                      <div className="w-[52%] space-y-2">
-                        <span className="inline-block px-2.5 py-1 rounded bg-orange-600 text-white font-extrabold text-[10px] tracking-wider uppercase shadow-md">
-                          🔥 COMBO IMPERDIBLE
-                        </span>
-                        <p className="text-xs font-serif italic text-amber-300 drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
-                          {imageOrigin === "real" ? "Edición Especial de la Casa" : "Creado por Nuestros Agentes"}
-                        </p>
-                        <h4 className="text-2xl sm:text-3xl font-black text-white leading-tight uppercase drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]">
-                          Doble Cheddar &amp; Papas
-                        </h4>
-                        <p className="text-xs text-slate-200 line-clamp-2 drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)]">
-                          Carne angus smash, queso fundido y papas rústicas con salsa especial.
-                        </p>
-                      </div>
+                /* TEXTO DIRECTO SOBRE EL LADO IZQUIERDO DE LA IMAGEN */
+                <div className="relative z-10 w-full h-full flex flex-col justify-between">
+                  <div className="w-[54%] space-y-2">
+                    <span className="inline-block px-2.5 py-1 rounded bg-orange-600 text-white font-extrabold text-[10px] tracking-wider uppercase shadow-md">
+                      {imageOrigin === "real" ? currentSector.tagReal : currentSector.tagGen}
+                    </span>
+                    <p className="text-xs font-serif italic text-amber-300 drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
+                      {imageOrigin === "real" ? currentSector.subReal : currentSector.subGen}
+                    </p>
+                    <h4 className="text-2xl sm:text-3xl font-black text-white leading-tight uppercase drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]">
+                      {imageOrigin === "real" ? currentSector.titleReal : currentSector.titleGen}
+                    </h4>
+                    <p className="text-xs text-slate-200 line-clamp-2 drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)]">
+                      {imageOrigin === "real" ? currentSector.descReal : currentSector.descGen}
+                    </p>
+                  </div>
 
-                      <div className="w-[52%] flex items-end justify-between pt-4">
-                        <div>
-                          <span className="text-[10px] text-slate-300 uppercase block font-bold drop-shadow">Por solo</span>
-                          <span className="text-2xl sm:text-3xl font-black text-amber-300 drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
-                            $8.990
-                          </span>
-                        </div>
-                        <span className="px-3.5 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs font-black shadow-xl shadow-orange-500/40">
-                          Pide Aquí ➔
-                        </span>
-                      </div>
+                  <div className="w-[54%] flex items-end justify-between pt-4">
+                    <div>
+                      <span className="text-[10px] text-slate-300 uppercase block font-bold drop-shadow">Precio o Promo</span>
+                      <span className="text-xl sm:text-2xl font-black text-amber-300 drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
+                        {imageOrigin === "real" ? currentSector.priceReal : currentSector.priceGen}
+                      </span>
                     </div>
-                  )}
-
-                  {/* 2. ENCABEZADO GOURMET: TEXTO DIRECTO ARRIBA (SIN CARD TAPANDO EL PLATO) */}
-                  {selectedStyle === "gourmet" && (
-                    <div className="relative z-10 w-full h-full flex flex-col justify-between text-center">
-                      <div className="space-y-1.5 pt-2">
-                        <span className="text-[11px] font-extrabold text-amber-300 uppercase tracking-widest block drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]">
-                          ⭐ RECOMENDACIÓN DEL CHEF
-                        </span>
-                        <h4 className="text-2xl sm:text-3xl font-black text-white drop-shadow-[0_3px_10px_rgba(0,0,0,0.95)]">
-                          {imageOrigin === "real" ? "Salmón a las Finas Hierbas" : "Costillar Glaseado al Romero"}
-                        </h4>
-                        <p className="text-xs text-amber-100 max-w-sm mx-auto drop-shadow-[0_2px_5px_rgba(0,0,0,0.95)]">
-                          Sellado en mantequilla clarificada con reducción de cítricos y papas doradas.
-                        </p>
-                      </div>
-
-                      <div className="pb-1">
-                        <span className="inline-block px-5 py-2.5 bg-orange-500 text-white text-xs font-bold rounded-xl shadow-2xl shadow-orange-500/40 transform hover:scale-105 transition-all">
-                          Reserva tu mesa por WhatsApp ➔
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 3. FICHA CON INGREDIENTES: TEXTO ARRIBA Y TIRA FLOTANTE DIRECTA */}
-                  {selectedStyle === "recipe" && (
-                    <div className="relative z-10 w-full h-full flex flex-col justify-between">
-                      <div className="pt-2">
-                        <span className="text-[10px] font-extrabold text-amber-300 uppercase tracking-wider block drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]">
-                          🥗 RECETA DE NUESTRA COCINA
-                        </span>
-                        <h4 className="text-2xl font-black text-white drop-shadow-[0_3px_8px_rgba(0,0,0,0.95)]">
-                          {imageOrigin === "real" ? "Pasta al Pesto Di Basilico" : "Ramen Tradicional de Autor"}
-                        </h4>
-                      </div>
-
-                      {/* Tira de ingredientes flotando DIRECTAMENTE sobre la foto */}
-                      <div className="grid grid-cols-4 gap-2 pt-2">
-                        <div className="text-center p-2 rounded-xl bg-black/50 backdrop-blur-sm border border-white/20 text-white shadow-lg">
-                          <span className="text-base block">🧄</span>
-                          <span className="text-[10px] font-bold block mt-0.5">Ajo Chilote</span>
-                        </div>
-                        <div className="text-center p-2 rounded-xl bg-black/50 backdrop-blur-sm border border-white/20 text-white shadow-lg">
-                          <span className="text-base block">🫒</span>
-                          <span className="text-[10px] font-bold block mt-0.5">Oliva Virgen</span>
-                        </div>
-                        <div className="text-center p-2 rounded-xl bg-black/50 backdrop-blur-sm border border-white/20 text-white shadow-lg">
-                          <span className="text-base block">🌿</span>
-                          <span className="text-[10px] font-bold block mt-0.5">Albahaca</span>
-                        </div>
-                        <div className="text-center p-2 rounded-xl bg-black/50 backdrop-blur-sm border border-white/20 text-white shadow-lg">
-                          <span className="text-base block">🧀</span>
-                          <span className="text-[10px] font-bold block mt-0.5">Parmesano</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </>
+                    <span className="px-3.5 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs font-black shadow-xl shadow-orange-500/40">
+                      {imageOrigin === "real" ? currentSector.ctaReal : currentSector.ctaGen}
+                    </span>
+                  </div>
+                </div>
               )}
             </div>
 
@@ -755,15 +826,15 @@ export default function ComoFuncionaPage() {
               <span className="text-xl">✨</span>
               <span>
                 <strong>Decisión de Nuestros Agentes:</strong> Los textos se montan directamente sobre el espacio
-                despejado de la imagen usando tipografía vectorial publicitaria, sombras suaves y jerarquía comercial.
-                El plato nunca queda tapado.
+                despejado de la imagen usando tipografía publicitaria, sombras suaves y jerarquía comercial.
+                Tu producto, prenda, plato o local nunca queda tapado ni deformado.
               </span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── 5. GALERÍA DE PROMPTS Y ESTILOS VISUALES DISPONIBLES ── */}
+      {/* ── 5. GALERÍA DE PROMPTS Y ESTILOS VISUALES DISPONIBLES POR RUBRO ── */}
       <section className="py-24 border-b" style={{ borderColor: "var(--line)" }}>
         <div className="wrap">
           <div className="text-center max-w-3xl mx-auto mb-16" data-reveal>
@@ -771,11 +842,11 @@ export default function ComoFuncionaPage() {
               Identidad de marca a tu medida
             </span>
             <h2 className="text-3xl sm:text-4xl font-bold mt-2" style={{ color: "var(--ink)" }}>
-              Nuestra Galería de Estilos Visuales &amp; Prompts Listos para Usar.
+              Nuestra Galería de Estilos Visuales &amp; Prompts para Todo Rubro.
             </h2>
             <p className="mt-4 text-base" style={{ color: "var(--ink-dim)" }}>
-              Cada negocio tiene una vibra única. Nuestros agentes cuentan con una amplia biblioteca de estilos
-              fotográficos calibrados para que todas tus publicaciones se vean profesionales y consistentes con tu marca.
+              Cada rubro comercial tiene un lenguaje visual propio. Nuestros agentes cuentan con una amplia biblioteca de
+              estilos fotográficos calibrados para que todas tus publicaciones proyecten la seriedad y el atractivo de una gran marca.
             </p>
 
             {/* Filtros de la Galería */}
@@ -789,7 +860,7 @@ export default function ComoFuncionaPage() {
                   borderColor: activePromptCat === "all" ? "var(--signal)" : "var(--line)",
                 }}
               >
-                Todos los Estilos
+                Todos los Rubros
               </button>
               <button
                 onClick={() => setActivePromptCat("gastronomia")}
@@ -800,35 +871,46 @@ export default function ComoFuncionaPage() {
                   borderColor: activePromptCat === "gastronomia" ? "var(--signal)" : "var(--line)",
                 }}
               >
-                🍽️ Restaurantes &amp; Cocina
+                🍽️ Gastronomía &amp; Cocina
               </button>
               <button
-                onClick={() => setActivePromptCat("fastfood")}
+                onClick={() => setActivePromptCat("retail")}
                 className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all border"
                 style={{
-                  background: activePromptCat === "fastfood" ? "var(--signal)" : "var(--panel)",
-                  color: activePromptCat === "fastfood" ? "#FFFFFF" : "var(--ink)",
-                  borderColor: activePromptCat === "fastfood" ? "var(--signal)" : "var(--line)",
+                  background: activePromptCat === "retail" ? "var(--signal)" : "var(--panel)",
+                  color: activePromptCat === "retail" ? "#FFFFFF" : "var(--ink)",
+                  borderColor: activePromptCat === "retail" ? "var(--signal)" : "var(--line)",
                 }}
               >
-                🍔 Fast Food &amp; Burgers
+                🛍️ Tiendas, Ropa &amp; Retail
               </button>
               <button
-                onClick={() => setActivePromptCat("cafe")}
+                onClick={() => setActivePromptCat("belleza")}
                 className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all border"
                 style={{
-                  background: activePromptCat === "cafe" ? "var(--signal)" : "var(--panel)",
-                  color: activePromptCat === "cafe" ? "#FFFFFF" : "var(--ink)",
-                  borderColor: activePromptCat === "cafe" ? "var(--signal)" : "var(--line)",
+                  background: activePromptCat === "belleza" ? "var(--signal)" : "var(--panel)",
+                  color: activePromptCat === "belleza" ? "#FFFFFF" : "var(--ink)",
+                  borderColor: activePromptCat === "belleza" ? "var(--signal)" : "var(--line)",
                 }}
               >
-                ☕ Cafetería &amp; Brunch
+                ✨ Estética &amp; Belleza
+              </button>
+              <button
+                onClick={() => setActivePromptCat("servicios")}
+                className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all border"
+                style={{
+                  background: activePromptCat === "servicios" ? "var(--signal)" : "var(--panel)",
+                  color: activePromptCat === "servicios" ? "#FFFFFF" : "var(--ink)",
+                  borderColor: activePromptCat === "servicios" ? "var(--signal)" : "var(--line)",
+                }}
+              >
+                ⚡ Fitness, Salud &amp; Servicios
               </button>
             </div>
           </div>
 
           {/* Cuadrícula de Tarjetas de Estilos Visuales */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" data-reveal>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" data-reveal>
             {filteredPrompts.map((style) => (
               <div
                 key={style.id}
@@ -836,7 +918,7 @@ export default function ComoFuncionaPage() {
                 style={{ background: "var(--panel)", borderColor: "var(--line)" }}
               >
                 {/* Cabecera con imagen del estilo */}
-                <div className="relative h-48 w-full overflow-hidden bg-slate-900">
+                <div className="relative h-44 w-full overflow-hidden bg-slate-900">
                   <div
                     className="absolute inset-0 bg-cover bg-center group-hover:scale-105 transition-transform duration-500"
                     style={{ backgroundImage: `url('${style.bgUrl}')` }}
@@ -849,27 +931,27 @@ export default function ComoFuncionaPage() {
                 </div>
 
                 {/* Contenido de la tarjeta */}
-                <div className="p-6 flex-1 flex flex-col justify-between">
+                <div className="p-5 flex-1 flex flex-col justify-between">
                   <div>
-                    <h3 className="text-lg font-bold mb-2" style={{ color: "var(--ink)" }}>
+                    <h3 className="text-base font-bold mb-2 leading-snug" style={{ color: "var(--ink)" }}>
                       {style.name}
                     </h3>
-                    <p className="text-xs leading-relaxed mb-4" style={{ color: "var(--ink-dim)" }}>
+                    <p className="text-xs leading-relaxed mb-4 line-clamp-3" style={{ color: "var(--ink-dim)" }}>
                       {style.description}
                     </p>
 
                     <div className="space-y-2 pt-3 border-t text-xs" style={{ borderColor: "var(--line)" }}>
                       <div>
-                        <span className="font-semibold block text-[11px] uppercase" style={{ color: "var(--ink-faint)" }}>
+                        <span className="font-semibold block text-[10px] uppercase" style={{ color: "var(--ink-faint)" }}>
                           Iluminación:
                         </span>
-                        <span style={{ color: "var(--ink)" }}>{style.lightingMood}</span>
+                        <span className="text-[11px]" style={{ color: "var(--ink)" }}>{style.lightingMood}</span>
                       </div>
                       <div>
-                        <span className="font-semibold block text-[11px] uppercase" style={{ color: "var(--ink-faint)" }}>
+                        <span className="font-semibold block text-[10px] uppercase" style={{ color: "var(--ink-faint)" }}>
                           Recomendado para:
                         </span>
-                        <span className="font-medium" style={{ color: "var(--ink)" }}>
+                        <span className="font-medium text-[11px]" style={{ color: "var(--ink)" }}>
                           {style.recommendedFor}
                         </span>
                       </div>
@@ -898,7 +980,7 @@ export default function ComoFuncionaPage() {
         </div>
       </section>
 
-      {/* ── 6. REELS Y VIDEOS DINÁMICOS ── */}
+      {/* ── 6. REELS Y VIDEOS DINÁMICOS POR RUBRO ── */}
       <section className="py-24 border-b" style={{ borderColor: "var(--line)" }}>
         <div className="wrap">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center" data-reveal>
@@ -907,12 +989,37 @@ export default function ComoFuncionaPage() {
                 Formato vertical de alto alcance
               </span>
               <h2 className="text-3xl sm:text-4xl font-bold mt-2 leading-tight" style={{ color: "var(--ink)" }}>
-                Reels, TikToks y Shorts que atrapan a tu cliente en los primeros 3 segundos.
+                Reels, TikToks y Shorts que atrapan clientes en los primeros 3 segundos.
               </h2>
               <p className="mt-4 text-base leading-relaxed" style={{ color: "var(--ink-dim)" }}>
-                El video vertical es el formato con mayor crecimiento y alcance orgánico. Nuestros agentes redactan
-                guiones con fórmulas probadas de retención, animan el contenido y dejan cada video listo para publicar.
+                El video vertical es el formato con mayor crecimiento y alcance para cualquier negocio local. Nuestros agentes
+                redactan guiones con fórmulas probadas de retención, animan el contenido y dejan cada video listo para publicar.
               </p>
+
+              {/* Selector de nicho para ver el gancho */}
+              <div className="flex flex-wrap gap-2 mt-6">
+                {(
+                  [
+                    { key: "gastronomia", label: "🍔 Gastronomía" },
+                    { key: "retail", label: "👗 Ropa & Tiendas" },
+                    { key: "belleza", label: "💈 Estética & Barbería" },
+                    { key: "fitness", label: "⚡ Fitness & Salud" },
+                  ] as const
+                ).map((n) => (
+                  <button
+                    key={n.key}
+                    onClick={() => setActiveReelNiche(n.key)}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all"
+                    style={{
+                      background: activeReelNiche === n.key ? "var(--signal)" : "var(--panel)",
+                      color: activeReelNiche === n.key ? "#FFFFFF" : "var(--ink)",
+                      borderColor: activeReelNiche === n.key ? "var(--signal)" : "var(--line)",
+                    }}
+                  >
+                    {n.label}
+                  </button>
+                ))}
+              </div>
 
               <div className="space-y-4 mt-8">
                 <div className="flex items-start gap-3">
@@ -924,7 +1031,7 @@ export default function ComoFuncionaPage() {
                       El Gancho (Primeros 3 seg)
                     </h4>
                     <p className="text-xs sm:text-sm" style={{ color: "var(--ink-dim)" }}>
-                      Una frase contundente que frena el scroll y despierta el apetito o la curiosidad de inmediato.
+                      Una frase contundente que frena el scroll y despierta la curiosidad, el deseo o la necesidad inmediata.
                     </p>
                   </div>
                 </div>
@@ -938,7 +1045,7 @@ export default function ComoFuncionaPage() {
                       Desarrollo Dinámico
                     </h4>
                     <p className="text-xs sm:text-sm" style={{ color: "var(--ink-dim)" }}>
-                      Muestra tu plato o servicio en acción, con subtítulos llamativos y ritmo visual moderno.
+                      Muestra tu producto, prenda o servicio en acción, con subtítulos llamativos y ritmo visual moderno.
                     </p>
                   </div>
                 </div>
@@ -952,32 +1059,33 @@ export default function ComoFuncionaPage() {
                       Llamado a la Acción Directo
                     </h4>
                     <p className="text-xs sm:text-sm" style={{ color: "var(--ink-dim)" }}>
-                      Indica con claridad cómo pedir por WhatsApp o visitar tu local hoy mismo.
+                      Indica con claridad cómo pedir por WhatsApp, visitar tu local o agendar hora hoy mismo.
                     </p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Mockup Reel */}
+            {/* Mockup Reel Interactivo según nicho */}
             <div className="relative mx-auto max-w-[320px] aspect-[9/16] rounded-3xl bg-slate-900 border-4 border-slate-700 shadow-2xl overflow-hidden flex flex-col justify-between p-6">
               <div
-                className="absolute inset-0 bg-cover bg-center"
+                className="absolute inset-0 bg-cover bg-center transition-all duration-300"
                 style={{
-                  backgroundImage:
-                    "url('https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80')",
-                  filter: "brightness(0.85)",
+                  backgroundImage: `url('${reelHooks[activeReelNiche].bg}')`,
+                  filter: "brightness(0.82)",
                 }}
               />
               <div className="relative z-10 flex items-center justify-between text-white text-xs font-bold">
-                <span className="bg-red-600 px-2.5 py-1 rounded-full uppercase text-[10px]">● REEL VIRAL</span>
+                <span className="bg-red-600 px-2.5 py-1 rounded-full uppercase text-[10px]">
+                  {reelHooks[activeReelNiche].tag}
+                </span>
                 <span>0:24</span>
               </div>
 
               <div className="relative z-10 bg-black/60 backdrop-blur-md p-4 rounded-2xl border border-white/10 space-y-2 text-white">
                 <span className="text-[11px] font-bold text-amber-300 block">🔥 GANCHO PROBADO:</span>
                 <p className="text-xs font-semibold leading-snug">
-                  &quot;Si buscas una hamburguesa que realmente chorree queso en Santiago, tienes que ver esto...&quot;
+                  {reelHooks[activeReelNiche].hook}
                 </p>
                 <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-300">
                   <span>Guión de nuestros agentes</span>
@@ -997,7 +1105,7 @@ export default function ComoFuncionaPage() {
               Control total desde tu bolsillo
             </span>
             <h2 className="text-3xl sm:text-4xl font-bold mt-2" style={{ color: "var(--ink)" }}>
-              Sin computadoras ni paneles difíciles: manejas tu agencia desde WhatsApp.
+              Sin computadoras ni paneles difíciles: manejas todo desde WhatsApp.
             </h2>
             <p className="mt-4 text-base" style={{ color: "var(--ink-dim)" }}>
               No tienes que aprender a usar ningún programa complicado. Todo te llega a la app que ya tienes en el
@@ -1065,8 +1173,8 @@ export default function ComoFuncionaPage() {
                   <div className="bg-slate-900 border border-slate-800 p-3.5 rounded-2xl rounded-tl-none max-w-[85%] text-slate-200">
                     <p className="font-semibold text-white mb-1">📅 Tus próximos posts listos:</p>
                     <p className="text-slate-300">
-                      • <strong>Miércoles 13:00</strong> — Combo Doble Cheddar ($8.990)
-                      <br />• <strong>Viernes 19:30</strong> — Reel &quot;¿Dónde comer la mejor burger este finde?&quot;
+                      • <strong>Miércoles 13:00</strong> — Oferta Nueva Temporada (-30% OFF)
+                      <br />• <strong>Viernes 19:30</strong> — Reel &quot;3 ideas para combinar este finde&quot;
                     </p>
                     <p className="text-emerald-400 mt-2 font-bold">
                       Responde &quot;Aprobar&quot; para dejarlos programados de inmediato.
@@ -1085,13 +1193,13 @@ export default function ComoFuncionaPage() {
               {activeScenario === "urgente" && (
                 <>
                   <div className="bg-emerald-700 text-white p-3 rounded-2xl rounded-tr-none ml-auto max-w-[80%] text-right">
-                    Tengo mucha masa hoy. Saca una promo express de 2x1 en pizzas familiares a $14.990 solo para hoy.
+                    Tengo sobrestock / horas libres para esta tarde. Saca una promo express de 25% descuento para las primeras 5 personas que escriban.
                   </div>
                   <div className="bg-slate-900 border border-slate-800 p-3.5 rounded-2xl rounded-tl-none max-w-[85%] text-slate-200">
                     <p className="font-semibold text-white mb-1">✨ ¡Borrador generado por nuestros agentes!</p>
                     <p className="text-slate-300 italic">
-                      &quot;¡Alerta de Jueves de Pizza! 🍕 2x1 en Familiares artesanales por solo $14.990. Válido hasta
-                      agotar stock de hoy. Pide al WhatsApp antes que se acaben.&quot;
+                      &quot;⚡ ¡Flash Sale de Hoy! Llévate 25% de descuento directo en tu compra o reserva agendando por
+                      WhatsApp antes de las 19:00 hrs. Solo 5 cupos disponibles.&quot;
                     </p>
                     <p className="text-orange-400 mt-2 font-bold">¿Lo publicamos ahora en historias y feed?</p>
                   </div>
@@ -1109,9 +1217,9 @@ export default function ComoFuncionaPage() {
                   <div className="bg-slate-900 border border-slate-800 p-3.5 rounded-2xl rounded-tl-none max-w-[85%] text-slate-200">
                     <p className="font-semibold text-white mb-1">📊 Resumen de los últimos 7 días:</p>
                     <p className="text-slate-300">
-                      • <strong>+4.250 personas</strong> vieron tus posts en tu comuna.
-                      <br />• <strong>38 personas</strong> tocaron el botón directo a tu WhatsApp.
-                      <br />• El post más exitoso fue el Reel del Combo Doble Queso.
+                      • <strong>+4.250 personas</strong> en tu comuna vieron tus publicaciones.
+                      <br />• <strong>42 personas</strong> tocaron el botón directo a tu WhatsApp.
+                      <br />• El post más exitoso fue el Reel promocional de la semana.
                     </p>
                     <p className="text-emerald-400 mt-2 font-bold">Nuestros agentes ya preparan la próxima semana.</p>
                   </div>
@@ -1304,7 +1412,7 @@ export default function ComoFuncionaPage() {
                     required
                     value={businessName}
                     onChange={(e) => setBusinessName(e.target.value)}
-                    placeholder="Ej. Pizzería Donatello / Burger House"
+                    placeholder="Ej. Boutique Roma / Barbería Don Luis / Gimnasio Titán"
                     className="w-full px-4 py-3.5 rounded-xl border text-sm focus:outline-none focus:border-orange-500"
                     style={{
                       background: "var(--panel-2)",
@@ -1329,14 +1437,18 @@ export default function ComoFuncionaPage() {
                         color: "var(--ink)",
                       }}
                     >
+                      <option>Tienda de Ropa, Calzado o Moda</option>
+                      <option>Minimarket, Botillería o Tienda de Barrio</option>
+                      <option>Peluquería, Barbería o Centro de Estética</option>
+                      <option>Gimnasio, Box de CrossFit o Entrenador</option>
+                      <option>Clínica Dental, Salud o Masajes</option>
                       <option>Hamburguesería / Fast Food</option>
-                      <option>Pizzería / Trattoria</option>
-                      <option>Sushi &amp; Nikkei</option>
-                      <option>Cafetería &amp; Pastelería</option>
-                      <option>Restaurante Gourmet / Autor</option>
-                      <option>Tienda / Retail</option>
-                      <option>Servicios Profesionales</option>
-                      <option>Estética, Salud o Belleza</option>
+                      <option>Restaurante, Pizzería o Sushi</option>
+                      <option>Cafetería, Pastelería o Brunch</option>
+                      <option>Taller Mecánico, Repuestos o Automotriz</option>
+                      <option>Ferretería, Hogar o Construcción</option>
+                      <option>Servicios Profesionales o Asesorías</option>
+                      <option>Otro Negocio Comercial / Local</option>
                     </select>
                   </div>
 
