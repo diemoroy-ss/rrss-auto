@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import BrandHeader from "../../components/BrandHeader";
 import BrandFooter from "../../components/BrandFooter";
 import DotCanvas from "../../components/DotCanvas";
@@ -16,12 +15,12 @@ const WA_MSG = encodeURIComponent(
 type ImageOrigin = "real" | "generated";
 type StyleKey = "split" | "gourmet" | "recipe";
 type ScenarioKey = "aprobar" | "urgente" | "metricas";
-type PromptCategory = "all" | "gastronomia" | "cafe" | "fastfood" | "retail";
+type PromptCategory = "all" | "gastronomia" | "cafe" | "fastfood";
 
 interface PromptStyleCard {
   id: string;
   name: string;
-  category: "gastronomia" | "cafe" | "fastfood" | "retail";
+  category: "gastronomia" | "cafe" | "fastfood";
   tag: string;
   description: string;
   lightingMood: string;
@@ -180,22 +179,28 @@ export default function ComoFuncionaPage() {
       {/* ── NAVEGACIÓN PRINCIPAL ── */}
       <BrandHeader />
 
-      {/* ── 1. HERO COMERCIAL (ALTO CONTRASTE CLARO/OSCURO) ── */}
-      <section className="hero pt-12 pb-20">
+      {/* ── 1. HERO COMERCIAL (100% CONTRASTE NATIVO) ── */}
+      <section className="hero pt-14 pb-20 border-b" style={{ borderColor: "var(--line)" }}>
         <div className="wrap">
           <div className="text-center max-w-4xl mx-auto" data-reveal>
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-600 dark:text-orange-400 text-xs font-semibold uppercase tracking-wider mb-6">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-500 text-xs font-bold uppercase tracking-wider mb-6">
               <span>🚀</span> Tu equipo de marketing trabajando 24/7
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100 leading-tight mb-6">
+            <h1
+              className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight mb-6"
+              style={{ color: "var(--ink)" }}
+            >
               Gestionamos las redes de tu negocio, atraemos clientes y publicamos{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-amber-500 dark:from-orange-400 dark:to-amber-300">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-amber-500">
                 todos los días por ti.
               </span>
             </h1>
 
-            <p className="text-lg sm:text-xl text-slate-600 dark:text-slate-300 leading-relaxed max-w-3xl mx-auto mb-10">
+            <p
+              className="text-lg sm:text-xl leading-relaxed max-w-3xl mx-auto mb-10"
+              style={{ color: "var(--ink-dim)" }}
+            >
               Nuestros agentes especializados investigan qué busca tu cliente, arman tu calendario del mes,
               visten tus fotos con cartelería comercial de alto impacto y publican automáticamente en
               Instagram, Facebook, TikTok y Google. <strong>Tú solo apruebas desde WhatsApp en 10 segundos.</strong>
@@ -214,14 +219,22 @@ export default function ComoFuncionaPage() {
                 href={`https://wa.me/${WA_NUMBER}?text=${WA_MSG}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full sm:w-auto px-7 py-4 rounded-xl bg-white dark:bg-slate-800/90 hover:bg-slate-50 dark:hover:bg-slate-700/90 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 font-semibold text-base transition-all text-center flex items-center justify-center gap-2 shadow-sm"
+                className="w-full sm:w-auto px-7 py-4 rounded-xl border font-semibold text-base transition-all text-center flex items-center justify-center gap-2 shadow-sm"
+                style={{
+                  background: "var(--panel)",
+                  borderColor: "var(--line-strong)",
+                  color: "var(--ink)",
+                }}
               >
                 <span>💬</span> Chatear por WhatsApp
               </a>
             </div>
 
-            {/* Badges de confianza con alto contraste */}
-            <div className="flex flex-wrap items-center justify-center gap-6 mt-10 text-xs text-slate-600 dark:text-slate-400">
+            {/* Badges de confianza */}
+            <div
+              className="flex flex-wrap items-center justify-center gap-6 mt-10 text-xs font-medium"
+              style={{ color: "var(--ink-dim)" }}
+            >
               <span className="flex items-center gap-1.5">
                 <span className="text-emerald-500 font-bold">✓</span> Sin contratos forzosos
               </span>
@@ -236,17 +249,17 @@ export default function ComoFuncionaPage() {
         </div>
       </section>
 
-      {/* ── 2. EL DOLOR REAL DEL CLIENTE ── */}
-      <section className="py-20 border-t border-slate-200 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-900/40">
+      {/* ── 2. EL DOLOR REAL DEL CLIENTE (FONDO TRANSPARENTE, SIN BANDAS GRISES) ── */}
+      <section className="py-24 border-b" style={{ borderColor: "var(--line)" }}>
         <div className="wrap">
           <div className="text-center max-w-3xl mx-auto mb-16" data-reveal>
-            <span className="eyebrow text-orange-600 dark:text-orange-400 font-bold text-xs uppercase tracking-wider">
+            <span className="eyebrow text-orange-500 font-bold text-xs uppercase tracking-wider">
               La realidad del día a día
             </span>
-            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-slate-100 mt-2">
+            <h2 className="text-3xl sm:text-4xl font-bold mt-2" style={{ color: "var(--ink)" }}>
               Llevar un negocio ya es bastante trabajo como para además ser creador de contenido.
             </h2>
-            <p className="text-slate-600 dark:text-slate-300 mt-4 text-base">
+            <p className="mt-4 text-base" style={{ color: "var(--ink-dim)" }}>
               Hablamos a diario con dueños de restaurantes, tiendas y profesionales. Casi todos se enfrentan a
               las mismas 3 frustraciones:
             </p>
@@ -254,58 +267,76 @@ export default function ComoFuncionaPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8" data-reveal>
             {/* Tarjeta 1 */}
-            <div className="p-8 rounded-2xl bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 shadow-sm dark:shadow-none flex flex-col justify-between">
+            <div
+              className="p-8 rounded-2xl border shadow-sm flex flex-col justify-between transition-all"
+              style={{ background: "var(--panel)", borderColor: "var(--line)" }}
+            >
               <div>
                 <div className="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 flex items-center justify-center text-2xl mb-6">
                   ⏳
                 </div>
-                <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-3">
+                <h3 className="text-xl font-bold mb-3" style={{ color: "var(--ink)" }}>
                   &quot;No me da el tiempo para pensar qué publicar&quot;
                 </h3>
-                <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">
+                <p className="text-sm leading-relaxed" style={{ color: "var(--ink-dim)" }}>
                   Terminas tu jornada agotado. Quieres subir algo a redes, pero te quedas en blanco frente al celular,
                   lo pospones para mañana y tu cuenta pasa semanas en silencio perdiendo clientes.
                 </p>
               </div>
-              <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700/50 text-xs text-red-600 dark:text-red-400 font-medium">
+              <div
+                className="mt-6 pt-4 border-t text-xs text-red-500 font-medium"
+                style={{ borderColor: "var(--line)" }}
+              >
                 ✕ Resultado: Tus competidores se quedan con la atención de tu zona.
               </div>
             </div>
 
             {/* Tarjeta 2 */}
-            <div className="p-8 rounded-2xl bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 shadow-sm dark:shadow-none flex flex-col justify-between">
+            <div
+              className="p-8 rounded-2xl border shadow-sm flex flex-col justify-between transition-all"
+              style={{ background: "var(--panel)", borderColor: "var(--line)" }}
+            >
               <div>
                 <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center text-2xl mb-6">
                   💸
                 </div>
-                <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-3">
+                <h3 className="text-xl font-bold mb-3" style={{ color: "var(--ink)" }}>
                   &quot;Las agencias tradicionales cobran caro y demoran días&quot;
                 </h3>
-                <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">
+                <p className="text-sm leading-relaxed" style={{ color: "var(--ink-dim)" }}>
                   Te cobran cientos de miles de pesos cada mes por un par de posts genéricos. Pides una promoción urgente
                   para este fin de semana y tardan 5 días en responderte un correo.
                 </p>
               </div>
-              <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700/50 text-xs text-amber-600 dark:text-amber-400 font-medium">
+              <div
+                className="mt-6 pt-4 border-t text-xs text-amber-500 font-medium"
+                style={{ borderColor: "var(--line)" }}
+              >
                 ✕ Resultado: Pagar caro por un servicio lento y poco flexible.
               </div>
             </div>
 
             {/* Tarjeta 3 */}
-            <div className="p-8 rounded-2xl bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 shadow-sm dark:shadow-none flex flex-col justify-between">
+            <div
+              className="p-8 rounded-2xl border shadow-sm flex flex-col justify-between transition-all"
+              style={{ background: "var(--panel)", borderColor: "var(--line)" }}
+            >
               <div>
                 <div className="w-12 h-12 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-500 flex items-center justify-center text-2xl mb-6">
                   📸
                 </div>
-                <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-3">
+                <h3 className="text-xl font-bold mb-3" style={{ color: "var(--ink)" }}>
                   &quot;Saco fotos pero no se ven como las de marcas grandes&quot;
                 </h3>
-                <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">
+                <p className="text-sm leading-relaxed" style={{ color: "var(--ink-dim)" }}>
                   Tu producto es delicioso o de excelente calidad, pero una foto suelta en el celular se ve fría,
                   sin precios destacados, sin llamados a la acción y sin el diseño que invita a comprar.
                 </p>
               </div>
-              <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700/50 text-xs text-orange-600 dark:text-orange-400 font-medium">
+              <div
+                className="mt-6 pt-4 border-t text-xs text-orange-500 font-medium"
+                style={{ borderColor: "var(--line)" }}
+              >
                 ✕ Resultado: Fotos caseras que no transmiten el verdadero valor de tu marca.
               </div>
             </div>
@@ -314,16 +345,16 @@ export default function ComoFuncionaPage() {
       </section>
 
       {/* ── 3. CÓMO LO HACEMOS (LOS 4 PASOS) ── */}
-      <section className="py-24 border-t border-slate-200 dark:border-slate-800/80">
+      <section className="py-24 border-b" style={{ borderColor: "var(--line)" }}>
         <div className="wrap">
           <div className="text-center max-w-3xl mx-auto mb-20" data-reveal>
-            <span className="eyebrow text-orange-600 dark:text-orange-400 font-bold text-xs uppercase tracking-wider">
+            <span className="eyebrow text-orange-500 font-bold text-xs uppercase tracking-wider">
               Cómo trabaja nuestro equipo
             </span>
-            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-slate-100 mt-2">
+            <h2 className="text-3xl sm:text-4xl font-bold mt-2" style={{ color: "var(--ink)" }}>
               Un flujo simple y continuo para que tu marca nunca pare de vender.
             </h2>
-            <p className="text-slate-600 dark:text-slate-300 mt-4 text-base">
+            <p className="mt-4 text-base" style={{ color: "var(--ink-dim)" }}>
               Nuestros agentes especializados se reparten el trabajo tal como lo haría una agencia de primer nivel,
               pero en minutos y a una fracción del costo.
             </p>
@@ -331,65 +362,105 @@ export default function ComoFuncionaPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8" data-reveal>
             {/* Paso 1 */}
-            <div className="relative p-7 rounded-2xl bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 shadow-sm dark:shadow-none flex flex-col">
-              <div className="text-xs font-mono font-bold text-orange-600 dark:text-orange-400 mb-3 tracking-widest">PASO 01</div>
-              <div className="w-12 h-12 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-500 flex items-center justify-center text-2xl mb-5">
-                📡
+            <div
+              className="relative p-7 rounded-2xl border shadow-sm flex flex-col justify-between"
+              style={{ background: "var(--panel)", borderColor: "var(--line)" }}
+            >
+              <div>
+                <div className="text-xs font-mono font-bold text-orange-500 mb-3 tracking-widest">PASO 01</div>
+                <div className="w-12 h-12 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-500 flex items-center justify-center text-2xl mb-5">
+                  📡
+                </div>
+                <h3 className="text-lg font-bold mb-2" style={{ color: "var(--ink)" }}>
+                  Radar de Nicho
+                </h3>
+                <p className="text-sm leading-relaxed" style={{ color: "var(--ink-dim)" }}>
+                  Nuestros agentes escanean las preguntas frecuentes, dudas y platos más buscados en tu rubro y ciudad.
+                  No adivinamos: creamos contenido que la gente ya quiere ver.
+                </p>
               </div>
-              <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-2">Radar de Nicho</h3>
-              <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">
-                Nuestros agentes escanean las preguntas frecuentes, dudas y platos más buscados en tu rubro y ciudad.
-                No adivinamos: creamos contenido que la gente ya quiere ver.
-              </p>
-              <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700/40 text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+              <div
+                className="mt-6 pt-4 border-t text-xs flex items-center gap-1.5"
+                style={{ borderColor: "var(--line)", color: "var(--ink-dim)" }}
+              >
                 <span className="text-emerald-500 font-bold">✓</span> Temas con demanda real
               </div>
             </div>
 
             {/* Paso 2 */}
-            <div className="relative p-7 rounded-2xl bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 shadow-sm dark:shadow-none flex flex-col">
-              <div className="text-xs font-mono font-bold text-orange-600 dark:text-orange-400 mb-3 tracking-widest">PASO 02</div>
-              <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-500 flex items-center justify-center text-2xl mb-5">
-                📅
+            <div
+              className="relative p-7 rounded-2xl border shadow-sm flex flex-col justify-between"
+              style={{ background: "var(--panel)", borderColor: "var(--line)" }}
+            >
+              <div>
+                <div className="text-xs font-mono font-bold text-blue-500 mb-3 tracking-widest">PASO 02</div>
+                <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-500 flex items-center justify-center text-2xl mb-5">
+                  📅
+                </div>
+                <h3 className="text-lg font-bold mb-2" style={{ color: "var(--ink)" }}>
+                  Estrategia Mensual
+                </h3>
+                <p className="text-sm leading-relaxed" style={{ color: "var(--ink-dim)" }}>
+                  Armamos un calendario balanceado con 4 pilares: combos de venta directa, platos de autor, secretos de
+                  cocina para ganar autoridad y videos cortos de gran alcance.
+                </p>
               </div>
-              <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-2">Estrategia Mensual</h3>
-              <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">
-                Armamos un calendario balanceado con 4 pilares: combos de venta directa, platos de autor, secretos de
-                cocina para ganar autoridad y videos cortos de gran alcance.
-              </p>
-              <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700/40 text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+              <div
+                className="mt-6 pt-4 border-t text-xs flex items-center gap-1.5"
+                style={{ borderColor: "var(--line)", color: "var(--ink-dim)" }}
+              >
                 <span className="text-emerald-500 font-bold">✓</span> 30 días planificados
               </div>
             </div>
 
             {/* Paso 3 */}
-            <div className="relative p-7 rounded-2xl bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 shadow-sm dark:shadow-none flex flex-col">
-              <div className="text-xs font-mono font-bold text-orange-600 dark:text-orange-400 mb-3 tracking-widest">PASO 03</div>
-              <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-500 flex items-center justify-center text-2xl mb-5">
-                🎨
+            <div
+              className="relative p-7 rounded-2xl border shadow-sm flex flex-col justify-between"
+              style={{ background: "var(--panel)", borderColor: "var(--line)" }}
+            >
+              <div>
+                <div className="text-xs font-mono font-bold text-purple-500 mb-3 tracking-widest">PASO 03</div>
+                <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-500 flex items-center justify-center text-2xl mb-5">
+                  🎨
+                </div>
+                <h3 className="text-lg font-bold mb-2" style={{ color: "var(--ink)" }}>
+                  Dirección de Arte
+                </h3>
+                <p className="text-sm leading-relaxed" style={{ color: "var(--ink-dim)" }}>
+                  Nuestros agentes examinan el encuadre y estampan carteles comerciales, precios destacados y botones
+                  <strong> directamente sobre la imagen</strong>, sin tapar ni deformar tu comida.
+                </p>
               </div>
-              <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-2">Dirección de Arte</h3>
-              <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">
-                Nuestros agentes examinan el encuadre y estampan carteles comerciales, precios destacados y botones
-                <strong> directamente sobre la imagen</strong>, sin tapar ni deformar tu comida.
-              </p>
-              <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700/40 text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+              <div
+                className="mt-6 pt-4 border-t text-xs flex items-center gap-1.5"
+                style={{ borderColor: "var(--line)", color: "var(--ink-dim)" }}
+              >
                 <span className="text-emerald-500 font-bold">✓</span> Tu plato queda impecable
               </div>
             </div>
 
             {/* Paso 4 */}
-            <div className="relative p-7 rounded-2xl bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 shadow-sm dark:shadow-none flex flex-col">
-              <div className="text-xs font-mono font-bold text-orange-600 dark:text-orange-400 mb-3 tracking-widest">PASO 04</div>
-              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center text-2xl mb-5">
-                🚀
+            <div
+              className="relative p-7 rounded-2xl border shadow-sm flex flex-col justify-between"
+              style={{ background: "var(--panel)", borderColor: "var(--line)" }}
+            >
+              <div>
+                <div className="text-xs font-mono font-bold text-emerald-500 mb-3 tracking-widest">PASO 04</div>
+                <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center text-2xl mb-5">
+                  🚀
+                </div>
+                <h3 className="text-lg font-bold mb-2" style={{ color: "var(--ink)" }}>
+                  Publicación Automática
+                </h3>
+                <p className="text-sm leading-relaxed" style={{ color: "var(--ink-dim)" }}>
+                  Tus piezas se publican solas en Instagram, Facebook, TikTok y Google Maps en el mejor horario.
+                  Tú recibes un mensaje en WhatsApp y apruebas con 1 toque.
+                </p>
               </div>
-              <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-2">Publicación Automática</h3>
-              <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">
-                Tus piezas se publican solas en Instagram, Facebook, TikTok y Google Maps en el mejor horario.
-                Tú recibes un mensaje en WhatsApp y apruebas con 1 toque.
-              </p>
-              <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700/40 text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+              <div
+                className="mt-6 pt-4 border-t text-xs flex items-center gap-1.5"
+                style={{ borderColor: "var(--line)", color: "var(--ink-dim)" }}
+              >
                 <span className="text-emerald-500 font-bold">✓</span> Cero tiempo perdido
               </div>
             </div>
@@ -397,17 +468,17 @@ export default function ComoFuncionaPage() {
         </div>
       </section>
 
-      {/* ── 4. RESPETO TOTAL A TU PRODUCTO: FOTOS REALES O CREADAS POR AGENTES (SIN CARDS TAPANDO) ── */}
-      <section className="py-24 border-t border-slate-200 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-900/60">
+      {/* ── 4. RESPETO TOTAL A TU PRODUCTO: FOTOS REALES O CREADAS POR AGENTES (TEXTO DIRECTO S/CARD) ── */}
+      <section className="py-24 border-b" style={{ borderColor: "var(--line)" }}>
         <div className="wrap">
           <div className="text-center max-w-3xl mx-auto mb-16" data-reveal>
-            <span className="eyebrow text-orange-600 dark:text-orange-400 font-bold text-xs uppercase tracking-wider">
+            <span className="eyebrow text-orange-500 font-bold text-xs uppercase tracking-wider">
               El gran diferencial visual
             </span>
-            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-slate-100 mt-2">
+            <h2 className="text-3xl sm:text-4xl font-bold mt-2" style={{ color: "var(--ink)" }}>
               El texto directo sobre la imagen. La comida es siempre la protagonista.
             </h2>
-            <p className="text-slate-600 dark:text-slate-300 mt-4 text-base">
+            <p className="mt-4 text-base" style={{ color: "var(--ink-dim)" }}>
               Nada de cajas oscuras que tapen tu comida. Nuestros agentes estampan tipografía publicitaria nítida
               directamente sobre el espacio libre de la foto, ya sea una foto real tomada con tu teléfono o una imagen
               creada por ellos mismos.
@@ -420,11 +491,12 @@ export default function ComoFuncionaPage() {
                   setImageOrigin("real");
                   setShowOriginal(false);
                 }}
-                className={`px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2 border ${
-                  imageOrigin === "real"
-                    ? "bg-orange-500 text-white border-orange-500 shadow-lg shadow-orange-500/25"
-                    : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:border-orange-400"
-                }`}
+                className="px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2 border"
+                style={{
+                  background: imageOrigin === "real" ? "var(--signal)" : "var(--panel)",
+                  color: imageOrigin === "real" ? "#FFFFFF" : "var(--ink)",
+                  borderColor: imageOrigin === "real" ? "var(--signal)" : "var(--line)",
+                }}
               >
                 <span>📸</span> Fotos Reales de tu Catálogo
               </button>
@@ -434,25 +506,30 @@ export default function ComoFuncionaPage() {
                   setImageOrigin("generated");
                   setShowOriginal(false);
                 }}
-                className={`px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2 border ${
-                  imageOrigin === "generated"
-                    ? "bg-orange-500 text-white border-orange-500 shadow-lg shadow-orange-500/25"
-                    : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:border-orange-400"
-                }`}
+                className="px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2 border"
+                style={{
+                  background: imageOrigin === "generated" ? "var(--signal)" : "var(--panel)",
+                  color: imageOrigin === "generated" ? "#FFFFFF" : "var(--ink)",
+                  borderColor: imageOrigin === "generated" ? "var(--signal)" : "var(--line)",
+                }}
               >
                 <span>🎨</span> Imágenes Creadas por Nuestros Agentes
               </button>
             </div>
 
             {/* Pestañas de Estilos */}
-            <div className="inline-flex p-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 mt-5 gap-2 shadow-sm">
+            <div
+              className="inline-flex p-1.5 rounded-xl border mt-5 gap-2 shadow-sm"
+              style={{ background: "var(--panel)", borderColor: "var(--line)" }}
+            >
               <button
                 onClick={() => setSelectedStyle("split")}
                 className={`px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
                   selectedStyle === "split"
                     ? "bg-orange-500 text-white shadow-sm"
-                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                    : "hover:text-orange-500"
                 }`}
+                style={{ color: selectedStyle === "split" ? "#FFFFFF" : "var(--ink-dim)" }}
               >
                 🍔 Split Comercial (Combo)
               </button>
@@ -461,8 +538,9 @@ export default function ComoFuncionaPage() {
                 className={`px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
                   selectedStyle === "gourmet"
                     ? "bg-orange-500 text-white shadow-sm"
-                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                    : "hover:text-orange-500"
                 }`}
+                style={{ color: selectedStyle === "gourmet" ? "#FFFFFF" : "var(--ink-dim)" }}
               >
                 🍷 Encabezado Gourmet
               </button>
@@ -471,8 +549,9 @@ export default function ComoFuncionaPage() {
                 className={`px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
                   selectedStyle === "recipe"
                     ? "bg-orange-500 text-white shadow-sm"
-                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                    : "hover:text-orange-500"
                 }`}
+                style={{ color: selectedStyle === "recipe" ? "#FFFFFF" : "var(--ink-dim)" }}
               >
                 🥗 Ficha de Cocina
               </button>
@@ -480,17 +559,24 @@ export default function ComoFuncionaPage() {
           </div>
 
           {/* Comparador Interactivo */}
-          <div className="max-w-4xl mx-auto bg-white dark:bg-slate-800/40 rounded-3xl border border-slate-200 dark:border-slate-700/80 p-6 sm:p-10 shadow-xl dark:shadow-2xl" data-reveal>
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 pb-6 border-b border-slate-200 dark:border-slate-700/60">
+          <div
+            className="max-w-4xl mx-auto rounded-3xl border p-6 sm:p-10 shadow-xl"
+            style={{ background: "var(--panel)", borderColor: "var(--line)" }}
+            data-reveal
+          >
+            <div
+              className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 pb-6 border-b"
+              style={{ borderColor: "var(--line)" }}
+            >
               <div>
-                <span className="text-xs font-mono font-bold text-orange-600 dark:text-orange-400 uppercase tracking-wider">
+                <span className="text-xs font-mono font-bold text-orange-500 uppercase tracking-wider">
                   {imageOrigin === "real" ? "Foto Real del Cliente" : "Generación Fotográfica de Nuestros Agentes"}
                   {" · "}
                   {selectedStyle === "split" && "Ideal para combos, promociones y delivery"}
                   {selectedStyle === "gourmet" && "Ideal para destacar la alta cocina y platos estrella"}
                   {selectedStyle === "recipe" && "Ideal para educar, generar interacción y guardados"}
                 </span>
-                <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mt-1">
+                <h3 className="text-xl font-bold mt-1" style={{ color: "var(--ink)" }}>
                   {imageOrigin === "real" ? (
                     selectedStyle === "split"
                       ? "Split Lateral: Plato real a la derecha, texto publicitario a la izquierda"
@@ -509,12 +595,17 @@ export default function ComoFuncionaPage() {
 
               {/* Botón Switch: Original vs Arte (visible solo si es foto real) */}
               {imageOrigin === "real" && (
-                <div className="flex items-center gap-3 bg-slate-100 dark:bg-slate-900/80 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700">
-                  <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">Foto cruda</span>
+                <div
+                  className="flex items-center gap-3 px-4 py-2 rounded-xl border"
+                  style={{ background: "var(--panel-2)", borderColor: "var(--line)" }}
+                >
+                  <span className="text-xs font-medium" style={{ color: "var(--ink-dim)" }}>
+                    Foto cruda
+                  </span>
                   <button
                     onClick={() => setShowOriginal((prev) => !prev)}
                     className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors duration-200 ease-in-out ${
-                      !showOriginal ? "bg-orange-500" : "bg-slate-400 dark:bg-slate-700"
+                      !showOriginal ? "bg-orange-500" : "bg-slate-400"
                     }`}
                     aria-label="Alternar vista original"
                   >
@@ -524,13 +615,13 @@ export default function ComoFuncionaPage() {
                       }`}
                     />
                   </button>
-                  <span className="text-xs text-orange-600 dark:text-orange-400 font-bold">Con Arte Directo</span>
+                  <span className="text-xs font-bold text-orange-500">Con Arte Directo</span>
                 </div>
               )}
             </div>
 
             {/* Contenedor del Cartel: TEXTO DIRECTO SOBRE LA IMAGEN (SIN CARDS QUE TAPEN EL PLATO) */}
-            <div className="relative aspect-square max-w-[500px] mx-auto rounded-2xl overflow-hidden shadow-2xl border border-slate-300 dark:border-slate-700/70 bg-stone-950 flex flex-col justify-between p-7 select-none">
+            <div className="relative aspect-square max-w-[500px] mx-auto rounded-2xl overflow-hidden shadow-2xl border border-stone-800 bg-stone-950 flex flex-col justify-between p-7 select-none">
               {/* Imagen de fondo (Foto Real vs Generada por Agentes) */}
               <div
                 className="absolute inset-0 bg-cover bg-center transition-all duration-300"
@@ -627,21 +718,21 @@ export default function ComoFuncionaPage() {
                         </h4>
                       </div>
 
-                      {/* Tira de ingredientes flotando DIRECTAMENTE sobre la foto (sin card sólida que tape) */}
+                      {/* Tira de ingredientes flotando DIRECTAMENTE sobre la foto */}
                       <div className="grid grid-cols-4 gap-2 pt-2">
-                        <div className="text-center p-2 rounded-xl bg-black/40 backdrop-blur-sm border border-white/20 text-white shadow-lg">
+                        <div className="text-center p-2 rounded-xl bg-black/50 backdrop-blur-sm border border-white/20 text-white shadow-lg">
                           <span className="text-base block">🧄</span>
                           <span className="text-[10px] font-bold block mt-0.5">Ajo Chilote</span>
                         </div>
-                        <div className="text-center p-2 rounded-xl bg-black/40 backdrop-blur-sm border border-white/20 text-white shadow-lg">
+                        <div className="text-center p-2 rounded-xl bg-black/50 backdrop-blur-sm border border-white/20 text-white shadow-lg">
                           <span className="text-base block">🫒</span>
                           <span className="text-[10px] font-bold block mt-0.5">Oliva Virgen</span>
                         </div>
-                        <div className="text-center p-2 rounded-xl bg-black/40 backdrop-blur-sm border border-white/20 text-white shadow-lg">
+                        <div className="text-center p-2 rounded-xl bg-black/50 backdrop-blur-sm border border-white/20 text-white shadow-lg">
                           <span className="text-base block">🌿</span>
                           <span className="text-[10px] font-bold block mt-0.5">Albahaca</span>
                         </div>
-                        <div className="text-center p-2 rounded-xl bg-black/40 backdrop-blur-sm border border-white/20 text-white shadow-lg">
+                        <div className="text-center p-2 rounded-xl bg-black/50 backdrop-blur-sm border border-white/20 text-white shadow-lg">
                           <span className="text-base block">🧀</span>
                           <span className="text-[10px] font-bold block mt-0.5">Parmesano</span>
                         </div>
@@ -653,7 +744,14 @@ export default function ComoFuncionaPage() {
             </div>
 
             {/* Explicación de nuestros agentes */}
-            <div className="mt-6 p-4 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center gap-3 text-xs sm:text-sm text-slate-800 dark:text-slate-200">
+            <div
+              className="mt-6 p-4 rounded-xl border flex items-center gap-3 text-xs sm:text-sm"
+              style={{
+                background: "var(--signal-soft)",
+                borderColor: "var(--signal-line)",
+                color: "var(--ink)",
+              }}
+            >
               <span className="text-xl">✨</span>
               <span>
                 <strong>Decisión de Nuestros Agentes:</strong> Los textos se montan directamente sobre el espacio
@@ -665,17 +763,17 @@ export default function ComoFuncionaPage() {
         </div>
       </section>
 
-      {/* ── 5. GALERÍA DE PROMPTS Y ESTILOS VISUALES DISPONIBLES (NUEVA SECCIÓN) ── */}
-      <section className="py-24 border-t border-slate-200 dark:border-slate-800/80">
+      {/* ── 5. GALERÍA DE PROMPTS Y ESTILOS VISUALES DISPONIBLES ── */}
+      <section className="py-24 border-b" style={{ borderColor: "var(--line)" }}>
         <div className="wrap">
           <div className="text-center max-w-3xl mx-auto mb-16" data-reveal>
-            <span className="eyebrow text-orange-600 dark:text-orange-400 font-bold text-xs uppercase tracking-wider">
+            <span className="eyebrow text-orange-500 font-bold text-xs uppercase tracking-wider">
               Identidad de marca a tu medida
             </span>
-            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-slate-100 mt-2">
+            <h2 className="text-3xl sm:text-4xl font-bold mt-2" style={{ color: "var(--ink)" }}>
               Nuestra Galería de Estilos Visuales &amp; Prompts Listos para Usar.
             </h2>
-            <p className="text-slate-600 dark:text-slate-300 mt-4 text-base">
+            <p className="mt-4 text-base" style={{ color: "var(--ink-dim)" }}>
               Cada negocio tiene una vibra única. Nuestros agentes cuentan con una amplia biblioteca de estilos
               fotográficos calibrados para que todas tus publicaciones se vean profesionales y consistentes con tu marca.
             </p>
@@ -684,41 +782,45 @@ export default function ComoFuncionaPage() {
             <div className="flex flex-wrap items-center justify-center gap-2 mt-8">
               <button
                 onClick={() => setActivePromptCat("all")}
-                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all border ${
-                  activePromptCat === "all"
-                    ? "bg-orange-500 text-white border-orange-500 shadow-md"
-                    : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:border-orange-400"
-                }`}
+                className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all border"
+                style={{
+                  background: activePromptCat === "all" ? "var(--signal)" : "var(--panel)",
+                  color: activePromptCat === "all" ? "#FFFFFF" : "var(--ink)",
+                  borderColor: activePromptCat === "all" ? "var(--signal)" : "var(--line)",
+                }}
               >
                 Todos los Estilos
               </button>
               <button
                 onClick={() => setActivePromptCat("gastronomia")}
-                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all border ${
-                  activePromptCat === "gastronomia"
-                    ? "bg-orange-500 text-white border-orange-500 shadow-md"
-                    : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:border-orange-400"
-                }`}
+                className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all border"
+                style={{
+                  background: activePromptCat === "gastronomia" ? "var(--signal)" : "var(--panel)",
+                  color: activePromptCat === "gastronomia" ? "#FFFFFF" : "var(--ink)",
+                  borderColor: activePromptCat === "gastronomia" ? "var(--signal)" : "var(--line)",
+                }}
               >
                 🍽️ Restaurantes &amp; Cocina
               </button>
               <button
                 onClick={() => setActivePromptCat("fastfood")}
-                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all border ${
-                  activePromptCat === "fastfood"
-                    ? "bg-orange-500 text-white border-orange-500 shadow-md"
-                    : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:border-orange-400"
-                }`}
+                className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all border"
+                style={{
+                  background: activePromptCat === "fastfood" ? "var(--signal)" : "var(--panel)",
+                  color: activePromptCat === "fastfood" ? "#FFFFFF" : "var(--ink)",
+                  borderColor: activePromptCat === "fastfood" ? "var(--signal)" : "var(--line)",
+                }}
               >
                 🍔 Fast Food &amp; Burgers
               </button>
               <button
                 onClick={() => setActivePromptCat("cafe")}
-                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all border ${
-                  activePromptCat === "cafe"
-                    ? "bg-orange-500 text-white border-orange-500 shadow-md"
-                    : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:border-orange-400"
-                }`}
+                className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all border"
+                style={{
+                  background: activePromptCat === "cafe" ? "var(--signal)" : "var(--panel)",
+                  color: activePromptCat === "cafe" ? "#FFFFFF" : "var(--ink)",
+                  borderColor: activePromptCat === "cafe" ? "var(--signal)" : "var(--line)",
+                }}
               >
                 ☕ Cafetería &amp; Brunch
               </button>
@@ -730,7 +832,8 @@ export default function ComoFuncionaPage() {
             {filteredPrompts.map((style) => (
               <div
                 key={style.id}
-                className="group relative rounded-2xl overflow-hidden bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/70 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col"
+                className="group relative rounded-2xl overflow-hidden border shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col"
+                style={{ background: "var(--panel)", borderColor: "var(--line)" }}
               >
                 {/* Cabecera con imagen del estilo */}
                 <div className="relative h-48 w-full overflow-hidden bg-slate-900">
@@ -748,33 +851,36 @@ export default function ComoFuncionaPage() {
                 {/* Contenido de la tarjeta */}
                 <div className="p-6 flex-1 flex flex-col justify-between">
                   <div>
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-2">
+                    <h3 className="text-lg font-bold mb-2" style={{ color: "var(--ink)" }}>
                       {style.name}
                     </h3>
-                    <p className="text-slate-600 dark:text-slate-300 text-xs leading-relaxed mb-4">
+                    <p className="text-xs leading-relaxed mb-4" style={{ color: "var(--ink-dim)" }}>
                       {style.description}
                     </p>
 
-                    <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-700/60 text-xs">
+                    <div className="space-y-2 pt-3 border-t text-xs" style={{ borderColor: "var(--line)" }}>
                       <div>
-                        <span className="text-slate-400 font-semibold block text-[11px] uppercase">Iluminación:</span>
-                        <span className="text-slate-700 dark:text-slate-200">{style.lightingMood}</span>
+                        <span className="font-semibold block text-[11px] uppercase" style={{ color: "var(--ink-faint)" }}>
+                          Iluminación:
+                        </span>
+                        <span style={{ color: "var(--ink)" }}>{style.lightingMood}</span>
                       </div>
                       <div>
-                        <span className="text-slate-400 font-semibold block text-[11px] uppercase">Recomendado para:</span>
-                        <span className="text-slate-700 dark:text-slate-200 font-medium">{style.recommendedFor}</span>
+                        <span className="font-semibold block text-[11px] uppercase" style={{ color: "var(--ink-faint)" }}>
+                          Recomendado para:
+                        </span>
+                        <span className="font-medium" style={{ color: "var(--ink)" }}>
+                          {style.recommendedFor}
+                        </span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="mt-5 pt-3 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between text-xs">
-                    <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                  <div className="mt-5 pt-3 border-t flex items-center justify-between text-xs" style={{ borderColor: "var(--line)" }}>
+                    <span className="text-emerald-500 font-bold flex items-center gap-1">
                       <span>✓</span> Listo en 1 clic
                     </span>
-                    <a
-                      href="#muestra-gratis"
-                      className="text-orange-600 dark:text-orange-400 font-bold hover:underline"
-                    >
+                    <a href="#muestra-gratis" className="text-orange-500 font-bold hover:underline">
                       Probar en tu marca ➔
                     </a>
                   </div>
@@ -784,7 +890,7 @@ export default function ComoFuncionaPage() {
           </div>
 
           <div className="text-center mt-12" data-reveal>
-            <p className="text-sm text-slate-600 dark:text-slate-400">
+            <p className="text-sm" style={{ color: "var(--ink-dim)" }}>
               ¿Tienes un estilo o colores corporativos específicos? Nuestros agentes pueden calibrar y fijar la
               <strong> paleta visual exacta</strong> de tu marca.
             </p>
@@ -793,53 +899,59 @@ export default function ComoFuncionaPage() {
       </section>
 
       {/* ── 6. REELS Y VIDEOS DINÁMICOS ── */}
-      <section className="py-24 border-t border-slate-200 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-900/40">
+      <section className="py-24 border-b" style={{ borderColor: "var(--line)" }}>
         <div className="wrap">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center" data-reveal>
             <div>
-              <span className="eyebrow text-orange-600 dark:text-orange-400 font-bold text-xs uppercase tracking-wider">
+              <span className="eyebrow text-orange-500 font-bold text-xs uppercase tracking-wider">
                 Formato vertical de alto alcance
               </span>
-              <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-slate-100 mt-2 leading-tight">
+              <h2 className="text-3xl sm:text-4xl font-bold mt-2 leading-tight" style={{ color: "var(--ink)" }}>
                 Reels, TikToks y Shorts que atrapan a tu cliente en los primeros 3 segundos.
               </h2>
-              <p className="text-slate-600 dark:text-slate-300 mt-4 text-base leading-relaxed">
+              <p className="mt-4 text-base leading-relaxed" style={{ color: "var(--ink-dim)" }}>
                 El video vertical es el formato con mayor crecimiento y alcance orgánico. Nuestros agentes redactan
                 guiones con fórmulas probadas de retención, animan el contenido y dejan cada video listo para publicar.
               </p>
 
               <div className="space-y-4 mt-8">
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-orange-500/20 text-orange-600 dark:text-orange-400 flex items-center justify-center font-bold text-sm shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-orange-500/20 text-orange-500 flex items-center justify-center font-bold text-sm shrink-0">
                     1
                   </div>
                   <div>
-                    <h4 className="text-base font-bold text-slate-900 dark:text-slate-100">El Gancho (Primeros 3 seg)</h4>
-                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+                    <h4 className="text-base font-bold" style={{ color: "var(--ink)" }}>
+                      El Gancho (Primeros 3 seg)
+                    </h4>
+                    <p className="text-xs sm:text-sm" style={{ color: "var(--ink-dim)" }}>
                       Una frase contundente que frena el scroll y despierta el apetito o la curiosidad de inmediato.
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-orange-500/20 text-orange-600 dark:text-orange-400 flex items-center justify-center font-bold text-sm shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-orange-500/20 text-orange-500 flex items-center justify-center font-bold text-sm shrink-0">
                     2
                   </div>
                   <div>
-                    <h4 className="text-base font-bold text-slate-900 dark:text-slate-100">Desarrollo Dinámico</h4>
-                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+                    <h4 className="text-base font-bold" style={{ color: "var(--ink)" }}>
+                      Desarrollo Dinámico
+                    </h4>
+                    <p className="text-xs sm:text-sm" style={{ color: "var(--ink-dim)" }}>
                       Muestra tu plato o servicio en acción, con subtítulos llamativos y ritmo visual moderno.
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-orange-500/20 text-orange-600 dark:text-orange-400 flex items-center justify-center font-bold text-sm shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-orange-500/20 text-orange-500 flex items-center justify-center font-bold text-sm shrink-0">
                     3
                   </div>
                   <div>
-                    <h4 className="text-base font-bold text-slate-900 dark:text-slate-100">Llamado a la Acción Directo</h4>
-                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+                    <h4 className="text-base font-bold" style={{ color: "var(--ink)" }}>
+                      Llamado a la Acción Directo
+                    </h4>
+                    <p className="text-xs sm:text-sm" style={{ color: "var(--ink-dim)" }}>
                       Indica con claridad cómo pedir por WhatsApp o visitar tu local hoy mismo.
                     </p>
                   </div>
@@ -878,29 +990,33 @@ export default function ComoFuncionaPage() {
       </section>
 
       {/* ── 7. COMANDO POR WHATSAPP ── */}
-      <section className="py-24 border-t border-slate-200 dark:border-slate-800/80">
+      <section className="py-24 border-b" style={{ borderColor: "var(--line)" }}>
         <div className="wrap">
           <div className="text-center max-w-3xl mx-auto mb-16" data-reveal>
-            <span className="eyebrow text-emerald-600 dark:text-emerald-400 font-bold text-xs uppercase tracking-wider">
+            <span className="eyebrow text-emerald-500 font-bold text-xs uppercase tracking-wider">
               Control total desde tu bolsillo
             </span>
-            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-slate-100 mt-2">
+            <h2 className="text-3xl sm:text-4xl font-bold mt-2" style={{ color: "var(--ink)" }}>
               Sin computadoras ni paneles difíciles: manejas tu agencia desde WhatsApp.
             </h2>
-            <p className="text-slate-600 dark:text-slate-300 mt-4 text-base">
+            <p className="mt-4 text-base" style={{ color: "var(--ink-dim)" }}>
               No tienes que aprender a usar ningún programa complicado. Todo te llega a la app que ya tienes en el
               bolsillo todos los días.
             </p>
 
             {/* Pestañas de Escenarios */}
-            <div className="inline-flex p-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 mt-8 gap-2 shadow-sm">
+            <div
+              className="inline-flex p-1.5 rounded-xl border mt-8 gap-2 shadow-sm"
+              style={{ background: "var(--panel)", borderColor: "var(--line)" }}
+            >
               <button
                 onClick={() => setActiveScenario("aprobar")}
                 className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
                   activeScenario === "aprobar"
                     ? "bg-emerald-600 text-white shadow-md"
-                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                    : "hover:text-emerald-500"
                 }`}
+                style={{ color: activeScenario === "aprobar" ? "#FFFFFF" : "var(--ink-dim)" }}
               >
                 1. Aprobar Posts Semanales
               </button>
@@ -909,8 +1025,9 @@ export default function ComoFuncionaPage() {
                 className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
                   activeScenario === "urgente"
                     ? "bg-emerald-600 text-white shadow-md"
-                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                    : "hover:text-emerald-500"
                 }`}
+                style={{ color: activeScenario === "urgente" ? "#FFFFFF" : "var(--ink-dim)" }}
               >
                 2. Crear Promo Urgente al Vuelo
               </button>
@@ -919,8 +1036,9 @@ export default function ComoFuncionaPage() {
                 className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
                   activeScenario === "metricas"
                     ? "bg-emerald-600 text-white shadow-md"
-                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                    : "hover:text-emerald-500"
                 }`}
+                style={{ color: activeScenario === "metricas" ? "#FFFFFF" : "var(--ink-dim)" }}
               >
                 3. Resumen y Rendimiento
               </button>
@@ -1005,124 +1123,125 @@ export default function ComoFuncionaPage() {
       </section>
 
       {/* ── 8. MULTICANAL 360° ── */}
-      <section className="py-24 border-t border-slate-200 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-900/40">
+      <section className="py-24 border-b" style={{ borderColor: "var(--line)" }}>
         <div className="wrap">
           <div className="text-center max-w-3xl mx-auto mb-16" data-reveal>
-            <span className="eyebrow text-orange-600 dark:text-orange-400 font-bold text-xs uppercase tracking-wider">
+            <span className="eyebrow text-orange-500 font-bold text-xs uppercase tracking-wider">
               Distribución sincronizada
             </span>
-            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-slate-100 mt-2">
+            <h2 className="text-3xl sm:text-4xl font-bold mt-2" style={{ color: "var(--ink)" }}>
               Tu marca activa donde tus clientes están buscando hoy.
             </h2>
-            <p className="text-slate-600 dark:text-slate-300 mt-4 text-base">
+            <p className="mt-4 text-base" style={{ color: "var(--ink-dim)" }}>
               Con un solo clic, tu contenido se adapta y se publica en todas las plataformas principales sin esfuerzo.
             </p>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-center" data-reveal>
-            <div className="p-5 rounded-2xl bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 shadow-sm dark:shadow-none">
-              <span className="text-3xl block mb-2">📸</span>
-              <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm">Instagram</h4>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Feed, Stories y Reels</p>
-            </div>
-
-            <div className="p-5 rounded-2xl bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 shadow-sm dark:shadow-none">
-              <span className="text-3xl block mb-2">👥</span>
-              <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm">Facebook</h4>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Página y grupos</p>
-            </div>
-
-            <div className="p-5 rounded-2xl bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 shadow-sm dark:shadow-none">
-              <span className="text-3xl block mb-2">🎵</span>
-              <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm">TikTok</h4>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Videos en tendencia</p>
-            </div>
-
-            <div className="p-5 rounded-2xl bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 shadow-sm dark:shadow-none">
-              <span className="text-3xl block mb-2">📍</span>
-              <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm">Google Maps</h4>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Ficha de negocio local</p>
-            </div>
-
-            <div className="p-5 rounded-2xl bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 shadow-sm dark:shadow-none">
-              <span className="text-3xl block mb-2">▶️</span>
-              <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm">YouTube</h4>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Shorts verticales</p>
-            </div>
-
-            <div className="p-5 rounded-2xl bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 shadow-sm dark:shadow-none">
-              <span className="text-3xl block mb-2">✍️</span>
-              <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm">Blog &amp; SEO</h4>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Artículos para Google</p>
-            </div>
+            {[
+              { icon: "📸", name: "Instagram", desc: "Feed, Stories y Reels" },
+              { icon: "👥", name: "Facebook", desc: "Página y grupos" },
+              { icon: "🎵", name: "TikTok", desc: "Videos en tendencia" },
+              { icon: "📍", name: "Google Maps", desc: "Ficha de negocio local" },
+              { icon: "▶️", name: "YouTube", desc: "Shorts verticales" },
+              { icon: "✍️", name: "Blog & SEO", desc: "Artículos para Google" },
+            ].map((chan) => (
+              <div
+                key={chan.name}
+                className="p-5 rounded-2xl border shadow-sm"
+                style={{ background: "var(--panel)", borderColor: "var(--line)" }}
+              >
+                <span className="text-3xl block mb-2">{chan.icon}</span>
+                <h4 className="font-bold text-sm" style={{ color: "var(--ink)" }}>
+                  {chan.name}
+                </h4>
+                <p className="text-xs mt-1" style={{ color: "var(--ink-dim)" }}>
+                  {chan.desc}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* ── 9. TABLA COMPARATIVA DIRECTA ── */}
-      <section className="py-24 border-t border-slate-200 dark:border-slate-800/80 bg-white dark:bg-slate-900/60">
+      <section className="py-24 border-b" style={{ borderColor: "var(--line)" }}>
         <div className="wrap">
           <div className="text-center max-w-3xl mx-auto mb-16" data-reveal>
-            <span className="eyebrow text-orange-600 dark:text-orange-400 font-bold text-xs uppercase tracking-wider">
+            <span className="eyebrow text-orange-500 font-bold text-xs uppercase tracking-wider">
               Comparativa directa
             </span>
-            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-slate-100 mt-2">
+            <h2 className="text-3xl sm:text-4xl font-bold mt-2" style={{ color: "var(--ink)" }}>
               ¿Por qué somos la opción más inteligente para tu negocio?
             </h2>
-            <p className="text-slate-600 dark:text-slate-300 mt-4 text-base">
+            <p className="mt-4 text-base" style={{ color: "var(--ink-dim)" }}>
               Mira la diferencia real entre contratar una agencia clásica, agotarte haciéndolo tú mismo o activar a
               nuestros agentes.
             </p>
           </div>
 
-          <div className="overflow-x-auto" data-reveal>
+          <div
+            className="overflow-x-auto rounded-2xl border p-4 shadow-sm"
+            style={{ background: "var(--panel)", borderColor: "var(--line)" }}
+            data-reveal
+          >
             <table className="w-full text-left border-collapse min-w-[640px] text-sm">
               <thead>
-                <tr className="border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 uppercase text-xs">
+                <tr className="border-b uppercase text-xs" style={{ borderColor: "var(--line)", color: "var(--ink-dim)" }}>
                   <th className="py-4 px-6 font-bold">Criterio</th>
-                  <th className="py-4 px-6 font-bold text-red-600 dark:text-red-400">Agencia Tradicional</th>
-                  <th className="py-4 px-6 font-bold text-amber-600 dark:text-amber-400">Hacerlo Tú Mismo</th>
-                  <th className="py-4 px-6 font-bold text-emerald-600 dark:text-emerald-400 bg-orange-500/10 rounded-t-xl">
+                  <th className="py-4 px-6 font-bold text-red-500">Agencia Tradicional</th>
+                  <th className="py-4 px-6 font-bold text-amber-500">Hacerlo Tú Mismo</th>
+                  <th className="py-4 px-6 font-bold text-emerald-500 bg-orange-500/10 rounded-t-xl">
                     Con Nuestros Agentes ⭐
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
+              <tbody className="divide-y" style={{ borderColor: "var(--line)", color: "var(--ink-dim)" }}>
                 <tr>
-                  <td className="py-4 px-6 font-bold text-slate-900 dark:text-white">Costo mensual</td>
-                  <td className="py-4 px-6 text-red-600 dark:text-red-300">$500 a $1.500 USD</td>
-                  <td className="py-4 px-6 text-amber-600 dark:text-amber-300">Tu tiempo libre (invaluable)</td>
-                  <td className="py-4 px-6 font-bold text-emerald-600 dark:text-emerald-400 bg-orange-500/10">
+                  <td className="py-4 px-6 font-bold" style={{ color: "var(--ink)" }}>
+                    Costo mensual
+                  </td>
+                  <td className="py-4 px-6 text-red-500">$500 a $1.500 USD</td>
+                  <td className="py-4 px-6 text-amber-500">Tu tiempo libre (invaluable)</td>
+                  <td className="py-4 px-6 font-bold text-emerald-500 bg-orange-500/10">
                     Desde $24.990 CLP / mes
                   </td>
                 </tr>
                 <tr>
-                  <td className="py-4 px-6 font-bold text-slate-900 dark:text-white">Tiempo de entrega</td>
+                  <td className="py-4 px-6 font-bold" style={{ color: "var(--ink)" }}>
+                    Tiempo de entrega
+                  </td>
                   <td className="py-4 px-6">5 a 10 días hábiles</td>
                   <td className="py-4 px-6">Cuando tengas 2 horas libres</td>
-                  <td className="py-4 px-6 font-bold text-emerald-600 dark:text-emerald-400 bg-orange-500/10">Minutos (24/7)</td>
+                  <td className="py-4 px-6 font-bold text-emerald-500 bg-orange-500/10">Minutos (24/7)</td>
                 </tr>
                 <tr>
-                  <td className="py-4 px-6 font-bold text-slate-900 dark:text-white">Tus fotos reales</td>
+                  <td className="py-4 px-6 font-bold" style={{ color: "var(--ink)" }}>
+                    Tus fotos reales
+                  </td>
                   <td className="py-4 px-6">Piden sesiones caras de fotos</td>
                   <td className="py-4 px-6">Fotos sueltas sin diseño ni precio</td>
-                  <td className="py-4 px-6 font-bold text-emerald-600 dark:text-emerald-400 bg-orange-500/10">
+                  <td className="py-4 px-6 font-bold text-emerald-500 bg-orange-500/10">
                     Vestidas con cartelería profesional directa
                   </td>
                 </tr>
                 <tr>
-                  <td className="py-4 px-6 font-bold text-slate-900 dark:text-white">Aprobación y control</td>
+                  <td className="py-4 px-6 font-bold" style={{ color: "var(--ink)" }}>
+                    Aprobación y control
+                  </td>
                   <td className="py-4 px-6">Mails interminables y reuniones</td>
                   <td className="py-4 px-6">Sin planificación fija</td>
-                  <td className="py-4 px-6 font-bold text-emerald-600 dark:text-emerald-400 bg-orange-500/10">
+                  <td className="py-4 px-6 font-bold text-emerald-500 bg-orange-500/10">
                     En 1 toque desde WhatsApp
                   </td>
                 </tr>
                 <tr>
-                  <td className="py-4 px-6 font-bold text-slate-900 dark:text-white">Publicación</td>
+                  <td className="py-4 px-6 font-bold" style={{ color: "var(--ink)" }}>
+                    Publicación
+                  </td>
                   <td className="py-4 px-6">Solo Instagram y Facebook</td>
                   <td className="py-4 px-6">Una sola red por falta de tiempo</td>
-                  <td className="py-4 px-6 font-bold text-emerald-600 dark:text-emerald-400 bg-orange-500/10">
+                  <td className="py-4 px-6 font-bold text-emerald-500 bg-orange-500/10">
                     Instagram, TikTok, Google, FB y Blog
                   </td>
                 </tr>
@@ -1133,17 +1252,21 @@ export default function ComoFuncionaPage() {
       </section>
 
       {/* ── 10. DOBLE LLAMADO A LA ACCIÓN (FORMULARIO EXPRESS + WHATSAPP) ── */}
-      <section id="muestra-gratis" className="py-24 border-t border-slate-200 dark:border-slate-800/80">
+      <section id="muestra-gratis" className="py-24">
         <div className="wrap">
-          <div className="max-w-4xl mx-auto rounded-3xl bg-white dark:bg-gradient-to-b dark:from-slate-800/80 dark:to-slate-900 border border-slate-200 dark:border-slate-700 p-8 sm:p-14 shadow-2xl" data-reveal>
+          <div
+            className="max-w-4xl mx-auto rounded-3xl border p-8 sm:p-14 shadow-2xl"
+            style={{ background: "var(--panel)", borderColor: "var(--line)" }}
+            data-reveal
+          >
             <div className="text-center max-w-2xl mx-auto mb-10">
-              <span className="eyebrow text-orange-600 dark:text-orange-400 font-bold text-xs uppercase tracking-wider">
+              <span className="eyebrow text-orange-500 font-bold text-xs uppercase tracking-wider">
                 Pruébalo sin costo
               </span>
-              <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-slate-100 mt-2">
+              <h2 className="text-3xl sm:text-4xl font-extrabold mt-2" style={{ color: "var(--ink)" }}>
                 Mira cómo se vería tu negocio hoy mismo, sin pagar nada.
               </h2>
-              <p className="text-slate-600 dark:text-slate-300 mt-3 text-base">
+              <p className="mt-3 text-base" style={{ color: "var(--ink-dim)" }}>
                 Déjanos el nombre de tu negocio y te preparamos una <strong>muestra gratuita y personalizada</strong> con
                 publicaciones y estrategia real en menos de lo que imaginas.
               </p>
@@ -1152,8 +1275,10 @@ export default function ComoFuncionaPage() {
             {formStatus === "success" ? (
               <div className="p-8 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-center max-w-lg mx-auto">
                 <span className="text-4xl block mb-2">🎉</span>
-                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">¡Solicitud recibida con éxito!</h3>
-                <p className="text-slate-600 dark:text-slate-300 text-sm mb-6">
+                <h3 className="text-xl font-bold mb-2" style={{ color: "var(--ink)" }}>
+                  ¡Solicitud recibida con éxito!
+                </h3>
+                <p className="text-sm mb-6" style={{ color: "var(--ink-dim)" }}>
                   Nuestros agentes ya están preparando la muestra comercial para <strong>{businessName}</strong>. Te
                   escribiremos al WhatsApp <strong>{contactPhone}</strong> con tu propuesta lista.
                 </p>
@@ -1171,7 +1296,7 @@ export default function ComoFuncionaPage() {
             ) : (
               <form onSubmit={handleSampleSubmit} className="max-w-xl mx-auto space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">
+                  <label className="block text-xs font-bold uppercase mb-1.5" style={{ color: "var(--ink)" }}>
                     Nombre de tu Negocio / Local *
                   </label>
                   <input
@@ -1180,19 +1305,29 @@ export default function ComoFuncionaPage() {
                     value={businessName}
                     onChange={(e) => setBusinessName(e.target.value)}
                     placeholder="Ej. Pizzería Donatello / Burger House"
-                    className="w-full px-4 py-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-orange-500 text-sm"
+                    className="w-full px-4 py-3.5 rounded-xl border text-sm focus:outline-none focus:border-orange-500"
+                    style={{
+                      background: "var(--panel-2)",
+                      borderColor: "var(--line-strong)",
+                      color: "var(--ink)",
+                    }}
                   />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">
+                    <label className="block text-xs font-bold uppercase mb-1.5" style={{ color: "var(--ink)" }}>
                       Rubro Comercial *
                     </label>
                     <select
                       value={businessRubro}
                       onChange={(e) => setBusinessRubro(e.target.value)}
-                      className="w-full px-4 py-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:border-orange-500 text-sm"
+                      className="w-full px-4 py-3.5 rounded-xl border text-sm focus:outline-none focus:border-orange-500"
+                      style={{
+                        background: "var(--panel-2)",
+                        borderColor: "var(--line-strong)",
+                        color: "var(--ink)",
+                      }}
                     >
                       <option>Hamburguesería / Fast Food</option>
                       <option>Pizzería / Trattoria</option>
@@ -1206,7 +1341,7 @@ export default function ComoFuncionaPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">
+                    <label className="block text-xs font-bold uppercase mb-1.5" style={{ color: "var(--ink)" }}>
                       Teléfono WhatsApp *
                     </label>
                     <input
@@ -1215,13 +1350,18 @@ export default function ComoFuncionaPage() {
                       value={contactPhone}
                       onChange={(e) => setContactPhone(e.target.value)}
                       placeholder="+56 9 1234 5678"
-                      className="w-full px-4 py-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-orange-500 text-sm"
+                      className="w-full px-4 py-3.5 rounded-xl border text-sm focus:outline-none focus:border-orange-500"
+                      style={{
+                        background: "var(--panel-2)",
+                        borderColor: "var(--line-strong)",
+                        color: "var(--ink)",
+                      }}
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1.5">
+                  <label className="block text-xs font-bold uppercase mb-1.5" style={{ color: "var(--ink)" }}>
                     Correo Electrónico (Opcional)
                   </label>
                   <input
@@ -1229,12 +1369,17 @@ export default function ComoFuncionaPage() {
                     value={contactEmail}
                     onChange={(e) => setContactEmail(e.target.value)}
                     placeholder="tucorreo@negocio.com"
-                    className="w-full px-4 py-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-orange-500 text-sm"
+                    className="w-full px-4 py-3.5 rounded-xl border text-sm focus:outline-none focus:border-orange-500"
+                    style={{
+                      background: "var(--panel-2)",
+                      borderColor: "var(--line-strong)",
+                      color: "var(--ink)",
+                    }}
                   />
                 </div>
 
                 {formStatus === "error" && (
-                  <p className="text-red-500 dark:text-red-400 text-xs">
+                  <p className="text-red-500 text-xs">
                     Hubo un problema enviando tus datos. Puedes escribirnos directo al WhatsApp de abajo.
                   </p>
                 )}
@@ -1249,9 +1394,11 @@ export default function ComoFuncionaPage() {
 
                 {/* Separador O */}
                 <div className="flex items-center gap-3 my-6">
-                  <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
-                  <span className="text-xs uppercase font-bold text-slate-400 dark:text-slate-500">O también puedes</span>
-                  <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+                  <div className="flex-1 h-px" style={{ background: "var(--line)" }} />
+                  <span className="text-xs uppercase font-bold" style={{ color: "var(--ink-faint)" }}>
+                    O también puedes
+                  </span>
+                  <div className="flex-1 h-px" style={{ background: "var(--line)" }} />
                 </div>
 
                 {/* Botón directo de WhatsApp Comercial */}
@@ -1266,7 +1413,7 @@ export default function ComoFuncionaPage() {
               </form>
             )}
 
-            <div className="mt-8 text-center text-xs text-slate-500 dark:text-slate-400">
+            <div className="mt-8 text-center text-xs" style={{ color: "var(--ink-dim)" }}>
               🔒 Tus datos son confidenciales y solo los usaremos para enviarte tu propuesta de muestra. Sin spam.
             </div>
           </div>
