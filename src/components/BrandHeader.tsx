@@ -51,10 +51,14 @@ export default function BrandHeader() {
 
             <span className="brand-slash hidden sm:inline">/</span>
 
-            <div className="brand-vertical-badge rrss-badge hidden sm:flex">
+            <Link
+              href="/"
+              className="brand-vertical-badge rrss-badge hidden sm:flex"
+              title="Ir al inicio de Redes & Contenido"
+            >
               <span className="rrss-dot"></span>
               <span className="vertical-name">REDES &amp; CONTENIDO</span>
-            </div>
+            </Link>
           </div>
 
           {/* Ecosystem Switcher Button */}
@@ -153,32 +157,21 @@ export default function BrandHeader() {
 
         {/* Desktop Navigation Links */}
         <div className="nav-links">
-          <Link href="/como-funciona" className="ghost">
+          <Link href="/como-funciona" className="ghost whitespace-nowrap">
             Cómo Funciona
           </Link>
 
-          <a href="#planes" className="ghost">
+          <a href="/#planes" className="ghost whitespace-nowrap">
             Planes
           </a>
-          
-          <a
-            href="https://santisoft.cl"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="ghost santisoft-ecosystem-link"
-            title="Ir al portal principal de Santisoft"
-          >
-            <span>SANTISOFT</span>
-            <span className="nav-arrow">↗</span>
-          </a>
 
-          <Link href="/login" className="ghost">
+          <Link href="/login" className="ghost whitespace-nowrap">
             Acceso Cliente
           </Link>
 
           <ThemeToggle />
 
-          <Link href="/registro" className="btn btn-primary btn-sm">
+          <Link href="/registro" className="btn btn-primary btn-sm whitespace-nowrap">
             Empezar Gratis
           </Link>
         </div>
@@ -220,7 +213,7 @@ export default function BrandHeader() {
           </Link>
 
           <a
-            href="#planes"
+            href="/#planes"
             onClick={() => setMobileMenuOpen(false)}
             className="nav-mobile-item"
           >

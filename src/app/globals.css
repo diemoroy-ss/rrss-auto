@@ -450,8 +450,8 @@ body:not(:has(.landing-page-root)) .eyebrow {
   & .nav-arrow { display: inline-block; font-size: 12px; transition: transform 0.2s ease; color: var(--signal); }
   & .santisoft-ecosystem-link:hover .nav-arrow { transform: translate(2.5px, -2.5px); color: var(--signal); }
 
-  & .nav-links { display: flex; align-items: center; gap: 30px; }
-  & .nav-links a.ghost { font-size: 14px; color: var(--ink-dim); position: relative; padding-bottom: 3px; }
+  & .nav-links { display: flex; align-items: center; gap: 20px; }
+  & .nav-links a.ghost { font-size: 14px; color: var(--ink-dim); position: relative; padding-bottom: 3px; white-space: nowrap; }
   & .nav-links a.ghost::after {
     content: ""; position: absolute; left: 0; right: 100%; bottom: 0; height: 1px; background: var(--signal);
     transition: right .25s cubic-bezier(.4, 0, .2, 1);
