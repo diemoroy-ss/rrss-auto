@@ -1,6 +1,7 @@
 import { adminDb, adminStorage } from "./firebase-admin";
 import { generateBannerCopyWithAgent, BannerCopyResult } from "./agents/agent-banner-copy";
 import { composeBannerOnImage } from "./banner-compositor";
+import { LayoutPosition, IngredientItem } from "./text-templates";
 
 export interface RealProductBannerParams {
   baseImageUrl: string;
@@ -10,7 +11,10 @@ export interface RealProductBannerParams {
   idea?: string;
   rubro?: string;
   businessName?: string;
-  fontStyle?: "script_handwritten" | "bold_modern" | "elegant_serif" | "clean_minimal";
+  fontStyle?: "script_handwritten" | "bold_modern" | "elegant_serif" | "clean_minimal" | "serif_script_mix" | "bold_textured";
+  layoutPosition?: LayoutPosition;
+  secondaryScript?: string;
+  ingredients?: IngredientItem[];
   aspectRatio?: "1:1" | "9:16";
   logoUrl?: string;
   userId?: string;
@@ -26,7 +30,10 @@ function mapFontFamily(style?: string): string {
       return "'Dancing Script', cursive, sans-serif";
     case "bold_modern":
       return "'Bebas Neue', 'Anton', sans-serif";
+    case "bold_textured":
+      return "'Anton', 'Bebas Neue', sans-serif";
     case "elegant_serif":
+    case "serif_script_mix":
       return "'Playfair Display', Georgia, serif";
     case "clean_minimal":
     default:
@@ -50,6 +57,9 @@ export async function composeRealProductBanner(params: RealProductBannerParams):
     rubro = "Gastronomía",
     businessName = "Mi Negocio",
     fontStyle = "script_handwritten",
+    layoutPosition = "top_banner",
+    secondaryScript,
+    ingredients,
     aspectRatio = "1:1",
     logoUrl,
     userId = "system",
@@ -58,7 +68,7 @@ export async function composeRealProductBanner(params: RealProductBannerParams):
 
   const isVertical = aspectRatio === "9:16";
 
-  console.log(`[RealProductCompositor] Procesando foto real de "${productName}" para ${businessName} (${fontStyle})...`);
+  console.log(`[RealProductCompositor] Procesando foto real de "${productName}" para ${businessName} (Layout: ${layoutPosition}, Font: ${fontStyle})...`);
 
   // 1. Invocación de nuestro Agente de Textos Publicitarios
   let bannerCopy: BannerCopyResult;
@@ -92,73 +102,162 @@ export async function composeRealProductBanner(params: RealProductBannerParams):
   try {
     const selectedFont = mapFontFamily(fontStyle);
     const isScript = fontStyle === "script_handwritten";
+    const isSplit = layoutPosition === "split_left";
+    const isRecipe = layoutPosition === "recipe_ingredients";
 
-    const textLayers: any[] = [
-      // 1. Badge Superior
-      {
-        x: 50,
-        y: isVertical ? 12 : 10,
-        text: bannerCopy.badgeText,
-        color: bannerCopy.badgeTextColor,
-        font: "Montserrat, sans-serif",
-        size: isVertical ? 24 : 20,
-        isBold: true,
-        backgroundColor: bannerCopy.badgeBgColor || "#fbbf24",
-        isPill: true,
-        shadowLevel: "soft",
-        letterSpacing: "wide",
-      },
-      // 2. Titular Principal (con fuente seleccionada: Cursiva, Bold, etc.)
-      {
-        x: 50,
-        y: isVertical ? 21 : 19,
-        text: isScript
-          ? capitalizeWords(bannerCopy.mainHeadline)
-          : bannerCopy.mainHeadline,
-        color: isScript ? "#ffffff" : bannerCopy.headlineColor,
-        font: selectedFont,
-        size: isScript ? (isVertical ? 72 : 56) : (isVertical ? 64 : 52),
-        isBold: true,
-        isItalic: fontStyle === "elegant_serif",
-        backgroundColor: "transparent",
-        shadowLevel: "hard",
-        letterSpacing: isScript ? "normal" : "wide",
-      },
-      // 3. Beneficio / Detalle del Plato o Precio
-      {
-        x: 50,
-        y: isVertical ? 29 : 27,
-        text: bannerCopy.benefitText,
-        color: bannerCopy.benefitTextColor,
-        font: "Montserrat, sans-serif",
-        size: isVertical ? 22 : 18,
-        isBold: true,
-        backgroundColor: bannerCopy.benefitBgColor || "rgba(15, 23, 42, 0.85)",
-        isPill: true,
-        shadowLevel: "soft",
-      },
-      // 4. Barra Inferior de Ubicación / CTA
-      {
-        x: 50,
-        y: isVertical ? 93 : 93,
-        text: bannerCopy.ctaText,
-        color: "#ffffff",
-        font: "Montserrat, sans-serif",
-        size: isVertical ? 22 : 18,
-        isBold: true,
-        backgroundColor: "rgba(15, 23, 42, 0.88)",
-        isPill: true,
-        shadowLevel: "hard",
-      },
-    ];
+    let textLayers: any[];
+
+    if (isSplit) {
+      textLayers = [
+        // Kicker / Cursiva superior al costado
+        {
+          x: 28,
+          y: isVertical ? 28 : 26,
+          text: secondaryScript || bannerCopy.badgeText || "Especial del Chef",
+          color: "#fcd34d",
+          font: "'Dancing Script', cursive, sans-serif",
+          size: isVertical ? 32 : 26,
+          isBold: true,
+          isItalic: true,
+          backgroundColor: "transparent",
+          shadowLevel: "hard",
+          textAlign: "left",
+        },
+        // Titular Principal al Costado
+        {
+          x: 28,
+          y: isVertical ? 38 : 36,
+          text: isScript ? capitalizeWords(bannerCopy.mainHeadline) : bannerCopy.mainHeadline,
+          color: bannerCopy.headlineColor || "#ffffff",
+          font: selectedFont,
+          size: isScript ? (isVertical ? 68 : 52) : (isVertical ? 60 : 46),
+          isBold: true,
+          isItalic: fontStyle === "elegant_serif" || fontStyle === "serif_script_mix",
+          backgroundColor: "transparent",
+          shadowLevel: "hard",
+          letterSpacing: "tight",
+          textAlign: "left",
+        },
+        // Beneficio / Detalle
+        {
+          x: 28,
+          y: isVertical ? 48 : 46,
+          text: bannerCopy.benefitText,
+          color: "#ffffff",
+          font: "Montserrat, sans-serif",
+          size: isVertical ? 20 : 16,
+          isBold: false,
+          backgroundColor: "transparent",
+          shadowLevel: "soft",
+          textAlign: "left",
+        },
+        // Precio Destacado
+        ...(price
+          ? [
+              {
+                x: 28,
+                y: isVertical ? 56 : 54,
+                text: price,
+                color: "#0f172a",
+                font: "Montserrat, sans-serif",
+                size: isVertical ? 24 : 20,
+                isBold: true,
+                backgroundColor: "#fbbf24",
+                isPill: true,
+                shadowLevel: "soft",
+                textAlign: "left",
+              },
+            ]
+          : []),
+        // Botón CTA al Costado
+        {
+          x: 28,
+          y: isVertical ? 66 : 64,
+          text: bannerCopy.ctaText,
+          color: "#0f172a",
+          font: "Montserrat, sans-serif",
+          size: isVertical ? 20 : 16,
+          isBold: true,
+          backgroundColor: "#fbbf24",
+          isPill: true,
+          shadowLevel: "hard",
+          textAlign: "left",
+        },
+      ];
+    } else {
+      textLayers = [
+        // 1. Badge Superior
+        {
+          x: 50,
+          y: isVertical ? 12 : 10,
+          text: bannerCopy.badgeText,
+          color: bannerCopy.badgeTextColor,
+          font: "Montserrat, sans-serif",
+          size: isVertical ? 24 : 20,
+          isBold: true,
+          backgroundColor: bannerCopy.badgeBgColor || "#fbbf24",
+          isPill: true,
+          shadowLevel: "soft",
+          letterSpacing: "wide",
+        },
+        // 2. Titular Principal
+        {
+          x: 50,
+          y: isVertical ? 21 : 19,
+          text: isScript
+            ? capitalizeWords(bannerCopy.mainHeadline)
+            : bannerCopy.mainHeadline,
+          color: isScript ? "#ffffff" : bannerCopy.headlineColor,
+          font: selectedFont,
+          size: isScript ? (isVertical ? 72 : 56) : (isVertical ? 64 : 52),
+          isBold: true,
+          isItalic: fontStyle === "elegant_serif" || fontStyle === "serif_script_mix",
+          backgroundColor: "transparent",
+          shadowLevel: "hard",
+          letterSpacing: isScript ? "normal" : "wide",
+        },
+        // 3. Beneficio / Detalle del Plato o Precio
+        {
+          x: 50,
+          y: isVertical ? 29 : 27,
+          text: bannerCopy.benefitText,
+          color: bannerCopy.benefitTextColor,
+          font: "Montserrat, sans-serif",
+          size: isVertical ? 22 : 18,
+          isBold: true,
+          backgroundColor: bannerCopy.benefitBgColor || "rgba(15, 23, 42, 0.85)",
+          isPill: true,
+          shadowLevel: "soft",
+        },
+        // 4. Barra Inferior de Ubicación / CTA (si no es receta con tira de ingredientes)
+        ...(!isRecipe
+          ? [
+              {
+                x: 50,
+                y: isVertical ? 93 : 93,
+                text: bannerCopy.ctaText,
+                color: "#ffffff",
+                font: "Montserrat, sans-serif",
+                size: isVertical ? 22 : 18,
+                isBold: true,
+                backgroundColor: "rgba(15, 23, 42, 0.88)",
+                isPill: true,
+                shadowLevel: "hard",
+              },
+            ]
+          : []),
+      ];
+    }
 
     // Registrar en Firestore para el endpoint /render/preview
     const renderDoc = await adminDb.collection("preview_renders").add({
       baseImageUrl,
       userId,
+      layoutPosition,
+      ingredients: ingredients && ingredients.length > 0 ? ingredients : null,
       useLogo: Boolean(includeLogo && logoUrl),
       logoUrl: logoUrl || null,
-      logoX: 14,
+      logoX: isSplit ? 90 : 14,
       logoY: isVertical ? 8 : 10,
       logoWidth: 100,
       logoBg: "transparent",

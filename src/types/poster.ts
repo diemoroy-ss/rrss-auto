@@ -12,8 +12,13 @@ export type VisualStyle =
 
 export type ContactType = 'phone' | 'email' | 'whatsapp';
 
+export type PosterLayout = 'auto' | 'top_banner' | 'split_left' | 'split_right' | 'recipe_ingredients';
+
 export interface PosterConfig {
   enabled: boolean;
+  layout?: PosterLayout;
+  layoutReasoning?: string;
+  kickerText?: string;
   // Elementos a incluir en el cartel
   includeLogo: boolean;
   logoUrl?: string;           // Auto-filled desde activeProfile.logoUrl
@@ -45,6 +50,25 @@ export function buildPosterPromptSuffix(config: PosterConfig): string {
   const parts: string[] = [
     `Estilo visual: ${config.visualStyle}.`,
   ];
+
+  // Directiva de composición según decisión de Dirección de Arte
+  if (config.layout === 'split_left') {
+    parts.push(
+      'SPATIAL COMPOSITION: Asymmetrical split commercial layout. The hero product MUST be framed strictly within the right 50% of the image. The left 50% must be clean, dark, out-of-focus copyspace with expansive negative space for typography overlay. Product must never be centered.'
+    );
+  } else if (config.layout === 'split_right') {
+    parts.push(
+      'SPATIAL COMPOSITION: Asymmetrical split commercial layout. The hero product is framed strictly within the left 50% of the image. The right 50% has wide open clean negative space for graphic design.'
+    );
+  } else if (config.layout === 'recipe_ingredients') {
+    parts.push(
+      'SPATIAL COMPOSITION: Clean overhead flat-lay restaurant presentation with the dish centered in the middle third, leaving wide empty negative space at top and bottom margins for recipe cards.'
+    );
+  } else if (config.layout === 'top_banner') {
+    parts.push(
+      'SPATIAL COMPOSITION: Hero product framed in the lower-middle half of the image, leaving expansive clean copyspace at the top header for typography.'
+    );
+  }
 
   if (config.includeBusinessName && config.businessName) {
     parts.push(`Nombre del negocio visible: "${config.businessName}".`);
@@ -85,6 +109,7 @@ export function buildPosterPromptSuffix(config: PosterConfig): string {
  */
 export const DEFAULT_POSTER_CONFIG: PosterConfig = {
   enabled: false,
+  layout: 'auto',
   includeLogo: false,
   includeBusinessName: true,
   includeMainText: false,

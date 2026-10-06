@@ -262,6 +262,7 @@ export default function RrssCreatePost() {
   const productNameParam = searchParams.get("productName");
   const priceParam = searchParams.get("price");
   const textTemplateNameParam = searchParams.get("textTemplateName");
+  const layoutPositionParam = searchParams.get("layoutPosition");
 
   useEffect(() => {
     if (promptIdParam) {
@@ -341,10 +342,11 @@ export default function RrssCreatePost() {
       const decodedName = decodeURIComponent(productNameParam);
       setIdea((prev) => prev || decodedName);
     }
-    if (textTemplateIdParam || badgeTextParam || priceParam) {
+    if (textTemplateIdParam || badgeTextParam || priceParam || layoutPositionParam) {
       setPosterConfig((prev) => ({
         ...prev,
         enabled: true,
+        layout: (layoutPositionParam as any) || prev.layout || "auto",
         includeMainText: !!productNameParam,
         mainText: productNameParam ? decodeURIComponent(productNameParam) : prev.mainText,
         includePrice: !!priceParam,
@@ -353,7 +355,7 @@ export default function RrssCreatePost() {
         includeSlogan: !!badgeTextParam,
       }));
     }
-  }, [baseImageUrlParam, productNameParam, textTemplateIdParam, badgeTextParam, priceParam]);
+  }, [baseImageUrlParam, productNameParam, textTemplateIdParam, badgeTextParam, priceParam, layoutPositionParam]);
 
   useEffect(() => {
     // Si venimos de la biblioteca y seleccionamos "Postear" (hideAI=true pero no openEditor)

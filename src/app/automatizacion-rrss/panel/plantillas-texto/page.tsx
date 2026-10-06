@@ -38,6 +38,8 @@ export default function PlantillasTextoPage() {
   const [newIngredientName, setNewIngredientName] = useState<string>("");
   const [newIngredientAmount, setNewIngredientAmount] = useState<string>("");
   const [newIngredientIcon, setNewIngredientIcon] = useState<string>("🥗");
+  const [isDecidingArtDirection, setIsDecidingArtDirection] = useState<boolean>(false);
+  const [artDirectionReasoning, setArtDirectionReasoning] = useState<string | null>(null);
 
   // Estados para modal de crear / editar plantilla
   const [editingTemplate, setEditingTemplate] = useState<TextTemplate | null>(null);
@@ -144,6 +146,7 @@ export default function PlantillasTextoPage() {
   // Abrir modal de prueba con foto
   const handleOpenTestModal = (template: TextTemplate) => {
     setTestingTemplate(template);
+    setArtDirectionReasoning(null);
     setTestIngredients(template.ingredients ? [...template.ingredients] : []);
     setTestSecondaryScript(template.secondaryScriptPattern || "");
     if (catalogItems.length > 0) {
@@ -156,6 +159,42 @@ export default function PlantillasTextoPage() {
       setTestProductName("Hamburguesa Doble Queso");
       setTestPrice("$24.900");
       setCustomPhotoUrl(template.previewSampleImage || "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=600&q=80");
+    }
+  };
+
+  // Decisión inteligente y dirección de arte automática por nuestros agentes
+  const handleAutoArtDirection = async () => {
+    setIsDecidingArtDirection(true);
+    try {
+      const res = await fetch("/api/laboratorio/analizar-direccion-arte", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageUrl: customPhotoUrl || testingTemplate?.previewSampleImage,
+          productName: testProductName.trim() || "Plato Principal",
+          price: testPrice.trim(),
+          rubro: activeProfile?.businessType || "Gastronomía",
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.decision) {
+        const { decision } = data;
+        setArtDirectionReasoning(decision.reasoning);
+        if (decision.kickerText) {
+          setTestSecondaryScript(decision.kickerText);
+        }
+        if (Array.isArray(decision.ingredients) && decision.ingredients.length > 0) {
+          setTestIngredients(decision.ingredients);
+        }
+        const rec = templates.find((t) => t.id === decision.templateId) || decision.template;
+        if (rec) {
+          setTestingTemplate(rec);
+        }
+      }
+    } catch (err) {
+      console.error("Error en dirección de arte automática:", err);
+    } finally {
+      setIsDecidingArtDirection(false);
     }
   };
 
@@ -859,6 +898,41 @@ export default function PlantillasTextoPage() {
 
               {/* Columna Derecha: Configurar Valores de Prueba */}
               <div className="space-y-4">
+                {/* 🎯 Dirección de Arte Inteligente por Nuestros Agentes */}
+                <div className="p-3.5 bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-amber-500/10 border border-indigo-500/20 rounded-2xl flex flex-col gap-2.5 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">🎯</span>
+                      <div>
+                        <span className="text-xs font-bold text-slate-900 dark:text-white block leading-tight">
+                          Dirección de Arte de Nuestros Agentes
+                        </span>
+                        <span className="text-[10px] text-slate-500 block">
+                          Evalúa la foto y contenido para elegir la mejor disposición
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAutoArtDirection}
+                      disabled={isDecidingArtDirection}
+                      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shrink-0"
+                    >
+                      <span>✨</span> {isDecidingArtDirection ? "Analizando..." : "Decidir Layout"}
+                    </button>
+                  </div>
+
+                  {artDirectionReasoning && (
+                    <div className="p-2.5 rounded-xl bg-white/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-200 flex items-start gap-2 animate-fadeIn shadow-xs">
+                      <span className="text-amber-500 font-bold mt-0.5">💡</span>
+                      <p className="leading-snug">
+                        <strong className="text-slate-900 dark:text-white font-semibold">Criterio del Agente: </strong>
+                        {artDirectionReasoning}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
                 {/* Seleccionar del Catálogo */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">

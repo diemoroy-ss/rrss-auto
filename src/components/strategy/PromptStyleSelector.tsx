@@ -149,7 +149,7 @@ export default function PromptStyleSelector({
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-sm md:text-base font-black text-slate-900 tracking-tight">
-                Estilos Visuales de Prompts IA
+                Estilos Visuales de Nuestros Agentes
               </h3>
               {enabled && selectedStyles.length > 0 && (
                 <span className="text-[11px] font-black text-indigo-600 bg-indigo-50 border border-indigo-200/70 px-2.5 py-0.5 rounded-full">
@@ -158,7 +158,7 @@ export default function PromptStyleSelector({
               )}
             </div>
             <p className="text-xs font-medium text-slate-500 mt-0.5">
-              Indica qué plantillas o imágenes de Prompts IA servirán de inspiración visual para las publicaciones generadas.
+              Indica qué plantillas o imágenes servirán de inspiración visual para las publicaciones diseñadas por nuestros agentes.
             </p>
           </div>
         </div>

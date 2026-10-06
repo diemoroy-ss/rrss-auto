@@ -124,6 +124,18 @@ export default function PosterSection({
         <div className="mt-4 p-4 bg-slate-50 rounded-2xl border border-slate-200/60 animate-in fade-in duration-300">
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2.5">📋 Configuración activa del cartel:</p>
           <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
+            <span className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl flex items-center gap-1 shadow-sm">
+              📐 Disposición:{" "}
+              <strong className="text-indigo-600 font-bold">
+                {!config.layout || config.layout === "auto"
+                  ? "🧠 Auto (Nuestros Agentes)"
+                  : config.layout === "split_left"
+                  ? "Split Lateral"
+                  : config.layout === "recipe_ingredients"
+                  ? "Ficha con Ingredientes"
+                  : "Cabecera Superior"}
+              </strong>
+            </span>
             {config.visualStyle && (
               <span className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl flex items-center gap-1 shadow-sm">
                 🎨 Estilo: <strong className="text-slate-800">{config.visualStyle}</strong>
@@ -350,6 +362,87 @@ export default function PosterSection({
 
               {/* Col 2: Estilos, CTA y Notas */}
               <div className="md:col-span-6 space-y-5">
+                {/* 🎯 Dirección de Arte / Disposición Visual */}
+                <div>
+                  <label className="block text-[10px] font-black text-amber-600 uppercase tracking-widest mb-2 flex items-center justify-between">
+                    <span>🎯 Disposición del Cartel (Dirección de Arte)</span>
+                    <span className="text-[9px] text-indigo-600 font-bold">Nuestros Agentes</span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => update("layout", "auto")}
+                      className={`p-2.5 rounded-xl border text-left transition-all ${
+                        (!config.layout || config.layout === "auto")
+                          ? "border-indigo-500 bg-indigo-50 text-indigo-900 shadow-sm"
+                          : "border-slate-100 bg-slate-50 text-slate-600 hover:border-slate-200"
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span className="text-sm">🧠</span>
+                        <span className="text-xs font-black">Automático (Agentes)</span>
+                      </div>
+                      <span className="text-[10px] text-slate-500 block leading-tight">
+                        Nuestros agentes eligen el mejor encuadre según tu producto.
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => update("layout", "split_left")}
+                      className={`p-2.5 rounded-xl border text-left transition-all ${
+                        config.layout === "split_left"
+                          ? "border-amber-500 bg-amber-50 text-amber-900 shadow-sm"
+                          : "border-slate-100 bg-slate-50 text-slate-600 hover:border-slate-200"
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span className="text-sm">📐</span>
+                        <span className="text-xs font-black">Split Lateral</span>
+                      </div>
+                      <span className="text-[10px] text-slate-500 block leading-tight">
+                        Texto a la izquierda, plato despejado a la derecha.
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => update("layout", "top_banner")}
+                      className={`p-2.5 rounded-xl border text-left transition-all ${
+                        config.layout === "top_banner"
+                          ? "border-amber-500 bg-amber-50 text-amber-900 shadow-sm"
+                          : "border-slate-100 bg-slate-50 text-slate-600 hover:border-slate-200"
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span className="text-sm">📌</span>
+                        <span className="text-xs font-black">Cabecera Superior</span>
+                      </div>
+                      <span className="text-[10px] text-slate-500 block leading-tight">
+                        Titular arriba, plato centrado limpio.
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => update("layout", "recipe_ingredients")}
+                      className={`p-2.5 rounded-xl border text-left transition-all ${
+                        config.layout === "recipe_ingredients"
+                          ? "border-amber-500 bg-amber-50 text-amber-900 shadow-sm"
+                          : "border-slate-100 bg-slate-50 text-slate-600 hover:border-slate-200"
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span className="text-sm">🥗</span>
+                        <span className="text-xs font-black">Ficha con Ingredientes</span>
+                      </div>
+                      <span className="text-[10px] text-slate-500 block leading-tight">
+                        Tira de ingredientes con iconos y cantidades.
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-[10px] font-black text-amber-600 uppercase tracking-widest mb-2">
                     Estilo visual del cartel

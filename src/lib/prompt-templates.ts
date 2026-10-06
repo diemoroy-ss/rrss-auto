@@ -1386,3 +1386,31 @@ High-energy fast gourmet advertising poster, crisp on-image typography, action f
     styleKeywords: "fast gourmet food poster, bold typography 'RAMEN FÁCIL', clock badge 'EN 10 MINUTOS', action noodle pull hero shot in center, three circular badges 'RÁPIDO', 'DELICIOSO', 'CON INGREDIENTES SIMPLES', yellow CTA button, text never covers food",
   },
 ];
+
+/**
+ * Fusiona un prompt de estilo con directivas de encuadre asimétrico decididas por el Agente Director de Arte.
+ */
+export function composePromptWithArtDirection(
+  basePrompt: string,
+  layoutPosition: "split_left" | "split_right" | "top_banner" | "recipe_ingredients" = "top_banner",
+  productName: string = "the dish"
+): string {
+  const directiveMap: Record<string, string> = {
+    split_left: `SPATIAL COMPOSITION MANDATE (ASYMMETRICAL SPLIT):
+- The hero ${productName} MUST be positioned strictly within the right 50% of the frame.
+- The left 50% MUST be an uncluttered, dimly lit surface with soft bokeh, purposefully leaving wide open clean negative space for graphic design typography. Centered product is strictly forbidden. Clean photography without any text or letters.`,
+    split_right: `SPATIAL COMPOSITION MANDATE (ASYMMETRICAL SPLIT):
+- The hero ${productName} MUST be positioned strictly within the left 50% of the frame.
+- The right 50% MUST be an uncluttered, soft-focus background leaving expansive clean negative space for graphic design. Clean photo without any letters.`,
+    recipe_ingredients: `SPATIAL COMPOSITION MANDATE (CULINARY BOARD):
+- Clean overhead flat-lay restaurant presentation of ${productName} positioned in the middle third of the frame.
+- Generous clean negative space at the upper header and lower footer margins for recipe cards. Clean photo without text.`,
+    top_banner: `SPATIAL COMPOSITION MANDATE (HERO BANNER):
+- The hero ${productName} is positioned in the lower-middle half of the frame at a 45-degree angle.
+- Clean open atmospheric background at the top header leaving space for typography. Clean photo without text.`,
+  };
+
+  const directive = directiveMap[layoutPosition] || directiveMap.top_banner;
+  return `${basePrompt}\n\n${directive}`;
+}
+
