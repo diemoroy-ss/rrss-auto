@@ -129,11 +129,49 @@ export async function POST(req: NextRequest) {
     const isStory = post.type === "Historia" || post.type === "Story";
     let generatedImageUrl: string | null = null;
 
-    const isBannerMode = ((targetProfile.bannerStyle as any) || 'banner') === 'banner';
+    const isCommercialStyle = Boolean(
+      post.isCommercialPoster ||
+      post.posterConfig?.enabled ||
+      (effectiveStyleId && (
+        effectiveStyleId.includes("style-food") ||
+        effectiveStyleId.includes("split") ||
+        effectiveStyleId.includes("recipe") ||
+        effectiveStyleId.includes("poster")
+      ))
+    );
+
+    const isBannerMode = isCommercialStyle || ((targetProfile.bannerStyle as any) || 'banner') === 'banner';
 
     if (resolvedKeepOriginalPhoto && resolvedBaseImage) {
       if (isBannerMode) {
-        console.log(`[generate-styled-image] 📸 Modo Foto Real + Cartel Publicitario activo para "${resolvedProductName}". Componiendo tipografía publicitaria sobre la foto original...`);
+        console.log(`[generate-styled-image] 📸 Modo Foto Real + Cartel Publicitario activo para "${resolvedProductName}".`);
+
+        let chosenLayout = post.layoutPosition || post.posterConfig?.layout || "auto";
+        let chosenKicker = post.secondaryScript || post.posterConfig?.kickerText;
+        let chosenIngredients = post.ingredients || null;
+
+        // Si el layout es auto o no está definido, el Agente Director de Arte decide el encuadre
+        if (chosenLayout === "auto" || !chosenLayout) {
+          try {
+            const { decideArtDirection } = await import("../../../../lib/agents/agent-art-director");
+            const decision = await decideArtDirection({
+              imageUrl: resolvedBaseImage,
+              productName: resolvedProductName || "Producto",
+              price: resolvedProductPrice,
+              postObjective: isCommercialStyle ? "promo" : "auto",
+              rubro: targetProfile.rubro || "Gastronomía",
+              captionIdea: post.idea || post.text,
+            });
+            chosenLayout = decision.layoutPosition;
+            if (!chosenKicker && decision.kickerText) chosenKicker = decision.kickerText;
+            if (!chosenIngredients && decision.ingredients) chosenIngredients = decision.ingredients;
+            console.log(`[generate-styled-image] 🎯 Agente Director de Arte decidió layout "${chosenLayout}": ${decision.reasoning}`);
+          } catch (artErr) {
+            console.warn("[generate-styled-image] Fallback en decisión de arte automática, usando top_banner:", artErr);
+            chosenLayout = "top_banner";
+          }
+        }
+
         const { composeRealProductBanner } = await import("../../../../lib/real-product-compositor");
         generatedImageUrl = await composeRealProductBanner({
           baseImageUrl: resolvedBaseImage,
@@ -144,15 +182,15 @@ export async function POST(req: NextRequest) {
           rubro: targetProfile.rubro || "Gastronomía",
           businessName: targetProfile.name || targetProfile.businessName || "Mi Negocio",
           fontStyle: resolvedFontStyle,
-          layoutPosition: post.layoutPosition || post.posterConfig?.layout || "top_banner",
-          secondaryScript: post.secondaryScript || post.posterConfig?.kickerText,
-          ingredients: post.ingredients || null,
+          layoutPosition: chosenLayout as any,
+          secondaryScript: chosenKicker,
+          ingredients: chosenIngredients,
           aspectRatio: isStory ? "9:16" : "1:1",
           logoUrl: targetProfile.logoUrl || "",
           userId: post.userId,
           includeLogo: post.includeLogo ?? targetProfile.alwaysIncludeLogo ?? true,
         });
-        sourceDescription = `Foto real de "${resolvedProductName}" con tipografía comercial (sin retoque de comida)`;
+        sourceDescription = `Foto real de "${resolvedProductName}" con tipografía comercial (Layout: ${chosenLayout})`;
       } else {
         console.log(`[generate-styled-image] 📸 Modo Foto Real Limpia (Sin Cartel) para "${resolvedProductName}".`);
         generatedImageUrl = resolvedBaseImage;
