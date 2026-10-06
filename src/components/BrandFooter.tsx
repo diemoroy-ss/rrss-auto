@@ -92,6 +92,11 @@ export default function BrandFooter() {
                 </a>
               </li>
               <li>
+                <Link href="/como-funciona" className="footer-link">
+                  Cómo Funciona
+                </Link>
+              </li>
+              <li>
                 <a href="#hero" className="footer-link active-vertical">
                   Redes &amp; Contenido
                 </a>

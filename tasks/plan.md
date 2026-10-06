@@ -1,37 +1,31 @@
-# Plan de Implementación: Agente Director de Arte & Composición Inteligente de Textos
+# Plan de Implementación: Landing Page Comercial "Cómo Funciona / Qué Hacemos"
 
 ## Objetivo
-Implementar la capacidad autónoma para que nuestros agentes decidan la disposición visual de los textos (`split_left`, `top_banner`, `recipe_ingredients`) en fotos reales y planifiquen la composición asimétrica en imágenes generadas por ellos mismos.
+Desarrollar una landing page comercial de alto impacto y orientada a clientes en `/como-funciona`, explicando todo lo que hacen nuestros agentes especializados para el negocio del cliente sin lenguaje técnico, con comparativa de mercado, ejemplos visuales de fotos reales con arte comercial y doble llamado a la acción (muestra gratis en vivo + WhatsApp comercial).
 
 ---
 
 ## Fases de Implementación
 
-### Fase 1: Módulo Central del Agente Director de Arte
-- **Archivo:** `src/lib/agents/agent-art-director.ts`
-- **Funcionalidad:**
-  - Análisis multimodal de fotos reales (detección de cuadrantes, posición del plato, espacio libre).
-  - Reglas de dirección de arte según objetivo comercial (combo, receta, lanzamiento, plato del día).
-  - Generador de directivas de composición fotográfica para inyectar en prompts de generación.
-  - Emparejamiento con la mejor plantilla de texto (`DEFAULT_TEXT_TEMPLATES`).
+### Fase 1: Arquitectura y Estructura de la Página
+- **Ruta:** `src/app/como-funciona/page.tsx`
+- **Componentes base:** Integración con `BrandHeader`, `BrandFooter`, `DotCanvas`, `PageTracker` y `WebChatWidget`.
+- **Estructura semántica:** 9 secciones modulares con diseño responsive, variables CSS de la marca (`#FF6B00`, fondo oscuro elegante, tipografía Inter).
 
-### Fase 2: Endpoint API para Decisión de Dirección de Arte
-- **Archivo:** `src/app/api/laboratorio/analizar-direccion-arte/route.ts`
-- **Funcionalidad:**
-  - Endpoint `POST` seguro que recibe `imageUrl`, `productName`, `postObjective`, `price`, `rubro`.
-  - Invoca al `AgentArtDirector` y devuelve el layout recomendado, la plantilla asociada, el razonamiento en una frase concisa, el kicker y los ingredientes sugeridos.
+### Fase 2: Componentes Interactivos Clave
+1. **Hero Comercial con Notificación WhatsApp:** Mockup visual que simula la interacción del agente con el dueño del negocio.
+2. **Comparador Antes y Después de Foto Real:** Visualización interactiva para demostrar cómo la foto casera del cliente se transforma en un cartel comercial de alto impacto sin deformar el plato.
+3. **Selector Interactivo de Estilos:** Split Lateral con precio, Encabezado Gourmet y Ficha de Receta con ingredientes.
+4. **Simulador de Comando por WhatsApp:** Demostración de cómo se aprueba una semana entera de posts con un mensaje.
+5. **Tabla Comparativa de Mercado:** Nosotros vs Agencia Tradicional vs Hacerlo Solo los fines de semana.
+6. **Módulo de Conversión Doble:** 
+   - Generación express de muestra comercial (conecta con `/api/public/muestras`).
+   - Botón directo de chat comercial a WhatsApp con mensaje preconfigurado.
 
-### Fase 3: Integración de Directivas de Composición en Prompts
-- **Archivo:** `src/lib/prompt-templates.ts`
-- **Funcionalidad:**
-  - Soporte de directivas de encuadre asimétrico (`split_left`, `split_right`, `recipe_ingredients`, `top_banner`) para enriquecer cualquier estilo del laboratorio.
+### Fase 3: Integración de Navegación y Enlaces
+- Añadir enlace sutil o botón "Cómo Funciona" en `BrandHeader` para que cualquier visitante de la web pueda descubrir esta presentación sin reemplazar la portada actual.
 
-### Fase 4: Integración en Interfaz de Usuario
-- **Archivos:**
-  - `src/app/automatizacion-rrss/panel/plantillas-texto/page.tsx`: botón y tarjeta de "🎯 Decisión Automática por Nuestros Agentes" en el modal de prueba y catálogo.
-  - `src/app/automatizacion-rrss/panel/laboratorio/page.tsx`: selector de composición inteligente activado por defecto con visualización de la justificación del agente.
-
-### Fase 5: Verificación y Despliegue
-- Ejecutar `npm run build` para garantizar cero errores de TypeScript y compilación.
-- Pruebas de los diferentes escenarios (combo a la derecha, receta con ingredientes, plato centrado).
-- Commit y push a `origin main`.
+### Fase 4: Verificación, Build y Despliegue
+- Validación con `npm run build` para asegurar cero errores de compilación o SSR.
+- Verificación de diseño en móviles y escritorio.
+- Commit y push a `origin/main`.

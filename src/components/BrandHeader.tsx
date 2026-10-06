@@ -153,6 +153,10 @@ export default function BrandHeader() {
 
         {/* Desktop Navigation Links */}
         <div className="nav-links">
+          <Link href="/como-funciona" className="ghost">
+            Cómo Funciona
+          </Link>
+
           <a href="#planes" className="ghost">
             Planes
           </a>
@@ -206,6 +210,14 @@ export default function BrandHeader() {
           <div className="mobile-brand-tag">
             <span className="mobile-ecosystem-label">PARTE DEL ECOSISTEMA SANTISOFT</span>
           </div>
+
+          <Link
+            href="/como-funciona"
+            onClick={() => setMobileMenuOpen(false)}
+            className="nav-mobile-item"
+          >
+            Cómo Funciona <span>→</span>
+          </Link>
 
           <a
             href="#planes"

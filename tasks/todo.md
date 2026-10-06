@@ -1,31 +1,31 @@
-# Tareas: Agente Director de Arte & Composición Inteligente
+# Lista de Tareas (TODO): Landing Page Comercial
 
-- [x] Task 1: Crear el módulo central `AgentArtDirector` en `src/lib/agents/agent-art-director.ts`
-  - Acceptance: Exporta `decideArtDirection(input)` y `getCompositionDirective(layout)`. Maneja visión de imágenes reales y planificación de prompts para imágenes a generar.
-  - Verify: Compilación TypeScript sin errores y tipos estructurados.
-  - Files: `src/lib/agents/agent-art-director.ts`
+- [x] Task 1: Crear la página base en `src/app/como-funciona/page.tsx` con metadatos y contenedor principal
+  - Acceptance: La ruta `/como-funciona` compila y renderiza el layout institucional sin errores.
+  - Verify: Comprobar renderizado y estructura en código.
+  - Files: `src/app/como-funciona/page.tsx`
 
-- [x] Task 2: Crear el endpoint de análisis en `src/app/api/laboratorio/analizar-direccion-arte/route.ts`
-  - Acceptance: Endpoint POST que responde con `{ layoutPosition, templateId, template, reasoning, kicker, ingredients, compositionDirective }`.
-  - Verify: Manejo adecuado de errores y fallback si no se proporciona imagen.
-  - Files: `src/app/api/laboratorio/analizar-direccion-arte/route.ts`
+- [x] Task 2: Implementar Secciones 1 a 3 (Hero persuasivo, Los 3 Dolores de Clientes y Los 4 Pasos de Nuestros Agentes)
+  - Acceptance: Copys 100% humanos, cero tecnicismos, explicación clara del Radar, Plan, Arte y Publicación.
+  - Verify: Inspección de código y textos.
+  - Files: `src/app/como-funciona/page.tsx`
 
-- [x] Task 3: Enriquecer prompts de generación con directivas de composición en `src/lib/prompt-templates.ts`
-  - Acceptance: Función para inyectar encuadre asimétrico (`split_left`, `recipe_ingredients`, etc.) en cualquier prompt comercial de comida.
-  - Verify: Prompts enriquecidos incluyen instrucciones precisas de "hero dish strictly in the right 50%" y "no text in image".
-  - Files: `src/lib/prompt-templates.ts`
+- [x] Task 3: Implementar Secciones 4 a 6 (Diferencial de Fotos Reales con Selector Antes/Después, Reels Dinámicos y Comando por WhatsApp)
+  - Acceptance: Interactividad con cambio de estilos (Split Lateral, Gourmet, Receta), mockup de WhatsApp y visuales claros.
+  - Verify: Verificar interactividad de pestañas y estilos.
+  - Files: `src/app/como-funciona/page.tsx`
 
-- [x] Task 4: Integrar botón de "🎯 Decisión Automática por Nuestros Agentes" en el probador de `plantillas-texto/page.tsx`
-  - Acceptance: En el modal de prueba, al pulsar "🎯 Decidir con nuestros agentes", el agente analiza la foto o plato y auto-selecciona el layout óptimo mostrando su justificación.
-  - Verify: El canvas y los campos (kicker, ingredientes, precio) se actualizan en vivo.
-  - Files: `src/app/automatizacion-rrss/panel/plantillas-texto/page.tsx`
+- [x] Task 4: Implementar Secciones 7 a 9 (Canales 360°, Tabla Comparativa y Doble CTA de Muestra en Vivo + WhatsApp)
+  - Acceptance: Tabla comparativa legible en móviles y escritorio, botón para generar muestra comercial interactiva y botón de WhatsApp configurado.
+  - Verify: Probar enlaces y formulario express de muestra.
+  - Files: `src/app/como-funciona/page.tsx`
 
-- [x] Task 5: Integrar dirección de arte inteligente en `crear/page.tsx`, `PosterSection.tsx` y `real-product-compositor.ts`
-  - Acceptance: Al generar imágenes con texto o carteles, el modo automático de agentes está activo por defecto e inyecta la composición adecuada.
-  - Verify: Generación y previsualización consistente.
-  - Files: `src/types/poster.ts`, `src/components/crear/PosterSection.tsx`, `src/lib/real-product-compositor.ts`, `src/app/api/posts/generate-styled-image/route.ts`
+- [x] Task 5: Enlazar la nueva página en `src/components/BrandHeader.tsx` y `src/components/BrandFooter.tsx`
+  - Acceptance: Los usuarios pueden navegar fácilmente a "Cómo Funciona" desde el menú superior y pie de página.
+  - Verify: Comprobar enlaces en el header y footer.
+  - Files: `src/components/BrandHeader.tsx`, `src/components/BrandFooter.tsx`
 
-- [x] Task 6: Build de producción y verificación de calidad
-  - Acceptance: `npm run build` pasa exitosamente con código 0 y sin errores.
-  - Verify: Ejecución de build y commit en git.
-  - Files: Todos los modificados.
+- [x] Task 6: Build de producción, verificación integral y git push
+  - Acceptance: `npm run build` pasa con exit code 0.
+  - Verify: Ejecución de build y push a `origin/main`.
+  - Files: Todos los archivos modificados.
