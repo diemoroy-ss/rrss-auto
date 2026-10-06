@@ -74,32 +74,106 @@ export default async function RenderPreviewPage(props: {
 
         {/* Scrim / Degradados de Contraste para legibilidad de textos sobre la comida */}
         {data.useScrim !== false && (
-          <>
-            <div
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: "100%",
-                height: isVertical ? "40%" : "45%",
-                background: "linear-gradient(to bottom, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.35) 60%, rgba(0,0,0,0) 100%)",
-                zIndex: 5,
-                pointerEvents: "none"
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                bottom: 0,
-                left: 0,
-                width: "100%",
-                height: isVertical ? "35%" : "35%",
-                background: "linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0) 100%)",
-                zIndex: 5,
-                pointerEvents: "none"
-              }}
-            />
-          </>
+          data.layoutPosition === "split_left" ? (
+            <>
+              <div
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "65%",
+                  height: "100%",
+                  background: "linear-gradient(to right, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.75) 55%, rgba(0,0,0,0) 100%)",
+                  zIndex: 5,
+                  pointerEvents: "none"
+                }}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: 0,
+                  left: 0,
+                  width: "100%",
+                  height: "25%",
+                  background: "linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%)",
+                  zIndex: 5,
+                  pointerEvents: "none"
+                }}
+              />
+            </>
+          ) : (
+            <>
+              <div
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  height: isVertical ? "40%" : "45%",
+                  background: "linear-gradient(to bottom, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.35) 60%, rgba(0,0,0,0) 100%)",
+                  zIndex: 5,
+                  pointerEvents: "none"
+                }}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: 0,
+                  left: 0,
+                  width: "100%",
+                  height: isVertical ? "35%" : "35%",
+                  background: "linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0) 100%)",
+                  zIndex: 5,
+                  pointerEvents: "none"
+                }}
+              />
+            </>
+          )
+        )}
+
+        {/* Tira de Ingredientes para recetas */}
+        {data.ingredients && data.ingredients.length > 0 && (
+          <div
+            style={{
+              position: "absolute",
+              bottom: isVertical ? "160px" : "110px",
+              left: "50%",
+              transform: "translateX(-50%)",
+              zIndex: 25,
+              display: "flex",
+              alignItems: "center",
+              gap: "16px",
+              padding: "12px 24px",
+              borderRadius: "20px",
+              backgroundColor: "rgba(0,0,0,0.70)",
+              backdropFilter: "blur(12px)",
+              border: "1px solid rgba(255,255,255,0.2)"
+            }}
+          >
+            {data.ingredients.slice(0, 5).map((ing: any, i: number) => (
+              <div
+                key={i}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  minWidth: "80px",
+                  textAlign: "center"
+                }}
+              >
+                <span style={{ fontSize: "28px", lineHeight: "1" }}>{ing.icon || "🥗"}</span>
+                <span style={{ fontSize: "18px", fontWeight: "bold", color: "#ffffff", marginTop: "4px" }}>
+                  {ing.name}
+                </span>
+                {ing.amount && (
+                  <span style={{ fontSize: "15px", color: "#fcd34d", fontWeight: "600" }}>
+                    {ing.amount}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
         )}
 
         {/* Capas de Texto */}

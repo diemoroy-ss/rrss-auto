@@ -11,6 +11,8 @@ import {
   DEFAULT_TEXT_TEMPLATES,
   formatTemplateText,
   TypographyStyle,
+  LayoutPosition,
+  IngredientItem,
 } from "../../../../lib/text-templates";
 import { useProfile } from "../../../../contexts/ProfileContext";
 
@@ -30,12 +32,21 @@ export default function PlantillasTextoPage() {
   const [customPhotoUrl, setCustomPhotoUrl] = useState<string>("");
   const [testProductName, setTestProductName] = useState<string>("");
   const [testPrice, setTestPrice] = useState<string>("");
+  const [testIngredients, setTestIngredients] = useState<IngredientItem[]>([]);
+  const [testSecondaryScript, setTestSecondaryScript] = useState<string>("");
+  const [isSuggestingIngredients, setIsSuggestingIngredients] = useState<boolean>(false);
+  const [newIngredientName, setNewIngredientName] = useState<string>("");
+  const [newIngredientAmount, setNewIngredientAmount] = useState<string>("");
+  const [newIngredientIcon, setNewIngredientIcon] = useState<string>("🥗");
 
   // Estados para modal de crear / editar plantilla
   const [editingTemplate, setEditingTemplate] = useState<TextTemplate | null>(null);
   const [isNewTemplate, setIsNewTemplate] = useState<boolean>(false);
   const [formName, setFormName] = useState<string>("");
   const [formCategory, setFormCategory] = useState<any>("Promociones & Combos");
+  const [formLayoutPosition, setFormLayoutPosition] = useState<LayoutPosition>("top_banner");
+  const [formSecondaryScript, setFormSecondaryScript] = useState<string>("");
+  const [formIngredients, setFormIngredients] = useState<IngredientItem[]>([]);
   const [formDescription, setFormDescription] = useState<string>("");
   const [formBadgeText, setFormBadgeText] = useState<string>("");
   const [formBadgeBgColor, setFormBadgeBgColor] = useState<string>("#fbbf24");
@@ -133,6 +144,8 @@ export default function PlantillasTextoPage() {
   // Abrir modal de prueba con foto
   const handleOpenTestModal = (template: TextTemplate) => {
     setTestingTemplate(template);
+    setTestIngredients(template.ingredients ? [...template.ingredients] : []);
+    setTestSecondaryScript(template.secondaryScriptPattern || "");
     if (catalogItems.length > 0) {
       const firstWithPhoto = catalogItems.find((it) => it.imageUrl?.startsWith("http")) || catalogItems[0];
       setSelectedCatalogItem(firstWithPhoto);
@@ -144,6 +157,50 @@ export default function PlantillasTextoPage() {
       setTestPrice("$24.900");
       setCustomPhotoUrl(template.previewSampleImage || "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=600&q=80");
     }
+  };
+
+  // Sugerir ingredientes con nuestros agentes especializados
+  const handleSuggestIngredients = async () => {
+    if (!testProductName.trim()) return;
+    setIsSuggestingIngredients(true);
+    try {
+      const res = await fetch("/api/laboratorio/sugerir-ingredientes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productName: testProductName.trim(),
+          rubro: activeProfile?.businessType || "Gastronomía",
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.ingredients) && data.ingredients.length > 0) {
+          setTestIngredients(data.ingredients);
+        }
+      }
+    } catch (err) {
+      console.error("Error sugiriendo ingredientes con nuestros agentes:", err);
+    } finally {
+      setIsSuggestingIngredients(false);
+    }
+  };
+
+  const handleAddIngredient = () => {
+    if (!newIngredientName.trim()) return;
+    setTestIngredients((prev) => [
+      ...prev,
+      {
+        icon: newIngredientIcon || "🥗",
+        name: newIngredientName.trim(),
+        amount: newIngredientAmount.trim() || undefined,
+      },
+    ]);
+    setNewIngredientName("");
+    setNewIngredientAmount("");
+  };
+
+  const handleRemoveIngredient = (idx: number) => {
+    setTestIngredients((prev) => prev.filter((_, i) => i !== idx));
   };
 
   const handleSelectCatalogItem = (itemId: string) => {
@@ -163,6 +220,7 @@ export default function PlantillasTextoPage() {
       textTemplateName: template.name,
       fontStyle: template.headlineFont,
       badgeText: template.badgeText,
+      ...(template.layoutPosition ? { layoutPosition: template.layoutPosition } : {}),
       ...(withPhotoUrl ? { baseImageUrl: withPhotoUrl } : {}),
       ...(productName ? { productName } : {}),
       ...(price ? { price } : {}),
@@ -177,6 +235,9 @@ export default function PlantillasTextoPage() {
       setIsNewTemplate(false);
       setFormName(template.name);
       setFormCategory(template.category);
+      setFormLayoutPosition(template.layoutPosition || "top_banner");
+      setFormSecondaryScript(template.secondaryScriptPattern || "");
+      setFormIngredients(template.ingredients ? [...template.ingredients] : []);
       setFormDescription(template.description);
       setFormBadgeText(template.badgeText);
       setFormBadgeBgColor(template.badgeBgColor);
@@ -196,6 +257,9 @@ export default function PlantillasTextoPage() {
       setIsNewTemplate(true);
       setFormName("Nueva Plantilla Publicitaria");
       setFormCategory("Promociones & Combos");
+      setFormLayoutPosition("top_banner");
+      setFormSecondaryScript("");
+      setFormIngredients([]);
       setFormDescription("Plantilla personalizada con textos y badges a medida");
       setFormBadgeText("⭐ DESTACADO DE LA SEMANA");
       setFormBadgeBgColor("#fbbf24");
@@ -229,6 +293,9 @@ export default function PlantillasTextoPage() {
         name: formName.trim(),
         description: formDescription.trim(),
         category: formCategory,
+        layoutPosition: formLayoutPosition,
+        secondaryScriptPattern: formSecondaryScript.trim(),
+        ingredients: formIngredients,
         badgeText: formBadgeText.trim(),
         badgeBgColor: formBadgeBgColor,
         badgeTextColor: formBadgeTextColor,
@@ -272,6 +339,280 @@ export default function PlantillasTextoPage() {
       console.error("Error eliminando plantilla:", err);
       alert("Error al eliminar: " + err.message);
     }
+  };
+
+  // Renderizador unificado para carteles (Split Lateral, Receta con Ingredientes, Cabecera Superior)
+  const renderCanvasPoster = ({
+    template,
+    title,
+    sub,
+    price,
+    secondaryScript,
+    ingredients,
+    photoUrl,
+    isModal = false,
+  }: {
+    template: TextTemplate;
+    title: string;
+    sub: string;
+    price?: string;
+    secondaryScript?: string;
+    ingredients?: IngredientItem[];
+    photoUrl: string;
+    isModal?: boolean;
+  }) => {
+    const layout = template.layoutPosition || "top_banner";
+    const effectiveIngredients = ingredients || template.ingredients || [];
+    const scriptText = secondaryScript || template.secondaryScriptPattern;
+
+    return (
+      <div
+        className={`relative aspect-square w-full overflow-hidden bg-slate-950 flex items-center justify-center select-none ${
+          isModal ? "rounded-2xl shadow-2xl border border-slate-800" : ""
+        }`}
+      >
+        {/* Imagen de Fondo */}
+        <img
+          src={photoUrl || template.previewSampleImage || "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=500&q=80"}
+          alt={template.name}
+          className={`absolute inset-0 w-full h-full object-cover ${
+            !isModal ? "group-hover:scale-105 transition-transform duration-500" : ""
+          } opacity-90`}
+        />
+
+        {/* ═══ 1. SPLIT LATERAL (Texto al costado izquierdo, plato a la derecha) ═══ */}
+        {layout === "split_left" && (
+          <>
+            <div className="absolute inset-y-0 left-0 w-[65%] bg-gradient-to-r from-black/95 via-black/80 to-transparent pointer-events-none z-10" />
+            <div className="absolute inset-x-0 bottom-0 h-[25%] bg-gradient-to-t from-black/80 to-transparent pointer-events-none z-10" />
+
+            {template.badgeText && (
+              <div className={`absolute ${isModal ? "top-4 right-4" : "top-3 right-3"} z-20`}>
+                <span
+                  className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-lg border border-white/20"
+                  style={{
+                    backgroundColor: template.badgeBgColor,
+                    color: template.badgeTextColor,
+                  }}
+                >
+                  {template.badgeText}
+                </span>
+              </div>
+            )}
+
+            <div
+              className={`absolute inset-y-0 left-0 w-[55%] ${
+                isModal ? "p-5" : "p-3.5"
+              } flex flex-col justify-center text-left z-20 pointer-events-none space-y-1.5`}
+            >
+              {scriptText && (
+                <span className={`font-serif italic text-amber-300 ${isModal ? "text-sm" : "text-xs"} drop-shadow leading-tight`}>
+                  {scriptText}
+                </span>
+              )}
+
+              <h3
+                className={`font-black leading-tight drop-shadow-[0_2px_5px_rgba(0,0,0,0.95)] ${
+                  template.headlineFont === "script_handwritten"
+                    ? isModal ? "font-serif italic text-2xl" : "font-serif italic text-xl"
+                    : template.headlineFont === "elegant_serif"
+                    ? isModal ? "font-serif text-xl" : "font-serif text-lg tracking-wide"
+                    : template.headlineFont === "serif_script_mix"
+                    ? isModal ? "font-serif text-2xl uppercase tracking-tight" : "font-serif text-lg uppercase tracking-tight"
+                    : template.headlineFont === "bold_textured"
+                    ? isModal ? "font-black uppercase text-2xl tracking-tighter" : "font-black uppercase text-lg tracking-tighter"
+                    : isModal ? "font-sans uppercase text-2xl tracking-tight" : "font-sans uppercase text-lg tracking-tight"
+                }`}
+                style={{ color: template.headlineColor }}
+              >
+                {title}
+              </h3>
+
+              {sub && (
+                <p className={`text-white/85 ${isModal ? "text-xs" : "text-[10px]"} font-medium leading-snug drop-shadow line-clamp-2`}>
+                  {sub}
+                </p>
+              )}
+
+              {price && (
+                <div className="pt-1">
+                  <span
+                    className="px-2.5 py-0.5 rounded-md text-xs font-black tracking-wide shadow"
+                    style={{
+                      backgroundColor: template.priceBgColor || "#fbbf24",
+                      color: template.priceTextColor || "#0f172a",
+                    }}
+                  >
+                    {price}
+                  </span>
+                </div>
+              )}
+
+              <div className="pt-2">
+                <div
+                  className="inline-block px-3 py-1.5 rounded-lg text-[9px] font-black tracking-wider uppercase shadow-md truncate max-w-[140px] text-center"
+                  style={{
+                    backgroundColor: template.ctaBgColor,
+                    color: template.ctaTextColor,
+                  }}
+                >
+                  {template.ctaText}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ═══ 2. RECETA CON INGREDIENTES (Cabecera + Plato al centro + Tira de ingredientes con iconos) ═══ */}
+        {layout === "recipe_ingredients" && (
+          <>
+            <div className="absolute inset-x-0 top-0 h-[38%] bg-gradient-to-b from-black/90 via-black/60 to-transparent pointer-events-none z-10" />
+            <div className="absolute inset-x-0 bottom-0 h-[45%] bg-gradient-to-t from-black/95 via-black/85 to-transparent pointer-events-none z-10" />
+
+            <div className={`absolute inset-x-0 top-0 ${isModal ? "p-4" : "p-3"} text-center z-20 pointer-events-none space-y-1`}>
+              <div className="flex justify-center mb-0.5">
+                <span
+                  className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider shadow-md border border-white/10"
+                  style={{
+                    backgroundColor: template.badgeBgColor,
+                    color: template.badgeTextColor,
+                  }}
+                >
+                  {template.badgeText}
+                </span>
+              </div>
+
+              <h3
+                className={`font-black leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] text-center px-1 ${
+                  template.headlineFont === "elegant_serif"
+                    ? isModal ? "font-serif text-xl tracking-wide" : "font-serif text-lg tracking-wide"
+                    : isModal ? "font-sans uppercase text-xl" : "font-sans uppercase text-lg"
+                }`}
+                style={{ color: template.headlineColor }}
+              >
+                {title}
+              </h3>
+
+              {sub && (
+                <p className={`font-serif italic text-amber-200/90 ${isModal ? "text-xs" : "text-[10px]"} leading-tight drop-shadow`}>
+                  {sub}
+                </p>
+              )}
+            </div>
+
+            <div className={`absolute inset-x-0 bottom-0 ${isModal ? "p-3.5" : "p-2.5"} text-center z-20 pointer-events-none space-y-1.5`}>
+              {effectiveIngredients.length > 0 && (
+                <div className="flex items-center justify-center gap-1.5 px-1 py-1 overflow-x-auto no-scrollbar">
+                  {effectiveIngredients.slice(0, 5).map((ing, i) => (
+                    <div
+                      key={i}
+                      className="flex flex-col items-center justify-center py-1 px-1.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/15 min-w-[50px] shadow-sm text-center"
+                    >
+                      <span className="text-sm leading-none mb-0.5">{ing.icon || "🥗"}</span>
+                      <span className="text-[9px] font-bold text-white truncate max-w-[54px] leading-tight">
+                        {ing.name}
+                      </span>
+                      <span className="text-[8px] text-amber-300 font-medium truncate max-w-[54px] leading-tight">
+                        {ing.amount || ""}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {scriptText ? (
+                <p className={`font-serif italic text-white/90 ${isModal ? "text-xs" : "text-[11px]"} drop-shadow leading-tight`}>
+                  {scriptText}
+                </p>
+              ) : (
+                <div className="flex justify-center pt-0.5">
+                  <div
+                    className="px-4 py-1.5 rounded-full text-[10px] font-black tracking-wider uppercase text-center shadow-lg truncate max-w-[200px]"
+                    style={{
+                      backgroundColor: template.ctaBgColor,
+                      color: template.ctaTextColor,
+                    }}
+                  >
+                    {template.ctaText}
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* ═══ 3. TOP BANNER (Cabecera superior tradicional y plato libre) ═══ */}
+        {layout !== "split_left" && layout !== "recipe_ingredients" && (
+          <>
+            <div className="absolute inset-x-0 top-0 h-[45%] bg-gradient-to-b from-black/90 via-black/60 to-transparent pointer-events-none z-10" />
+            <div className="absolute inset-x-0 bottom-0 h-[25%] bg-gradient-to-t from-black/85 via-black/30 to-transparent pointer-events-none z-10" />
+
+            {price && (
+              <div className={`absolute ${isModal ? "top-4 right-4" : "top-3 right-3"} z-20`}>
+                <span
+                  className="px-2.5 py-1 rounded-lg text-[11px] font-black tracking-wide shadow-lg border border-black/20"
+                  style={{
+                    backgroundColor: template.priceBgColor || "#fbbf24",
+                    color: template.priceTextColor || "#0f172a",
+                  }}
+                >
+                  {price}
+                </span>
+              </div>
+            )}
+
+            <div className={`absolute inset-0 ${isModal ? "p-4" : "p-3.5"} flex flex-col justify-between z-10 text-center pointer-events-none`}>
+              <div className="space-y-1 pt-1 px-1">
+                <div className="flex justify-center mb-1">
+                  <span
+                    className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider shadow-md border border-white/10"
+                    style={{
+                      backgroundColor: template.badgeBgColor,
+                      color: template.badgeTextColor,
+                    }}
+                  >
+                    {template.badgeText}
+                  </span>
+                </div>
+
+                <h3
+                  className={`font-black leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] text-center px-1 ${
+                    template.headlineFont === "script_handwritten"
+                      ? isModal ? "font-serif italic text-2xl" : "font-serif italic text-xl"
+                      : template.headlineFont === "elegant_serif"
+                      ? isModal ? "font-serif text-xl tracking-wide" : "font-serif text-lg tracking-wide"
+                      : isModal ? "font-sans uppercase text-xl tracking-tight" : "font-sans uppercase text-lg tracking-tight"
+                  }`}
+                  style={{ color: template.headlineColor }}
+                >
+                  {title}
+                </h3>
+
+                {sub && (
+                  <p className={`text-white/95 ${isModal ? "text-xs" : "text-[10px]"} font-semibold tracking-wide leading-tight drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)] line-clamp-1 px-2`}>
+                    {sub}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex-1" />
+
+              <div className="pb-1 px-2 flex justify-center">
+                <div
+                  className="px-4 py-1.5 rounded-full text-[10px] font-black tracking-wider uppercase text-center shadow-lg truncate max-w-[200px] border border-black/10"
+                  style={{
+                    backgroundColor: template.ctaBgColor,
+                    color: template.ctaTextColor,
+                  }}
+                >
+                  {template.ctaText}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -383,95 +724,30 @@ export default function PlantillasTextoPage() {
                 className="group flex flex-col bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300"
               >
                 {/* Canvas Mockup de Previsualización */}
-                <div className="relative aspect-square w-full overflow-hidden bg-slate-950 flex items-center justify-center select-none">
-                  <img
-                    src={template.previewSampleImage || "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=500&q=80"}
-                    alt={template.name}
-                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90"
-                  />
-
-                  {/* Degradados Scrim: Superior para cabecera tipográfica y sutil inferior para CTA */}
-                  <div className="absolute inset-x-0 top-0 h-[45%] bg-gradient-to-b from-black/90 via-black/60 to-transparent pointer-events-none" />
-                  <div className="absolute inset-x-0 bottom-0 h-[25%] bg-gradient-to-t from-black/85 via-black/30 to-transparent pointer-events-none" />
-
-                  {/* Badge de Precio Flotante en la esquina superior derecha */}
-                  {renderedPrice && (
-                    <div className="absolute top-3 right-3 z-20">
-                      <span
-                        className="px-2.5 py-1 rounded-lg text-[11px] font-black tracking-wide shadow-lg border border-black/20"
-                        style={{
-                          backgroundColor: template.priceBgColor || "#fbbf24",
-                          color: template.priceTextColor || "#0f172a",
-                        }}
-                      >
-                        {renderedPrice}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Capas Tipográficas Renderizadas: Cabecera superior y CTA inferior (El centro queda 100% limpio para la comida) */}
-                  <div className="absolute inset-0 p-3.5 flex flex-col justify-between z-10 text-center pointer-events-none">
-                    {/* Zona Superior (Cabecera): Badge + Titular + Subtítulo */}
-                    <div className="space-y-1 pt-1 px-1">
-                      {/* Badge Superior Centrado */}
-                      <div className="flex justify-center mb-1">
-                        <span
-                          className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider shadow-md border border-white/10"
-                          style={{
-                            backgroundColor: template.badgeBgColor,
-                            color: template.badgeTextColor,
-                          }}
-                        >
-                          {template.badgeText}
-                        </span>
-                      </div>
-
-                      {/* Titular Principal en la cabecera */}
-                      <h3
-                        className={`font-black leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] text-center px-1 ${
-                          template.headlineFont === "script_handwritten"
-                            ? "font-serif italic text-xl"
-                            : template.headlineFont === "elegant_serif"
-                            ? "font-serif text-lg tracking-wide"
-                            : "font-sans uppercase text-lg tracking-tight"
-                        }`}
-                        style={{ color: template.headlineColor }}
-                      >
-                        {renderedTitle}
-                      </h3>
-
-                      {/* Subtítulo descriptivo */}
-                      {renderedSub && (
-                        <p className="text-white/95 text-[10px] font-semibold tracking-wide leading-tight drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)] line-clamp-1 px-2">
-                          {renderedSub}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Zona Central (Espacio Libre): La comida/producto se ve 100% despejada */}
-                    <div className="flex-1" />
-
-                    {/* Zona Inferior: Botón CTA compacto en el borde inferior */}
-                    <div className="pb-1 px-2 flex justify-center">
-                      <div
-                        className="px-4 py-1.5 rounded-full text-[10px] font-black tracking-wider uppercase text-center shadow-lg truncate max-w-[200px] border border-black/10"
-                        style={{
-                          backgroundColor: template.ctaBgColor,
-                          color: template.ctaTextColor,
-                        }}
-                      >
-                        {template.ctaText}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                {renderCanvasPoster({
+                  template,
+                  title: renderedTitle,
+                  sub: renderedSub,
+                  price: renderedPrice,
+                  secondaryScript: template.secondaryScriptPattern,
+                  ingredients: template.ingredients,
+                  photoUrl: template.previewSampleImage,
+                  isModal: false,
+                })}
 
                 {/* Info Card */}
                 <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
                   <div>
-                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 uppercase tracking-wider">
                         {template.category}
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                        {template.layoutPosition === "split_left"
+                          ? "📐 Split Lateral"
+                          : template.layoutPosition === "recipe_ingredients"
+                          ? "🥗 Con Ingredientes"
+                          : "📌 Cabecera Superior"}
                       </span>
                       {!template.isDefault && (
                         <span className="text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded">
@@ -556,88 +832,24 @@ export default function PlantillasTextoPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-6">
               {/* Columna Izquierda: Vista Previa en Vivo */}
               <div className="flex flex-col items-center">
-                <div className="relative aspect-square w-full max-w-[340px] rounded-2xl overflow-hidden shadow-2xl bg-slate-950 border border-slate-800">
-                  <img
-                    src={customPhotoUrl || testingTemplate.previewSampleImage}
-                    alt="Foto Real"
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                  {/* Scrim Superior e Inferior */}
-                  <div className="absolute inset-x-0 top-0 h-[45%] bg-gradient-to-b from-black/90 via-black/60 to-transparent pointer-events-none" />
-                  <div className="absolute inset-x-0 bottom-0 h-[25%] bg-gradient-to-t from-black/85 via-black/30 to-transparent pointer-events-none" />
-
-                  {/* Badge de Precio Flotante en la esquina superior derecha */}
-                  {testPrice && (
-                    <div className="absolute top-4 right-4 z-20">
-                      <span
-                        className="px-3 py-1 rounded-xl text-xs font-black tracking-wide shadow-lg border border-black/20"
-                        style={{
-                          backgroundColor: testingTemplate.priceBgColor || "#fbbf24",
-                          color: testingTemplate.priceTextColor || "#0f172a",
-                        }}
-                      >
-                        {testPrice}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Capas Tipográficas Renderizadas: Cabecera superior y CTA inferior */}
-                  <div className="absolute inset-0 p-4 flex flex-col justify-between text-center z-10 pointer-events-none">
-                    {/* Zona Superior (Cabecera): Badge + Titular + Subtítulo */}
-                    <div className="space-y-1.5 pt-1 px-1">
-                      <div className="flex justify-center mb-1">
-                        <span
-                          className="px-3 py-0.5 rounded-full text-xs font-black uppercase tracking-wider shadow-md border border-white/10"
-                          style={{
-                            backgroundColor: testingTemplate.badgeBgColor,
-                            color: testingTemplate.badgeTextColor,
-                          }}
-                        >
-                          {testingTemplate.badgeText}
-                        </span>
-                      </div>
-
-                      <h4
-                        className={`font-black leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] text-center px-1 ${
-                          testingTemplate.headlineFont === "script_handwritten"
-                            ? "font-serif italic text-2xl"
-                            : testingTemplate.headlineFont === "elegant_serif"
-                            ? "font-serif text-xl tracking-wide"
-                            : "font-sans uppercase text-xl tracking-tight"
-                        }`}
-                        style={{ color: testingTemplate.headlineColor }}
-                      >
-                        {formatTemplateText(testingTemplate.headlinePattern, {
-                          productName: testProductName || "Nombre del Plato",
-                        })}
-                      </h4>
-
-                      {testingTemplate.subheadlinePattern && (
-                        <p className="text-white/95 text-xs font-semibold tracking-wide drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)] line-clamp-1 px-2">
-                          {formatTemplateText(testingTemplate.subheadlinePattern, {
-                            productName: testProductName,
-                            price: testPrice,
-                          })}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Espacio Central Libre para la comida */}
-                    <div className="flex-1" />
-
-                    {/* Zona Inferior: Botón CTA compacto */}
-                    <div className="pb-1 px-3 flex justify-center">
-                      <div
-                        className="px-5 py-2 rounded-full text-xs font-black tracking-wider uppercase text-center shadow-lg truncate max-w-[220px] border border-black/10"
-                        style={{
-                          backgroundColor: testingTemplate.ctaBgColor,
-                          color: testingTemplate.ctaTextColor,
-                        }}
-                      >
-                        {testingTemplate.ctaText}
-                      </div>
-                    </div>
-                  </div>
+                <div className="w-full max-w-[340px]">
+                  {renderCanvasPoster({
+                    template: testingTemplate,
+                    title: formatTemplateText(testingTemplate.headlinePattern, {
+                      productName: testProductName || "Nombre del Plato",
+                    }),
+                    sub: testingTemplate.subheadlinePattern
+                      ? formatTemplateText(testingTemplate.subheadlinePattern, {
+                          productName: testProductName,
+                          price: testPrice,
+                        })
+                      : "",
+                    price: testPrice,
+                    secondaryScript: testSecondaryScript,
+                    ingredients: testIngredients,
+                    photoUrl: customPhotoUrl || testingTemplate.previewSampleImage,
+                    isModal: true,
+                  })}
                 </div>
 
                 <p className="text-[11px] text-slate-400 mt-2 text-center">
@@ -646,7 +858,7 @@ export default function PlantillasTextoPage() {
               </div>
 
               {/* Columna Derecha: Configurar Valores de Prueba */}
-              <div className="space-y-5">
+              <div className="space-y-4">
                 {/* Seleccionar del Catálogo */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
@@ -698,6 +910,70 @@ export default function PlantillasTextoPage() {
                     />
                   </div>
                 </div>
+
+                {/* Kicker / Cursiva Superior si es Split Lateral */}
+                {testingTemplate.layoutPosition === "split_left" && (
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Kicker / Cursiva Superior:
+                    </label>
+                    <input
+                      type="text"
+                      value={testSecondaryScript}
+                      onChange={(e) => setTestSecondaryScript(e.target.value)}
+                      className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+                      placeholder="ej. Hyderabadi / Fresh & Cheesy / Presentamos"
+                    />
+                  </div>
+                )}
+
+                {/* Gestor de Ingredientes si es Ficha de Receta */}
+                {testingTemplate.layoutPosition === "recipe_ingredients" && (
+                  <div className="p-3.5 bg-amber-500/10 border border-amber-500/20 rounded-2xl space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                        <span>🥗</span> Tira de Ingredientes (Ficha)
+                      </span>
+                      <button
+                        onClick={handleSuggestIngredients}
+                        disabled={isSuggestingIngredients}
+                        className="text-[11px] font-bold px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-lg shadow-sm transition-all flex items-center gap-1 disabled:opacity-50 cursor-pointer"
+                      >
+                        <span>✨</span> {isSuggestingIngredients ? "Sugerir..." : "Sugerir con agentes"}
+                      </button>
+                    </div>
+
+                    <div className="flex flex-wrap gap-1.5">
+                      {testIngredients.map((ing, idx) => (
+                        <span
+                          key={idx}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-200 shadow-sm"
+                        >
+                          <span className="text-sm">{ing.icon}</span>
+                          <span className="font-semibold">{ing.name}</span>
+                          {ing.amount && (
+                            <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">
+                              ({ing.amount})
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setTestIngredients((prev) => prev.filter((_, i) => i !== idx))}
+                            className="text-slate-400 hover:text-red-500 text-xs ml-1"
+                            title="Eliminar ingrediente"
+                          >
+                            ✕
+                          </button>
+                        </span>
+                      ))}
+                      {testIngredients.length === 0 && (
+                        <p className="text-[11px] text-slate-400 italic">
+                          No hay ingredientes configurados. Pulsa en "Sugerir con agentes" para generar automáticamente.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* URL de Foto Personalizada */}
                 <div>
@@ -788,6 +1064,37 @@ export default function PlantillasTextoPage() {
                 </div>
               </div>
 
+              {/* Disposición / Layout y Kicker Secundario */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Disposición / Layout Visual:
+                  </label>
+                  <select
+                    value={formLayoutPosition}
+                    onChange={(e) => setFormLayoutPosition(e.target.value as any)}
+                    className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-medium"
+                  >
+                    <option value="top_banner">📌 Cabecera Superior (Clásico)</option>
+                    <option value="split_left">📐 Split Lateral (Texto al Costado & Plato a la Derecha)</option>
+                    <option value="recipe_ingredients">🥗 Ficha de Receta con Tira de Ingredientes</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Kicker / Cursiva Superior (Secundario):
+                  </label>
+                  <input
+                    type="text"
+                    value={formSecondaryScript}
+                    onChange={(e) => setFormSecondaryScript(e.target.value)}
+                    placeholder="ej. Hyderabadi / Fresh & Cheesy / Una receta, mil momentos"
+                    className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+                  />
+                </div>
+              </div>
+
               {/* Descripción */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
@@ -848,11 +1155,13 @@ export default function PlantillasTextoPage() {
                     <select
                       value={formHeadlineFont}
                       onChange={(e) => setFormHeadlineFont(e.target.value as TypographyStyle)}
-                      className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+                      className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-medium"
                     >
                       <option value="bold_modern">Bebas Neue (Moderno)</option>
                       <option value="script_handwritten">Dancing Script (Cursiva)</option>
                       <option value="elegant_serif">Playfair Display (Elegante)</option>
+                      <option value="serif_script_mix">Playfair + Script (Mix Editorial)</option>
+                      <option value="bold_textured">Impact Condensado (Texturizado)</option>
                       <option value="clean_minimal">Montserrat (Limpio)</option>
                     </select>
                   </div>

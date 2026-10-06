@@ -1,10 +1,37 @@
-export type TypographyStyle = "bold_modern" | "script_handwritten" | "elegant_serif" | "clean_minimal";
+export type TypographyStyle =
+  | "bold_modern"
+  | "script_handwritten"
+  | "elegant_serif"
+  | "clean_minimal"
+  | "serif_script_mix"
+  | "bold_textured";
+
+export type LayoutPosition =
+  | "top_banner" // Clásico: Cabecera superior, producto en base limpia
+  | "split_left" // Split Lateral: Textos al costado izquierdo (45%), plato a la derecha (55%)
+  | "split_right" // Split Lateral: Textos al costado derecho, plato a la izquierda
+  | "recipe_ingredients"; // Ficha de Receta: Cabecera + Plato central + Tira de ingredientes y cantidades abajo
+
+export interface IngredientItem {
+  name: string;
+  amount?: string;
+  icon?: string;
+}
 
 export interface TextTemplate {
   id: string;
   name: string;
   description: string;
-  category: "Promociones & Combos" | "Lanzamientos" | "Ofertas Flash" | "Delivery" | "Lifestyle & Marca" | "Gourmet & Menú";
+  category:
+    | "Promociones & Combos"
+    | "Lanzamientos"
+    | "Ofertas Flash"
+    | "Delivery"
+    | "Lifestyle & Marca"
+    | "Gourmet & Menú"
+    | "Split Lateral"
+    | "Recetas & Ingredientes";
+  layoutPosition?: LayoutPosition;
   badgeText: string;
   badgeBgColor: string;
   badgeTextColor: string;
@@ -12,10 +39,12 @@ export interface TextTemplate {
   headlineFont: TypographyStyle;
   headlineColor: string;
   subheadlinePattern: string;
+  secondaryScriptPattern?: string; // Subtítulo o frase cursiva secundaria
   priceBadgePattern?: string; // e.g. "{PRECIO}" or "20% OFF"
   priceBgColor?: string;
   priceTextColor?: string;
   taglineOrBenefits?: string[];
+  ingredients?: IngredientItem[]; // Tira de ingredientes con iconos y cantidades
   ctaText: string;
   ctaBgColor: string;
   ctaTextColor: string;
@@ -25,6 +54,8 @@ export interface TextTemplate {
 
 export const TEXT_TEMPLATE_CATEGORIES = [
   "Todas",
+  "Split Lateral",
+  "Recetas & Ingredientes",
   "Promociones & Combos",
   "Lanzamientos",
   "Ofertas Flash",
@@ -200,6 +231,146 @@ export const DEFAULT_TEXT_TEMPLATES: TextTemplate[] = [
     ctaBgColor: "#fbbf24",
     ctaTextColor: "#0f172a",
     previewSampleImage: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600&q=80",
+    isDefault: true,
+  },
+  {
+    id: "tpl-split-biryani",
+    name: "Split Lateral Editorial (Costado Izquierdo)",
+    description: "Composición asimétrica inspirada en revistas: textos y precio agrupados a la izquierda y el plato protagonista completo a la derecha.",
+    category: "Split Lateral",
+    layoutPosition: "split_left",
+    badgeText: "RECETA DE AUTOR",
+    badgeBgColor: "#0f172a",
+    badgeTextColor: "#f59e0b",
+    headlinePattern: "{PRODUCTO}",
+    headlineFont: "serif_script_mix",
+    headlineColor: "#ffffff",
+    subheadlinePattern: "Arroz basmati aromático cocinado a fuego lento con especias tradicionales y carne tierna.",
+    secondaryScriptPattern: "Especialidad de la casa",
+    priceBadgePattern: "{PRECIO}",
+    priceBgColor: "#0f172a",
+    priceTextColor: "#fbbf24",
+    ctaText: "ORDENAR AHORA",
+    ctaBgColor: "#fbbf24",
+    ctaTextColor: "#0f172a",
+    previewSampleImage: "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=600&q=80",
+    isDefault: true,
+  },
+  {
+    id: "tpl-split-pizza",
+    name: "Split Lateral de Alto Impacto (Pizza & Queso)",
+    description: "Titular rústico llamativo en el costado izquierdo, badge circular de 'ORDER NOW!' y plato apetitoso a la derecha sin obstrucción.",
+    category: "Split Lateral",
+    layoutPosition: "split_left",
+    badgeText: "ORDER NOW!",
+    badgeBgColor: "#dc2626",
+    badgeTextColor: "#ffffff",
+    headlinePattern: "HOT & CHEESY {PRODUCTO}",
+    headlineFont: "bold_textured",
+    headlineColor: "#fbbf24",
+    subheadlinePattern: "FRESH INGREDIENTS. PERFECT FLAVOR.",
+    secondaryScriptPattern: "Recién salida del horno",
+    priceBadgePattern: "{PRECIO}",
+    priceBgColor: "#fbbf24",
+    priceTextColor: "#0f172a",
+    ctaText: "¡PÍDELA HOY!",
+    ctaBgColor: "#dc2626",
+    ctaTextColor: "#ffffff",
+    previewSampleImage: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&q=80",
+    isDefault: true,
+  },
+  {
+    id: "tpl-split-butter-chicken",
+    name: "Lanzamiento Split con Botón (Introducing)",
+    description: "Presenta novedades con titular 'Introducing' en cursiva a la izquierda, botón directo y plato humeante a la derecha.",
+    category: "Split Lateral",
+    layoutPosition: "split_left",
+    badgeText: "NUEVO",
+    badgeBgColor: "#fbbf24",
+    badgeTextColor: "#0f172a",
+    headlinePattern: "{PRODUCTO}",
+    headlineFont: "bold_modern",
+    headlineColor: "#fbbf24",
+    subheadlinePattern: "Rico, cremoso e irresistible.",
+    secondaryScriptPattern: "Presentamos nuestro nuevo",
+    ctaText: "¡PRUÉBALO HOY!",
+    ctaBgColor: "#fbbf24",
+    ctaTextColor: "#0f172a",
+    previewSampleImage: "https://images.unsplash.com/photo-1588166524941-3bf61a9c41db?w=600&q=80",
+    isDefault: true,
+  },
+  {
+    id: "tpl-split-burger-combo",
+    name: "Combo Desglosado Lateral (Ultimate Value)",
+    description: "Titular de combo y lista de acompañamientos a la izquierda, badge 'BEST VALUE' y hamburguesa con papas a la derecha.",
+    category: "Split Lateral",
+    layoutPosition: "split_left",
+    badgeText: "BEST VALUE!",
+    badgeBgColor: "#dc2626",
+    badgeTextColor: "#ffffff",
+    headlinePattern: "ULTIMATE {PRODUCTO} COMBO",
+    headlineFont: "bold_modern",
+    headlineColor: "#fbbf24",
+    subheadlinePattern: "BURGER + PAPAS + BEBIDA",
+    priceBadgePattern: "{PRECIO}",
+    priceBgColor: "#0f172a",
+    priceTextColor: "#fbbf24",
+    ctaText: "¡ORDENA AHORA!",
+    ctaBgColor: "#fbbf24",
+    ctaTextColor: "#0f172a",
+    previewSampleImage: "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=600&q=80",
+    isDefault: true,
+  },
+  {
+    id: "tpl-recipe-pasta-garlic",
+    name: "Ficha de Receta con Tira de Ingredientes (Pasta al Ajo)",
+    description: "Diseño estilo masterclass gastronómica: titular superior elegante, plato en el centro, y tira horizontal de 5 ingredientes con iconos y cantidades.",
+    category: "Recetas & Ingredientes",
+    layoutPosition: "recipe_ingredients",
+    badgeText: "RECETA DE LA CASA",
+    badgeBgColor: "rgba(15, 23, 42, 0.85)",
+    badgeTextColor: "#ffffff",
+    headlinePattern: "{PRODUCTO}",
+    headlineFont: "elegant_serif",
+    headlineColor: "#ffffff",
+    subheadlinePattern: "Simple, deliciosa y lista en minutos",
+    secondaryScriptPattern: "Una receta, mil momentos ♡",
+    ingredients: [
+      { icon: "🧄", name: "Ajo", amount: "4 dientes" },
+      { icon: "🍝", name: "Pasta", amount: "200 g" },
+      { icon: "🫒", name: "Aceite oliva", amount: "1 cda" },
+      { icon: "🧀", name: "Parmesano", amount: "½ taza" },
+      { icon: "🌿", name: "Perejil", amount: "al gusto" },
+    ],
+    ctaText: "VER DETALLES",
+    ctaBgColor: "#fbbf24",
+    ctaTextColor: "#0f172a",
+    previewSampleImage: "https://images.unsplash.com/photo-1621996346565-e3d5d62817d2?w=600&q=80",
+    isDefault: true,
+  },
+  {
+    id: "tpl-express-ramen",
+    name: "Plato Express con Tiempo & Sellos (Ramen en 10 Min)",
+    description: "Titular dinámico con badge de reloj 'EN 10 MINUTOS' y 3 sellos circulares inferiores con iconos de calidad y rapidez.",
+    category: "Recetas & Ingredientes",
+    layoutPosition: "recipe_ingredients",
+    badgeText: "EXPRESS",
+    badgeBgColor: "#f59e0b",
+    badgeTextColor: "#0f172a",
+    headlinePattern: "{PRODUCTO} FÁCIL",
+    headlineFont: "bold_modern",
+    headlineColor: "#fbbf24",
+    subheadlinePattern: "⏰ EN 10 MINUTOS",
+    secondaryScriptPattern: "Rápido, caliente y listo para disfrutar",
+    ingredients: [
+      { icon: "⚡", name: "RÁPIDO", amount: "10 min" },
+      { icon: "👨‍🍳", name: "DELICIOSO", amount: "Sabor real" },
+      { icon: "🍃", name: "NATURAL", amount: "Ingredientes frescos" },
+    ],
+    ctaText: "¡PÍDELO AHORA!",
+    ctaBgColor: "#fbbf24",
+    ctaTextColor: "#0f172a",
+    previewSampleImage: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=600&q=80",
     isDefault: true,
   },
 ];
