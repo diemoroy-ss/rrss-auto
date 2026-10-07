@@ -220,9 +220,13 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
           
           // Get saved active profile from localStorage for persistence across reloads
           const savedActiveId = localStorage.getItem(`activeProfile_${auth.currentUser.uid}`);
-          const found = userProfiles.find(p => p.id === savedActiveId);
-          if (found) {
+          const realProfiles = userProfiles.filter(p => !p.isTestProfile && !p.id.startsWith("prof_test_"));
+          const found = (realProfiles.length > 0 ? realProfiles : userProfiles).find(p => p.id === savedActiveId);
+          if (found && !found.isTestProfile && !found.id.startsWith("prof_test_")) {
              setActiveProfileState(found);
+          } else if (realProfiles.length > 0) {
+             setActiveProfileState(realProfiles[0]);
+             localStorage.setItem(`activeProfile_${auth.currentUser.uid}`, realProfiles[0].id);
           } else {
              setActiveProfileState(userProfiles[0]);
              localStorage.setItem(`activeProfile_${auth.currentUser.uid}`, userProfiles[0].id);

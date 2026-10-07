@@ -1,11 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { useProfile } from "../contexts/ProfileContext";
 
 export default function NetworkSwitcher() {
   const { activeProfile, profiles, setActiveProfile, addProfile, isBusiness, loading, planConfig } = useProfile();
   const [isOpen, setIsOpen] = useState(false);
+  const pathname = usePathname();
+  const isLaboratorio = pathname?.includes("/laboratorio");
+  
+  // Filtrar empresas demo: solo deben existir y gestionarse dentro del Laboratorio
+  const realProfiles = profiles.filter(
+    (p) => !p.isTestProfile && !p.id.startsWith("prof_test_")
+  );
+  const displayProfiles = realProfiles.length > 0 ? realProfiles : profiles;
+
+  // Si la cuenta activa es demo y estamos fuera del laboratorio, usar la cuenta real
+  const effectiveActiveProfile =
+    !isLaboratorio && (activeProfile?.isTestProfile || activeProfile?.id?.startsWith("prof_test_")) && realProfiles.length > 0
+      ? realProfiles[0]
+      : activeProfile;
+
+  useEffect(() => {
+    // Si el usuario sale del laboratorio teniendo una demo seleccionada, restaurar su cuenta real activa
+    if (!isLaboratorio && (activeProfile?.isTestProfile || activeProfile?.id?.startsWith("prof_test_")) && realProfiles.length > 0) {
+      setActiveProfile(realProfiles[0].id);
+    }
+  }, [isLaboratorio, activeProfile, realProfiles, setActiveProfile]);
   
   // Creation state
   const [isCreating, setIsCreating] = useState(false);
@@ -16,7 +38,7 @@ export default function NetworkSwitcher() {
 
   const emojis = ['🏢', '💇‍♀️', '🍽️', '🏋️‍♂️', '🐾', '📸', '☕', '👗', '🏠', '🚗'];
 
-  if (loading || !activeProfile) return null;
+  if (loading || !effectiveActiveProfile) return null;
 
   const handleAdd = async () => {
      if (!newName.trim()) return;
@@ -33,8 +55,6 @@ export default function NetworkSwitcher() {
      }
   };
 
-  // ... (Navbar button remains same)
-
   return (
     <>
       {/* 🚀 EL BOTÓN DEL NAVBAR 🚀 */}
@@ -42,10 +62,10 @@ export default function NetworkSwitcher() {
          onClick={() => setIsOpen(true)}
          className="mr-6 flex items-center gap-3 bg-white border border-slate-200 hover:border-indigo-300 hover:shadow-md px-4 py-2 rounded-xl transition-all group"
       >
-         <span className="text-xl group-hover:scale-110 transition-transform">{activeProfile.icon || '🏢'}</span>
+         <span className="text-xl group-hover:scale-110 transition-transform">{effectiveActiveProfile.icon || '🏢'}</span>
          <div className="text-left hidden md:block">
             <div className="text-[9px] font-black uppercase tracking-widest text-slate-400">Cuenta Activa</div>
-            <div className="text-sm font-bold text-slate-800 leading-tight line-clamp-1 max-w-[120px]">{activeProfile.name}</div>
+            <div className="text-sm font-bold text-slate-800 leading-tight line-clamp-1 max-w-[120px]">{effectiveActiveProfile.name}</div>
          </div>
          <span className="text-slate-300 ml-2 group-hover:text-indigo-400">▼</span>
       </button>
@@ -62,34 +82,29 @@ export default function NetworkSwitcher() {
                   <p className="text-indigo-200 text-lg mb-16 font-medium">Selecciona una cuenta para cargar su estrategia, calendario y estadísticas.</p>
                   
                   <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10">
-                    {profiles.map(p => (
+                    {displayProfiles.map(p => (
                         <button 
                           key={p.id}
                           onClick={() => { setActiveProfile(p.id); setIsOpen(false); }}
                           className="group flex flex-col items-center gap-6 transition-all hover:-translate-y-2"
                         >
                           <div className={`w-32 h-32 md:w-44 md:h-44 rounded-[2rem] flex items-center justify-center text-6xl md:text-7xl shadow-2xl transition-all border-4 relative overflow-hidden ${
-                            activeProfile.id === p.id 
+                            effectiveActiveProfile.id === p.id 
                             ? 'bg-indigo-600 border-indigo-400 shadow-indigo-600/50 scale-105' 
                             : 'bg-slate-800 border-slate-700/50 group-hover:border-slate-500 shadow-xl opacity-80 group-hover:opacity-100'
                           }`}>
                             {/* Glow effect for active profile */}
-                            {activeProfile.id === p.id && <div className="absolute inset-0 bg-white/20 animate-pulse mix-blend-overlay"></div>}
+                            {effectiveActiveProfile.id === p.id && <div className="absolute inset-0 bg-white/20 animate-pulse mix-blend-overlay"></div>}
                             <span className="relative z-10">{p.icon || '🏢'}</span>
-                            {(p.isTestProfile || p.id.startsWith('prof_test_')) && (
-                              <span className="absolute top-3 right-3 z-20 bg-amber-400 text-amber-950 font-black text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider shadow">
-                                🧪 Demo
-                              </span>
-                            )}
                           </div>
-                          <span className={`text-lg md:text-xl font-bold tracking-tight transition-colors line-clamp-1 max-w-[140px] md:max-w-[200px] text-center px-2 ${activeProfile.id === p.id ? 'text-white' : 'text-slate-400 group-hover:text-white'}`}>
+                          <span className={`text-lg md:text-xl font-bold tracking-tight transition-colors line-clamp-1 max-w-[140px] md:max-w-[200px] text-center px-2 ${effectiveActiveProfile.id === p.id ? 'text-white' : 'text-slate-400 group-hover:text-white'}`}>
                             {p.name}
                           </span>
                         </button>
                     ))}
 
-                    {/* Botón de Agregar (Solo para Business y limitado por el plan) */}
-                    {isBusiness && profiles.length < (planConfig?.maxAccounts || 1) && (
+                    {/* Botón de Agregar (Solo para Business y limitado por el plan, sin contar demos) */}
+                    {isBusiness && displayProfiles.length < (planConfig?.maxAccounts || 1) && (
                         <button 
                           onClick={() => setIsCreating(true)}
                           className="group flex flex-col items-center gap-6 transition-all hover:-translate-y-2 opacity-60 hover:opacity-100"

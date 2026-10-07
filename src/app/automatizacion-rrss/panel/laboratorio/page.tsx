@@ -48,36 +48,25 @@ export default function LaboratorioPage() {
   // ID de la empresa de prueba seleccionada en el Laboratorio
   const [selectedTestId, setSelectedTestId] = useState<string>("");
 
-  // Auto-seleccionar y mantener sincronizado el perfil de prueba
+  // Auto-seleccionar y mantener sincronizado el perfil de prueba local del Laboratorio
   useEffect(() => {
     if (testProfiles.length > 0) {
-      // Si el activeProfile actual de la app es un perfil de prueba y es diferente del selectedTestId, sincronizarlo
-      if (activeProfile && testProfiles.some((tp) => tp.id === activeProfile.id)) {
-        if (selectedTestId !== activeProfile.id) {
-          setSelectedTestId(activeProfile.id);
-          return;
-        }
-      }
-
       const exists = testProfiles.some((tp) => tp.id === selectedTestId);
       if (!selectedTestId || !exists) {
         const firstTestId = testProfiles[0].id;
         setSelectedTestId(firstTestId);
-        setActiveProfile(firstTestId);
       }
     }
-  }, [testProfiles, activeProfile?.id, selectedTestId]);
+  }, [testProfiles, selectedTestId]);
 
   const currentTestProfile: BusinessProfile | null =
     testProfiles.find((tp) => tp.id === selectedTestId) ||
-    (activeProfile && testProfiles.find((tp) => tp.id === activeProfile.id)) ||
     (testProfiles.length > 0 ? testProfiles[0] : null);
 
   const isCurrentTest = Boolean(currentTestProfile);
 
   const handleSelectTestProfile = (id: string) => {
     setSelectedTestId(id);
-    setActiveProfile(id);
   };
 
   // Active Tab
