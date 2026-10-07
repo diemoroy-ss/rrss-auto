@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { auth, db } from "../../../../lib/firebase";
+import { auth, db, storage } from "../../../../lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { collection, getDocs, doc, setDoc, deleteDoc } from "firebase/firestore";
+import { collection, getDocs, doc, setDoc, deleteDoc, query, where } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import {
   TextTemplate,
   TEXT_TEMPLATE_CATEGORIES,
@@ -15,6 +16,14 @@ import {
   IngredientItem,
 } from "../../../../lib/text-templates";
 import { useProfile } from "../../../../contexts/ProfileContext";
+
+export interface LibraryPhotoItem {
+  id: string;
+  url: string;
+  title: string;
+  price?: string;
+  source: "catalogo" | "biblioteca" | "subida";
+}
 
 export default function PlantillasTextoPage() {
   const router = useRouter();
@@ -30,6 +39,13 @@ export default function PlantillasTextoPage() {
   const [catalogItems, setCatalogItems] = useState<any[]>([]);
   const [selectedCatalogItem, setSelectedCatalogItem] = useState<any | null>(null);
   const [customPhotoUrl, setCustomPhotoUrl] = useState<string>("");
+  const [libraryPhotos, setLibraryPhotos] = useState<LibraryPhotoItem[]>([]);
+  const [photoSourceTab, setPhotoSourceTab] = useState<"catalog" | "upload" | "url">("catalog");
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState<boolean>(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isDraggingPhoto, setIsDraggingPhoto] = useState<boolean>(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [testProductName, setTestProductName] = useState<string>("");
   const [testPrice, setTestPrice] = useState<string>("");
   const [testIngredients, setTestIngredients] = useState<IngredientItem[]>([]);
@@ -70,7 +86,7 @@ export default function PlantillasTextoPage() {
       setCurrentUser(u);
       if (u) {
         await loadTemplates(u.uid);
-        await loadCatalog(u.uid);
+        await loadCatalogAndLibrary(u.uid);
       } else {
         setLoading(false);
       }
@@ -108,23 +124,105 @@ export default function PlantillasTextoPage() {
     }
   };
 
-  const loadCatalog = async (userId: string) => {
+  const loadCatalogAndLibrary = async (userId: string) => {
     try {
-      const snap = await getDocs(collection(db, "users", userId, "catalog"));
+      // 1. Cargar productos/servicios desde 'catalogo' (con fallback a 'catalog')
+      let snapCatalogo = await getDocs(collection(db, "users", userId, "catalogo"));
+      if (snapCatalogo.empty) {
+        snapCatalogo = await getDocs(collection(db, "users", userId, "catalog"));
+      }
+
       const items: any[] = [];
-      snap.forEach((d) => {
+      const photos: LibraryPhotoItem[] = [];
+      const seenUrls = new Set<string>();
+
+      snapCatalogo.forEach((d) => {
         const item = d.data();
-        if (item.name) items.push({ id: d.id, ...item });
+        if (item.name) {
+          const itemObj = { id: d.id, ...item };
+          items.push(itemObj);
+          if (
+            item.imageUrl &&
+            typeof item.imageUrl === "string" &&
+            item.imageUrl.startsWith("http") &&
+            !seenUrls.has(item.imageUrl)
+          ) {
+            seenUrls.add(item.imageUrl);
+            photos.push({
+              id: `cat-${d.id}`,
+              url: item.imageUrl,
+              title: item.name,
+              price: item.price || item.offerPrice || "",
+              source: "catalogo",
+            });
+          }
+        }
       });
       setCatalogItems(items);
+
+      // 2. Cargar fotos previas de la biblioteca y plantillas del usuario
+      try {
+        const [genSnap, tplSnap] = await Promise.all([
+          getDocs(query(collection(db, "generated_images"), where("userId", "==", userId))),
+          getDocs(query(collection(db, "user_templates"), where("userId", "==", userId))),
+        ]);
+
+        genSnap.forEach((d) => {
+          const data = d.data();
+          if (
+            data.url &&
+            typeof data.url === "string" &&
+            data.url.startsWith("http") &&
+            !seenUrls.has(data.url)
+          ) {
+            seenUrls.add(data.url);
+            photos.push({
+              id: `gen-${d.id}`,
+              url: data.url,
+              title: data.prompt || data.text || "Foto Generada",
+              price: "",
+              source: "biblioteca",
+            });
+          }
+        });
+
+        tplSnap.forEach((d) => {
+          const data = d.data();
+          if (
+            data.url &&
+            typeof data.url === "string" &&
+            data.url.startsWith("http") &&
+            !seenUrls.has(data.url)
+          ) {
+            seenUrls.add(data.url);
+            photos.push({
+              id: `tpl-${d.id}`,
+              url: data.url,
+              title: data.name || "Foto Guardada",
+              price: "",
+              source: "biblioteca",
+            });
+          }
+        });
+      } catch (bibErr) {
+        console.warn("Aviso: no se pudieron cargar todas las fotos de biblioteca:", bibErr);
+      }
+
+      setLibraryPhotos(photos);
+
       if (items.length > 0) {
-        setSelectedCatalogItem(items[0]);
-        setTestProductName(items[0].name || "");
-        setTestPrice(items[0].price || "");
-        if (items[0].imageUrl) setCustomPhotoUrl(items[0].imageUrl);
+        const firstWithPhoto = items.find((it) => it.imageUrl?.startsWith("http")) || items[0];
+        setSelectedCatalogItem(firstWithPhoto);
+        setTestProductName(firstWithPhoto.name || "");
+        setTestPrice(firstWithPhoto.price || firstWithPhoto.offerPrice || "");
+        if (firstWithPhoto.imageUrl) setCustomPhotoUrl(firstWithPhoto.imageUrl);
+      } else if (photos.length > 0) {
+        setCustomPhotoUrl(photos[0].url);
+        if (photos[0].title) setTestProductName(photos[0].title);
+        if (photos[0].price) setTestPrice(photos[0].price);
       }
     } catch (err) {
-      console.warn("Error cargando catálogo para pruebas de plantilla:", err);
+      console.warn("Error cargando catálogo y biblioteca para pruebas de plantilla:", err);
     }
   };
 
@@ -149,12 +247,18 @@ export default function PlantillasTextoPage() {
     setArtDirectionReasoning(null);
     setTestIngredients(template.ingredients ? [...template.ingredients] : []);
     setTestSecondaryScript(template.secondaryScriptPattern || "");
+    setUploadError(null);
     if (catalogItems.length > 0) {
       const firstWithPhoto = catalogItems.find((it) => it.imageUrl?.startsWith("http")) || catalogItems[0];
       setSelectedCatalogItem(firstWithPhoto);
       setTestProductName(firstWithPhoto.name || "Hamburguesa Doble Queso");
       setTestPrice(firstWithPhoto.price || "$24.900");
       setCustomPhotoUrl(firstWithPhoto.imageUrl || template.previewSampleImage || "");
+    } else if (libraryPhotos.length > 0) {
+      const first = libraryPhotos[0];
+      setCustomPhotoUrl(first.url);
+      setTestProductName(first.title || "Hamburguesa Doble Queso");
+      setTestPrice(first.price || "$24.900");
     } else {
       setTestProductName("Hamburguesa Doble Queso");
       setTestPrice("$24.900");
@@ -247,8 +351,84 @@ export default function PlantillasTextoPage() {
     if (item) {
       setSelectedCatalogItem(item);
       setTestProductName(item.name || "");
-      setTestPrice(item.price || "");
+      setTestPrice(item.price || item.offerPrice || "");
       if (item.imageUrl) setCustomPhotoUrl(item.imageUrl);
+    }
+  };
+
+  const handleSelectPhoto = (photo: LibraryPhotoItem) => {
+    setCustomPhotoUrl(photo.url);
+    if (photo.title && photo.source === "catalogo") {
+      setTestProductName(photo.title);
+      if (photo.price) setTestPrice(photo.price);
+      const matched = catalogItems.find(
+        (it) => it.name === photo.title || it.imageUrl === photo.url
+      );
+      if (matched) setSelectedCatalogItem(matched);
+    }
+  };
+
+  const handleUploadNewPhoto = async (file: File) => {
+    if (!file) return;
+    if (!currentUser?.uid) {
+      setUploadError("Debes iniciar sesión para subir fotos.");
+      return;
+    }
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowed.includes(file.type)) {
+      setUploadError("Formato no compatible. Por favor sube una imagen JPG, PNG o WebP.");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadError("La imagen supera el límite de 10 MB.");
+      return;
+    }
+
+    setIsUploadingPhoto(true);
+    setUploadError(null);
+
+    try {
+      let downloadUrl = "";
+      try {
+        const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
+        const storageRef = ref(
+          storage,
+          `users/${currentUser.uid}/plantillas_bg/${Date.now()}_${safeName}`
+        );
+        await uploadBytes(storageRef, file, { contentType: file.type });
+        downloadUrl = await getDownloadURL(storageRef);
+      } catch (clientStorageErr: any) {
+        console.warn("Storage client fallback a upload-image API:", clientStorageErr);
+        const token = await currentUser.getIdToken();
+        const fd = new FormData();
+        fd.append("file", file);
+        fd.append("profileId", activeProfile?.id || "default");
+        const res = await fetch("/api/catalogo/upload-image", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: fd,
+        });
+        const data = await res.json();
+        if (!res.ok || !data.url) throw new Error(data.error || "Error al subir la imagen");
+        downloadUrl = data.url;
+      }
+
+      if (downloadUrl) {
+        setCustomPhotoUrl(downloadUrl);
+        const newPhotoItem: LibraryPhotoItem = {
+          id: `upload-${Date.now()}`,
+          url: downloadUrl,
+          title: file.name.replace(/\.[^/.]+$/, ""),
+          price: "",
+          source: "subida",
+        };
+        setLibraryPhotos((prev) => [newPhotoItem, ...prev]);
+      }
+    } catch (err: any) {
+      console.error("Error subiendo foto:", err);
+      setUploadError(err.message || "Error al subir la foto.");
+    } finally {
+      setIsUploadingPhoto(false);
     }
   };
 
@@ -933,6 +1113,241 @@ export default function PlantillasTextoPage() {
                   )}
                 </div>
 
+                {/* 📸 Foto de Fondo para la Plantilla (Biblioteca, Subir o URL) */}
+                <div className="space-y-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                      <span>📸</span> Foto de Fondo para la Plantilla:
+                    </label>
+                    {customPhotoUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setCustomPhotoUrl(testingTemplate.previewSampleImage || "")}
+                        className="text-[11px] text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition-colors cursor-pointer"
+                      >
+                        Restaurar muestra
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Pestañas de Selección */}
+                  <div className="grid grid-cols-3 gap-1 p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-xl text-xs font-semibold">
+                    <button
+                      type="button"
+                      onClick={() => setPhotoSourceTab("catalog")}
+                      className={`py-2 px-2 rounded-lg transition-all flex items-center justify-center gap-1.5 text-center cursor-pointer ${
+                        photoSourceTab === "catalog"
+                          ? "bg-indigo-600 text-white shadow-xs font-bold"
+                          : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                      }`}
+                    >
+                      <span>🖼️</span> Mi Biblioteca ({libraryPhotos.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPhotoSourceTab("upload")}
+                      className={`py-2 px-2 rounded-lg transition-all flex items-center justify-center gap-1.5 text-center cursor-pointer ${
+                        photoSourceTab === "upload"
+                          ? "bg-indigo-600 text-white shadow-xs font-bold"
+                          : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                      }`}
+                    >
+                      <span>📤</span> Subir Foto
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPhotoSourceTab("url")}
+                      className={`py-2 px-2 rounded-lg transition-all flex items-center justify-center gap-1.5 text-center cursor-pointer ${
+                        photoSourceTab === "url"
+                          ? "bg-indigo-600 text-white shadow-xs font-bold"
+                          : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                      }`}
+                    >
+                      <span>🔗</span> Pegar URL
+                    </button>
+                  </div>
+
+                  {/* Tab 1: Mi Biblioteca y Catálogo */}
+                  {photoSourceTab === "catalog" && (
+                    <div className="space-y-2.5 animate-fadeIn">
+                      {libraryPhotos.length > 0 ? (
+                        <>
+                          <div className="flex items-center justify-between text-[11px] text-slate-500">
+                            <span>Toca una foto para aplicarla de fondo:</span>
+                            <span>{libraryPhotos.length} fotos</span>
+                          </div>
+
+                          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-48 overflow-y-auto pr-1 p-1 rounded-xl bg-slate-100/70 dark:bg-slate-900/70 border border-slate-200/80 dark:border-slate-800">
+                            {libraryPhotos.map((photo) => {
+                              const isSelected = customPhotoUrl === photo.url;
+                              return (
+                                <button
+                                  key={photo.id}
+                                  type="button"
+                                  onClick={() => handleSelectPhoto(photo)}
+                                  className={`group relative aspect-square rounded-xl overflow-hidden border-2 transition-all cursor-pointer text-left ${
+                                    isSelected
+                                      ? "border-indigo-600 ring-2 ring-indigo-500/40 shadow-md scale-[0.98]"
+                                      : "border-transparent hover:border-slate-300 dark:hover:border-slate-600 opacity-90 hover:opacity-100"
+                                  }`}
+                                  title={`${photo.title} ${photo.price ? `(${photo.price})` : ""}`}
+                                >
+                                  <img
+                                    src={photo.url}
+                                    alt={photo.title}
+                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                  />
+                                  <div
+                                    className={`absolute bottom-0 inset-x-0 text-[9px] font-bold px-1 py-0.5 truncate text-white ${
+                                      photo.source === "catalogo"
+                                        ? "bg-slate-950/85"
+                                        : photo.source === "subida"
+                                        ? "bg-emerald-950/85"
+                                        : "bg-indigo-950/85"
+                                    }`}
+                                  >
+                                    {photo.title || "Foto"}
+                                  </div>
+                                  {isSelected && (
+                                    <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-black shadow-md">
+                                      ✓
+                                    </div>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="p-4 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-center space-y-2">
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            Aún no tienes fotos guardadas en tu catálogo o biblioteca.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => setPhotoSourceTab("upload")}
+                            className="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 rounded-lg text-xs font-bold transition-colors inline-flex items-center gap-1 cursor-pointer"
+                          >
+                            <span>📤</span> Subir una foto ahora
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Tab 2: Subir Nueva Foto */}
+                  {photoSourceTab === "upload" && (
+                    <div className="space-y-2 animate-fadeIn">
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleUploadNewPhoto(file);
+                        }}
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        className="hidden"
+                      />
+
+                      <div
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          setIsDraggingPhoto(true);
+                        }}
+                        onDragLeave={() => setIsDraggingPhoto(false)}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          setIsDraggingPhoto(false);
+                          const file = e.dataTransfer.files?.[0];
+                          if (file) handleUploadNewPhoto(file);
+                        }}
+                        onClick={() => fileInputRef.current?.click()}
+                        className={`p-5 rounded-xl border-2 border-dashed transition-all cursor-pointer flex flex-col items-center justify-center text-center gap-2 ${
+                          isDraggingPhoto
+                            ? "border-indigo-600 bg-indigo-50 dark:bg-indigo-950/40"
+                            : "border-slate-300 dark:border-slate-700 hover:border-indigo-500 bg-white dark:bg-slate-900"
+                        }`}
+                      >
+                        {isUploadingPhoto ? (
+                          <div className="flex flex-col items-center gap-2 py-2">
+                            <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                            <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                              Subiendo y procesando foto...
+                            </span>
+                            <span className="text-[10px] text-slate-400">
+                              Quedará lista para el poster y guardada en tu biblioteca
+                            </span>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xl shadow-xs">
+                              📤
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                Haz clic para elegir foto o arrástrala aquí
+                              </p>
+                              <p className="text-[10px] text-slate-400 mt-0.5">
+                                Formatos: JPG, PNG, WebP (máx. 10 MB)
+                              </p>
+                            </div>
+                          </>
+                        )}
+                      </div>
+
+                      {uploadError && (
+                        <div className="p-2.5 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-xs text-red-600 dark:text-red-400">
+                          ⚠️ {uploadError}
+                        </div>
+                      )}
+
+                      {customPhotoUrl && (
+                        <div className="flex items-center gap-2.5 p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 text-xs text-emerald-700 dark:text-emerald-300">
+                          <img
+                            src={customPhotoUrl}
+                            alt="Preview subida"
+                            className="w-8 h-8 rounded-lg object-cover border border-emerald-300 shrink-0"
+                          />
+                          <div className="flex-1 truncate">
+                            <span className="font-bold block leading-tight">Foto activa en el poster</span>
+                            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 truncate block">
+                              Lista para crear tu publicación
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Tab 3: Pegar URL */}
+                  {photoSourceTab === "url" && (
+                    <div className="space-y-2 animate-fadeIn">
+                      <div className="flex gap-2">
+                        <input
+                          type="url"
+                          value={customPhotoUrl}
+                          onChange={(e) => setCustomPhotoUrl(e.target.value)}
+                          className="flex-1 px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          placeholder="https://ejemplo.com/tu-foto.jpg"
+                        />
+                        {customPhotoUrl && (
+                          <button
+                            type="button"
+                            onClick={() => setCustomPhotoUrl("")}
+                            className="px-2.5 py-2 text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl border border-slate-200 dark:border-slate-800"
+                            title="Limpiar URL"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-slate-400">
+                        Pega un enlace directo de internet a la imagen de tu plato o producto.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
                 {/* Seleccionar del Catálogo */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
@@ -1048,20 +1463,6 @@ export default function PlantillasTextoPage() {
                     </div>
                   </div>
                 )}
-
-                {/* URL de Foto Personalizada */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    URL de Foto de Fondo:
-                  </label>
-                  <input
-                    type="url"
-                    value={customPhotoUrl}
-                    onChange={(e) => setCustomPhotoUrl(e.target.value)}
-                    className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
-                    placeholder="https://..."
-                  />
-                </div>
 
                 {/* Botón de Acción */}
                 <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
