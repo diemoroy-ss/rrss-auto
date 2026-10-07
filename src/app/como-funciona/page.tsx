@@ -784,6 +784,14 @@ export default function ComoFuncionaPage() {
               ) : (
                 /* TEXTO DIRECTO SOBRE EL LADO IZQUIERDO DE LA IMAGEN */
                 <div className="relative z-10 w-full h-full flex flex-col justify-between">
+                  {/* Marca de agua de muestra en esquina superior derecha */}
+                  <div className="absolute top-0 right-0 pointer-events-none select-none">
+                    <span className="px-2.5 py-1 rounded-md bg-black/70 backdrop-blur-md border border-white/20 text-white font-mono text-[9px] uppercase tracking-wider shadow-md flex items-center gap-1.5 opacity-90">
+                      <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+                      MUESTRA DE PRUEBA · SANTISOFT
+                    </span>
+                  </div>
+
                   <div className="w-[54%] space-y-2">
                     <span className="inline-block px-2.5 py-1 rounded bg-orange-600 text-white font-extrabold text-[10px] tracking-wider uppercase shadow-md">
                       {imageOrigin === "real" ? currentSector.tagReal : currentSector.tagGen}
@@ -1414,6 +1422,9 @@ export default function ComoFuncionaPage() {
                       Cartelería comercial con tu producto o servicio real: tipografía publicitaria directa, badge de oferta,
                       precios claros y llamado a la acción hacia WhatsApp.
                     </p>
+                    <p className="text-[10px] mt-2 font-medium" style={{ color: "var(--ink-faint)" }}>
+                      🔒 Con marca de agua de muestra (se entrega limpia al activar plan).
+                    </p>
                   </div>
                   <div
                     className="mt-4 pt-3 border-t text-[11px] font-semibold text-emerald-500 flex items-center gap-1"
@@ -1438,6 +1449,9 @@ export default function ComoFuncionaPage() {
                     <p className="text-xs leading-relaxed" style={{ color: "var(--ink-dim)" }}>
                       Imagen creada por nuestros agentes con el estilo fotográfico ideal para tu rubro (alta estética y
                       atmósfera de marca, sin precios ni logos forzados).
+                    </p>
+                    <p className="text-[10px] mt-2 font-medium" style={{ color: "var(--ink-faint)" }}>
+                      🔒 Con marca de agua de muestra (se entrega limpia al activar plan).
                     </p>
                   </div>
                   <div

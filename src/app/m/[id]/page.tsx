@@ -243,6 +243,57 @@ const PLAN_META: Record<string, { defaultBadge: string; emoji: string; subtitle:
   pro: { defaultBadge: "Avanzado", emoji: "👑", subtitle: "Máximo impacto con Meta Ads" },
 };
 
+function WatermarkOverlay({
+  size = "normal",
+  text = "SANTISOFT · MUESTRA DE PRUEBA",
+  showBanner = true,
+}: {
+  size?: "small" | "normal" | "large";
+  text?: string;
+  showBanner?: boolean;
+}) {
+  return (
+    <div className="absolute inset-0 pointer-events-none select-none overflow-hidden z-20 flex flex-col justify-between p-3 sm:p-5">
+      {/* Top watermark badge */}
+      <div className="flex justify-end">
+        <span className="px-2.5 py-1 rounded-lg bg-black/70 backdrop-blur-md border border-white/20 text-white font-mono text-[9px] sm:text-[10px] tracking-wider uppercase shadow-md flex items-center gap-1.5 opacity-90">
+          <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+          MUESTRA DE PRUEBA
+        </span>
+      </div>
+
+      {/* Diagonal central repeating watermark */}
+      <div className="absolute inset-0 flex items-center justify-center -rotate-[24deg] opacity-30">
+        <div className="text-center space-y-3">
+          <p
+            className={`font-black uppercase tracking-[0.22em] text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)] ${
+              size === "small"
+                ? "text-[11px] tracking-wider"
+                : size === "large"
+                ? "text-2xl sm:text-4xl"
+                : "text-base sm:text-2xl"
+            }`}
+          >
+            {text}
+          </p>
+          <p className="text-[9px] sm:text-[11px] font-bold uppercase tracking-widest text-amber-300 drop-shadow">
+            PROPIEDAD DE SANTISOFT · DEMO EXCLUSIVA
+          </p>
+        </div>
+      </div>
+
+      {/* Bottom watermark notice */}
+      {showBanner && (
+        <div className="flex justify-between items-end">
+          <span className="px-2.5 py-1 rounded-lg bg-black/70 backdrop-blur-md border border-white/20 text-slate-200 text-[9px] sm:text-[10px] font-semibold shadow-md">
+            🔒 Activa tu plan para obtener versión HD sin marca de agua
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function PublicProspectDemoPage({ params }: { params?: { id?: string } }) {
   const routeParams = useParams();
   const demoId = (typeof routeParams?.id === "string" ? routeParams.id : null) || params?.id || "";
@@ -588,18 +639,19 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
                                 alt={pub.title || "Post"}
                                 className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300"
                               />
+                              <WatermarkOverlay size="small" showBanner={false} />
                               {pub.productPrice && (
-                                <div className="absolute top-2 left-2 bg-black/80 backdrop-blur-md text-emerald-400 font-black text-xs px-2.5 py-0.5 rounded-lg border border-white/20 shadow-md">
+                                <div className="absolute top-2 left-2 z-30 bg-black/80 backdrop-blur-md text-emerald-400 font-black text-xs px-2.5 py-0.5 rounded-lg border border-white/20 shadow-md">
                                   {pub.productPrice}
                                 </div>
                               )}
                               {pub.type === "carrusel" && (
-                                <div className="absolute top-2 right-2 bg-black/80 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded-md border border-white/20 shadow-md">
+                                <div className="absolute top-2 right-2 z-30 bg-black/80 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded-md border border-white/20 shadow-md">
                                   3 Slides
                                 </div>
                               )}
                               {(pub.isCommercialPoster || pub.visualStyleTitle?.toLowerCase().includes("poster") || pub.visualStyleTitle?.toLowerCase().includes("combo") || pub.visualStyleTitle?.toLowerCase().includes("lanzamiento")) && (
-                                <div className="absolute bottom-2 inset-x-2 bg-slate-950/85 backdrop-blur-md text-amber-300 text-[10px] font-black py-0.5 px-2 rounded-lg text-center truncate border border-amber-500/30 shadow-md">
+                                <div className="absolute bottom-2 inset-x-2 z-30 bg-slate-950/85 backdrop-blur-md text-amber-300 text-[10px] font-black py-0.5 px-2 rounded-lg text-center truncate border border-amber-500/30 shadow-md">
                                   🏷️ Cartel con Texto &amp; Precio
                                 </div>
                               )}
@@ -741,17 +793,13 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
                           }`}
                         />
 
+                        {/* Marca de agua de protección comercial */}
+                        <WatermarkOverlay size="normal" />
+
                         {/* Badge sutil flotante en la esquina superior para ampliar */}
-                        <div className="absolute top-3 right-3 flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
+                        <div className="absolute top-3 left-3 z-30 flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
                           <span className="px-3 py-1.5 rounded-xl bg-black/75 backdrop-blur-md text-white text-xs font-bold border border-white/20 shadow-md flex items-center gap-1.5">
                             <span>🔍</span> Toca para Ampliar
-                          </span>
-                        </div>
-
-                        {/* Indicador de empresa discreto en esquina inferior */}
-                        <div className="absolute bottom-3 left-3 pointer-events-none">
-                          <span className="text-[10px] font-bold text-white/90 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg">
-                            {demo.prospectBusiness}
                           </span>
                         </div>
                       </div>
@@ -765,13 +813,14 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
                           <span>🔍</span> Inspeccionar a Pantalla Completa
                         </button>
                         <a
-                          href={currentPub.imageUrl || demo.generatedImageUrl}
-                          download={`post_${selectedPubIndex + 1}_${demo.prospectBusiness}.jpg`}
+                          href={`https://wa.me/${santisoftWhatsAppNumber}?text=${encodeURIComponent(
+                            `¡Hola Santisoft! Me gustó la propuesta de "${currentPub.dishOrProductName || currentPub.title || demo.prospectBusiness}" que prepararon sus agentes. Quiero activar mi plan para descargar los diseños en alta resolución sin marca de agua.`
+                          )}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-xs font-bold text-white shadow-md flex items-center gap-2 transition-all active:scale-95 cursor-pointer"
+                          className="px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-xs font-bold text-white shadow-md flex items-center gap-2 transition-all active:scale-95 cursor-pointer"
                         >
-                          <span>⬇️</span> Descargar Diseño en Alta Resolución
+                          <span>🔒</span> Activar Plan para Descargar sin Marca de Agua
                         </a>
                       </div>
                     </div>
@@ -806,6 +855,9 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
                           }`}
                         />
 
+                        {/* Marca de agua de protección comercial */}
+                        <WatermarkOverlay size="normal" />
+
                         {/* Botón Slide Anterior */}
                         {slides.length > 1 && (
                           <button
@@ -814,7 +866,7 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
                               e.stopPropagation();
                               setActiveCarouselSlide((prev) => (prev > 0 ? prev - 1 : slides.length - 1));
                             }}
-                            className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center font-bold text-sm backdrop-blur-xs transition-all shadow-md cursor-pointer z-10"
+                            className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center font-bold text-sm backdrop-blur-xs transition-all shadow-md cursor-pointer z-30"
                           >
                             ‹
                           </button>
@@ -828,19 +880,19 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
                               e.stopPropagation();
                               setActiveCarouselSlide((prev) => (prev < slides.length - 1 ? prev + 1 : 0));
                             }}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center font-bold text-sm backdrop-blur-xs transition-all shadow-md cursor-pointer z-10"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center font-bold text-sm backdrop-blur-xs transition-all shadow-md cursor-pointer z-30"
                           >
                             ›
                           </button>
                         )}
 
                         {/* Badge indicador de Slide actual */}
-                        <div className="absolute top-3 left-3 bg-black/75 backdrop-blur-md text-white text-[10px] font-black px-2.5 py-1 rounded-full border border-white/20">
+                        <div className="absolute top-3 left-3 z-30 bg-black/75 backdrop-blur-md text-white text-[10px] font-black px-2.5 py-1 rounded-full border border-white/20">
                           Slide {activeCarouselSlide + 1} de {slides.length}
                         </div>
 
                         {/* Botón Ampliar */}
-                        <div className="absolute top-3 right-3">
+                        <div className="absolute top-3 right-3 z-30">
                           <span className="px-2.5 py-1 rounded-xl bg-black/75 backdrop-blur-md text-white text-[11px] font-bold border border-white/20 shadow-md flex items-center gap-1">
                             🔍 Toca para Ampliar
                           </span>
@@ -891,13 +943,14 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
                           <span>🔍</span> Inspeccionar Slide Completo
                         </button>
                         <a
-                          href={slides[activeCarouselSlide]}
-                          download={`carrusel_slide_${activeCarouselSlide + 1}_${demo.prospectBusiness}.jpg`}
+                          href={`https://wa.me/${santisoftWhatsAppNumber}?text=${encodeURIComponent(
+                            `¡Hola Santisoft! Quiero activar mi plan para descargar el carrusel completo en alta resolución sin marca de agua para ${demo.prospectBusiness}.`
+                          )}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-xs font-bold text-white shadow-md flex items-center gap-2 transition-all active:scale-95 cursor-pointer"
+                          className="px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-xs font-bold text-white shadow-md flex items-center gap-2 transition-all active:scale-95 cursor-pointer"
                         >
-                          <span>⬇️</span> Descargar Diapositiva #{activeCarouselSlide + 1}
+                          <span>🔒</span> Activar Plan para Descargar sin Marca de Agua
                         </a>
                       </div>
                     </div>
@@ -1113,28 +1166,26 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
                       className="w-full h-full object-contain"
                     />
 
-                    <div className="absolute top-3 right-3 flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
+                    {/* Marca de agua de protección comercial */}
+                    <WatermarkOverlay size="normal" />
+
+                    <div className="absolute top-3 left-3 z-30 flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
                       <span className="px-3 py-1.5 rounded-xl bg-black/75 backdrop-blur-md text-white text-xs font-bold border border-white/20 shadow-md flex items-center gap-1.5">
                         <span>🔍</span> Toca para Ampliar
-                      </span>
-                    </div>
-
-                    <div className="absolute bottom-3 left-3 pointer-events-none">
-                      <span className="text-[10px] font-bold text-white/90 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg">
-                        {demo.prospectBusiness}
                       </span>
                     </div>
                   </div>
 
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
                     <a
-                      href={demo.generatedImageUrl}
-                      download={`propuesta_${demo.prospectBusiness}.jpg`}
+                      href={`https://wa.me/${santisoftWhatsAppNumber}?text=${encodeURIComponent(
+                        `¡Hola Santisoft! Vi la propuesta que prepararon para ${demo.prospectBusiness}. Quiero activar mi plan para descargar los diseños en alta resolución sin marca de agua.`
+                      )}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-xs font-bold text-white shadow-md flex items-center gap-2 transition-all active:scale-95 cursor-pointer"
+                      className="px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-xs font-bold text-white shadow-md flex items-center gap-2 transition-all active:scale-95 cursor-pointer"
                     >
-                      <span>⬇️</span> Descargar Diseño en Alta Resolución
+                      <span>🔒</span> Activar Plan para Descargar sin Marca de Agua
                     </a>
 
                     {hasVideo && (
@@ -1790,13 +1841,14 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
 
               <div className="flex items-center gap-2">
                 <a
-                  href={lightboxData.url}
-                  download={`diseño_${demo.prospectBusiness || "propuesta"}.jpg`}
+                  href={`https://wa.me/${santisoftWhatsAppNumber}?text=${encodeURIComponent(
+                    `¡Hola Santisoft! Estoy revisando la propuesta de "${lightboxData.title || demo.prospectBusiness}". Quiero activar mi plan para descargar los diseños en alta resolución sin marca de agua.`
+                  )}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                  className="px-3 py-1.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-md"
                 >
-                  <span>⬇️</span> <span className="hidden sm:inline">Descargar Original</span>
+                  <span>🔒</span> <span className="hidden sm:inline">Descargar sin Marca de Agua</span>
                 </a>
                 <button
                   type="button"
@@ -1816,6 +1868,8 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
                 alt={lightboxData.title || "Diseño en Alta Resolución"}
                 className="max-h-[75vh] w-auto max-w-full object-contain rounded-xl select-none"
               />
+              {/* Marca de agua de protección comercial en Lightbox */}
+              <WatermarkOverlay size="large" />
             </div>
 
             {/* Barra inferior de información y CTA */}
