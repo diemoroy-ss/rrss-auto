@@ -1380,6 +1380,101 @@ export default function ComoFuncionaPage() {
               </p>
             </div>
 
+            {/* ── QUÉ INCLUYE TU MUESTRA GRATUITA (BLOQUE VISUAL) ── */}
+            <div
+              className="mb-10 p-6 sm:p-7 rounded-2xl border"
+              style={{ background: "var(--panel-2)", borderColor: "var(--line)" }}
+            >
+              <div className="text-center sm:text-left mb-5">
+                <span className="text-xs font-mono font-bold text-orange-500 uppercase tracking-widest block">
+                  TRANSPARENCIA TOTAL
+                </span>
+                <h3 className="text-base sm:text-lg font-bold mt-1" style={{ color: "var(--ink)" }}>
+                  ¿Qué recibirás exactamente en tu muestra personalizada?
+                </h3>
+                <p className="text-xs mt-1" style={{ color: "var(--ink-dim)" }}>
+                  Sin trucos ni cobros ocultos: te preparamos material comercial real listo para publicar en tus redes.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* 1. Poster comercial con marca y precio */}
+                <div
+                  className="p-5 rounded-xl border flex flex-col justify-between shadow-xs"
+                  style={{ background: "var(--panel)", borderColor: "var(--line)" }}
+                >
+                  <div>
+                    <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-500 flex items-center justify-center text-xl mb-3">
+                      🏷️
+                    </div>
+                    <h4 className="text-sm font-bold mb-1.5" style={{ color: "var(--ink)" }}>
+                      Poster con tu Marca y Precio
+                    </h4>
+                    <p className="text-xs leading-relaxed" style={{ color: "var(--ink-dim)" }}>
+                      Cartelería comercial con tu producto o servicio real: tipografía publicitaria directa, badge de oferta,
+                      precios claros y llamado a la acción hacia WhatsApp.
+                    </p>
+                  </div>
+                  <div
+                    className="mt-4 pt-3 border-t text-[11px] font-semibold text-emerald-500 flex items-center gap-1"
+                    style={{ borderColor: "var(--line)" }}
+                  >
+                    <span>✓</span> Listo para vender hoy
+                  </div>
+                </div>
+
+                {/* 2. Poster de autor con estilo visual */}
+                <div
+                  className="p-5 rounded-xl border flex flex-col justify-between shadow-xs"
+                  style={{ background: "var(--panel)", borderColor: "var(--line)" }}
+                >
+                  <div>
+                    <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-500 flex items-center justify-center text-xl mb-3">
+                      🎨
+                    </div>
+                    <h4 className="text-sm font-bold mb-1.5" style={{ color: "var(--ink)" }}>
+                      Poster con Estilo Visual de Nicho
+                    </h4>
+                    <p className="text-xs leading-relaxed" style={{ color: "var(--ink-dim)" }}>
+                      Imagen creada por nuestros agentes con el estilo fotográfico ideal para tu rubro (alta estética y
+                      atmósfera de marca, sin precios ni logos forzados).
+                    </p>
+                  </div>
+                  <div
+                    className="mt-4 pt-3 border-t text-[11px] font-semibold text-emerald-500 flex items-center gap-1"
+                    style={{ borderColor: "var(--line)" }}
+                  >
+                    <span>✓</span> Estética de gran marca
+                  </div>
+                </div>
+
+                {/* 3. Calendario y estrategia de prueba */}
+                <div
+                  className="p-5 rounded-xl border flex flex-col justify-between shadow-xs"
+                  style={{ background: "var(--panel)", borderColor: "var(--line)" }}
+                >
+                  <div>
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center text-xl mb-3">
+                      📅
+                    </div>
+                    <h4 className="text-sm font-bold mb-1.5" style={{ color: "var(--ink)" }}>
+                      Calendario de Prueba por 10 Días
+                    </h4>
+                    <p className="text-xs leading-relaxed" style={{ color: "var(--ink-dim)" }}>
+                      Planificación de tus próximas publicaciones con días, horarios sugeridos para tu zona y copys
+                      persuasivos listos para copiar y pegar.
+                    </p>
+                  </div>
+                  <div
+                    className="mt-4 pt-3 border-t text-[11px] font-semibold text-emerald-500 flex items-center gap-1"
+                    style={{ borderColor: "var(--line)" }}
+                  >
+                    <span>✓</span> Sin costo ni compromiso
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {formStatus === "success" ? (
               <div className="p-8 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-center max-w-lg mx-auto">
                 <span className="text-4xl block mb-2">🎉</span>
