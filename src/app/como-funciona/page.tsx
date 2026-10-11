@@ -116,6 +116,9 @@ export default function ComoFuncionaPage() {
   // Origen de la imagen: Real vs Generada por agentes
   const [imageOrigin, setImageOrigin] = useState<ImageOrigin>("real");
 
+  // Modo de texto comercial en showroom: Con texto (cartel con precios/oferta) vs Sin texto comercial (foto limpia)
+  const [showroomTextMode, setShowroomTextMode] = useState<"con_texto" | "sin_texto">("con_texto");
+
   // Rubro seleccionado en el showroom interactivo
   const [selectedSector, setSelectedSector] = useState<BusinessSector>("gastronomia");
   const [showOriginal, setShowOriginal] = useState(false);
@@ -134,6 +137,7 @@ export default function ComoFuncionaPage() {
   const [businessRubro, setBusinessRubro] = useState("Tienda de Ropa, Calzado o Moda");
   const [contactPhone, setContactPhone] = useState("");
   const [contactEmail, setContactEmail] = useState("");
+  const [sampleTextPreference, setSampleTextPreference] = useState<"mixto" | "con_texto" | "sin_texto">("mixto");
   const [formStatus, setFormStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
 
   // Scroll reveal observer
@@ -172,7 +176,8 @@ export default function ComoFuncionaPage() {
           rubro: businessRubro,
           telefono: contactPhone,
           email: contactEmail || `${businessName.toLowerCase().replace(/\s+/g, "")}@contacto.temporal`,
-          mensaje: `Solicitud de muestra comercial para ${businessName} (Rubro: ${businessRubro}). WhatsApp: ${contactPhone}`,
+          mensaje: `Solicitud de muestra comercial para ${businessName} (Rubro: ${businessRubro}). Preferencia visual: ${sampleTextPreference}. WhatsApp: ${contactPhone}`,
+          imageTextPreference: sampleTextPreference,
         }),
       });
 
@@ -711,6 +716,40 @@ export default function ComoFuncionaPage() {
                 🎨 Imágenes Creadas por Nuestros Agentes
               </button>
             </div>
+
+            {/* Selector de Formato: Con Texto Comercial vs Sin Texto Comercial */}
+            <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
+              <span className="text-xs font-bold uppercase tracking-wider mr-1" style={{ color: "var(--ink-dim)" }}>
+                Formato visual:
+              </span>
+              <button
+                onClick={() => setShowroomTextMode("con_texto")}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all border flex items-center gap-1.5 cursor-pointer ${
+                  showroomTextMode === "con_texto" ? "shadow-xs ring-1 ring-orange-500/30" : "opacity-75 hover:opacity-100"
+                }`}
+                style={{
+                  background: showroomTextMode === "con_texto" ? "var(--signal)" : "var(--panel)",
+                  color: showroomTextMode === "con_texto" ? "#FFFFFF" : "var(--ink)",
+                  borderColor: showroomTextMode === "con_texto" ? "var(--signal)" : "var(--line)",
+                }}
+              >
+                <span>🏷️</span> Con Texto Comercial (Cartel de Venta)
+              </button>
+
+              <button
+                onClick={() => setShowroomTextMode("sin_texto")}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all border flex items-center gap-1.5 cursor-pointer ${
+                  showroomTextMode === "sin_texto" ? "shadow-xs ring-1 ring-orange-500/30" : "opacity-75 hover:opacity-100"
+                }`}
+                style={{
+                  background: showroomTextMode === "sin_texto" ? "var(--signal)" : "var(--panel)",
+                  color: showroomTextMode === "sin_texto" ? "#FFFFFF" : "var(--ink)",
+                  borderColor: showroomTextMode === "sin_texto" ? "var(--signal)" : "var(--line)",
+                }}
+              >
+                <span>🖼️</span> Sin Texto Comercial (Fotografía Limpia)
+              </button>
+            </div>
           </div>
 
           {/* Comparador Interactivo del Rubro Seleccionado */}
@@ -728,14 +767,18 @@ export default function ComoFuncionaPage() {
                   {currentSector.icon} {currentSector.name} · {currentSector.badge}
                 </span>
                 <h3 className="text-xl font-bold mt-1" style={{ color: "var(--ink)" }}>
-                  {imageOrigin === "real"
-                    ? `Foto Real del Negocio con Tipografía Directa de Nuestros Agentes`
-                    : `Generación de Catálogo Fotográfico por Nuestros Agentes`}
+                  {showroomTextMode === "con_texto"
+                    ? (imageOrigin === "real"
+                        ? `Foto Real del Negocio con Tipografía Directa de Nuestros Agentes`
+                        : `Cartel Comercial Creado por Nuestros Agentes con Titular y Precio`)
+                    : (imageOrigin === "real"
+                        ? `Foto Real Limpia y Apetitosa sin Textos Superpuestos`
+                        : `Fotografía Limpia de Producto Creada por Nuestros Agentes`)}
                 </h3>
               </div>
 
-              {/* Botón Switch: Original vs Arte (visible solo si es foto real) */}
-              {imageOrigin === "real" && (
+              {/* Botón Switch: Original vs Arte (visible solo si es foto real y modo con texto) */}
+              {imageOrigin === "real" && showroomTextMode === "con_texto" && (
                 <div
                   className="flex items-center gap-3 px-4 py-2 rounded-xl border shrink-0"
                   style={{ background: "var(--panel-2)", borderColor: "var(--line)" }}
@@ -761,28 +804,51 @@ export default function ComoFuncionaPage() {
               )}
             </div>
 
-            {/* Contenedor del Cartel: TEXTO DIRECTO SOBRE LA IMAGEN (SIN CARDS QUE TAPEN EL PRODUCTO) */}
+            {/* Contenedor del Cartel: TEXTO DIRECTO SOBRE LA IMAGEN O FOTO LIMPIA */}
             <div className="relative aspect-square max-w-[500px] mx-auto rounded-2xl overflow-hidden shadow-2xl border border-stone-800 bg-stone-950 flex flex-col justify-between p-7 select-none">
               {/* Imagen de fondo */}
               <div
                 className="absolute inset-0 bg-cover bg-center transition-all duration-300"
                 style={{
-                  backgroundImage: `linear-gradient(to right, rgba(10,15,25,0.92) 0%, rgba(10,15,25,0.65) 48%, rgba(0,0,0,0.1) 85%), url('${
-                    imageOrigin === "real" ? currentSector.imgReal : currentSector.imgGen
-                  }')`,
+                  backgroundImage: showroomTextMode === "con_texto"
+                    ? `linear-gradient(to right, rgba(10,15,25,0.92) 0%, rgba(10,15,25,0.65) 48%, rgba(0,0,0,0.1) 85%), url('${
+                        imageOrigin === "real" ? currentSector.imgReal : currentSector.imgGen
+                      }')`
+                    : `url('${imageOrigin === "real" ? currentSector.imgReal : currentSector.imgGen}')`,
                   filter: showOriginal ? "none" : "contrast(1.05) saturate(1.1)",
                 }}
               />
 
               {/* Modo foto cruda de celular */}
-              {showOriginal ? (
+              {showOriginal && imageOrigin === "real" && showroomTextMode === "con_texto" ? (
                 <div className="relative z-10 m-auto bg-black/75 backdrop-blur-md px-6 py-4 rounded-xl border border-white/20 text-center">
                   <span className="text-3xl mb-2 block">📱</span>
                   <p className="text-base font-bold text-white">Foto original tomada con tu celular</p>
                   <p className="text-xs text-slate-300 mt-1">Sin tipografía, sin precios destacados ni llamado a la acción.</p>
                 </div>
+              ) : showroomTextMode === "sin_texto" ? (
+                /* MODO SIN TEXTO: FOTO LIMPIA CON MARCA DE AGUA EN ESQUINA */
+                <div className="relative z-10 w-full h-full flex flex-col justify-between pointer-events-none">
+                  {/* Marca de agua de muestra en esquina superior derecha */}
+                  <div className="flex justify-end">
+                    <span className="px-2.5 py-1 rounded-md bg-black/70 backdrop-blur-md border border-white/20 text-white font-mono text-[9px] uppercase tracking-wider shadow-md flex items-center gap-1.5 opacity-90">
+                      <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+                      MUESTRA DE PRUEBA · SANTISOFT
+                    </span>
+                  </div>
+
+                  {/* Badge inferior explicativo de foto limpia */}
+                  <div className="flex items-center justify-between">
+                    <span className="px-3 py-1.5 rounded-lg bg-black/75 backdrop-blur-md border border-white/20 text-white text-xs font-semibold flex items-center gap-1.5 shadow-lg">
+                      <span>🖼️</span> Fotografía Limpia (Sin Textos Gráficos)
+                    </span>
+                    <span className="px-2.5 py-1 rounded-md bg-emerald-600/90 text-white text-[10px] font-black uppercase tracking-wider shadow">
+                      ✓ Branding &amp; Estética Pura
+                    </span>
+                  </div>
+                </div>
               ) : (
-                /* TEXTO DIRECTO SOBRE EL LADO IZQUIERDO DE LA IMAGEN */
+                /* MODO CON TEXTO: TEXTO DIRECTO SOBRE EL LADO IZQUIERDO DE LA IMAGEN */
                 <div className="relative z-10 w-full h-full flex flex-col justify-between">
                   {/* Marca de agua de muestra en esquina superior derecha */}
                   <div className="absolute top-0 right-0 pointer-events-none select-none">
@@ -833,9 +899,9 @@ export default function ComoFuncionaPage() {
             >
               <span className="text-xl">✨</span>
               <span>
-                <strong>Decisión de Nuestros Agentes:</strong> Los textos se montan directamente sobre el espacio
-                despejado de la imagen usando tipografía publicitaria, sombras suaves y jerarquía comercial.
-                Tu producto, prenda, plato o local nunca queda tapado ni deformado.
+                <strong>Generamos ambos estilos para tu marca:</strong> Nuestros agentes diseñan tanto{" "}
+                <strong>carteles comerciales</strong> con tipografía, precios y ofertas directas para incentivar pedidos, como{" "}
+                <strong>fotografías limpias de autor</strong> sin textos encima para proyectar la máxima estética y posicionamiento de tu negocio.
               </span>
             </div>
           </div>
@@ -1597,6 +1663,48 @@ export default function ComoFuncionaPage() {
                       color: "var(--ink)",
                     }}
                   />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase mb-1.5" style={{ color: "var(--ink)" }}>
+                    ¿Cómo prefieres las imágenes de tu muestra gratuita?
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    {[
+                      { id: "mixto" as const, label: "Con y Sin Texto", icon: "🔄", desc: "Muestra combinada recomendada" },
+                      { id: "con_texto" as const, label: "Con Texto Comercial", icon: "🏷️", desc: "Carteles con precios y ofertas" },
+                      { id: "sin_texto" as const, label: "Sin Texto Comercial", icon: "🖼️", desc: "Fotos limpias de producto" },
+                    ].map((fmt) => {
+                      const isSelected = sampleTextPreference === fmt.id;
+                      return (
+                        <button
+                          key={fmt.id}
+                          type="button"
+                          onClick={() => setSampleTextPreference(fmt.id)}
+                          className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                            isSelected
+                              ? "border-orange-500 bg-orange-500/10 shadow-xs ring-1 ring-orange-500/30"
+                              : "border-slate-200 hover:border-slate-300"
+                          }`}
+                          style={{
+                            background: isSelected ? "var(--panel-2)" : "var(--panel)",
+                            borderColor: isSelected ? "var(--signal)" : "var(--line)",
+                          }}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-base">{fmt.icon}</span>
+                            <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                              isSelected ? "bg-orange-500 text-white" : "border text-transparent"
+                            }`}>
+                              ✓
+                            </span>
+                          </div>
+                          <div className="text-xs font-bold" style={{ color: "var(--ink)" }}>{fmt.label}</div>
+                          <div className="text-[10px] mt-0.5 leading-snug" style={{ color: "var(--ink-dim)" }}>{fmt.desc}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {formStatus === "error" && (

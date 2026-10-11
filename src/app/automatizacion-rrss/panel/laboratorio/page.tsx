@@ -158,6 +158,7 @@ export default function LaboratorioPage() {
     "carrusel",
     "reel",
   ]);
+  const [sampleImageTextOption, setSampleImageTextOption] = useState<"mixto" | "con_texto" | "sin_texto">("mixto");
   const [generatingMuestra, setGeneratingMuestra] = useState(false);
   const [generatedMuestraResult, setGeneratedMuestraResult] = useState<{
     demoId: string;
@@ -747,7 +748,8 @@ export default function LaboratorioPage() {
           })),
           catalogUsage,
           selectedStyles: usePromptStyles ? selectedStyles : [],
-          isCommercialPoster: isCommercialPosterOnly,
+          imageTextOption: sampleImageTextOption,
+          isCommercialPoster: sampleImageTextOption === "con_texto" ? true : sampleImageTextOption === "sin_texto" ? false : isCommercialPosterOnly,
           agentTone,
           customAgentInstruction,
           nicheContext: radarData ? JSON.stringify(radarData.trends || radarData.summary || "") : "",
@@ -2139,7 +2141,7 @@ export default function LaboratorioPage() {
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 {/* 1. Selector de Cantidad de Publicaciones (Mínimo 1, Máximo 5) */}
                 <div className="space-y-3 bg-white p-4 rounded-2xl border border-indigo-100 shadow-2xs">
                   <div className="flex items-center justify-between">
@@ -2169,7 +2171,7 @@ export default function LaboratorioPage() {
                   </div>
 
                   <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
-                    Nuestros agentes generarán {postsToGenerate} {postsToGenerate === 1 ? "publicación individual" : "publicaciones completas"} con fotografía publicitaria real o cartel comercial y copy para cada formato.
+                    Nuestros agentes generarán {postsToGenerate} {postsToGenerate === 1 ? "publicación individual" : "publicaciones completas"} con diseño visual y copy persuasivo.
                   </p>
                 </div>
 
@@ -2177,7 +2179,7 @@ export default function LaboratorioPage() {
                 <div className="space-y-3 bg-white p-4 rounded-2xl border border-indigo-100 shadow-2xs">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-black text-slate-900 uppercase tracking-wider">
-                      2. Tipos de Publicaciones (Marca con check)
+                      2. Tipos de Publicaciones
                     </label>
                     <span className="text-[11px] font-bold text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200">
                       {selectedPostFormats.length} seleccionados
@@ -2230,7 +2232,60 @@ export default function LaboratorioPage() {
                   </div>
 
                   <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
-                    Las {postsToGenerate} publicaciones se distribuirán exclusivamente entre los formatos que marques con check.
+                    Las {postsToGenerate} publicaciones se distribuirán entre los formatos seleccionados.
+                  </p>
+                </div>
+
+                {/* 3. Selector de Textos en Imagen: Con Texto Comercial, Sin Texto o Mixto */}
+                <div className="space-y-3 bg-white p-4 rounded-2xl border border-indigo-100 shadow-2xs">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                      3. Textos en Imagen
+                    </label>
+                    <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
+                      {sampleImageTextOption === "mixto" ? "Mixto" : sampleImageTextOption === "con_texto" ? "Con Texto" : "Sin Texto"}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { id: "mixto" as const, label: "Mixto", icon: "🔄", desc: "Con y Sin Texto" },
+                      { id: "con_texto" as const, label: "Con Texto", icon: "🏷️", desc: "Cartel Comercial" },
+                      { id: "sin_texto" as const, label: "Sin Texto", icon: "🖼️", desc: "Foto Limpia" },
+                    ].map((opt) => {
+                      const isSelected = sampleImageTextOption === opt.id;
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => setSampleImageTextOption(opt.id)}
+                          className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                            isSelected
+                              ? "bg-amber-50/70 border-amber-500 shadow-2xs ring-2 ring-amber-500/20"
+                              : "bg-slate-50 border-slate-200 opacity-60 hover:opacity-100"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-base">{opt.icon}</span>
+                            <span className={`w-4 h-4 rounded-md flex items-center justify-center text-[10px] font-black ${
+                              isSelected ? "bg-amber-600 text-white" : "border border-slate-300 text-transparent"
+                            }`}>
+                              ✓
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-xs font-black text-slate-900 block leading-tight">{opt.label}</span>
+                            <span className="text-[10px] text-slate-500 font-medium">{opt.desc}</span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
+                    {sampleImageTextOption === "mixto" && "Combina carteles comerciales con tipografías y precios, y fotos limpias sin textos superpuestos."}
+                    {sampleImageTextOption === "con_texto" && "Todas las imágenes llevarán tipografías publicitarias de venta, titular, precio y badges."}
+                    {sampleImageTextOption === "sin_texto" && "Todas las imágenes serán fotografías limpias sin textos, letras ni precios encima."}
                   </p>
                 </div>
               </div>

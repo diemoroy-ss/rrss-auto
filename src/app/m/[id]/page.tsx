@@ -650,9 +650,13 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
                                   3 Slides
                                 </div>
                               )}
-                              {(pub.isCommercialPoster || pub.visualStyleTitle?.toLowerCase().includes("poster") || pub.visualStyleTitle?.toLowerCase().includes("combo") || pub.visualStyleTitle?.toLowerCase().includes("lanzamiento")) && (
+                              {(pub.isCommercialPoster || pub.visualStyleTitle?.toLowerCase().includes("poster") || pub.visualStyleTitle?.toLowerCase().includes("combo") || pub.visualStyleTitle?.toLowerCase().includes("lanzamiento")) ? (
                                 <div className="absolute bottom-2 inset-x-2 z-30 bg-slate-950/85 backdrop-blur-md text-amber-300 text-[10px] font-black py-0.5 px-2 rounded-lg text-center truncate border border-amber-500/30 shadow-md">
                                   🏷️ Cartel con Texto &amp; Precio
+                                </div>
+                              ) : (
+                                <div className="absolute bottom-2 inset-x-2 z-30 bg-slate-950/85 backdrop-blur-md text-emerald-300 text-[10px] font-black py-0.5 px-2 rounded-lg text-center truncate border border-emerald-500/30 shadow-md">
+                                  🖼️ Foto Limpia de Producto
                                 </div>
                               )}
                             </div>
@@ -763,9 +767,13 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
                       {/* Control superior de encuadre y zoom */}
                       <div className="flex items-center justify-between text-xs px-1">
                         <div className="flex items-center gap-2">
-                          {(currentPub.isCommercialPoster || currentPub.visualStyleTitle?.toLowerCase().includes("poster") || currentPub.visualStyleTitle?.toLowerCase().includes("combo") || currentPub.visualStyleTitle?.toLowerCase().includes("lanzamiento")) && (
+                          {(currentPub.isCommercialPoster || currentPub.visualStyleTitle?.toLowerCase().includes("poster") || currentPub.visualStyleTitle?.toLowerCase().includes("combo") || currentPub.visualStyleTitle?.toLowerCase().includes("lanzamiento")) ? (
                             <span className="px-2.5 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-700 border border-amber-500/30 flex items-center gap-1">
                               <span>🏷️</span> Cartel con Tipografía &amp; Precio
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-700 border border-emerald-500/30 flex items-center gap-1">
+                              <span>🖼️</span> Fotografía Limpia de Producto
                             </span>
                           )}
                         </div>

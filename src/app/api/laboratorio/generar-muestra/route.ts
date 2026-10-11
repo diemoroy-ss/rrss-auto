@@ -17,6 +17,7 @@ interface GenerateMuestraPayload {
   catalogUsage?: "mixed" | "all";
   selectedStyles?: any[];
   isCommercialPoster?: boolean;
+  imageTextOption?: "con_texto" | "sin_texto" | "mixto";
   agentTone?: string;
   customAgentInstruction?: string;
   nicheContext?: string;
@@ -108,11 +109,18 @@ export async function POST(req: NextRequest) {
       catalogUsage = "mixed",
       selectedStyles = [],
       isCommercialPoster = false,
+      imageTextOption = body.isCommercialPoster ? "con_texto" : "mixto",
       agentTone = "directo_cercano",
       customAgentInstruction = "",
       nicheContext = "",
       userId = uid,
     } = body;
+
+    // Normalizar modo visual: "con_texto", "sin_texto" o "mixto"
+    const finalImageTextMode: "con_texto" | "sin_texto" | "mixto" = 
+      imageTextOption === "con_texto" || imageTextOption === "sin_texto" || imageTextOption === "mixto"
+        ? imageTextOption
+        : isCommercialPoster ? "con_texto" : "mixto";
 
     // Validar cantidad: mínimo 1 y máximo 5
     const clampedCount = Math.max(1, Math.min(5, Number(postsCount) || 3));
@@ -123,7 +131,7 @@ export async function POST(req: NextRequest) {
       : ["post"];
     const finalAllowedTypes = validAllowedTypes.length > 0 ? validAllowedTypes : ["post"];
 
-    console.log(`[Lab Generar Muestra] Solicitando ${clampedCount} posts para ${businessName} (${rubro}). Formatos permitidos:`, finalAllowedTypes);
+    console.log(`[Lab Generar Muestra] Solicitando ${clampedCount} posts para ${businessName} (${rubro}). Modo imagen: ${finalImageTextMode}. Formatos permitidos:`, finalAllowedTypes);
 
     // Preparar contexto del catálogo
     const catalogFormatted = catalogItems.length > 0
@@ -166,8 +174,14 @@ REGLAS ABSOLUTAS:
    - CERO frases robóticas ("en el vertiginoso mundo", "descubre", "sumérgete", "en conclusión").
    - NUNCA menciones "IA" o "Inteligencia Artificial". Refiérete siempre a "nuestros agentes" o "nuestro equipo de agentes especializados".
 
-3. CARTEL COMERCIAL & TEXTOS EN IMAGEN:
-   ${isCommercialPoster ? "Esta planificación está configurada con imágenes tipo CARTEL COMERCIAL. Es MANDATORIO que cada 'imagePromptEnglish' sea un prompt de cartel publicitario que ordene al generador de imagen renderizar tipografía publicitaria visible, nítida y legible integrada en la composición (commercial poster graphic design with crisp on-image typography text overlay): titular en mayúsculas entre comillas (ej: 'COMBO BURGER' o 'NUEVO EN EL MENÚ'), subtítulo de sabor, badge de ingredientes o beneficios, precio destacado con signo $ (ej: '$24.900') y botón o sticker con llamado a la acción (ej: '¡ORDENA AHORA!' o '¡PRUÉBALO HOY!')." : "Estilo fotográfico cuidado y apetitoso, centrado en el producto o servicio."}
+3. CARTEL COMERCIAL & TEXTOS EN IMAGEN (MODO: ${finalImageTextMode.toUpperCase()}):
+   ${
+     finalImageTextMode === "con_texto"
+       ? "TODAS las publicaciones deben ser diseñadas como CARTEL COMERCIAL con tipografía publicitaria integrada ('isCommercialPoster': true). En 'imagePromptEnglish', incluye instrucciones explícitas de layout publicitario con titular en mayúsculas, subtítulo, badge de precio destacado (ej: '$24.900') y botón o sticker con llamado a la acción ('¡ORDENA AHORA!')."
+       : finalImageTextMode === "sin_texto"
+       ? "TODAS las publicaciones deben ser diseñadas como FOTOGRAFÍA LIMPIA sin textos superpuestos ('isCommercialPoster': false). En 'imagePromptEnglish', describe una fotografía comercial, editorial o de autor de alta estética centrada en el producto o servicio, indicando explícitamente: clean photography without text, no typography, no words, no overlays."
+       : "Esta planificación es MIXTA: debes combinar publicaciones tipo CARTEL COMERCIAL ('isCommercialPoster': true) con tipografía visible de oferta y precio, y publicaciones de FOTOGRAFÍA LIMPIA ('isCommercialPoster': false) con alta estética y sin ningún texto superpuesto sobre la imagen. Alterna los formatos entre las publicaciones."
+   }
 
 4. CONTACTO Y LLAMADO A LA ACCIÓN:
    ${phone ? `- WhatsApp de contacto: ${phone}` : ""}
@@ -227,6 +241,7 @@ Devuelve ÚNICAMENTE un objeto JSON válido con las claves "strategy" y "publica
       "copy": "Texto completo y humanizado listo para publicar en redes",
       "cta": "Llamado a la acción con canal de contacto",
       "visualStyleTitle": "Nombre del estilo visual aplicado",
+      "isCommercialPoster": true, // true si es cartel con textos y precios, false si es foto limpia sin textos superpuestos
       "imagePromptEnglish": "Prompt descriptivo en inglés (60 a 90 palabras) para fotografía profesional o cartel publicitario",
       "carouselPrompts": ["Prompt slide 1 en inglés", "Prompt slide 2 en inglés", "Prompt slide 3 en inglés"], // solo si type === 'carrusel'
       "reelScript": { // solo si type === 'reel'
@@ -398,36 +413,54 @@ ${stylesContext}`;
         const catalogMatch = catalogItems.find((it) => it.name?.toLowerCase() === prodName.toLowerCase() || it.id === pub.productId);
         const hasCatalogRealPhoto = catalogMatch?.imageUrl && catalogMatch.imageUrl.startsWith("http");
 
+        // Determinar si esta publicación específica llevará texto comercial o foto limpia
+        let postIsCommercial = true;
+        if (finalImageTextMode === "con_texto") {
+          postIsCommercial = true;
+        } else if (finalImageTextMode === "sin_texto") {
+          postIsCommercial = false;
+        } else {
+          // Modo mixto: si el agente definió boolean en pub.isCommercialPoster respetarlo, si no alternar
+          postIsCommercial = typeof pub.isCommercialPoster === "boolean" ? pub.isCommercialPoster : (idx % 2 === 0);
+        }
+
         let promptEnglish = pub.imagePromptEnglish || "";
         if (!promptEnglish) {
-          promptEnglish = isCommercialPoster
+          promptEnglish = postIsCommercial
             ? `Commercial food advertising poster layout for ${prodName}, two-tier composition: mouth-watering hero food dish positioned cleanly in LOWER 55%-60% of frame, UPPER 40%-45% features clean dark atmospheric negative space (copyspace) with bold crisp typography text overlay reading "${prodName.toUpperCase()}", highlighted yellow price badge "${pub.productPrice || '$24.900'}" in upper corner, rounded yellow CTA button "¡ORDENA AHORA!", STRICT RULE: all rendered text overlays must stay strictly in the upper negative space and NEVER overlap, touch or obscure the food dish, warm restaurant lighting, 8k resolution`
-            : `Professional commercial advertising food photography of ${prodName}, gourmet restaurant plating, dramatic warm lighting, 8k resolution, photorealistic, no watermarks`;
-        } else if (isCommercialPoster && !promptEnglish.toLowerCase().includes("typography") && !promptEnglish.toLowerCase().includes("text overlay")) {
+            : `Professional commercial advertising food photography of ${prodName}, gourmet restaurant plating, dramatic warm lighting, 8k resolution, photorealistic, clean shot, STRICT NEGATIVE: no text, no typography, no letters, no words, no watermark, no overlays`;
+        } else if (postIsCommercial && !promptEnglish.toLowerCase().includes("typography") && !promptEnglish.toLowerCase().includes("text overlay")) {
           promptEnglish = `Commercial advertising poster graphic design, two-tier composition with dark upper copyspace, bold crisp typography text overlay reading "${prodName.toUpperCase()}", price badge "${pub.productPrice || '$24.900'}" in upper margin, compact CTA button "¡ORDENA AHORA!", STRICT RULE: typography must never overlap or cover the food hero in lower half, ${promptEnglish}`;
+        } else if (!postIsCommercial) {
+          promptEnglish = `${promptEnglish}, clean commercial photography, STRICT NEGATIVE: no text, no typography, no letters, no words, no watermark, no overlays`;
         }
 
         if (pub.type === "carrusel") {
           // Generar 3 slides para carrusel
           let coverUrl = "";
           if (hasCatalogRealPhoto) {
-            try {
-              console.log(`[Lab Generar Muestra] 🦋 Componiendo portada de carrusel con Butterfly Social para: ${prodName}`);
-              const { composeRealProductBanner } = await import("../../../../lib/real-product-compositor");
-              coverUrl = await composeRealProductBanner({
-                baseImageUrl: catalogMatch.imageUrl,
-                productName: prodName,
-                productDescription: catalogMatch.description || pub.title,
-                price: pub.productPrice || catalogMatch.price || "",
-                idea: pub.hook || pub.title,
-                rubro,
-                businessName,
-                aspectRatio: "1:1",
-                userId,
-                includeLogo: true,
-              });
-            } catch (bErr) {
-              console.warn("[Lab Generar Muestra] Error en Butterfly para portada de carrusel, usando foto directa:", bErr);
+            if (postIsCommercial) {
+              try {
+                console.log(`[Lab Generar Muestra] 🦋 Componiendo portada de carrusel con Butterfly Social para: ${prodName}`);
+                const { composeRealProductBanner } = await import("../../../../lib/real-product-compositor");
+                coverUrl = await composeRealProductBanner({
+                  baseImageUrl: catalogMatch.imageUrl,
+                  productName: prodName,
+                  productDescription: catalogMatch.description || pub.title,
+                  price: pub.productPrice || catalogMatch.price || "",
+                  idea: pub.hook || pub.title,
+                  rubro,
+                  businessName,
+                  aspectRatio: "1:1",
+                  userId,
+                  includeLogo: true,
+                });
+              } catch (bErr) {
+                console.warn("[Lab Generar Muestra] Error en Butterfly para portada de carrusel, usando foto directa:", bErr);
+                coverUrl = catalogMatch.imageUrl;
+              }
+            } else {
+              // Foto limpia sin textos superpuestos
               coverUrl = catalogMatch.imageUrl;
             }
           }
@@ -450,29 +483,34 @@ ${stylesContext}`;
             ...pub,
             imageUrl: slideUrls[0],
             carouselImages: slideUrls,
-            isCommercialPoster,
+            isCommercialPoster: postIsCommercial,
           };
         } else if (pub.type === "reel") {
           // Generar visual vertical 9:16 para reel
           let reelImageUrl = "";
           if (hasCatalogRealPhoto) {
-            try {
-              console.log(`[Lab Generar Muestra] 🦋 Componiendo portada vertical Reel con Butterfly Social para: ${prodName}`);
-              const { composeRealProductBanner } = await import("../../../../lib/real-product-compositor");
-              reelImageUrl = await composeRealProductBanner({
-                baseImageUrl: catalogMatch.imageUrl,
-                productName: prodName,
-                productDescription: catalogMatch.description || pub.title,
-                price: pub.productPrice || catalogMatch.price || "",
-                idea: pub.hook || pub.title,
-                rubro,
-                businessName,
-                aspectRatio: "9:16",
-                userId,
-                includeLogo: true,
-              });
-            } catch (bErr) {
-              console.warn("[Lab Generar Muestra] Error en Butterfly para Reel vertical, fallback a generador:", bErr);
+            if (postIsCommercial) {
+              try {
+                console.log(`[Lab Generar Muestra] 🦋 Componiendo portada vertical Reel con Butterfly Social para: ${prodName}`);
+                const { composeRealProductBanner } = await import("../../../../lib/real-product-compositor");
+                reelImageUrl = await composeRealProductBanner({
+                  baseImageUrl: catalogMatch.imageUrl,
+                  productName: prodName,
+                  productDescription: catalogMatch.description || pub.title,
+                  price: pub.productPrice || catalogMatch.price || "",
+                  idea: pub.hook || pub.title,
+                  rubro,
+                  businessName,
+                  aspectRatio: "9:16",
+                  userId,
+                  includeLogo: true,
+                });
+              } catch (bErr) {
+                console.warn("[Lab Generar Muestra] Error en Butterfly para Reel vertical, fallback a generador:", bErr);
+              }
+            } else {
+              // Foto limpia de catálogo
+              reelImageUrl = catalogMatch.imageUrl;
             }
           }
 
@@ -485,29 +523,34 @@ ${stylesContext}`;
             ...pub,
             imageUrl: reelImageUrl,
             aspectRatio: "9:16",
-            isCommercialPoster,
+            isCommercialPoster: postIsCommercial,
           };
         } else {
           // Post estándar 1:1
           let finalImgUrl = "";
           if (hasCatalogRealPhoto) {
-            try {
-              console.log(`[Lab Generar Muestra] 🦋 Componiendo post 1:1 con Butterfly Social para foto real: ${prodName}`);
-              const { composeRealProductBanner } = await import("../../../../lib/real-product-compositor");
-              finalImgUrl = await composeRealProductBanner({
-                baseImageUrl: catalogMatch.imageUrl,
-                productName: prodName,
-                productDescription: catalogMatch.description || pub.title,
-                price: pub.productPrice || catalogMatch.price || "",
-                idea: pub.hook || pub.title,
-                rubro,
-                businessName,
-                aspectRatio: "1:1",
-                userId,
-                includeLogo: true,
-              });
-            } catch (bErr) {
-              console.warn("[Lab Generar Muestra] Error en Butterfly para post 1:1, usando foto directa:", bErr);
+            if (postIsCommercial) {
+              try {
+                console.log(`[Lab Generar Muestra] 🦋 Componiendo post 1:1 con Butterfly Social para foto real: ${prodName}`);
+                const { composeRealProductBanner } = await import("../../../../lib/real-product-compositor");
+                finalImgUrl = await composeRealProductBanner({
+                  baseImageUrl: catalogMatch.imageUrl,
+                  productName: prodName,
+                  productDescription: catalogMatch.description || pub.title,
+                  price: pub.productPrice || catalogMatch.price || "",
+                  idea: pub.hook || pub.title,
+                  rubro,
+                  businessName,
+                  aspectRatio: "1:1",
+                  userId,
+                  includeLogo: true,
+                });
+              } catch (bErr) {
+                console.warn("[Lab Generar Muestra] Error en Butterfly para post 1:1, usando foto directa:", bErr);
+                finalImgUrl = catalogMatch.imageUrl;
+              }
+            } else {
+              // Foto limpia de catálogo sin textos superpuestos
               finalImgUrl = catalogMatch.imageUrl;
             }
           } else {
@@ -517,7 +560,7 @@ ${stylesContext}`;
           return {
             ...pub,
             imageUrl: finalImgUrl,
-            isCommercialPoster,
+            isCommercialPoster: postIsCommercial,
           };
         }
       })

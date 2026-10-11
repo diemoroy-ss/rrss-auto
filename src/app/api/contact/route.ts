@@ -14,13 +14,19 @@ const N8N_EVOAPI_WEBHOOK_URL = process.env.N8N_EVOAPI_WEBHOOK_URL || "https://n8
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { nombre, email, telefono, mensaje, rubro } = body;
+    const { nombre, email, telefono, mensaje, rubro, imageTextPreference } = body;
 
     if (!nombre || (!email && !telefono) || !mensaje) {
       return NextResponse.json({ error: "Faltan campos obligatorios" }, { status: 400 });
     }
 
     const isSampleRequest = Boolean(rubro || mensaje?.toLowerCase().includes("muestra"));
+    const visualModeLabel = imageTextPreference === "con_texto" 
+      ? "Solo con texto comercial (carteles con precios)" 
+      : imageTextPreference === "sin_texto" 
+      ? "Solo sin texto comercial (fotos limpias)" 
+      : "Mixto (con y sin texto comercial)";
+
     const isRealEmail = Boolean(
       email &&
       typeof email === 'string' &&
@@ -38,6 +44,7 @@ export async function POST(req: Request) {
           telefono: telefono || "",
           mensaje,
           rubro: rubro || "",
+          imageTextPreference: imageTextPreference || "mixto",
           isSampleRequest,
           createdAt: new Date(),
           status: 'unread',
@@ -51,6 +58,7 @@ export async function POST(req: Request) {
             prospectPhone: telefono || "",
             prospectEmail: isRealEmail ? email : "",
             rubro: rubro || "General",
+            imageTextPreference: imageTextPreference || "mixto",
             status: "solicitada",
             source: "como-funciona",
             createdAt: new Date(),
@@ -95,6 +103,10 @@ export async function POST(req: Request) {
               <tr>
                 <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #334155;">Rubro:</td>
                 <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; color: #0f172a;">${rubro || 'No especificado'}</td>
+              </tr>
+              <tr>
+                <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #334155;">Formato Visual:</td>
+                <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; color: #0f172a; font-weight: 600;">${visualModeLabel}</td>
               </tr>
               <tr>
                 <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #334155;">WhatsApp:</td>
@@ -149,8 +161,8 @@ export async function POST(req: Request) {
               <div style="margin-bottom: 20px;">
                 <h3 style="color: #0f172a; font-size: 14px; font-weight: 700; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 0.5px;">¿Qué incluirá tu muestra comercial?</h3>
                 <ul style="margin: 0; padding-left: 20px; color: #475569; font-size: 13px; line-height: 1.8;">
-                  <li><strong>Posters comerciales:</strong> Diseñados con tu marca, precios y promociones listos para publicar.</li>
-                  <li><strong>Estilos visuales para tu nicho:</strong> Formatos calibrados para tu negocio sin diseños genéricos.</li>
+                  <li><strong>Diseño visual adaptado:</strong> Propuesta visual personalizada (${visualModeLabel}).</li>
+                  <li><strong>Posters y estilos para tu nicho:</strong> Formatos calibrados para tu negocio sin diseños genéricos.</li>
                   <li><strong>Calendario de prueba por 10 días:</strong> Planificación estratégica con horarios sugeridos y copys persuasivos.</li>
                 </ul>
               </div>
@@ -188,7 +200,7 @@ export async function POST(req: Request) {
 
       if (cleanPhone.length >= 8) {
         const whatsappMessage = isSampleRequest
-          ? `¡Hola! 👋 Confirmamos la recepción de tu solicitud para *${nombre}*${rubro ? ` (${rubro})` : ""}.\n\nNuestros agentes especializados ya están preparando tu muestra comercial gratuita: los posters con tu marca y precios, estilos visuales adaptados a tu rubro y el calendario de prueba por 10 días.\n\nEn cuanto tengamos la propuesta lista te compartiremos el enlace interactivo por este mismo chat. Si quieres coordinar algún detalle adicional o enviarnos tu logo o foto de producto, respóndeme directamente aquí.`
+          ? `¡Hola! 👋 Confirmamos la recepción de tu solicitud para *${nombre}*${rubro ? ` (${rubro})` : ""}.\n\nNuestros agentes especializados ya están preparando tu muestra comercial gratuita (${visualModeLabel}), con estilos visuales adaptados a tu negocio y el calendario de prueba por 10 días.\n\nEn cuanto tengamos la propuesta lista te compartiremos el enlace interactivo por este mismo chat. Si quieres coordinar algún detalle adicional o enviarnos tu logo o foto de producto, respóndeme directamente aquí.`
           : `¡Hola ${nombre}! 👋 Hemos recibido tu mensaje en Santisoft. Nuestro equipo de agentes se pondrá en contacto contigo a la brevedad. ¡Muchas gracias por escribirnos!`;
 
         try {
