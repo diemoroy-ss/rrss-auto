@@ -30,7 +30,8 @@ import {
   FaBoxOpen,
   FaShieldAlt,
   FaLock,
-  FaSearch
+  FaSearch,
+  FaTrash
 } from "react-icons/fa";
 
 export default function VideoPromptsPage() {
@@ -60,6 +61,7 @@ export default function VideoPromptsPage() {
   // Modal de Admin para Cargar / Editar Muestra
   const [showAdminModal, setShowAdminModal] = useState<boolean>(false);
   const [adminSaving, setAdminSaving] = useState<boolean>(false);
+  const [adminDeleting, setAdminDeleting] = useState<boolean>(false);
   const [adminUploadingImage, setAdminUploadingImage] = useState<boolean>(false);
   const [adminUploadingVideo, setAdminUploadingVideo] = useState<boolean>(false);
   const [adminError, setAdminError] = useState<string>("");
@@ -309,6 +311,50 @@ export default function VideoPromptsPage() {
     } finally {
       setAdminSaving(false);
     }
+  };
+
+  // Eliminar plantilla de Admin
+  const handleAdminDelete = async (command: string) => {
+    if (!user) return;
+    if (!window.confirm(`¿Estás seguro de que deseas eliminar el efecto "${command}" de la galería?`)) {
+      return;
+    }
+
+    setAdminDeleting(true);
+    setAdminError("");
+
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch(`/api/video-prompts/templates?command=${encodeURIComponent(command)}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error al eliminar plantilla");
+
+      await loadTemplates();
+      if (showAdminModal && editingTemplate.command === command) {
+        setShowAdminModal(false);
+      }
+    } catch (err: any) {
+      alert(err.message || "Error al eliminar plantilla.");
+    } finally {
+      setAdminDeleting(false);
+    }
+  };
+
+  // Autogenerar prompt en inglés basado en el comando y atributos ingresados
+  const handleAutoGeneratePrompt = () => {
+    const prompt = buildVeoPromptFromCommand(editingTemplate, {
+      productName: "the product",
+      rubro: "commercial",
+      aspectRatio: "9:16",
+    });
+    setEditingTemplate((prev) => ({
+      ...prev,
+      defaultEnglishPrompt: prompt,
+    }));
   };
 
   // ── GESTIÓN DE USUARIO: ABRIR MODAL CREACIÓN ─────────────────────────────────
@@ -753,13 +799,23 @@ export default function VideoPromptsPage() {
                   </div>
                   <div className="flex items-center gap-1.5">
                     {isAdminUser && (
-                      <button
-                        onClick={() => openAdminEdit(cmd)}
-                        title="Editar Muestra como Admin"
-                        className="p-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-bold transition-colors"
-                      >
-                        <FaEdit />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => openAdminEdit(cmd)}
+                          title="Editar Efecto y Muestras de Video"
+                          className="p-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-bold transition-colors"
+                        >
+                          <FaEdit />
+                        </button>
+                        <button
+                          onClick={() => handleAdminDelete(cmd.command)}
+                          title="Eliminar Efecto de la Galería"
+                          disabled={adminDeleting}
+                          className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold transition-colors disabled:opacity-50"
+                        >
+                          <FaTrash />
+                        </button>
+                      </div>
                     )}
                     <button
                       onClick={() => handleCopy(cmd.command, `cmd-${cmd.command}`)}
@@ -935,8 +991,8 @@ export default function VideoPromptsPage() {
             )}
 
             <div className="space-y-4 text-xs">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="sm:col-span-1">
                   <label className="font-bold text-slate-700 block mb-1">Comando Flow (*):</label>
                   <input
                     type="text"
@@ -946,13 +1002,23 @@ export default function VideoPromptsPage() {
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-900 font-mono font-bold"
                   />
                 </div>
-                <div>
+                <div className="sm:col-span-1">
                   <label className="font-bold text-slate-700 block mb-1">Nombre del Efecto:</label>
                   <input
                     type="text"
                     placeholder="Ej: Smoke Reveal"
                     value={editingTemplate.name}
                     onChange={(e) => setEditingTemplate({ ...editingTemplate, name: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-900 font-bold"
+                  />
+                </div>
+                <div className="sm:col-span-1">
+                  <label className="font-bold text-slate-700 block mb-1">Categoría:</label>
+                  <input
+                    type="text"
+                    placeholder="Ej: Product Reveals"
+                    value={editingTemplate.category}
+                    onChange={(e) => setEditingTemplate({ ...editingTemplate, category: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-900 font-bold"
                   />
                 </div>
@@ -971,112 +1037,197 @@ export default function VideoPromptsPage() {
 
               {/* Sección Subir Imagen Base */}
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
-                <label className="font-bold text-slate-900 block flex items-center justify-between">
-                  <span>1. Imagen Base (Foto estática inicial):</span>
-                  {adminUploadingImage && <span className="text-indigo-600 flex items-center gap-1"><FaSpinner className="animate-spin" /> Subiendo...</span>}
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Pega la URL de la imagen o sube un archivo..."
-                    value={editingTemplate.sampleBaseImage || ""}
-                    onChange={(e) => setEditingTemplate({ ...editingTemplate, sampleBaseImage: e.target.value })}
-                    className="flex-1 bg-white border border-slate-200 rounded-xl p-2 text-slate-900 text-xs"
-                  />
-                  <input
-                    ref={adminImageInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      if (e.target.files?.[0]) handleAdminFileUpload(e.target.files[0], "image");
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => adminImageInputRef.current?.click()}
-                    disabled={adminUploadingImage}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-1.5"
-                  >
-                    <FaUpload /> <span>Subir Foto</span>
-                  </button>
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-900">1. Imagen Base (Foto estática inicial):</span>
+                  {adminUploadingImage && (
+                    <span className="text-indigo-600 flex items-center gap-1 font-bold">
+                      <FaSpinner className="animate-spin" /> Subiendo imagen...
+                    </span>
+                  )}
                 </div>
-                {editingTemplate.sampleBaseImage && (
-                  <div className="mt-2 h-24 w-32 rounded-lg overflow-hidden border border-slate-200 bg-slate-900">
-                    <img src={editingTemplate.sampleBaseImage} alt="Base preview" className="w-full h-full object-cover" />
+                <div className="flex flex-col sm:flex-row gap-3 items-start">
+                  {editingTemplate.sampleBaseImage ? (
+                    <div className="h-24 w-28 rounded-xl overflow-hidden border border-slate-300 bg-slate-900 shrink-0 relative group">
+                      <img src={editingTemplate.sampleBaseImage} alt="Base preview" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setEditingTemplate({ ...editingTemplate, sampleBaseImage: "" })}
+                        title="Quitar foto"
+                        className="absolute top-1 right-1 bg-red-600/90 hover:bg-red-700 text-white p-1 rounded-md text-[10px]"
+                      >
+                        <FaTimes />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="h-24 w-28 rounded-xl border border-dashed border-slate-300 flex items-center justify-center text-slate-400 bg-white shrink-0">
+                      <FaImage className="text-2xl" />
+                    </div>
+                  )}
+
+                  <div className="flex-1 space-y-2 w-full">
+                    <input
+                      ref={adminImageInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files?.[0]) handleAdminFileUpload(e.target.files[0], "image");
+                      }}
+                    />
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => adminImageInputRef.current?.click()}
+                        disabled={adminUploadingImage}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm"
+                      >
+                        <FaUpload /> <span>Subir desde mi equipo</span>
+                      </button>
+                      {editingTemplate.sampleBaseImage && (
+                        <button
+                          type="button"
+                          onClick={() => setEditingTemplate({ ...editingTemplate, sampleBaseImage: "" })}
+                          className="px-3 py-2 text-slate-500 hover:text-red-600 font-bold text-xs"
+                        >
+                          Quitar foto
+                        </button>
+                      )}
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="O pega la URL directa de la foto..."
+                      value={editingTemplate.sampleBaseImage || ""}
+                      onChange={(e) => setEditingTemplate({ ...editingTemplate, sampleBaseImage: e.target.value })}
+                      className="w-full bg-white border border-slate-200 rounded-xl p-2 text-slate-900 text-xs"
+                    />
                   </div>
-                )}
+                </div>
               </div>
 
               {/* Sección Subir Video Final */}
               <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
-                <label className="font-bold text-slate-900 block flex items-center justify-between">
-                  <span>2. Video Final (Resultado generado en Veo / Flow):</span>
-                  {adminUploadingVideo && <span className="text-indigo-600 flex items-center gap-1"><FaSpinner className="animate-spin" /> Subiendo video...</span>}
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Pega la URL del video MP4 o sube un archivo..."
-                    value={editingTemplate.sampleFinalVideo || ""}
-                    onChange={(e) => setEditingTemplate({ ...editingTemplate, sampleFinalVideo: e.target.value })}
-                    className="flex-1 bg-white border border-slate-200 rounded-xl p-2 text-slate-900 text-xs"
-                  />
-                  <input
-                    ref={adminVideoInputRef}
-                    type="file"
-                    accept="video/mp4,video/webm"
-                    className="hidden"
-                    onChange={(e) => {
-                      if (e.target.files?.[0]) handleAdminFileUpload(e.target.files[0], "video");
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => adminVideoInputRef.current?.click()}
-                    disabled={adminUploadingVideo}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-1.5"
-                  >
-                    <FaUpload /> <span>Subir Video</span>
-                  </button>
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-900">2. Video Final de Referencia (Generado por Flow / Veo):</span>
+                  {adminUploadingVideo && (
+                    <span className="text-indigo-600 flex items-center gap-1 font-bold">
+                      <FaSpinner className="animate-spin" /> Subiendo video...
+                    </span>
+                  )}
                 </div>
-                {editingTemplate.sampleFinalVideo && (
-                  <div className="mt-2 h-28 w-44 rounded-lg overflow-hidden border border-slate-200 bg-black">
-                    <video src={editingTemplate.sampleFinalVideo} autoPlay loop muted controls className="w-full h-full object-cover" />
+                <div className="flex flex-col sm:flex-row gap-3 items-start">
+                  {editingTemplate.sampleFinalVideo ? (
+                    <div className="h-32 w-32 rounded-xl overflow-hidden border border-slate-300 bg-black shrink-0 relative group">
+                      <video src={editingTemplate.sampleFinalVideo} autoPlay loop muted controls className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setEditingTemplate({ ...editingTemplate, sampleFinalVideo: "" })}
+                        title="Quitar video"
+                        className="absolute top-1 right-1 bg-red-600/90 hover:bg-red-700 text-white p-1 rounded-md text-[10px]"
+                      >
+                        <FaTimes />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="h-32 w-32 rounded-xl border border-dashed border-slate-300 flex items-center justify-center text-slate-400 bg-white shrink-0">
+                      <FaVideo className="text-2xl" />
+                    </div>
+                  )}
+
+                  <div className="flex-1 space-y-2 w-full">
+                    <input
+                      ref={adminVideoInputRef}
+                      type="file"
+                      accept="video/mp4,video/webm"
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files?.[0]) handleAdminFileUpload(e.target.files[0], "video");
+                      }}
+                    />
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => adminVideoInputRef.current?.click()}
+                        disabled={adminUploadingVideo}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm"
+                      >
+                        <FaUpload /> <span>Subir Video (MP4 / WebM)</span>
+                      </button>
+                      {editingTemplate.sampleFinalVideo && (
+                        <button
+                          type="button"
+                          onClick={() => setEditingTemplate({ ...editingTemplate, sampleFinalVideo: "" })}
+                          className="px-3 py-2 text-slate-500 hover:text-red-600 font-bold text-xs"
+                        >
+                          Quitar video
+                        </button>
+                      )}
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="O pega la URL directa del video MP4..."
+                      value={editingTemplate.sampleFinalVideo || ""}
+                      onChange={(e) => setEditingTemplate({ ...editingTemplate, sampleFinalVideo: e.target.value })}
+                      className="w-full bg-white border border-slate-200 rounded-xl p-2 text-slate-900 text-xs"
+                    />
                   </div>
-                )}
+                </div>
               </div>
 
               {/* Prompt Maestro */}
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Prompt Maestro en Inglés:</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-bold text-slate-700 block">Prompt Maestro en Inglés (6 capas):</label>
+                  <button
+                    type="button"
+                    onClick={handleAutoGeneratePrompt}
+                    className="text-[11px] text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1"
+                  >
+                    <FaMagic /> <span>Generar fórmula automática</span>
+                  </button>
+                </div>
                 <textarea
                   rows={4}
                   value={editingTemplate.defaultEnglishPrompt}
                   onChange={(e) => setEditingTemplate({ ...editingTemplate, defaultEnglishPrompt: e.target.value })}
                   placeholder="Prompt de 6 componentes para Veo 3.1..."
-                  className="w-full bg-slate-900 text-slate-100 font-mono text-xs rounded-xl p-3"
+                  className="w-full bg-slate-900 text-slate-100 font-mono text-xs rounded-xl p-3 leading-relaxed"
                 />
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => setShowAdminModal(false)}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 font-bold text-xs text-slate-600 hover:bg-slate-50"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleAdminSave}
-                disabled={adminSaving}
-                className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-2 shadow-md"
-              >
-                {adminSaving ? <FaSpinner className="animate-spin" /> : <FaCheck />}
-                <span>Guardar Muestra en la Galería</span>
-              </button>
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-100">
+              {templates.some((t) => t.command === editingTemplate.command) ? (
+                <button
+                  type="button"
+                  onClick={() => handleAdminDelete(editingTemplate.command)}
+                  disabled={adminDeleting || adminSaving}
+                  className="px-4 py-2.5 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 font-bold text-xs flex items-center gap-1.5 transition-colors w-full sm:w-auto justify-center"
+                >
+                  <FaTrash />
+                  <span>Eliminar Efecto</span>
+                </button>
+              ) : (
+                <div className="hidden sm:block"></div>
+              )}
+
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowAdminModal(false)}
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 font-bold text-xs text-slate-600 hover:bg-slate-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAdminSave}
+                  disabled={adminSaving || adminUploadingImage || adminUploadingVideo}
+                  className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-2 shadow-md transition-all disabled:opacity-50"
+                >
+                  {adminSaving ? <FaSpinner className="animate-spin" /> : <FaCheck />}
+                  <span>Guardar Muestra en la Galería</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

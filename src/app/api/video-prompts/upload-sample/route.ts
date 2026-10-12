@@ -48,20 +48,23 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(arrayBuffer);
 
     const bucket = adminStorage.bucket();
-    const fileRef = bucket.file(storagePath);
+    const downloadToken = Math.random().toString(36).substring(2) + Date.now().toString(36);
 
     await fileRef.save(buffer, {
-      metadata: { contentType: file.type || (type === 'video' ? 'video/mp4' : 'image/jpeg') },
+      metadata: {
+        contentType: file.type || (type === 'video' ? 'video/mp4' : 'image/jpeg'),
+        metadata: { firebaseStorageDownloadTokens: downloadToken }
+      },
       resumable: false,
     });
 
+    let publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(storagePath)}?alt=media&token=${downloadToken}`;
     try {
       await fileRef.makePublic();
+      publicUrl = `https://storage.googleapis.com/${bucket.name}/${storagePath}`;
     } catch (e) {
-      // Ignorar si el bucket no tiene permisos de makePublic directo
+      // Ignorar si el bucket no tiene permisos de makePublic directo y usar token
     }
-
-    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${storagePath}`;
 
     return NextResponse.json({
       success: true,

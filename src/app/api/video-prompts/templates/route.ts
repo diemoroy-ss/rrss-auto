@@ -28,18 +28,19 @@ export async function GET() {
     const mergedTemplates = FLOW_COMMANDS.map((baseCmd) => {
       const custom = dbMap[baseCmd.command];
       if (custom) {
+        if ((custom as any).deleted) return null;
         return {
           ...baseCmd,
           ...custom
         };
       }
       return baseCmd;
-    });
+    }).filter(Boolean) as FlowCommandDef[];
 
     // Añadir comandos adicionales creados exclusivamente por el admin
     const baseCommandSet = new Set(FLOW_COMMANDS.map((c) => c.command));
     Object.values(dbMap).forEach((customCmd: any) => {
-      if (customCmd.command && !baseCommandSet.has(customCmd.command)) {
+      if (customCmd.command && !baseCommandSet.has(customCmd.command) && !customCmd.deleted) {
         mergedTemplates.push({
           command: customCmd.command,
           name: customCmd.name || customCmd.command,
@@ -125,6 +126,7 @@ export async function POST(req: NextRequest) {
       defaultEnglishPrompt,
       sampleBaseImage,
       sampleFinalVideo,
+      deleted: false,
       updatedAt: new Date().toISOString(),
       updatedBy: decoded.email || decoded.uid
     };
@@ -141,3 +143,58 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error?.message || 'Error del servidor al guardar template' }, { status: 500 });
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Falta token de autenticación' }, { status: 401 });
+    }
+
+    if (!adminAuth || !adminDb) {
+      return NextResponse.json({ error: 'Firebase Admin no configurado' }, { status: 500 });
+    }
+
+    const token = authHeader.split('Bearer ')[1];
+    let decoded;
+    try {
+      decoded = await adminAuth.verifyIdToken(token);
+    } catch {
+      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
+    }
+
+    if (!isAdminAdmin(decoded.email)) {
+      const userDoc = await adminDb.collection('users').doc(decoded.uid).get();
+      if (userDoc.data()?.role !== 'admin') {
+        return NextResponse.json({ error: 'Acceso restringido para administradores' }, { status: 403 });
+      }
+    }
+
+    const { searchParams } = new URL(req.url);
+    const command = searchParams.get('command');
+
+    if (!command || typeof command !== 'string') {
+      return NextResponse.json({ error: 'Comando requerido para eliminar' }, { status: 400 });
+    }
+
+    const safeDocId = command.replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase();
+    const docRef = adminDb.collection('flow_video_templates').doc(safeDocId);
+
+    // Guardar marca deleted: true
+    await docRef.set({
+      command: command.trim(),
+      deleted: true,
+      deletedAt: new Date().toISOString(),
+      deletedBy: decoded.email || decoded.uid
+    }, { merge: true });
+
+    return NextResponse.json({
+      success: true,
+      message: `Efecto ${command} eliminado correctamente de la galería.`
+    });
+  } catch (error: any) {
+    console.error('Error eliminando template de video:', error);
+    return NextResponse.json({ error: error?.message || 'Error del servidor al eliminar template' }, { status: 500 });
+  }
+}
+
