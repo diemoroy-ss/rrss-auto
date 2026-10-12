@@ -12,14 +12,18 @@ import TikTokPostSettings, { TikTokSettingsState, DEFAULT_TIKTOK_SETTINGS } from
 import {
   VIDEO_PROMPT_STYLES,
   videoPromptCategories,
-  buildImageToVideoPrompt,
   VideoPromptTemplate
 } from "../../../../lib/video-prompt-templates";
-import { FaCopy, FaCheck, FaMagic, FaFilm, FaCamera, FaPlay, FaLightbulb, FaWhatsapp, FaDownload, FaSpinner } from "react-icons/fa";
+import {
+  FLOW_COMMANDS,
+  FlowCommandDef,
+  buildVeoPromptFromCommand
+} from "../../../../lib/flow-command-translator";
+import { FaCopy, FaCheck, FaMagic, FaFilm, FaCamera, FaPlay, FaLightbulb, FaWhatsapp, FaDownload, FaSpinner, FaUpload, FaTrash, FaCheckCircle } from "react-icons/fa";
 
 
 function VideoPoCContent() {
-  const { activeProfile } = useProfile();
+  const { activeProfile, updateProfileById, updateActiveProfile } = useProfile();
   const prof = activeProfile as any;
   const searchParams = useSearchParams();
   const ideaParam = searchParams?.get("idea");
@@ -38,6 +42,10 @@ function VideoPoCContent() {
   // Composición del Reel (inicialmente null para no generar automáticamente)
   const [composition, setComposition] = useState<VideoComposition | null>(null);
 
+  // Imágenes personalizadas para escenas de Reel (hasta 3)
+  const [uploadedReelImages, setUploadedReelImages] = useState<string[]>([]);
+  const [isUploadingReelImage, setIsUploadingReelImage] = useState<boolean>(false);
+
   // Estado del Checklist de carga de imágenes de fondo por escena
   const [imageStatus, setImageStatus] = useState<Record<number, "loading" | "ready" | "error">>({});
   const [networkCopies, setNetworkCopies] = useState<Record<string, string>>({});
@@ -45,13 +53,40 @@ function VideoPoCContent() {
 
   // Tab Principal: Remotion vs Biblioteca de Prompts
   const [activeMainTab, setActiveMainTab] = useState<"remotion" | "prompts">("remotion");
-  const [selectedPromptCategory, setSelectedPromptCategory] = useState<string>("Todas");
-  const [selectedPromptStyle, setSelectedPromptStyle] = useState<VideoPromptTemplate>(VIDEO_PROMPT_STYLES[0]);
+  
+  // Biblioteca de Prompts con Flow Commands y Videos de Referencia
+  const [flowTemplates, setFlowTemplates] = useState<FlowCommandDef[]>(FLOW_COMMANDS);
+  const [selectedFlowCommand, setSelectedFlowCommand] = useState<FlowCommandDef>(FLOW_COMMANDS[0]);
+  const [selectedFlowCategory, setSelectedFlowCategory] = useState<string>("Todas");
+  const [selectedPromptCatalogoId, setSelectedPromptCatalogoId] = useState<string>("");
+
   const [promptBusiness, setPromptBusiness] = useState<string>(prof?.nombre || prof?.name || "");
   const [promptRubro, setPromptRubro] = useState<string>(prof?.rubro || prof?.niche || "General");
   const [promptConcept, setPromptConcept] = useState<string>("");
   const [promptCustomDir, setPromptCustomDir] = useState<string>("");
   const [copiedPromptText, setCopiedPromptText] = useState<boolean>(false);
+
+  // Cargar plantillas dinámicas desde Firestore (con muestras de admin)
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      try {
+        const res = await fetch("/api/video-prompts/templates", { cache: "no-store" });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.templates && Array.isArray(data.templates) && data.templates.length > 0) {
+            setFlowTemplates(data.templates);
+            setSelectedFlowCommand((prev) => {
+              const found = data.templates.find((t: FlowCommandDef) => t.command === prev?.command);
+              return found || data.templates[0];
+            });
+          }
+        }
+      } catch (e) {
+        console.warn("[PoC Video] Error cargando plantillas de video:", e);
+      }
+    };
+    fetchTemplates();
+  }, []);
 
   useEffect(() => {
     if (prof?.nombre || prof?.name) {
@@ -62,29 +97,34 @@ function VideoPoCContent() {
     }
   }, [prof?.nombre, prof?.name, prof?.rubro, prof?.niche]);
 
-  const compiledPrompt = selectedPromptStyle
-    ? buildImageToVideoPrompt(selectedPromptStyle, {
-        businessName: promptBusiness,
+  const compiledFlowPrompt = selectedFlowCommand
+    ? buildVeoPromptFromCommand(selectedFlowCommand, {
+        productName: promptConcept || promptBusiness || "el producto",
         rubro: promptRubro,
-        offerText: promptConcept,
-        customDirection: promptCustomDir,
+        additionalDetails: promptCustomDir,
       })
-    : null;
+    : "";
 
   const handleCopyPrompt = () => {
-    if (compiledPrompt?.promptEnglish) {
-      navigator.clipboard.writeText(compiledPrompt.promptEnglish);
+    if (compiledFlowPrompt) {
+      navigator.clipboard.writeText(compiledFlowPrompt);
       setCopiedPromptText(true);
       setTimeout(() => setCopiedPromptText(false), 2500);
     }
   };
 
-  const filteredPromptStyles =
-    selectedPromptCategory === "Todas"
-      ? VIDEO_PROMPT_STYLES
-      : VIDEO_PROMPT_STYLES.filter((s) => s.category === selectedPromptCategory);
+  const flowCategories = [
+    "Todas",
+    ...Array.from(new Set(flowTemplates.map((t) => t.category).filter(Boolean))),
+  ];
 
-  // Estados para Generación Asíncrona n8n (Image-to-Video)
+  const filteredFlowTemplates =
+    selectedFlowCategory === "Todas"
+      ? flowTemplates
+      : flowTemplates.filter((s) => s.category === selectedFlowCategory);
+
+  // Configuración del Video (Image-to-Video)
+  const [imageSourceType, setImageSourceType] = useState<"logo" | "product">("logo");
   const [baseVideoImageUrl, setBaseVideoImageUrl] = useState<string>(prof?.logoUrl || prof?.logo || "");
   const [videoRenderMode, setVideoRenderMode] = useState<"raw" | "remotion">("raw");
   const [isGeneratingN8nVideo, setIsGeneratingN8nVideo] = useState<boolean>(false);
@@ -92,25 +132,95 @@ function VideoPoCContent() {
   const [n8nGenerationError, setN8nGenerationError] = useState<string>("");
   const [n8nProgressText, setN8nProgressText] = useState<string>("");
 
+  const [isUploadingLogo, setIsUploadingLogo] = useState<boolean>(false);
+  const [isUploadingProductImage, setIsUploadingProductImage] = useState<boolean>(false);
+  const [logoUpdateSuccess, setLogoUpdateSuccess] = useState<boolean>(false);
+
+  // Helper para subir archivos a Firebase Storage vía API
+  const handleUploadImageFile = async (file: File): Promise<string> => {
+    const user = auth.currentUser;
+    if (!user) throw new Error("Debes iniciar sesión para subir imágenes.");
+    const token = await user.getIdToken();
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("profileId", activeProfile?.id || "default");
+    const res = await fetch("/api/catalogo/upload-image", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
+    const data = await res.json();
+    if (!res.ok || !data.url) throw new Error(data.error || "Error al subir la imagen.");
+    return data.url;
+  };
+
+  // Cambiar el logo del negocio (actualiza perfil de la cuenta y video)
+  const handleLogoChange = async (file: File) => {
+    try {
+      setIsUploadingLogo(true);
+      setLogoUpdateSuccess(false);
+      const url = await handleUploadImageFile(file);
+      if (activeProfile?.id) {
+        if (updateProfileById) {
+          await updateProfileById(activeProfile.id, { logoUrl: url });
+        } else if (updateActiveProfile) {
+          await updateActiveProfile({ logoUrl: url });
+        }
+      }
+      setBaseVideoImageUrl(url);
+      setLogoUpdateSuccess(true);
+      setTimeout(() => setLogoUpdateSuccess(false), 4000);
+    } catch (err: any) {
+      console.error("Error al actualizar logo:", err);
+      alert(err.message || "Error al actualizar logo");
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  };
+
+  // Agregar imagen para Reel (hasta 3)
+  const handleAddReelImage = async (file: File) => {
+    if (uploadedReelImages.length >= 3) return;
+    try {
+      setIsUploadingReelImage(true);
+      const url = await handleUploadImageFile(file);
+      setUploadedReelImages((prev) => [...prev, url]);
+    } catch (err: any) {
+      console.error("Error al subir foto para Reel:", err);
+      alert(err.message || "Error al subir la imagen");
+    } finally {
+      setIsUploadingReelImage(false);
+    }
+  };
+
+  const handleRemoveReelImage = (idxToRemove: number) => {
+    setUploadedReelImages((prev) => prev.filter((_, i) => i !== idxToRemove));
+  };
+
   const handleGenerateN8nVideo = async () => {
     if (!baseVideoImageUrl || !baseVideoImageUrl.startsWith("http")) {
-      setN8nGenerationError("Por favor ingresa o carga una URL de imagen válida para animar.");
+      setN8nGenerationError("Por favor selecciona o sube una imagen válida (logo o foto de producto) para animar.");
       return;
     }
 
     setIsGeneratingN8nVideo(true);
     setN8nGenerationError("");
     setN8nGeneratedVideoUrl("");
-    setN8nProgressText("Conectando con el webhook de n8n...");
+    setN8nProgressText("Nuestros agentes están procesando el video...");
 
     try {
+      const user = auth.currentUser;
+      const token = user ? await user.getIdToken() : "";
       const res = await fetch("/api/ai/image-to-video", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           imageUrl: baseVideoImageUrl,
-          prompt: compiledPrompt?.promptEnglish,
-          motionStyle: selectedPromptStyle?.id,
+          prompt: compiledFlowPrompt,
+          motionStyle: selectedFlowCommand?.command || "/360 product orbit",
           businessName: promptBusiness,
           rubro: promptRubro,
           renderMode: videoRenderMode,
@@ -121,18 +231,18 @@ function VideoPoCContent() {
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || "Fallo en la generación de video en n8n.");
+        throw new Error(data.error || "Fallo en la generación de video.");
       }
 
       if (data.videoUrl) {
         setN8nGeneratedVideoUrl(data.videoUrl);
         setN8nProgressText("¡Video generado con éxito!");
       } else {
-        throw new Error("n8n no retornó una URL de video válida.");
+        throw new Error("No se retornó una URL de video válida.");
       }
     } catch (err: any) {
-      console.error("Error al generar video en n8n:", err);
-      setN8nGenerationError(err.message || "Error al conectar con el webhook de n8n.");
+      console.error("Error al generar video:", err);
+      setN8nGenerationError(err.message || "Error al procesar el video con nuestros agentes.");
     } finally {
       setIsGeneratingN8nVideo(false);
     }
@@ -317,6 +427,7 @@ function VideoPoCContent() {
           rubro: rubro.trim() || "General",
           style,
           motionEffect,
+          uploadedImages: uploadedReelImages.length > 0 ? uploadedReelImages : undefined,
           catalogoItem: selectedData ? {
             name: selectedData.name,
             description: selectedData.description,
@@ -775,6 +886,75 @@ function VideoPoCContent() {
                 </div>
               </div>
 
+              {/* SUBIDA DE HASTA 3 IMÁGENES PARA EL REEL */}
+              <div className="space-y-2 p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <span>📸 Fotos Propias para las Escenas</span>
+                    <span className="text-slate-400 font-normal">(Opcional, hasta 3 fotos)</span>
+                  </label>
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">
+                    {uploadedReelImages.length}/3 Seleccionadas
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  Sube hasta 3 fotos de tus productos o negocio para que protagonicen las escenas del video. Si no subes fotos, nuestros agentes generarán fondos visuales cinemáticos automáticos.
+                </p>
+
+                <div className="flex flex-wrap gap-2 pt-1 items-center">
+                  {uploadedReelImages.map((imgUrl, i) => (
+                    <div key={i} className="relative w-16 h-20 rounded-xl overflow-hidden border border-slate-300 shadow-sm group bg-slate-900">
+                      <img src={imgUrl} alt={`Foto ${i + 1}`} className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveReelImage(i)}
+                        className="absolute top-1 right-1 w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center text-[10px] font-bold shadow-md hover:bg-rose-700 transition-colors"
+                        title="Eliminar foto"
+                      >
+                        ✕
+                      </button>
+                      <span className="absolute bottom-1 left-1 px-1 rounded bg-black/70 text-white text-[9px] font-bold">
+                        #{i + 1}
+                      </span>
+                    </div>
+                  ))}
+
+                  {uploadedReelImages.length < 3 && (
+                    <label className="w-16 h-20 rounded-xl border-2 border-dashed border-indigo-300 hover:border-indigo-500 bg-indigo-50/50 hover:bg-indigo-50 transition-all flex flex-col items-center justify-center cursor-pointer text-indigo-600">
+                      {isUploadingReelImage ? (
+                        <FaSpinner className="animate-spin text-sm" />
+                      ) : (
+                        <>
+                          <span className="text-lg font-bold">+</span>
+                          <span className="text-[9px] font-bold">Subir</span>
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={isUploadingReelImage}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleAddReelImage(file);
+                          e.target.value = "";
+                        }}
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              {/* RECORDATORIO DE DURACIÓN MÁX 10S */}
+              <div className="p-3 bg-indigo-50/70 border border-indigo-100 rounded-xl flex items-center justify-between text-xs font-bold text-indigo-900">
+                <span className="flex items-center gap-1.5">
+                  <span>⏱️</span> Duración calibrada para máxima retención:
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-extrabold">
+                  Máximo 10 Segundos
+                </span>
+              </div>
+
               {errorMsg && (
                 <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl font-bold">
                   ⚠️ {errorMsg}
@@ -789,11 +969,11 @@ function VideoPoCContent() {
                 {loading ? (
                   <>
                     <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span>Generando Guion e Imágenes con IA...</span>
+                    <span>Generando Guion y Escenas con nuestros agentes...</span>
                   </>
                 ) : (
                   <>
-                    <span>✨ Generar Reel con IA</span>
+                    <span>✨ Generar Reel con nuestros agentes (Máx. 10s)</span>
                   </>
                 )}
               </button>
@@ -840,14 +1020,14 @@ function VideoPoCContent() {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        {/* Botón Regenerar IA */}
+                        {/* Botón Regenerar con Agente */}
                         <button
                             onClick={() => handleRegenerateSceneImage(idx, scene)}
                             disabled={imageStatus[idx] === 'loading'}
                             className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-extrabold rounded-lg border border-indigo-200 transition-all flex items-center gap-1 disabled:opacity-50"
                             title="Regenerar esta imagen con Agente"
                           >
-                            {imageStatus[idx] === 'loading' ? '⏳ Generando...' : '🖼️ Regenerar IA'}
+                            {imageStatus[idx] === 'loading' ? '⏳ Generando...' : '🖼️ Regenerar con Agente'}
                           </button>
 
                         {/* Botón Subir Imagen Local */}
@@ -957,7 +1137,7 @@ function VideoPoCContent() {
                               disabled={imageStatus[idx] === 'loading'}
                               className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-extrabold rounded-lg border border-indigo-200 transition-all flex items-center gap-1 disabled:opacity-50"
                             >
-                              {imageStatus[idx] === 'loading' ? '⏳ Generando...' : '🖼️ Regenerar IA'}
+                              {imageStatus[idx] === 'loading' ? '⏳ Generando...' : '🖼️ Regenerar con Agente'}
                             </button>
 
                           <label className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[10px] font-extrabold rounded-lg border border-emerald-200 transition-all cursor-pointer flex items-center gap-1">
@@ -1215,12 +1395,46 @@ function VideoPoCContent() {
             {/* COLUMNA IZQUIERDA: CONFIGURACIÓN Y ESTILOS (7 COLUMNAS) */}
             <div className="lg:col-span-7 space-y-6">
               
-              {/* TARJETA DE PERSONALIZACIÓN DEL NEGOCIO */}
+              {/* TARJETA DE PERSONALIZACIÓN DEL NEGOCIO / PRODUCTO */}
               <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-4">
                 <h3 className="text-xs font-black uppercase tracking-wider text-slate-500 flex items-center gap-2">
                   <span>🎯</span>
                   <span>Personalizar Contexto del Video</span>
                 </h3>
+
+                {/* SELECTOR DE PRODUCTO O SERVICIO GUARDADO EN EL CATÁLOGO */}
+                {catalogoItems.length > 0 && (
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+                      <span>Vincular Producto o Servicio Guardado</span>
+                      <span className="text-slate-400 font-normal text-[11px]">(Opcional para auto-completar)</span>
+                    </label>
+                    <select
+                      value={selectedPromptCatalogoId}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setSelectedPromptCatalogoId(val);
+                        if (!val) return;
+                        const found = catalogoItems.find((i: any) => i.id === val);
+                        if (found) {
+                          setPromptConcept(found.name + (found.description ? ` - ${found.description}` : ""));
+                          if (found.imageUrl) {
+                            setBaseVideoImageUrl(found.imageUrl);
+                            setImageSourceType("product");
+                          }
+                        }
+                      }}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                    >
+                      <option value="">-- Escribir manualmente o sin producto del catálogo --</option>
+                      {catalogoItems.map((item: any) => (
+                        <option key={item.id} value={item.id}>
+                          {item.name} {item.price ? `($${Number(item.price).toLocaleString("es-CL")})` : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
@@ -1231,7 +1445,7 @@ function VideoPoCContent() {
                       type="text"
                       value={promptBusiness}
                       onChange={(e) => setPromptBusiness(e.target.value)}
-                      placeholder="Ej: Café Valparaíso, Clínica Estética..."
+                      placeholder="Ej: Café Valparaíso, Clínica Dental..."
                       className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                   </div>
@@ -1244,7 +1458,7 @@ function VideoPoCContent() {
                       type="text"
                       value={promptRubro}
                       onChange={(e) => setPromptRubro(e.target.value)}
-                      placeholder="Ej: Gastronomía, Bienes Raíces..."
+                      placeholder="Ej: Gastronomía, Bienes Raíces, Moda..."
                       className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                   </div>
@@ -1253,7 +1467,7 @@ function VideoPoCContent() {
                 <div className="space-y-3">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Concepto Visual o Producto a Destacar <span className="text-slate-400 font-normal">(Opcional)</span>
+                      Concepto Visual o Producto a Destacar <span className="text-slate-400 font-normal">(Opcional o editable)</span>
                     </label>
                     <input
                       type="text"
@@ -1279,29 +1493,29 @@ function VideoPoCContent() {
                 </div>
               </div>
 
-              {/* SELECTOR DE ESTILOS DE MOVIMIENTO DE CÁMARA */}
+              {/* BIBLIOTECA DE PROMPTS CON VIDEOS PRECARGADOS Y CATEGORÍAS */}
               <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-5">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
                     <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
                       <span>🎬</span>
-                      <span>Estilos de Movimiento de Cámara Cinematográfica</span>
+                      <span>Biblioteca de Prompts de Video con Referencias</span>
                     </h3>
                     <p className="text-xs text-slate-500">
-                      Selecciona la dinámica visual que mejor se adapte al producto o servicio.
+                      Selecciona una categoría y estilo con video de muestra para calibrar tu animación.
                     </p>
                   </div>
                 </div>
 
                 {/* Filtro por Categorías */}
                 <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
-                  {["Todas", ...videoPromptCategories].map((cat) => (
+                  {flowCategories.map((cat) => (
                     <button
                       key={cat}
                       type="button"
-                      onClick={() => setSelectedPromptCategory(cat)}
+                      onClick={() => setSelectedFlowCategory(cat)}
                       className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
-                        selectedPromptCategory === cat
+                        selectedFlowCategory === cat
                           ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20"
                           : "bg-slate-100 hover:bg-slate-200 text-slate-600"
                       }`}
@@ -1311,44 +1525,87 @@ function VideoPoCContent() {
                   ))}
                 </div>
 
-                {/* Grid de Estilos */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  {filteredPromptStyles.map((item) => {
-                    const isSelected = selectedPromptStyle?.id === item.id;
+                {/* Grid de Comandos / Prompts con Videos Precargados */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {filteredFlowTemplates.map((item) => {
+                    const isSelected = selectedFlowCommand?.command === item.command;
                     return (
                       <div
-                        key={item.id}
-                        onClick={() => setSelectedPromptStyle(item)}
+                        key={item.command}
+                        onClick={() => setSelectedFlowCommand(item)}
                         className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex flex-col justify-between space-y-3 ${
                           isSelected
                             ? "border-indigo-600 bg-indigo-50/50 shadow-md ring-2 ring-indigo-500/20"
                             : "border-slate-200 hover:border-slate-300 bg-white"
                         }`}
                       >
-                        <div className="space-y-2">
+                        <div className="space-y-2.5">
+                          {/* Header del prompt */}
                           <div className="flex items-center justify-between">
-                            <span className="text-2xl">{item.icon}</span>
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-slate-100 text-indigo-700 border border-slate-200">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xl">{item.icon}</span>
+                              <h4 className="text-xs font-black text-slate-900 leading-tight">
+                                {item.name}
+                              </h4>
+                            </div>
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-slate-100 text-indigo-700 border border-slate-200">
                               {item.category}
                             </span>
                           </div>
 
-                          <h4 className="text-xs font-black text-slate-900 leading-tight">
-                            {item.title}
-                          </h4>
+                          {/* Video precargado de referencia o muestra */}
+                          {item.sampleFinalVideo ? (
+                            <div className="rounded-xl overflow-hidden bg-black aspect-[9/16] max-h-56 relative group shadow-inner">
+                              <video
+                                src={item.sampleFinalVideo}
+                                autoPlay
+                                loop
+                                muted
+                                playsInline
+                                className="w-full h-full object-cover"
+                              />
+                              <div className="absolute bottom-1 right-1 bg-black/70 px-1.5 py-0.5 rounded text-[9px] font-mono text-white flex items-center gap-1">
+                                <span>▶</span> Video Muestra
+                              </div>
+                            </div>
+                          ) : item.sampleBaseImage ? (
+                            <div className="rounded-xl overflow-hidden bg-slate-900 aspect-[9/16] max-h-56 relative shadow-inner">
+                              <img
+                                src={item.sampleBaseImage}
+                                alt={item.name}
+                                className="w-full h-full object-cover"
+                              />
+                              <div className="absolute bottom-1 right-1 bg-black/70 px-1.5 py-0.5 rounded text-[9px] font-mono text-white">
+                                🖼️ Muestra Base
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="rounded-xl bg-gradient-to-br from-indigo-950/5 to-slate-900/5 p-4 border border-dashed border-indigo-200 flex flex-col justify-center items-center text-center">
+                              <span className="text-2xl mb-1">{item.icon}</span>
+                              <span className="text-[11px] font-bold text-slate-700">{item.command}</span>
+                              <span className="text-[10px] text-slate-400 font-mono mt-0.5">Veo 2 / Kling / Runway</span>
+                            </div>
+                          )}
 
                           <p className="text-[11px] text-slate-600 leading-relaxed">
                             {item.description}
                           </p>
                         </div>
 
-                        <div className="pt-2 border-t border-slate-100 space-y-1.5">
-                          <div className="text-[10px] font-mono text-slate-500 truncate">
-                            📹 {item.cameraMotion}
+                        <div className="pt-2 border-t border-slate-100 space-y-1">
+                          <div className="text-[10px] font-mono text-slate-500 truncate" title={item.cameraMovement}>
+                            📹 {item.cameraMovement}
                           </div>
-                          <div className="text-[10px] font-semibold text-indigo-600 truncate">
-                            🎯 {item.recommendedFor}
-                          </div>
+                          {item.lightingStyle && (
+                            <div className="text-[10px] font-mono text-slate-500 truncate" title={item.lightingStyle}>
+                              💡 {item.lightingStyle}
+                            </div>
+                          )}
+                          {isSelected && (
+                            <div className="pt-1 text-[11px] font-black text-indigo-700 flex items-center gap-1">
+                              <span>✓ Seleccionado</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
@@ -1360,73 +1617,189 @@ function VideoPoCContent() {
             {/* COLUMNA DERECHA: GENERADOR N8N, PROMPT COMPILADO Y ACCIONES (5 COLUMNAS) */}
             <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-8">
               
-              {/* TARJETA DE ANIMACIÓN AUTOMÁTICA N8N CON SWITCH */}
+              {/* TARJETA DE CONFIGURACIÓN DEL VIDEO */}
               <div className="bg-gradient-to-b from-slate-900 to-indigo-950 rounded-3xl p-6 text-white border border-indigo-700/50 shadow-2xl space-y-5">
                 <div className="flex items-center justify-between border-b border-indigo-800/60 pb-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-xl">🚀</span>
+                    <span className="text-xl">🎬</span>
                     <div>
                       <h4 className="text-xs font-mono font-bold text-amber-400 uppercase tracking-wider">
-                        Animación Image-to-Video
+                        Configuración del Video
                       </h4>
                       <div className="text-xs font-black text-white">
-                        Generar Video Automático vía n8n
+                        Personaliza la imagen base y renderizado
                       </div>
                     </div>
                   </div>
-                  <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-extrabold border border-emerald-500/40">
-                    Modo B (Polling)
-                  </span>
                 </div>
 
-                {/* 1. Selector de Imagen Base */}
-                <div className="space-y-2">
+                {/* 1. Selector de Imagen Base (Logo vs Producto) */}
+                <div className="space-y-3">
                   <label className="block text-xs font-bold text-slate-200">
-                    1. URL de la Imagen Base a Animar <span className="text-rose-400">*</span>
+                    1. Imagen Base para Animar:
                   </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="url"
-                      value={baseVideoImageUrl}
-                      onChange={(e) => setBaseVideoImageUrl(e.target.value)}
-                      placeholder="https://.../imagen-del-negocio.jpg"
-                      className="flex-1 px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-400 font-mono"
-                    />
-                    {activeProfile?.logoUrl && (
-                      <button
-                        type="button"
-                        onClick={() => setBaseVideoImageUrl(activeProfile.logoUrl)}
-                        className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-300 rounded-xl transition-all whitespace-nowrap"
-                        title="Usar logo de la marca"
-                      >
-                        Usar Logo
-                      </button>
-                    )}
+                  
+                  {/* Selector de modo: Logo vs Producto */}
+                  <div className="grid grid-cols-2 gap-2 bg-slate-950/80 p-1 rounded-xl border border-indigo-900/40 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setImageSourceType("logo");
+                        setBaseVideoImageUrl(activeProfile?.logoUrl || activeProfile?.logo || "");
+                      }}
+                      className={`py-2 px-3 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 ${
+                        imageSourceType === "logo"
+                          ? "bg-indigo-600 text-white shadow-sm"
+                          : "text-slate-400 hover:text-white"
+                      }`}
+                    >
+                      <span>🏷️</span> Usar Logo de Marca
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setImageSourceType("product");
+                      }}
+                      className={`py-2 px-3 rounded-lg font-bold transition-all flex items-center justify-center gap-1.5 ${
+                        imageSourceType === "product"
+                          ? "bg-indigo-600 text-white shadow-sm"
+                          : "text-slate-400 hover:text-white"
+                      }`}
+                    >
+                      <span>📦</span> Foto de Producto
+                    </button>
                   </div>
 
-                  {baseVideoImageUrl && (
-                    <div className="flex items-center gap-3 p-2 bg-slate-950/60 rounded-xl border border-slate-800">
-                      <div className="w-12 h-12 rounded-lg bg-slate-800 overflow-hidden shrink-0">
-                        <img
-                          src={baseVideoImageUrl}
-                          alt="Previsualización base"
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            (e.target as HTMLElement).style.display = "none";
-                          }}
-                        />
+                  {imageSourceType === "logo" ? (
+                    <div className="p-3 bg-slate-950/80 rounded-2xl border border-indigo-900/50 space-y-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          {(activeProfile?.logoUrl || activeProfile?.logo || baseVideoImageUrl) ? (
+                            <div className="w-14 h-14 rounded-xl bg-white p-1 border border-slate-700 overflow-hidden shrink-0 shadow-md">
+                              <img
+                                src={baseVideoImageUrl || activeProfile?.logoUrl || activeProfile?.logo}
+                                alt="Logo de la marca"
+                                className="w-full h-full object-contain"
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-14 h-14 rounded-xl bg-slate-800 flex items-center justify-center text-2xl shrink-0">
+                              🏷️
+                            </div>
+                          )}
+                          <div>
+                            <div className="text-xs font-bold text-white">
+                              {activeProfile?.name || promptBusiness || "Logo de tu Marca"}
+                            </div>
+                            <div className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1 mt-0.5">
+                              <span>✓</span> Logo activo de la cuenta
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Botón para cambiar el logo de la cuenta */}
+                        <label className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition-all cursor-pointer border border-slate-700 flex items-center gap-1.5 shrink-0">
+                          {isUploadingLogo ? (
+                            <>
+                              <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                              <span>Guardando...</span>
+                            </>
+                          ) : (
+                            <>
+                              <span>📁</span>
+                              <span>Cambiar Logo</span>
+                            </>
+                          )}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            disabled={isUploadingLogo}
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleLogoChange(file);
+                              e.target.value = "";
+                            }}
+                          />
+                        </label>
                       </div>
-                      <span className="text-[11px] text-slate-300 truncate max-w-[240px]">
-                        {baseVideoImageUrl}
-                      </span>
+
+                      {logoUpdateSuccess && (
+                        <div className="text-[11px] text-emerald-400 font-bold bg-emerald-950/60 p-2 rounded-xl border border-emerald-800">
+                          ✅ Logo actualizado para este video y guardado en tu cuenta.
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-slate-950/80 rounded-2xl border border-indigo-900/50 space-y-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          {baseVideoImageUrl ? (
+                            <div className="w-14 h-14 rounded-xl bg-slate-800 border border-slate-700 overflow-hidden shrink-0 shadow-md">
+                              <img
+                                src={baseVideoImageUrl}
+                                alt="Foto de producto"
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-14 h-14 rounded-xl bg-slate-800 flex items-center justify-center text-2xl shrink-0">
+                              📸
+                            </div>
+                          )}
+                          <div>
+                            <div className="text-xs font-bold text-white">
+                              {promptConcept || "Foto para la animación"}
+                            </div>
+                            <div className="text-[10px] text-slate-400 mt-0.5">
+                              {baseVideoImageUrl ? "Imagen lista para animar" : "Selecciona o sube una foto"}
+                            </div>
+                          </div>
+                        </div>
+
+                        <label className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition-all cursor-pointer border border-indigo-400/40 flex items-center gap-1.5 shrink-0">
+                          {isUploadingProductImage ? (
+                            <>
+                              <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                              <span>Subiendo...</span>
+                            </>
+                          ) : (
+                            <>
+                              <span>📁</span>
+                              <span>Subir Foto</span>
+                            </>
+                          )}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            disabled={isUploadingProductImage}
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                try {
+                                  setIsUploadingProductImage(true);
+                                  const url = await handleUploadImageFile(file);
+                                  setBaseVideoImageUrl(url);
+                                } catch (err: any) {
+                                  alert(err.message || "Error al subir foto");
+                                } finally {
+                                  setIsUploadingProductImage(false);
+                                }
+                              }
+                              e.target.value = "";
+                            }}
+                          />
+                        </label>
+                      </div>
                     </div>
                   )}
                 </div>
 
-                {/* 2. SWITCH DE RENDERIZADO (Raw vs Remotion) */}
+                {/* 2. SWITCH DE RENDERIZADO (Sin mencionar n8n ni remotion) */}
                 <div className="space-y-2 pt-2 border-t border-indigo-900/60">
                   <label className="block text-xs font-bold text-slate-200">
-                    2. Modalidad de Renderizado (Switch):
+                    2. Modalidad de Renderizado:
                   </label>
                   
                   <div className="grid grid-cols-2 gap-2 bg-slate-950/80 p-1.5 rounded-2xl border border-indigo-900/50">
@@ -1441,10 +1814,10 @@ function VideoPoCContent() {
                     >
                       <div className="text-xs font-extrabold flex items-center gap-1.5">
                         <span>⚡</span>
-                        <span>Video Puro (n8n)</span>
+                        <span>Video Cinemático Directo</span>
                       </div>
                       <p className={`text-[10px] mt-0.5 leading-tight ${videoRenderMode === "raw" ? "text-slate-900 font-semibold" : "text-slate-400"}`}>
-                        Video tal cual sale del motor cinematográfico.
+                        Clip con movimiento y físicas cinematográficas puras.
                       </p>
                     </button>
 
@@ -1459,16 +1832,16 @@ function VideoPoCContent() {
                     >
                       <div className="text-xs font-extrabold flex items-center gap-1.5">
                         <span>✨</span>
-                        <span>Remotion Premium</span>
+                        <span>Con Marca &amp; Subtítulos</span>
                       </div>
                       <p className={`text-[10px] mt-0.5 leading-tight ${videoRenderMode === "remotion" ? "text-indigo-100 font-semibold" : "text-slate-400"}`}>
-                        Monta subtítulos Hormozi, locución y tu logo.
+                        Subtítulos dinámicos, locución y logo de tu marca.
                       </p>
                     </button>
                   </div>
                 </div>
 
-                {/* 3. Botón de Disparo a n8n */}
+                {/* 3. Botón de Generación de Video (Sin mencionar n8n) */}
                 <div className="pt-2">
                   <button
                     type="button"
@@ -1484,7 +1857,7 @@ function VideoPoCContent() {
                     ) : (
                       <>
                         <span>🚀</span>
-                        <span>Generar Video Animado vía n8n</span>
+                        <span>Generar Video Animado</span>
                       </>
                     )}
                   </button>
@@ -1496,13 +1869,13 @@ function VideoPoCContent() {
                   )}
                 </div>
 
-                {/* 4. Previsualización del Video Generado por n8n */}
+                {/* 4. Previsualización del Video Generado */}
                 {n8nGeneratedVideoUrl && (
                   <div className="p-4 bg-slate-950 rounded-2xl border border-emerald-500/50 space-y-3 animate-in fade-in duration-300">
                     <div className="flex items-center justify-between text-xs font-bold text-emerald-400">
                       <span>✅ ¡Video Animado Listo!</span>
                       <span className="text-[10px] font-mono uppercase bg-emerald-950/80 px-2 py-0.5 rounded-full border border-emerald-800">
-                        {videoRenderMode === "remotion" ? "Remotion Compuesto" : "Video Puro n8n"}
+                        {videoRenderMode === "remotion" ? "Con Marca & Subtítulos" : "Video Cinemático Directo"}
                       </span>
                     </div>
 
@@ -1546,13 +1919,13 @@ function VideoPoCContent() {
               <div className="bg-slate-950 rounded-3xl p-6 text-white border border-slate-800 shadow-2xl space-y-5">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-lg">{selectedPromptStyle?.icon || "✨"}</span>
+                    <span className="text-lg">{selectedFlowCommand?.icon || "✨"}</span>
                     <div>
                       <h4 className="text-xs font-mono font-bold text-amber-400 uppercase tracking-wider">
                         Prompt Compilado
                       </h4>
                       <div className="text-xs font-black text-white">
-                        {selectedPromptStyle?.title}
+                        {selectedFlowCommand?.name} ({selectedFlowCommand?.command})
                       </div>
                     </div>
                   </div>
@@ -1566,7 +1939,7 @@ function VideoPoCContent() {
                 <div className="space-y-2">
                   <div className="relative">
                     <p className="text-xs text-slate-200 font-mono bg-slate-900/90 p-4 rounded-2xl border border-slate-800/80 leading-relaxed select-all max-h-64 overflow-y-auto">
-                      {compiledPrompt?.promptEnglish}
+                      {compiledFlowPrompt}
                     </p>
                   </div>
 
@@ -1587,7 +1960,7 @@ function VideoPoCContent() {
                     ) : (
                       <>
                         <FaCopy className="text-sm" />
-                        <span>Copiar Prompt para Kling / Runway</span>
+                        <span>Copiar Prompt para Veo 2 / Kling / Runway</span>
                       </>
                     )}
                   </button>
@@ -1600,12 +1973,22 @@ function VideoPoCContent() {
                       Detalle de Cinematografía
                     </span>
                     <p className="text-slate-300 leading-snug">
-                      {compiledPrompt?.cameraNotes}
+                      📹 {selectedFlowCommand?.cameraMovement}
                     </p>
+                    {selectedFlowCommand?.lightingStyle && (
+                      <p className="text-slate-400 text-[10px] leading-snug pt-1">
+                        💡 {selectedFlowCommand.lightingStyle}
+                      </p>
+                    )}
+                    {selectedFlowCommand?.physicsEffect && (
+                      <p className="text-slate-400 text-[10px] leading-snug pt-0.5">
+                        ✨ {selectedFlowCommand.physicsEffect}
+                      </p>
+                    )}
                   </div>
 
                   <p className="text-slate-400 text-[11px] leading-relaxed">
-                    ℹ️ {compiledPrompt?.promptSpanishSummary}
+                    ℹ️ {selectedFlowCommand?.description}
                   </p>
                 </div>
 

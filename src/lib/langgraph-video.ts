@@ -163,11 +163,11 @@ async function stitchAndCompleteNode(state: VideoWorkflowState): Promise<Partial
 const memorySaver = new MemorySaver();
 
 export function createVideoWorkflow() {
-  const workflow = new StateGraph<VideoWorkflowState>({ channels: videoChannels })
-    .addNode("generatePrompts", generatePromptsNode)
-    .addNode("prepareAssets", prepareFirebaseAssetsNode)
-    .addNode("renderRemotion", renderRemotionChunksNode)
-    .addNode("stitchVideo", stitchAndCompleteNode)
+  const workflow = new StateGraph<VideoWorkflowState>({ channels: videoChannels } as any)
+    .addNode("generatePrompts", generatePromptsNode as any)
+    .addNode("prepareAssets", prepareFirebaseAssetsNode as any)
+    .addNode("renderRemotion", renderRemotionChunksNode as any)
+    .addNode("stitchVideo", stitchAndCompleteNode as any)
     .addEdge(START, "generatePrompts")
     .addEdge("generatePrompts", "prepareAssets")
     .addEdge("prepareAssets", "renderRemotion")
@@ -199,7 +199,7 @@ export async function startAsyncVideoGeneration(rubro: string, idea: string, thr
   };
 
   // Iniciamos la ejecución de forma asíncrona para no bloquear la petición HTTP (evitando timeouts de Vercel)
-  app.invoke(initialState, config).catch((err) => {
+  (app.invoke as any)(initialState, config).catch((err: any) => {
     console.error(`[LangGraph Video] Error fatal en segundo plano en hilo ${threadId}:`, err);
   });
 

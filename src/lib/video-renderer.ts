@@ -31,13 +31,14 @@ export async function renderAndUploadReel(post: any, userId: string, postId: str
     const bundled = await bundle(rootPath, () => undefined, {
         webpackOverride: (config) => config,
         ignoreRegisterRootWarning: true,
-    });
+    } as any);
 
     // 2.1 Calcular duración requerida por la locución para evitar cortes
     const wordCount = (post.audioScript || '').trim().split(/\s+/).filter(Boolean).length;
-    const estimatedAudioSec = wordCount > 0 ? Math.ceil((wordCount / 2.2) + 1.5) : 12;
-    const rawSceneSec = (post.scenes || []).reduce((acc: number, s: any) => acc + (s.duration || 4), 0) || 12;
-    const finalTotalSec = Math.max(rawSceneSec, estimatedAudioSec);
+    const estimatedAudioSec = wordCount > 0 ? Math.ceil((wordCount / 2.2) + 1.5) : 9.5;
+    const rawSceneSec = (post.scenes || []).reduce((acc: number, s: any) => acc + (s.duration || 3.2), 0) || 9.5;
+    // Duración máxima estricta de 10 segundos
+    const finalTotalSec = Math.min(10, Math.max(rawSceneSec, estimatedAudioSec));
 
     const sceneCount = (post.scenes || []).length || 1;
     const adjustedSceneDuration = Math.round((finalTotalSec / sceneCount) * 10) / 10;

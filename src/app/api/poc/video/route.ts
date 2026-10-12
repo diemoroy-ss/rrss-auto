@@ -4,7 +4,7 @@ import { generateVideoPoCComposition } from '../../../../lib/video-poc-service';
 export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => ({}));
-    const { topic, rubro, style, visualDirection, catalogoItem } = body;
+    const { topic, rubro, style, visualDirection, catalogoItem, uploadedImages } = body;
 
     if (!topic || typeof topic !== 'string' || !topic.trim()) {
       return NextResponse.json({ error: 'Debes proporcionar un tema o idea para el video.' }, { status: 400 });
@@ -15,7 +15,8 @@ export async function POST(req: Request) {
       rubro: rubro || 'General',
       style: style || 'vibrante',
       visualDirection: typeof visualDirection === 'string' ? visualDirection.trim() : '',
-      catalogoItem
+      catalogoItem,
+      uploadedImages: Array.isArray(uploadedImages) ? uploadedImages : undefined
     });
 
     return NextResponse.json({ success: true, composition });

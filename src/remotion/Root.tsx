@@ -31,7 +31,7 @@ export interface ReelProps {
 export const RemotionRoot: React.FC = () => {
   return (
     <>
-      <Composition
+      <Composition<ReelProps>
         id="SantisoftReel"
         component={ReelComposition}
         durationInFrames={360}
