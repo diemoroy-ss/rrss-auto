@@ -161,10 +161,6 @@ export default function BrandHeader() {
             Cómo Funciona
           </Link>
 
-          <Link href="/triptico" className="ghost whitespace-nowrap">
-            Tríptico
-          </Link>
-
           <a href="/#planes" className="ghost whitespace-nowrap">
             Planes
           </a>
@@ -214,14 +210,6 @@ export default function BrandHeader() {
             className="nav-mobile-item"
           >
             Cómo Funciona <span>→</span>
-          </Link>
-
-          <Link
-            href="/triptico"
-            onClick={() => setMobileMenuOpen(false)}
-            className="nav-mobile-item"
-          >
-            Tríptico <span>→</span>
           </Link>
 
           <a
