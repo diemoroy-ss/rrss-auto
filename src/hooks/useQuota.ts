@@ -5,9 +5,10 @@ import { auth, db } from "../lib/firebase";
 import { 
   getQuotaUsage, 
   getPlanLimit, 
-  getVideoPlanLimit,
-  getAiGenerationUsage,
-  getAiPlanLimit 
+  getVideoPlanLimit, 
+  getAiGenerationUsage, 
+  getAiPlanLimit,
+  fetchUserQuotas 
 } from "../lib/quota";
 import { SocialPost } from "../types/dashboard";
 
@@ -47,6 +48,18 @@ export function useQuota(profileId: string | undefined): UseQuotaReturn {
   const fetchQuotas = useCallback(async (u: any) => {
     if (!u) return;
     try {
+      const serverQuotas = await fetchUserQuotas(profileId || "default");
+      if (serverQuotas) {
+        setUserPlan(serverQuotas.plan);
+        setQuotaUsed(serverQuotas.postsUsed);
+        setPlanLimit(serverQuotas.postsLimit);
+        setVideoLimit(serverQuotas.videoLimit);
+        setImagesUsed(serverQuotas.imagesUsed);
+        setImageLimit(serverQuotas.imageLimit);
+        setVideosUsed(serverQuotas.videosUsed);
+        return;
+      }
+
       const d = await getDoc(doc(db, "users", u.uid));
       const plan = d.data()?.plan || "free";
       setUserPlan(plan);
@@ -67,7 +80,7 @@ export function useQuota(profileId: string | undefined): UseQuotaReturn {
       setImageLimit(imgLimit);
       setVideosUsed(vidUsed);
     } catch (err) {
-      console.error("[useQuota] Error cargando cuotas:", err);
+      console.warn("[useQuota] Aviso cargando cuotas:", err);
     }
   }, [profileId]);
 

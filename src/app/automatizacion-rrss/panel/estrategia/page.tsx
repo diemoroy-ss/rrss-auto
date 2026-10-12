@@ -7,7 +7,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useProfile } from "../../../../contexts/ProfileContext";
-import { isUserAdmin, getPlanLimit, getVideoPlanLimit, getAiPlanLimit, getAiGenerationUsage, getVideoQuotaUsage, getQuotaUsage } from "../../../../lib/quota";
+import { isUserAdmin, getPlanLimit, getVideoPlanLimit, getAiPlanLimit, getAiGenerationUsage, getVideoQuotaUsage, getQuotaUsage, fetchUserQuotas } from "../../../../lib/quota";
 import StatusModal from "../../../../components/StatusModal";
 import VoiceMic from "../../../../components/VoiceMic";
 import PromptStyleSelector from "../../../../components/strategy/PromptStyleSelector";
@@ -185,21 +185,32 @@ export default function EstrategiaPage() {
               
               // Cargar cuotas y límites reales del plan y consumo
               const plan = data.plan || "free";
-              const [pLimit, vLimit, iLimit, pUsed, vUsed, iUsed] = await Promise.all([
-                  getPlanLimit(plan, u.email),
-                  getVideoPlanLimit(plan, u.email),
-                  getAiPlanLimit(plan, 'image', u.email),
-                  getQuotaUsage(u.uid, activeProfile?.id || 'default'),
-                  getVideoQuotaUsage(u.uid),
-                  getAiGenerationUsage(u.uid, 'image')
-              ]);
+              const serverQuotas = await fetchUserQuotas(activeProfile?.id || 'default');
+              
+              if (serverQuotas) {
+                  setPlanLimit(serverQuotas.postsLimit);
+                  setVideoLimit(serverQuotas.videoLimit);
+                  setImageLimit(serverQuotas.imageLimit);
+                  setPostsThisMonth(serverQuotas.postsUsed);
+                  setVideosThisMonth(serverQuotas.videosUsed);
+                  setImagesThisMonth(serverQuotas.imagesUsed);
+              } else {
+                  const [pLimit, vLimit, iLimit, pUsed, vUsed, iUsed] = await Promise.all([
+                      getPlanLimit(plan, u.email),
+                      getVideoPlanLimit(plan, u.email),
+                      getAiPlanLimit(plan, 'image', u.email),
+                      getQuotaUsage(u.uid, activeProfile?.id || 'default'),
+                      getVideoQuotaUsage(u.uid),
+                      getAiGenerationUsage(u.uid, 'image')
+                  ]);
 
-              setPlanLimit(pLimit);
-              setVideoLimit(vLimit);
-              setImageLimit(iLimit);
-              setPostsThisMonth(pUsed);
-              setVideosThisMonth(vUsed);
-              setImagesThisMonth(iUsed);
+                  setPlanLimit(pLimit);
+                  setVideoLimit(vLimit);
+                  setImageLimit(iLimit);
+                  setPostsThisMonth(pUsed);
+                  setVideosThisMonth(vUsed);
+                  setImagesThisMonth(iUsed);
+              }
 
               const qPosts = query(
                   collection(db, "social_posts"),

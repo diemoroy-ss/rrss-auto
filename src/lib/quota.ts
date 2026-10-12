@@ -1,5 +1,5 @@
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
-import { db } from './firebase';
+import { db, auth } from './firebase';
 
 interface PlanConfig {
     postsLimit: number;
@@ -95,6 +95,34 @@ export async function getVideoPlanLimit(plan: string, email?: string): Promise<n
     return config[planId]?.videosLimit ?? (config['free']?.videosLimit || 0);
 }
 
+export interface UserQuotasResponse {
+    plan: string;
+    postsLimit: number;
+    videoLimit: number;
+    imageLimit: number;
+    blogLimit: number;
+    postsUsed: number;
+    videosUsed: number;
+    imagesUsed: number;
+    blogsUsed: number;
+}
+
+export async function fetchUserQuotas(profileId: string = 'default'): Promise<UserQuotasResponse | null> {
+    if (!auth?.currentUser) return null;
+    try {
+        const token = await auth.currentUser.getIdToken();
+        const res = await fetch(`/api/user/quotas?profileId=${encodeURIComponent(profileId)}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+            return await res.json();
+        }
+    } catch {
+        // Fallback silencioso
+    }
+    return null;
+}
+
 export async function getAiGenerationUsage(userId: string, type: 'image' | 'video' | 'blog'): Promise<number> {
     const firstDayOfMonth = new Date();
     firstDayOfMonth.setDate(1);
@@ -116,8 +144,8 @@ export async function getAiGenerationUsage(userId: string, type: 'image' | 'vide
             }
         });
         return used;
-    } catch (e) {
-        console.error(`[getAiGenerationUsage] Error loading ${type} usage:`, e);
+    } catch (e: any) {
+        // Evitar spam de errores en consola si no hay reglas de cliente o no hay permisos
         return 0;
     }
 }
@@ -185,8 +213,7 @@ export async function getVideoQuotaUsage(userId: string): Promise<number> {
         });
 
         return Math.max(aiVideosUsed, scheduledVideos);
-    } catch (e) {
-        console.error("Error in getVideoQuotaUsage:", e);
+    } catch {
         return 0;
     }
 }

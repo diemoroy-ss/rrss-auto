@@ -8,7 +8,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useProfile } from "../../../../contexts/ProfileContext";
-import { getQuotaUsage, getPlanLimit, getVideoPlanLimit, getAiGenerationUsage, getAiPlanLimit } from "../../../../lib/quota";
+import { getQuotaUsage, getPlanLimit, getVideoPlanLimit, getAiGenerationUsage, getAiPlanLimit, fetchUserQuotas } from "../../../../lib/quota";
 import { fetchSocialRules, getCombinedConstraints, SocialRules, DEFAULT_SOCIAL_RULES } from "../../../../lib/socialRules";
 import { type PosterConfig, DEFAULT_POSTER_CONFIG, buildPosterPromptSuffix } from "../../../../types/poster";
 
@@ -190,24 +190,37 @@ export default function RrssCreatePost() {
             const plan = data.plan || "free";
             setUserPlan(plan);
 
-            const [used, planLimit, vLimit, imgUsed, imgLimit, vidUsed] = await Promise.all([
-              getQuotaUsage(u.uid, activeProfile?.id || 'default'),
-              getPlanLimit(plan, u.email),
-              getVideoPlanLimit(plan, u.email),
-              getAiGenerationUsage(u.uid, "image"),
-              getAiPlanLimit(plan, "image", u.email),
-              getAiGenerationUsage(u.uid, "video")
-            ]);
-
-            setPostsThisMonth(used);
-            setPostLimit(planLimit);
-            if (used >= planLimit) {
+            const serverQuotas = await fetchUserQuotas(activeProfile?.id || 'default');
+            if (serverQuotas) {
+              setPostsThisMonth(serverQuotas.postsUsed);
+              setPostLimit(serverQuotas.postsLimit);
+              if (serverQuotas.postsUsed >= serverQuotas.postsLimit) {
                 setQuotaExceeded(true);
+              }
+              setVideoLimit(serverQuotas.videoLimit);
+              setImagesUsed(serverQuotas.imagesUsed);
+              setImageLimit(serverQuotas.imageLimit);
+              setVideosUsed(serverQuotas.videosUsed);
+            } else {
+              const [used, planLimit, vLimit, imgUsed, imgLimit, vidUsed] = await Promise.all([
+                getQuotaUsage(u.uid, activeProfile?.id || 'default'),
+                getPlanLimit(plan, u.email),
+                getVideoPlanLimit(plan, u.email),
+                getAiGenerationUsage(u.uid, "image"),
+                getAiPlanLimit(plan, "image", u.email),
+                getAiGenerationUsage(u.uid, "video")
+              ]);
+
+              setPostsThisMonth(used);
+              setPostLimit(planLimit);
+              if (used >= planLimit) {
+                  setQuotaExceeded(true);
+              }
+              setVideoLimit(vLimit);
+              setImagesUsed(imgUsed);
+              setImageLimit(imgLimit);
+              setVideosUsed(vidUsed);
             }
-            setVideoLimit(vLimit);
-            setImagesUsed(imgUsed);
-            setImageLimit(imgLimit);
-            setVideosUsed(vidUsed);
 
             const isAdminRole = data.role === 'admin' || u.email === 'diemoroy@gmail.com' || u.email === 'spalezcom@gmail.com' || u.email === 'santisoftai@gmail.com';
             setIsAdmin(isAdminRole);

@@ -81,7 +81,7 @@ export default function MetricasDashboard() {
 
   const handleDownloadReport = async () => {
     if (!aiAnalysis) {
-        setSyncStatus({ type: 'error', text: 'Debes generar el análisis de IA antes de descargar el reporte.' });
+        setSyncStatus({ type: 'error', text: 'Debes generar el análisis de nuestros agentes antes de descargar el reporte.' });
         return;
     }
     
@@ -130,14 +130,14 @@ export default function MetricasDashboard() {
     }
   };
 
-  const shareTextWhatsApp = `¡Hola! Aquí tienes el resumen generado por Inteligencia Artificial para el rendimiento de la cuenta de ${activeProfile?.name || 'nuestra marca'}. Te adjunto el PDF del reporte enseguida.\n\n*Alcance Total:* ${totalReach.toLocaleString('es-ES')}\n*Interacciones Totales:* ${totalInteractions.toLocaleString('es-ES')}\n\nAnalizado por Santisoft IA 🤖`;
-  const shareTextEmailBody = `Hola,%0D%0A%0D%0ATe comparto el estado actual del rendimiento de nuestras redes sociales.%0D%0A%0D%0AAlcance Total: ${totalReach.toLocaleString('es-ES')}%0D%0AInteracciones Totales: ${totalInteractions.toLocaleString('es-ES')}%0D%0A%0D%0ATe enviaré el reporte PDF generado por la IA de Santisoft adjunto en este correo.`;
+  const shareTextWhatsApp = `¡Hola! Aquí tienes el resumen generado por nuestro equipo de agentes para el rendimiento de la cuenta de ${activeProfile?.name || 'nuestra marca'}. Te adjunto el PDF del reporte enseguida.\n\n*Alcance Total:* ${totalReach.toLocaleString('es-ES')}\n*Interacciones Totales:* ${totalInteractions.toLocaleString('es-ES')}\n\nAnalizado por el equipo de agentes de Santisoft`;
+  const shareTextEmailBody = `Hola,%0D%0A%0D%0ATe comparto el estado actual del rendimiento de nuestras redes sociales.%0D%0A%0D%0AAlcance Total: ${totalReach.toLocaleString('es-ES')}%0D%0AInteracciones Totales: ${totalInteractions.toLocaleString('es-ES')}%0D%0A%0D%0ATe enviaré el reporte PDF generado por el equipo de agentes de Santisoft adjunto en este correo.`;
 
   const handleSendToN8N = async () => {
     if (!n8nValue) return;
     
     if (!aiAnalysis) {
-        setSyncStatus({ type: 'error', text: 'Debes generar el análisis de IA antes de enviar el reporte.' });
+        setSyncStatus({ type: 'error', text: 'Debes generar el análisis de nuestros agentes antes de enviar el reporte.' });
         setShowN8nModal(false);
         return;
     }
@@ -254,6 +254,26 @@ export default function MetricasDashboard() {
      async function fetchHistory() {
          if (!user || !activeProfile?.id) return;
          try {
+             const token = await user.getIdToken();
+             const res = await fetch(`/api/analytics/history?profileId=${encodeURIComponent(activeProfile.id)}`, {
+                 headers: { Authorization: `Bearer ${token}` }
+             });
+             if (res.ok) {
+                 const data = await res.json();
+                 const history = data.history || [];
+                 setAnalyticsHistory(history);
+                 if (history.length > 0 && !aiAnalysis) {
+                     setAiAnalysis(history[0].analysisHtml || "");
+                     setAiRecommendation(history[0].recommendation || null);
+                     setCurrentAnalysisId(history[0].id);
+                 }
+                 return;
+             }
+         } catch {
+             // Fallback si la API no está disponible
+         }
+
+         try {
              const hCol = collection(db, "users", user.uid, "businesses", activeProfile.id, "analytics_history");
              const q = query(hCol, orderBy("createdAt", "desc"));
              const snap = await getDocs(q);
@@ -267,8 +287,8 @@ export default function MetricasDashboard() {
                  setAiRecommendation(history[0].recommendation || null);
                  setCurrentAnalysisId(history[0].id);
              }
-         } catch(e) {
-             console.warn("Could not fetch analytics history", e);
+         } catch {
+             // Silencioso para evitar warnings innecesarios en consola
          }
      }
      fetchHistory();

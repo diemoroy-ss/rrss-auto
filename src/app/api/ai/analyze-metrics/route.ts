@@ -80,7 +80,7 @@ Por favor, genera el reporte JSON según tus instrucciones. Saca inferencias cla
         if (match) {
             parsedResult = JSON.parse(match[0]);
         } else {
-            throw new Error("La IA no devolvió un formato JSON válido.");
+            throw new Error("Nuestros agentes no devolvieron un formato JSON válido.");
         }
     }
 
