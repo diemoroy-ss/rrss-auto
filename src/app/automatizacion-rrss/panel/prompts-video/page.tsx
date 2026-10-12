@@ -85,12 +85,16 @@ export default function VideoPromptsPage() {
   const [activeUserEffect, setActiveUserEffect] = useState<FlowCommandDef | null>(null);
   const [userProductName, setUserProductName] = useState<string>("");
   const [userProductDescription, setUserProductDescription] = useState<string>("");
-  const [imageSourceMode, setImageSourceMode] = useState<"catalog" | "upload">("catalog");
+  const [imageSourceMode, setImageSourceMode] = useState<"catalog" | "upload" | "agent_generate">("catalog");
   const [selectedCatalogItemId, setSelectedCatalogItemId] = useState<string | null>(null);
   const [catalogSearch, setCatalogSearch] = useState<string>("");
   const [userImageUrl, setUserImageUrl] = useState<string>("");
   const [userImageFile, setUserImageFile] = useState<File | null>(null);
   const [userUploadingImage, setUserUploadingImage] = useState<boolean>(false);
+  const [agentGeneratingImage, setAgentGeneratingImage] = useState<boolean>(false);
+  const [agentImageSuccess, setAgentImageSuccess] = useState<string>("");
+  const [agentImageAspectRatio, setAgentImageAspectRatio] = useState<"9:16" | "1:1">("9:16");
+  const [userNiche, setUserNiche] = useState<string>("");
   const [includeLogo, setIncludeLogo] = useState<boolean>(!!activeProfile?.logoUrl);
   const [userLogoUrl, setUserLogoUrl] = useState<string>(activeProfile?.logoUrl || "");
   const [catalogItems, setCatalogItems] = useState<any[]>([]);
@@ -165,10 +169,18 @@ export default function VideoPromptsPage() {
     }
   };
 
-  // Categorías únicas
+  // Categorías únicas organizadas
   const categories = useMemo(() => {
-    const cats = Array.from(new Set(templates.map((c) => c.category)));
-    return ["Todas", ...cats];
+    const priority = [
+      "Todas",
+      "E-Commerce & Productos",
+      "Servicios & Marcas",
+      "Lanzamientos & Revelación",
+      "Creativos & Tendencias",
+    ];
+    const presentCats = Array.from(new Set(templates.map((c) => c.category)));
+    const merged = ["Todas", ...priority.filter(p => p !== "Todas" && presentCats.includes(p)), ...presentCats.filter(c => !priority.includes(c))];
+    return merged;
   }, [templates]);
 
   // Filtrado de comandos
@@ -362,9 +374,11 @@ export default function VideoPromptsPage() {
     setActiveUserEffect(effect);
     setCatalogSearch("");
     setUserModalError("");
+    setAgentImageSuccess("");
     setGeneratedVideoResult(null);
     setIncludeLogo(!!activeProfile?.logoUrl);
     setUserLogoUrl(activeProfile?.logoUrl || "");
+    setUserNiche(activeProfile?.rubro || "");
 
     if (catalogItems.length > 0) {
       setImageSourceMode("catalog");
@@ -374,11 +388,12 @@ export default function VideoPromptsPage() {
       setUserProductDescription(firstWithImage.description || "");
       setUserImageUrl(firstWithImage.imageUrl || "");
     } else {
-      setImageSourceMode("upload");
+      // Si no tiene catálogo, ofrecer directamente el modo de crear foto con nuestros agentes
+      setImageSourceMode("agent_generate");
       setSelectedCatalogItemId(null);
       setUserProductName(activeProfile?.name || "");
       setUserProductDescription("");
-      setUserImageUrl(effect.sampleBaseImage || "");
+      setUserImageUrl("");
     }
 
     setShowUserModal(true);
@@ -389,6 +404,7 @@ export default function VideoPromptsPage() {
     setUserProductName(item.name || "");
     setUserProductDescription(item.description || "");
     setUserImageUrl(item.imageUrl || "");
+    setAgentImageSuccess("");
   };
 
   // Filtrado de items del catálogo según búsqueda del usuario
@@ -408,6 +424,7 @@ export default function VideoPromptsPage() {
     if (!user) return;
     setUserUploadingImage(true);
     setUserModalError("");
+    setAgentImageSuccess("");
 
     try {
       const token = await user.getIdToken();
@@ -433,18 +450,64 @@ export default function VideoPromptsPage() {
     }
   };
 
+  // Generar fotografía base con nuestros agentes cuando no tiene foto previa
+  const handleGenerateBaseImageWithAgent = async (): Promise<string | null> => {
+    if (!user) return null;
+    if (!userProductName.trim()) {
+      setUserModalError("Por favor ingresa el nombre de tu producto o servicio para que nuestros agentes lo generen.");
+      return null;
+    }
+
+    setAgentGeneratingImage(true);
+    setUserModalError("");
+    setAgentImageSuccess("");
+
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch("/api/video-prompts/generate-base-image", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          productName: userProductName.trim(),
+          rubro: userNiche || activeProfile?.rubro || "Comercial",
+          description: userProductDescription.trim(),
+          aspectRatio: agentImageAspectRatio,
+          commandCategory: activeUserEffect?.category,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "No se pudo generar la imagen base con nuestros agentes.");
+      }
+
+      setUserImageUrl(data.imageUrl);
+      setAgentImageSuccess("¡Fotografía comercial base generada con éxito por nuestros agentes! Ya puedes proceder a crear el video.");
+      refreshQuota();
+      return data.imageUrl;
+    } catch (err: any) {
+      setUserModalError(err.message || "Error al generar la imagen del producto.");
+      return null;
+    } finally {
+      setAgentGeneratingImage(false);
+    }
+  };
+
   // Prompt específico para el usuario en el modal enriquecido con descripción de producto
   const userFinalPrompt = useMemo(() => {
     if (!activeUserEffect) return "";
     return buildVeoPromptFromCommand(activeUserEffect, {
       productName: userProductName || activeProfile?.name || "el producto",
-      rubro: activeProfile?.rubro || "comercial",
-      aspectRatio: "9:16",
+      rubro: userNiche || activeProfile?.rubro || "comercial",
+      aspectRatio: agentImageAspectRatio,
       additionalDetails: userProductDescription
         ? `Product visual features: ${userProductDescription}`
         : undefined,
     });
-  }, [activeUserEffect, userProductName, userProductDescription, activeProfile]);
+  }, [activeUserEffect, userProductName, userNiche, activeProfile, agentImageAspectRatio, userProductDescription]);
 
   // Verificar si la cuota permite video
   const hasVideoQuota = useMemo(() => {
@@ -452,12 +515,27 @@ export default function VideoPromptsPage() {
     return videoLimit > 0 && videosUsed < videoLimit;
   }, [isAdminUser, videoLimit, videosUsed]);
 
-  // Ejecutar generación de video con agentes
+  // Ejecutar generación de video con agentes (Pipeline en 2 pasos si no tiene foto)
   const handleGenerateUserVideo = async () => {
     if (!user || !activeUserEffect) return;
 
-    if (!userImageUrl) {
-      setUserModalError("Por favor sube una imagen de producto o selecciona una de tu catálogo.");
+    let effectiveImageUrl = userImageUrl;
+
+    // Si está en modo generación asistida y no generó la imagen previa, ejecutar primero el Paso 1
+    if (imageSourceMode === "agent_generate" && !effectiveImageUrl) {
+      setVideoGenProgress("Paso 1 de 2: Nuestros agentes están generando la fotografía publicitaria de producto...");
+      setGeneratingVideo(true);
+      const generatedImg = await handleGenerateBaseImageWithAgent();
+      if (!generatedImg) {
+        setGeneratingVideo(false);
+        setVideoGenProgress("");
+        return;
+      }
+      effectiveImageUrl = generatedImg;
+    }
+
+    if (!effectiveImageUrl) {
+      setUserModalError("Por favor sube una imagen de producto, selecciona una de tu biblioteca o genera una con nuestros agentes.");
       return;
     }
 
@@ -469,14 +547,14 @@ export default function VideoPromptsPage() {
     setGeneratingVideo(true);
     setUserModalError("");
     setGeneratedVideoResult(null);
-    setVideoGenProgress("Conectando con nuestros agentes y preparando escena...");
+    setVideoGenProgress("Paso 2 de 2: Conectando con Google Flow y estructurando física de Veo 3.1...");
 
     try {
       const token = await user.getIdToken();
 
       setTimeout(() => {
-        setVideoGenProgress("Estructurando dinámica de cámara y física en Google Flow & Veo 3.1...");
-      }, 3000);
+        setVideoGenProgress("Renderizando dinámica de cámara, partículas y destellos cinemáticos...");
+      }, 4000);
 
       setTimeout(() => {
         if (includeLogo) {
@@ -484,7 +562,7 @@ export default function VideoPromptsPage() {
         } else {
           setVideoGenProgress("Finalizando renderizado cinemático en alta resolución...");
         }
-      }, 7000);
+      }, 9000);
 
       const res = await fetch("/api/ai/image-to-video", {
         method: "POST",
@@ -493,11 +571,11 @@ export default function VideoPromptsPage() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          imageUrl: userImageUrl,
+          imageUrl: effectiveImageUrl,
           prompt: userFinalPrompt,
           motionStyle: activeUserEffect.command,
           businessName: userProductName || activeProfile?.name || "",
-          rubro: activeProfile?.rubro || "General",
+          rubro: userNiche || activeProfile?.rubro || "General",
           renderMode: includeLogo ? "remotion" : "raw",
           logoUrl: includeLogo ? userLogoUrl : "",
           profileId: activeProfile?.id || "default",
@@ -755,7 +833,7 @@ export default function VideoPromptsPage() {
                 className="bg-white border border-slate-200 text-slate-900 text-xs rounded-xl pl-3.5 pr-8 py-2 w-56 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
               />
             </div>
-            <div className="flex items-center bg-slate-100 p-1 rounded-xl text-xs font-bold text-slate-600">
+            <div className="flex flex-wrap items-center bg-slate-100 p-1 rounded-xl text-xs font-bold text-slate-600 gap-1">
               {categories.map((cat) => (
                 <button
                   key={cat}
@@ -1016,11 +1094,18 @@ export default function VideoPromptsPage() {
                   <label className="font-bold text-slate-700 block mb-1">Categoría:</label>
                   <input
                     type="text"
-                    placeholder="Ej: Product Reveals"
+                    list="flow-categories-datalist"
+                    placeholder="Ej: E-Commerce & Productos"
                     value={editingTemplate.category}
                     onChange={(e) => setEditingTemplate({ ...editingTemplate, category: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-900 font-bold"
                   />
+                  <datalist id="flow-categories-datalist">
+                    <option value="E-Commerce & Productos" />
+                    <option value="Servicios & Marcas" />
+                    <option value="Lanzamientos & Revelación" />
+                    <option value="Creativos & Tendencias" />
+                  </datalist>
                 </div>
               </div>
 
@@ -1311,7 +1396,7 @@ export default function VideoPromptsPage() {
                   </div>
 
                   {/* Pestañas de modo */}
-                  <div className="flex bg-slate-100 p-1 rounded-2xl gap-1 border border-slate-200">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 bg-slate-100 p-1 rounded-2xl gap-1 border border-slate-200">
                     <button
                       type="button"
                       onClick={() => {
@@ -1320,16 +1405,16 @@ export default function VideoPromptsPage() {
                           handleSelectCatalogItem(catalogItems[0]);
                         }
                       }}
-                      className={`flex-1 py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all ${
+                      className={`py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all ${
                         imageSourceMode === "catalog"
                           ? "bg-white text-indigo-700 shadow-sm border border-slate-200/80"
                           : "text-slate-600 hover:text-slate-900"
                       }`}
                     >
-                      <FaBoxOpen className="text-sm" />
-                      <span>Mi Biblioteca de Productos</span>
+                      <FaBoxOpen className="text-sm shrink-0" />
+                      <span>Mi Biblioteca</span>
                       {catalogItems.length > 0 && (
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] ${
+                        <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${
                           imageSourceMode === "catalog"
                             ? "bg-indigo-100 text-indigo-700 font-black"
                             : "bg-slate-200 text-slate-700 font-semibold"
@@ -1342,14 +1427,30 @@ export default function VideoPromptsPage() {
                     <button
                       type="button"
                       onClick={() => setImageSourceMode("upload")}
-                      className={`flex-1 py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all ${
+                      className={`py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all ${
                         imageSourceMode === "upload"
                           ? "bg-white text-indigo-700 shadow-sm border border-slate-200/80"
                           : "text-slate-600 hover:text-slate-900"
                       }`}
                     >
-                      <FaUpload className="text-sm" />
-                      <span>Subir Nueva Foto</span>
+                      <FaUpload className="text-sm shrink-0" />
+                      <span>Subir Mi Foto</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setImageSourceMode("agent_generate");
+                        if (!userProductName) setUserProductName(activeProfile?.name || "");
+                      }}
+                      className={`py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all ${
+                        imageSourceMode === "agent_generate"
+                          ? "bg-indigo-600 text-white shadow-sm font-black"
+                          : "text-indigo-700 hover:bg-indigo-50 font-bold"
+                      }`}
+                    >
+                      <FaMagic className="text-sm shrink-0" />
+                      <span>✨ Crear Foto con Agentes</span>
                     </button>
                   </div>
                 </div>
@@ -1545,7 +1646,143 @@ export default function VideoPromptsPage() {
                   </div>
                 )}
 
-                {/* Paso 2: Datos y detalles descriptivos del producto para Veo 3.1 */}
+                {/* CONTENIDO MODO 3: CREAR FOTO CON NUESTROS AGENTES */}
+                {imageSourceMode === "agent_generate" && (
+                  <div className="bg-gradient-to-br from-indigo-50/80 via-white to-purple-50/70 p-4 sm:p-5 rounded-2xl border border-indigo-200 space-y-4 shadow-sm">
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                      <div>
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-700 font-bold text-[10px] uppercase tracking-wider mb-1">
+                          <FaMagic /> Pipeline en 2 Pasos (Foto Comercial → Video Flow)
+                        </div>
+                        <h4 className="font-black text-slate-900 text-sm">
+                          Nuestros agentes crean la fotografía base de tu producto o servicio
+                        </h4>
+                        <p className="text-slate-600 text-[11px] mt-0.5 leading-relaxed">
+                          Si no tienes fotos reales, nuestros agentes diseñan una fotografía de estudio publicitaria en alta definición con encuadre limpio para que el video mantenga perfecta coherencia visual.
+                        </p>
+                      </div>
+
+                      {/* Selector de Proporción */}
+                      <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200 shrink-0 self-start">
+                        <button
+                          type="button"
+                          onClick={() => setAgentImageAspectRatio("9:16")}
+                          className={`px-2.5 py-1 rounded-lg font-bold text-[10px] transition-all ${
+                            agentImageAspectRatio === "9:16"
+                              ? "bg-indigo-600 text-white shadow-sm"
+                              : "text-slate-600 hover:text-slate-900"
+                          }`}
+                        >
+                          9:16 (Reel)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setAgentImageAspectRatio("1:1")}
+                          className={`px-2.5 py-1 rounded-lg font-bold text-[10px] transition-all ${
+                            agentImageAspectRatio === "1:1"
+                              ? "bg-indigo-600 text-white shadow-sm"
+                              : "text-slate-600 hover:text-slate-900"
+                          }`}
+                        >
+                          1:1 (Post)
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="font-bold text-slate-700 block mb-1 text-[11px]">
+                          Nombre del producto o servicio: <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Ej: Hamburguesa Angus Triple, Perfume Noir, Software Dental..."
+                          value={userProductName}
+                          onChange={(e) => setUserProductName(e.target.value)}
+                          className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-slate-900 font-bold text-xs focus:outline-none focus:border-indigo-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="font-bold text-slate-700 block mb-1 text-[11px]">
+                          Rubro o Nicho:
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Ej: Gastronomía, Barbería, Cosmética, Tecnología..."
+                          value={userNiche}
+                          onChange={(e) => setUserNiche(e.target.value)}
+                          className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-slate-900 text-xs focus:outline-none focus:border-indigo-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1 text-[11px]">
+                        Detalles visuales clave de la fotografía:
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ej: Pan brioche brillante, queso derretido, fondo oscuro elegante, iluminación cálida de estudio..."
+                        value={userProductDescription}
+                        onChange={(e) => setUserProductDescription(e.target.value)}
+                        className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-slate-900 text-xs focus:outline-none focus:border-indigo-500"
+                      />
+                    </div>
+
+                    {/* Previsualización si ya fue generada */}
+                    {userImageUrl ? (
+                      <div className="bg-white p-3.5 rounded-xl border border-emerald-200 flex flex-col sm:flex-row items-center gap-3.5">
+                        <div className="w-20 h-28 rounded-lg overflow-hidden border border-slate-200 shrink-0 bg-slate-100 shadow-sm">
+                          <img src={userImageUrl} alt="Foto Base Generada" className="w-full h-full object-cover" />
+                        </div>
+                        <div className="flex-1 min-w-0 space-y-1 text-center sm:text-left">
+                          <div className="inline-flex items-center gap-1 text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                            <FaCheck /> Imagen base lista para video
+                          </div>
+                          <div className="font-bold text-slate-900 text-xs truncate">
+                            {userProductName}
+                          </div>
+                          <p className="text-[11px] text-slate-500">
+                            La imagen base ya está anclada. Al presionar "Generar Video", nuestros agentes animarán este objeto con el efecto {activeUserEffect.name}.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleGenerateBaseImageWithAgent}
+                          disabled={agentGeneratingImage}
+                          className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all shrink-0"
+                        >
+                          {agentGeneratingImage ? <FaSpinner className="animate-spin" /> : "Regenerar otra foto"}
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+                        <p className="text-[11px] text-slate-500">
+                          Haz clic abajo para generar la foto base ahora, o presiona directo "Generar Video" y nuestros agentes harán la secuencia completa automáticamente.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={handleGenerateBaseImageWithAgent}
+                          disabled={agentGeneratingImage || !userProductName.trim()}
+                          className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all disabled:opacity-50"
+                        >
+                          {agentGeneratingImage ? <FaSpinner className="animate-spin" /> : <FaMagic />}
+                          <span>{agentGeneratingImage ? "Creando fotografía base..." : "Generar Foto Base con Agentes"}</span>
+                        </button>
+                      </div>
+                    )}
+
+                    {agentImageSuccess && (
+                      <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] p-2.5 rounded-xl flex items-center gap-2 font-medium">
+                        <FaCheck className="text-emerald-600 shrink-0" />
+                        <span>{agentImageSuccess}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Paso 2: Datos y detalles descriptivos del producto para Veo 3.1 (solo visible si no es modo agent_generate para no duplicar campos) */}
+                {imageSourceMode !== "agent_generate" && (
                 <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
                   <span className="font-bold text-slate-900 text-sm block">
                     2. Datos y descripción de tu producto:
@@ -1583,6 +1820,7 @@ export default function VideoPromptsPage() {
                     </div>
                   </div>
                 </div>
+                )}
 
                 {/* Paso 3: Opción de Logo con Remotion */}
                 <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
@@ -1692,11 +1930,24 @@ export default function VideoPromptsPage() {
                     <button
                       type="button"
                       onClick={handleGenerateUserVideo}
-                      disabled={generatingVideo || userUploadingImage || !userImageUrl}
+                      disabled={
+                        generatingVideo || 
+                        userUploadingImage || 
+                        agentGeneratingImage || 
+                        (imageSourceMode === "agent_generate" ? !userProductName.trim() : !userImageUrl)
+                      }
                       className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-2 shadow-md disabled:opacity-50 transition-all"
                     >
-                      {generatingVideo ? <FaSpinner className="animate-spin" /> : <FaPlay className="text-[10px]" />}
-                      <span>Generar Video con nuestros agentes</span>
+                      {generatingVideo || agentGeneratingImage ? (
+                        <FaSpinner className="animate-spin" />
+                      ) : (
+                        <FaPlay className="text-[10px]" />
+                      )}
+                      <span>
+                        {imageSourceMode === "agent_generate" && !userImageUrl
+                          ? "Generar Foto + Video (2 Pasos)"
+                          : "Generar Video con nuestros agentes"}
+                      </span>
                     </button>
                   ) : (
                     <Link
