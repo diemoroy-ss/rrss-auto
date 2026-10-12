@@ -129,6 +129,7 @@ function PanelLayoutContent({
       items: [
         { href: "/automatizacion-rrss/panel/crear", label: "Nuevo Post", icon: "✍️", exact: false },
         { href: "/automatizacion-rrss/panel/poc-video", label: "Generar Video", icon: "🎬", exact: false },
+        { href: "/automatizacion-rrss/panel/prompts-video", label: "Prompts de Video", icon: "🎥", exact: false },
         ...(isAdminUser ? [{ href: "/automatizacion-rrss/panel/ads", label: "Meta Ads", icon: "🎯", exact: true }] : []),
       ]
     },
