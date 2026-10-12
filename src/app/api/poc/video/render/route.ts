@@ -17,14 +17,22 @@ export async function POST(req: Request) {
 
     const postId = inputPostId || ('reel_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7));
 
+    // Garantizar que la duración total nunca supere los 10 segundos
+    const rawTotalDuration = composition.scenes.reduce((sum: number, s: any) => sum + (s.duration || 3), 0);
+    const scale = rawTotalDuration > 10 ? 10 / rawTotalDuration : 1;
+    const clampedScenes = composition.scenes.map((s: any) => ({
+      ...s,
+      duration: Math.max(1, Math.round((s.duration || 3) * scale * 10) / 10),
+    }));
+
     const postData = {
       id: postId,
-      scenes: composition.scenes,
+      scenes: clampedScenes,
       audioScript: composition.audioScript || '',
       showWatermark: showWatermark,
     };
 
-    console.log(`[API PoC Render] Renderizando video Remotion para post ${postId}...`);
+    console.log(`[API PoC Render] Renderizando video Remotion para post ${postId} (máx 10s)...`);
     const videoUrl = await renderAndUploadReel(postData, userId, postId);
 
     // Si ya existe en Firestore, actualizarlo también

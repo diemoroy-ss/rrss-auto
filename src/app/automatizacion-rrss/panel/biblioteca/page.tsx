@@ -397,7 +397,26 @@ export default function BibliotecaPage() {
             
             <div className="w-full md:w-3/5 bg-slate-950 flex flex-col items-center justify-center relative p-4 overflow-y-auto max-h-[90vh]">
               {selectedImage.scenes && selectedImage.scenes.length > 0 ? (
-                <RemotionReelPlayer composition={{ title: selectedImage.prompt || "Reel", rubro: activeProfile?.rubro || "General", totalDuration: selectedImage.scenes.reduce((acc: number, s: any) => acc + (s.duration || 4), 0), audioScript: selectedImage.audioScript || "", copyText: selectedImage.copy || "", scenes: selectedImage.scenes }} />
+                (() => {
+                  const rawTotal = selectedImage.scenes.reduce((acc: number, s: any) => acc + (s.duration || 3.3), 0);
+                  const scale = rawTotal > 10 ? 10 / rawTotal : 1;
+                  const scaledScenes = selectedImage.scenes.map((s: any) => ({
+                    ...s,
+                    duration: Math.max(1, Math.round((s.duration || 3.3) * scale * 10) / 10),
+                  }));
+                  return (
+                    <RemotionReelPlayer
+                      composition={{
+                        title: selectedImage.prompt || "Reel",
+                        rubro: activeProfile?.rubro || "General",
+                        totalDuration: Math.min(10, Math.max(3, Math.round(rawTotal * scale * 10) / 10)),
+                        audioScript: selectedImage.audioScript || "",
+                        copyText: selectedImage.copy || "",
+                        scenes: scaledScenes,
+                      }}
+                    />
+                  );
+                })()
               ) : (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img src={selectedImage.url} alt={selectedImage.prompt || "Diseño"} className="w-full h-auto object-contain max-h-[85vh] rounded-2xl" />

@@ -19,7 +19,8 @@ export const ReelComposition: React.FC<ReelProps> = ({
   let currentSceneIndex = 0;
   let sceneProgress = 0;
 
-  const validScenes = scenes.length > 0 ? scenes : [{
+  // Asegurar límite estricto de máximo 10 segundos en la composición
+  const baseScenes = scenes.length > 0 ? scenes : [{
     id: "scene_default",
     duration: 10,
     title: "REEL EXCLUSIVO",
@@ -29,6 +30,13 @@ export const ReelComposition: React.FC<ReelProps> = ({
     textColor: "#FFFFFF",
     accentColor: "#F59E0B",
   }];
+
+  const rawTotalSec = baseScenes.reduce((acc, s) => acc + (s.duration || 3.3), 0) || 10;
+  const scale = rawTotalSec > 10 ? 10 / rawTotalSec : 1;
+  const validScenes = baseScenes.map((s) => ({
+    ...s,
+    duration: Math.min(10, Math.round(((s.duration || 3.3) * scale) * 10) / 10)
+  }));
 
   let found = false;
 

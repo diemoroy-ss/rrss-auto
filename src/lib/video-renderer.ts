@@ -33,10 +33,10 @@ export async function renderAndUploadReel(post: any, userId: string, postId: str
         ignoreRegisterRootWarning: true,
     } as any);
 
-    // 2.1 Calcular duración requerida por la locución para evitar cortes
+    // 2.1 Calcular duración requerida por la locución para evitar cortes (máximo 10s estricto)
     const wordCount = (post.audioScript || '').trim().split(/\s+/).filter(Boolean).length;
-    const estimatedAudioSec = wordCount > 0 ? Math.ceil((wordCount / 2.2) + 1.5) : 9.5;
-    const rawSceneSec = (post.scenes || []).reduce((acc: number, s: any) => acc + (s.duration || 3.2), 0) || 9.5;
+    const estimatedAudioSec = wordCount > 0 ? Math.min(10, Math.ceil((wordCount / 2.2) + 1.5)) : 9.5;
+    const rawSceneSec = Math.min(10, (post.scenes || []).reduce((acc: number, s: any) => acc + (s.duration || 3.2), 0) || 9.5);
     // Duración máxima estricta de 10 segundos
     const finalTotalSec = Math.min(10, Math.max(rawSceneSec, estimatedAudioSec));
 
@@ -46,7 +46,7 @@ export async function renderAndUploadReel(post: any, userId: string, postId: str
         ...s,
         duration: adjustedSceneDuration
     }));
-    const totalDurationInFrames = Math.ceil(finalTotalSec * 30);
+    const totalDurationInFrames = Math.min(300, Math.ceil(finalTotalSec * 30));
 
     console.log(`[VideoRenderer] Duración calibrada: ${finalTotalSec}s (${totalDurationInFrames} frames) para ${wordCount} palabras.`);
 

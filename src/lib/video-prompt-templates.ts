@@ -107,7 +107,7 @@ export function buildImageToVideoPrompt(
   const offerContext = offerText ? `Visual accentuating the concept: "${offerText}".` : "";
   const custom = customDirection ? `Direction details: ${customDirection}.` : "";
 
-  const promptEnglish = `${template.baseEnglishPrompt} Context: High-impact video ${subject}. ${offerContext} ${custom} Maintain subject identity from the start frame, photorealistic textures, no text distortion, smooth coherent motion.`.trim();
+  const promptEnglish = `${template.baseEnglishPrompt} Context: High-impact video ${subject}. ${offerContext} ${custom} Maintain subject identity from the start frame, photorealistic textures, no text distortion, smooth coherent motion. Maximum duration: 10 seconds.`.trim();
 
   const promptSpanishSummary = `Estilo "${template.title}": ${template.description} (Optimizado para ${rubro}${businessName ? ` - ${businessName}` : ""}).`;
 

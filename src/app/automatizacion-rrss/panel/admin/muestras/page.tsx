@@ -1008,15 +1008,15 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
       const comp: VideoComposition = {
         title: `Reel para ${prospectBusiness}`,
         rubro: rubro,
-        totalDuration: 12,
-        audioScript: `¿Buscas la mejor calidad en ${rubro}? En ${prospectBusiness} te ayudamos con ${
+        totalDuration: 9.5,
+        audioScript: `¿Buscas la mejor opción en ${rubro}? En ${prospectBusiness} te ayudamos con ${
           offerText || "soluciones a tu medida"
-        }. Escríbenos hoy y descubre todo lo que tenemos para ti.`,
+        }. ¡Escríbenos hoy!`,
         copyText: `${prospectBusiness} - ${offerText || "Calidad y excelencia garantizada"}. Contáctanos por WhatsApp para más información.`,
         scenes: [
           {
             id: "scene-1",
-            duration: 4,
+            duration: 3.2,
             title: prospectBusiness.toUpperCase(),
             subtitle: `¿Buscas la mejor opción en ${rubro}?`,
             highlightWords: [prospectBusiness.toUpperCase(), "opción"],
@@ -1027,7 +1027,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
           },
           {
             id: "scene-2",
-            duration: 4,
+            duration: 3.2,
             title: offerText ? offerText.toUpperCase() : "ATENCIÓN PROFESIONAL",
             subtitle: offerText ? `Aprovecha hoy: ${offerText}` : "Resultados reales con atención directa",
             highlightWords: offerText ? [offerText.toUpperCase().split(" ")[0]] : ["ATENCIÓN"],
@@ -1038,7 +1038,7 @@ Diseñamos este contenido con su identidad para que veas la calidad y el impacto
           },
           {
             id: "scene-3",
-            duration: 4,
+            duration: 3.1,
             title: "ESCRÍBENOS HOY",
             subtitle: "Atención directa vía WhatsApp",
             highlightWords: ["WHATSAPP", "HOY"],

@@ -163,7 +163,8 @@ const RISKY_HASHTAGS = new Set([
  * Construye el prompt para generar un guión de Reel.
  */
 export function buildReelScriptPrompt(input: ReelScriptInput): string {
-  const duration = input.durationSeconds ?? 30;
+  const duration = Math.min(10, input.durationSeconds ?? 10);
+  const midEnd = Math.max(4, duration - 3);
   const toneMap: Record<ReelTone, string> = {
     informal: "cercano, coloquial, como si hablaras con un amigo",
     experto: "autoridad relajada, no arrogante — sabes de lo que hablas pero no suenas pedante",
@@ -183,35 +184,32 @@ export function buildReelScriptPrompt(input: ReelScriptInput): string {
 
   const objectiveInstructions: Record<ReelObjective, string> = {
     venta: `
-Objetivo: VENTA DIRECTA
+Objetivo: VENTA DIRECTA (Reel dinámico de máximo ${duration} segundos)
 Estructura obligatoria:
-1. Hook (0-3s): Muestra el resultado final antes de explicar cómo
-2. Problema (3-8s): "Muchos me preguntan cómo logro X..."
-3. Solución (8-${duration - 5}s): Presenta el producto/servicio de forma natural, sin vender agresivamente
-4. CTA (últimos 3s): Uno solo, específico: "Escríbeme la palabra X al DM" o "El link está en mi bio"`,
+1. Hook (0-3s): Muestra el resultado final o dolor clave antes de explicar cómo
+2. Problema y Solución (3-${midEnd}s): Presenta el valor directo de tu producto o servicio
+3. CTA (${midEnd}-${duration}s): Uno solo y directo: "Escríbeme por DM" o "Link en bio"`,
 
     educacion: `
-Objetivo: EDUCATIVO — maximizar saves y shares
+Objetivo: EDUCATIVO (Reel dinámico de máximo ${duration} segundos) — maximizar saves y shares
 Estructura obligatoria:
-1. Hook (0-3s): "El error que comete el 90% al hacer [X]" o "Cómo [resultado] en [tiempo]"
-2. Promesa (3-6s): "En este Reel te enseño [X] pasos/secretos/errores"
-3. Desarrollo (6-${duration - 4}s): Máx 3-4 puntos concretos, uno cada 4-6 segundos
-4. CTA (últimos 3s): "Guárdalo para no olvidarlo" (los saves amplifican el alcance)`,
+1. Hook (0-3s): "El error que comete el 90% al hacer [X]" o "Cómo [resultado] rápido"
+2. Micro-lección o Pasos (3-${midEnd}s): 2 puntos ultra concretos y de valor inmediato
+3. CTA (${midEnd}-${duration}s): "Guárdalo para no olvidarlo"`,
 
     viralidad: `
-Objetivo: VIRALIDAD / ALCANCE MASIVO
+Objetivo: VIRALIDAD / ALCANCE MASIVO (Reel dinámico de máximo ${duration} segundos)
 Estructura obligatoria:
 1. Hook (0-3s): Opinión fuerte, dato sorprendente o afirmación polarizante
-2. Desarrollo (3-${duration - 4}s): Tesis breve con 1-2 argumentos sólidos. Puede incluir un giro inesperado.
-3. CTA (últimos 3s): "¿Estás de acuerdo? Comentalo abajo" — los comentarios son la métrica que más multiplica el alcance`,
+2. Desarrollo (3-${midEnd}s): Tesis breve con 1 argumento contundente
+3. CTA (${midEnd}-${duration}s): "¿Estás de acuerdo? Coméntalo abajo"`,
 
     branding: `
-Objetivo: BRANDING / AUTORIDAD / CONEXIÓN
+Objetivo: BRANDING / AUTORIDAD (Reel dinámico de máximo ${duration} segundos)
 Estructura obligatoria:
-1. Hook (0-3s): Historia personal breve (fracaso real → aprendizaje)
-2. Contexto (3-8s): Por qué eso importa para tu audiencia
-3. Insight (8-${duration - 4}s): La lección aplicable, específica, no genérica
-4. CTA (últimos 3s): "Sígueme para más sobre [tema específico]"`,
+1. Hook (0-3s): Anécdota o afirmación rápida de autoridad
+2. Contexto e Insight (3-${midEnd}s): La lección directa aplicable
+3. CTA (${midEnd}-${duration}s): "Sígueme para más"`,
   };
 
   return `Eres un guionista especialista en Instagram Reels para negocios de ${nicheContext[input.niche]}.

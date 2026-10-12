@@ -20,8 +20,16 @@ export default function RemotionReelPlayer({ composition, onSceneChange, company
   const requestRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number | null>(null);
 
-  const scenes = composition.scenes || [];
-  const totalDuration = composition.totalDuration || scenes.reduce((acc, s) => acc + s.duration, 0) || 12;
+  const rawScenes = composition.scenes || [];
+  const rawSumSec = rawScenes.reduce((acc, s) => acc + (s.duration || 3.3), 0) || 9.5;
+  const scale = rawSumSec > 10 ? 10 / rawSumSec : 1;
+  const scenes = rawScenes.map((s) => ({
+    ...s,
+    duration: Math.min(10, Math.round(((s.duration || 3.3) * scale) * 10) / 10),
+  }));
+
+  const rawDuration = composition.totalDuration || rawSumSec || 9.5;
+  const totalDuration = Math.min(10, Math.max(3, Math.round(rawDuration * scale * 10) / 10));
 
   // Encontrar escena activa según currentTime
   let accumulatedTime = 0;

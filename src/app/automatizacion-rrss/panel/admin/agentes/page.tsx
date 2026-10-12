@@ -152,7 +152,7 @@ const ALL_AGENTS: AgentDefinition[] = [
     triggers: "Generación de Reels desde el panel, publicaciones automáticas y sección PoC Video.",
     summary: "Diseña la composición de escenas en formato vertical 9:16, invoca al Agente de Imagen para generar fondos fotográficos adaptados a cada escena y renderiza el video MP4 nativo con Remotion.",
     capabilities: [
-      "Estructuración de 3 a 4 escenas temporizadas (gancho, desarrollo, CTA)",
+      "Estructuración de 3 escenas temporizadas (gancho, desarrollo, CTA) de máximo 10 segundos",
       "Generación de fondos fotográficos 9:16 por escena mediante Agente de Imagen",
       "Sincronización de guion de locución y subtítulos dinámicos",
       "Renderizado concurrente a MP4 de alta definición y subida a Firebase Storage"
@@ -490,7 +490,7 @@ const ALL_AGENTS: AgentDefinition[] = [
     sourceFile: "src/lib/bh-skills.ts (generateReelScript)",
     backendModel: "gemini-3.7-flash",
     triggers: "Módulo de creación de video corto y calendario de Reels.",
-    summary: "Genera libretos completos para Reels de 15 a 60 segundos con desglose segundo a segundo: qué se ve en cámara, qué texto va en pantalla y qué debe decir la persona para maximizar la retención.",
+    summary: "Genera libretos completos para Reels de máximo 10 segundos con desglose segundo a segundo: qué se ve en cámara, qué texto va en pantalla y qué debe decir la persona para maximizar la retención.",
     capabilities: [
       "Estructuras específicas según objetivo: Venta, Educación (saves), Viralidad (comentarios) o Branding",
       "Fórmulas de hooks visuales y verbales para los primeros 3 segundos",

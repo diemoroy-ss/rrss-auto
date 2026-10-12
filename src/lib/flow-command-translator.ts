@@ -283,5 +283,5 @@ export function buildVeoPromptFromCommand(
     productSubject
   );
 
-  return `${base}${nicheContext}.${extraNotes} Camera: ${cmdDef.cameraMovement}. Lighting: ${cmdDef.lightingStyle}. Preserving image composition and brand fidelity.`;
+  return `${base}${nicheContext}.${extraNotes} Camera: ${cmdDef.cameraMovement}. Lighting: ${cmdDef.lightingStyle}. Maximum duration: 10 seconds. Preserving image composition and brand fidelity.`;
 }

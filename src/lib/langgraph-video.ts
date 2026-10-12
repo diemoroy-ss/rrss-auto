@@ -43,20 +43,19 @@ async function generatePromptsNode(state: VideoWorkflowState): Promise<Partial<V
   console.log(`[LangGraph Video] Generando guion y escenas para rubro: ${state.rubro}...`);
   
   const systemInstruction = `Eres un experto en Marketing Digital B2B y Dirección de Arte Cinematográfica.
-El usuario quiere crear un video promocional de exactamente 20 segundos.
+El usuario quiere crear un video promocional de MÁXIMO 10 SEGUNDOS de duración.
 Rubro: ${state.rubro}
 Idea: ${state.idea}
 
-Debes estructurar el guion en exactamente 4 escenas de 5 segundos cada una y devolver EXACTAMENTE un JSON válido con la siguiente estructura:
+Debes estructurar el guion en exactamente 3 escenas cortas de máximo 3.2 segundos cada una (duración total del video: máximo 10 segundos) y devolver EXACTAMENTE un JSON válido con la siguiente estructura:
 {
   "copy": "Texto atractivo para redes sociales con emojis (max 300 chars)",
   "image_prompt": "Prompt profesional en inglés para generación de imagen estática de fondo sin texto",
-  "video_prompt": "Prompt cinematográfico en inglés para animación de fondo",
+  "video_prompt": "Prompt cinematográfico en inglés para animación de fondo (max 10 seconds)",
   "scenes": [
-    { "id": "scene_1", "duration": 5, "text": "Gancho inicial impactante (0s-5s)" },
-    { "id": "scene_2", "duration": 5, "text": "Planteamiento del problema B2B (5s-10s)" },
-    { "id": "scene_3", "duration": 5, "text": "Solución o propuesta de valor (10s-15s)" },
-    { "id": "scene_4", "duration": 5, "text": "Llamado a la acción (CTA) claro (15s-20s)" }
+    { "id": "scene_1", "duration": 3.2, "text": "Gancho inicial impactante (0s-3.2s)" },
+    { "id": "scene_2", "duration": 3.2, "text": "Problema y propuesta de valor (3.2s-6.4s)" },
+    { "id": "scene_3", "duration": 3.2, "text": "Llamado a la acción (CTA) claro (6.4s-9.6s)" }
   ]
 }`;
 
@@ -64,18 +63,27 @@ Debes estructurar el guion en exactamente 4 escenas de 5 segundos cada una y dev
     const textResponse = await generateFreeText(systemInstruction, undefined, true);
     const result = JSON.parse(textResponse);
 
+    const rawScenes = Array.isArray(result.scenes) && result.scenes.length > 0 
+      ? result.scenes 
+      : [{ id: "scene_1", duration: 3.2, text: state.idea }];
+
+    const rawTotal = rawScenes.reduce((sum: number, s: any) => sum + (s.duration || 3.2), 0);
+    const scale = rawTotal > 10 ? 10 / rawTotal : 1;
+    const clampedScenes = rawScenes.map((s: any) => ({
+      ...s,
+      duration: Math.max(1, Math.round((s.duration || 3.2) * scale * 10) / 10)
+    }));
+
     return {
-      copy: result.copy || "Campaña promocional generada por IA",
+      copy: result.copy || "Campaña promocional desarrollada por nuestros agentes",
       imagePrompt: result.image_prompt || "",
       videoPrompt: result.video_prompt || "",
-      scenes: result.scenes || [
-        { id: "scene_1", duration: 5, text: state.idea },
-      ],
+      scenes: clampedScenes,
       status: 'preparing_firebase_assets'
     };
   } catch (error: any) {
     console.error("[LangGraph Video] Error en generatePromptsNode:", error);
-    return { status: 'failed', errorMessage: "Error generando guion y prompts con IA." };
+    return { status: 'failed', errorMessage: "Error generando guion y prompts con nuestros agentes." };
   }
 }
 

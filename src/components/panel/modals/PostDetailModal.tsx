@@ -402,16 +402,26 @@ export default function PostDetailModal({
                     </div>
                   ) : post.scenes && post.scenes.length > 0 ? (
                     <div className="flex flex-col items-center justify-center p-2 bg-slate-50 rounded-2xl w-full">
-                      <RemotionReelPlayer
-                        composition={{
-                          title: post.idea || post.title || "Reel Animado",
-                          rubro: activeProfile?.rubro || "General",
-                          totalDuration: post.scenes.reduce((acc: number, s: any) => acc + (s.duration || 4), 0),
-                          audioScript: post.audioScript || "",
-                          copyText: post.copy || post.text || "",
-                          scenes: post.scenes,
-                        }}
-                      />
+                      {(() => {
+                        const rawTotal = post.scenes.reduce((acc: number, s: any) => acc + (s.duration || 3.3), 0);
+                        const scale = rawTotal > 10 ? 10 / rawTotal : 1;
+                        const scaledScenes = post.scenes.map((s: any) => ({
+                          ...s,
+                          duration: Math.max(1, Math.round((s.duration || 3.3) * scale * 10) / 10),
+                        }));
+                        return (
+                          <RemotionReelPlayer
+                            composition={{
+                              title: post.idea || post.title || "Reel Animado",
+                              rubro: activeProfile?.rubro || "General",
+                              totalDuration: Math.min(10, Math.max(3, Math.round(rawTotal * scale * 10) / 10)),
+                              audioScript: post.audioScript || "",
+                              copyText: post.copy || post.text || "",
+                              scenes: scaledScenes,
+                            }}
+                          />
+                        );
+                      })()}
                     </div>
                   ) : (
                     <DashboardCarouselViewer

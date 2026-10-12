@@ -34,23 +34,24 @@ export const RemotionRoot: React.FC = () => {
       <Composition<ReelProps>
         id="SantisoftReel"
         component={ReelComposition}
-        durationInFrames={360}
+        durationInFrames={300}
         fps={30}
         width={1080}
         height={1920}
         calculateMetadata={({ props }) => {
-          const durationInFrames = props?.totalDurationInFrames || 360;
+          const rawFrames = props?.totalDurationInFrames || 300;
+          const durationInFrames = Math.min(300, Math.max(90, rawFrames));
           return {
             durationInFrames,
           };
         }}
         defaultProps={{
           compositionId: "default",
-          totalDurationInFrames: 360,
+          totalDurationInFrames: 300,
           scenes: [
             {
               id: "scene_1",
-              duration: 12,
+              duration: 10,
               title: "GENERANDO VIDEO...",
               subtitle: "Por favor espere",
               highlightWords: ["VIDEO"],

@@ -1705,7 +1705,26 @@ export default function RrssDashboard() {
                              </div>
                            ) : selectedPost.scenes && selectedPost.scenes.length > 0 ? (
                              <div className="flex flex-col items-center justify-center p-2 bg-slate-50 rounded-2xl w-full">
-                               <RemotionReelPlayer composition={{ title: selectedPost.idea || selectedPost.title || 'Reel Animado', rubro: activeProfile?.rubro || 'General', totalDuration: selectedPost.scenes.reduce((acc, s) => acc + (s.duration || 4), 0), audioScript: selectedPost.audioScript || '', copyText: selectedPost.copy || selectedPost.text || '', scenes: selectedPost.scenes }} />
+                               {(() => {
+                                  const rawTotal = selectedPost.scenes.reduce((acc: number, s: any) => acc + (s.duration || 3.3), 0);
+                                  const scale = rawTotal > 10 ? 10 / rawTotal : 1;
+                                  const scaledScenes = selectedPost.scenes.map((s: any) => ({
+                                    ...s,
+                                    duration: Math.max(1, Math.round((s.duration || 3.3) * scale * 10) / 10),
+                                  }));
+                                  return (
+                                    <RemotionReelPlayer
+                                      composition={{
+                                        title: selectedPost.idea || selectedPost.title || 'Reel Animado',
+                                        rubro: activeProfile?.rubro || 'General',
+                                        totalDuration: Math.min(10, Math.max(3, Math.round(rawTotal * scale * 10) / 10)),
+                                        audioScript: selectedPost.audioScript || '',
+                                        copyText: selectedPost.copy || selectedPost.text || '',
+                                        scenes: scaledScenes,
+                                      }}
+                                    />
+                                  );
+                                })()}
                              </div>
                            ) : (
                              <DashboardCarouselViewer 

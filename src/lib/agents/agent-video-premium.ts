@@ -42,8 +42,8 @@ export async function generatePremiumVideoWithAgent(params: PremiumVideoAgentPar
 
   if (!optimizedPrompt) {
     const sysInstruction = `Eres un experto director de cinematografía publicitaria.
-Tu trabajo es tomar la idea base del usuario y convertirla en un prompt descriptivo, visual y detallado en INGLÉS para generar un video corto promocional de alta calidad en formato vertical 9:16 (vertical mobile format / TikTok/Reels ratio).
-Debes detallar la iluminación, el movimiento de cámara, la acción principal y la atmósfera pensando en un encuadre vertical.
+Tu trabajo es tomar la idea base del usuario y convertirla en un prompt descriptivo, visual y detallado en INGLÉS para generar un video corto promocional de alta calidad de MÁXIMO 10 SEGUNDOS de duración en formato vertical 9:16 (vertical mobile format / TikTok/Reels ratio).
+Debes detallar la iluminación, el movimiento de cámara, la acción principal y la atmósfera pensando en un encuadre vertical dinámico de corta duración (máximo 10s).
 El video no tendrá texto, debe ser puro impacto visual para el rubro: ${rubro}.
 Descripción del negocio: ${businessDescription}.
 No devuelvas NADA MÁS que el prompt en inglés. Ni saludos ni comillas.
@@ -54,7 +54,7 @@ IMPORTANTE: Finaliza SIEMPRE tu prompt con el texto exacto --ar 9:16`;
       optimizedPrompt = optimizedPrompt.trim().replace(/^["']|["']$/g, '');
     } catch (err) {
       console.warn('[AgentVideoPremium] Error generando prompt con agentes, aplicando fallback directo:', err);
-      optimizedPrompt = `Cinematic slow motion vertical 9:16 commercial shot for a business in the ${rubro} industry. Professional lighting, ultra-clean commercial grading, high quality, photorealistic, shallow depth of field --ar 9:16`;
+      optimizedPrompt = `Cinematic vertical 9:16 commercial shot for a business in the ${rubro} industry. Professional lighting, ultra-clean commercial grading, high quality, photorealistic, shallow depth of field. Maximum 10 seconds duration --ar 9:16`;
     }
   }
 
@@ -80,7 +80,11 @@ IMPORTANTE: Finaliza SIEMPRE tu prompt con el texto exacto --ar 9:16`;
       orientation: 'portrait',
       dimension: '1080x1920',
       motionStyle,
-      renderMode
+      renderMode,
+      duration: 10,
+      durationSeconds: 10,
+      maxDuration: 10,
+      seconds: 10
     };
 
     if (imageUrl) {
