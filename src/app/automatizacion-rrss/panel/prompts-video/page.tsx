@@ -29,7 +29,8 @@ import {
   FaDownload,
   FaBoxOpen,
   FaShieldAlt,
-  FaLock
+  FaLock,
+  FaSearch
 } from "react-icons/fa";
 
 export default function VideoPromptsPage() {
@@ -81,6 +82,10 @@ export default function VideoPromptsPage() {
   const [showUserModal, setShowUserModal] = useState<boolean>(false);
   const [activeUserEffect, setActiveUserEffect] = useState<FlowCommandDef | null>(null);
   const [userProductName, setUserProductName] = useState<string>("");
+  const [userProductDescription, setUserProductDescription] = useState<string>("");
+  const [imageSourceMode, setImageSourceMode] = useState<"catalog" | "upload">("catalog");
+  const [selectedCatalogItemId, setSelectedCatalogItemId] = useState<string | null>(null);
+  const [catalogSearch, setCatalogSearch] = useState<string>("");
   const [userImageUrl, setUserImageUrl] = useState<string>("");
   const [userImageFile, setUserImageFile] = useState<File | null>(null);
   const [userUploadingImage, setUserUploadingImage] = useState<boolean>(false);
@@ -309,15 +314,48 @@ export default function VideoPromptsPage() {
   // ── GESTIÓN DE USUARIO: ABRIR MODAL CREACIÓN ─────────────────────────────────
   const openUserCreateModal = (effect: FlowCommandDef) => {
     setActiveUserEffect(effect);
-    setUserProductName(activeProfile?.name || "");
-    setUserImageUrl(effect.sampleBaseImage || "");
-    setUserImageFile(null);
+    setCatalogSearch("");
     setUserModalError("");
     setGeneratedVideoResult(null);
     setIncludeLogo(!!activeProfile?.logoUrl);
     setUserLogoUrl(activeProfile?.logoUrl || "");
+
+    if (catalogItems.length > 0) {
+      setImageSourceMode("catalog");
+      const firstWithImage = catalogItems.find((it) => !!it.imageUrl) || catalogItems[0];
+      setSelectedCatalogItemId(firstWithImage.id);
+      setUserProductName(firstWithImage.name || "");
+      setUserProductDescription(firstWithImage.description || "");
+      setUserImageUrl(firstWithImage.imageUrl || "");
+    } else {
+      setImageSourceMode("upload");
+      setSelectedCatalogItemId(null);
+      setUserProductName(activeProfile?.name || "");
+      setUserProductDescription("");
+      setUserImageUrl(effect.sampleBaseImage || "");
+    }
+
     setShowUserModal(true);
   };
+
+  const handleSelectCatalogItem = (item: any) => {
+    setSelectedCatalogItemId(item.id);
+    setUserProductName(item.name || "");
+    setUserProductDescription(item.description || "");
+    setUserImageUrl(item.imageUrl || "");
+  };
+
+  // Filtrado de items del catálogo según búsqueda del usuario
+  const filteredCatalogItems = useMemo(() => {
+    if (!catalogSearch.trim()) return catalogItems;
+    const q = catalogSearch.toLowerCase().trim();
+    return catalogItems.filter(
+      (item) =>
+        (item.name && item.name.toLowerCase().includes(q)) ||
+        (item.description && item.description.toLowerCase().includes(q)) ||
+        (item.category && item.category.toLowerCase().includes(q))
+    );
+  }, [catalogItems, catalogSearch]);
 
   // Subir imagen del usuario desde su equipo
   const handleUserImageUpload = async (file: File) => {
@@ -349,15 +387,18 @@ export default function VideoPromptsPage() {
     }
   };
 
-  // Prompt específico para el usuario en el modal
+  // Prompt específico para el usuario en el modal enriquecido con descripción de producto
   const userFinalPrompt = useMemo(() => {
     if (!activeUserEffect) return "";
     return buildVeoPromptFromCommand(activeUserEffect, {
-      productName: userProductName || activeProfile?.name || "mi producto",
+      productName: userProductName || activeProfile?.name || "el producto",
       rubro: activeProfile?.rubro || "comercial",
       aspectRatio: "9:16",
+      additionalDetails: userProductDescription
+        ? `Product visual features: ${userProductDescription}`
+        : undefined,
     });
-  }, [activeUserEffect, userProductName, activeProfile]);
+  }, [activeUserEffect, userProductName, userProductDescription, activeProfile]);
 
   // Verificar si la cuota permite video
   const hasVideoQuota = useMemo(() => {
@@ -1105,11 +1146,11 @@ export default function VideoPromptsPage() {
               </div>
             ) : (
               <div className="space-y-5 text-xs">
-                {/* Paso 1: Selección de Imagen */}
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
-                  <div className="flex items-center justify-between">
+                {/* Paso 1: Selección de Producto / Imagen */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
                     <span className="font-bold text-slate-900 text-sm">
-                      1. Foto de tu producto o servicio:
+                      1. Selecciona el producto o imagen a animar:
                     </span>
                     {userUploadingImage && (
                       <span className="text-indigo-600 flex items-center gap-1 font-bold">
@@ -1118,102 +1159,278 @@ export default function VideoPromptsPage() {
                     )}
                   </div>
 
-                  <div className="flex flex-col sm:flex-row gap-4 items-start">
-                    {/* Previsualizador de la imagen elegida */}
-                    <div className="w-32 h-32 rounded-xl bg-slate-200 border border-slate-300 overflow-hidden flex items-center justify-center shrink-0">
-                      {userImageUrl ? (
-                        <img src={userImageUrl} alt="Producto" className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="text-center p-2 text-slate-400">
-                          <FaImage className="text-2xl mx-auto mb-1" />
-                          <span className="text-[10px]">Sin imagen</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex-1 space-y-3 w-full">
-                      {/* Botón de subida de archivo */}
-                      <input
-                        ref={userFileInputRef}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => {
-                          if (e.target.files?.[0]) handleUserImageUpload(e.target.files[0]);
-                        }}
-                      />
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => userFileInputRef.current?.click()}
-                          disabled={userUploadingImage || generatingVideo}
-                          className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm"
-                        >
-                          <FaUpload /> <span>Subir desde mi equipo</span>
-                        </button>
-                      </div>
-
-                      {/* Selector rápido desde catálogo de productos */}
+                  {/* Pestañas de modo */}
+                  <div className="flex bg-slate-100 p-1 rounded-2xl gap-1 border border-slate-200">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setImageSourceMode("catalog");
+                        if (!selectedCatalogItemId && catalogItems.length > 0) {
+                          handleSelectCatalogItem(catalogItems[0]);
+                        }
+                      }}
+                      className={`flex-1 py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all ${
+                        imageSourceMode === "catalog"
+                          ? "bg-white text-indigo-700 shadow-sm border border-slate-200/80"
+                          : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      <FaBoxOpen className="text-sm" />
+                      <span>Mi Biblioteca de Productos</span>
                       {catalogItems.length > 0 && (
-                        <div>
-                          <label className="text-[11px] font-bold text-slate-600 block mb-1">
-                            O selecciona una foto de tu catálogo:
-                          </label>
-                          <div className="flex gap-2 overflow-x-auto pb-1 max-w-full">
-                            {catalogItems.map((item) => (
-                              <button
-                                key={item.id}
-                                type="button"
-                                onClick={() => {
-                                  if (item.imageUrl) setUserImageUrl(item.imageUrl);
-                                  if (item.name) setUserProductName(item.name);
-                                }}
-                                className={`shrink-0 p-1.5 rounded-lg border text-left flex items-center gap-2 transition-all ${
-                                  userImageUrl === item.imageUrl
-                                    ? "border-indigo-600 bg-indigo-50 shadow-sm"
-                                    : "border-slate-200 bg-white hover:border-slate-300"
-                                }`}
-                              >
-                                {item.imageUrl ? (
-                                  <img src={item.imageUrl} alt={item.name} className="w-8 h-8 rounded object-cover" />
-                                ) : (
-                                  <FaBoxOpen className="text-slate-400" />
-                                )}
-                                <span className="font-bold text-[11px] text-slate-800 max-w-[100px] truncate">
-                                  {item.name}
-                                </span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] ${
+                          imageSourceMode === "catalog"
+                            ? "bg-indigo-100 text-indigo-700 font-black"
+                            : "bg-slate-200 text-slate-700 font-semibold"
+                        }`}>
+                          {catalogItems.length}
+                        </span>
                       )}
+                    </button>
 
-                      {/* Input manual de URL */}
-                      <div>
-                        <input
-                          type="text"
-                          placeholder="O pega la URL de la foto..."
-                          value={userImageUrl}
-                          onChange={(e) => setUserImageUrl(e.target.value)}
-                          className="w-full bg-white border border-slate-200 rounded-xl p-2 text-slate-900 text-xs"
-                        />
-                      </div>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setImageSourceMode("upload")}
+                      className={`flex-1 py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all ${
+                        imageSourceMode === "upload"
+                          ? "bg-white text-indigo-700 shadow-sm border border-slate-200/80"
+                          : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      <FaUpload className="text-sm" />
+                      <span>Subir Nueva Foto</span>
+                    </button>
                   </div>
                 </div>
 
-                {/* Paso 2: Detalles del Producto */}
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">
-                    2. Nombre de tu producto u oferta:
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Ej: Hamburguesa Suprema con Queso Fundido"
-                    value={userProductName}
-                    onChange={(e) => setUserProductName(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-900 font-bold"
-                  />
+                {/* CONTENIDO MODO 1: BIBLIOTECA DE PRODUCTOS */}
+                {imageSourceMode === "catalog" && (
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+                    {loadingCatalog ? (
+                      <div className="py-8 text-center text-slate-500 flex items-center justify-center gap-2">
+                        <FaSpinner className="animate-spin text-indigo-600 text-lg" />
+                        <span>Cargando productos de tu biblioteca...</span>
+                      </div>
+                    ) : catalogItems.length === 0 ? (
+                      <div className="py-6 px-4 text-center space-y-2 bg-white rounded-xl border border-dashed border-slate-300">
+                        <FaBoxOpen className="text-3xl text-slate-300 mx-auto" />
+                        <p className="font-bold text-slate-700">Aún no tienes productos registrados en tu biblioteca</p>
+                        <p className="text-slate-500 text-[11px] max-w-sm mx-auto">
+                          Puedes subir una foto directamente en la pestaña "Subir Nueva Foto" o agregar tus productos desde la sección Catálogo.
+                        </p>
+                        <div className="pt-2">
+                          <button
+                            type="button"
+                            onClick={() => setImageSourceMode("upload")}
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl text-xs inline-flex items-center gap-1.5"
+                          >
+                            <FaUpload /> <span>Cambiar a Subir Foto</span>
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {/* Barra de búsqueda de productos */}
+                        {catalogItems.length > 2 && (
+                          <div className="relative">
+                            <FaSearch className="absolute left-3 top-2.5 text-slate-400 text-xs" />
+                            <input
+                              type="text"
+                              value={catalogSearch}
+                              onChange={(e) => setCatalogSearch(e.target.value)}
+                              placeholder="Buscar en tu biblioteca por nombre o descripción..."
+                              className="w-full pl-8 pr-8 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-indigo-500"
+                            />
+                            {catalogSearch && (
+                              <button
+                                type="button"
+                                onClick={() => setCatalogSearch("")}
+                                className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600 text-xs p-1"
+                              >
+                                <FaTimes />
+                              </button>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Grid de productos seleccionables */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 max-h-56 overflow-y-auto pr-1">
+                          {filteredCatalogItems.map((item) => {
+                            const isSelected = selectedCatalogItemId === item.id;
+                            return (
+                              <div
+                                key={item.id}
+                                onClick={() => handleSelectCatalogItem(item)}
+                                className={`p-2.5 rounded-xl border cursor-pointer transition-all flex items-start gap-2.5 text-left relative ${
+                                  isSelected
+                                    ? "border-indigo-600 bg-indigo-50/70 shadow-sm ring-2 ring-indigo-500/20"
+                                    : "border-slate-200 bg-white hover:border-indigo-300 hover:bg-slate-50/50"
+                                }`}
+                              >
+                                <div className="w-12 h-12 rounded-lg bg-slate-100 border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center">
+                                  {item.imageUrl ? (
+                                    <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+                                  ) : (
+                                    <FaImage className="text-slate-400 text-base" />
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between gap-1">
+                                    <h4 className="font-bold text-slate-900 text-[11px] truncate">{item.name}</h4>
+                                    {isSelected && (
+                                      <span className="text-indigo-600 text-xs shrink-0">
+                                        <FaCheck />
+                                      </span>
+                                    )}
+                                  </div>
+                                  {item.category && (
+                                    <span className="text-[10px] text-indigo-600 font-semibold block truncate">
+                                      {item.category}
+                                    </span>
+                                  )}
+                                  {item.description && (
+                                    <p className="text-[10px] text-slate-500 line-clamp-1 mt-0.5">
+                                      {item.description}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {filteredCatalogItems.length === 0 && (
+                          <p className="text-center py-4 text-slate-500 text-xs">
+                            No se encontraron productos que coincidan con "{catalogSearch}".
+                          </p>
+                        )}
+
+                        {/* Tarjeta de resumen de producto seleccionado */}
+                        {userImageUrl && (
+                          <div className="bg-white p-3 rounded-xl border border-indigo-100 flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-lg overflow-hidden border border-slate-200 shrink-0 bg-slate-100">
+                              <img src={userImageUrl} alt={userProductName} className="w-full h-full object-cover" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">
+                                Producto seleccionado para el video:
+                              </div>
+                              <div className="font-bold text-slate-900 text-xs truncate">
+                                {userProductName || "Sin nombre"}
+                              </div>
+                              {userProductDescription && (
+                                <div className="text-[10px] text-slate-500 truncate">
+                                  {userProductDescription}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* CONTENIDO MODO 2: SUBIR NUEVA FOTO O URL */}
+                {imageSourceMode === "upload" && (
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-4">
+                    <div className="flex flex-col sm:flex-row gap-4 items-start">
+                      {/* Vista previa de la imagen */}
+                      <div className="w-28 h-28 rounded-xl bg-slate-200 border border-slate-300 overflow-hidden flex items-center justify-center shrink-0">
+                        {userImageUrl ? (
+                          <img src={userImageUrl} alt="Producto" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="text-center p-2 text-slate-400">
+                            <FaImage className="text-2xl mx-auto mb-1" />
+                            <span className="text-[10px]">Sin imagen</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex-1 space-y-2.5 w-full">
+                        <input
+                          ref={userFileInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            if (e.target.files?.[0]) handleUserImageUpload(e.target.files[0]);
+                          }}
+                        />
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => userFileInputRef.current?.click()}
+                            disabled={userUploadingImage || generatingVideo}
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm"
+                          >
+                            <FaUpload /> <span>Elegir archivo de imagen</span>
+                          </button>
+                          {userImageUrl && (
+                            <button
+                              type="button"
+                              onClick={() => setUserImageUrl("")}
+                              className="text-slate-500 hover:text-slate-700 font-bold px-3 py-2 text-xs"
+                            >
+                              Limpiar
+                            </button>
+                          )}
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-bold text-slate-600 block mb-1">
+                            O pega un enlace público de la imagen:
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="https://ejemplo.com/foto-producto.jpg"
+                            value={userImageUrl}
+                            onChange={(e) => setUserImageUrl(e.target.value)}
+                            className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-slate-900 text-xs focus:outline-none focus:border-indigo-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Paso 2: Datos y detalles descriptivos del producto para Veo 3.1 */}
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+                  <span className="font-bold text-slate-900 text-sm block">
+                    2. Datos y descripción de tu producto:
+                  </span>
+
+                  <div className="space-y-3">
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1 text-[11px]">
+                        Nombre del producto u oferta:
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ej: Zapatillas Urban Ultra 2026, Café Espresso Orgánico..."
+                        value={userProductName}
+                        onChange={(e) => setUserProductName(e.target.value)}
+                        className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-slate-900 font-bold text-xs focus:outline-none focus:border-indigo-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1 text-[11px] flex items-center justify-between">
+                        <span>Descripción física / visual para el modelo de video:</span>
+                        <span className="text-[10px] text-slate-400 font-normal">Opcional pero recomendado</span>
+                      </label>
+                      <textarea
+                        rows={2}
+                        placeholder="Ej: Botella de vidrio ámbar con etiqueta mate dorada, textura suave, condensación fría en la superficie..."
+                        value={userProductDescription}
+                        onChange={(e) => setUserProductDescription(e.target.value)}
+                        className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-slate-900 text-xs focus:outline-none focus:border-indigo-500 resize-none"
+                      />
+                      <p className="text-[10px] text-slate-500 mt-1">
+                        Nuestros agentes incorporan estos detalles en la capa de texturas físicas y reflejos cinemáticos de Google Flow y Veo 3.1.
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Paso 3: Opción de Logo con Remotion */}
