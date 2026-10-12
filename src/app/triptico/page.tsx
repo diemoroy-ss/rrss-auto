@@ -5,6 +5,7 @@ import Link from "next/link";
 import BrandHeader from "../../components/BrandHeader";
 import BrandFooter from "../../components/BrandFooter";
 import DotCanvas from "../../components/DotCanvas";
+import PageTracker from "../../components/PageTracker";
 import {
   FaPlay,
   FaQrcode,
@@ -53,16 +54,18 @@ export default function TripticoSalesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 relative selection:bg-indigo-500 selection:text-white">
+    <div className="landing-page-root relative overflow-x-hidden min-h-screen selection:bg-indigo-500 selection:text-white">
+      <PageTracker page="triptico" />
       <DotCanvas />
-      <BrandHeader />
 
-      {/* ── BANNER SUPERIOR DE IMPACTO ── */}
-      <div className="bg-gradient-to-r from-orange-600 via-amber-500 to-indigo-600 text-white text-xs font-black py-2 px-4 text-center tracking-wider uppercase flex items-center justify-center gap-2 relative z-20">
-        <FaBolt className="text-yellow-200" />
-        <span>Resumen Ejecutivo &amp; Tríptico Comercial de Santisoft</span>
-        <span className="hidden sm:inline bg-black/30 px-2 py-0.5 rounded text-[10px]">Actualizado 2026</span>
+      {/* ── PROMO BANNER ESTÁNDAR DE LA PLATAFORMA ── */}
+      <div className="promo">
+        <span className="on-air"></span>
+        TRÍPTICO DE VENTAS — <strong>ECOSISTEMA COMERCIAL DE 3 MOTORES</strong> · VIDEOS, AFICHES &amp; MENÚ QR
       </div>
+
+      {/* ── BRAND NAV HEADER ── */}
+      <BrandHeader />
 
       <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16 space-y-12">
         {/* ── ENCABEZADO PRINCIPAL DE LA LANDING ── */}
