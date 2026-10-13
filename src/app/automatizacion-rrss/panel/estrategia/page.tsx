@@ -469,7 +469,14 @@ export default function EstrategiaPage() {
                 productDescription: post.productDescription || null,
                 baseImageUrl: post.baseImageUrl || null,
                 hasProductImage: Boolean(post.baseImageUrl),
-                isCommercialPoster: Boolean(post.isCommercialPoster ?? isCommercialPosterOnly)
+                isCommercialPoster: Boolean(post.isCommercialPoster ?? isCommercialPosterOnly),
+                videoCommand: post.videoCommand || null,
+                videoTemplateName: post.videoTemplateName || null,
+                videoCategory: post.videoCategory || null,
+                videoMotionStyle: post.videoMotionStyle || null,
+                videoPrompt: post.videoPrompt || null,
+                videoDuration: postType === 'Reel' ? 10 : null,
+                needsBaseImageFirst: Boolean(postType === 'Reel' && (post.needsBaseImageFirst || !post.baseImageUrl))
             });
 
             try {
@@ -976,7 +983,31 @@ export default function EstrategiaPage() {
                                             </div>
                                          )}
 
-                                         {/* Style badge if assigned */}
+                                         {/* Video Template badge if assigned */}
+                                          {(post.videoTemplateName || post.videoCommand) && (
+                                             <div className="flex items-center gap-2.5 p-2.5 rounded-2xl bg-purple-50/80 border border-purple-100/90 mb-4 relative z-10">
+                                               <span className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center text-base shrink-0">🎬</span>
+                                               <div className="min-w-0 flex-1">
+                                                 <div className="flex items-center gap-1.5 flex-wrap">
+                                                   <span className="text-[9px] font-black text-purple-600 uppercase tracking-widest">Plantilla Oficial de Video</span>
+                                                   <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200">
+                                                     Máx 10s
+                                                   </span>
+                                                   {post.needsBaseImageFirst && (
+                                                     <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+                                                       📸 Foto previa por agentes
+                                                     </span>
+                                                   )}
+                                                 </div>
+                                                 <div className="text-xs font-black text-purple-950 truncate mt-0.5">{post.videoTemplateName || post.videoCommand}</div>
+                                                 {post.videoMotionStyle && (
+                                                   <div className="text-[10px] text-purple-700/80 font-medium line-clamp-1 mt-0.5">🎥 {post.videoMotionStyle}</div>
+                                                 )}
+                                               </div>
+                                             </div>
+                                          )}
+
+                                          {/* Style badge if assigned */}
                                          {post.visualStyle && (
                                             <div className="flex items-center gap-2.5 p-2.5 rounded-2xl bg-indigo-50/80 border border-indigo-100/90 mb-4 relative z-10">
                                               {post.previewUrl ? (
@@ -989,7 +1020,7 @@ export default function EstrategiaPage() {
                                                 <span className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center text-base shrink-0">🎨</span>
                                               )}
                                               <div className="min-w-0 flex-1">
-                                                <div className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">Estilo Visual Prompt IA</div>
+                                                <div className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">Estilo Visual de Agentes</div>
                                                 <div className="text-xs font-black text-indigo-950 truncate">{post.visualStyle}</div>
                                                 {post.imageDirection && (
                                                   <div className="text-[10px] text-slate-500 font-medium line-clamp-1 mt-0.5">{post.imageDirection}</div>

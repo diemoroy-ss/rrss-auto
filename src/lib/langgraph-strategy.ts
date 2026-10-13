@@ -1,5 +1,6 @@
 import { StateGraph, START, END, Annotation } from "@langchain/langgraph";
 import { generateFreeText } from "./gemini-free";
+import { FLOW_COMMANDS } from "./flow-command-translator";
 
 // 1. Definición del Estado del Grafo para Estrategia
 export const StrategyAnnotation = Annotation.Root({
@@ -169,13 +170,30 @@ REGLA ESTRICTA DE IMÁGENES TIPO CARTEL COMERCIAL ACTIVADA:
 4. En "imageDirection", instruye explícitamente a nuestros agentes para componer un Cartel Publicitario Comercial de dos niveles: plato/producto limpio en la mitad inferior y tipografía/precio en la cabecera superior sin tapar la comida.\n\n`
     : "";
 
+  const videoTemplatesContext = state.maxVideos > 0 ? `
+PLANTILLAS Y COMANDOS DE VIDEO OFICIALES PROPUESTOS (${FLOW_COMMANDS.length} PLANTILLAS DISPONIBLES):
+${FLOW_COMMANDS.map((c, i) => `${i + 1}. Comando: "${c.command}" | Nombre: "${c.name}" | Categoría: "${c.category}" | Enfoque: "${c.description}" | Movimiento: "${c.cameraMovement}"`).join("\n")}
+
+REGLA ESTRICTA DE VIDEOS POR PLANTILLAS (PLAN CON VIDEOS):
+1. NO SE HARÁN VIDEOS QUE NO SEAN LOS PROPUESTOS: Todo post con formato 'Reel' o 'Video' DEBE elegir OBLIGATORIAMENTE una de las 20 plantillas/comandos de video de la lista oficial de arriba. Está terminantemente prohibido inventar o sugerir estilos de video fuera de estas plantillas.
+2. Cada post que tenga formato 'Reel' o 'Video' debe incluir obligatoriamente los siguientes campos:
+   - "videoCommand": El comando exacto de la plantilla seleccionada (ej: "${FLOW_COMMANDS[0].command}", "${FLOW_COMMANDS[2].command}", etc.)
+   - "videoTemplateName": El nombre oficial de la plantilla seleccionada (ej: "${FLOW_COMMANDS[0].name}")
+   - "videoCategory": Categoría oficial de la plantilla ("E-Commerce & Productos", "Servicios & Marcas", "Lanzamientos & Revelación", o "Creativos & Tendencias")
+   - "videoMotionStyle": El movimiento de cámara exacto de la plantilla seleccionada
+   - "videoPrompt": Prompt cinematográfico en inglés derivado de la plantilla, adaptado al producto o rubro, especificando duración máxima de 10 segundos ("Maximum duration: 10 seconds --ar 9:16")
+   - "videoDuration": 10 (Duración máxima estricta de 10 segundos)
+   - "needsBaseImageFirst": true si el producto NO tiene foto real registrada (o hasProductImage es false). Recuerda: si el usuario no tiene imágenes de producto subidas, primero se debe generar la imagen comercial con nuestros agentes y luego el video a partir de ella. Si tiene foto real subida, false.
+3. Si la publicación NO es 'Reel' ni 'Video', estos campos de video deben ser null.
+\n` : "";
+
   const prompt = `Eres un Social Media Planner experto, entrenado con los mejores frameworks de crecimiento (BH Skills). 
 Basándote en el siguiente análisis, genera un plan táctico de publicaciones.
 
 ANÁLISIS ESTRATÉGICO:
 ${state.analysis}
 
-${contactContext}${catalogInstruction}${commercialPosterRule}${state.promotions ? `PROMOCIONES Y OFERTAS CLAVE DEL NEGOCIO (Incluye estas promociones, precios o combos reales en los ganchos y copys comerciales):\n"${state.promotions}"\n\n` : ""}${state.nicheContext ? `CONTEXTO DEL RADAR DE NICHO (Últimos 30 días):\n${state.nicheContext}\n\n` : ""}${stylesContext}
+${contactContext}${catalogInstruction}${commercialPosterRule}${videoTemplatesContext}${state.promotions ? `PROMOCIONES Y OFERTAS CLAVE DEL NEGOCIO (Incluye estas promociones, precios o combos reales en los ganchos y copys comerciales):\n"${state.promotions}"\n\n` : ""}${state.nicheContext ? `CONTEXTO DEL RADAR DE NICHO (Últimos 30 días):\n${state.nicheContext}\n\n` : ""}${stylesContext}
 
 HISTORIAL DE POSTS Y RENDIMIENTO (Analiza esto para replicar qué formatos/ideas tuvieron más likes/alcance, y descarta lo que no sirvió):
 ${state.history}
@@ -203,7 +221,18 @@ DEBES GENERAR UNA ESTRUCTURA DE JSON válida que contenga un arreglo 'strategy' 
   "productDescription": "Descripción breve del producto o servicio (o null)",
   "baseImageUrl": "URL de la foto si el producto tiene foto real, o null si no tiene",
   "hasProductImage": true o false,
-  "isCommercialPoster": ${state.isCommercialPoster ? "true" : "false"}${state.promptStyles && state.promptStyles.length > 0 ? `,\n  "visualStyle": "Nombre del estilo asignado",\n  "promptTemplateId": "ID del estilo asignado",\n  "previewUrl": "URL de preview del estilo",\n  "imageDirection": "Instrucción de imagen aplicando el estilo y destacando el producto"` : ""}
+  "isCommercialPoster": ${state.isCommercialPoster ? "true" : "false"},
+  "visualStyle": "Nombre del estilo visual de imagen asignado (o null)",
+  "promptTemplateId": "ID del estilo visual de imagen asignado (o null)",
+  "previewUrl": "URL de preview del estilo visual (o null)",
+  "imageDirection": "Instrucción de imagen aplicando el estilo y destacando el producto",
+  "videoCommand": "Comando de video oficial de las 20 plantillas si es Reel (ej: '${FLOW_COMMANDS[0].command}') o null",
+  "videoTemplateName": "Nombre oficial de la plantilla de video si es Reel (ej: '${FLOW_COMMANDS[0].name}') o null",
+  "videoCategory": "Categoría de la plantilla de video si es Reel o null",
+  "videoMotionStyle": "Movimiento de cámara si es Reel o null",
+  "videoPrompt": "Prompt cinematográfico en inglés para el video (max 10s --ar 9:16) si es Reel o null",
+  "videoDuration": 10,
+  "needsBaseImageFirst": true o false si es Reel (true si no tiene foto real previa, false si tiene)
 }
 
 GENERA EXACTAMENTE ${state.postsPerWeek} PUBLICACIONES DISTRIBUIDAS EN LOS PRÓXIMOS DÍAS.
@@ -231,6 +260,7 @@ REGLAS A VALIDAR:
 5. CONSERVA INTACTOS los campos de producto si están presentes: 'productId', 'productName', 'productDescription', 'baseImageUrl', 'hasProductImage'.
 6. CONSERVA INTACTOS los campos de estilo visual: 'visualStyle', 'promptTemplateId', 'previewUrl', 'imageDirection'.
 7. CONSERVA INTACTO el campo 'isCommercialPoster' (booleano) si está presente.
+8. CONSERVA INTACTOS y valida los campos de video para Reels: 'videoCommand', 'videoTemplateName', 'videoCategory', 'videoMotionStyle', 'videoPrompt', 'videoDuration', 'needsBaseImageFirst'.
 
 DEVUELVE ÚNICAMENTE EL OBJETO JSON LIMPIO. SIN MARKDOWN.`;
 
@@ -259,22 +289,72 @@ DEVUELVE ÚNICAMENTE EL OBJETO JSON LIMPIO. SIN MARKDOWN.`;
     }));
   }
 
-  // Post-procesamiento estricto de seguridad de límites de video
+  // Post-procesamiento estricto de seguridad de límites de video y plantillas oficiales
   if (state.maxVideos <= 0) {
     strategy = strategy.map(item => {
       if (item.format === 'Reel' || item.format === 'Video') {
-        return { ...item, format: 'Post Fijo' };
+        return { 
+          ...item, 
+          format: 'Post Fijo',
+          videoCommand: null,
+          videoTemplateName: null,
+          videoCategory: null,
+          videoMotionStyle: null,
+          videoPrompt: null,
+          videoDuration: null,
+          needsBaseImageFirst: false
+        };
       }
       return item;
     });
   } else {
     let videoCount = 0;
     strategy = strategy.map(item => {
-      if (item.format === 'Reel' || item.format === 'Video') {
+      const isReel = item.format === 'Reel' || item.format === 'Video';
+      if (isReel) {
         videoCount++;
         if (videoCount > state.maxVideos) {
-          return { ...item, format: 'Post Fijo' };
+          return { 
+            ...item, 
+            format: 'Post Fijo',
+            videoCommand: null,
+            videoTemplateName: null,
+            videoCategory: null,
+            videoMotionStyle: null,
+            videoPrompt: null,
+            videoDuration: null,
+            needsBaseImageFirst: false
+          };
         }
+
+        // Validar que el Reel tenga un comando propuesto de las 20 plantillas oficiales
+        const matchedCmd = FLOW_COMMANDS.find(c => 
+          c.command.toLowerCase() === (item.videoCommand || '').toLowerCase() ||
+          c.name.toLowerCase() === (item.videoTemplateName || '').toLowerCase()
+        );
+
+        // Si no vino comando o no es uno de los propuestos, asignar uno adecuado según rubro
+        const isFood = /comida|gastronom|restauran|cafe|hamburgue|pizz/i.test(state.businessType);
+        const isService = /servicio|abogad|clinic|consult|inmobil/i.test(state.businessType);
+        const defaultCmd = isFood
+          ? (FLOW_COMMANDS.find(c => c.command === '/fresh food reveal') || FLOW_COMMANDS[0])
+          : isService
+          ? (FLOW_COMMANDS.find(c => c.command === '/office tour glide') || FLOW_COMMANDS.find(c => c.command === '/client testimonial hero') || FLOW_COMMANDS[0])
+          : FLOW_COMMANDS[0]; // /360 product orbit
+
+        const finalCmd = matchedCmd || defaultCmd;
+
+        return {
+          ...item,
+          format: 'Reel',
+          videoCommand: finalCmd.command,
+          videoTemplateName: finalCmd.name,
+          videoCategory: finalCmd.category,
+          videoMotionStyle: item.videoMotionStyle || finalCmd.cameraMovement,
+          videoPrompt: item.videoPrompt || `${finalCmd.defaultEnglishPrompt} Maximum duration: 10 seconds --ar 9:16`,
+          videoDuration: 10,
+          needsBaseImageFirst: !item.baseImageUrl
+        };
       }
       return item;
     });

@@ -480,7 +480,55 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
                                 businessName: targetProfile?.name || ''
                             }, creds.uid, postId);
                         } else {
-                            // Generar con agente de Video Premium (que invoca n8n y luego Remotion)
+                            // Generar con agente de Video Premium con plantilla y resolución de imagen previa
+                            let resolvedReelBaseImage: string | undefined = undefined;
+
+                            // 1. Revisar si ya tiene foto de producto real subida
+                            if (post.baseImageUrl && typeof post.baseImageUrl === 'string' && post.baseImageUrl.startsWith('http')) {
+                                resolvedReelBaseImage = post.baseImageUrl;
+                            } else if (post.imageUrl && typeof post.imageUrl === 'string' && post.imageUrl.startsWith('http') && !post.imageUrl.includes('.mp4') && !post.imageUrl.includes('.webm') && !post.imageUrl.includes('.mov')) {
+                                resolvedReelBaseImage = post.imageUrl;
+                            }
+
+                            // 2. Si no tiene foto real, o needsBaseImageFirst es true:
+                            // Primero generar la imagen publicitaria con nuestros agentes y luego el video
+                            if (!resolvedReelBaseImage) {
+                                infoLog += `Generando primero imagen publicitaria base con nuestros agentes para animación de video... `;
+                                const { generateImageWithAgent } = await import('../../../lib/agents/agent-image');
+
+                                const productFocus = post.productName 
+                                    ? `Producto/servicio protagonista: "${post.productName}"${post.productDescription ? ` (${post.productDescription})` : ''}. ` 
+                                    : '';
+
+                                const imagePromptIdea = post.imageDirection 
+                                    ? `${productFocus}${post.imageDirection}${post.visualStyle ? ` en estilo visual ${post.visualStyle}` : ''}. Contexto del post: ${post.idea || post.text || post.copy}`
+                                    : `${productFocus}${post.idea || post.text || post.copy || 'Fotografía comercial publicitaria'}`;
+
+                                try {
+                                    resolvedReelBaseImage = await generateImageWithAgent({
+                                        idea: imagePromptIdea,
+                                        rubro: targetProfile?.rubro || targetProfile?.businessType || 'General',
+                                        businessName: targetProfile?.name || '',
+                                        businessDescription: targetProfile?.businessDescription || '',
+                                        promotions: targetProfile?.promotions || '',
+                                        customOffer: post.customOffer || '',
+                                        productName: post.productName || undefined,
+                                        productDescription: post.productDescription || undefined,
+                                        bannerStyle: (targetProfile?.bannerStyle as any) || 'banner',
+                                        aspectRatio: '9:16',
+                                        logoPrompt: targetProfile?.logoPrompt || '',
+                                        logoUrl: targetProfile?.logoUrl || '',
+                                        userId: creds.uid,
+                                        includeLogo: false,
+                                        promptTemplateId: post.promptTemplateId || undefined,
+                                        visualStyle: post.visualStyle || undefined,
+                                        brandVisualIdentity: targetProfile?.visualIdentity || undefined,
+                                    });
+                                } catch (imgErr) {
+                                    console.warn('[publishInBackground] Advertencia generando imagen previa para Reel:', imgErr);
+                                }
+                            }
+
                             const { generatePremiumVideoWithAgent } = await import('../../../lib/agents/agent-video-premium');
                             finalReelUrl = await generatePremiumVideoWithAgent({
                                 postId,
@@ -490,7 +538,10 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
                                 userId: creds.uid,
                                 logoUrl: targetProfile?.logoUrl || post.logoUrl || '',
                                 businessName: targetProfile?.name || '',
-                                showWatermark: post.showWatermark ?? false
+                                showWatermark: post.showWatermark ?? false,
+                                imageUrl: resolvedReelBaseImage || undefined,
+                                promptOverride: post.videoPrompt || undefined,
+                                motionStyle: post.videoCommand || post.videoMotionStyle || 'cinematic_slow_push_in'
                             });
                         }
                     }
