@@ -428,29 +428,43 @@ export default function MetricasDashboard() {
 
   const handleManualSync = async () => {
     setIsSyncing(true);
-    setSyncStatus({ type: 'info', text: 'Buscando el historial más reciente en los servidores de Meta...' });
+    setSyncStatus({ type: 'info', text: 'Nuestros agentes están sincronizando las métricas con tus redes sociales...' });
     
     try {
+      const idToken = user ? await user.getIdToken() : null;
       const response = await fetch('/api/sync-metrics', { 
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {})
+        },
         body: JSON.stringify({ 
           userId: user.uid,
           profileId: activeProfile?.id || 'default'
         })
       });
 
-      if (!response.ok) throw new Error("Error en el servidor de sincronización");
+      const resData = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(resData.error || "Error en el servidor de sincronización");
+      }
       
       // Tras finalizar, volvemos a descargar los datos actualizados de Firestore
       if (user) await fetchMetrics(user.uid);
       
-      setSyncStatus({ type: 'success', text: '¡Métricas sincronizadas perfectamente! Tus datos están al día.' });
+      setSyncStatus({ 
+        type: 'success', 
+        text: resData.message || '¡Métricas sincronizadas por nuestros agentes! Tus datos están al día.' 
+      });
       setTimeout(() => setSyncStatus(null), 5000);
       
-    } catch (e) {
-      setSyncStatus({ type: 'error', text: 'No pudimos sincronizar en este momento. Revisa tu conexión con el servidor.' });
-      setTimeout(() => setSyncStatus(null), 5000);
+    } catch (e: any) {
+      console.error("Error manual sync", e);
+      setSyncStatus({ 
+        type: 'error', 
+        text: e.message || 'No pudimos sincronizar en este momento. Revisa tu conexión con el servidor.' 
+      });
+      setTimeout(() => setSyncStatus(null), 6000);
     } finally {
       setIsSyncing(false);
     }
@@ -600,7 +614,7 @@ export default function MetricasDashboard() {
                  <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-300 mb-2">Posts Exitosos</h4>
                  <div className="text-5xl font-black text-white tracking-tight">{publishedPosts.length}</div>
                  <div className="mt-4 flex items-center gap-2 text-xs font-bold text-indigo-200 bg-white/10 w-fit px-3 py-1 rounded-lg backdrop-blur-md">
-                    Entregados por el Bot
+                    Publicados por nuestros agentes
                  </div>
                </div>
             </div>
@@ -613,10 +627,10 @@ export default function MetricasDashboard() {
              <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8 mb-6 print:hidden">
                 <div>
                    <h3 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3 mb-3">
-                      <span className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-2xl border border-indigo-100 shadow-inner">🧠</span>
-                      Inteligencia Analítica
+                      <span className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-2xl border border-indigo-100 shadow-inner">👥</span>
+                      Análisis de Agentes
                    </h3>
-                   <p className="text-slate-500 text-lg font-medium max-w-xl leading-relaxed">Nuestra IA evaluará tu rendimiento mensual, detectará qué formatos funcionan mejor y te dará consejos tácticos para maximizar resultados.</p>
+                   <p className="text-slate-500 text-lg font-medium max-w-xl leading-relaxed">Nuestros agentes evaluarán tu rendimiento mensual, detectarán qué formatos funcionan mejor y te darán consejos tácticos para maximizar resultados.</p>
                 </div>
                 <div className="flex flex-col gap-3 w-full md:w-auto shrink-0">
                     <button
@@ -624,7 +638,7 @@ export default function MetricasDashboard() {
                        disabled={analyzing || publishedPosts.length === 0 || !hasNetworks}
                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-50 disabled:pointer-events-none font-black text-lg px-8 py-5 rounded-2xl shadow-xl hover:shadow-indigo-500/20 transition-all hover:-translate-y-1 flex items-center justify-center gap-3"
                     >
-                       {analyzing ? <><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Analizando...</> : !hasNetworks ? 'Conecta RRSS para analizar' : 'Generar Reporte AI ✨'}
+                       {analyzing ? <><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Analizando...</> : !hasNetworks ? 'Conecta RRSS para analizar' : 'Generar Reporte con Agentes ✨'}
                     </button>
                     {analyticsHistory.length > 0 && (
                        <select 
@@ -665,7 +679,7 @@ export default function MetricasDashboard() {
                    <div id="printable-report-wrapper" ref={reportRef} className={`bg-slate-50 rounded-[24px] p-6 md:p-10 text-slate-700 border-2 border-slate-100 shadow-inner ${isExporting ? 'opacity-50' : ''}`}>
                       {/* Hidden Header for PDF Output */}
                       <div id="pdf-hidden-header" style={{ display: 'none' }} className="mb-8">
-                         <h2 className="text-3xl font-black text-indigo-900 mb-2">Reporte Analítico de Rendimiento (IA)</h2>
+                         <h2 className="text-3xl font-black text-indigo-900 mb-2">Reporte Analítico de Rendimiento (Agentes)</h2>
                          <p className="text-slate-500 font-bold text-lg mb-6">{activeProfile?.name || 'Mi Marca'} - {format(new Date(), "MMMM yyyy", { locale: es })}</p>
                          <div className="flex gap-4 mb-6">
                             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm w-1/2">
@@ -688,8 +702,8 @@ export default function MetricasDashboard() {
                       {chartData.length > 0 && (
                          <div className="mt-12 pt-8 border-t border-slate-200">
                              <h3 className="text-xl font-black text-slate-900 mb-6 flex items-center gap-2"><span className="text-2xl">📊</span> Rendimiento de posts recientes</h3>
-                             <div className="h-[300px] w-full bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                                 <ResponsiveContainer width="100%" height="100%">
+                             <div className="h-[300px] w-full min-w-0 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                                 <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={250}>
                                      <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                                          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                                          <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
@@ -741,7 +755,7 @@ export default function MetricasDashboard() {
                                title="Enviar automáticamente vía n8n (WhatsApp o Email)"
                                className="bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-600 font-bold p-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center border border-indigo-500/30 group"
                             >
-                               <span className="text-xl group-hover:scale-110 transition-transform">🤖 Enviar Reporte</span>
+                               <span className="text-xl group-hover:scale-110 transition-transform">📨 Enviar Reporte</span>
                             </button>
                          </div>
                       </div>
@@ -874,9 +888,9 @@ export default function MetricasDashboard() {
              <div className="bg-white w-full max-w-md rounded-[32px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
                 <div className="bg-indigo-600 p-8 text-white relative">
                    <button onClick={() => setShowN8nModal(false)} className="absolute top-6 right-6 text-white/60 hover:text-white text-2xl">×</button>
-                   <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center text-3xl mb-4 backdrop-blur-md">🤖</div>
+                   <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center text-3xl mb-4 backdrop-blur-md">📨</div>
                    <h3 className="text-2xl font-black tracking-tight">Enviar Reporte</h3>
-                   <p className="text-indigo-100 text-sm font-medium mt-1">Automatización vía n8n</p>
+                   <p className="text-indigo-100 text-sm font-medium mt-1">Automatización de Agentes</p>
                 </div>
                 
                 <div className="p-8 space-y-6">
