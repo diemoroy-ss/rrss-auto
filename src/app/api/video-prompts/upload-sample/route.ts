@@ -48,6 +48,7 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(arrayBuffer);
 
     const bucket = adminStorage.bucket();
+    const fileRef = bucket.file(storagePath);
     const downloadToken = Math.random().toString(36).substring(2) + Date.now().toString(36);
 
     await fileRef.save(buffer, {

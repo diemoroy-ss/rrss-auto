@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
-import { auth } from "../../../../lib/firebase";
+import { auth, storage } from "../../../../lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useProfile } from "../../../../contexts/ProfileContext";
 import { useQuota } from "../../../../hooks/useQuota";
 import { 
@@ -258,25 +259,60 @@ export default function VideoPromptsPage() {
     setAdminError("");
 
     try {
-      const token = await user.getIdToken();
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("type", type);
-      formData.append("command", editingTemplate.command || "sample");
+      const commandSlug = (editingTemplate.command || "sample").replace(/[^a-zA-Z0-9_-]/g, "_").toLowerCase();
+      const ext = file.name.split(".").pop() || (type === "video" ? "mp4" : "jpg");
+      const fileName = `${commandSlug}_${type}_${Date.now()}.${ext}`;
 
-      const res = await fetch("/api/video-prompts/upload-sample", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
+      let downloadUrl = "";
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Error al subir archivo");
+      // 1. Intentar subida directa al bucket con SDK de Firebase (cliente), evitando límites de proxy HTTP (Nginx 413)
+      try {
+        const storageRef = ref(storage, `users/${user.uid}/flow_showcase/${fileName}`);
+        const snap = await uploadBytes(storageRef, file, {
+          contentType: file.type || (type === "video" ? "video/mp4" : "image/jpeg"),
+        });
+        downloadUrl = await getDownloadURL(snap.ref);
+      } catch (clientErr: any) {
+        console.warn("Subida directa por cliente no disponible, usando ruta de servidor...", clientErr);
+        // Fallback a API route
+        const token = await user.getIdToken();
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("type", type);
+        formData.append("command", editingTemplate.command || "sample");
+
+        const res = await fetch("/api/video-prompts/upload-sample", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+
+        if (!res.ok) {
+          let errText = "Error al subir archivo";
+          try {
+            const errJson = await res.json();
+            errText = errJson.error || errText;
+          } catch {
+            const raw = await res.text();
+            if (res.status === 413) {
+              errText = "El archivo excede el tamaño máximo permitido por el servidor web.";
+            } else {
+              errText = `Error (${res.status}): ${raw.slice(0, 120)}`;
+            }
+          }
+          throw new Error(errText);
+        }
+
+        const data = await res.json();
+        downloadUrl = data.url;
+      }
+
+      if (!downloadUrl) throw new Error("No se pudo obtener la URL del archivo subido.");
 
       if (type === "image") {
-        setEditingTemplate((prev) => ({ ...prev, sampleBaseImage: data.url }));
+        setEditingTemplate((prev) => ({ ...prev, sampleBaseImage: downloadUrl }));
       } else {
-        setEditingTemplate((prev) => ({ ...prev, sampleFinalVideo: data.url }));
+        setEditingTemplate((prev) => ({ ...prev, sampleFinalVideo: downloadUrl }));
       }
     } catch (err: any) {
       setAdminError(err.message || "Error al subir archivo.");
