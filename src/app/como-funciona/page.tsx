@@ -18,6 +18,94 @@ type ScenarioKey = "aprobar" | "urgente" | "metricas";
 type PromptCategory = "all" | "gastronomia" | "retail" | "belleza" | "servicios";
 type ReelNiche = "gastronomia" | "retail" | "belleza" | "fitness";
 
+interface VideoPromptHighlight {
+  command: string;
+  name: string;
+  category: string;
+  icon: string;
+  tag: string;
+  description: string;
+  cameraMovement: string;
+  physicsEffect: string;
+  recommendedFor: string;
+  bgUrl: string;
+}
+
+const VIDEO_PROMPT_HIGHLIGHTS: VideoPromptHighlight[] = [
+  {
+    command: "/360 product orbit",
+    name: "Órbita 360° de Producto",
+    category: "E-Commerce & Retail",
+    icon: "🔄",
+    tag: "3D & Catálogo",
+    description: "Cámara en giro circular continuo y fluido alrededor del producto, revelando relieve, materiales y reflejos de estudio.",
+    cameraMovement: "Rotación orbital estabilizada de 360 grados en plano medio",
+    physicsEffect: "Paralaje de fondo con reflejos continuos sobre los bordes",
+    recommendedFor: "Zapatillas, botellas, cosmética, tecnología, calzado y accesorios",
+    bgUrl: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    command: "/smoke reveal",
+    name: "Revelación con Humo Volumétrico",
+    category: "Lanzamientos & Estilo",
+    icon: "💨",
+    tag: "Misterio & Impacto",
+    description: "Cortina de humo denso y envolvente que se abre suavemente para revelar el producto con iluminación dramática.",
+    cameraMovement: "Dolly push-in frontal suave con desenfoque cinematográfico",
+    physicsEffect: "Humo que ondula e interactúa con la luz lateral antes de disiparse",
+    recommendedFor: "Tragos de autor, platos a la parrilla, lanzamientos de temporada y moda urbana",
+    bgUrl: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    command: "/water splash reveal",
+    name: "Salpicadura de Agua Fresca",
+    category: "Bebidas & Cosmética",
+    icon: "💧",
+    tag: "Frescura a 1000fps",
+    description: "Gotas de agua pura que estallan en ultra cámara lenta, transmitiendo frescura irresistible y vitalidad.",
+    cameraMovement: "Enfoque macro estático con seguimiento focal de alta definición",
+    physicsEffect: "Dinámica de fluidos a 1000fps con destellos cristalinos en cada gota",
+    recommendedFor: "Bebidas, cervezas, coctelería, cremas hidratantes y cuidado de la piel",
+    bgUrl: "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    command: "/fresh food reveal",
+    name: "Plato Recién Hecho con Vapor",
+    category: "Gastronomía",
+    icon: "🍔",
+    tag: "Apetito Inmediato",
+    description: "Cámara lenta cinematográfica con columnas de vapor caliente, salsas brillantes y texturas doradas que invitan a comer.",
+    cameraMovement: "Acercamiento en ángulo bajo con suave inclinación cenital",
+    physicsEffect: "Ondas sutiles de vapor culinario y brillo dorado sobre los ingredientes",
+    recommendedFor: "Hamburguesas, pizzas, pastas, cortes de carne, sándwiches y café",
+    bgUrl: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    command: "/Times Square 3D reveal",
+    name: "Pantalla Anamórfica 3D",
+    category: "Marcas & Servicios",
+    icon: "🌆",
+    tag: "Efecto Gran Marca",
+    description: "Tu marca o producto se proyecta en una gigantesca pantalla curva 3D en Times Square, simulando salir hacia el público.",
+    cameraMovement: "Toma callejera angular desde el suelo hacia la esquina monumental",
+    physicsEffect: "Ilusión óptica anamórfica donde el contenido rompe el marco de la pantalla",
+    recommendedFor: "Servicios profesionales, marcas corporativas, consultorías y lanzamientos",
+    bgUrl: "https://images.unsplash.com/photo-1508873696983-2df5293cb32f?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    command: "/macro product shot",
+    name: "Macro a Detalles & Texturas",
+    category: "Artesanal & Lujo",
+    icon: "🔍",
+    tag: "Alta Precisión",
+    description: "Lente macro deslizándose sobre costuras, maderas, grabados o ingredientes seleccionados con nitidez total.",
+    cameraMovement: "Deslizamiento rasante suave con enfoque selectivo progresivo",
+    physicsEffect: "Iluminación lateral que acentúa el relieve y la confección auténtica",
+    recommendedFor: "Joyería, ropa de autor, repostería fina, marroquinería y calzado",
+    bgUrl: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80",
+  },
+];
+
 interface PromptStyleCard {
   id: string;
   name: string;
@@ -128,6 +216,24 @@ export default function ComoFuncionaPage() {
 
   // Niche en el selector de Reels
   const [activeReelNiche, setActiveReelNiche] = useState<ReelNiche>("gastronomia");
+
+  // Comando seleccionado en la biblioteca de prompts de video
+  const [selectedVideoCommand, setSelectedVideoCommand] = useState<string>("/360 product orbit");
+  const [copiedCommandNotice, setCopiedCommandNotice] = useState<string | null>(null);
+
+  const activeVideoHighlight =
+    VIDEO_PROMPT_HIGHLIGHTS.find((v) => v.command === selectedVideoCommand) ||
+    VIDEO_PROMPT_HIGHLIGHTS[0];
+
+  const handleCopyVideoCommand = (cmd: string) => {
+    try {
+      navigator.clipboard.writeText(cmd);
+      setCopiedCommandNotice(cmd);
+      setTimeout(() => setCopiedCommandNotice(null), 2500);
+    } catch {
+      // Fallback si clipboard no está disponible
+    }
+  };
 
   // Simulador de WhatsApp
   const [activeScenario, setActiveScenario] = useState<ScenarioKey>("aprobar");
@@ -1051,6 +1157,38 @@ export default function ComoFuncionaPage() {
               <strong> paleta visual exacta</strong> de tu marca.
             </p>
           </div>
+
+          {/* Banner de puente hacia la Biblioteca de Prompts de Video */}
+          <div
+            className="mt-12 p-6 sm:p-8 rounded-3xl border flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm"
+            style={{ background: "var(--panel)", borderColor: "var(--line)" }}
+            data-reveal
+          >
+            <div className="flex items-center gap-4 text-left">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-orange-500 to-amber-500 text-white flex items-center justify-center text-3xl shrink-0 shadow-lg shadow-orange-500/20">
+                🎬
+              </div>
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-orange-500 block">
+                  Nuevo Módulo de Video 9:16
+                </span>
+                <h3 className="text-lg sm:text-xl font-bold mt-0.5" style={{ color: "var(--ink)" }}>
+                  ¿Prefieres ver las fotos de tus productos en movimiento?
+                </h3>
+                <p className="text-xs sm:text-sm mt-1 max-w-2xl" style={{ color: "var(--ink-dim)" }}>
+                  Conoce nuestra <strong>Biblioteca de Prompts de Video</strong>: más de 20 comandos cinematográficos para
+                  transformar fotos estáticas en videos publicitarios con órbita 360°, humo, agua y texturas en cámara lenta.
+                </p>
+              </div>
+            </div>
+
+            <a
+              href="#prompts-video"
+              className="px-6 py-3 rounded-xl font-bold text-xs sm:text-sm text-white bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 transition-all shadow-md shrink-0 whitespace-nowrap"
+            >
+              Ver Prompts de Video 🎥
+            </a>
+          </div>
         </div>
       </section>
 
@@ -1164,6 +1302,257 @@ export default function ComoFuncionaPage() {
                 <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-300">
                   <span>Guión de nuestros agentes</span>
                   <span className="text-orange-400 font-bold">Listo para IG &amp; TikTok</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 6.B BIBLIOTECA DE PROMPTS Y COMANDOS DE VIDEO ── */}
+      <section id="prompts-video" className="py-24 border-b" style={{ borderColor: "var(--line)" }}>
+        <div className="wrap">
+          <div className="text-center max-w-3xl mx-auto mb-16" data-reveal>
+            <span className="eyebrow text-orange-500 font-bold text-xs uppercase tracking-wider">
+              Catálogo Exclusivo de Video 9:16
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-bold mt-2 leading-tight" style={{ color: "var(--ink)" }}>
+              Nuestra Biblioteca de Prompts de Video: Dale Vida a Tus Productos.
+            </h2>
+            <p className="mt-4 text-base leading-relaxed" style={{ color: "var(--ink-dim)" }}>
+              Para destacar en Instagram Reels, TikTok y YouTube Shorts no basta con fotos fijas. Nuestros agentes cuentan con
+              un catálogo de más de 20 comandos cinematográficos para transformar fotos de tu local o catálogo en clips
+              publicitarios con giro 3D, humo volumétrico, salpicaduras y luces de estudio.
+            </p>
+          </div>
+
+          {/* Grilla interactiva de comandos */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start" data-reveal>
+            {/* Lista de comandos (lado izquierdo) */}
+            <div className="lg:col-span-5 space-y-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block px-1">
+                Toca un comando para ver cómo actúa:
+              </span>
+              {VIDEO_PROMPT_HIGHLIGHTS.map((item) => {
+                const isSelected = item.command === selectedVideoCommand;
+                return (
+                  <button
+                    key={item.command}
+                    onClick={() => setSelectedVideoCommand(item.command)}
+                    className="w-full text-left p-4 rounded-2xl border transition-all flex items-center justify-between gap-3 group"
+                    style={{
+                      background: isSelected ? "var(--panel-accent, #fff7ed)" : "var(--panel)",
+                      borderColor: isSelected ? "var(--signal)" : "var(--line)",
+                      boxShadow: isSelected ? "0 4px 20px -2px rgba(249, 115, 22, 0.15)" : "none",
+                    }}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="text-2xl shrink-0 p-2 rounded-xl bg-orange-500/10 text-orange-500">
+                        {item.icon}
+                      </span>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <code className="text-xs font-bold text-orange-600 bg-orange-100/60 dark:bg-orange-950/40 px-2 py-0.5 rounded-md truncate">
+                            {item.command}
+                          </code>
+                          <span className="text-[10px] font-semibold text-slate-400 hidden sm:inline">
+                            {item.tag}
+                          </span>
+                        </div>
+                        <h4 className="text-sm font-bold mt-1 truncate" style={{ color: "var(--ink)" }}>
+                          {item.name}
+                        </h4>
+                      </div>
+                    </div>
+                    <span
+                      className={`text-sm transition-transform ${
+                        isSelected ? "text-orange-500 font-bold translate-x-1" : "text-slate-400"
+                      }`}
+                    >
+                      ➔
+                    </span>
+                  </button>
+                );
+              })}
+
+              {/* Botón directo a la biblioteca en el panel */}
+              <div className="pt-2">
+                <a
+                  href="/automatizacion-rrss/panel/prompts-video"
+                  className="w-full py-3.5 px-4 rounded-xl border border-dashed border-orange-500/40 bg-orange-500/5 hover:bg-orange-500/10 text-orange-600 dark:text-orange-400 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all text-center"
+                >
+                  <span>🎥</span>
+                  <span>Ver los 20 Comandos en la Biblioteca Completa</span>
+                  <span>➔</span>
+                </a>
+              </div>
+            </div>
+
+            {/* Ficha técnica del comando seleccionado (lado derecho) */}
+            <div className="lg:col-span-7">
+              <div
+                className="p-6 sm:p-8 rounded-3xl border shadow-xl relative overflow-hidden"
+                style={{
+                  background: "var(--panel)",
+                  borderColor: "var(--line)",
+                }}
+              >
+                {/* Header ficha */}
+                <div className="flex flex-wrap items-center justify-between gap-3 pb-6 border-b" style={{ borderColor: "var(--line)" }}>
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl p-3 rounded-2xl bg-orange-500/10 text-orange-500">
+                      {activeVideoHighlight.icon}
+                    </span>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-orange-500">
+                          {activeVideoHighlight.category}
+                        </span>
+                        <span className="text-xs text-slate-400">·</span>
+                        <span className="text-[11px] font-medium text-slate-400">
+                          Formato Vertical 9:16
+                        </span>
+                      </div>
+                      <h3 className="text-xl sm:text-2xl font-bold mt-0.5" style={{ color: "var(--ink)" }}>
+                        {activeVideoHighlight.name}
+                      </h3>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => handleCopyVideoCommand(activeVideoHighlight.command)}
+                    className="px-3.5 py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 shadow-sm"
+                    style={{
+                      background: "var(--panel)",
+                      borderColor: copiedCommandNotice === activeVideoHighlight.command ? "var(--signal)" : "var(--line)",
+                      color: copiedCommandNotice === activeVideoHighlight.command ? "var(--signal)" : "var(--ink)",
+                    }}
+                    title="Copiar comando"
+                  >
+                    <span>{copiedCommandNotice === activeVideoHighlight.command ? "✓" : "📋"}</span>
+                    <span>
+                      {copiedCommandNotice === activeVideoHighlight.command ? "¡Comando copiado!" : "Copiar comando"}
+                    </span>
+                  </button>
+                </div>
+
+                {/* Explicación y foto de referencia */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6 items-center">
+                  <div className="space-y-4">
+                    <p className="text-sm leading-relaxed" style={{ color: "var(--ink-dim)" }}>
+                      {activeVideoHighlight.description}
+                    </p>
+
+                    <div className="space-y-3 pt-2">
+                      <div className="p-3.5 rounded-xl bg-slate-500/5 border border-slate-500/10 space-y-1">
+                        <span className="text-[11px] font-bold text-orange-500 flex items-center gap-1 uppercase tracking-wider">
+                          <span>🎥</span> Movimiento de Cámara:
+                        </span>
+                        <p className="text-xs font-medium" style={{ color: "var(--ink)" }}>
+                          {activeVideoHighlight.cameraMovement}
+                        </p>
+                      </div>
+
+                      <div className="p-3.5 rounded-xl bg-slate-500/5 border border-slate-500/10 space-y-1">
+                        <span className="text-[11px] font-bold text-amber-500 flex items-center gap-1 uppercase tracking-wider">
+                          <span>✨</span> Física &amp; Iluminación:
+                        </span>
+                        <p className="text-xs font-medium" style={{ color: "var(--ink)" }}>
+                          {activeVideoHighlight.physicsEffect}
+                        </p>
+                      </div>
+
+                      <div className="p-3.5 rounded-xl bg-slate-500/5 border border-slate-500/10 space-y-1">
+                        <span className="text-[11px] font-bold text-emerald-500 flex items-center gap-1 uppercase tracking-wider">
+                          <span>🎯</span> Ideal para:
+                        </span>
+                        <p className="text-xs font-medium" style={{ color: "var(--ink)" }}>
+                          {activeVideoHighlight.recommendedFor}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Mockup visual de la toma */}
+                  <div className="relative aspect-[9/16] rounded-2xl overflow-hidden border border-slate-700/30 shadow-xl bg-slate-900 flex flex-col justify-between p-4 max-w-[240px] mx-auto w-full">
+                    <div
+                      className="absolute inset-0 bg-cover bg-center transition-all duration-500"
+                      style={{
+                        backgroundImage: `url('${activeVideoHighlight.bgUrl}')`,
+                        filter: "brightness(0.85)",
+                      }}
+                    />
+                    <div className="relative z-10 flex items-center justify-between text-white text-[10px] font-bold">
+                      <span className="bg-orange-600/90 backdrop-blur-sm px-2 py-0.5 rounded-full uppercase tracking-wider">
+                        {activeVideoHighlight.icon} Video 9:16
+                      </span>
+                      <span className="bg-black/50 backdrop-blur-sm px-2 py-0.5 rounded-full">
+                        HD · 24fps
+                      </span>
+                    </div>
+
+                    <div className="relative z-10 bg-black/70 backdrop-blur-md p-3 rounded-xl border border-white/10 space-y-1 text-white">
+                      <div className="flex items-center gap-1 text-[10px] font-bold text-orange-300">
+                        <span>▶</span>
+                        <span>COMANDO ACTIVO</span>
+                      </div>
+                      <code className="text-[11px] font-mono text-white block font-bold">
+                        {activeVideoHighlight.command}
+                      </code>
+                      <p className="text-[10px] text-slate-300 line-clamp-2">
+                        {activeVideoHighlight.cameraMovement}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pasos de transformación Antes / Agentes / Video */}
+                <div className="mt-8 pt-6 border-t" style={{ borderColor: "var(--line)" }}>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
+                    <div className="p-3 rounded-xl bg-slate-500/5 border border-slate-500/10">
+                      <span className="text-base font-bold block mb-1">📸 1. Tu Foto</span>
+                      <span className="text-[11px]" style={{ color: "var(--ink-dim)" }}>
+                        Una foto simple tomada con tu celular o de tu catálogo actual.
+                      </span>
+                    </div>
+                    <div className="p-3 rounded-xl bg-orange-500/10 border border-orange-500/20">
+                      <span className="text-base font-bold text-orange-600 dark:text-orange-400 block mb-1">
+                        ⚡ 2. Nuestros Agentes
+                      </span>
+                      <span className="text-[11px]" style={{ color: "var(--ink-dim)" }}>
+                        Aplican el comando maestro de video con física y luces de estudio.
+                      </span>
+                    </div>
+                    <div className="p-3 rounded-xl bg-slate-500/5 border border-slate-500/10">
+                      <span className="text-base font-bold block mb-1">🎬 3. Video 9:16</span>
+                      <span className="text-[11px]" style={{ color: "var(--ink-dim)" }}>
+                        Clip publicitario dinámico listo para publicar en Reels y TikTok.
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Acciones finales */}
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t" style={{ borderColor: "var(--line)" }}>
+                    <div className="text-xs text-left" style={{ color: "var(--ink-dim)" }}>
+                      <span>💡 </span>
+                      <span>Puedes elegir y combinar cualquiera de nuestros comandos en tu plan mensual.</span>
+                    </div>
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                      <a
+                        href="/automatizacion-rrss/panel/prompts-video"
+                        className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl border font-bold text-xs transition-all hover:bg-slate-500/5 text-center"
+                        style={{ borderColor: "var(--line)", color: "var(--ink)" }}
+                      >
+                        Explorar Biblioteca ➔
+                      </a>
+                      <a
+                        href="#muestra-gratis"
+                        className="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs shadow-md transition-all text-center whitespace-nowrap"
+                      >
+                        Probar con Mi Producto ✨
+                      </a>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
