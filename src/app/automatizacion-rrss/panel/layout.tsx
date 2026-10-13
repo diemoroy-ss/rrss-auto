@@ -129,7 +129,7 @@ function PanelLayoutContent({
       items: [
         { href: "/automatizacion-rrss/panel/crear", label: "Nuevo Post", icon: "✍️", exact: false },
         { href: "/automatizacion-rrss/panel/poc-video", label: "Generar Video", icon: "🎬", exact: false },
-        { href: "/automatizacion-rrss/panel/prompts-video", label: "Prompts de Video", icon: "🎥", exact: false },
+        { href: "/automatizacion-rrss/panel/prompts-video", label: "Prompts de Video", icon: "🎥", exact: true },
         ...(isAdminUser ? [{ href: "/automatizacion-rrss/panel/ads", label: "Meta Ads", icon: "🎯", exact: true }] : []),
       ]
     },
@@ -139,7 +139,7 @@ function PanelLayoutContent({
         { href: "/automatizacion-rrss/panel/radar", label: "Radar de Nicho", icon: "📡", exact: false },
         { href: "/automatizacion-rrss/panel/estrategia", label: "Estrategia", icon: "🚀", exact: false },
         { href: "/automatizacion-rrss/panel/blog", label: "SEO / GEO", icon: "🌐", exact: false },
-        { href: "/automatizacion-rrss/panel/prompts", label: "Comandos de Agentes", icon: "✨", exact: false },
+        { href: "/automatizacion-rrss/panel/prompts", label: "Comandos de Agentes", icon: "✨", exact: true },
       ]
     },
     {
@@ -154,11 +154,16 @@ function PanelLayoutContent({
     }
   ];
 
+  const isLinkActive = (link: { href: string; exact?: boolean }) => {
+    if (link.exact) return pathname === link.href;
+    return pathname === link.href || pathname.startsWith(link.href + "/");
+  };
+
   const allLinks = navSections.flatMap(s => s.items);
 
   const isAdminRoute = pathname.includes("/automatizacion-rrss/panel/admin");
   const activeLinks = isAdminRoute ? adminLinks : allLinks;
-  const currentLink = activeLinks.find(l => l.exact ? pathname === l.href : pathname.startsWith(l.href));
+  const currentLink = activeLinks.find(l => isLinkActive(l));
 
   return (
     <div className="min-h-screen panel-grid-bg flex flex-col md:flex-row print:bg-white">
@@ -182,7 +187,7 @@ function PanelLayoutContent({
             <nav className="flex-1 py-4 px-3 space-y-1.5 overflow-y-auto">
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 px-3 mb-2">Gestión Global</p>
               {adminLinks.map(link => {
-                const isActive = link.exact ? pathname === link.href : pathname.startsWith(link.href);
+                const isActive = isLinkActive(link);
                 return (
                   <Link key={link.href} href={link.href}
                     className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all font-bold text-xs ${isActive ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 font-extrabold' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
@@ -215,7 +220,7 @@ function PanelLayoutContent({
                 <div key={section.title} className="space-y-1">
                   <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 px-3 mb-1.5">{section.title}</p>
                   {section.items.map(link => {
-                    const isActive = link.exact ? pathname === link.href : pathname.startsWith(link.href);
+                    const isActive = isLinkActive(link);
                     return (
                       <Link key={link.href} href={link.href} prefetch={false}
                         className={`flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all font-bold text-xs ${isActive ? 'active-nav-item' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
@@ -338,7 +343,7 @@ function PanelLayoutContent({
                 <div className="px-3 py-3 flex flex-col gap-3">
                   {isAdminRoute ? (
                     adminLinks.map(link => {
-                      const isActive = link.exact ? pathname === link.href : pathname.startsWith(link.href);
+                      const isActive = isLinkActive(link);
                       return (
                         <Link
                           key={link.href}
@@ -360,7 +365,7 @@ function PanelLayoutContent({
                       <div key={section.title} className="flex flex-col gap-1">
                         <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 px-3">{section.title}</p>
                         {section.items.map(link => {
-                          const isActive = link.exact ? pathname === link.href : pathname.startsWith(link.href);
+                          const isActive = isLinkActive(link);
                           return (
                             <Link
                               key={link.href}

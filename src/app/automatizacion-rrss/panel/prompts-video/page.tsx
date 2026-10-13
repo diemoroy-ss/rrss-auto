@@ -20,7 +20,6 @@ import {
   FaFilm, 
   FaMagic, 
   FaArrowRight,
-  FaLightbulb,
   FaPlus,
   FaEdit,
   FaUpload,
@@ -1965,25 +1964,6 @@ export default function VideoPromptsPage() {
         </div>
       )}
 
-      {/* ── NOTA EXPLICATIVA SOBRE GOOGLE FLOW Y VEO ── */}
-      <div className="bg-indigo-50/70 border border-indigo-100 rounded-3xl p-6 md:p-8 flex items-start gap-4 text-indigo-950">
-        <div className="p-3 bg-indigo-600 text-white rounded-2xl shrink-0 shadow-md">
-          <FaLightbulb className="text-xl" />
-        </div>
-        <div className="space-y-1.5">
-          <h4 className="font-black text-base text-indigo-950">
-            ¿Cómo procesa Google Flow los comandos de video?
-          </h4>
-          <p className="text-xs md:text-sm text-indigo-900/80 leading-relaxed">
-            Google Flow Labs utiliza un intérprete semántico que expande cada comando corto (como{" "}
-            <code className="bg-indigo-200/60 text-indigo-950 px-1.5 py-0.5 rounded font-mono font-bold">
-              /smoke reveal
-            </code>
-            ) en una descripción física y cinemática en inglés. Para alimentar directamente a Google Veo 3.1 o Gemini Video (Omni), 
-            nuestros agentes generan la fórmula completa de 6 capas: acción física, mecánica de cámara, física de partículas, iluminación de estudio, color grading y cadencia temporal. Además, Remotion sobrepone tu logo de marca con perfecta nitidez visual.
-          </p>
-        </div>
-      </div>
     </div>
   );
 }
