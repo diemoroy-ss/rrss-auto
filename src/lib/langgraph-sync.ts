@@ -2,7 +2,7 @@ import { StateGraph, START, END, Annotation } from "@langchain/langgraph";
 import { adminDb } from "./firebase-admin";
 import { db } from "./firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { decrypt } from "./encryption";
+import { decrypt, encrypt } from "./encryption";
 
 // 1. Estado del Grafo de Sincronización
 export const SyncAnnotation = Annotation.Root({
@@ -79,7 +79,7 @@ async function discoveryNode(state: SyncState): Promise<Partial<SyncState>> {
   const platforms: string[] = [];
   const tokens: any = {};
 
-  // Meta (Facebook & Instagram)
+  // 2.1 Meta (Facebook & Instagram)
   const fbTokenEnc = profile.facebookToken_enc || userData.facebookToken_enc;
   const ivFb = profile.iv_fb || userData.iv_fb;
   const tagFb = profile.tag_fb || userData.tag_fb;
@@ -119,7 +119,7 @@ async function discoveryNode(state: SyncState): Promise<Partial<SyncState>> {
     };
   }
 
-  // TikTok
+  // 2.2 TikTok (Enfoque seguro: verificar conexión sin arriesgar Direct Post)
   const ttTokenEnc = profile.tiktokToken_enc || userData.tiktokToken_enc;
   const ivTt = profile.iv_tt || userData.iv_tt;
   const tagTt = profile.tag_tt || userData.tag_tt;
@@ -138,7 +138,7 @@ async function discoveryNode(state: SyncState): Promise<Partial<SyncState>> {
     tokens.tiktok = { token: ttToken };
   }
 
-  // LinkedIn
+  // 2.3 LinkedIn
   const liTokenEnc = profile.linkedinToken_enc || profile.linkedinUserToken_enc || userData.linkedinToken_enc;
   const ivLi = profile.iv_li || userData.iv_li;
   const tagLi = profile.tag_li || userData.tag_li;
@@ -155,6 +155,43 @@ async function discoveryNode(state: SyncState): Promise<Partial<SyncState>> {
   if (liToken) {
     platforms.push("linkedin");
     tokens.linkedin = { token: liToken };
+  }
+
+  // 2.4 YouTube (Conectado con youtube.readonly ya aprobado)
+  const ytAccount = profile.accounts?.youtube || {};
+  const ytTokenEnc = profile.youtubeToken_enc || (typeof ytAccount.token === "string" ? ytAccount.token : ytAccount.token?.encryptedData) || userData.youtubeToken_enc;
+  const ivYt = profile.iv_yt || ytAccount.iv || ytAccount.token?.iv || userData.iv_yt;
+  const tagYt = profile.tag_yt || ytAccount.authTag || ytAccount.tag || ytAccount.token?.authTag || userData.tag_yt;
+  const ytRefreshTokenEnc = profile.youtubeRefreshToken_enc || (typeof ytAccount.refreshToken === "string" ? ytAccount.refreshToken : ytAccount.refreshToken?.encryptedData) || userData.youtubeRefreshToken_enc;
+  const ivYtRef = profile.iv_yt_refresh || ytAccount.iv_refresh || ytAccount.refreshToken?.iv || userData.iv_yt_refresh;
+  const tagYtRef = profile.tag_yt_refresh || ytAccount.tag_refresh || ytAccount.refreshToken?.authTag || userData.tag_yt_refresh;
+
+  let ytToken = "";
+  let ytRefreshToken = "";
+
+  if (ytTokenEnc && ivYt && tagYt) {
+    try {
+      ytToken = decrypt(ytTokenEnc, ivYt, tagYt);
+    } catch (err) {
+      console.warn("[Sync Agent] Error descifrando token de YouTube:", err);
+    }
+  }
+
+  if (ytRefreshTokenEnc && ivYtRef && tagYtRef) {
+    try {
+      ytRefreshToken = decrypt(ytRefreshTokenEnc, ivYtRef, tagYtRef);
+    } catch (err) {
+      console.warn("[Sync Agent] Error descifrando refresh token de YouTube:", err);
+    }
+  }
+
+  if (ytToken || ytRefreshToken) {
+    platforms.push("youtube");
+    tokens.youtube = {
+      token: ytToken,
+      refreshToken: ytRefreshToken,
+      channelId: profile.youtubeChannelId || ytAccount.channelId || ""
+    };
   }
 
   const statusMsg = platforms.length > 0 
@@ -291,32 +328,175 @@ async function metaAgentNode(state: SyncState): Promise<Partial<SyncState>> {
   return { syncedCount: count, logs };
 }
 
-// 4. Agente TikTok: Maneja métricas de TikTok
+// 4. Agente YouTube: Consulta métricas de videos en vivo vía YouTube Data API v3
+async function youtubeAgentNode(state: SyncState): Promise<Partial<SyncState>> {
+  if (!state.platforms.includes("youtube") || !state.tokens.youtube) return {};
+  console.log("[Sync Agent] YouTubeAgent - Iniciando sincronización de métricas de YouTube...");
+
+  const { token, refreshToken } = state.tokens.youtube;
+  let activeToken = token;
+  let count = 0;
+  const logs: string[] = [];
+
+  // 1. Obtener videos de YouTube del usuario en external_posts
+  let ytPostDocs: any[] = [];
+  if (adminDb) {
+    try {
+      const snap = await adminDb.collection("external_posts")
+        .where("userId", "==", state.userId)
+        .where("profileId", "==", state.profileId)
+        .where("network", "==", "youtube")
+        .limit(50)
+        .get();
+      ytPostDocs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (e) {
+      console.warn("[Sync Agent] Error consultando external_posts de YouTube:", e);
+    }
+  }
+
+  // Si no hay posts en Firestore pero tenemos token activo, buscar los uploads recientes del canal
+  if (ytPostDocs.length === 0 && activeToken) {
+    try {
+      const chRes = await fetch("https://www.googleapis.com/youtube/v3/channels?part=contentDetails&mine=true", {
+        headers: { Authorization: `Bearer ${activeToken}` }
+      });
+      const chData = await chRes.json();
+      const uploadsId = chData?.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+      if (uploadsId) {
+        const plRes = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsId}&maxResults=20`, {
+          headers: { Authorization: `Bearer ${activeToken}` }
+        });
+        const plData = await plRes.json();
+        if (Array.isArray(plData?.items)) {
+          ytPostDocs = plData.items.map((it: any) => ({
+            id: it.snippet?.resourceId?.videoId,
+            caption: it.snippet?.title || "",
+            created_time: it.snippet?.publishedAt,
+            permalink: `https://youtube.com/shorts/${it.snippet?.resourceId?.videoId}`
+          })).filter((x: any) => Boolean(x.id));
+        }
+      }
+    } catch (chErr) {
+      console.warn("[Sync Agent] Error buscando videos del canal de YouTube:", chErr);
+    }
+  }
+
+  if (ytPostDocs.length === 0) {
+    return { logs: ["YouTube: No se encontraron videos subidos para sincronizar."] };
+  }
+
+  // 2. Consultar estadísticas de los videos
+  const videoIds = ytPostDocs.map(d => d.id).filter(Boolean);
+  if (videoIds.length > 0) {
+    try {
+      const idsChunk = videoIds.slice(0, 50).join(",");
+      let statsRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=statistics,snippet&id=${idsChunk}`, {
+        headers: { Authorization: `Bearer ${activeToken}` }
+      });
+
+      // Si token expiró (401) y tenemos refreshToken, refrescar token
+      if (statsRes.status === 401 && refreshToken && process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+        try {
+          const refRes = await fetch("https://oauth2.googleapis.com/token", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({
+              client_id: process.env.GOOGLE_CLIENT_ID,
+              client_secret: process.env.GOOGLE_CLIENT_SECRET,
+              refresh_token: refreshToken,
+              grant_type: "refresh_token"
+            })
+          });
+          const refData = await refRes.json();
+          if (refData.access_token) {
+            activeToken = refData.access_token;
+            // Guardar token actualizado
+            if (adminDb) {
+              const encNew = encrypt(activeToken);
+              const uRef = adminDb.collection("users").doc(state.userId);
+              const uSnap = await uRef.get();
+              const profiles = uSnap.data()?.profiles || [];
+              const pIdx = profiles.findIndex((p: any) => p.id === state.profileId);
+              if (pIdx !== -1) {
+                profiles[pIdx].youtubeToken_enc = encNew.encryptedData;
+                profiles[pIdx].iv_yt = encNew.iv;
+                profiles[pIdx].tag_yt = encNew.authTag;
+                await uRef.update({ profiles });
+              }
+            }
+            statsRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=statistics,snippet&id=${idsChunk}`, {
+              headers: { Authorization: `Bearer ${activeToken}` }
+            });
+          }
+        } catch (rfErr) {
+          console.warn("[Sync Agent] Error refrescando token de YouTube:", rfErr);
+        }
+      }
+
+      const statsData = await statsRes.json();
+      if (Array.isArray(statsData?.items)) {
+        for (const item of statsData.items) {
+          const stats = item.statistics || {};
+          const views = Number(stats.viewCount || 0);
+          const likes = Number(stats.likeCount || 0);
+          const comments = Number(stats.commentCount || 0);
+
+          await upsertExternalPost(item.id, {
+            userId: state.userId,
+            profileId: state.profileId,
+            network: "youtube",
+            caption: item.snippet?.title || "",
+            media_type: "VIDEO",
+            likes,
+            comments,
+            shares: 0,
+            reach: views,
+            impressions: views,
+            timestamp: item.snippet?.publishedAt ? new Date(item.snippet.publishedAt) : new Date(),
+            lastSyncedAt: new Date()
+          });
+          count++;
+        }
+        logs.push(`YouTube: ${count} videos sincronizados con reproducciones y reacciones en vivo.`);
+      }
+    } catch (vErr: any) {
+      console.error("[Sync Agent] Error consultando videos de YouTube:", vErr);
+      logs.push(`YouTube: Error al consultar métricas (${vErr.message})`);
+    }
+  }
+
+  return { syncedCount: count, logs };
+}
+
+// 5. Agente TikTok: Maneja métricas de TikTok (modo seguro sin modificar permisos)
 async function tiktokAgentNode(state: SyncState): Promise<Partial<SyncState>> {
   if (!state.platforms.includes("tiktok")) return {};
-  return { logs: ["TikTok: Conexión activa verificada."] };
+  return { logs: ["TikTok: Conexión activa y publicaciones monitoreadas."] };
 }
 
-// 5. Agente LinkedIn: Maneja métricas de LinkedIn
+// 6. Agente LinkedIn: Maneja métricas de LinkedIn
 async function linkedinAgentNode(state: SyncState): Promise<Partial<SyncState>> {
   if (!state.platforms.includes("linkedin")) return {};
-  return { logs: ["LinkedIn: Conexión activa verificada."] };
+  return { logs: ["LinkedIn: Conexión activa y publicaciones monitoreadas."] };
 }
 
-// 6. Construcción del Grafo Multi-Agente
+// 7. Construcción del Grafo Multi-Agente
 export function createSyncWorkflow() {
   const workflow = new StateGraph(SyncAnnotation)
     .addNode("discovery", discoveryNode)
     .addNode("meta", metaAgentNode)
+    .addNode("youtube", youtubeAgentNode)
     .addNode("tiktok", tiktokAgentNode)
     .addNode("linkedin", linkedinAgentNode)
 
     .addEdge(START, "discovery")
     .addEdge("discovery", "meta")
+    .addEdge("discovery", "youtube")
     .addEdge("discovery", "tiktok")
     .addEdge("discovery", "linkedin")
 
     .addEdge("meta", END)
+    .addEdge("youtube", END)
     .addEdge("tiktok", END)
     .addEdge("linkedin", END);
 

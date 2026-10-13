@@ -45,7 +45,7 @@ export default function MetricasDashboard() {
   // Aggregated Stats
   const [totalReach, setTotalReach] = useState(0);
   const [totalInteractions, setTotalInteractions] = useState(0);
-  const [networkFilter, setNetworkFilter] = useState<'todos' | 'facebook' | 'instagram' | 'tiktok' | 'linkedin'>('todos');
+  const [networkFilter, setNetworkFilter] = useState<'todos' | 'facebook' | 'instagram' | 'tiktok' | 'linkedin' | 'youtube'>('todos');
   const { activeProfile } = useProfile();
   
   // AI Feature States
@@ -396,6 +396,7 @@ export default function MetricasDashboard() {
       if (!!activeProfile?.instagramToken_enc || (isDefault && !!uData.instagramToken_enc)) connectedSet.add('instagram');
       if (!!activeProfile?.tiktokToken_enc || (isDefault && !!uData.tiktokToken_enc)) connectedSet.add('tiktok');
       if (!!activeProfile?.linkedinUserToken_enc || !!activeProfile?.linkedinToken_enc || (isDefault && (!!uData.linkedinUserToken_enc || !!uData.linkedinToken_enc))) connectedSet.add('linkedin');
+      if (!!activeProfile?.youtubeToken_enc || !!activeProfile?.accounts?.youtube?.connected || (isDefault && !!uData.youtubeToken_enc)) connectedSet.add('youtube');
 
       const filteredData = uniqueData.filter(post => {
          const postNetwork = post.networks?.[0] || 'unknown';
@@ -796,6 +797,7 @@ export default function MetricasDashboard() {
                     <button onClick={() => setNetworkFilter('instagram')} className={`px-4 py-1.5 border rounded-lg text-sm font-medium transition-colors ${networkFilter === 'instagram' ? 'border-slate-800 bg-slate-800 text-white shadow-md' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}>Instagram</button>
                     <button onClick={() => setNetworkFilter('tiktok')} className={`px-4 py-1.5 border rounded-lg text-sm font-medium transition-colors ${networkFilter === 'tiktok' ? 'border-slate-800 bg-slate-800 text-white shadow-md' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}>TikTok</button>
                     <button onClick={() => setNetworkFilter('linkedin')} className={`px-4 py-1.5 border rounded-lg text-sm font-medium transition-colors ${networkFilter === 'linkedin' ? 'border-slate-800 bg-slate-800 text-white shadow-md' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}>LinkedIn</button>
+                    <button onClick={() => setNetworkFilter('youtube')} className={`px-4 py-1.5 border rounded-lg text-sm font-medium transition-colors ${networkFilter === 'youtube' ? 'border-red-600 bg-red-600 text-white shadow-md' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}`}>YouTube</button>
                 </div>
              </div>
 
@@ -824,10 +826,11 @@ export default function MetricasDashboard() {
                     const isIg = post.networks.includes('instagram');
                     const isTt = post.networks.includes('tiktok');
                     const isLi = post.networks.includes('linkedin');
+                    const isYt = post.networks.includes('youtube');
                     
                     const rankColor = i === 0 ? 'text-amber-500' : i === 1 ? 'text-slate-400' : i === 2 ? 'text-orange-700' : 'text-slate-800';
-                    const accentColor = isFb ? 'bg-blue-600' : isIg ? 'bg-pink-500' : isTt ? 'bg-black' : 'bg-blue-700';
-                    const brandBg = isFb ? 'bg-blue-50 text-blue-500' : isIg ? 'bg-pink-50 text-pink-500' : isTt ? 'bg-slate-900 text-white' : 'bg-blue-50 text-blue-600';
+                    const accentColor = isFb ? 'bg-blue-600' : isIg ? 'bg-pink-500' : isTt ? 'bg-black' : isYt ? 'bg-red-600' : 'bg-blue-700';
+                    const brandBg = isFb ? 'bg-blue-50 text-blue-500' : isIg ? 'bg-pink-50 text-pink-500' : isTt ? 'bg-slate-900 text-white' : isYt ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600';
 
                     return (
                       <div key={post.id} className="pr-4 md:pr-10 p-4 md:py-3 md:pl-4 flex flex-col md:flex-row gap-4 items-start md:items-center group bg-white border border-slate-200 rounded-2xl shadow-sm relative overflow-hidden transition-all hover:shadow-md hover:border-slate-300">
@@ -843,13 +846,14 @@ export default function MetricasDashboard() {
                             {isIg && <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.07m0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>}
                             {isTt && <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.9-.32-1.98-.23-2.81.33-.85.51-1.44 1.43-1.58 2.41-.14.96.11 1.99.69 2.77.58.78 1.47 1.27 2.41 1.39.67.1 1.38.01 1.98-.31.69-.39 1.19-1.05 1.35-1.82.06-.3.07-.62.07-.92V0h.02z"/></svg>}
                             {isLi && <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M4.98 3.5c0 1.381-1.11 2.5-2.48 2.5s-2.48-1.119-2.48-2.5c0-1.38 1.11-2.5 2.48-2.5s2.48 1.12 2.48 2.5zm.02 4.5h-5v16h5v-16zm7.982 0h-4.968v16h4.969v-8.399c0-4.67 6.029-5.052 6.029 0v8.399h4.988v-10.131c0-7.88-8.922-7.593-11.018-3.714v-2.155z"/></svg>}
+                            {isYt && <svg className="w-6 h-6 fill-current text-red-600" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>}
                          </div>
 
                          <div className="flex-1 min-w-0 pr-4 mt-2 md:mt-0 xl:max-w-xl">
                             <div className="flex items-center gap-3 mb-1.5">
                                <span className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold ${isFb ? 'text-blue-700 bg-blue-50' : isIg ? 'text-pink-700 bg-pink-50' : isTt ? 'text-slate-900 bg-slate-100' : 'text-blue-800 bg-blue-50'}`}>
                                   <span className={`w-1.5 h-1.5 rounded-full ${isFb ? 'bg-blue-500' : isIg ? 'bg-pink-500' : isTt ? 'bg-black' : 'bg-blue-700'}`}></span>
-                                  {isFb ? 'Facebook' : isIg ? 'Instagram' : isTt ? 'TikTok' : 'LinkedIn'}
+                                  {isFb ? 'Facebook' : isIg ? 'Instagram' : isTt ? 'TikTok' : isYt ? 'YouTube' : 'LinkedIn'}
                                </span>
                                <span className="text-xs text-slate-400 font-medium">{dateStr}</span>
                             </div>
