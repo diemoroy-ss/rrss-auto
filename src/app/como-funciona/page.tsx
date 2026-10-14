@@ -29,6 +29,8 @@ interface VideoPromptHighlight {
   physicsEffect: string;
   recommendedFor: string;
   bgUrl: string;
+  videoUrl?: string;
+  baseImageUrl?: string;
 }
 
 const VIDEO_PROMPT_HIGHLIGHTS: VideoPromptHighlight[] = [
@@ -42,7 +44,9 @@ const VIDEO_PROMPT_HIGHLIGHTS: VideoPromptHighlight[] = [
     cameraMovement: "Rotación orbital estabilizada de 360 grados en plano medio",
     physicsEffect: "Paralaje de fondo con reflejos continuos sobre los bordes",
     recommendedFor: "Zapatillas, botellas, cosmética, tecnología, calzado y accesorios",
-    bgUrl: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80",
+    bgUrl: "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_360_product_orbit_image_1791908361375.jpg?alt=media&token=8587c752-bbde-49e9-9766-2e0a7e5bd16b",
+    baseImageUrl: "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_360_product_orbit_image_1791908361375.jpg?alt=media&token=8587c752-bbde-49e9-9766-2e0a7e5bd16b",
+    videoUrl: "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_360_product_orbit_video_1791908370384.mp4?alt=media&token=255d8c89-98e8-4a22-a30a-d8a2feb6f8af",
   },
   {
     command: "/smoke reveal",
@@ -54,7 +58,9 @@ const VIDEO_PROMPT_HIGHLIGHTS: VideoPromptHighlight[] = [
     cameraMovement: "Dolly push-in frontal suave con desenfoque cinematográfico",
     physicsEffect: "Humo que ondula e interactúa con la luz lateral antes de disiparse",
     recommendedFor: "Tragos de autor, platos a la parrilla, lanzamientos de temporada y moda urbana",
-    bgUrl: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=800&q=80",
+    bgUrl: "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_smoke_reveal_image_1791912549918.webp?alt=media&token=b064d1f1-508e-4a34-b6f5-e487b682dacf",
+    baseImageUrl: "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_smoke_reveal_image_1791912549918.webp?alt=media&token=b064d1f1-508e-4a34-b6f5-e487b682dacf",
+    videoUrl: "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_smoke_reveal_video_1791912556524.mp4?alt=media&token=fe380098-be2f-44ef-b847-fd532d47a692",
   },
   {
     command: "/water splash reveal",
@@ -66,7 +72,9 @@ const VIDEO_PROMPT_HIGHLIGHTS: VideoPromptHighlight[] = [
     cameraMovement: "Enfoque macro estático con seguimiento focal de alta definición",
     physicsEffect: "Dinámica de fluidos a 1000fps con destellos cristalinos en cada gota",
     recommendedFor: "Bebidas, cervezas, coctelería, cremas hidratantes y cuidado de la piel",
-    bgUrl: "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=800&q=80",
+    bgUrl: "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_water_splash_reveal_image_1791909068083.jpg?alt=media&token=5b2327ed-ee9c-4db3-ac83-0df70ec12f4c",
+    baseImageUrl: "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_water_splash_reveal_image_1791909068083.jpg?alt=media&token=5b2327ed-ee9c-4db3-ac83-0df70ec12f4c",
+    videoUrl: "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_water_splash_reveal_video_1791909074089.mp4?alt=media&token=1ddff927-8722-42f2-8c42-384ab59fa9df",
   },
   {
     command: "/fresh food reveal",
@@ -78,7 +86,9 @@ const VIDEO_PROMPT_HIGHLIGHTS: VideoPromptHighlight[] = [
     cameraMovement: "Acercamiento en ángulo bajo con suave inclinación cenital",
     physicsEffect: "Ondas sutiles de vapor culinario y brillo dorado sobre los ingredientes",
     recommendedFor: "Hamburguesas, pizzas, pastas, cortes de carne, sándwiches y café",
-    bgUrl: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80",
+    bgUrl: "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_fresh_food_reveal_image_1791908932525.jpg?alt=media&token=2f817f96-ef93-4740-998c-c2826d3adb13",
+    baseImageUrl: "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_fresh_food_reveal_image_1791908932525.jpg?alt=media&token=2f817f96-ef93-4740-998c-c2826d3adb13",
+    videoUrl: "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_fresh_food_reveal_video_1791908993033.mp4?alt=media&token=4ea5d4e0-4c00-4d38-b2e8-009570c14128",
   },
   {
     command: "/Times Square 3D reveal",
@@ -90,7 +100,9 @@ const VIDEO_PROMPT_HIGHLIGHTS: VideoPromptHighlight[] = [
     cameraMovement: "Toma callejera angular desde el suelo hacia la esquina monumental",
     physicsEffect: "Ilusión óptica anamórfica donde el contenido rompe el marco de la pantalla",
     recommendedFor: "Servicios profesionales, marcas corporativas, consultorías y lanzamientos",
-    bgUrl: "https://images.unsplash.com/photo-1508873696983-2df5293cb32f?auto=format&fit=crop&w=800&q=80",
+    bgUrl: "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_times_square_3d_reveal_image_1791914453800.webp?alt=media&token=d4aa6e39-63ee-4f12-bde2-2f73b6b515d8",
+    baseImageUrl: "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_times_square_3d_reveal_image_1791914453800.webp?alt=media&token=d4aa6e39-63ee-4f12-bde2-2f73b6b515d8",
+    videoUrl: "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_times_square_3d_reveal_video_1791914460145.mp4?alt=media&token=aa6ddf8a-5b0e-4c97-b902-50ccf5ee2deb",
   },
   {
     command: "/macro product shot",
@@ -102,7 +114,9 @@ const VIDEO_PROMPT_HIGHLIGHTS: VideoPromptHighlight[] = [
     cameraMovement: "Deslizamiento rasante suave con enfoque selectivo progresivo",
     physicsEffect: "Iluminación lateral que acentúa el relieve y la confección auténtica",
     recommendedFor: "Joyería, ropa de autor, repostería fina, marroquinería y calzado",
-    bgUrl: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80",
+    bgUrl: "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_macro_product_shot_image_1791908361375.jpg?alt=media&token=8587c752-bbde-49e9-9766-2e0a7e5bd16b",
+    baseImageUrl: "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_macro_product_shot_image_1791910011818.jpg?alt=media&token=756d24c1-8169-42e0-b2ca-afd2cbb10a38",
+    videoUrl: "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_macro_product_shot_video_1791910036356.mp4?alt=media&token=675a7d7e-a182-44da-b858-81427a4a8255",
   },
 ];
 
@@ -219,6 +233,7 @@ export default function ComoFuncionaPage() {
 
   // Comando seleccionado en la biblioteca de prompts de video
   const [selectedVideoCommand, setSelectedVideoCommand] = useState<string>("/360 product orbit");
+  const [videoPreviewMode, setVideoPreviewMode] = useState<"video" | "image">("video");
   const [copiedCommandNotice, setCopiedCommandNotice] = useState<string | null>(null);
 
   const activeVideoHighlight =
@@ -1338,35 +1353,62 @@ export default function ComoFuncionaPage() {
                 return (
                   <button
                     key={item.command}
-                    onClick={() => setSelectedVideoCommand(item.command)}
-                    className="w-full text-left p-4 rounded-2xl border transition-all flex items-center justify-between gap-3 group"
+                    onClick={() => {
+                      setSelectedVideoCommand(item.command);
+                      setVideoPreviewMode("video");
+                    }}
+                    className={`w-full text-left p-4 rounded-2xl border transition-all flex items-center justify-between gap-3 group ${
+                      isSelected
+                        ? "ring-2 ring-orange-500/80 shadow-lg shadow-orange-500/10"
+                        : "hover:border-orange-500/40"
+                    }`}
                     style={{
-                      background: isSelected ? "var(--panel-accent, #fff7ed)" : "var(--panel)",
+                      background: isSelected ? "var(--panel-2)" : "var(--panel)",
                       borderColor: isSelected ? "var(--signal)" : "var(--line)",
-                      boxShadow: isSelected ? "0 4px 20px -2px rgba(249, 115, 22, 0.15)" : "none",
                     }}
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <span className="text-2xl shrink-0 p-2 rounded-xl bg-orange-500/10 text-orange-500">
+                      <span
+                        className={`text-2xl shrink-0 p-2.5 rounded-xl transition-all ${
+                          isSelected
+                            ? "bg-gradient-to-tr from-orange-500 to-amber-500 text-white shadow-md shadow-orange-500/30 scale-105"
+                            : "bg-orange-500/10 text-orange-500"
+                        }`}
+                      >
                         {item.icon}
                       </span>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <code className="text-xs font-bold text-orange-600 bg-orange-100/60 dark:bg-orange-950/40 px-2 py-0.5 rounded-md truncate">
+                          <code
+                            className={`text-xs font-bold px-2 py-0.5 rounded-md truncate transition-colors ${
+                              isSelected
+                                ? "bg-orange-500 text-white font-mono"
+                                : "bg-slate-500/10 text-orange-600 dark:text-orange-400 font-mono"
+                            }`}
+                          >
                             {item.command}
                           </code>
-                          <span className="text-[10px] font-semibold text-slate-400 hidden sm:inline">
+                          <span
+                            className={`text-[10px] font-semibold hidden sm:inline ${
+                              isSelected ? "text-orange-400 font-bold" : "text-slate-400"
+                            }`}
+                          >
                             {item.tag}
                           </span>
                         </div>
-                        <h4 className="text-sm font-bold mt-1 truncate" style={{ color: "var(--ink)" }}>
+                        <h4
+                          className={`text-sm font-bold mt-1 truncate transition-colors ${
+                            isSelected ? "text-orange-500 dark:text-orange-400 font-extrabold" : ""
+                          }`}
+                          style={{ color: isSelected ? undefined : "var(--ink)" }}
+                        >
                           {item.name}
                         </h4>
                       </div>
                     </div>
                     <span
-                      className={`text-sm transition-transform ${
-                        isSelected ? "text-orange-500 font-bold translate-x-1" : "text-slate-400"
+                      className={`text-sm font-bold transition-all ${
+                        isSelected ? "text-orange-500 translate-x-1" : "text-slate-400"
                       }`}
                     >
                       ➔
@@ -1473,30 +1515,74 @@ export default function ComoFuncionaPage() {
                     </div>
                   </div>
 
-                  {/* Mockup visual de la toma */}
-                  <div className="relative aspect-[9/16] rounded-2xl overflow-hidden border border-slate-700/30 shadow-xl bg-slate-900 flex flex-col justify-between p-4 max-w-[240px] mx-auto w-full">
-                    <div
-                      className="absolute inset-0 bg-cover bg-center transition-all duration-500"
-                      style={{
-                        backgroundImage: `url('${activeVideoHighlight.bgUrl}')`,
-                        filter: "brightness(0.85)",
-                      }}
-                    />
+                  {/* Mockup visual de la toma con Video Real en Loop */}
+                  <div className="relative aspect-[9/16] rounded-2xl overflow-hidden border border-slate-700/40 shadow-2xl bg-black flex flex-col justify-between p-4 max-w-[260px] mx-auto w-full">
+                    {/* Render de Video Real o Imagen Base según modo */}
+                    {videoPreviewMode === "video" && activeVideoHighlight.videoUrl ? (
+                      <video
+                        key={activeVideoHighlight.videoUrl}
+                        src={activeVideoHighlight.videoUrl}
+                        poster={activeVideoHighlight.baseImageUrl || activeVideoHighlight.bgUrl}
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                    ) : (
+                      <img
+                        key={activeVideoHighlight.baseImageUrl || activeVideoHighlight.bgUrl}
+                        src={activeVideoHighlight.baseImageUrl || activeVideoHighlight.bgUrl}
+                        alt={activeVideoHighlight.name}
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                    )}
+
+                    {/* Selector de modo Video vs Foto */}
                     <div className="relative z-10 flex items-center justify-between text-white text-[10px] font-bold">
-                      <span className="bg-orange-600/90 backdrop-blur-sm px-2 py-0.5 rounded-full uppercase tracking-wider">
-                        {activeVideoHighlight.icon} Video 9:16
-                      </span>
-                      <span className="bg-black/50 backdrop-blur-sm px-2 py-0.5 rounded-full">
+                      <div className="flex items-center gap-1 bg-black/75 backdrop-blur-md p-1 rounded-full border border-white/15 shadow-sm">
+                        <button
+                          type="button"
+                          onClick={() => setVideoPreviewMode("video")}
+                          className={`px-2.5 py-1 rounded-full uppercase tracking-wider transition-all flex items-center gap-1 text-[10px] font-bold ${
+                            videoPreviewMode === "video"
+                              ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-sm"
+                              : "text-slate-300 hover:text-white"
+                          }`}
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse"></span>
+                          <span>Video 9:16</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setVideoPreviewMode("image")}
+                          className={`px-2.5 py-1 rounded-full uppercase tracking-wider transition-all flex items-center gap-1 text-[10px] font-bold ${
+                            videoPreviewMode === "image"
+                              ? "bg-slate-700 text-white shadow-sm"
+                              : "text-slate-300 hover:text-white"
+                          }`}
+                        >
+                          <span>📸</span>
+                          <span>Foto Base</span>
+                        </button>
+                      </div>
+
+                      <span className="bg-black/75 backdrop-blur-md px-2 py-1 rounded-full border border-white/15 text-[10px] text-slate-200">
                         HD · 24fps
                       </span>
                     </div>
 
-                    <div className="relative z-10 bg-black/70 backdrop-blur-md p-3 rounded-xl border border-white/10 space-y-1 text-white">
-                      <div className="flex items-center gap-1 text-[10px] font-bold text-orange-300">
-                        <span>▶</span>
-                        <span>COMANDO ACTIVO</span>
+                    {/* Ficha inferior en el mockup */}
+                    <div className="relative z-10 bg-black/80 backdrop-blur-md p-3 rounded-xl border border-white/15 space-y-1 text-white shadow-lg">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold text-orange-400 flex items-center gap-1">
+                          <span>{videoPreviewMode === "video" ? "▶ VIDEO GENERADO" : "📸 FOTO ORIGINAL"}</span>
+                        </span>
+                        <span className="text-[9px] text-slate-300 font-mono">
+                          {videoPreviewMode === "video" ? "Veo 9:16" : "Base"}
+                        </span>
                       </div>
-                      <code className="text-[11px] font-mono text-white block font-bold">
+                      <code className="text-xs font-mono text-white block font-bold truncate">
                         {activeVideoHighlight.command}
                       </code>
                       <p className="text-[10px] text-slate-300 line-clamp-2">
@@ -1533,23 +1619,26 @@ export default function ComoFuncionaPage() {
 
                   {/* Acciones finales */}
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t" style={{ borderColor: "var(--line)" }}>
-                    <div className="text-xs text-left" style={{ color: "var(--ink-dim)" }}>
+                    <div className="text-xs text-left max-w-md" style={{ color: "var(--ink-dim)" }}>
                       <span>💡 </span>
-                      <span>Puedes elegir y combinar cualquiera de nuestros comandos en tu plan mensual.</span>
+                      <span>
+                        Los videos cinematográficos se generan bajo demanda y están incluidos en nuestros planes con módulo de video.
+                      </span>
                     </div>
                     <div className="flex items-center gap-3 w-full sm:w-auto">
                       <a
-                        href="/automatizacion-rrss/panel/prompts-video"
+                        href="/#planes"
                         className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl border font-bold text-xs transition-all hover:bg-slate-500/5 text-center"
                         style={{ borderColor: "var(--line)", color: "var(--ink)" }}
                       >
-                        Explorar Biblioteca ➔
+                        Ver Planes con Video ➔
                       </a>
                       <a
-                        href="#muestra-gratis"
-                        className="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs shadow-md transition-all text-center whitespace-nowrap"
+                        href="/automatizacion-rrss/panel/prompts-video"
+                        className="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs shadow-md transition-all text-center whitespace-nowrap flex items-center justify-center gap-1.5"
                       >
-                        Probar con Mi Producto ✨
+                        <span>🎥</span>
+                        <span>Explorar Biblioteca Completa</span>
                       </a>
                     </div>
                   </div>
