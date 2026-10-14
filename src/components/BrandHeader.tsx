@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { FaWhatsapp, FaArrowRight, FaTimes, FaBars } from "react-icons/fa";
 
@@ -13,7 +14,12 @@ const WA_URL =
 export default function BrandHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [switcherOpen, setSwitcherOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const switcherRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Close ecosystem switcher on click outside or escape key
   useEffect(() => {
@@ -209,29 +215,55 @@ export default function BrandHeader() {
           <ThemeToggle />
 
           <button
-            onClick={() => setMobileMenuOpen((prev) => !prev)}
+            onClick={() => setMobileMenuOpen(true)}
             className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-700/80 flex items-center justify-center text-slate-200 hover:text-white active:scale-95 transition-all"
-            aria-label={mobileMenuOpen ? "Cerrar menú" : "Abrir menú de navegación"}
+            aria-label="Abrir menú de navegación"
             aria-expanded={mobileMenuOpen}
           >
-            {mobileMenuOpen ? <FaTimes className="text-base" /> : <FaBars className="text-base" />}
+            <FaBars className="text-base" />
           </button>
         </div>
       </div>
 
-      {/* Mobile Menu Overlay / Drawer */}
-      {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-x-0 top-16 bottom-0 z-50 bg-slate-950/98 backdrop-blur-xl border-t border-slate-800 overflow-y-auto p-5 flex flex-col justify-between animate-in fade-in slide-in-from-top-2 duration-200">
-          <div className="space-y-4">
-            <span className="text-[10px] font-black uppercase tracking-[0.15em] text-orange-400 block px-2">
-              Navegación
-            </span>
+      {/* Mobile Menu en Pantalla Completa mediante Portal (inmune a cualquier z-index o stacking context) */}
+      {mobileMenuOpen && mounted && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[99999] bg-slate-950 flex flex-col overflow-hidden animate-in fade-in duration-150">
+          {/* Header del menú móvil */}
+          <div className="h-16 px-4 sm:px-6 flex items-center justify-between border-b border-slate-800 bg-slate-950 shrink-0">
+            <Link
+              href="/"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2.5 text-white"
+            >
+              <LogoMark size={24} />
+              <span className="font-black text-lg tracking-tight text-white font-sans">
+                SANTISOFT
+              </span>
+            </Link>
 
-            <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center text-white active:scale-95 transition-all"
+                aria-label="Cerrar menú"
+              >
+                <FaTimes className="text-lg" />
+              </button>
+            </div>
+          </div>
+
+          {/* Contenido scrolleable del menú */}
+          <div className="flex-1 overflow-y-auto px-5 py-6 space-y-6">
+            <div className="space-y-2">
+              <span className="text-[10px] font-black uppercase tracking-[0.15em] text-orange-400 block px-2">
+                Navegación
+              </span>
+
               <Link
                 href="/como-funciona"
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900/60 hover:bg-slate-900 text-white font-bold text-sm border border-slate-800/60 transition-colors"
+                className="flex items-center justify-between p-4 rounded-2xl bg-slate-900 hover:bg-slate-850 text-white font-bold text-base border border-slate-800 transition-colors"
               >
                 <span>Cómo Funciona</span>
                 <FaArrowRight className="text-xs text-orange-400" />
@@ -240,7 +272,7 @@ export default function BrandHeader() {
               <Link
                 href="/triptico"
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900/60 hover:bg-slate-900 text-white font-bold text-sm border border-slate-800/60 transition-colors"
+                className="flex items-center justify-between p-4 rounded-2xl bg-slate-900 hover:bg-slate-850 text-white font-bold text-base border border-slate-800 transition-colors"
               >
                 <span>Tríptico / Pitch Rápido</span>
                 <FaArrowRight className="text-xs text-orange-400" />
@@ -249,7 +281,7 @@ export default function BrandHeader() {
               <a
                 href="/#planes"
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900/60 hover:bg-slate-900 text-white font-bold text-sm border border-slate-800/60 transition-colors"
+                className="flex items-center justify-between p-4 rounded-2xl bg-slate-900 hover:bg-slate-850 text-white font-bold text-base border border-slate-800 transition-colors"
               >
                 <span>Planes &amp; Precios</span>
                 <FaArrowRight className="text-xs text-orange-400" />
@@ -258,19 +290,19 @@ export default function BrandHeader() {
               <Link
                 href="/login"
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900/60 hover:bg-slate-900 text-white font-bold text-sm border border-slate-800/60 transition-colors"
+                className="flex items-center justify-between p-4 rounded-2xl bg-slate-900 hover:bg-slate-850 text-white font-bold text-base border border-slate-800 transition-colors"
               >
                 <span>Acceso Clientes</span>
                 <FaArrowRight className="text-xs text-slate-400" />
               </Link>
             </div>
 
-            {/* CTAs Móvil */}
-            <div className="pt-2 space-y-2.5">
+            {/* Acciones principales */}
+            <div className="space-y-3 pt-1">
               <Link
                 href="/registro"
                 onClick={() => setMobileMenuOpen(false)}
-                className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-sm text-center block shadow-lg shadow-orange-500/25 transition-all"
+                className="w-full py-4 px-4 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-base text-center block shadow-xl shadow-orange-500/25 transition-all"
               >
                 Empezar Gratis 🚀
               </Link>
@@ -280,46 +312,47 @@ export default function BrandHeader() {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setMobileMenuOpen(false)}
-                className="w-full py-3 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all"
+                className="w-full py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg transition-all"
               >
-                <FaWhatsapp className="text-sm" /> Hablar con un asesor por WhatsApp
+                <FaWhatsapp className="text-base" /> Hablar por WhatsApp
               </a>
             </div>
 
-            {/* Ecosistema en móvil */}
-            <div className="pt-4 border-t border-slate-800/80 space-y-2">
+            {/* Ecosistema Santisoft */}
+            <div className="pt-4 border-t border-slate-800 space-y-2.5">
               <span className="text-[10px] font-black uppercase tracking-[0.15em] text-cyan-400 block px-2">
                 Ecosistema Santisoft
               </span>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2.5">
                 <a
                   href="https://agentes.santisoft.cl"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-left text-xs font-semibold text-slate-200 hover:text-white"
+                  className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-left text-xs font-semibold text-slate-200 hover:text-white"
                 >
-                  <span className="block text-cyan-400 font-bold">Agentes IA ↗</span>
-                  <span className="text-[10px] text-slate-400">Automatización</span>
+                  <span className="block text-cyan-400 font-bold text-sm">Agentes IA ↗</span>
+                  <span className="text-[11px] text-slate-400">Automatización</span>
                 </a>
 
                 <a
                   href="https://santisoft.cl"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-left text-xs font-semibold text-slate-200 hover:text-white"
+                  className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-left text-xs font-semibold text-slate-200 hover:text-white"
                 >
-                  <span className="block text-white font-bold">Santisoft.cl ↗</span>
-                  <span className="text-[10px] text-slate-400">Plataforma Matriz</span>
+                  <span className="block text-white font-bold text-sm">Santisoft.cl ↗</span>
+                  <span className="text-[11px] text-slate-400">Plataforma Matriz</span>
                 </a>
               </div>
             </div>
-          </div>
 
-          <div className="pt-6 pb-2 text-center text-[11px] text-slate-500">
-            Santisoft Redes &amp; Contenido © {new Date().getFullYear()}
+            <div className="pt-4 text-center text-xs text-slate-500">
+              Santisoft Redes &amp; Contenido © {new Date().getFullYear()}
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </nav>
   );
