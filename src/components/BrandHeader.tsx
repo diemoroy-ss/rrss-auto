@@ -180,6 +180,13 @@ export default function BrandHeader() {
           </Link>
 
           <Link
+            href="/biblioteca"
+            className="text-sm font-medium text-slate-300 hover:text-white transition-colors"
+          >
+            Biblioteca
+          </Link>
+
+          <Link
             href="/triptico"
             className="text-sm font-medium text-slate-300 hover:text-white transition-colors"
           >
@@ -266,6 +273,15 @@ export default function BrandHeader() {
                 className="flex items-center justify-between p-4 rounded-2xl bg-slate-900 hover:bg-slate-850 text-white font-bold text-base border border-slate-800 transition-colors"
               >
                 <span>Cómo Funciona</span>
+                <FaArrowRight className="text-xs text-orange-400" />
+              </Link>
+
+              <Link
+                href="/biblioteca"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between p-4 rounded-2xl bg-slate-900 hover:bg-slate-850 text-white font-bold text-base border border-slate-800 transition-colors"
+              >
+                <span>Biblioteca de Estilos</span>
                 <FaArrowRight className="text-xs text-orange-400" />
               </Link>
 

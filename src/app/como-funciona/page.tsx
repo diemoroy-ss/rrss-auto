@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import BrandHeader from "../../components/BrandHeader";
 import BrandFooter from "../../components/BrandFooter";
 import DotCanvas from "../../components/DotCanvas";
@@ -1341,97 +1342,223 @@ export default function ComoFuncionaPage() {
             </p>
           </div>
 
-          {/* Grilla interactiva de comandos */}
+          {/* Grilla interactiva de comandos: Acordeón en móvil y dos columnas en desktop */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start" data-reveal>
-            {/* Lista de comandos (lado izquierdo) */}
+            {/* Lista de comandos (lado izquierdo en desktop, acordeón completo en móvil) */}
             <div className="lg:col-span-5 space-y-3">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block px-1">
-                Toca un comando para ver cómo actúa:
+                Toca un comando para ver cómo actúa en video:
               </span>
               {VIDEO_PROMPT_HIGHLIGHTS.map((item) => {
                 const isSelected = item.command === selectedVideoCommand;
                 return (
-                  <button
-                    key={item.command}
-                    onClick={() => {
-                      setSelectedVideoCommand(item.command);
-                      setVideoPreviewMode("video");
-                    }}
-                    className={`w-full text-left p-4 rounded-2xl border transition-all flex items-center justify-between gap-3 group ${
-                      isSelected
-                        ? "ring-2 ring-orange-500/80 shadow-lg shadow-orange-500/10"
-                        : "hover:border-orange-500/40"
-                    }`}
-                    style={{
-                      background: isSelected ? "var(--panel-2)" : "var(--panel)",
-                      borderColor: isSelected ? "var(--signal)" : "var(--line)",
-                    }}
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
+                  <div key={item.command} className="space-y-3">
+                    <button
+                      onClick={() => {
+                        if (isSelected) {
+                          // En móvil permite alternar o mantener seleccionado
+                          setSelectedVideoCommand(item.command);
+                        } else {
+                          setSelectedVideoCommand(item.command);
+                          setVideoPreviewMode("video");
+                        }
+                      }}
+                      className={`w-full text-left p-4 rounded-2xl border transition-all flex items-center justify-between gap-3 group ${
+                        isSelected
+                          ? "ring-2 ring-orange-500/80 shadow-lg shadow-orange-500/10"
+                          : "hover:border-orange-500/40"
+                      }`}
+                      style={{
+                        background: isSelected ? "var(--panel-2)" : "var(--panel)",
+                        borderColor: isSelected ? "var(--signal)" : "var(--line)",
+                      }}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span
+                          className={`text-2xl shrink-0 p-2.5 rounded-xl transition-all ${
+                            isSelected
+                              ? "bg-gradient-to-tr from-orange-500 to-amber-500 text-white shadow-md shadow-orange-500/30 scale-105"
+                              : "bg-orange-500/10 text-orange-500"
+                          }`}
+                        >
+                          {item.icon}
+                        </span>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <code
+                              className={`text-xs font-bold px-2 py-0.5 rounded-md truncate transition-colors ${
+                                isSelected
+                                  ? "bg-orange-500 text-white font-mono"
+                                  : "bg-slate-500/10 text-orange-600 dark:text-orange-400 font-mono"
+                              }`}
+                            >
+                              {item.command}
+                            </code>
+                            <span
+                              className={`text-[10px] font-semibold hidden sm:inline ${
+                                isSelected ? "text-orange-400 font-bold" : "text-slate-400"
+                              }`}
+                            >
+                              {item.tag}
+                            </span>
+                          </div>
+                          <h4
+                            className={`text-sm font-bold mt-1 truncate transition-colors ${
+                              isSelected ? "text-orange-500 dark:text-orange-400 font-extrabold" : ""
+                            }`}
+                            style={{ color: isSelected ? undefined : "var(--ink)" }}
+                          >
+                            {item.name}
+                          </h4>
+                        </div>
+                      </div>
                       <span
-                        className={`text-2xl shrink-0 p-2.5 rounded-xl transition-all ${
-                          isSelected
-                            ? "bg-gradient-to-tr from-orange-500 to-amber-500 text-white shadow-md shadow-orange-500/30 scale-105"
-                            : "bg-orange-500/10 text-orange-500"
+                        className={`text-sm font-bold transition-transform duration-200 ${
+                          isSelected ? "text-orange-500 rotate-90 lg:rotate-0 lg:translate-x-1" : "text-slate-400"
                         }`}
                       >
-                        {item.icon}
+                        ➔
                       </span>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <code
-                            className={`text-xs font-bold px-2 py-0.5 rounded-md truncate transition-colors ${
-                              isSelected
-                                ? "bg-orange-500 text-white font-mono"
-                                : "bg-slate-500/10 text-orange-600 dark:text-orange-400 font-mono"
-                            }`}
-                          >
-                            {item.command}
-                          </code>
-                          <span
-                            className={`text-[10px] font-semibold hidden sm:inline ${
-                              isSelected ? "text-orange-400 font-bold" : "text-slate-400"
-                            }`}
-                          >
-                            {item.tag}
-                          </span>
+                    </button>
+
+                    {/* Acordeón desplegable en móvil (se muestra justo debajo del comando seleccionado) */}
+                    {isSelected && (
+                      <div
+                        className="lg:hidden p-5 rounded-3xl border shadow-xl space-y-5 animate-in fade-in slide-in-from-top-2 duration-200"
+                        style={{
+                          background: "var(--panel)",
+                          borderColor: "var(--signal)",
+                        }}
+                      >
+                        <div>
+                          <div className="flex items-center justify-between pb-3 border-b" style={{ borderColor: "var(--line)" }}>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-orange-500">
+                              {item.category} · Formato Vertical 9:16
+                            </span>
+                            <button
+                              onClick={() => handleCopyVideoCommand(item.command)}
+                              className="px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all flex items-center gap-1"
+                              style={{
+                                background: "var(--panel-2)",
+                                borderColor: copiedCommandNotice === item.command ? "var(--signal)" : "var(--line)",
+                                color: copiedCommandNotice === item.command ? "var(--signal)" : "var(--ink)",
+                              }}
+                            >
+                              <span>{copiedCommandNotice === item.command ? "✓" : "📋"}</span>
+                              <span>{copiedCommandNotice === item.command ? "Copiado" : "Copiar"}</span>
+                            </button>
+                          </div>
+                          <p className="text-xs leading-relaxed mt-3" style={{ color: "var(--ink-dim)" }}>
+                            {item.description}
+                          </p>
                         </div>
-                        <h4
-                          className={`text-sm font-bold mt-1 truncate transition-colors ${
-                            isSelected ? "text-orange-500 dark:text-orange-400 font-extrabold" : ""
-                          }`}
-                          style={{ color: isSelected ? undefined : "var(--ink)" }}
-                        >
-                          {item.name}
-                        </h4>
+
+                        {/* Reproductor de video en móvil */}
+                        <div className="relative aspect-[9/16] rounded-2xl overflow-hidden border border-slate-700/40 shadow-2xl bg-black flex flex-col justify-between p-3 max-w-[240px] mx-auto w-full">
+                          {videoPreviewMode === "video" && item.videoUrl ? (
+                            <video
+                              key={item.videoUrl}
+                              src={item.videoUrl}
+                              poster={item.baseImageUrl || item.bgUrl}
+                              autoPlay
+                              loop
+                              muted
+                              playsInline
+                              className="absolute inset-0 w-full h-full object-cover"
+                            />
+                          ) : (
+                            <img
+                              key={item.baseImageUrl || item.bgUrl}
+                              src={item.baseImageUrl || item.bgUrl}
+                              alt={item.name}
+                              className="absolute inset-0 w-full h-full object-cover"
+                            />
+                          )}
+
+                          <div className="relative z-10 flex items-center justify-between text-white text-[9px] font-bold">
+                            <div className="flex items-center gap-1 bg-black/80 backdrop-blur-md p-1 rounded-full border border-white/15">
+                              <button
+                                type="button"
+                                onClick={() => setVideoPreviewMode("video")}
+                                className={`px-2 py-0.5 rounded-full uppercase tracking-wider transition-all flex items-center gap-1 text-[9px] font-bold ${
+                                  videoPreviewMode === "video"
+                                    ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white"
+                                    : "text-slate-300"
+                                }`}
+                              >
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse"></span>
+                                <span>Video 9:16</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setVideoPreviewMode("image")}
+                                className={`px-2 py-0.5 rounded-full uppercase tracking-wider transition-all text-[9px] font-bold ${
+                                  videoPreviewMode === "image" ? "bg-slate-700 text-white" : "text-slate-300"
+                                }`}
+                              >
+                                <span>Foto</span>
+                              </button>
+                            </div>
+                            <span className="bg-black/80 backdrop-blur-md px-1.5 py-0.5 rounded-full border border-white/15 text-[9px] text-slate-200">
+                              HD · 24fps
+                            </span>
+                          </div>
+
+                          <div className="relative z-10 bg-black/85 backdrop-blur-md p-2.5 rounded-xl border border-white/15 space-y-0.5 text-white">
+                            <div className="flex items-center justify-between text-[9px]">
+                              <span className="text-orange-400 font-bold">
+                                {videoPreviewMode === "video" ? "▶ VIDEO GENERADO" : "📸 FOTO BASE"}
+                              </span>
+                              <span className="text-slate-400 font-mono">Veo 9:16</span>
+                            </div>
+                            <code className="text-[11px] font-mono text-white block font-bold truncate">
+                              {item.command}
+                            </code>
+                          </div>
+                        </div>
+
+                        {/* Fichas técnicas en móvil */}
+                        <div className="space-y-2 text-xs">
+                          <div className="p-2.5 rounded-xl bg-slate-500/5 border border-slate-500/10">
+                            <span className="font-bold text-orange-500 block text-[10px] uppercase">
+                              🎥 Movimiento de Cámara:
+                            </span>
+                            <span style={{ color: "var(--ink)" }}>{item.cameraMovement}</span>
+                          </div>
+                          <div className="p-2.5 rounded-xl bg-slate-500/5 border border-slate-500/10">
+                            <span className="font-bold text-amber-500 block text-[10px] uppercase">
+                              ✨ Física &amp; Iluminación:
+                            </span>
+                            <span style={{ color: "var(--ink)" }}>{item.physicsEffect}</span>
+                          </div>
+                          <div className="p-2.5 rounded-xl bg-slate-500/5 border border-slate-500/10">
+                            <span className="font-bold text-emerald-500 block text-[10px] uppercase">
+                              🎯 Recomendado para:
+                            </span>
+                            <span style={{ color: "var(--ink)" }}>{item.recommendedFor}</span>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    <span
-                      className={`text-sm font-bold transition-all ${
-                        isSelected ? "text-orange-500 translate-x-1" : "text-slate-400"
-                      }`}
-                    >
-                      ➔
-                    </span>
-                  </button>
+                    )}
+                  </div>
                 );
               })}
 
-              {/* Botón directo a la biblioteca en el panel */}
+              {/* Botón directo a la biblioteca pública */}
               <div className="pt-2">
-                <a
-                  href="/automatizacion-rrss/panel/prompts-video"
+                <Link
+                  href="/biblioteca"
                   className="w-full py-3.5 px-4 rounded-xl border border-dashed border-orange-500/40 bg-orange-500/5 hover:bg-orange-500/10 text-orange-600 dark:text-orange-400 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all text-center"
                 >
                   <span>🎥</span>
-                  <span>Ver los 20 Comandos en la Biblioteca Completa</span>
+                  <span>Ver los 20 Comandos en la Biblioteca Pública</span>
                   <span>➔</span>
-                </a>
+                </Link>
               </div>
             </div>
 
-            {/* Ficha técnica del comando seleccionado (lado derecho) */}
-            <div className="lg:col-span-7">
+            {/* Ficha técnica del comando seleccionado (solo visible en pantallas grandes desktop) */}
+            <div className="hidden lg:block lg:col-span-7">
               <div
                 className="p-6 sm:p-8 rounded-3xl border shadow-xl relative overflow-hidden"
                 style={{
@@ -1633,13 +1760,13 @@ export default function ComoFuncionaPage() {
                       >
                         Ver Planes con Video ➔
                       </a>
-                      <a
-                        href="/automatizacion-rrss/panel/prompts-video"
+                      <Link
+                        href="/biblioteca"
                         className="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs shadow-md transition-all text-center whitespace-nowrap flex items-center justify-center gap-1.5"
                       >
                         <span>🎥</span>
-                        <span>Explorar Biblioteca Completa</span>
-                      </a>
+                        <span>Explorar Biblioteca Pública Completa</span>
+                      </Link>
                     </div>
                   </div>
                 </div>
