@@ -1043,32 +1043,51 @@ export default function BibliotecaPublicaPage() {
 
         {/* ───────────── LLAMADO A LA ACCIÓN FINAL ───────────── */}
         <section className="pt-10">
-          <div className="rounded-[2.5rem] bg-gradient-to-r from-orange-600 via-amber-600 to-indigo-700 p-8 sm:p-14 text-center space-y-6 shadow-2xl">
-            <h2 className="text-3xl sm:text-5xl font-black text-white leading-tight">
-              ¿Listo para que tus redes publiquen con estos estilos todos los días?
-            </h2>
-            <p className="text-white/90 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed">
-              Tú solo tomas la foto con tu celular y apruebas desde WhatsApp. Nuestros agentes se
-              encargan del video, afiche comercial, redacción persuasiva y publicación automática.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+          <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-b from-slate-900 via-slate-900/95 to-slate-950 p-8 sm:p-14 text-center space-y-6 shadow-2xl border border-orange-500/30">
+            {/* Resplandor decorativo de fondo */}
+            <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-orange-500/15 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="relative z-10 space-y-4">
+              <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs font-bold uppercase tracking-wider">
+                ✨ Publica como los Grandes
+              </span>
+
+              <h2 className="text-3xl sm:text-5xl font-black text-white leading-tight">
+                ¿Listo para que tus redes publiquen con estos estilos todos los días?
+              </h2>
+
+              <p className="text-slate-300 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed">
+                Tú solo tomas la foto con tu celular y apruebas desde WhatsApp. Nuestros agentes se
+                encargan del video, afiche comercial, redacción persuasiva y publicación automática.
+              </p>
+            </div>
+
+            <div className="relative z-10 flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+              {/* Botón Principal: Ver cómo funciona */}
               <Link
                 href="/como-funciona"
-                className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-white text-slate-950 hover:bg-slate-100 font-black text-sm shadow-xl transition-all"
+                style={{ color: "#ffffff" }}
+                className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 !text-white font-black text-sm shadow-xl shadow-orange-500/25 hover:shadow-orange-500/40 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 text-center"
               >
-                Ver cómo funciona
+                Ver cómo funciona <FaArrowRight className="text-xs" />
               </Link>
+
+              {/* Botón Secundario: Ver planes y precios */}
               <Link
                 href="/#planes"
-                className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-black/40 hover:bg-black/60 text-white font-black text-sm border border-white/30 transition-all"
+                style={{ color: "#ffffff" }}
+                className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-slate-800/90 hover:bg-slate-700/90 !text-white font-black text-sm border border-slate-700 hover:border-slate-600 shadow-md transition-all flex items-center justify-center text-center"
               >
                 Ver planes y precios
               </Link>
+
+              {/* Botón WhatsApp */}
               <a
                 href={getWhatsAppLink("Biblioteca General", "Consulta de Planes")}
                 target="_blank"
                 rel="noreferrer"
-                className="w-full sm:w-auto px-6 py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-lg"
+                style={{ color: "#ffffff" }}
+                className="w-full sm:w-auto px-6 py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 !text-white font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-600/25 hover:shadow-emerald-600/40"
               >
                 <FaWhatsapp className="text-base" /> Hablar por WhatsApp
               </a>
