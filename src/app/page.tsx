@@ -65,12 +65,15 @@ export default function Home() {
               <span className="pillar-tag">CANAL 1 · REDES SOCIALES 360°</span>
               <h3>Redes Sociales 360°</h3>
               <ul className="pillar-list">
-                <li><span className="mark">›</span><span>Generación de <strong>contenido persuasivo</strong> con nuestros agentes, adaptado a tu marca.</span></li>
+                <li><span className="mark">›</span><span><strong>Videos 9:16 &amp; Afiches Comerciales:</strong> 20 comandos cinematográficos para Reels y TikTok, más afiches con precios, ofertas y llamados a WhatsApp.</span></li>
                 <li><span className="mark">›</span><span><strong>Radar de Nicho 📡:</strong> Detección de tendencias, dudas y temas con alta tracción en tu rubro.</span></li>
                 <li><span className="mark">›</span><span><strong>Calendario estratégico</strong> que deja todo un mes programado en minutos.</span></li>
-                <li><span className="mark">›</span><span>Publicación automática directa en <strong>Meta (Facebook, Instagram)</strong>, <strong>TikTok</strong>, <strong>Google Business</strong>, <strong>YouTube Shorts</strong> y <strong>X</strong>.</span></li>
+                <li><span className="mark">›</span><span>Publicación automática directa en <strong>Instagram, Facebook, TikTok, YouTube Shorts</strong> y <strong>X</strong>.</span></li>
               </ul>
-              <span className="pillar-note">Autopublicación directa y sincronizada</span>
+              <div className="mt-3 pt-3 border-t border-slate-700/30 flex items-center justify-between text-xs">
+                <span className="pillar-note !m-0">Autopublicación directa y sincronizada</span>
+                <Link href="/biblioteca" className="text-orange-400 font-bold hover:underline">Ver biblioteca ➔</Link>
+              </div>
             </div>
             <div className="pillar b">
               <span className="pillar-tag">CANAL 2 · SEO &amp; GEO CON BLOG</span>

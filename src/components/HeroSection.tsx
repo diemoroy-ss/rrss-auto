@@ -125,17 +125,18 @@ export default function HeroSection() {
             <span className="eyebrow">Redes 360° <span className="freq">·</span> SEO &amp; GEO <span className="freq">·</span> WhatsApp Bot 🟢</span>
             <h1 className="lg:text-left text-center leading-tight mt-5">Que te <em>vean.</em><br />Que te <span className="em-p">citen.</span></h1>
             <p className="sub lg:text-left text-center lg:mx-0 mx-auto mt-6">Tu marca activa 24/7 sin contratar un equipo costoso: nuestros agentes investigan tu nicho, diseñan las piezas, redactan los copys y publican solos en tus redes y blog. Y si quieres supervisar, pedir un post de emergencia o ver métricas, lo haces directo por <strong>WhatsApp</strong>.</p>
-            <div className="hero-ctas flex flex-col sm:flex-row justify-center lg:justify-start gap-4 mt-8 w-full">
+            <div className="hero-ctas flex flex-col sm:flex-row justify-center lg:justify-start gap-3 mt-8 w-full">
               <a href="#planes" className="btn btn-primary w-full sm:w-auto justify-center text-center">Explorar Planes</a>
+              <Link href="/triptico" className="btn btn-outline w-full sm:w-auto justify-center text-center">Ver Pitch de 2 Min ➔</Link>
               <Link href="/login" className="btn btn-ghost w-full sm:w-auto justify-center text-center">Acceso Cliente</Link>
             </div>
             <div className="badges flex flex-wrap justify-center lg:justify-start gap-2 w-full mt-10">
               <span className="badge on !border-emerald-500/40 text-emerald-400 font-semibold"><span className="dot !bg-emerald-400 !shadow-[0_0_6px_#34d399]"></span>WhatsApp Bot</span>
-              <span className="badge on"><span className="dot"></span>Meta (FB / IG)</span>
+              <span className="badge on"><span className="dot"></span>Instagram &amp; Facebook</span>
               <span className="badge on"><span className="dot"></span>TikTok</span>
-              <span className="badge on"><span className="dot"></span>CMS/Blog</span>
-              <span className="badge on"><span className="dot"></span>Google Business</span>
-              <span className="badge"><span className="dot"></span>LinkedIn — Soon</span>
+              <span className="badge on"><span className="dot"></span>YouTube Shorts</span>
+              <span className="badge on"><span className="dot"></span>X (Twitter)</span>
+              <span className="badge on"><span className="dot"></span>CMS / Blog GEO</span>
             </div>
           </div>
 
@@ -203,7 +204,7 @@ export default function HeroSection() {
                 </div>
                 <div className="ring-row">
                   <div className="eq-visual"><span></span><span></span><span></span><span></span><span></span></div>
-                  <p className="gauge-desc"><b>Meta + TikTok</b>, siempre activos con el calendario automatizado para todo el mes.</p>
+                  <p className="gauge-desc"><b>5 Redes activas</b>: videos 9:16, afiches comerciales y publicaciones automáticas en Instagram, TikTok, Facebook, YouTube y X.</p>
                 </div>
               </div>
               <div className="gauge b">
