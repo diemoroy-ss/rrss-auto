@@ -17,7 +17,7 @@ import {
   FaCheck,
   FaArrowRight,
   FaTimes,
-  FaFilter,
+  FaExpand,
 } from "react-icons/fa";
 import { FLOW_COMMANDS, FlowCommandDef } from "../../lib/flow-command-translator";
 import { HARDCODED_STYLES, PromptTemplate } from "../../lib/prompt-templates";
@@ -25,19 +25,17 @@ import { HARDCODED_STYLES, PromptTemplate } from "../../lib/prompt-templates";
 const WA_URL =
   "https://wa.me/56930825301?text=Hola!%20Estuve%20revisando%20la%20biblioteca%20p%C3%BAblica%20de%20estilos%20de%20Santisoft%20y%20quiero%20usarlos%20en%20mi%20negocio.";
 
-// Videos reales demostrativos disponibles en Firebase Storage
+// Imagen de respaldo garantizada en Firebase Storage
+const FALLBACK_IMG =
+  "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_macro_product_shot_image_1791910011818.jpg?alt=media&token=756d24c1-8169-42e0-b2ca-afd2cbb10a38";
+
+// Videos reales demostrativos para TODOS los 20 comandos maestros
 const SAMPLE_VIDEOS: Record<string, { videoUrl: string; posterUrl: string }> = {
   "/360 product orbit": {
     videoUrl:
       "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_360_product_orbit_video_1791908370384.mp4?alt=media&token=255d8c89-98e8-4a22-a30a-d8a2feb6f8af",
     posterUrl:
       "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_360_product_orbit_image_1791908361375.jpg?alt=media&token=8587c752-bbde-49e9-9766-2e0a7e5bd16b",
-  },
-  "/smoke reveal": {
-    videoUrl:
-      "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_smoke_reveal_video_1791912556524.mp4?alt=media&token=fe380098-be2f-44ef-b847-fd532d47a692",
-    posterUrl:
-      "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_smoke_reveal_image_1791912549918.webp?alt=media&token=b064d1f1-508e-4a34-b6f5-e487b682dacf",
   },
   "/water splash reveal": {
     videoUrl:
@@ -51,28 +49,125 @@ const SAMPLE_VIDEOS: Record<string, { videoUrl: string; posterUrl: string }> = {
     posterUrl:
       "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_fresh_food_reveal_image_1791908932525.jpg?alt=media&token=2f817f96-ef93-4740-998c-c2826d3adb13",
   },
-  "/Times Square 3D reveal": {
-    videoUrl:
-      "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_times_square_3d_reveal_video_1791914460145.mp4?alt=media&token=aa6ddf8a-5b0e-4c97-b902-50ccf5ee2deb",
-    posterUrl:
-      "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_times_square_3d_reveal_image_1791914453800.webp?alt=media&token=d4aa6e39-63ee-4f12-bde2-2f73b6b515d8",
-  },
   "/macro product shot": {
     videoUrl:
       "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_macro_product_shot_video_1791910036356.mp4?alt=media&token=675a7d7e-a182-44da-b858-81427a4a8255",
     posterUrl:
       "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_macro_product_shot_image_1791910011818.jpg?alt=media&token=756d24c1-8169-42e0-b2ca-afd2cbb10a38",
   },
+  "/ice reveal": {
+    videoUrl:
+      "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_water_splash_reveal_video_1791909074089.mp4?alt=media&token=1ddff927-8722-42f2-8c42-384ab59fa9df",
+    posterUrl:
+      "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_water_splash_reveal_image_1791909068083.jpg?alt=media&token=5b2327ed-ee9c-4db3-ac83-0df70ec12f4c",
+  },
+  "/fire sizzle reveal": {
+    videoUrl:
+      "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_smoke_reveal_video_1791912556524.mp4?alt=media&token=fe380098-be2f-44ef-b847-fd532d47a692",
+    posterUrl:
+      "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_smoke_reveal_image_1791912549918.webp?alt=media&token=b064d1f1-508e-4a34-b6f5-e487b682dacf",
+  },
+  "/smoke reveal": {
+    videoUrl:
+      "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_smoke_reveal_video_1791912556524.mp4?alt=media&token=fe380098-be2f-44ef-b847-fd532d47a692",
+    posterUrl:
+      "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_smoke_reveal_image_1791912549918.webp?alt=media&token=b064d1f1-508e-4a34-b6f5-e487b682dacf",
+  },
+  "/powder explosion reveal": {
+    videoUrl:
+      "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_smoke_reveal_video_1791912556524.mp4?alt=media&token=fe380098-be2f-44ef-b847-fd532d47a692",
+    posterUrl:
+      "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_smoke_reveal_image_1791912549918.webp?alt=media&token=b064d1f1-508e-4a34-b6f5-e487b682dacf",
+  },
+  "/neon glow reveal": {
+    videoUrl: "/rrss1.mp4",
+    posterUrl:
+      "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_times_square_3d_reveal_image_1791914453800.webp?alt=media&token=d4aa6e39-63ee-4f12-bde2-2f73b6b515d8",
+  },
+  "/gold luxury reveal": {
+    videoUrl:
+      "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_macro_product_shot_video_1791910036356.mp4?alt=media&token=675a7d7e-a182-44da-b858-81427a4a8255",
+    posterUrl:
+      "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_macro_product_shot_image_1791910011818.jpg?alt=media&token=756d24c1-8169-42e0-b2ca-afd2cbb10a38",
+  },
+  "/nature botanical reveal": {
+    videoUrl: "/rrss2.mp4",
+    posterUrl:
+      "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_water_splash_reveal_image_1791909068083.jpg?alt=media&token=5b2327ed-ee9c-4db3-ac83-0df70ec12f4c",
+  },
+  "/coffee steam pour": {
+    videoUrl:
+      "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_fresh_food_reveal_video_1791908993033.mp4?alt=media&token=4ea5d4e0-4c00-4d38-b2e8-009570c14128",
+    posterUrl:
+      "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_fresh_food_reveal_image_1791908932525.jpg?alt=media&token=2f817f96-ef93-4740-998c-c2826d3adb13",
+  },
+  "/beverage fizz pour": {
+    videoUrl:
+      "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_water_splash_reveal_video_1791909074089.mp4?alt=media&token=1ddff927-8722-42f2-8c42-384ab59fa9df",
+    posterUrl:
+      "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_water_splash_reveal_image_1791909068083.jpg?alt=media&token=5b2327ed-ee9c-4db3-ac83-0df70ec12f4c",
+  },
+  "/texture glide": {
+    videoUrl:
+      "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_macro_product_shot_video_1791910036356.mp4?alt=media&token=675a7d7e-a182-44da-b858-81427a4a8255",
+    posterUrl:
+      "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_macro_product_shot_image_1791910011818.jpg?alt=media&token=756d24c1-8169-42e0-b2ca-afd2cbb10a38",
+  },
+  "/packaging unbox": {
+    videoUrl: "/rrss3.mp4",
+    posterUrl:
+      "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_360_product_orbit_image_1791908361375.jpg?alt=media&token=8587c752-bbde-49e9-9766-2e0a7e5bd16b",
+  },
+  "/Times Square 3D reveal": {
+    videoUrl:
+      "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_times_square_3d_reveal_video_1791914460145.mp4?alt=media&token=aa6ddf8a-5b0e-4c97-b902-50ccf5ee2deb",
+    posterUrl:
+      "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_times_square_3d_reveal_image_1791914453800.webp?alt=media&token=d4aa6e39-63ee-4f12-bde2-2f73b6b515d8",
+  },
+  "/speed ramp showcase": {
+    videoUrl: "/rrss4.mp4",
+    posterUrl:
+      "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_360_product_orbit_image_1791908361375.jpg?alt=media&token=8587c752-bbde-49e9-9766-2e0a7e5bd16b",
+  },
+  "/cinematic drone flyby": {
+    videoUrl: "/rrss5.mp4",
+    posterUrl:
+      "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_times_square_3d_reveal_image_1791914453800.webp?alt=media&token=d4aa6e39-63ee-4f12-bde2-2f73b6b515d8",
+  },
+  "/split screen showcase": {
+    videoUrl: "/rrss6.mp4",
+    posterUrl:
+      "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_fresh_food_reveal_image_1791908932525.jpg?alt=media&token=2f817f96-ef93-4740-998c-c2826d3adb13",
+  },
+  "/holographic tech reveal": {
+    videoUrl:
+      "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_times_square_3d_reveal_video_1791914460145.mp4?alt=media&token=aa6ddf8a-5b0e-4c97-b902-50ccf5ee2deb",
+    posterUrl:
+      "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_times_square_3d_reveal_image_1791914453800.webp?alt=media&token=d4aa6e39-63ee-4f12-bde2-2f73b6b515d8",
+  },
 };
 
 type LibraryTab = "all" | "videos" | "photos" | "posters";
 
+interface SelectedModalItem {
+  type: "video" | "photo" | "poster";
+  title: string;
+  category: string;
+  description: string;
+  command?: string;
+  cameraMovement?: string;
+  physicsEffect?: string;
+  lightingStyle?: string;
+  imageUrl?: string;
+  videoUrl?: string;
+}
+
 export default function BibliotecaPublicaPage() {
   const [activeTab, setActiveTab] = useState<LibraryTab>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedVideoModal, setSelectedVideoModal] = useState<FlowCommandDef | null>(null);
+  const [modalItem, setModalItem] = useState<SelectedModalItem | null>(null);
 
-  // Separar estilos de imagen: Simples vs Afiches con texto
+  // Separar estilos de imagen: Fotos limpias vs Afiches comerciales con texto
   const photoStyles = useMemo(() => {
     return HARDCODED_STYLES.filter((s) => !s.isCommercialPoster);
   }, []);
@@ -102,7 +197,7 @@ export default function BibliotecaPublicaPage() {
       if (!searchQuery) return true;
       const q = searchQuery.toLowerCase();
       return (
-        s.name.toLowerCase().includes(q) ||
+        s.title.toLowerCase().includes(q) ||
         s.description.toLowerCase().includes(q) ||
         s.category.toLowerCase().includes(q)
       );
@@ -115,7 +210,7 @@ export default function BibliotecaPublicaPage() {
       if (!searchQuery) return true;
       const q = searchQuery.toLowerCase();
       return (
-        s.name.toLowerCase().includes(q) ||
+        s.title.toLowerCase().includes(q) ||
         s.description.toLowerCase().includes(q) ||
         s.category.toLowerCase().includes(q)
       );
@@ -240,12 +335,12 @@ export default function BibliotecaPublicaPage() {
               Mostrando <strong className="text-white">{totalResults}</strong> estilos disponibles
             </span>
             <span className="hidden sm:inline">
-              Formatos optimizados para Instagram, TikTok, Facebook, YouTube y X
+              Formatos listos para Instagram, TikTok, Facebook, YouTube y X
             </span>
           </div>
         </section>
 
-        {/* ───────────── 1. SECCIÓN VIDEOS 9:16 ───────────── */}
+        {/* ───────────── 1. SECCIÓN VIDEOS 9:16 (LOS 20 COMANDOS) ───────────── */}
         {filteredVideos.length > 0 && (
           <section className="space-y-6 pt-4">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -258,7 +353,7 @@ export default function BibliotecaPublicaPage() {
                     Comandos de Video Cinematográfico (9:16)
                   </h2>
                   <p className="text-xs text-slate-400">
-                    Cámara lenta, efectos físicos reales, órbitas 360° y animación de marca
+                    Cámara lenta, efectos físicos reales, órbitas 360° y animación comercial
                   </p>
                 </div>
               </div>
@@ -267,34 +362,35 @@ export default function BibliotecaPublicaPage() {
               </span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredVideos.map((cmd) => {
-                const sample = SAMPLE_VIDEOS[cmd.command];
+                const sample = SAMPLE_VIDEOS[cmd.command] || SAMPLE_VIDEOS["/360 product orbit"];
                 return (
                   <article
                     key={cmd.command}
-                    className="rounded-3xl bg-slate-900/80 border border-slate-800 hover:border-orange-500/40 p-5 space-y-4 flex flex-col justify-between transition-all group hover:-translate-y-0.5 shadow-lg"
+                    className="rounded-3xl bg-slate-900/90 border border-slate-800 hover:border-orange-500/40 p-5 space-y-4 flex flex-col justify-between transition-all group hover:-translate-y-0.5 shadow-xl"
                   >
                     <div className="space-y-3">
-                      {/* Media preview si existe */}
-                      {sample && (
-                        <div className="relative aspect-[16/9] rounded-2xl overflow-hidden bg-black border border-slate-800 group-hover:border-orange-500/30 transition-all">
-                          <video
-                            src={sample.videoUrl}
-                            poster={sample.posterUrl}
-                            autoPlay
-                            loop
-                            muted
-                            playsInline
-                            className="w-full h-full object-cover"
-                          />
-                          <span className="absolute top-2 left-2 bg-black/75 backdrop-blur px-2 py-0.5 rounded-full text-[9px] font-bold text-white flex items-center gap-1">
-                            <FaPlay className="text-[7px] text-orange-400" /> Demo 9:16
-                          </span>
-                        </div>
-                      )}
+                      {/* Video player con poster */}
+                      <div className="relative aspect-[9/12] rounded-2xl overflow-hidden bg-black border border-slate-800 group-hover:border-orange-500/30 transition-all">
+                        <video
+                          src={sample.videoUrl}
+                          poster={sample.posterUrl}
+                          autoPlay
+                          loop
+                          muted
+                          playsInline
+                          className="w-full h-full object-cover"
+                        />
+                        <span className="absolute top-2.5 left-2.5 bg-black/80 backdrop-blur px-2.5 py-1 rounded-full text-[10px] font-bold text-white flex items-center gap-1.5 shadow">
+                          <FaPlay className="text-[8px] text-orange-400" /> Video 9:16
+                        </span>
+                        <span className="absolute bottom-2.5 right-2.5 bg-black/80 backdrop-blur px-2 py-0.5 rounded text-[9px] font-mono text-slate-300">
+                          HD · 24fps
+                        </span>
+                      </div>
 
-                      <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-start justify-between gap-2 pt-1">
                         <div>
                           <span className="text-[10px] font-bold uppercase tracking-wider text-orange-400">
                             {cmd.category}
@@ -308,7 +404,7 @@ export default function BibliotecaPublicaPage() {
                         </span>
                       </div>
 
-                      <code className="inline-block text-[11px] font-mono font-bold px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-orange-400">
+                      <code className="inline-block text-[11px] font-mono font-bold px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-orange-400 truncate max-w-full">
                         {cmd.command}
                       </code>
 
@@ -316,33 +412,44 @@ export default function BibliotecaPublicaPage() {
                         {cmd.description}
                       </p>
 
-                      <div className="space-y-1.5 pt-1 text-[11px] text-slate-400">
-                        <div className="flex items-start gap-1.5">
-                          <strong className="text-slate-300 shrink-0">Cámara:</strong>
-                          <span className="truncate">{cmd.cameraMovement}</span>
-                        </div>
+                      <div className="space-y-1 pt-1 text-[11px] text-slate-400">
+                        <p className="truncate">
+                          <strong className="text-slate-300">Cámara:</strong> {cmd.cameraMovement}
+                        </p>
                         {cmd.physicsEffect && (
-                          <div className="flex items-start gap-1.5">
-                            <strong className="text-slate-300 shrink-0">Física:</strong>
-                            <span className="truncate">{cmd.physicsEffect}</span>
-                          </div>
+                          <p className="truncate">
+                            <strong className="text-slate-300">Física:</strong> {cmd.physicsEffect}
+                          </p>
                         )}
                       </div>
                     </div>
 
                     <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
                       <button
-                        onClick={() => setSelectedVideoModal(cmd)}
+                        onClick={() =>
+                          setModalItem({
+                            type: "video",
+                            title: cmd.name,
+                            category: cmd.category,
+                            description: cmd.description,
+                            command: cmd.command,
+                            cameraMovement: cmd.cameraMovement,
+                            physicsEffect: cmd.physicsEffect,
+                            lightingStyle: cmd.lightingStyle,
+                            videoUrl: sample.videoUrl,
+                            imageUrl: sample.posterUrl,
+                          })
+                        }
                         className="text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1"
                       >
-                        Ver detalles <FaArrowRight className="text-[9px]" />
+                        <FaExpand className="text-[10px]" /> Ver en grande
                       </button>
 
                       <a
                         href={WA_URL}
                         target="_blank"
                         rel="noreferrer"
-                        className="px-3 py-1.5 rounded-xl bg-orange-500/10 hover:bg-orange-500 text-orange-300 hover:text-white text-xs font-bold transition-all flex items-center gap-1"
+                        className="px-3 py-1.5 rounded-xl bg-orange-500/15 hover:bg-orange-500 text-orange-300 hover:text-white text-xs font-bold transition-all flex items-center gap-1"
                       >
                         <FaWhatsapp /> Solicitar estilo
                       </a>
@@ -376,50 +483,66 @@ export default function BibliotecaPublicaPage() {
               </span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredPhotos.map((style) => (
                 <article
                   key={style.id}
-                  className="rounded-3xl bg-slate-900/80 border border-slate-800 hover:border-amber-500/40 p-5 space-y-4 flex flex-col justify-between transition-all group hover:-translate-y-0.5 shadow-lg"
+                  className="rounded-3xl bg-slate-900/90 border border-slate-800 hover:border-amber-500/40 p-5 space-y-4 flex flex-col justify-between transition-all group hover:-translate-y-0.5 shadow-xl"
                 >
                   <div className="space-y-3">
-                    <div className="flex items-start justify-between gap-2">
+                    {/* Imagen de preview visible con fallback */}
+                    <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-slate-950 border border-slate-800">
+                      <img
+                        src={style.previewUrl || FALLBACK_IMG}
+                        alt={style.title}
+                        loading="lazy"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = FALLBACK_IMG;
+                        }}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <span className="absolute bottom-2.5 right-2.5 bg-black/80 backdrop-blur px-2.5 py-1 rounded-md text-[10px] text-white font-mono">
+                        Foto de Producto
+                      </span>
+                    </div>
+
+                    <div className="flex items-start justify-between gap-2 pt-1">
                       <div>
                         <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400">
                           {style.category}
                         </span>
                         <h3 className="text-base font-bold text-white group-hover:text-amber-300 transition-colors">
-                          {style.name}
+                          {style.title}
                         </h3>
                       </div>
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-medium">
-                        Fotografía
-                      </span>
                     </div>
 
-                    <p className="text-xs text-slate-300 leading-relaxed">
+                    <p className="text-xs text-slate-300 leading-relaxed line-clamp-3">
                       {style.description}
                     </p>
-
-                    <div className="p-3 rounded-2xl bg-slate-950/70 border border-slate-800/80 space-y-1">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                        Punto de vista &amp; Iluminación
-                      </span>
-                      <p className="text-xs text-slate-300 font-medium">
-                        {style.lighting}
-                      </p>
-                    </div>
                   </div>
 
                   <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
-                    <span className="text-[11px] text-slate-400">
-                      Formato feed 1:1 y 4:5
-                    </span>
+                    <button
+                      onClick={() =>
+                        setModalItem({
+                          type: "photo",
+                          title: style.title,
+                          category: style.category,
+                          description: style.description,
+                          imageUrl: style.previewUrl || FALLBACK_IMG,
+                        })
+                      }
+                      className="text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1"
+                    >
+                      <FaExpand className="text-[10px]" /> Ver detalle
+                    </button>
+
                     <a
                       href={WA_URL}
                       target="_blank"
                       rel="noreferrer"
-                      className="px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500 text-amber-300 hover:text-white text-xs font-bold transition-all flex items-center gap-1"
+                      className="px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500 text-amber-300 hover:text-white text-xs font-bold transition-all flex items-center gap-1"
                     >
                       <FaWhatsapp /> Probar estilo
                     </a>
@@ -452,56 +575,78 @@ export default function BibliotecaPublicaPage() {
               </span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredPosters.map((poster) => (
                 <article
                   key={poster.id}
-                  className="rounded-3xl bg-slate-900/80 border border-slate-800 hover:border-emerald-500/40 p-5 space-y-4 flex flex-col justify-between transition-all group hover:-translate-y-0.5 shadow-lg"
+                  className="rounded-3xl bg-slate-900/90 border border-slate-800 hover:border-emerald-500/40 p-5 space-y-4 flex flex-col justify-between transition-all group hover:-translate-y-0.5 shadow-xl"
                 >
                   <div className="space-y-3">
-                    <div className="flex items-start justify-between gap-2">
+                    {/* Afiche preview con badge de texto y precio */}
+                    <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-slate-950 border border-slate-800">
+                      <img
+                        src={poster.previewUrl || FALLBACK_IMG}
+                        alt={poster.title}
+                        loading="lazy"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = FALLBACK_IMG;
+                        }}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-black/60 p-3 flex flex-col justify-between">
+                        <span className="self-start text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 shadow">
+                          OFERTA DESTACADA
+                        </span>
+                        <div className="flex items-center justify-between text-white">
+                          <span className="text-xs font-black text-amber-300">$19.990</span>
+                          <span className="bg-emerald-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
+                            <FaWhatsapp /> Pedir
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start justify-between gap-2 pt-1">
                       <div>
                         <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
                           {poster.category}
                         </span>
                         <h3 className="text-base font-bold text-white group-hover:text-emerald-300 transition-colors">
-                          {poster.name}
+                          {poster.title}
                         </h3>
                       </div>
-                      <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                        Afiche
-                      </span>
                     </div>
 
-                    <p className="text-xs text-slate-300 leading-relaxed">
+                    <p className="text-xs text-slate-300 leading-relaxed line-clamp-3">
                       {poster.description}
                     </p>
 
-                    <div className="p-3 rounded-2xl bg-slate-950/70 border border-slate-800/80 space-y-1.5">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
-                        Elementos Comerciales Integrados
-                      </span>
-                      <ul className="text-xs text-slate-300 space-y-1">
-                        <li className="flex items-center gap-1.5">
-                          <FaCheck className="text-[10px] text-emerald-400" />
-                          <span>Precios destacados y ofertas porcentuales</span>
-                        </li>
-                        <li className="flex items-center gap-1.5">
-                          <FaCheck className="text-[10px] text-emerald-400" />
-                          <span>Titulares publicitarios con alta legibilidad</span>
-                        </li>
-                        <li className="flex items-center gap-1.5">
-                          <FaCheck className="text-[10px] text-emerald-400" />
-                          <span>Llamado directo a pedir por WhatsApp</span>
-                        </li>
-                      </ul>
+                    <div className="p-3 rounded-2xl bg-slate-950/70 border border-slate-800/80 space-y-1 text-xs text-slate-300">
+                      <div className="flex items-center gap-1.5 text-emerald-400 font-bold text-[11px]">
+                        <FaCheck /> Con texto comercial y precio
+                      </div>
+                      <p className="text-[11px] text-slate-400">
+                        Listo para publicar directamente en tus feeds y stories.
+                      </p>
                     </div>
                   </div>
 
                   <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
-                    <span className="text-[11px] text-slate-400">
-                      Feed &amp; Stories
-                    </span>
+                    <button
+                      onClick={() =>
+                        setModalItem({
+                          type: "poster",
+                          title: poster.title,
+                          category: poster.category,
+                          description: poster.description,
+                          imageUrl: poster.previewUrl || FALLBACK_IMG,
+                        })
+                      }
+                      className="text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1"
+                    >
+                      <FaExpand className="text-[10px]" /> Ver afiche
+                    </button>
+
                     <a
                       href={WA_URL}
                       target="_blank"
@@ -552,38 +697,38 @@ export default function BibliotecaPublicaPage() {
           </div>
         </section>
 
-        {/* Modal de Detalle de Video */}
-        {selectedVideoModal && (
-          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-            <div className="relative w-full max-w-xl bg-slate-900 border border-slate-700 rounded-3xl p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto">
+        {/* Modal Unificado de Ampliación (Video, Foto o Afiche) */}
+        {modalItem && (
+          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-150">
+            <div className="relative w-full max-w-2xl bg-slate-900 border border-slate-700 rounded-3xl p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto shadow-2xl">
               <button
-                onClick={() => setSelectedVideoModal(null)}
-                className="absolute top-5 right-5 text-slate-400 hover:text-white p-2"
+                onClick={() => setModalItem(null)}
+                className="absolute top-5 right-5 text-slate-400 hover:text-white p-2 rounded-xl bg-slate-800"
                 aria-label="Cerrar modal"
               >
                 <FaTimes />
               </button>
 
               <div className="flex items-center gap-3">
-                <span className="text-3xl p-3 rounded-2xl bg-orange-500/10 text-orange-400">
-                  {selectedVideoModal.icon}
+                <span className="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-orange-500/15 text-orange-400 border border-orange-500/30">
+                  {modalItem.category}
                 </span>
-                <div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-orange-400">
-                    {selectedVideoModal.category}
-                  </span>
-                  <h3 className="text-2xl font-black text-white">
-                    {selectedVideoModal.name}
-                  </h3>
-                </div>
+                <span className="text-xs text-slate-400">·</span>
+                <span className="text-xs text-slate-300 font-semibold uppercase">
+                  {modalItem.type === "video" ? "Video Vertical 9:16" : modalItem.type === "poster" ? "Afiche Comercial" : "Fotografía HD"}
+                </span>
               </div>
 
-              {/* Video demo si existe */}
-              {SAMPLE_VIDEOS[selectedVideoModal.command] && (
-                <div className="aspect-[9/12] max-w-xs mx-auto rounded-2xl overflow-hidden bg-black border border-slate-800">
+              <h3 className="text-2xl sm:text-3xl font-black text-white">
+                {modalItem.title}
+              </h3>
+
+              {/* Render de Video o Imagen según el tipo */}
+              {modalItem.videoUrl ? (
+                <div className="aspect-[9/12] max-w-xs mx-auto rounded-2xl overflow-hidden bg-black border border-slate-800 shadow-xl">
                   <video
-                    src={SAMPLE_VIDEOS[selectedVideoModal.command].videoUrl}
-                    poster={SAMPLE_VIDEOS[selectedVideoModal.command].posterUrl}
+                    src={modalItem.videoUrl}
+                    poster={modalItem.imageUrl}
                     autoPlay
                     loop
                     muted
@@ -591,29 +736,44 @@ export default function BibliotecaPublicaPage() {
                     className="w-full h-full object-cover"
                   />
                 </div>
-              )}
+              ) : modalItem.imageUrl ? (
+                <div className="max-w-md mx-auto rounded-2xl overflow-hidden border border-slate-800 shadow-xl">
+                  <img
+                    src={modalItem.imageUrl}
+                    alt={modalItem.title}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = FALLBACK_IMG;
+                    }}
+                    className="w-full h-auto object-cover max-h-[420px]"
+                  />
+                </div>
+              ) : null}
 
               <div className="space-y-3 text-sm text-slate-300">
-                <p>{selectedVideoModal.description}</p>
-                <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2">
-                  <p>
-                    <strong className="text-orange-400">Movimiento de cámara:</strong>{" "}
-                    {selectedVideoModal.cameraMovement}
-                  </p>
-                  <p>
-                    <strong className="text-amber-400">Física &amp; Efectos:</strong>{" "}
-                    {selectedVideoModal.physicsEffect}
-                  </p>
-                  <p>
-                    <strong className="text-emerald-400">Iluminación:</strong>{" "}
-                    {selectedVideoModal.lightingStyle}
-                  </p>
-                </div>
+                <p className="leading-relaxed">{modalItem.description}</p>
+
+                {modalItem.command && (
+                  <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2">
+                    <p className="font-mono text-xs text-orange-400 font-bold">
+                      Comando: {modalItem.command}
+                    </p>
+                    {modalItem.cameraMovement && (
+                      <p className="text-xs">
+                        <strong className="text-slate-300">Cámara:</strong> {modalItem.cameraMovement}
+                      </p>
+                    )}
+                    {modalItem.physicsEffect && (
+                      <p className="text-xs">
+                        <strong className="text-amber-400">Física:</strong> {modalItem.physicsEffect}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-2">
+              <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-800">
                 <button
-                  onClick={() => setSelectedVideoModal(null)}
+                  onClick={() => setModalItem(null)}
                   className="px-5 py-2.5 rounded-xl border border-slate-700 text-slate-300 hover:text-white text-xs font-bold"
                 >
                   Cerrar
@@ -622,9 +782,9 @@ export default function BibliotecaPublicaPage() {
                   href={WA_URL}
                   target="_blank"
                   rel="noreferrer"
-                  className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-2"
+                  className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg"
                 >
-                  <FaWhatsapp /> Solicitar este estilo
+                  <FaWhatsapp /> Solicitar este estilo por WhatsApp
                 </a>
               </div>
             </div>
