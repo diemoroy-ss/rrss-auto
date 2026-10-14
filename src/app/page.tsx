@@ -132,60 +132,141 @@ export default function Home() {
       {/* 6. Testimonios */}
       <TestimonialsSection />
 
-      {/* 7. Comparativa de Costos */}
-      <section id="comparativa">
+      {/* 7. Nueva Sección "Anclaje de Precio" (Tabla Comparativa de 3 Columnas) */}
+      <section id="comparativa" className="py-20 border-t border-slate-800/80">
         <div className="wrap">
           <div className="section-head center" data-reveal>
-            <span className="eyebrow">El argumento real</span>
-            <h2>No compites con <em>herramientas.</em><br />Compites con contratar <span className="em-p">personas.</span></h2>
+            <span className="eyebrow">Comparativa Directa · Números Reales</span>
+            <h2>Tres caminos para tus redes.<br />Uno solo te da <em>ventas y tiempo libre.</em></h2>
           </div>
-          <p className="cost-comparison-sub" data-reveal>
-            ¿Cuánto te cuesta tener a alguien que escriba, diseñe, edite videos y gestione tus redes todos los días en Chile?
+          <p className="text-center max-w-2xl mx-auto -mt-6 mb-12 text-slate-300 text-sm sm:text-base leading-relaxed" data-reveal>
+            Hagamos números claros para el dueño de negocio en Chile. ¿Cuánto te cuesta realmente mantener tus redes activas todos los días?
           </p>
-          <div className="cost-comparison-grid" data-reveal>
-            <div className="cost-card traditional">
-              <div className="cost-card-header">
-                <span className="cost-card-label">EQUIPO TRADICIONAL EN CHILE</span>
-                <span className="cost-card-badge bad">❌ Opción costosa</span>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch" data-reveal>
+            {/* Columna 1: Hacerlo tú mismo */}
+            <div className="p-7 rounded-3xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between space-y-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black uppercase tracking-wider text-slate-400">Opción 1</span>
+                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400">Hacerlo a mano</span>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">Hacerlo tú mismo</h3>
+                  <div className="mt-2 text-3xl font-black text-slate-200">$0 <span className="text-sm font-normal text-slate-400">CLP / mes</span></div>
+                  <p className="text-xs text-red-400 font-semibold mt-1">"Gratis" en dinero, carísimo en tiempo y estrés</p>
+                </div>
+                <ul className="space-y-3 text-xs text-slate-300 pt-2 border-t border-slate-800">
+                  <li className="flex items-start gap-2">
+                    <span className="text-red-400 font-bold">✕</span>
+                    <span>Pierdes <strong>+15 horas al mes</strong> pensando qué publicar y buscando fotos.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-red-400 font-bold">✕</span>
+                    <span><strong>Estrés el domingo en la noche</strong> improvisando diseños caseros en Canva.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-red-400 font-bold">✕</span>
+                    <span><strong>Redes abandonadas</strong> a la segunda semana por falta de tiempo para operar tu negocio.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-red-400 font-bold">✕</span>
+                    <span>Cero alcance: fotos sin llamadas a la acción que nadie comparte ni compra.</span>
+                  </li>
+                </ul>
               </div>
-              <ul className="cost-breakdown-list">
-                <li><span className="cost-role">Community Manager</span><span className="cost-amount">~$450.000</span></li>
-                <li><span className="cost-role">Diseñador Gráfico</span><span className="cost-amount">~$400.000</span></li>
-                <li><span className="cost-role">Redactor de Contenidos &amp; SEO</span><span className="cost-amount">~$350.000</span></li>
-                <li><span className="cost-role">Editor de Video</span><span className="cost-amount">~$300.000</span></li>
-              </ul>
-              <div className="cost-total-row">
-                <span>Total mensual estimado</span>
-                <span className="cost-total-amount bad">$1.200.000 – $1.500.000</span>
+              <div className="p-3.5 rounded-2xl bg-red-950/20 border border-red-900/30 text-center text-xs text-red-300 font-medium">
+                Resultado: Negocio invisible y dueño agotado.
               </div>
-              <p className="cost-card-note">Sin contar vacaciones, finiquitos, herramientas de diseño ni licencias de software adicionales.</p>
             </div>
 
-            <div className="cost-card santisoft">
-              <div className="cost-card-header">
-                <span className="cost-card-label">SANTISOFT — PLAN PRO</span>
-                <span className="cost-card-badge good">✓ Opción inteligente</span>
+            {/* Columna 2: Agencia Tradicional */}
+            <div className="p-7 rounded-3xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between space-y-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black uppercase tracking-wider text-slate-400">Opción 2</span>
+                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-red-950/60 border border-red-900/40 text-red-300">Costoso y lento</span>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">Agencia Tradicional / CM</h3>
+                  <div className="mt-2 text-2xl sm:text-3xl font-black text-white">$400.000 – $700.000 <span className="text-xs sm:text-sm font-normal text-slate-400">CLP / mes</span></div>
+                  <p className="text-xs text-red-400 font-semibold mt-1">Presupuesto inalcanzable para la mayoría de PyMEs</p>
+                </div>
+                <ul className="space-y-3 text-xs text-slate-300 pt-2 border-t border-slate-800">
+                  <li className="flex items-start gap-2">
+                    <span className="text-red-400 font-bold">✕</span>
+                    <span><strong>Reuniones lentas</strong> e interminables hilos de correos para coordinar 8 posts al mes.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-red-400 font-bold">✕</span>
+                    <span><strong>Textos genéricos y fríos</strong> redactados por personas que no conocen la realidad de tu rubro.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-red-400 font-bold">✕</span>
+                    <span>Tardan <strong>días en responder</strong> cuando necesitas publicar una promo urgente para el fin de semana.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-red-400 font-bold">✕</span>
+                    <span><strong>Contratos amarrados</strong> por 6 a 12 meses sin garantía de resultados.</span>
+                  </li>
+                </ul>
               </div>
-              <ul className="cost-breakdown-list">
-                <li><span className="cost-role">80 publicaciones en redes al mes</span><span className="cost-check">✓</span></li>
-                <li><span className="cost-role">12 videos con locución y guión</span><span className="cost-check">✓</span></li>
-                <li><span className="cost-role">80 imágenes generadas a tu estilo</span><span className="cost-check">✓</span></li>
-                <li><span className="cost-role">8 artículos de Blog SEO/GEO al mes</span><span className="cost-check">✓</span></li>
-                <li><span className="cost-role">Radar de Nicho + Meta Ads integrado</span><span className="cost-check">✓</span></li>
-                <li><span className="cost-role">Publicación automática en Meta, TikTok, YouTube</span><span className="cost-check">✓</span></li>
-                <li><span className="cost-role">Control y aprobación por WhatsApp Bot</span><span className="cost-check">✓</span></li>
-              </ul>
-              <div className="cost-total-row highlight">
-                <span>Total mensual</span>
-                <span className="cost-total-amount good">$89.990</span>
+              <div className="p-3.5 rounded-2xl bg-red-950/20 border border-red-900/30 text-center text-xs text-red-300 font-medium">
+                Resultado: Pagar una fortuna por un servicio rígido.
               </div>
-              <p className="cost-card-note highlight-note">Más del 90% de ahorro. Sin contratar, sin reuniones, sin esperar.</p>
+            </div>
+
+            {/* Columna 3: RRSS-Auto by Santisoft (DESTACADA) */}
+            <div className="relative p-7 rounded-3xl bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 border-2 border-orange-500 shadow-2xl shadow-orange-500/20 flex flex-col justify-between space-y-6">
+              <div className="absolute -top-3.5 right-6 bg-gradient-to-r from-orange-500 to-amber-500 text-slate-950 text-[11px] font-black uppercase tracking-wider px-3.5 py-1 rounded-full shadow-lg">
+                🔥 Recomendado para PyMEs
+              </div>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black uppercase tracking-wider text-orange-400">Opción 3</span>
+                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Llave en Mano</span>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">RRSS-Auto by Santisoft</h3>
+                  <div className="mt-2 text-3xl font-black text-white">Desde $49.990 <span className="text-sm font-normal text-slate-400">CLP / mes</span></div>
+                  <p className="text-xs text-emerald-400 font-semibold mt-1">90% más barato que una agencia y 100% bajo tu control</p>
+                </div>
+                <ul className="space-y-3 text-xs text-slate-200 pt-2 border-t border-slate-800">
+                  <li className="flex items-start gap-2">
+                    <span className="text-emerald-400 font-bold">✓</span>
+                    <span><strong>Calendario hiper-orgánico del mes</strong> listo en minutos con tu logo y colores.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-emerald-400 font-bold">✓</span>
+                    <span><strong>Guiones de Reels e Historias</strong> listos para leer en 30 segundos con fórmulas de retención.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-emerald-400 font-bold">✓</span>
+                    <span><strong>Policía Anti-Baneos</strong> de Instagram para proteger el alcance y la salud de tu cuenta.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-emerald-400 font-bold">✓</span>
+                    <span><strong>Configuración Llave en Mano gratis</strong>: dejamos la voz de tu marca y tu primer mes andando.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-emerald-400 font-bold">✓</span>
+                    <span><strong>Aprobación en 1 toque por WhatsApp</strong>: sin reuniones ni paneles difíciles.</span>
+                  </li>
+                </ul>
+              </div>
+              <div className="space-y-2">
+                <a
+                  href="https://wa.me/56965909543?text=%C2%A1Hola!%20Quiero%20asegurar%20uno%20de%20los%20cupos%20del%20Plan%20Fundador%20de%20Santisoft%20con%20Setup%20Gratis."
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-xs text-center flex items-center justify-center gap-2 shadow-lg shadow-orange-500/25 transition-all"
+                >
+                  <span>🚀</span> Asegurar mi cupo con Setup Gratis
+                </a>
+                <p className="text-[10px] text-center text-slate-400">Garantía Cero Riesgo de 7 días · Cancela cuando quieras</p>
+              </div>
             </div>
           </div>
-
-          <p className="cost-cta-note" data-reveal>
-            Tu contenido del mes completo, listo en 15 minutos. Nuestros agentes investigan tu nicho, crean las piezas y publican solos.
-          </p>
         </div>
       </section>
 

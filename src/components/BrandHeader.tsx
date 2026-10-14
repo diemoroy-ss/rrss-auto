@@ -9,7 +9,7 @@ import LogoMark from "./LogoMark";
 import ThemeToggle from "./ThemeToggle";
 
 const WA_URL =
-  "https://wa.me/56930825301?text=Hola!%20Quiero%20informaci%C3%B3n%20sobre%20el%20servicio%20de%20Santisoft.";
+  "https://wa.me/56965909543?text=Hola!%20Quiero%20informaci%C3%B3n%20sobre%20el%20servicio%20de%20Santisoft.";
 
 export default function BrandHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);

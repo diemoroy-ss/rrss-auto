@@ -122,21 +122,36 @@ export default function HeroSection() {
         <div className="radar"></div>
         <div className="wrap flex flex-col lg:flex-row items-center gap-12 lg:gap-8">
           <div className="hero-head lg:w-1/2 lg:text-left text-center m-0 max-w-none flex flex-col items-center lg:items-start z-10 relative">
-            <span className="eyebrow">Redes 360° <span className="freq">·</span> SEO &amp; GEO <span className="freq">·</span> WhatsApp Bot 🟢</span>
-            <h1 className="lg:text-left text-center leading-tight mt-5">Que te <em>vean.</em><br />Que te <span className="em-p">citen.</span></h1>
-            <p className="sub lg:text-left text-center lg:mx-0 mx-auto mt-6">Tu marca activa 24/7 sin contratar un equipo costoso: nuestros agentes investigan tu nicho, diseñan las piezas, redactan los copys y publican solos en tus redes y blog. Y si quieres supervisar, pedir un post de emergencia o ver métricas, lo haces directo por <strong>WhatsApp</strong>.</p>
+            <span className="eyebrow">Exclusivo para PyMEs y Negocios en Chile <span className="freq">·</span> WhatsApp 🟢</span>
+            <h1 className="lg:text-left text-center leading-tight mt-5 text-3xl sm:text-4xl lg:text-5xl font-black">
+              Tus Redes Sociales publicando y atrayendo clientes 24/7 en piloto automático — <em className="not-italic text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-300">Por una fracción de lo que te cobra una agencia.</em>
+            </h1>
+            <p className="sub lg:text-left text-center lg:mx-0 mx-auto mt-6 text-base sm:text-lg text-slate-300 leading-relaxed max-w-xl">
+              Sin redactar desde cero, sin sufrir diseñando y sin sonar como robot. Clonamos la voz exacta de tu negocio y te dejamos el mes completo de contenido listo en minutos.
+            </p>
             <div className="hero-ctas flex flex-col sm:flex-row justify-center lg:justify-start gap-3 mt-8 w-full">
-              <a href="#planes" className="btn btn-primary w-full sm:w-auto justify-center text-center">Explorar Planes</a>
-              <Link href="/triptico" className="btn btn-outline w-full sm:w-auto justify-center text-center">Ver Pitch de 2 Min ➔</Link>
-              <Link href="/login" className="btn btn-ghost w-full sm:w-auto justify-center text-center">Acceso Cliente</Link>
+              <a
+                href="https://wa.me/56965909543?text=%C2%A1Hola%20Santisoft!%20Quiero%20recibir%20los%203%20posts%20de%20prueba%20gratis%20para%20mi%20negocio%20por%20WhatsApp.%20Mi%20rubro%20es%3A%20"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-primary w-full sm:w-auto justify-center text-center !bg-gradient-to-r !from-emerald-500 !to-teal-500 hover:!from-emerald-600 hover:!to-teal-600 !text-white !font-black !shadow-lg !shadow-emerald-500/30 flex items-center gap-2"
+              >
+                <span>💬</span> Quiero recibir 3 posts de prueba gratis por WhatsApp
+              </a>
+              <Link href="/como-funciona" className="btn btn-outline w-full sm:w-auto justify-center text-center">
+                Ver cómo funciona ➔
+              </Link>
+              <a href="#comparativa" className="btn btn-ghost w-full sm:w-auto justify-center text-center">
+                Ver precios
+              </a>
             </div>
-            <div className="badges flex flex-wrap justify-center lg:justify-start gap-2 w-full mt-10">
-              <span className="badge on !border-emerald-500/40 text-emerald-400 font-semibold"><span className="dot !bg-emerald-400 !shadow-[0_0_6px_#34d399]"></span>WhatsApp Bot</span>
+            <div className="badges flex flex-wrap justify-center lg:justify-start gap-2 w-full mt-8">
+              <span className="badge on !border-emerald-500/40 text-emerald-400 font-semibold"><span className="dot !bg-emerald-400 !shadow-[0_0_6px_#34d399]"></span>Aprobación por WhatsApp</span>
               <span className="badge on"><span className="dot"></span>Instagram &amp; Facebook</span>
-              <span className="badge on"><span className="dot"></span>TikTok</span>
+              <span className="badge on"><span className="dot"></span>TikTok &amp; Reels</span>
               <span className="badge on"><span className="dot"></span>YouTube Shorts</span>
-              <span className="badge on"><span className="dot"></span>X (Twitter)</span>
-              <span className="badge on"><span className="dot"></span>CMS / Blog GEO</span>
+              <span className="badge on"><span className="dot"></span>Policía Anti-Baneos</span>
+              <span className="badge on"><span className="dot"></span>Setup Llave en Mano</span>
             </div>
           </div>
 

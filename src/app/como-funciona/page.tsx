@@ -632,126 +632,94 @@ export default function ComoFuncionaPage() {
         </div>
       </section>
 
-      {/* ── 3. CÓMO LO HACEMOS (LOS 4 PASOS PARA CUALQUIER RUBRO) ── */}
+      {/* ── 3. CÓMO LO HACEMOS (3 PASOS SIN ESFUERZO) ── */}
       <section className="py-24 border-b" style={{ borderColor: "var(--line)" }}>
         <div className="wrap">
           <div className="text-center max-w-3xl mx-auto mb-20" data-reveal>
             <span className="eyebrow text-orange-500 font-bold text-xs uppercase tracking-wider">
-              Cómo trabaja nuestro equipo
+              Flujo 100% Sin Fricción
             </span>
             <h2 className="text-3xl sm:text-4xl font-bold mt-2" style={{ color: "var(--ink)" }}>
-              Un flujo simple y continuo para que tu negocio nunca pare de vender.
+              Tu presencia en redes resuelta en 3 pasos simples.
             </h2>
             <p className="mt-4 text-base" style={{ color: "var(--ink-dim)" }}>
-              Nuestros agentes especializados se reparten el trabajo tal como lo haría una agencia de primer nivel,
-              pero en minutos y adaptados al rubro específico de tu local.
+              Olvídate de curvas de aprendizaje o configuraciones eternas. Diseñamos este sistema para que delegues el 100% del trabajo pesado sin perder el control de tu negocio.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8" data-reveal>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8" data-reveal>
             {/* Paso 1 */}
             <div
-              className="relative p-7 rounded-2xl border shadow-sm flex flex-col justify-between"
+              className="relative p-8 rounded-2xl border shadow-sm flex flex-col justify-between"
               style={{ background: "var(--panel)", borderColor: "var(--line)" }}
             >
               <div>
-                <div className="text-xs font-mono font-bold text-orange-500 mb-3 tracking-widest">PASO 01</div>
+                <div className="text-xs font-mono font-bold text-orange-500 mb-3 tracking-widest">PASO 01 · DÍA 1</div>
                 <div className="w-12 h-12 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-500 flex items-center justify-center text-2xl mb-5">
-                  📡
+                  🧬
                 </div>
-                <h3 className="text-lg font-bold mb-2" style={{ color: "var(--ink)" }}>
-                  Radar de Nicho
+                <h3 className="text-xl font-bold mb-3" style={{ color: "var(--ink)" }}>
+                  Clonamos el ADN de tu Negocio
                 </h3>
                 <p className="text-sm leading-relaxed" style={{ color: "var(--ink-dim)" }}>
-                  Nuestros agentes escanean las preguntas frecuentes, precios, ofertas y tendencias de tu rubro en tu
-                  comuna o ciudad. Ya sea que vendas comida, ropa, servicios de estética o planes fitness, detectamos qué
-                  quiere tu público.
+                  Nosotros te ayudamos desde el primer minuto. Conectamos tu web o perfil actual de Instagram: el sistema extrae tus colores corporativos, tu tono de comunicación real y los servicios o productos más rentables de tu negocio.
                 </p>
               </div>
               <div
-                className="mt-6 pt-4 border-t text-xs flex items-center gap-1.5"
-                style={{ borderColor: "var(--line)", color: "var(--ink-dim)" }}
+                className="mt-6 pt-4 border-t text-xs flex items-center gap-1.5 font-semibold text-emerald-500"
+                style={{ borderColor: "var(--line)" }}
               >
-                <span className="text-emerald-500 font-bold">✓</span> Temas con demanda comercial real
+                <span>✓</span> Onboarding guiado 1 a 1 incluido
               </div>
             </div>
 
             {/* Paso 2 */}
             <div
-              className="relative p-7 rounded-2xl border shadow-sm flex flex-col justify-between"
+              className="relative p-8 rounded-2xl border shadow-sm flex flex-col justify-between"
               style={{ background: "var(--panel)", borderColor: "var(--line)" }}
             >
               <div>
-                <div className="text-xs font-mono font-bold text-blue-500 mb-3 tracking-widest">PASO 02</div>
+                <div className="text-xs font-mono font-bold text-blue-500 mb-3 tracking-widest">PASO 02 · 5 MINUTOS</div>
                 <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-500 flex items-center justify-center text-2xl mb-5">
-                  📅
+                  ⚡
                 </div>
-                <h3 className="text-lg font-bold mb-2" style={{ color: "var(--ink)" }}>
-                  Estrategia Mensual
+                <h3 className="text-xl font-bold mb-3" style={{ color: "var(--ink)" }}>
+                  Tu Mes Completo en 5 Minutos
                 </h3>
                 <p className="text-sm leading-relaxed" style={{ color: "var(--ink-dim)" }}>
-                  Armamos un calendario con 4 pilares: ofertas directas y liquidaciones, productos o servicios estrella,
-                  consejos y demostraciones para generar confianza, y videos de alto alcance orgánico.
+                  Nuestros agentes estructuran tu calendario hiper-orgánico del mes: diseñan carruseles y gráficas con tu logo, redactan copys persuasivos calibrados para LATAM y preparan guiones de Reels e Historias palabra por palabra (con protección anti-baneos de Instagram).
                 </p>
               </div>
               <div
-                className="mt-6 pt-4 border-t text-xs flex items-center gap-1.5"
-                style={{ borderColor: "var(--line)", color: "var(--ink-dim)" }}
+                className="mt-6 pt-4 border-t text-xs flex items-center gap-1.5 font-semibold text-emerald-500"
+                style={{ borderColor: "var(--line)" }}
               >
-                <span className="text-emerald-500 font-bold">✓</span> 30 días planificados
+                <span>✓</span> 30 días de contenido listos al instante
               </div>
             </div>
 
             {/* Paso 3 */}
             <div
-              className="relative p-7 rounded-2xl border shadow-sm flex flex-col justify-between"
+              className="relative p-8 rounded-2xl border shadow-sm flex flex-col justify-between"
               style={{ background: "var(--panel)", borderColor: "var(--line)" }}
             >
               <div>
-                <div className="text-xs font-mono font-bold text-purple-500 mb-3 tracking-widest">PASO 03</div>
+                <div className="text-xs font-mono font-bold text-purple-500 mb-3 tracking-widest">PASO 03 · 1 CLIC</div>
                 <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-500 flex items-center justify-center text-2xl mb-5">
-                  🎨
+                  🎯
                 </div>
-                <h3 className="text-lg font-bold mb-2" style={{ color: "var(--ink)" }}>
-                  Dirección de Arte
+                <h3 className="text-xl font-bold mb-3" style={{ color: "var(--ink)" }}>
+                  Apruebas en 1 Clic y a Vender
                 </h3>
                 <p className="text-sm leading-relaxed" style={{ color: "var(--ink-dim)" }}>
-                  Nuestros agentes examinan el encuadre de la foto de tu producto, prenda o servicio y estampan carteles
-                  comerciales, precios y llamados a la acción <strong>directamente sobre la imagen</strong>, sin tapar ni
-                  deformar lo que vendes.
+                  Revisas todo cómodamente desde tu celular o computador, apruebas lo que te gusta y el contenido queda programado. Tu marca mantiene presencia activa, genera confianza en tus clientes y atrae consultas de venta todos los días.
                 </p>
               </div>
               <div
-                className="mt-6 pt-4 border-t text-xs flex items-center gap-1.5"
-                style={{ borderColor: "var(--line)", color: "var(--ink-dim)" }}
+                className="mt-6 pt-4 border-t text-xs flex items-center gap-1.5 font-semibold text-emerald-500"
+                style={{ borderColor: "var(--line)" }}
               >
-                <span className="text-emerald-500 font-bold">✓</span> Tu producto queda impecable
-              </div>
-            </div>
-
-            {/* Paso 4 */}
-            <div
-              className="relative p-7 rounded-2xl border shadow-sm flex flex-col justify-between"
-              style={{ background: "var(--panel)", borderColor: "var(--line)" }}
-            >
-              <div>
-                <div className="text-xs font-mono font-bold text-emerald-500 mb-3 tracking-widest">PASO 04</div>
-                <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center text-2xl mb-5">
-                  🚀
-                </div>
-                <h3 className="text-lg font-bold mb-2" style={{ color: "var(--ink)" }}>
-                  Publicación Automática
-                </h3>
-                <p className="text-sm leading-relaxed" style={{ color: "var(--ink-dim)" }}>
-                  Tus piezas se publican solas en Instagram, Facebook, TikTok y Google Maps en el mejor horario comercial.
-                  Tú recibes un mensaje en WhatsApp y apruebas con 1 solo toque.
-                </p>
-              </div>
-              <div
-                className="mt-6 pt-4 border-t text-xs flex items-center gap-1.5"
-                style={{ borderColor: "var(--line)", color: "var(--ink-dim)" }}
-              >
-                <span className="text-emerald-500 font-bold">✓</span> Cero tiempo perdido
+                <span>✓</span> Control total sin perder horas
               </div>
             </div>
           </div>
@@ -2034,6 +2002,81 @@ export default function ComoFuncionaPage() {
                 </tr>
               </tbody>
             </table>
+          </div>
+        </div>
+      </section>
+
+      {/* ── SECCIÓN FAQ ROMPE-OBJECIONES ── */}
+      <section className="py-24 border-b" style={{ borderColor: "var(--line)" }}>
+        <div className="wrap max-w-4xl">
+          <div className="text-center mb-16" data-reveal>
+            <span className="eyebrow text-orange-500 font-bold text-xs uppercase tracking-wider">
+              Claridad Total
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-bold mt-2" style={{ color: "var(--ink)" }}>
+              Preguntas Frecuentes de Dueños de PyMEs
+            </h2>
+            <p className="mt-3 text-base" style={{ color: "var(--ink-dim)" }}>
+              Todo lo que necesitas saber antes de poner tus redes en piloto automático.
+            </p>
+          </div>
+
+          <div className="space-y-4" data-reveal>
+            {/* FAQ 1 */}
+            <div
+              className="p-6 sm:p-7 rounded-2xl border transition-all"
+              style={{ background: "var(--panel)", borderColor: "var(--line)" }}
+            >
+              <h3 className="text-lg font-bold flex items-start gap-3" style={{ color: "var(--ink)" }}>
+                <span className="text-orange-500 text-xl font-bold mt-0.5">Q.</span>
+                <span>¿Se va a notar que los textos están hechos por agentes o tecnología?</span>
+              </h3>
+              <p className="mt-3 text-sm sm:text-base leading-relaxed pl-8" style={{ color: "var(--ink-dim)" }}>
+                Para nada. El mayor error de las herramientas genéricas es usar frases clichés como &quot;en el vertiginoso mundo de hoy&quot; o sonar robóticos. Nuestros agentes aplican protocolos estrictos de humanización profunda y adaptación al mercado chileno: extraen tu vocabulario real, escriben con tono cercano &quot;tú a tú&quot; y transmiten la personalidad genuina de tu negocio.
+              </p>
+            </div>
+
+            {/* FAQ 2 */}
+            <div
+              className="p-6 sm:p-7 rounded-2xl border transition-all"
+              style={{ background: "var(--panel)", borderColor: "var(--line)" }}
+            >
+              <h3 className="text-lg font-bold flex items-start gap-3" style={{ color: "var(--ink)" }}>
+                <span className="text-orange-500 text-xl font-bold mt-0.5">Q.</span>
+                <span>¿Qué pasa si no tengo tiempo o no me manejo con la tecnología?</span>
+              </h3>
+              <p className="mt-3 text-sm sm:text-base leading-relaxed pl-8" style={{ color: "var(--ink-dim)" }}>
+                No necesitas saber nada de diseño ni programas complicados. Con nuestro Plan Fundador te incluimos una sesión 1 a 1 de Onboarding Llave en Mano: nos conectamos 20 minutos contigo, configuramos tu marca y dejamos tu primer mes de publicaciones completamente listo para que solo tengas que dar el visto bueno.
+              </p>
+            </div>
+
+            {/* FAQ 3 */}
+            <div
+              className="p-6 sm:p-7 rounded-2xl border transition-all"
+              style={{ background: "var(--panel)", borderColor: "var(--line)" }}
+            >
+              <h3 className="text-lg font-bold flex items-start gap-3" style={{ color: "var(--ink)" }}>
+                <span className="text-orange-500 text-xl font-bold mt-0.5">Q.</span>
+                <span>¿Sirve para mi rubro específico (clínicas, servicios, industria, comercio, corretaje)?</span>
+              </h3>
+              <p className="mt-3 text-sm sm:text-base leading-relaxed pl-8" style={{ color: "var(--ink-dim)" }}>
+                Sí, 100%. Nuestros agentes no usan plantillas genéricas. Se adaptan a los dolores de compra, dudas frecuentes y objeciones de venta reales de cada rubro: desde restaurantes y moda, hasta clínicas dentales, servicios técnicos, consultorías, gimnasios o corretaje de propiedades.
+              </p>
+            </div>
+
+            {/* FAQ 4 */}
+            <div
+              className="p-6 sm:p-7 rounded-2xl border transition-all"
+              style={{ background: "var(--panel)", borderColor: "var(--line)" }}
+            >
+              <h3 className="text-lg font-bold flex items-start gap-3" style={{ color: "var(--ink)" }}>
+                <span className="text-orange-500 text-xl font-bold mt-0.5">Q.</span>
+                <span>¿Hay contratos de permanencia o amarres obligatorios?</span>
+              </h3>
+              <p className="mt-3 text-sm sm:text-base leading-relaxed pl-8" style={{ color: "var(--ink-dim)" }}>
+                Cero amarres. En Santisoft creemos en relaciones comerciales basadas en resultados. Tu suscripción es 100% mes a mes y puedes pausar o cancelar cuando quieras con un solo clic, sin multas ni contratos forzados.
+              </p>
+            </div>
           </div>
         </div>
       </section>

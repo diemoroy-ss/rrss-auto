@@ -6,459 +6,523 @@ import BrandFooter from "../../components/BrandFooter";
 import DotCanvas from "../../components/DotCanvas";
 import PageTracker from "../../components/PageTracker";
 import {
-  FaPlay,
-  FaQrcode,
-  FaVideo,
-  FaImage,
   FaWhatsapp,
   FaCheck,
   FaArrowRight,
-  FaMobileAlt,
   FaClock,
   FaBolt,
-  FaInstagram,
-  FaFacebook,
-  FaTiktok,
-  FaYoutube,
-  FaTwitter,
+  FaShieldAlt,
+  FaVideo,
+  FaImage,
+  FaCalendarAlt,
   FaTimes,
+  FaGift,
+  FaFilePdf,
   FaStore,
+  FaSearch,
+  FaRocket,
 } from "react-icons/fa";
 
-const WA_URL =
-  "https://wa.me/56930825301?text=Hola!%20Vi%20el%20pitch%20de%20Santisoft%20y%20quiero%20saber%20m%C3%A1s%20para%20mis%20productos%20y%20servicios.";
+const WA_NUMBER = "56965909543";
 
-// Video real en loop vertical 9:16 desde Firebase Storage
-const HERO_VIDEO =
-  "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_fresh_food_reveal_video_1791908993033.mp4?alt=media&token=4ea5d4e0-4c00-4d38-b2e8-009570c14128";
-const HERO_POSTER =
-  "https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_fresh_food_reveal_image_1791908932525.jpg?alt=media&token=2f817f96-ef93-4740-998c-c2826d3adb13";
+const WA_GIFT_MSG = encodeURIComponent(
+  "¡Hola Santisoft! Leí el tríptico comercial y quiero recibir los 3 posts de prueba gratis personalizados para mi negocio."
+);
+const WA_FOUNDER_MSG = encodeURIComponent(
+  "¡Hola Santisoft! Quiero reservar uno de los 15 cupos del Plan PyME Fundador con Setup Inicial GRATIS ($49.990 CLP/mes)."
+);
+const WA_PRO_MSG = encodeURIComponent(
+  "¡Hola Santisoft! Quiero activar el Plan PyME Pro ($39.990 CLP/mes) para mi negocio."
+);
+const WA_DWY_MSG = encodeURIComponent(
+  "¡Hola Santisoft! Me interesa el Plan PyME 'Lo Hacemos Contigo' ($149.990 CLP/mes) con sesiones mensuales."
+);
 
 const SECTION = "relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8";
 
 export default function TripticoPitchPage() {
+  const handlePrint = () => {
+    if (typeof window !== "undefined") {
+      window.print();
+    }
+  };
+
   return (
-    <div className="landing-page-root relative overflow-x-hidden min-h-screen selection:bg-orange-500 selection:text-white">
+    <div className="landing-page-root relative overflow-x-hidden min-h-screen selection:bg-orange-500 selection:text-white bg-[#06080F] text-slate-100">
       <PageTracker page="triptico" />
       <DotCanvas />
 
-      <div className="promo">
+      {/* Top Bar Promocional */}
+      <div className="promo print:hidden">
         <span className="on-air"></span>
-        PUBLICAMOS EN TUS REDES <strong>TODOS LOS DÍAS, SOLOS</strong> · TÚ SOLO APRUEBAS DESDE WHATSAPP
+        TRÍPTICO COMERCIAL PARA PYMES EN CHILE · SETUP LLAVE EN MANO GRATIS (SOLO 15 CUPOS)
       </div>
 
-      <BrandHeader />
+      <div className="print:hidden">
+        <BrandHeader />
+      </div>
 
-      <main className="pb-24 md:pb-0">
-        {/* ───────────── 1. GANCHO (HERO) ───────────── */}
-        <section className={`${SECTION} pt-10 md:pt-16`}>
-          <div className="relative rounded-[2rem] overflow-hidden border border-orange-500/30 shadow-2xl min-h-[520px] md:min-h-[600px] flex items-end">
-            <video
-              src={HERO_VIDEO}
-              poster={HERO_POSTER}
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/75 to-slate-950/25" />
-
-            <div className="relative z-10 w-full p-6 sm:p-10 md:p-14 space-y-6 max-w-3xl">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-orange-500/15 border border-orange-400/40 text-orange-300 text-xs font-bold tracking-wide">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                  Tus redes en piloto automático
-                </span>
-                <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900/80 border border-slate-700 text-slate-300 text-xs font-medium">
-                  <FaStore className="text-amber-400 text-[11px]" /> Productos, servicios y comercios
-                </span>
-              </div>
-
-              <h1 className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight text-white leading-[1.05]">
-                Una foto.
-                <br />
-                Tres formas de vender.
-                <br />
-                <span className="bg-clip-text text-transparent bg-gradient-to-r from-orange-400 via-amber-300 to-amber-200">
-                  Publicadas solas.
-                </span>
-              </h1>
-
-              <p className="text-base sm:text-lg text-slate-200 leading-relaxed max-w-xl">
-                Nuestros agentes transforman cualquier foto de tus productos o servicios en videos dinámicos,
-                afiches comerciales y un catálogo digital interactivo con QR. Y lo publican todo en tus 5 redes
-                mientras tú solo das el visto bueno por WhatsApp.
-              </p>
-
-              <div className="flex flex-wrap items-center gap-3 pt-1">
-                <Link
-                  href="/como-funciona"
-                  className="px-7 py-4 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-sm flex items-center gap-2 shadow-xl shadow-orange-500/25 transition-all hover:-translate-y-0.5"
-                >
-                  Ver cómo funciona <FaArrowRight className="text-xs" />
-                </Link>
-                <div className="flex items-center gap-3 text-slate-300 text-lg pl-1" aria-label="Redes donde publicamos">
-                  <FaInstagram /> <FaFacebook /> <FaTiktok /> <FaYoutube /> <FaTwitter />
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ───────────── 2. EL PROBLEMA ───────────── */}
-        <section className={`${SECTION} py-16 md:py-24`}>
-          <div className="text-center max-w-2xl mx-auto space-y-3">
-            <span className="text-xs font-black uppercase tracking-[0.2em] text-orange-400">El problema real</span>
-            <h2 className="text-3xl sm:text-5xl font-black text-white leading-tight">
-              Tener un gran producto o servicio no basta.
-              <br />
-              <span className="text-slate-400">Estar presente todos los días en redes agota.</span>
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-10">
-            {[
-              {
-                t: "Agencias lentas y costosas",
-                d: "Semanas de ida y vuelta para coordinar publicaciones que podrías resolver en segundos.",
-              },
-              {
-                t: "Fotos comunes sin gancho",
-                d: "Tomas caseras que se pierden en el feed sin precio visible, sin oferta clara ni llamado a comprar.",
-              },
-              {
-                t: "Catálogos pesados en PDF",
-                d: "Archivos lentos donde el cliente debe hacer zoom en su teléfono y termina yéndose sin preguntar.",
-              },
-            ].map((p) => (
-              <div
-                key={p.t}
-                className="p-6 rounded-3xl bg-red-950/20 border border-red-900/30 flex items-start gap-4"
-              >
-                <span className="mt-1 p-2 rounded-xl bg-red-500/15 text-red-400 text-xs shrink-0">
-                  <FaTimes />
-                </span>
-                <div>
-                  <h3 className="text-lg font-black text-white">{p.t}</h3>
-                  <p className="text-sm text-slate-400 mt-1 leading-relaxed">{p.d}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ───────────── 3. LA SOLUCIÓN: 3 MOTORES ───────────── */}
-        <section className={`${SECTION} pb-16 md:pb-24`}>
-          <div className="text-center max-w-2xl mx-auto space-y-3">
-            <span className="text-xs font-black uppercase tracking-[0.2em] text-indigo-300">La solución integral</span>
-            <h2 className="text-3xl sm:text-5xl font-black text-white leading-tight">
-              Tres motores comerciales.
-              <br />
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-300 to-orange-300">
-                Una sola plataforma sin fricción.
+      <main className="pb-24 print:pb-0 pt-6 sm:pt-10">
+        {/* Encabezado y botón de imprimir/guardar PDF */}
+        <section className={SECTION}>
+          <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-slate-800">
+            <div className="flex items-center gap-3">
+              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs font-bold tracking-wide">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                Dossier Ejecutivo 2026
               </span>
-            </h2>
-            <p className="text-slate-400 text-sm sm:text-base max-w-xl mx-auto">
-              Cada foto que tomas activa tres canales simultáneos para vender más y mantener tus redes siempre activas.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
-            {/* Motor 1: Video */}
-            <article className="rounded-3xl bg-slate-900/80 border border-orange-500/30 overflow-hidden flex flex-col">
-              <div className="relative aspect-[9/12] bg-black">
-                <video
-                  src={HERO_VIDEO}
-                  poster={HERO_POSTER}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
-                <span className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/70 backdrop-blur px-2.5 py-1 rounded-full text-[10px] font-bold text-white">
-                  <FaPlay className="text-[8px] text-orange-400" /> Video vertical 9:16
-                </span>
-              </div>
-              <div className="p-6 space-y-2 flex-1">
-                <div className="flex items-center gap-2 text-orange-400 text-sm font-black">
-                  <FaVideo /> Videos para Reels y TikTok
-                </div>
-                <p className="text-sm text-slate-300 leading-relaxed">
-                  Tus productos o servicios cobran movimiento cinematográfico, efectos de iluminación y dinamismo que frena el scroll en segundos.
-                </p>
-                <span className="inline-block text-[11px] text-slate-500 pt-1">Disponible en planes con módulo de video</span>
-              </div>
-            </article>
-
-            {/* Motor 2: Afiche Comercial */}
-            <article className="rounded-3xl bg-slate-900/80 border border-amber-500/30 overflow-hidden flex flex-col">
-              <div className="relative aspect-[9/12] bg-gradient-to-br from-slate-900 via-amber-950/40 to-slate-950 overflow-hidden">
-                <img
-                  src="https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_macro_product_shot_image_1791910011818.jpg?alt=media&token=756d24c1-8169-42e0-b2ca-afd2cbb10a38"
-                  alt="Afiche comercial de producto o servicio"
-                  className="absolute inset-0 w-full h-full object-cover"
-                  loading="eager"
-                />
-                {/* Degradados publicitarios para garantizar legibilidad */}
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-slate-950/70" />
-
-                {/* Encabezado del afiche: Etiqueta y oferta */}
-                <div className="absolute inset-x-0 top-0 p-4 space-y-1.5 z-10">
-                  <div className="flex items-center justify-between">
-                    <span className="inline-block bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-md uppercase tracking-wider">
-                      ★ OFERTA DE LA SEMANA
-                    </span>
-                    <span className="text-[10px] text-amber-200 font-bold bg-black/60 px-2 py-0.5 rounded backdrop-blur">
-                      CUPOS / STOCK LIMITADO
-                    </span>
-                  </div>
-                  <p className="text-white font-black text-lg leading-tight uppercase drop-shadow-md">
-                    EDICIÓN O SERVICIO DESTACADO
-                  </p>
-                </div>
-
-                {/* Pie del afiche: Precios, garantías y botón WhatsApp */}
-                <div className="absolute inset-x-0 bottom-0 p-4 space-y-2.5 z-10">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-amber-400 font-black text-2xl sm:text-3xl leading-none drop-shadow">
-                      $19.990
-                    </span>
-                    <span className="text-slate-400 line-through text-xs font-bold">
-                      $29.990
-                    </span>
-                    <span className="text-[10px] bg-red-500/90 text-white font-black px-1.5 py-0.5 rounded">
-                      -33%
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-1 border-t border-white/10">
-                    <span className="text-[10px] text-slate-300 font-medium">
-                      ✓ Atención rápida · Garantizado
-                    </span>
-                    <span className="bg-emerald-500 hover:bg-emerald-600 text-white text-[11px] font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg shadow-emerald-500/30">
-                      <FaWhatsapp className="text-xs" /> Pedir aquí
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <div className="p-6 space-y-2 flex-1">
-                <div className="flex items-center gap-2 text-amber-400 text-sm font-black">
-                  <FaImage /> Afiches que convierten
-                </div>
-                <p className="text-sm text-slate-300 leading-relaxed">
-                  Precios, promociones y mensajes comerciales sobre tu imagen real. El cliente ve lo que ofreces, entiende el beneficio y sabe cómo pedir.
-                </p>
-              </div>
-            </article>
-
-            {/* Motor 3: Catálogo QR */}
-            <article className="rounded-3xl bg-slate-900/80 border border-emerald-500/30 overflow-hidden flex flex-col">
-              <div className="relative aspect-[9/12] bg-gradient-to-b from-slate-800 to-slate-950 flex items-center justify-center">
-                <div className="w-44 rounded-[1.6rem] border-4 border-slate-600 bg-slate-950 p-3 space-y-3 shadow-2xl">
-                  <div className="w-full aspect-square rounded-xl bg-white p-2">
-                    <img
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(
-                        "https://rrss.santisoft.cl/menu/demo-burgers"
-                      )}`}
-                      alt="Código QR de ejemplo"
-                      className="w-full h-full object-contain"
-                    />
-                  </div>
-                  <div className="text-center space-y-1">
-                    <p className="text-[11px] font-black text-white">Escanea tu catálogo</p>
-                    <p className="text-[10px] text-emerald-400 font-bold flex items-center justify-center gap-1">
-                      <FaMobileAlt /> Pedido directo a WhatsApp
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="p-6 space-y-2 flex-1">
-                <div className="flex items-center gap-2 text-emerald-400 text-sm font-black">
-                  <FaQrcode /> Catálogo o Carta QR digital
-                </div>
-                <p className="text-sm text-slate-300 leading-relaxed">
-                  Tu vitrina interactiva siempre al día en el celular de tus clientes. Con fotos, precios y botón para consultar o comprar de inmediato.
-                </p>
-                <Link
-                  href="/menu/demo-burgers"
-                  target="_blank"
-                  className="inline-flex items-center gap-1 text-xs font-bold text-emerald-300 hover:text-emerald-200 pt-1"
-                >
-                  Ver demo interactiva en vivo <FaArrowRight className="text-[9px]" />
-                </Link>
-              </div>
-            </article>
-          </div>
-        </section>
-
-        {/* ───────────── 4. PUBLICACIÓN AUTOMÁTICA + TIEMPO RECUPERADO ───────────── */}
-        <section className={`${SECTION} pb-16 md:pb-24`}>
-          <div className="rounded-[2rem] bg-gradient-to-br from-indigo-950/80 via-slate-900 to-slate-950 border border-indigo-500/30 p-6 sm:p-10 md:p-14 space-y-12">
-            <div className="text-center max-w-2xl mx-auto space-y-3">
-              <span className="text-xs font-black uppercase tracking-[0.2em] text-emerald-300">
-                Publicación automática
+              <span className="text-xs text-slate-400 font-mono hidden sm:inline-block">
+                Solución RRSS-Auto by Santisoft
               </span>
-              <h2 className="text-3xl sm:text-5xl font-black text-white leading-tight">
-                Tú tomas la foto con tu celular.
-                <br />
-                <span className="text-slate-400">Nuestros agentes hacen todo el resto.</span>
-              </h2>
             </div>
-
-            {/* 4 pasos */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {[
-                {
-                  n: "1",
-                  t: "Sacas una foto",
-                  d: "De tu producto, servicio, local o trabajo del día, sin equipos caros.",
-                },
-                {
-                  n: "2",
-                  t: "Nuestros agentes preparan el pack",
-                  d: "Generan el video, diseñan el afiche, redactan el texto y arman la propuesta.",
-                },
-                {
-                  n: "3",
-                  t: "Apruebas en 10 segundos",
-                  d: "Te llega a WhatsApp. Revisas la muestra y das el visto bueno con un tap.",
-                },
-                {
-                  n: "4",
-                  t: "Se publica automáticamente",
-                  d: "Sale solo en Instagram, Facebook, TikTok, YouTube y X al mismo tiempo.",
-                },
-              ].map((s) => (
-                <div key={s.n} className="p-5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-2">
-                  <span className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-amber-500 text-white font-black text-sm flex items-center justify-center">
-                    {s.n}
-                  </span>
-                  <h3 className="text-base font-black text-white leading-snug">{s.t}</h3>
-                  <p className="text-xs text-slate-400 leading-relaxed">{s.d}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* Tiempo recuperado */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
-              <div className="p-6 sm:p-8 rounded-3xl bg-red-950/20 border border-red-900/30 space-y-2">
-                <span className="text-[11px] font-black uppercase tracking-wider text-red-400 flex items-center gap-1.5">
-                  <FaClock /> Gestionar tus redes a mano
-                </span>
-                <p className="text-4xl sm:text-5xl font-black text-white">6 a 10 h</p>
-                <p className="text-sm text-slate-400 leading-relaxed">
-                  por semana pensando qué publicar, peleando con aplicaciones de diseño, redactando textos y subiendo contenido red por red.
-                </p>
-              </div>
-              <div className="p-6 sm:p-8 rounded-3xl bg-emerald-950/30 border border-emerald-500/40 space-y-2">
-                <span className="text-[11px] font-black uppercase tracking-wider text-emerald-300 flex items-center gap-1.5">
-                  <FaBolt /> Con nuestro equipo de agentes
-                </span>
-                <p className="text-4xl sm:text-5xl font-black text-emerald-300">Minutos</p>
-                <p className="text-sm text-slate-300 leading-relaxed">
-                  a la semana solo para dar el visto bueno en tu WhatsApp. Recuperas hasta <strong className="text-white">30 horas libres al mes</strong> para
-                  atender clientes, mejorar tu negocio o descansar.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ───────────── 5. CIERRE Y COMPARATIVA ───────────── */}
-        <section className={`${SECTION} pb-16 md:pb-24`}>
-          <div className="text-center max-w-2xl mx-auto space-y-3">
-            <h2 className="text-3xl sm:text-5xl font-black text-white leading-tight">
-              Mismo negocio.
-              <br />
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-amber-300">
-                Mucho más tiempo para ti.
-              </span>
-            </h2>
-          </div>
-
-          <div className="mt-10 rounded-3xl border border-slate-800 overflow-hidden">
-            <div className="grid grid-cols-3 text-xs sm:text-sm font-black bg-slate-900/80">
-              <div className="p-4 text-slate-500">Aspecto</div>
-              <div className="p-4 text-red-400">Hacerlo a mano o con agencia</div>
-              <div className="p-4 text-emerald-300 bg-emerald-950/30">Santisoft</div>
-            </div>
-            {[
-              ["Tu dedicación", "Horas creando, editando y subiendo", "Segundos aprobando por WhatsApp"],
-              ["Frecuencia", "Solo cuando te queda tiempo libre", "Presencia constante y programada"],
-              ["Canales", "Sueles publicar en una sola red", "Tus 5 redes cubiertas en simultáneo"],
-              ["Coordinación", "Días de correos y ajustes", "Flujo directo en tu chat personal"],
-            ].map(([k, a, b]) => (
-              <div key={k} className="grid grid-cols-3 text-xs sm:text-sm border-t border-slate-800">
-                <div className="p-4 font-bold text-white">{k}</div>
-                <div className="p-4 text-slate-400">{a}</div>
-                <div className="p-4 font-bold text-emerald-300 bg-emerald-950/20 flex items-start gap-1.5">
-                  <FaCheck className="mt-0.5 shrink-0 text-[10px]" /> {b}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-12 rounded-[2rem] bg-gradient-to-r from-orange-600 via-amber-600 to-indigo-700 p-8 sm:p-12 text-center space-y-6 shadow-2xl">
-            <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight">
-              ¿Listo para poner tus redes en marcha y recuperar tu tiempo?
-            </h2>
-            <p className="text-white/90 text-sm sm:text-base max-w-xl mx-auto leading-relaxed">
-              Conoce el paso a paso detallado de cómo trabajan nuestros agentes por dentro o revisa el plan que mejor se adapta a tu negocio.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link
-                href="/como-funciona"
-                className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-white text-slate-950 hover:bg-slate-100 font-black text-sm shadow-xl transition-all"
+            <div className="flex items-center gap-2 print:hidden">
+              <button
+                onClick={handlePrint}
+                className="px-3.5 py-1.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-slate-500 text-xs font-semibold text-slate-300 flex items-center gap-2 transition-all cursor-pointer"
+                title="Imprimir o guardar en PDF"
               >
-                Ver cómo funciona
-              </Link>
-              <Link
-                href="/#planes"
-                className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-black/40 hover:bg-black/60 text-white font-black text-sm border border-white/30 transition-all"
-              >
-                Ver planes
-              </Link>
+                <FaFilePdf className="text-red-400" /> Imprimir / PDF
+              </button>
               <a
-                href={WA_URL}
+                href={`https://wa.me/${WA_NUMBER}?text=${WA_GIFT_MSG}`}
                 target="_blank"
                 rel="noreferrer"
-                className="w-full sm:w-auto px-6 py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm flex items-center justify-center gap-2 transition-all"
+                className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white flex items-center gap-1.5 transition-all shadow-md shadow-emerald-600/20"
               >
-                <FaWhatsapp className="text-base" /> Hablar por WhatsApp
+                <FaWhatsapp className="text-sm" /> Hablar por WhatsApp
               </a>
+            </div>
+          </div>
+        </section>
+
+        {/* ══════════════════════════════════════════════════════════════
+            CARA 1: EL DOLOR CRÓNICO DE LA PYME EN REDES
+        ══════════════════════════════════════════════════════════════ */}
+        <section className={`${SECTION} py-12 sm:py-16`}>
+          <div className="rounded-3xl bg-gradient-to-b from-slate-900/90 to-slate-950/90 border border-red-500/20 p-6 sm:p-10 md:p-14 relative overflow-hidden shadow-2xl">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-red-500/5 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="max-w-3xl space-y-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-black tracking-wider uppercase">
+                Bloque 01 · El Diagnóstico Comercial
+              </div>
+              <h1 className="text-3xl sm:text-5xl md:text-6xl font-black text-white leading-tight">
+                ¿Cuántos clientes pierde tu PyME cada semana por tener las redes sociales abandonadas?
+              </h1>
+              <p className="text-base sm:text-lg text-slate-300 leading-relaxed">
+                El <strong>78% de los chilenos</strong> entra al Instagram de un negocio antes de cotizar o comprar. Si encuentran publicaciones de hace dos meses o fotos sueltas sin precios ni llamados claros, asumen que el negocio cerró o no es confiable y se van con tu competencia.
+              </p>
+            </div>
+
+            {/* Los 3 Dolores Crónicos */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
+              {/* Dolor 1 */}
+              <div className="p-6 rounded-2xl bg-red-950/20 border border-red-900/30 flex flex-col justify-between space-y-4">
+                <div>
+                  <div className="w-10 h-10 rounded-xl bg-red-500/15 border border-red-500/30 text-red-400 flex items-center justify-center font-black mb-3">
+                    <FaClock />
+                  </div>
+                  <h3 className="text-lg font-black text-white">1. Falta de Tiempo Crónica</h3>
+                  <p className="text-sm text-slate-300 mt-2 leading-relaxed">
+                    Terminas agotado de atender clientes, proveedores y operaciones. Lo último que quieres hacer un domingo a las 10 PM es pelear con Canva o pensar qué escribir.
+                  </p>
+                </div>
+                <div className="pt-3 border-t border-red-900/30 text-xs text-red-400 font-semibold flex items-center gap-1.5">
+                  <FaTimes /> Redes abandonadas a la segunda semana
+                </div>
+              </div>
+
+              {/* Dolor 2 */}
+              <div className="p-6 rounded-2xl bg-red-950/20 border border-red-900/30 flex flex-col justify-between space-y-4">
+                <div>
+                  <div className="w-10 h-10 rounded-xl bg-red-500/15 border border-red-500/30 text-red-400 flex items-center justify-center font-black mb-3">
+                    <FaTimes />
+                  </div>
+                  <h3 className="text-lg font-black text-white">2. Agencias Impagables</h3>
+                  <p className="text-sm text-slate-300 mt-2 leading-relaxed">
+                    Una agencia tradicional te cobra entre <strong>$400.000 y $700.000 CLP/mes</strong> por dos reuniones lentas y 8 posts genéricos redactados por personas que no entienden tu rubro ni tu calle.
+                  </p>
+                </div>
+                <div className="pt-3 border-t border-red-900/30 text-xs text-red-400 font-semibold flex items-center gap-1.5">
+                  <FaTimes /> Alto costo mensual y contratos amarrados
+                </div>
+              </div>
+
+              {/* Dolor 3 */}
+              <div className="p-6 rounded-2xl bg-red-950/20 border border-red-900/30 flex flex-col justify-between space-y-4">
+                <div>
+                  <div className="w-10 h-10 rounded-xl bg-red-500/15 border border-red-500/30 text-red-400 flex items-center justify-center font-black mb-3">
+                    <FaStore />
+                  </div>
+                  <h3 className="text-lg font-black text-white">3. Publicar a Ciegas Sin Vender</h3>
+                  <p className="text-sm text-slate-300 mt-2 leading-relaxed">
+                    Subir fotos de vez en cuando sin estrategia de precios ni llamadas a la acción directas genera cero mensajes en tu WhatsApp. Mucho esfuerzo para ningún retorno.
+                  </p>
+                </div>
+                <div className="pt-3 border-t border-red-900/30 text-xs text-red-400 font-semibold flex items-center gap-1.5">
+                  <FaTimes /> Cero consultas comerciales efectivas
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ══════════════════════════════════════════════════════════════
+            CARA 2: LA SOLUCIÓN TODO-EN-UNO (LOS 4 MOTORES DE RRSS-AUTO)
+        ══════════════════════════════════════════════════════════════ */}
+        <section className={`${SECTION} py-8 sm:py-12`}>
+          <div className="rounded-3xl bg-slate-900/70 border border-orange-500/30 p-6 sm:p-10 md:p-14 relative overflow-hidden shadow-2xl">
+            <div className="text-center max-w-3xl mx-auto space-y-3 mb-12">
+              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs font-black tracking-wider uppercase">
+                Bloque 02 · La Solución Integral
+              </span>
+              <h2 className="text-3xl sm:text-5xl font-black text-white leading-tight">
+                4 Motores que Reemplazan a una Agencia Completa
+              </h2>
+              <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
+                Nuestros agentes se reparten todo el trabajo pesado: desde la estrategia mensual y el diseño con tu marca, hasta guiones palabra por palabra y protección algorítmica.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Motor 1 */}
+              <div className="p-7 rounded-2xl bg-slate-950/80 border border-slate-800 hover:border-orange-500/40 transition-all flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-xs font-mono font-bold text-orange-400 tracking-widest uppercase">
+                      MOTOR 01
+                    </span>
+                    <span className="p-2 rounded-xl bg-orange-500/15 text-orange-400 text-lg">
+                      <FaImage />
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2">
+                    Gráficas y Carruseles con tu Marca
+                  </h3>
+                  <p className="text-sm text-slate-300 leading-relaxed">
+                    Cartelería comercial nítida estampada directamente sobre tus fotos reales o imágenes creadas a medida. Con tus colores oficiales, logo, badges de oferta y precios visibles sin tapar lo que vendes. Cero plantillas genéricas.
+                  </p>
+                </div>
+                <div className="mt-6 pt-4 border-t border-slate-800 text-xs text-emerald-400 font-semibold flex items-center gap-1.5">
+                  <FaCheck /> Tu producto o servicio queda impecable
+                </div>
+              </div>
+
+              {/* Motor 2 */}
+              <div className="p-7 rounded-2xl bg-slate-950/80 border border-slate-800 hover:border-blue-500/40 transition-all flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-xs font-mono font-bold text-blue-400 tracking-widest uppercase">
+                      MOTOR 02
+                    </span>
+                    <span className="p-2 rounded-xl bg-blue-500/15 text-blue-400 text-lg">
+                      <FaVideo />
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2">
+                    Guiones de Reels e Historias (30 seg)
+                  </h3>
+                  <p className="text-sm text-slate-300 leading-relaxed">
+                    Estructura probada para video vertical: Hook magnético de 3 segundos, desarrollo dinámico y llamada a la acción hacia WhatsApp. Te entregamos el texto listo para leer frente a la cámara en 30 segundos, sin trabarte ni improvisar.
+                  </p>
+                </div>
+                <div className="mt-6 pt-4 border-t border-slate-800 text-xs text-emerald-400 font-semibold flex items-center gap-1.5">
+                  <FaCheck /> Alto alcance orgánico en Instagram y TikTok
+                </div>
+              </div>
+
+              {/* Motor 3 */}
+              <div className="p-7 rounded-2xl bg-slate-950/80 border border-slate-800 hover:border-emerald-500/40 transition-all flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-xs font-mono font-bold text-emerald-400 tracking-widest uppercase">
+                      MOTOR 03
+                    </span>
+                    <span className="p-2 rounded-xl bg-emerald-500/15 text-emerald-400 text-lg">
+                      <FaShieldAlt />
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2">
+                    Calendario Hiper-Orgánico + Policía Anti-Baneos
+                  </h3>
+                  <p className="text-sm text-slate-300 leading-relaxed">
+                    Planificación mensual de 30 días con los mejores horarios de publicación de tu zona comercial. Cada pieza pasa por un filtro que audita hashtags y copys para proteger tu cuenta de shadowbans y penalizaciones del algoritmo de Instagram.
+                  </p>
+                </div>
+                <div className="mt-6 pt-4 border-t border-slate-800 text-xs text-emerald-400 font-semibold flex items-center gap-1.5">
+                  <FaCheck /> Cuenta segura y alcance sostenido mes a mes
+                </div>
+              </div>
+
+              {/* Motor 4 */}
+              <div className="p-7 rounded-2xl bg-slate-950/80 border border-slate-800 hover:border-purple-500/40 transition-all flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-xs font-mono font-bold text-purple-400 tracking-widest uppercase">
+                      MOTOR 04
+                    </span>
+                    <span className="p-2 rounded-xl bg-purple-500/15 text-purple-400 text-lg">
+                      <FaSearch />
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2">
+                    Posicionamiento SEO & GEO y Venta Directa
+                  </h3>
+                  <p className="text-sm text-slate-300 leading-relaxed">
+                    Textos persuasivos calibrados para el público chileno con redacción de tú a tú y enlaces directos hacia tu WhatsApp. Descripciones optimizadas con términos de búsqueda local para aparecer primero cuando tus vecinos busquen tu servicio.
+                  </p>
+                </div>
+                <div className="mt-6 pt-4 border-t border-slate-800 text-xs text-emerald-400 font-semibold flex items-center gap-1.5">
+                  <FaCheck /> De seguidor a cliente consultando en minutos
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ══════════════════════════════════════════════════════════════
+            CARA 3: LA OFERTA DE LANZAMIENTO Y ACCIÓN INMEDIATA
+        ══════════════════════════════════════════════════════════════ */}
+        <section className={`${SECTION} py-8 sm:py-16`}>
+          <div className="rounded-3xl bg-gradient-to-b from-slate-900 to-slate-950 border border-emerald-500/30 p-6 sm:p-10 md:p-14 relative overflow-hidden shadow-2xl">
+            <div className="text-center max-w-3xl mx-auto space-y-3 mb-12">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-black tracking-wider uppercase">
+                Bloque 03 · Oferta Comercial y Planes en CLP
+              </div>
+              <h2 className="text-3xl sm:text-5xl font-black text-white leading-tight">
+                Elige cómo quieres poner tus redes en piloto automático
+              </h2>
+              <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
+                Precios claros, en pesos chilenos, sin contratos forzados ni letras chicas.
+              </p>
+            </div>
+
+            {/* Grid de 3 Planes */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+              {/* Plan 1: Pro */}
+              <div className="p-7 rounded-2xl bg-slate-950/70 border border-slate-800 flex flex-col justify-between">
+                <div>
+                  <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest">
+                    Plan Autogestionado
+                  </span>
+                  <h3 className="text-2xl font-black text-white mt-1">PyME Pro</h3>
+                  <p className="text-xs text-slate-400 mt-1">Ideal para dueños de negocio que quieren operar su propio mes en minutos.</p>
+
+                  <div className="my-6 pb-6 border-b border-slate-800">
+                    <span className="text-3xl sm:text-4xl font-black text-white">$39.990</span>
+                    <span className="text-xs text-slate-400 ml-1">CLP + IVA / mes</span>
+                  </div>
+
+                  <ul className="space-y-3 text-xs sm:text-sm text-slate-300">
+                    <li className="flex items-start gap-2">
+                      <FaCheck className="text-emerald-400 mt-1 shrink-0" />
+                      <span>Calendario hiper-orgánico de 30 días</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <FaCheck className="text-emerald-400 mt-1 shrink-0" />
+                      <span>Generador de afiches y carruseles con tu marca</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <FaCheck className="text-emerald-400 mt-1 shrink-0" />
+                      <span>Guiones de Reels e Historias listos para leer</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <FaCheck className="text-emerald-400 mt-1 shrink-0" />
+                      <span>Hasta 3 perfiles comerciales</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="mt-8">
+                  <a
+                    href={`https://wa.me/${WA_NUMBER}?text=${WA_PRO_MSG}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-full py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs sm:text-sm text-center block transition-all border border-slate-700"
+                  >
+                    Elegir Plan Pro
+                  </a>
+                </div>
+              </div>
+
+              {/* Plan 2: Fundador (DESTACADO) */}
+              <div className="p-8 rounded-3xl bg-gradient-to-b from-orange-950/40 via-slate-950 to-slate-950 border-2 border-orange-500 relative flex flex-col justify-between shadow-2xl scale-[1.02] md:scale-105 z-10">
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-[11px] font-black uppercase tracking-wider py-1 px-4 rounded-full shadow-md">
+                  ★ Plan Más Elegido · Solo 15 Cupos
+                </div>
+
+                <div>
+                  <span className="text-xs font-mono font-bold text-orange-400 uppercase tracking-widest">
+                    Llave en Mano
+                  </span>
+                  <h3 className="text-2xl font-black text-white mt-1">PyME Fundador</h3>
+                  <p className="text-xs text-orange-200/80 mt-1">
+                    Nosotros te dejamos el primer mes completamente configurado y andando.
+                  </p>
+
+                  <div className="my-6 pb-6 border-b border-orange-500/30">
+                    <span className="text-4xl sm:text-5xl font-black text-white">$49.990</span>
+                    <span className="text-xs text-slate-300 ml-1">CLP + IVA / mes</span>
+                    <div className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/30">
+                      <FaGift /> SETUP INICIAL GRATIS (Valor real $150.000)
+                    </div>
+                  </div>
+
+                  <ul className="space-y-3 text-xs sm:text-sm text-slate-200">
+                    <li className="flex items-start gap-2 font-semibold text-white">
+                      <FaCheck className="text-orange-400 mt-1 shrink-0" />
+                      <span>Sesión 1 a 1 de 20 min con nuestro equipo</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <FaCheck className="text-orange-400 mt-1 shrink-0" />
+                      <span>Configuración del ADN y voz de tu negocio</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <FaCheck className="text-orange-400 mt-1 shrink-0" />
+                      <span>Tu primer mes de contenido 100% listo para aprobar</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <FaCheck className="text-orange-400 mt-1 shrink-0" />
+                      <span>Policía Anti-Baneos de Instagram activa</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <FaCheck className="text-orange-400 mt-1 shrink-0" />
+                      <span>Soporte prioritario directo vía WhatsApp</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="mt-8">
+                  <a
+                    href={`https://wa.me/${WA_NUMBER}?text=${WA_FOUNDER_MSG}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-full py-4 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-extrabold text-sm text-center block transition-all shadow-xl shadow-orange-500/30"
+                  >
+                    Reservar Cupo con Setup Gratis
+                  </a>
+                </div>
+              </div>
+
+              {/* Plan 3: Lo Hacemos Contigo */}
+              <div className="p-7 rounded-2xl bg-slate-950/70 border border-slate-800 flex flex-col justify-between">
+                <div>
+                  <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest">
+                    Done-With-You
+                  </span>
+                  <h3 className="text-2xl font-black text-white mt-1">Lo Hacemos Contigo</h3>
+                  <p className="text-xs text-slate-400 mt-1">Para el dueño que quiere delegar todo con acompañamiento continuo.</p>
+
+                  <div className="my-6 pb-6 border-b border-slate-800">
+                    <span className="text-3xl sm:text-4xl font-black text-white">$149.990</span>
+                    <span className="text-xs text-slate-400 ml-1">CLP + IVA / mes</span>
+                  </div>
+
+                  <ul className="space-y-3 text-xs sm:text-sm text-slate-300">
+                    <li className="flex items-start gap-2 font-semibold text-white">
+                      <FaCheck className="text-emerald-400 mt-1 shrink-0" />
+                      <span>2 sesiones mensuales de 20 min junto a ti</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <FaCheck className="text-emerald-400 mt-1 shrink-0" />
+                      <span>Generamos y programamos todo el mes contigo</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <FaCheck className="text-emerald-400 mt-1 shrink-0" />
+                      <span>Revisión de ofertas, promociones y métricas</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <FaCheck className="text-emerald-400 mt-1 shrink-0" />
+                      <span>Canal directo con un estratega dedicado</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="mt-8">
+                  <a
+                    href={`https://wa.me/${WA_NUMBER}?text=${WA_DWY_MSG}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-full py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs sm:text-sm text-center block transition-all border border-slate-700"
+                  >
+                    Quiero Acompañamiento
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            {/* Garantía Cero Riesgo */}
+            <div className="mt-12 p-6 rounded-2xl bg-slate-950 border border-emerald-500/30 max-w-3xl mx-auto flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+              <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-2xl shrink-0">
+                <FaShieldAlt />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-base font-bold text-white">
+                  Garantía Cero Riesgo de 7 Días
+                </h4>
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                  Si durante tu primera semana sientes que este sistema no te ahorra al menos 10 horas de trabajo, te devolvemos el <strong>100% de tu dinero inmediatamente</strong> y sin preguntas incómodas.
+                </p>
+              </div>
+            </div>
+
+            {/* Gran Llamado a la Acción - Caballo de Troya (3 posts gratis) */}
+            <div className="mt-12 p-8 sm:p-12 rounded-3xl bg-gradient-to-r from-orange-600 via-amber-600 to-emerald-700 text-center space-y-6 shadow-2xl">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/20 text-white text-xs font-black uppercase tracking-wider backdrop-blur">
+                <FaGift /> Prueba sin pagar nada
+              </div>
+              <h3 className="text-2xl sm:text-4xl md:text-5xl font-black text-white leading-tight">
+                ¿Prefieres ver el resultado antes de decidir?
+              </h3>
+              <p className="text-white/95 text-sm sm:text-base max-w-xl mx-auto leading-relaxed">
+                Escríbenos el nombre de tu negocio y te enviaremos <strong>3 publicaciones reales personalizadas</strong> con la voz y colores de tu marca directo a tu WhatsApp.
+              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
+                <a
+                  href={`https://wa.me/${WA_NUMBER}?text=${WA_GIFT_MSG}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-full sm:w-auto px-8 py-5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-white font-black text-base shadow-2xl shadow-emerald-950/40 transition-all flex items-center justify-center gap-3 hover:-translate-y-0.5"
+                >
+                  <FaWhatsapp className="text-xl" />
+                  <span>Quiero mis 3 posts de prueba gratis por WhatsApp</span>
+                </a>
+                <Link
+                  href="/como-funciona"
+                  className="w-full sm:w-auto px-6 py-4 rounded-2xl bg-black/40 hover:bg-black/60 text-white font-bold text-sm border border-white/30 transition-all text-center"
+                >
+                  Ver Cómo Funciona
+                </Link>
+              </div>
             </div>
           </div>
         </section>
       </main>
 
-      {/* Barra fija en móvil */}
-      <div className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-slate-950/95 backdrop-blur border-t border-slate-800 p-3 flex items-center gap-2">
-        <Link
-          href="/como-funciona"
-          className="flex-1 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white font-black text-xs text-center"
-        >
-          Cómo funciona
-        </Link>
-        <Link
-          href="/#planes"
-          className="flex-1 py-3 rounded-xl border border-slate-600 text-white font-bold text-xs text-center"
-        >
-          Planes
-        </Link>
+      {/* Barra de acción fija en móvil */}
+      <div className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-slate-950/95 backdrop-blur border-t border-slate-800 p-3 flex items-center gap-2 print:hidden">
         <a
-          href={WA_URL}
+          href={`https://wa.me/${WA_NUMBER}?text=${WA_GIFT_MSG}`}
+          target="_blank"
+          rel="noreferrer"
+          className="flex-1 py-3 px-3 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white font-black text-xs text-center flex items-center justify-center gap-2 shadow-md"
+        >
+          <FaGift /> Pedir 3 posts gratis
+        </a>
+        <a
+          href={`https://wa.me/${WA_NUMBER}?text=${WA_FOUNDER_MSG}`}
           target="_blank"
           rel="noreferrer"
           aria-label="WhatsApp"
-          className="w-11 h-11 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-lg shrink-0"
+          className="w-11 h-11 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-lg shrink-0 shadow-md"
         >
           <FaWhatsapp />
         </a>
       </div>
 
-      <BrandFooter />
+      <div className="print:hidden">
+        <BrandFooter />
+      </div>
     </div>
   );
 }
