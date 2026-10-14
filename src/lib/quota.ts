@@ -37,13 +37,17 @@ async function getPlansConfig(): Promise<SystemPlansConfig> {
     
     // Fallback to hardcoded values if Firestore fails
     return {
-        free:     { postsLimit: 5,   videosLimit: 0  },
-        starter:  { postsLimit: 20,  videosLimit: 2  },
-        growth:   { postsLimit: 40,  videosLimit: 6  },
-        pro:      { postsLimit: 80,  videosLimit: 12 },
-        elite:    { postsLimit: 80,  videosLimit: 12 }, // alias legacy → pro
-        business: { postsLimit: 200, videosLimit: 30 },
-        agency:   { postsLimit: 999, videosLimit: 80 },
+        free:              { postsLimit: 5,   videosLimit: 0  },
+        esencial:          { postsLimit: 15,  videosLimit: 8  },
+        starter:           { postsLimit: 15,  videosLimit: 8  },
+        crecimiento:       { postsLimit: 40,  videosLimit: 20 },
+        growth:            { postsLimit: 40,  videosLimit: 20 },
+        pro:               { postsLimit: 40,  videosLimit: 20 },
+        elite:             { postsLimit: 80,  videosLimit: 20 },
+        "piloto-automatico": { postsLimit: 120, videosLimit: 40 },
+        piloto_automatico: { postsLimit: 120, videosLimit: 40 },
+        business:          { postsLimit: 120, videosLimit: 40 },
+        agency:            { postsLimit: 999, videosLimit: 80 },
     };
 }
 

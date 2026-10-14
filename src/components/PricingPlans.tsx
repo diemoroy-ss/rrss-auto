@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { FaCheck, FaWhatsapp, FaShieldAlt, FaStar, FaBolt, FaRocket } from "react-icons/fa";
+import { FaCheck, FaWhatsapp, FaShieldAlt, FaRocket, FaGift } from "react-icons/fa";
 
 const WA_NUMBER = "56965909543";
 
@@ -11,6 +11,7 @@ interface PyMEPlan {
   name: string;
   tagline: string;
   badge?: string;
+  originalPriceMonthly: number;
   priceMonthly: number;
   priceAnnual: number;
   description: string;
@@ -23,66 +24,71 @@ interface PyMEPlan {
 
 const PYME_PLANS: PyMEPlan[] = [
   {
-    id: "pyme-pro",
-    name: "Plan PyME Pro",
-    tagline: "AUTOGESTIONADO · 100% CONTROL",
-    priceMonthly: 39990,
-    priceAnnual: 35990,
-    description: "Ideal para emprendedores y dueños que quieren tener su mes de contenido listo en minutos con el software.",
+    id: "pyme-esencial",
+    name: "Plan PyME Esencial",
+    tagline: "PRESENCIA ACTIVA · CERO BLOQUEOS",
+    originalPriceMonthly: 89990,
+    priceMonthly: 59990,
+    priceAnnual: 53990,
+    description: "Ideal para negocios locales y profesionales que necesitan redes activas, confiables y con contenido profesional sin perder tiempo.",
     isFeatured: false,
-    ctaText: "Elegir PyME Pro ($39.990)",
-    ctaHref: `/confirmar-plan?plan=pro&billing=mensual`,
+    ctaText: "Elegir Plan Esencial ($59.990)",
+    ctaHref: `https://wa.me/${WA_NUMBER}?text=%C2%A1Hola%20Santisoft!%20Quiero%20activar%20el%20Plan%20PyME%20Esencial%20(%2459.990%20CLP%20%2B%20IVA%2Fmes)%20para%20mi%20negocio.%20Mi%20empresa%20es%3A%20`,
     features: [
-      "Calendario mensual hiper-orgánico en 5 minutos",
-      "Generador de gráficas y carruseles con tu marca y logo",
-      "Guiones de Reels e Historias palabra por palabra (30 seg)",
-      "Hasta 3 perfiles de redes (Instagram, Facebook, TikTok, etc.)",
-      "Publicación automática programada sin esfuerzo",
+      "1 Marca configurada (Instagram + Facebook)",
+      "Clonación de Voz de Marca + Humanizador IA: Textos con el tono real de tu negocio, cero robóticos",
+      "Calendario Hiper-Orgánico Mensual: 15 publicaciones estratégicas al mes (valor, autoridad y venta)",
+      "Generador de Gráficas y Carruseles: Hasta 15 diseños mensuales listos con tu logo y colores corporativos",
+      "8 Guiones de Reels + Secuencias de Stories listos para leer en 30 segundos frente al celular",
+      "Escudo Policía Anti-Baneos: Protección automática contra shadowbans y bloqueos de alcance en Instagram",
       "Aprobación y control móvil directo desde WhatsApp",
-      "Soporte por WhatsApp de lunes a viernes",
+      "Soporte directo por WhatsApp de lunes a viernes",
     ],
   },
   {
-    id: "pyme-fundador",
-    name: "Plan PyME Fundador",
-    tagline: "LLAVE EN MANO · SOLO 15 CUPOS",
-    badge: "🔥 SETUP GRATIS (Ahorro $150.000)",
-    priceMonthly: 49990,
-    priceAnnual: 44990,
-    description: "El más elegido. Para el dueño que quiere partir vendiendo de inmediato: nosotros dejamos todo configurado por ti.",
+    id: "pyme-crecimiento",
+    name: "Plan PyME Crecimiento",
+    tagline: "MÁQUINA DE VENTAS · MÁS ELEGIDO",
+    badge: "🔥 MÁS ELEGIDO · SOLO 15 CUPOS",
+    originalPriceMonthly: 149990,
+    priceMonthly: 99990,
+    priceAnnual: 89990,
+    description: "Para PyMEs establecidas que buscan captar clientes todos los días, superar a su competencia y ahorrar los $450.000+ que cobra una agencia.",
     isFeatured: true,
-    bonusText: "🎁 BONO EXCLUSIVO: Sesión 1 a 1 de 20 min donde clonamos la voz de tu marca y te dejamos el primer mes andando.",
-    ctaText: "Asegurar Cupo Fundador ($49.990)",
-    ctaHref: `https://wa.me/${WA_NUMBER}?text=%C2%A1Hola%20Santisoft!%20Quiero%20asegurar%20uno%20de%20los%2015%20cupos%20del%20Plan%20PyME%20Fundador%20(%2449.990%20CLP)%20con%20Setup%20Inicial%20Gratis.%20Mi%20negocio%20es%3A%20`,
+    bonusText: "🎁 BONO EXCLUSIVO (Solo 15 cupos): Setup 'Llave en Mano' GRATIS (Valor real $150.000 CLP) — Nosotros configuramos tu marca, extraemos tu voz desde tu web y dejamos tu primera quincena andando en una videollamada de 25 minutos.",
+    ctaText: "Asegurar Cupo Crecimiento con Setup Gratis ($99.990)",
+    ctaHref: `https://wa.me/${WA_NUMBER}?text=%C2%A1Hola%20Santisoft!%20Quiero%20asegurar%20uno%20de%20los%2015%20cupos%20del%20Plan%20PyME%20Crecimiento%20(%2499.990%20CLP%20%2B%20IVA)%20con%20Setup%20Llave%20en%20Mano%20Gratis.%20Mi%20negocio%20es%3A%20`,
     features: [
-      "Todo lo incluido en el Plan PyME Pro",
-      "Setup Inicial 100% GRATIS (Valor normal $150.000 CLP)",
-      "Sesión 1 a 1 de 20 min de Onboarding personalizado",
-      "Dejamos tu primer mes de 30 posts listo y programado",
-      "Módulo de videos 9:16 cinematográficos para Reels y TikTok",
-      "Policía Anti-Baneos: auditoría de hashtags y copys en Instagram",
-      "Radar de Nicho: detección de ofertas y tendencias locales en Chile",
+      "Todo lo incluido en el Plan Esencial",
+      "Multicanal Ilimitado (30 días): Instagram, Facebook, TikTok",
+      "Módulo de Autoridad en LinkedIn para ventas y captación B2B",
+      "Espía de Competencia Activo: Analiza qué anuncios y publicaciones le dan resultado a tus competidores",
+      "Pack Publicidad Lista (Meta & Google Ads): Textos persuasivos y creativos listos para campañas pagadas",
+      "Posicionamiento en Google e IAs (SEO + GEO): Artículos de blog para que tu PyME aparezca recomendada en Google y ChatGPT",
+      "Generador de Lead Magnets y Secuencias de Cierre por WhatsApp",
       "Atención prioritaria VIP por WhatsApp",
     ],
   },
   {
-    id: "pyme-dwu",
-    name: "Plan Lo Hacemos Contigo",
-    tagline: "DONE-WITH-YOU · MÁXIMO RESULTADO",
-    priceMonthly: 149990,
-    priceAnnual: 134990,
-    description: "Para el dueño que no quiere tocar nada y busca acompañamiento continuo mes a mes con nuestro equipo.",
+    id: "pyme-piloto-automatico",
+    name: "Plan PyME Piloto Automático",
+    tagline: "DONE-WITH-YOU · SERVICIO VIP",
+    badge: "⚡ SETUP INICIAL GRATIS",
+    originalPriceMonthly: 349990,
+    priceMonthly: 249990,
+    priceAnnual: 224990,
+    description: "Para dueños de empresas y gerentes sin tiempo que quieren todo el poder del sistema pero prefieren que nuestro equipo lo opere junto a ellos.",
     isFeatured: false,
-    ctaText: "Postular a Done-With-You",
-    ctaHref: `https://wa.me/${WA_NUMBER}?text=%C2%A1Hola%20Santisoft!%20Me%20interesa%20el%20Plan%20%22Lo%20Hacemos%20Contigo%22%20(%24149.990%20CLP)%20con%20acompa%C3%B1amiento%20mensual.%20Mi%20empresa%20es%3A%20`,
+    bonusText: "🤝 SERVICIO DONE-WITH-YOU: 2 sesiones ejecutivas al mes (20 min por Zoom) para generar las campañas, revisar métricas y dejar todo programado en vivo.",
+    ctaText: "Postular a Piloto Automático ($249.990)",
+    ctaHref: `https://wa.me/${WA_NUMBER}?text=%C2%A1Hola%20Santisoft!%20Me%20interesa%20el%20Plan%20PyME%20Piloto%20Autom%C3%A1tico%20VIP%20(%24249.990%20CLP%20%2B%20IVA)%20con%20acompa%C3%B1amiento%20Done-With-You.%20Mi%20empresa%20es%3A%20`,
     features: [
-      "Todo el software completo con publicaciones y videos ilimitados",
-      "2 sesiones mensuales de 20 min donde armamos todo tu mes contigo",
-      "Diseño y revisión de ofertas comerciales, combos y precios",
-      "Artículos de blog SEO/GEO para que te recomienden en Google y ChatGPT",
-      "Módulo de anuncios Meta Ads (Facebook e Instagram) calibrado",
-      "Reporte mensual de métricas, ventas y crecimiento de comunidad",
-      "Línea directa con tu consultor asignado por WhatsApp",
+      "Todo el Plan Crecimiento Ilimitado incluido",
+      "2 Sesiones Ejecutivas al Mes (20 min por Zoom): Ejecutamos el espía de competencia, generamos campañas y programamos todo el mes en vivo",
+      "Optimización de Perfil de LinkedIn del Dueño + Casos de Éxito para cerrar negocios de mayor ticket",
+      "Auditoría Trimestral de Conversión Web (CRO): Optimizamos tu web para que las visitas de redes compren",
+      "Soporte Prioritario Directo por WhatsApp con tu estratega dedicado",
+      "Monitoreo continuo de reputación y optimización de anuncios",
     ],
   },
 ];
@@ -132,7 +138,7 @@ export default function PricingPlans() {
                   : "bg-slate-900/80 border border-slate-800 hover:border-slate-700"
               }`}
             >
-              {/* Badge Destacado en Cupo Fundador */}
+              {/* Badge Destacado */}
               {plan.badge && (
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-orange-500 to-amber-500 text-slate-950 text-[11px] font-black uppercase tracking-wider px-4 py-1 rounded-full shadow-lg whitespace-nowrap">
                   {plan.badge}
@@ -152,6 +158,14 @@ export default function PricingPlans() {
 
                 {/* Precio */}
                 <div className="py-4 border-y border-slate-800/80">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs text-slate-500 line-through font-semibold">
+                      ${plan.originalPriceMonthly.toLocaleString("es-CL")} / mes
+                    </span>
+                    <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                      Precio Oferta
+                    </span>
+                  </div>
                   <div className="flex items-baseline gap-1.5">
                     <span className="text-4xl sm:text-5xl font-black text-white tracking-tight">
                       ${currentPrice.toLocaleString("es-CL")}
@@ -165,7 +179,7 @@ export default function PricingPlans() {
                   </div>
                 </div>
 
-                {/* Bono destacado para Fundador */}
+                {/* Bono destacado */}
                 {plan.bonusText && (
                   <div className="p-3.5 rounded-2xl bg-orange-500/10 border border-orange-500/30 text-xs text-orange-200 font-semibold leading-relaxed">
                     {plan.bonusText}
@@ -233,11 +247,11 @@ export default function PricingPlans() {
         </div>
         <div className="space-y-1.5 flex-1">
           <h4 className="text-base sm:text-lg font-black text-white">
-            Garantía Cero Riesgo de 7 días
+            Garantía Cero Riesgo de 7 Días
           </h4>
           <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-            Si durante tu primera semana el sistema no te ahorra al menos <strong>10 horas de trabajo</strong> o
-            no quedas 100% satisfecho con los contenidos generados, te devolvemos el <strong>100% de tu dinero</strong> sin preguntas ni letras chicas.
+            Si en tu primera semana sientes que el sistema no te ahorra al menos <strong>10 horas de trabajo al mes</strong> o
+            no quedas 100% satisfecho, te devolvemos el <strong>100% de tu dinero sin preguntas</strong>. Sin contratos de amarre.
           </p>
         </div>
         <a
@@ -263,7 +277,7 @@ export default function PricingPlans() {
             Planes a la medida para agencias y franquicias con múltiples sucursales
           </h4>
           <p className="text-xs text-slate-400">
-            Podemos habilitar cuentas multi-marca con límites ampliados y tarifas especiales por volumen.
+            Habilitamos cuentas multi-marca con límites ampliados y tarifas especiales por volumen.
           </p>
         </div>
         <a

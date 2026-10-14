@@ -654,7 +654,7 @@ export default function ComoFuncionaPage() {
               style={{ background: "var(--panel)", borderColor: "var(--line)" }}
             >
               <div>
-                <div className="text-xs font-mono font-bold text-orange-500 mb-3 tracking-widest">PASO 01 · DÍA 1</div>
+                <div className="text-xs font-mono font-bold text-orange-500 mb-3 tracking-widest">PASO 01 · 25 MINUTOS</div>
                 <div className="w-12 h-12 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-500 flex items-center justify-center text-2xl mb-5">
                   🧬
                 </div>
@@ -662,14 +662,14 @@ export default function ComoFuncionaPage() {
                   Clonamos el ADN de tu Negocio
                 </h3>
                 <p className="text-sm leading-relaxed" style={{ color: "var(--ink-dim)" }}>
-                  Nosotros te ayudamos desde el primer minuto. Conectamos tu web o perfil actual de Instagram: el sistema extrae tus colores corporativos, tu tono de comunicación real y los servicios o productos más rentables de tu negocio.
+                  En solo 25 minutos con nuestro <strong>Setup Llave en Mano</strong> nos conectamos contigo: extraemos la voz de tu marca desde tu web o Instagram, definimos tu paleta corporativa y dejamos tu primera quincena lista sin que toques una sola tecla.
                 </p>
               </div>
               <div
                 className="mt-6 pt-4 border-t text-xs flex items-center gap-1.5 font-semibold text-emerald-500"
                 style={{ borderColor: "var(--line)" }}
               >
-                <span>✓</span> Onboarding guiado 1 a 1 incluido
+                <span>✓</span> Videollamada de 25 min incluida gratis
               </div>
             </div>
 
@@ -684,17 +684,17 @@ export default function ComoFuncionaPage() {
                   ⚡
                 </div>
                 <h3 className="text-xl font-bold mb-3" style={{ color: "var(--ink)" }}>
-                  Tu Mes Completo en 5 Minutos
+                  Tu Mes Completo, Espía de Competencia y Guiones
                 </h3>
                 <p className="text-sm leading-relaxed" style={{ color: "var(--ink-dim)" }}>
-                  Nuestros agentes estructuran tu calendario hiper-orgánico del mes: diseñan carruseles y gráficas con tu logo, redactan copys persuasivos calibrados para LATAM y preparan guiones de Reels e Historias palabra por palabra (con protección anti-baneos de Instagram).
+                  En 5 minutos el motor genera tu calendario hiper-orgánico del mes: analiza qué le funciona a tu competencia en Chile, diseña gráficas con tu logo y redacta guiones de Reels palabra por palabra con protección anti-baneos de Instagram.
                 </p>
               </div>
               <div
                 className="mt-6 pt-4 border-t text-xs flex items-center gap-1.5 font-semibold text-emerald-500"
                 style={{ borderColor: "var(--line)" }}
               >
-                <span>✓</span> 30 días de contenido listos al instante
+                <span>✓</span> Espía activo + 30 días de contenido
               </div>
             </div>
 
@@ -709,17 +709,17 @@ export default function ComoFuncionaPage() {
                   🎯
                 </div>
                 <h3 className="text-xl font-bold mb-3" style={{ color: "var(--ink)" }}>
-                  Apruebas en 1 Clic y a Vender
+                  Apruebas en 1 Clic desde tu Celular y a Vender
                 </h3>
                 <p className="text-sm leading-relaxed" style={{ color: "var(--ink-dim)" }}>
-                  Revisas todo cómodamente desde tu celular o computador, apruebas lo que te gusta y el contenido queda programado. Tu marca mantiene presencia activa, genera confianza en tus clientes y atrae consultas de venta todos los días.
+                  Revisas todo cómodamente desde tu celular o WhatsApp, apruebas con 1 solo toque y tus publicaciones salen programadas en el horario de mayor venta. Tu marca siempre visible sin consumir tu tiempo.
                 </p>
               </div>
               <div
                 className="mt-6 pt-4 border-t text-xs flex items-center gap-1.5 font-semibold text-emerald-500"
                 style={{ borderColor: "var(--line)" }}
               >
-                <span>✓</span> Control total sin perder horas
+                <span>✓</span> Control total desde WhatsApp
               </div>
             </div>
           </div>
@@ -1956,10 +1956,10 @@ export default function ComoFuncionaPage() {
                   <td className="py-4 px-6 font-bold" style={{ color: "var(--ink)" }}>
                     Costo mensual
                   </td>
-                  <td className="py-4 px-6 text-red-500">$500 a $1.500 USD</td>
+                  <td className="py-4 px-6 text-red-500">$450.000 a $800.000 CLP</td>
                   <td className="py-4 px-6 text-amber-500">Tu tiempo libre (invaluable)</td>
                   <td className="py-4 px-6 font-bold text-emerald-500 bg-orange-500/10">
-                    Desde $24.990 CLP / mes
+                    Desde $59.990 CLP / mes
                   </td>
                 </tr>
                 <tr>
@@ -2029,10 +2029,10 @@ export default function ComoFuncionaPage() {
             >
               <h3 className="text-lg font-bold flex items-start gap-3" style={{ color: "var(--ink)" }}>
                 <span className="text-orange-500 text-xl font-bold mt-0.5">Q.</span>
-                <span>¿Se va a notar que los textos están hechos por agentes o tecnología?</span>
+                <span>¿Suena como robot o se va a notar falso?</span>
               </h3>
               <p className="mt-3 text-sm sm:text-base leading-relaxed pl-8" style={{ color: "var(--ink-dim)" }}>
-                Para nada. El mayor error de las herramientas genéricas es usar frases clichés como &quot;en el vertiginoso mundo de hoy&quot; o sonar robóticos. Nuestros agentes aplican protocolos estrictos de humanización profunda y adaptación al mercado chileno: extraen tu vocabulario real, escriben con tono cercano &quot;tú a tú&quot; y transmiten la personalidad genuina de tu negocio.
+                Para nada. El mayor error de las herramientas genéricas es usar frases clichés como &quot;en el vertiginoso mundo de hoy&quot; o sonar robóticos. Nuestros agentes aplican clonación de voz y protocolos avanzados de humanización calibrados para el mercado chileno: extraen tu vocabulario real, escriben con tono cercano &quot;tú a tú&quot; y transmiten la personalidad genuina de tu negocio.
               </p>
             </div>
 
@@ -2043,10 +2043,10 @@ export default function ComoFuncionaPage() {
             >
               <h3 className="text-lg font-bold flex items-start gap-3" style={{ color: "var(--ink)" }}>
                 <span className="text-orange-500 text-xl font-bold mt-0.5">Q.</span>
-                <span>¿Qué pasa si no tengo tiempo o no me manejo con la tecnología?</span>
+                <span>¿Qué pasa si no soy tecnológico o no tengo tiempo?</span>
               </h3>
               <p className="mt-3 text-sm sm:text-base leading-relaxed pl-8" style={{ color: "var(--ink-dim)" }}>
-                No necesitas saber nada de diseño ni programas complicados. Con nuestro Plan Fundador te incluimos una sesión 1 a 1 de Onboarding Llave en Mano: nos conectamos 20 minutos contigo, configuramos tu marca y dejamos tu primer mes de publicaciones completamente listo para que solo tengas que dar el visto bueno.
+                No necesitas saber nada de diseño ni programas complicados. En nuestro Plan Crecimiento te incluimos una videollamada de 25 minutos de Setup &quot;Llave en Mano&quot; GRATIS: nos conectamos contigo, configuramos tu marca, extraemos tu tono desde tu web o Instagram y dejamos tu primera quincena completamente lista para que solo tengas que dar el visto bueno desde WhatsApp.
               </p>
             </div>
 

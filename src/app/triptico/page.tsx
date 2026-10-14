@@ -8,34 +8,32 @@ import PageTracker from "../../components/PageTracker";
 import {
   FaWhatsapp,
   FaCheck,
-  FaArrowRight,
   FaClock,
-  FaBolt,
   FaShieldAlt,
   FaVideo,
   FaImage,
-  FaCalendarAlt,
   FaTimes,
   FaGift,
   FaFilePdf,
   FaStore,
   FaSearch,
-  FaRocket,
+  FaEye,
+  FaLinkedin,
 } from "react-icons/fa";
 
 const WA_NUMBER = "56965909543";
 
 const WA_GIFT_MSG = encodeURIComponent(
-  "¡Hola Santisoft! Leí el tríptico comercial y quiero recibir los 3 posts de prueba gratis personalizados para mi negocio."
+  "¡Hola Santisoft! Leí el tríptico comercial y quiero recibir los 3 posts de prueba gratis creados para mi negocio por WhatsApp."
 );
-const WA_FOUNDER_MSG = encodeURIComponent(
-  "¡Hola Santisoft! Quiero reservar uno de los 15 cupos del Plan PyME Fundador con Setup Inicial GRATIS ($49.990 CLP/mes)."
+const WA_ESENCIAL_MSG = encodeURIComponent(
+  "¡Hola Santisoft! Quiero activar el Plan PyME Esencial ($59.990 CLP + IVA/mes) para mi negocio."
 );
-const WA_PRO_MSG = encodeURIComponent(
-  "¡Hola Santisoft! Quiero activar el Plan PyME Pro ($39.990 CLP/mes) para mi negocio."
+const WA_CRECIMIENTO_MSG = encodeURIComponent(
+  "¡Hola Santisoft! Quiero asegurar uno de los 15 cupos del Plan PyME Crecimiento ($99.990 CLP + IVA) con Setup Llave en Mano GRATIS."
 );
-const WA_DWY_MSG = encodeURIComponent(
-  "¡Hola Santisoft! Me interesa el Plan PyME 'Lo Hacemos Contigo' ($149.990 CLP/mes) con sesiones mensuales."
+const WA_PILOTO_MSG = encodeURIComponent(
+  "¡Hola Santisoft! Me interesa el Plan PyME Piloto Automático VIP ($249.990 CLP + IVA) con acompañamiento Done-With-You."
 );
 
 const SECTION = "relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8";
@@ -124,7 +122,7 @@ export default function TripticoPitchPage() {
                   </div>
                   <h3 className="text-lg font-black text-white">1. Falta de Tiempo Crónica</h3>
                   <p className="text-sm text-slate-300 mt-2 leading-relaxed">
-                    Terminas agotado de atender clientes, proveedores y operaciones. Lo último que quieres hacer un domingo a las 10 PM es pelear con Canva o pensar qué escribir.
+                    Terminas agotado de atender clientes, proveedores y operaciones. Pierdes <strong>+15 horas al mes</strong> pensando qué publicar y lo último que quieres hacer un domingo a las 10 PM es pelear con Canva.
                   </p>
                 </div>
                 <div className="pt-3 border-t border-red-900/30 text-xs text-red-400 font-semibold flex items-center gap-1.5">
@@ -140,11 +138,11 @@ export default function TripticoPitchPage() {
                   </div>
                   <h3 className="text-lg font-black text-white">2. Agencias Impagables</h3>
                   <p className="text-sm text-slate-300 mt-2 leading-relaxed">
-                    Una agencia tradicional te cobra entre <strong>$400.000 y $700.000 CLP/mes</strong> por dos reuniones lentas y 8 posts genéricos redactados por personas que no entienden tu rubro ni tu calle.
+                    Una agencia tradicional te cobra entre <strong>$450.000 y $800.000 CLP/mes</strong> por reuniones lentas y 8 posts genéricos redactados por personas que no entienden tu rubro ni tu calle, con contratos largos amarrados.
                   </p>
                 </div>
                 <div className="pt-3 border-t border-red-900/30 text-xs text-red-400 font-semibold flex items-center gap-1.5">
-                  <FaTimes /> Alto costo mensual y contratos amarrados
+                  <FaTimes /> Alto costo mensual y cero flexibilidad
                 </div>
               </div>
 
@@ -156,7 +154,7 @@ export default function TripticoPitchPage() {
                   </div>
                   <h3 className="text-lg font-black text-white">3. Publicar a Ciegas Sin Vender</h3>
                   <p className="text-sm text-slate-300 mt-2 leading-relaxed">
-                    Subir fotos de vez en cuando sin estrategia de precios ni llamadas a la acción directas genera cero mensajes en tu WhatsApp. Mucho esfuerzo para ningún retorno.
+                    Subir fotos sueltas de vez en cuando sin estrategia de precios ni llamadas a la acción directas genera cero mensajes en tu WhatsApp. Mucho esfuerzo para ningún retorno.
                   </p>
                 </div>
                 <div className="pt-3 border-t border-red-900/30 text-xs text-red-400 font-semibold flex items-center gap-1.5">
@@ -180,7 +178,7 @@ export default function TripticoPitchPage() {
                 4 Motores que Reemplazan a una Agencia Completa
               </h2>
               <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
-                Nuestros agentes se reparten todo el trabajo pesado: desde la estrategia mensual y el diseño con tu marca, hasta guiones palabra por palabra y protección algorítmica.
+                Nuestros agentes se encargan de toda la cadena: desde el espía de competencia y la clonación de tu voz, hasta el diseño publicitario, guiones de Reels y posicionamiento SEO.
               </p>
             </div>
 
@@ -200,7 +198,7 @@ export default function TripticoPitchPage() {
                     Gráficas y Carruseles con tu Marca
                   </h3>
                   <p className="text-sm text-slate-300 leading-relaxed">
-                    Cartelería comercial nítida estampada directamente sobre tus fotos reales o imágenes creadas a medida. Con tus colores oficiales, logo, badges de oferta y precios visibles sin tapar lo que vendes. Cero plantillas genéricas.
+                    Cartelería comercial nítida estampada directamente sobre tus fotos reales o imágenes de catálogo. Con tus colores corporativos, logo, badges de oferta y precios visibles sin tapar lo que vendes. Cero plantillas genéricas.
                   </p>
                 </div>
                 <div className="mt-6 pt-4 border-t border-slate-800 text-xs text-emerald-400 font-semibold flex items-center gap-1.5">
@@ -238,19 +236,19 @@ export default function TripticoPitchPage() {
                     <span className="text-xs font-mono font-bold text-emerald-400 tracking-widest uppercase">
                       MOTOR 03
                     </span>
-                    <span className="p-2 rounded-xl bg-emerald-500/15 text-emerald-400 text-lg">
-                      <FaShieldAlt />
+                    <span className="p-2 rounded-xl bg-emerald-500/15 text-emerald-400 text-lg flex items-center gap-1">
+                      <FaShieldAlt /> <FaEye className="text-xs text-amber-400" />
                     </span>
                   </div>
                   <h3 className="text-xl font-bold text-white mb-2">
-                    Calendario Hiper-Orgánico + Policía Anti-Baneos
+                    Calendario Hiper-Orgánico + Espía + Policía Anti-Baneos
                   </h3>
                   <p className="text-sm text-slate-300 leading-relaxed">
-                    Planificación mensual de 30 días con los mejores horarios de publicación de tu zona comercial. Cada pieza pasa por un filtro que audita hashtags y copys para proteger tu cuenta de shadowbans y penalizaciones del algoritmo de Instagram.
+                    Estrategia mensual con horarios óptimos en Chile. Analiza qué anuncios le dan resultados a tus competidores y audita automáticamente tus hashtags y textos para evitar shadowbans y castigos algorítmicos en Instagram.
                   </p>
                 </div>
                 <div className="mt-6 pt-4 border-t border-slate-800 text-xs text-emerald-400 font-semibold flex items-center gap-1.5">
-                  <FaCheck /> Cuenta segura y alcance sostenido mes a mes
+                  <FaCheck /> Cuenta protegida y ventaja competitiva
                 </div>
               </div>
 
@@ -261,19 +259,19 @@ export default function TripticoPitchPage() {
                     <span className="text-xs font-mono font-bold text-purple-400 tracking-widest uppercase">
                       MOTOR 04
                     </span>
-                    <span className="p-2 rounded-xl bg-purple-500/15 text-purple-400 text-lg">
-                      <FaSearch />
+                    <span className="p-2 rounded-xl bg-purple-500/15 text-purple-400 text-lg flex items-center gap-1">
+                      <FaSearch /> <FaLinkedin className="text-xs text-blue-400" />
                     </span>
                   </div>
                   <h3 className="text-xl font-bold text-white mb-2">
                     Posicionamiento SEO & GEO y Venta Directa
                   </h3>
                   <p className="text-sm text-slate-300 leading-relaxed">
-                    Textos persuasivos calibrados para el público chileno con redacción de tú a tú y enlaces directos hacia tu WhatsApp. Descripciones optimizadas con términos de búsqueda local para aparecer primero cuando tus vecinos busquen tu servicio.
+                    Textos persuasivos con redacción humana &quot;tú a tú&quot; y llamados claros hacia tu WhatsApp. Artículos de blog optimizados para salir recomendado en Google y ChatGPT, más módulo de autoridad en LinkedIn para cerrar negocios B2B.
                   </p>
                 </div>
                 <div className="mt-6 pt-4 border-t border-slate-800 text-xs text-emerald-400 font-semibold flex items-center gap-1.5">
-                  <FaCheck /> De seguidor a cliente consultando en minutos
+                  <FaCheck /> De seguidor a cliente cotizando por WhatsApp
                 </div>
               </div>
             </div>
@@ -287,165 +285,211 @@ export default function TripticoPitchPage() {
           <div className="rounded-3xl bg-gradient-to-b from-slate-900 to-slate-950 border border-emerald-500/30 p-6 sm:p-10 md:p-14 relative overflow-hidden shadow-2xl">
             <div className="text-center max-w-3xl mx-auto space-y-3 mb-12">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-black tracking-wider uppercase">
-                Bloque 03 · Oferta Comercial y Planes en CLP
+                Bloque 03 · Nueva Estructura Oficial de Planes (CLP + IVA)
               </div>
               <h2 className="text-3xl sm:text-5xl font-black text-white leading-tight">
                 Elige cómo quieres poner tus redes en piloto automático
               </h2>
               <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
-                Precios claros, en pesos chilenos, sin contratos forzados ni letras chicas.
+                Precios claros, sin contratos forzados ni letras chicas. Cancela con 1 clic cuando quieras.
               </p>
             </div>
 
             {/* Grid de 3 Planes */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
-              {/* Plan 1: Pro */}
+              {/* Plan 1: Esencial */}
               <div className="p-7 rounded-2xl bg-slate-950/70 border border-slate-800 flex flex-col justify-between">
                 <div>
                   <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest">
-                    Plan Autogestionado
+                    Presencia Activa
                   </span>
-                  <h3 className="text-2xl font-black text-white mt-1">PyME Pro</h3>
-                  <p className="text-xs text-slate-400 mt-1">Ideal para dueños de negocio que quieren operar su propio mes en minutos.</p>
+                  <h3 className="text-2xl font-black text-white mt-1">PyME Esencial</h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Para negocios locales y profesionales que necesitan redes activas y confiables sin perder tiempo.
+                  </p>
 
                   <div className="my-6 pb-6 border-b border-slate-800">
-                    <span className="text-3xl sm:text-4xl font-black text-white">$39.990</span>
-                    <span className="text-xs text-slate-400 ml-1">CLP + IVA / mes</span>
+                    <div className="text-xs text-slate-500 line-through font-semibold mb-1">
+                      $89.990 / mes
+                    </div>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-3xl sm:text-4xl font-black text-white">$59.990</span>
+                      <span className="text-xs text-slate-400 font-medium">+ IVA / mes</span>
+                    </div>
                   </div>
 
                   <ul className="space-y-3 text-xs sm:text-sm text-slate-300">
                     <li className="flex items-start gap-2">
                       <FaCheck className="text-emerald-400 mt-1 shrink-0" />
-                      <span>Calendario hiper-orgánico de 30 días</span>
+                      <span><strong>1 Marca configurada</strong> (Instagram + Facebook)</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <FaCheck className="text-emerald-400 mt-1 shrink-0" />
-                      <span>Generador de afiches y carruseles con tu marca</span>
+                      <span><strong>Clonación de Voz + Humanizador IA</strong>: cero textos robóticos</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <FaCheck className="text-emerald-400 mt-1 shrink-0" />
-                      <span>Guiones de Reels e Historias listos para leer</span>
+                      <span><strong>15 publicaciones estratégicas al mes</strong> (valor, autoridad y venta)</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <FaCheck className="text-emerald-400 mt-1 shrink-0" />
-                      <span>Hasta 3 perfiles comerciales</span>
+                      <span><strong>Hasta 15 gráficas y carruseles</strong> con tu logo y colores</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <FaCheck className="text-emerald-400 mt-1 shrink-0" />
+                      <span><strong>8 Guiones de Reels + Stories</strong> listos para leer en 30 seg</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <FaCheck className="text-emerald-400 mt-1 shrink-0" />
+                      <span><strong>Escudo Policía Anti-Baneos</strong> de Instagram</span>
                     </li>
                   </ul>
                 </div>
 
                 <div className="mt-8">
                   <a
-                    href={`https://wa.me/${WA_NUMBER}?text=${WA_PRO_MSG}`}
+                    href={`https://wa.me/${WA_NUMBER}?text=${WA_ESENCIAL_MSG}`}
                     target="_blank"
                     rel="noreferrer"
                     className="w-full py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs sm:text-sm text-center block transition-all border border-slate-700"
                   >
-                    Elegir Plan Pro
+                    Elegir Plan Esencial
                   </a>
                 </div>
               </div>
 
-              {/* Plan 2: Fundador (DESTACADO) */}
+              {/* Plan 2: Crecimiento (DESTACADO) */}
               <div className="p-8 rounded-3xl bg-gradient-to-b from-orange-950/40 via-slate-950 to-slate-950 border-2 border-orange-500 relative flex flex-col justify-between shadow-2xl scale-[1.02] md:scale-105 z-10">
                 <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-[11px] font-black uppercase tracking-wider py-1 px-4 rounded-full shadow-md">
-                  ★ Plan Más Elegido · Solo 15 Cupos
+                  ★ MÁS ELEGIDO · SOLO 15 CUPOS
                 </div>
 
                 <div>
                   <span className="text-xs font-mono font-bold text-orange-400 uppercase tracking-widest">
-                    Llave en Mano
+                    Máquina de Ventas
                   </span>
-                  <h3 className="text-2xl font-black text-white mt-1">PyME Fundador</h3>
+                  <h3 className="text-2xl font-black text-white mt-1">PyME Crecimiento</h3>
                   <p className="text-xs text-orange-200/80 mt-1">
-                    Nosotros te dejamos el primer mes completamente configurado y andando.
+                    Para PyMEs que buscan captar clientes todos los días y ahorrar los $450.000+ de una agencia.
                   </p>
 
                   <div className="my-6 pb-6 border-b border-orange-500/30">
-                    <span className="text-4xl sm:text-5xl font-black text-white">$49.990</span>
-                    <span className="text-xs text-slate-300 ml-1">CLP + IVA / mes</span>
+                    <div className="text-xs text-slate-400 line-through font-semibold mb-1">
+                      $149.990 / mes
+                    </div>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-4xl sm:text-5xl font-black text-white">$99.990</span>
+                      <span className="text-xs text-slate-300 font-medium">+ IVA / mes</span>
+                    </div>
                     <div className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/30">
-                      <FaGift /> SETUP INICIAL GRATIS (Valor real $150.000)
+                      <FaGift /> SETUP LLAVE EN MANO GRATIS ($150.000 valor)
                     </div>
                   </div>
 
                   <ul className="space-y-3 text-xs sm:text-sm text-slate-200">
                     <li className="flex items-start gap-2 font-semibold text-white">
                       <FaCheck className="text-orange-400 mt-1 shrink-0" />
-                      <span>Sesión 1 a 1 de 20 min con nuestro equipo</span>
+                      <span>Todo lo incluido en el Plan Esencial</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <FaCheck className="text-orange-400 mt-1 shrink-0" />
-                      <span>Configuración del ADN y voz de tu negocio</span>
+                      <span><strong>Multicanal Ilimitado (30 días)</strong>: Instagram, FB y TikTok</span>
+                    </li>
+                    <li className="flex items-start gap-2 font-semibold text-white">
+                      <FaCheck className="text-orange-400 mt-1 shrink-0" />
+                      <span><strong>Módulo Autoridad en LinkedIn</strong> para ventas B2B</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <FaCheck className="text-orange-400 mt-1 shrink-0" />
-                      <span>Tu primer mes de contenido 100% listo para aprobar</span>
+                      <span><strong>Espía de Competencia Activo</strong>: qué le funciona a tu rubro</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <FaCheck className="text-orange-400 mt-1 shrink-0" />
-                      <span>Policía Anti-Baneos de Instagram activa</span>
+                      <span><strong>Pack Publicidad Lista</strong> (Meta & Google Ads)</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <FaCheck className="text-orange-400 mt-1 shrink-0" />
-                      <span>Soporte prioritario directo vía WhatsApp</span>
+                      <span><strong>SEO + GEO</strong>: recomendado en Google y ChatGPT</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <FaCheck className="text-orange-400 mt-1 shrink-0" />
+                      <span><strong>Lead Magnets y secuencias de cierre</strong> por WhatsApp</span>
                     </li>
                   </ul>
                 </div>
 
                 <div className="mt-8">
                   <a
-                    href={`https://wa.me/${WA_NUMBER}?text=${WA_FOUNDER_MSG}`}
+                    href={`https://wa.me/${WA_NUMBER}?text=${WA_CRECIMIENTO_MSG}`}
                     target="_blank"
                     rel="noreferrer"
                     className="w-full py-4 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-extrabold text-sm text-center block transition-all shadow-xl shadow-orange-500/30"
                   >
-                    Reservar Cupo con Setup Gratis
+                    Asegurar Cupo con Setup Gratis
                   </a>
                 </div>
               </div>
 
-              {/* Plan 3: Lo Hacemos Contigo */}
+              {/* Plan 3: Piloto Automático VIP */}
               <div className="p-7 rounded-2xl bg-slate-950/70 border border-slate-800 flex flex-col justify-between">
                 <div>
                   <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest">
-                    Done-With-You
+                    Done-With-You (VIP)
                   </span>
-                  <h3 className="text-2xl font-black text-white mt-1">Lo Hacemos Contigo</h3>
-                  <p className="text-xs text-slate-400 mt-1">Para el dueño que quiere delegar todo con acompañamiento continuo.</p>
+                  <h3 className="text-2xl font-black text-white mt-1">Piloto Automático</h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Para dueños y gerentes sin tiempo que prefieren que nuestro equipo opere el sistema junto a ellos.
+                  </p>
 
                   <div className="my-6 pb-6 border-b border-slate-800">
-                    <span className="text-3xl sm:text-4xl font-black text-white">$149.990</span>
-                    <span className="text-xs text-slate-400 ml-1">CLP + IVA / mes</span>
+                    <div className="text-xs text-slate-500 line-through font-semibold mb-1">
+                      $349.990 / mes
+                    </div>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-3xl sm:text-4xl font-black text-white">$249.990</span>
+                      <span className="text-xs text-slate-400 font-medium">+ IVA / mes</span>
+                    </div>
+                    <div className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/30">
+                      <FaGift /> SETUP INICIAL GRATIS
+                    </div>
                   </div>
 
                   <ul className="space-y-3 text-xs sm:text-sm text-slate-300">
                     <li className="flex items-start gap-2 font-semibold text-white">
                       <FaCheck className="text-emerald-400 mt-1 shrink-0" />
-                      <span>2 sesiones mensuales de 20 min junto a ti</span>
+                      <span>Todo el Plan Crecimiento Ilimitado incluido</span>
+                    </li>
+                    <li className="flex items-start gap-2 font-semibold text-white">
+                      <FaCheck className="text-emerald-400 mt-1 shrink-0" />
+                      <span><strong>2 Sesiones Ejecutivas al Mes (Zoom 20 min)</strong></span>
                     </li>
                     <li className="flex items-start gap-2">
                       <FaCheck className="text-emerald-400 mt-1 shrink-0" />
-                      <span>Generamos y programamos todo el mes contigo</span>
+                      <span>Ejecutamos espía, campañas y programamos en vivo contigo</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <FaCheck className="text-emerald-400 mt-1 shrink-0" />
-                      <span>Revisión de ofertas, promociones y métricas</span>
+                      <span><strong>Optimización Perfil LinkedIn del Dueño</strong> + Casos de Éxito</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <FaCheck className="text-emerald-400 mt-1 shrink-0" />
-                      <span>Canal directo con un estratega dedicado</span>
+                      <span><strong>Auditoría Trimestral de Conversión Web (CRO)</strong></span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <FaCheck className="text-emerald-400 mt-1 shrink-0" />
+                      <span><strong>Soporte Prioritario VIP</strong> directo por WhatsApp</span>
                     </li>
                   </ul>
                 </div>
 
                 <div className="mt-8">
                   <a
-                    href={`https://wa.me/${WA_NUMBER}?text=${WA_DWY_MSG}`}
+                    href={`https://wa.me/${WA_NUMBER}?text=${WA_PILOTO_MSG}`}
                     target="_blank"
                     rel="noreferrer"
                     className="w-full py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs sm:text-sm text-center block transition-all border border-slate-700"
                   >
-                    Quiero Acompañamiento
+                    Postular a Piloto Automático
                   </a>
                 </div>
               </div>
@@ -461,7 +505,7 @@ export default function TripticoPitchPage() {
                   Garantía Cero Riesgo de 7 Días
                 </h4>
                 <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                  Si durante tu primera semana sientes que este sistema no te ahorra al menos 10 horas de trabajo, te devolvemos el <strong>100% de tu dinero inmediatamente</strong> y sin preguntas incómodas.
+                  Si en tu primera semana sientes que el sistema no te ahorra al menos <strong>10 horas de trabajo al mes</strong>, te devolvemos el <strong>100% de tu dinero sin preguntas</strong>. Sin contratos de amarre.
                 </p>
               </div>
             </div>
@@ -485,7 +529,7 @@ export default function TripticoPitchPage() {
                   className="w-full sm:w-auto px-8 py-5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-white font-black text-base shadow-2xl shadow-emerald-950/40 transition-all flex items-center justify-center gap-3 hover:-translate-y-0.5"
                 >
                   <FaWhatsapp className="text-xl" />
-                  <span>Quiero mis 3 posts de prueba gratis por WhatsApp</span>
+                  <span>Quiero recibir 3 posts de prueba gratis creados para mi negocio</span>
                 </a>
                 <Link
                   href="/como-funciona"
@@ -510,7 +554,7 @@ export default function TripticoPitchPage() {
           <FaGift /> Pedir 3 posts gratis
         </a>
         <a
-          href={`https://wa.me/${WA_NUMBER}?text=${WA_FOUNDER_MSG}`}
+          href={`https://wa.me/${WA_NUMBER}?text=${WA_CRECIMIENTO_MSG}`}
           target="_blank"
           rel="noreferrer"
           aria-label="WhatsApp"

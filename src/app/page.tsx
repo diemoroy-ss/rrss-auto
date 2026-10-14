@@ -189,7 +189,7 @@ export default function Home() {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-white">Agencia Tradicional / CM</h3>
-                  <div className="mt-2 text-2xl sm:text-3xl font-black text-white">$400.000 – $700.000 <span className="text-xs sm:text-sm font-normal text-slate-400">CLP / mes</span></div>
+                  <div className="mt-2 text-2xl sm:text-3xl font-black text-white">$450.000 – $800.000 <span className="text-xs sm:text-sm font-normal text-slate-400">CLP / mes</span></div>
                   <p className="text-xs text-red-400 font-semibold mt-1">Presupuesto inalcanzable para la mayoría de PyMEs</p>
                 </div>
                 <ul className="space-y-3 text-xs text-slate-300 pt-2 border-t border-slate-800">
@@ -207,7 +207,7 @@ export default function Home() {
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-red-400 font-bold">✕</span>
-                    <span><strong>Contratos amarrados</strong> por 6 a 12 meses sin garantía de resultados.</span>
+                    <span><strong>Contratos largos</strong> amarrados por 6 a 12 meses sin garantía de resultados.</span>
                   </li>
                 </ul>
               </div>
@@ -228,13 +228,17 @@ export default function Home() {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-white">RRSS-Auto by Santisoft</h3>
-                  <div className="mt-2 text-3xl font-black text-white">Desde $49.990 <span className="text-sm font-normal text-slate-400">CLP / mes</span></div>
+                  <div className="mt-2 text-3xl font-black text-white">Desde $59.990 <span className="text-sm font-normal text-slate-400">CLP / mes</span></div>
                   <p className="text-xs text-emerald-400 font-semibold mt-1">90% más barato que una agencia y 100% bajo tu control</p>
                 </div>
                 <ul className="space-y-3 text-xs text-slate-200 pt-2 border-t border-slate-800">
                   <li className="flex items-start gap-2">
                     <span className="text-emerald-400 font-bold">✓</span>
-                    <span><strong>Calendario hiper-orgánico del mes</strong> listo en minutos con tu logo y colores.</span>
+                    <span><strong>IA con tu voz real</strong>: textos persuasivos con la personalidad auténtica de tu negocio.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-emerald-400 font-bold">✓</span>
+                    <span><strong>Espía de competencia activo</strong>: detecta qué le está funcionando a tu competencia en Chile.</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-emerald-400 font-bold">✓</span>
@@ -246,17 +250,13 @@ export default function Home() {
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-emerald-400 font-bold">✓</span>
-                    <span><strong>Configuración Llave en Mano gratis</strong>: dejamos la voz de tu marca y tu primer mes andando.</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-emerald-400 font-bold">✓</span>
-                    <span><strong>Aprobación en 1 toque por WhatsApp</strong>: sin reuniones ni paneles difíciles.</span>
+                    <span><strong>Setup Llave en Mano GRATIS</strong>: dejamos tu marca configurada y tu contenido andando.</span>
                   </li>
                 </ul>
               </div>
               <div className="space-y-2">
                 <a
-                  href="https://wa.me/56965909543?text=%C2%A1Hola!%20Quiero%20asegurar%20uno%20de%20los%20cupos%20del%20Plan%20Fundador%20de%20Santisoft%20con%20Setup%20Gratis."
+                  href="https://wa.me/56965909543?text=%C2%A1Hola!%20Quiero%20asegurar%20uno%20de%20los%20cupos%20del%20Plan%20PyME%20Crecimiento%20de%20Santisoft%20con%20Setup%20Gratis."
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full py-3 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-xs text-center flex items-center justify-center gap-2 shadow-lg shadow-orange-500/25 transition-all"

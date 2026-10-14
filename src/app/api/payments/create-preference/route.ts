@@ -23,15 +23,18 @@ export async function POST(req: Request) {
     let title = "";
     let unitPrice = 0;
 
-    if (planId === "pro") {
-      title = "Suscripción Santisoft Pro";
-      unitPrice = 19990;
-    } else if (planId === "business") {
-      title = "Suscripción Santisoft Business";
-      unitPrice = 79990;
+    if (planId === "esencial" || planId === "starter") {
+      title = "Suscripción Santisoft PyME Esencial";
+      unitPrice = 59990;
+    } else if (planId === "crecimiento" || planId === "pro" || planId === "growth") {
+      title = "Suscripción Santisoft PyME Crecimiento";
+      unitPrice = 99990;
+    } else if (planId === "piloto-automatico" || planId === "business" || planId === "dwu") {
+      title = "Suscripción Santisoft PyME Piloto Automático (VIP)";
+      unitPrice = 249990;
     } else if (planId === "agency") {
       title = "Suscripción Santisoft Agency";
-      unitPrice = 299990;
+      unitPrice = 399990;
     } else {
       return NextResponse.json({ error: "Invalid plan ID" }, { status: 400 });
     }
