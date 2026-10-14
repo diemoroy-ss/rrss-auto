@@ -192,24 +192,56 @@ export default function TripticoPitchPage() {
               </div>
             </article>
 
-            {/* Motor 2: Afiche */}
+            {/* Motor 2: Afiche Comercial */}
             <article className="rounded-3xl bg-slate-900/80 border border-amber-500/30 overflow-hidden flex flex-col">
-              <div className="relative aspect-[9/12] bg-slate-800">
+              <div className="relative aspect-[9/12] bg-gradient-to-br from-slate-900 via-amber-950/40 to-slate-950 overflow-hidden">
                 <img
-                  src="https://images.unsplash.com/photo-1556742049-0a67c5574f73?auto=format&fit=crop&w=800&q=80"
+                  src="https://firebasestorage.googleapis.com/v0/b/rrss-santisoft.firebasestorage.app/o/users%2FAGdJLwdz0QNhBPcRp1FdWWMooAb2%2Fflow_showcase%2F_macro_product_shot_image_1791910011818.jpg?alt=media&token=756d24c1-8169-42e0-b2ca-afd2cbb10a38"
                   alt="Afiche comercial de producto o servicio"
                   className="absolute inset-0 w-full h-full object-cover"
+                  loading="eager"
                 />
-                <div className="absolute inset-x-0 top-0 bg-gradient-to-b from-black/85 via-black/40 to-transparent p-4 pb-12 space-y-1">
-                  <span className="inline-block bg-amber-500 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded">
-                    OFERTA SEMANAL
-                  </span>
-                  <p className="text-white font-black text-lg leading-tight uppercase">PACK PROMO O SERVICIO DESTACADO</p>
-                  <p className="text-amber-300 font-black text-2xl">$19.990</p>
+                {/* Degradados publicitarios para garantizar legibilidad */}
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-slate-950/70" />
+
+                {/* Encabezado del afiche: Etiqueta y oferta */}
+                <div className="absolute inset-x-0 top-0 p-4 space-y-1.5 z-10">
+                  <div className="flex items-center justify-between">
+                    <span className="inline-block bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-md uppercase tracking-wider">
+                      ★ OFERTA DE LA SEMANA
+                    </span>
+                    <span className="text-[10px] text-amber-200 font-bold bg-black/60 px-2 py-0.5 rounded backdrop-blur">
+                      CUPOS / STOCK LIMITADO
+                    </span>
+                  </div>
+                  <p className="text-white font-black text-lg leading-tight uppercase drop-shadow-md">
+                    EDICIÓN O SERVICIO DESTACADO
+                  </p>
                 </div>
-                <span className="absolute bottom-3 right-3 bg-emerald-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shadow-lg">
-                  <FaWhatsapp /> Comprar / Consultar
-                </span>
+
+                {/* Pie del afiche: Precios, garantías y botón WhatsApp */}
+                <div className="absolute inset-x-0 bottom-0 p-4 space-y-2.5 z-10">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-amber-400 font-black text-2xl sm:text-3xl leading-none drop-shadow">
+                      $19.990
+                    </span>
+                    <span className="text-slate-400 line-through text-xs font-bold">
+                      $29.990
+                    </span>
+                    <span className="text-[10px] bg-red-500/90 text-white font-black px-1.5 py-0.5 rounded">
+                      -33%
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1 border-t border-white/10">
+                    <span className="text-[10px] text-slate-300 font-medium">
+                      ✓ Atención rápida · Garantizado
+                    </span>
+                    <span className="bg-emerald-500 hover:bg-emerald-600 text-white text-[11px] font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg shadow-emerald-500/30">
+                      <FaWhatsapp className="text-xs" /> Pedir aquí
+                    </span>
+                  </div>
+                </div>
               </div>
               <div className="p-6 space-y-2 flex-1">
                 <div className="flex items-center gap-2 text-amber-400 text-sm font-black">

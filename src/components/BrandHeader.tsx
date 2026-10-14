@@ -2,9 +2,13 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { FaWhatsapp, FaArrowRight, FaTimes, FaBars } from "react-icons/fa";
 
 import LogoMark from "./LogoMark";
 import ThemeToggle from "./ThemeToggle";
+
+const WA_URL =
+  "https://wa.me/56930825301?text=Hola!%20Quiero%20informaci%C3%B3n%20sobre%20el%20servicio%20de%20Santisoft.";
 
 export default function BrandHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -32,123 +36,128 @@ export default function BrandHeader() {
     };
   }, []);
 
+  // Prevenir scroll en el fondo cuando el menú móvil está abierto
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileMenuOpen]);
+
   return (
-    <nav className="brand-nav">
-      <div className="wrap brand-nav-wrap">
-        {/* Brand Lockup & Ecosystem Switcher */}
-        <div className="brand-logo-container">
-          <div className="brand-lockup">
-            <a
-              href="https://santisoft.cl"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="brand-parent-link"
-              title="Ir a Santisoft.cl"
-            >
-              <LogoMark size={22} />
-              <span className="brand-parent-name">SANTISOFT</span>
-            </a>
+    <nav className="brand-nav sticky top-0 z-50 bg-slate-950/95 backdrop-blur-md border-b border-slate-800/80">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        {/* Brand Lockup (Logo + Vertical) */}
+        <div className="flex items-center gap-3">
+          <Link
+            href="/"
+            className="flex items-center gap-2.5 text-white hover:opacity-90 transition-opacity"
+            title="Santisoft - Inicio"
+          >
+            <LogoMark size={24} />
+            <span className="font-black text-lg sm:text-xl tracking-tight text-white font-sans">
+              SANTISOFT
+            </span>
+          </Link>
 
-            <span className="brand-slash hidden sm:inline">/</span>
+          <span className="hidden sm:inline text-slate-600 font-light text-sm">/</span>
 
-            <Link
-              href="/"
-              className="brand-vertical-badge rrss-badge hidden sm:flex"
-              title="Ir al inicio de Redes & Contenido"
-            >
-              <span className="rrss-dot"></span>
-              <span className="vertical-name">REDES &amp; CONTENIDO</span>
-            </Link>
-          </div>
+          <Link
+            href="/"
+            className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 text-[11px] font-bold tracking-wider uppercase"
+            title="Redes & Contenido"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></span>
+            Redes &amp; Contenido
+          </Link>
 
-          {/* Ecosystem Switcher Button */}
-          <div className="ecosystem-switcher-wrapper" ref={switcherRef}>
+          {/* Ecosystem Switcher Button (Desktop) */}
+          <div className="hidden md:block relative" ref={switcherRef}>
             <button
               onClick={() => setSwitcherOpen((prev) => !prev)}
-              className={`ecosystem-switcher-trigger ${switcherOpen ? "active" : ""}`}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-slate-800 bg-slate-900/80 hover:bg-slate-850 hover:border-slate-700 text-slate-300 text-xs font-medium transition-all"
               aria-label="Selector de Ecosistema Santisoft"
               aria-expanded={switcherOpen}
-              title="Descubrir Ecosistema Santisoft"
             >
               <svg
-                width="14"
-                height="14"
+                width="12"
+                height="12"
                 viewBox="0 0 16 16"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
-                className="switcher-grid-icon"
+                className="text-orange-400"
               >
                 <rect x="2" y="2" width="5" height="5" rx="1.5" fill="currentColor" />
                 <rect x="9" y="2" width="5" height="5" rx="1.5" fill="currentColor" />
                 <rect x="2" y="9" width="5" height="5" rx="1.5" fill="currentColor" />
                 <rect x="9" y="9" width="5" height="5" rx="1.5" fill="currentColor" />
               </svg>
-              <span className="switcher-label">Ecosistema</span>
+              <span>Ecosistema</span>
               <svg
-                width="10"
-                height="6"
+                width="8"
+                height="5"
                 viewBox="0 0 10 6"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
-                className={`switcher-chevron ${switcherOpen ? "rotate-180" : ""}`}
+                className={`transition-transform duration-200 ${switcherOpen ? "rotate-180" : ""}`}
               >
                 <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
 
-            {/* Ecosystem Popover */}
+            {/* Desktop Ecosystem Popover */}
             {switcherOpen && (
-              <div className="ecosystem-popover">
-                <div className="popover-header">
-                  <span className="popover-eyebrow">ECOSISTEMA SANTISOFT</span>
-                  <span className="popover-sub">Soluciones Tecnológicas</span>
+              <div className="absolute top-full left-0 mt-2 w-72 rounded-2xl bg-slate-900 border border-slate-700/80 p-3 shadow-2xl z-50 space-y-2">
+                <div className="px-2 py-1">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-orange-400">
+                    Ecosistema Santisoft
+                  </span>
+                  <p className="text-xs text-slate-400">Soluciones de software &amp; automatización</p>
                 </div>
 
-                <div className="popover-divider" />
+                <div className="h-px bg-slate-800" />
 
-                <div className="popover-products">
-                  {/* Current Active Product: Redes & Contenido */}
-                  <div className="popover-product-item current rrss-current">
-                    <div className="product-status-indicator active-rrss"></div>
-                    <div className="product-info">
-                      <div className="product-title-row">
-                        <span className="product-name">Redes &amp; Contenido</span>
-                        <span className="badge-active-rrss">Actual</span>
-                      </div>
-                      <span className="product-desc">Generación &amp; distribución de contenido inteligente</span>
+                <div className="space-y-1">
+                  <div className="p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/25">
+                    <div className="flex items-center justify-between text-xs font-bold text-white">
+                      <span>Redes &amp; Contenido</span>
+                      <span className="text-[9px] bg-orange-500 text-slate-950 font-black px-1.5 py-0.5 rounded">
+                        Actual
+                      </span>
                     </div>
+                    <p className="text-[11px] text-slate-400 mt-0.5">Publicación y piezas automáticas</p>
                   </div>
 
-                  {/* Sibling Product: Agentes IA */}
                   <a
                     href="https://agentes.santisoft.cl"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="popover-product-item sibling-product-link"
+                    className="block p-2.5 rounded-xl hover:bg-slate-800/80 text-xs text-slate-300 transition-colors"
                     onClick={() => setSwitcherOpen(false)}
                   >
-                    <div className="product-status-indicator sibling-cyan"></div>
-                    <div className="product-info">
-                      <div className="product-title-row">
-                        <span className="product-name">Agentes IA</span>
-                        <span className="badge-sibling">Ver Vertical ↗</span>
-                      </div>
-                      <span className="product-desc">Automatización inteligente &amp; agentes para empresas</span>
+                    <div className="flex items-center justify-between font-bold text-white">
+                      <span>Agentes para Empresas</span>
+                      <span className="text-cyan-400 text-xs">↗</span>
                     </div>
+                    <p className="text-[11px] text-slate-400 mt-0.5">Automatización inteligente de operaciones</p>
                   </a>
                 </div>
 
-                <div className="popover-divider" />
+                <div className="h-px bg-slate-800" />
 
                 <a
                   href="https://santisoft.cl"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="popover-footer-link"
+                  className="flex items-center justify-between px-2 py-1 text-xs text-slate-400 hover:text-white transition-colors"
                   onClick={() => setSwitcherOpen(false)}
                 >
                   <span>Explorar Santisoft.cl</span>
-                  <span className="external-arrow">↗</span>
+                  <span>↗</span>
                 </a>
               </div>
             )}
@@ -156,143 +165,159 @@ export default function BrandHeader() {
         </div>
 
         {/* Desktop Navigation Links */}
-        <div className="nav-links">
-          <Link href="/como-funciona" className="ghost whitespace-nowrap">
+        <div className="hidden md:flex items-center gap-6">
+          <Link
+            href="/como-funciona"
+            className="text-sm font-medium text-slate-300 hover:text-white transition-colors"
+          >
             Cómo Funciona
           </Link>
 
-          <a href="/#planes" className="ghost whitespace-nowrap">
+          <Link
+            href="/triptico"
+            className="text-sm font-medium text-slate-300 hover:text-white transition-colors"
+          >
+            Tríptico
+          </Link>
+
+          <a
+            href="/#planes"
+            className="text-sm font-medium text-slate-300 hover:text-white transition-colors"
+          >
             Planes
           </a>
 
-          <Link href="/login" className="ghost whitespace-nowrap">
+          <Link
+            href="/login"
+            className="text-sm font-medium text-slate-300 hover:text-white transition-colors"
+          >
             Acceso Cliente
           </Link>
 
           <ThemeToggle />
 
-          <Link href="/registro" className="btn btn-primary btn-sm whitespace-nowrap">
+          <Link
+            href="/registro"
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs tracking-wide shadow-md shadow-orange-500/20 transition-all hover:-translate-y-0.5"
+          >
             Empezar Gratis
           </Link>
         </div>
 
-        {/* Mobile controls */}
-        <div className="nav-mobile-controls">
+        {/* Mobile controls (Limpio y directo: ThemeToggle + Botón Hamburguesa) */}
+        <div className="flex items-center gap-2 md:hidden">
           <ThemeToggle />
 
-          <Link href="/registro" className="btn btn-primary btn-sm nav-mobile-cta">
-            Empezar
-          </Link>
-
           <button
-            onClick={() => setMobileMenuOpen((o) => !o)}
-            className="nav-hamburger"
-            aria-label="Abrir menú"
+            onClick={() => setMobileMenuOpen((prev) => !prev)}
+            className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-700/80 flex items-center justify-center text-slate-200 hover:text-white active:scale-95 transition-all"
+            aria-label={mobileMenuOpen ? "Cerrar menú" : "Abrir menú de navegación"}
             aria-expanded={mobileMenuOpen}
           >
-            <span className={`nav-bar ${mobileMenuOpen ? "bar-open-1" : ""}`} />
-            <span className={`nav-bar ${mobileMenuOpen ? "bar-open-2" : ""}`} />
-            <span className={`nav-bar ${mobileMenuOpen ? "bar-open-3" : ""}`} />
+            {mobileMenuOpen ? <FaTimes className="text-base" /> : <FaBars className="text-base" />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Menu Dropdown */}
+      {/* Mobile Menu Overlay / Drawer */}
       {mobileMenuOpen && (
-        <div className="nav-mobile-menu">
-          <div className="mobile-brand-tag">
-            <span className="mobile-ecosystem-label">PARTE DEL ECOSISTEMA SANTISOFT</span>
+        <div className="md:hidden fixed inset-x-0 top-16 bottom-0 z-50 bg-slate-950/98 backdrop-blur-xl border-t border-slate-800 overflow-y-auto p-5 flex flex-col justify-between animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="space-y-4">
+            <span className="text-[10px] font-black uppercase tracking-[0.15em] text-orange-400 block px-2">
+              Navegación
+            </span>
+
+            <div className="space-y-1">
+              <Link
+                href="/como-funciona"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900/60 hover:bg-slate-900 text-white font-bold text-sm border border-slate-800/60 transition-colors"
+              >
+                <span>Cómo Funciona</span>
+                <FaArrowRight className="text-xs text-orange-400" />
+              </Link>
+
+              <Link
+                href="/triptico"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900/60 hover:bg-slate-900 text-white font-bold text-sm border border-slate-800/60 transition-colors"
+              >
+                <span>Tríptico / Pitch Rápido</span>
+                <FaArrowRight className="text-xs text-orange-400" />
+              </Link>
+
+              <a
+                href="/#planes"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900/60 hover:bg-slate-900 text-white font-bold text-sm border border-slate-800/60 transition-colors"
+              >
+                <span>Planes &amp; Precios</span>
+                <FaArrowRight className="text-xs text-orange-400" />
+              </a>
+
+              <Link
+                href="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900/60 hover:bg-slate-900 text-white font-bold text-sm border border-slate-800/60 transition-colors"
+              >
+                <span>Acceso Clientes</span>
+                <FaArrowRight className="text-xs text-slate-400" />
+              </Link>
+            </div>
+
+            {/* CTAs Móvil */}
+            <div className="pt-2 space-y-2.5">
+              <Link
+                href="/registro"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-sm text-center block shadow-lg shadow-orange-500/25 transition-all"
+              >
+                Empezar Gratis 🚀
+              </Link>
+
+              <a
+                href={WA_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full py-3 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all"
+              >
+                <FaWhatsapp className="text-sm" /> Hablar con un asesor por WhatsApp
+              </a>
+            </div>
+
+            {/* Ecosistema en móvil */}
+            <div className="pt-4 border-t border-slate-800/80 space-y-2">
+              <span className="text-[10px] font-black uppercase tracking-[0.15em] text-cyan-400 block px-2">
+                Ecosistema Santisoft
+              </span>
+
+              <div className="grid grid-cols-2 gap-2">
+                <a
+                  href="https://agentes.santisoft.cl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-left text-xs font-semibold text-slate-200 hover:text-white"
+                >
+                  <span className="block text-cyan-400 font-bold">Agentes IA ↗</span>
+                  <span className="text-[10px] text-slate-400">Automatización</span>
+                </a>
+
+                <a
+                  href="https://santisoft.cl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-left text-xs font-semibold text-slate-200 hover:text-white"
+                >
+                  <span className="block text-white font-bold">Santisoft.cl ↗</span>
+                  <span className="text-[10px] text-slate-400">Plataforma Matriz</span>
+                </a>
+              </div>
+            </div>
           </div>
 
-          <Link
-            href="/como-funciona"
-            onClick={() => setMobileMenuOpen(false)}
-            className="nav-mobile-item"
-          >
-            Cómo Funciona <span>→</span>
-          </Link>
-
-          <a
-            href="/#planes"
-            onClick={() => setMobileMenuOpen(false)}
-            className="nav-mobile-item"
-          >
-            Planes <span>↓</span>
-          </a>
-
-          <a
-            href="https://agentes.santisoft.cl"
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => setMobileMenuOpen(false)}
-            className="nav-mobile-item"
-          >
-            <span>Agentes IA</span>
-            <span className="nav-arrow">↗</span>
-          </a>
-
-          <a
-            href="https://santisoft.cl"
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => setMobileMenuOpen(false)}
-            className="nav-mobile-item highlighted-santisoft"
-          >
-            <span>Explorar Santisoft</span>
-            <span className="nav-arrow">↗</span>
-          </a>
-
-          <Link
-            href="/login"
-            onClick={() => setMobileMenuOpen(false)}
-            className="nav-mobile-item"
-          >
-            Acceso Cliente <span>→</span>
-          </Link>
-
-          <Link
-            href="/registro"
-            onClick={() => setMobileMenuOpen(false)}
-            className="btn btn-primary nav-mobile-cta-full"
-          >
-            Empezar Gratis 🚀
-          </Link>
-
-          {/* Social Links Mobile */}
-          <div className="flex items-center justify-center gap-3 pt-3 border-t border-slate-700/30 mt-2">
-            <a
-              href="https://www.instagram.com/santisoftai/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300 hover:text-white flex items-center justify-center transition-all"
-              title="Instagram @santisoftai"
-            >
-              <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-              </svg>
-            </a>
-            <a
-              href="https://www.facebook.com/santisoft"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-9 h-9 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-300 hover:text-white flex items-center justify-center transition-all"
-              title="Facebook Santisoft"
-            >
-              <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                <path d="M9 8H6v4h3v12h5V12h3.642L18 8h-4V6.333C14 5.374 14.5 5 15.5 5H18V0h-3.808C10.593 0 9 1.582 9 4.615V8z"/>
-              </svg>
-            </a>
-            <a
-              href="https://www.youtube.com/@Santisoftai"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-9 h-9 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 hover:text-white flex items-center justify-center transition-all"
-              title="YouTube @Santisoftai"
-            >
-              <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-              </svg>
-            </a>
+          <div className="pt-6 pb-2 text-center text-[11px] text-slate-500">
+            Santisoft Redes &amp; Contenido © {new Date().getFullYear()}
           </div>
         </div>
       )}
