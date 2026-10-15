@@ -255,6 +255,38 @@ export default function UpcomingTimeline({
         </div>
       )}
 
+      {/* ── BARRA DE ACCESO RÁPIDO: AGENDAR ESTRATEGIA (SEMANAL O 14 DÍAS) ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-gradient-to-r from-orange-50/70 via-slate-50 to-orange-50/40 rounded-2xl border border-orange-200/80">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-orange-500/15 text-orange-600 flex items-center justify-center shrink-0 text-sm font-black">
+            🎯
+          </div>
+          <div>
+            <p className="text-xs font-black text-slate-900">
+              ¿Días sin publicaciones en tu negocio?
+            </p>
+            <p className="text-[11px] text-slate-500 font-medium">
+              Nuestros agentes diseñan los copys, hooks y gráficas listas para publicar en piloto automático.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+          <Link
+            href="/automatizacion-rrss/panel/estrategia?duration=7"
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white hover:bg-orange-50 text-slate-800 hover:text-orange-600 font-bold text-xs border border-slate-200 hover:border-orange-200 transition-all shadow-2xs"
+          >
+            <span>📅 Estrategia Semanal (7d)</span>
+          </Link>
+          <Link
+            href="/automatizacion-rrss/panel/estrategia?duration=14"
+            className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all shadow-xs"
+          >
+            <span>🚀 Estrategia 14 Días</span>
+          </Link>
+        </div>
+      </div>
+
       {/* ══════════════════════════════════════════════════════════════
           3. LAS 3 CARDS DESTACADAS DE PUBLICACIONES INMEDIATAS
       ══════════════════════════════════════════════════════════════ */}

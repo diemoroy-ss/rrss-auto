@@ -58,6 +58,17 @@ export default function EstrategiaPage() {
   const router = useRouter();
   const [expectations, setExpectations] = useState("");
   const [promoMode, setPromoMode] = useState<'profile' | 'custom'>('profile');
+  const [strategyDuration, setStrategyDuration] = useState<'7' | '14' | 'month'>('14');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const d = params.get('duration');
+      if (d === '7' || d === '14' || d === 'month') {
+        setStrategyDuration(d as any);
+      }
+    }
+  }, []);
   const [customPromotions, setCustomPromotions] = useState("");
   const [radarAnalysis, setRadarAnalysis] = useState<any>(null);
   const [useRadarContext, setUseRadarContext] = useState<boolean>(true);
@@ -337,6 +348,8 @@ export default function EstrategiaPage() {
                  businessData,
                  userId: user?.uid,
                  profileId: activeProfile?.id || 'default',
+                 postsPerWeek: strategyDuration === '7' ? 4 : strategyDuration === '14' ? 8 : (planLimit || 15),
+                 duration: strategyDuration === '7' ? 7 : strategyDuration === '14' ? 14 : 30,
                  catalogUsage,
                  catalogoItems: itemsToUse.map((item: any) => ({
                      id: item.id,
@@ -603,6 +616,66 @@ export default function EstrategiaPage() {
           )}
 
           <div className={`space-y-6 ${userPlan === 'free' && !isUserAdmin(user?.email) ? 'opacity-30 pointer-events-none blur-sm' : ''}`}>
+             {/* SELECTOR DE DURACIÓN DE ESTRATEGIA (Semanal vs 14 días vs Mes) */}
+             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                 <div>
+                   <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                     <span>⏱️</span> Horizonte de Planificación
+                   </h4>
+                   <p className="text-[11px] text-slate-500 font-medium">
+                     Selecciona cuántos días deseas planificar con nuestros agentes
+                   </p>
+                 </div>
+                 <div className="inline-flex rounded-xl bg-white p-1 border border-slate-200 shadow-xs self-start sm:self-auto">
+                   <button
+                     type="button"
+                     onClick={() => setStrategyDuration('7')}
+                     className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                       strategyDuration === '7'
+                         ? 'bg-slate-900 text-white shadow-xs'
+                         : 'text-slate-600 hover:text-slate-900'
+                     }`}
+                   >
+                     <span>📅 Semanal (7 días)</span>
+                   </button>
+                   <button
+                     type="button"
+                     onClick={() => setStrategyDuration('14')}
+                     className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                       strategyDuration === '14'
+                         ? 'bg-slate-900 text-white shadow-xs'
+                         : 'text-slate-600 hover:text-slate-900'
+                     }`}
+                   >
+                     <span>🚀 14 Días (Quincenal)</span>
+                   </button>
+                   <button
+                     type="button"
+                     onClick={() => setStrategyDuration('month')}
+                     className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                       strategyDuration === 'month'
+                         ? 'bg-slate-900 text-white shadow-xs'
+                         : 'text-slate-600 hover:text-slate-900'
+                     }`}
+                   >
+                     <span>📆 Mes Completo</span>
+                   </button>
+                 </div>
+               </div>
+
+               <div className="text-[11px] font-semibold text-slate-600 flex items-center justify-between pt-2 border-t border-slate-200/60">
+                 <span>
+                   {strategyDuration === '7' && 'Nuestros agentes diseñarán entre 3 y 4 publicaciones estratégicas para la próxima semana.'}
+                   {strategyDuration === '14' && 'Nuestros agentes diseñarán entre 7 y 8 publicaciones estratégicas para cubrir dos semanas completas.'}
+                   {strategyDuration === 'month' && 'Nuestros agentes diseñarán la grilla mensual completa de contenidos según tu plan activo.'}
+                 </span>
+                 <span className="text-[10px] font-black uppercase text-orange-700 bg-orange-100 px-2 py-0.5 rounded-md border border-orange-200">
+                   {strategyDuration === '7' ? '3-4 Posts' : strategyDuration === '14' ? '7-8 Posts' : 'Grilla Completa'}
+                 </span>
+               </div>
+             </div>
+
              <div className="flex items-center justify-between">
                <h3 className="text-base font-black text-slate-900 tracking-tight">1. ¿Qué deseas lograr?</h3>
                {selectedGoal && (

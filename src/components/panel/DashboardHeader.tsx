@@ -1,8 +1,9 @@
 "use client";
 
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { getPlanConfig } from "../../lib/plans";
-import { Sparkles, CalendarCheck, BarChart3, Plus, Zap, CheckCircle2 } from "lucide-react";
+import { Sparkles, CalendarCheck, BarChart3, Plus, Zap, CheckCircle2, Target, ChevronDown, Calendar, Rocket } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
 
 interface DashboardHeaderProps {
@@ -43,6 +44,19 @@ export default function DashboardHeader({
     : Math.min(100, Math.round((quotaUsed / Math.max(1, effectiveMaxPosts)) * 100));
 
   const isAtLimit = !isUnlimited && quotaUsed >= effectiveMaxPosts;
+
+  const [isStrategyOpen, setIsStrategyOpen] = useState(false);
+  const strategyMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (strategyMenuRef.current && !strategyMenuRef.current.contains(event.target as Node)) {
+        setIsStrategyOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleNewPostClick = (e: React.MouseEvent) => {
     if (isAtLimit && onOpenUpgradeModal) {
@@ -101,6 +115,86 @@ export default function DashboardHeader({
             <FaWhatsapp className="text-emerald-600 text-sm" />
             <span className="hidden sm:inline">WhatsApp Bot</span>
           </a>
+
+          {/* Dropdown Agendar Estrategia (Semanal o 14 días) */}
+          <div className="relative" ref={strategyMenuRef}>
+            <button
+              type="button"
+              onClick={() => setIsStrategyOpen(!isStrategyOpen)}
+              className="bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 px-3.5 sm:px-4 rounded-xl transition-all shadow-sm flex items-center gap-2 text-xs border border-slate-700 hover:border-slate-600"
+            >
+              <Target className="w-3.5 h-3.5 text-orange-400" />
+              <span>Agendar Estrategia</span>
+              <ChevronDown
+                className={`w-3.5 h-3.5 text-slate-400 transition-transform ${
+                  isStrategyOpen ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+
+            {isStrategyOpen && (
+              <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-white rounded-2xl shadow-2xl border border-slate-200 p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+                <div className="px-3 py-2 border-b border-slate-100">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                    Planificación con Agentes
+                  </span>
+                  <p className="text-xs font-bold text-slate-800 mt-0.5">
+                    Selecciona el período a programar:
+                  </p>
+                </div>
+
+                <div className="p-1 space-y-1">
+                  {/* Opción 1: Estrategia Semanal (7 días) */}
+                  <Link
+                    href="/automatizacion-rrss/panel/estrategia?duration=7"
+                    onClick={() => setIsStrategyOpen(false)}
+                    className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-orange-50/70 group transition-all text-left"
+                  >
+                    <div className="w-9 h-9 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center text-base shrink-0 group-hover:scale-105 transition-transform">
+                      📅
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-black text-slate-900 group-hover:text-orange-600">
+                          Estrategia Semanal
+                        </span>
+                        <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-orange-100 text-orange-700">
+                          7 días
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 mt-0.5 leading-snug font-medium">
+                        3 a 4 publicaciones tácticas para mantener presencia activa en los próximos 7 días.
+                      </p>
+                    </div>
+                  </Link>
+
+                  {/* Opción 2: Estrategia 14 Días */}
+                  <Link
+                    href="/automatizacion-rrss/panel/estrategia?duration=14"
+                    onClick={() => setIsStrategyOpen(false)}
+                    className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-slate-100 group transition-all text-left"
+                  >
+                    <div className="w-9 h-9 rounded-xl bg-slate-900 text-orange-400 flex items-center justify-center text-base shrink-0 group-hover:scale-105 transition-transform">
+                      🚀
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-black text-slate-900 group-hover:text-slate-950">
+                          Estrategia 14 Días
+                        </span>
+                        <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-slate-900 text-white">
+                          Quincenal
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 mt-0.5 leading-snug font-medium">
+                        7 a 8 publicaciones para asegurar dos semanas completas de ventas y contenidos.
+                      </p>
+                    </div>
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Botón Crear / Agendar Post */}
           <Link
