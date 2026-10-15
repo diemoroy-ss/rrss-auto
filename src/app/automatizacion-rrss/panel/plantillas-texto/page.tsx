@@ -1856,6 +1856,8 @@ export default function PlantillasTextoPage() {
             </div>
           </div>
         </div>
+      )}
+
       {/* =========================================================
           MODAL / DRAWER DE ESTILOS Y DISEÑOS (100% RESPONSIVE)
           ========================================================= */}
