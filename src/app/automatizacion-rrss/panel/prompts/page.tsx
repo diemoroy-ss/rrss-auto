@@ -65,6 +65,41 @@ function getCategoryIconComponent(category: string) {
   return <Tag className="w-3.5 h-3.5 shrink-0" />;
 }
 
+function getCategorySubtitle(category: string): string {
+  const normalized = category.toLowerCase().trim();
+  if (normalized.includes("publicidad") || normalized.includes("ads") || normalized.includes("cartel")) {
+    return "Vallas, anuncios y fotos lifestyle";
+  }
+  if (normalized.includes("gastro") || normalized.includes("comida") || normalized.includes("restauran")) {
+    return "Menús, platos gourmet y promociones";
+  }
+  if (normalized.includes("editorial") || normalized.includes("revista")) {
+    return "Portadas, modas y layouts limpios";
+  }
+  if (normalized.includes("producto") || normalized.includes("e-commerce") || normalized.includes("tienda")) {
+    return "Fondo blanco, 360° y estudio";
+  }
+  if (normalized.includes("técnic") || normalized.includes("tecnic") || normalized.includes("exploded")) {
+    return "Exploded view, esquemas y planos";
+  }
+  if (normalized.includes("3d") || normalized.includes("diseño") || normalized.includes("diseno")) {
+    return "Renders hiperrealistas y texturas";
+  }
+  if (normalized.includes("foto") || normalized.includes("realism")) {
+    return "Capturas fotográficas profesionales";
+  }
+  if (normalized.includes("artístic") || normalized.includes("concept") || normalized.includes("creat")) {
+    return "Ilustraciones y arte conceptual";
+  }
+  if (normalized.includes("cyberpunk") || normalized.includes("futur")) {
+    return "Neón, futurismo y ciencia ficción";
+  }
+  if (normalized.includes("minimal")) {
+    return "Composiciones limpias y elegantes";
+  }
+  return "Instrucciones optimizadas de estilo";
+}
+
 export default function PromptsLibraryPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
@@ -77,26 +112,15 @@ export default function PromptsLibraryPage() {
   const [promptTemplates, setPromptTemplates] = useState<PromptTemplate[]>([]);
   const [loadingPrompts, setLoadingPrompts] = useState(true);
 
-  // Category Management Modal State
+  // Category Management Modal State (Admin)
   const [isManageCategoriesModalOpen, setIsManageCategoriesModalOpen] = useState(false);
   const [newCategoryInput, setNewCategoryInput] = useState("");
   const [editingCategoryName, setEditingCategoryName] = useState<string | null>(null);
   const [editingCategoryNewValue, setEditingCategoryNewValue] = useState("");
   const [quickNewCategory, setQuickNewCategory] = useState("");
 
-  // Category Popover State for "+ Más estilos (X) ▾"
-  const [isMoreCategoriesOpen, setIsMoreCategoriesOpen] = useState(false);
-  const moreCategoriesRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (moreCategoriesRef.current && !moreCategoriesRef.current.contains(event.target as Node)) {
-        setIsMoreCategoriesOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  // Modal / Drawer de Estilos Visuales (Opción 2)
+  const [isStyleFilterModalOpen, setIsStyleFilterModalOpen] = useState(false);
 
   // Status Modal State (Reemplazo moderno de alerts y confirms)
   const [statusModal, setStatusModal] = useState<{
@@ -470,12 +494,6 @@ export default function PromptsLibraryPage() {
         return a.localeCompare(b);
       });
   }, [categoriesList, categoryCounts]);
-
-  const topCategories = useMemo(() => activeCategoriesSorted.slice(0, 5), [activeCategoriesSorted]);
-  const remainingCategories = useMemo(() => activeCategoriesSorted.slice(5), [activeCategoriesSorted]);
-  const isRemainingCategoryActive = useMemo(() => {
-    return remainingCategories.includes(activeCategory);
-  }, [remainingCategories, activeCategory]);
 
   const filteredPrompts = useMemo(() => {
     return promptTemplates.filter(p => {
@@ -869,24 +887,24 @@ export default function PromptsLibraryPage() {
       </div>
 
       {/* ══════════════════════════════════════════════════════════════
-          BARRA UNIFICADA: BUSCADOR + FILTROS HORIZONTALES LIMPIOS
+          BARRA UNIFICADA: BUSCADOR + BOTÓN DRAWER FILTRAR ESTILOS (OPCIÓN 2)
       ══════════════════════════════════════════════════════════════ */}
-      <div className="bg-slate-50/80 border border-slate-200/90 rounded-2xl p-2 sm:p-2.5 mb-8 shadow-2xs">
-        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2.5">
+      <div className="bg-white border border-slate-200/90 rounded-2xl p-2.5 sm:p-3 shadow-2xs mb-8">
+        <div className="flex items-center justify-between gap-2.5 sm:gap-3">
           {/* Buscador Integrado */}
-          <div className="relative w-full lg:w-72 xl:w-80 shrink-0">
+          <div className="relative flex-1">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar por título, estilo..."
-              className="w-full pl-9 pr-8 py-2 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 shadow-2xs transition-all"
+              placeholder="Buscar por título, estilo o descripción..."
+              className="w-full pl-9 pr-8 py-2.5 bg-slate-50 hover:bg-slate-100/70 focus:bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 shadow-2xs transition-all"
             />
             {searchQuery && (
               <button 
                 onClick={() => setSearchQuery("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 text-[10px] flex items-center justify-center font-bold transition-colors"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-600 text-[10px] flex items-center justify-center font-bold transition-colors"
                 title="Limpiar búsqueda"
               >
                 <X className="w-3 h-3" />
@@ -894,135 +912,59 @@ export default function PromptsLibraryPage() {
             )}
           </div>
 
-          {/* Filtros de Categorías en una sola línea horizontal */}
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 max-w-full">
-            {/* Botón "Todos los Estilos" */}
-            <button
-              onClick={() => {
-                setActiveCategory("all");
-                setIsMoreCategoriesOpen(false);
-              }}
-              className={`px-3 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
-                activeCategory === "all"
-                  ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-200 ring-2 ring-indigo-500/20'
-                  : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200/90 shadow-2xs'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span>Todos los Estilos</span>
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${
-                activeCategory === "all" ? 'bg-indigo-700 text-white' : 'bg-slate-100 text-slate-500'
-              }`}>
-                {categoryCounts.all || 0}
-              </span>
-            </button>
-
-            {/* Top 5 Categorías con más plantillas activas (> 0) */}
-            {topCategories.map(cat => {
-              const count = categoryCounts[cat] || 0;
-              const isSelected = activeCategory === cat;
-              return (
-                <button
-                  key={cat}
-                  onClick={() => {
-                    setActiveCategory(cat);
-                    setIsMoreCategoriesOpen(false);
-                  }}
-                  className={`px-3 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
-                    isSelected
-                      ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-200 ring-2 ring-indigo-500/20'
-                      : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200/90 shadow-2xs'
-                  }`}
-                >
-                  <span className={isSelected ? 'text-indigo-200' : 'text-slate-400'}>
-                    {getCategoryIconComponent(cat)}
-                  </span>
-                  <span>{cat}</span>
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${
-                    isSelected ? 'bg-indigo-700 text-white' : 'bg-slate-100 text-slate-500'
-                  }`}>
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
-
-            {/* Popover elegante para las categorías restantes: "+ Más estilos (X) ▾" */}
-            {remainingCategories.length > 0 && (
-              <div className="relative shrink-0" ref={moreCategoriesRef}>
-                <button
-                  type="button"
-                  onClick={() => setIsMoreCategoriesOpen(!isMoreCategoriesOpen)}
-                  className={`px-3 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 whitespace-nowrap border ${
-                    isRemainingCategoryActive
-                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm shadow-indigo-200 ring-2 ring-indigo-500/20'
-                      : isMoreCategoriesOpen
-                      ? 'bg-slate-100 text-slate-900 border-slate-300'
-                      : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200/90 shadow-2xs'
-                  }`}
-                >
-                  <span>
-                    {isRemainingCategoryActive ? activeCategory : `+ Más estilos (${remainingCategories.length})`}
-                  </span>
-                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isMoreCategoriesOpen ? 'rotate-180' : ''}`} />
-                </button>
-
-                {isMoreCategoriesOpen && (
-                  <div className="absolute right-0 mt-2 w-64 sm:w-72 bg-white rounded-2xl shadow-xl border border-slate-200 p-2 z-30 animate-in fade-in zoom-in-95 duration-150">
-                    <div className="px-3 py-2 border-b border-slate-100 flex items-center justify-between">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-                        Otros Estilos Disponibles
-                      </span>
-                      <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
-                        {remainingCategories.length} estilos
-                      </span>
-                    </div>
-
-                    <div className="p-1 space-y-1 max-h-60 overflow-y-auto custom-scrollbar">
-                      {remainingCategories.map(cat => {
-                        const count = categoryCounts[cat] || 0;
-                        const isSelected = activeCategory === cat;
-                        return (
-                          <button
-                            key={cat}
-                            type="button"
-                            onClick={() => {
-                              setActiveCategory(cat);
-                              setIsMoreCategoriesOpen(false);
-                            }}
-                            className={`w-full flex items-center justify-between p-2 rounded-xl text-left text-xs font-semibold transition-all ${
-                              isSelected
-                                ? 'bg-indigo-50 text-indigo-700 font-bold'
-                                : 'hover:bg-slate-50 text-slate-700'
-                            }`}
-                          >
-                            <div className="flex items-center gap-2 truncate">
-                              <span className="text-slate-400 shrink-0">{getCategoryIconComponent(cat)}</span>
-                              <span className="truncate">{cat}</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                                isSelected ? 'bg-indigo-200 text-indigo-800' : 'bg-slate-100 text-slate-500'
-                              }`}>
-                                {count}
-                              </span>
-                              {isSelected && <Check className="w-3.5 h-3.5 text-indigo-600" />}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Contador sutil */}
-          <div className="hidden 2xl:flex items-center text-xs font-bold text-slate-400 shrink-0 px-2 whitespace-nowrap">
-            <span>{filteredPrompts.length} {filteredPrompts.length === 1 ? 'plantilla' : 'plantillas'}</span>
-          </div>
+          {/* Botón Disparador del Modal/Drawer de Estilos */}
+          <button
+            type="button"
+            onClick={() => setIsStyleFilterModalOpen(true)}
+            className={`px-3.5 sm:px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shrink-0 shadow-2xs ${
+              activeCategory === "all"
+                ? "bg-slate-900 hover:bg-slate-800 text-white"
+                : "bg-indigo-600 hover:bg-indigo-700 text-white ring-2 ring-indigo-500/20 shadow-indigo-200"
+            }`}
+            title="Abrir selector de estilos visuales"
+          >
+            <span>{activeCategory === "all" ? "⚡" : "🎨"}</span>
+            <span className="hidden sm:inline font-black">
+              {activeCategory === "all" ? "Filtrar Estilos" : activeCategory}
+            </span>
+            <span className="sm:hidden font-black">
+              {activeCategory === "all" ? "Estilos" : activeCategory}
+            </span>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${
+              activeCategory === "all" 
+                ? "bg-slate-800 text-slate-300 border border-slate-700" 
+                : "bg-indigo-700 text-white"
+            }`}>
+              {activeCategory === "all" ? activeCategoriesSorted.length : (categoryCounts[activeCategory] || 0)}
+            </span>
+          </button>
         </div>
+
+        {/* Barra de Filtro Activo si no es 'all' */}
+        {activeCategory !== "all" && (
+          <div className="mt-2.5 pt-2.5 border-t border-slate-100 flex items-center justify-between animate-in fade-in duration-150">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold text-slate-400">Filtrando por:</span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                <span>{getCategoryIconComponent(activeCategory)}</span>
+                <span>{activeCategory}</span>
+                <span className="text-[10px] bg-indigo-100 text-indigo-800 px-1.5 py-0.2 rounded-full font-black">
+                  {categoryCounts[activeCategory] || 0}
+                </span>
+                <button 
+                  onClick={() => setActiveCategory("all")}
+                  className="text-indigo-400 hover:text-indigo-800 font-bold ml-1 transition-colors"
+                  title="Eliminar filtro y ver todos"
+                >
+                  ✕
+                </button>
+              </span>
+            </div>
+            <div className="text-xs font-bold text-slate-400">
+              {filteredPrompts.length} {filteredPrompts.length === 1 ? "plantilla" : "plantillas"}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Prompts Grid */}
@@ -1660,6 +1602,130 @@ export default function PromptsLibraryPage() {
                   <span>✨</span> Usar esta Plantilla
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================
+          MODAL / DRAWER DE ESTILOS VISUALES (OPCIÓN 2 - 100% RESPONSIVE)
+          ========================================================= */}
+      {isStyleFilterModalOpen && (
+        <div 
+          className="fixed inset-0 z-[110] bg-slate-950/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200"
+          onClick={() => setIsStyleFilterModalOpen(false)}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white w-full sm:max-w-xl rounded-t-[32px] sm:rounded-3xl p-5 sm:p-6 shadow-2xl border border-slate-200 max-h-[85vh] overflow-y-auto custom-scrollbar animate-in slide-in-from-bottom-8 sm:zoom-in-95 duration-200 flex flex-col"
+          >
+            {/* Cabecera del Drawer/Modal */}
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-4 sticky top-0 bg-white z-10">
+              <div>
+                <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                  <span>🎨</span> Seleccionar Estilo Visual
+                </h3>
+                <p className="text-slate-500 text-xs mt-0.5 font-medium">
+                  Categorías ordenadas por cantidad de plantillas disponibles
+                </p>
+              </div>
+              <button 
+                onClick={() => setIsStyleFilterModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center font-bold text-sm transition-colors"
+                title="Cerrar"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Grid táctil de estilos */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-1">
+              {/* Opción 'Todos los Estilos' */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveCategory("all");
+                  setIsStyleFilterModalOpen(false);
+                }}
+                className={`p-3.5 rounded-2xl text-left transition-all flex items-center justify-between group border ${
+                  activeCategory === "all"
+                    ? "border-indigo-500 bg-indigo-50/80 shadow-xs ring-1 ring-indigo-500/30"
+                    : "border-slate-200/90 hover:border-indigo-300 hover:bg-slate-50"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm shadow-xs ${
+                    activeCategory === "all" ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-700"
+                  }`}>
+                    ✨
+                  </span>
+                  <div>
+                    <div className={`text-xs font-black ${
+                      activeCategory === "all" ? "text-indigo-950" : "text-slate-900 group-hover:text-indigo-600"
+                    }`}>
+                      Todos los Estilos
+                    </div>
+                    <div className="text-[10px] text-slate-400 font-medium">
+                      Ver colección completa
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className={`text-xs font-black px-2 py-0.5 rounded-full ${
+                    activeCategory === "all" ? "bg-indigo-200 text-indigo-800" : "bg-slate-100 text-slate-600"
+                  }`}>
+                    {categoryCounts.all || 0}
+                  </span>
+                  {activeCategory === "all" && <Check className="w-4 h-4 text-indigo-600" />}
+                </div>
+              </button>
+
+              {/* Categorías con plantillas activas (> 0) */}
+              {activeCategoriesSorted.map(cat => {
+                const count = categoryCounts[cat] || 0;
+                const isSelected = activeCategory === cat;
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => {
+                      setActiveCategory(cat);
+                      setIsStyleFilterModalOpen(false);
+                    }}
+                    className={`p-3.5 rounded-2xl text-left transition-all flex items-center justify-between group border ${
+                      isSelected
+                        ? "border-indigo-500 bg-indigo-50/80 shadow-xs ring-1 ring-indigo-500/30"
+                        : "border-slate-200/90 hover:border-indigo-300 hover:bg-slate-50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 truncate">
+                      <span className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm shrink-0 shadow-xs ${
+                        isSelected ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-700"
+                      }`}>
+                        {getCategoryIconComponent(cat)}
+                      </span>
+                      <div className="truncate">
+                        <div className={`text-xs font-bold truncate ${
+                          isSelected ? "text-indigo-950 font-black" : "text-slate-900 group-hover:text-indigo-600"
+                        }`}>
+                          {cat}
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-medium truncate">
+                          {getCategorySubtitle(cat)}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                        isSelected ? "bg-indigo-200 text-indigo-800 font-black" : "bg-slate-100 text-slate-600"
+                      }`}>
+                        {count}
+                      </span>
+                      {isSelected && <Check className="w-4 h-4 text-indigo-600" />}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
