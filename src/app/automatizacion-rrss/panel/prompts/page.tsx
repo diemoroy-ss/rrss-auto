@@ -107,10 +107,24 @@ export default function PromptsLibraryPage() {
   const { activeProfile } = useProfile();
   
   const [categoriesList, setCategoriesList] = useState<string[]>(promptCategories);
-  const [activeCategory, setActiveCategory] = useState<string>("all");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [promptTemplates, setPromptTemplates] = useState<PromptTemplate[]>([]);
   const [loadingPrompts, setLoadingPrompts] = useState(true);
+
+  const toggleCategory = (cat: string) => {
+    if (cat === "all") {
+      setSelectedCategories([]);
+      return;
+    }
+    setSelectedCategories(prev => {
+      if (prev.includes(cat)) {
+        return prev.filter(c => c !== cat);
+      } else {
+        return [...prev, cat];
+      }
+    });
+  };
 
   // Category Management Modal State (Admin)
   const [isManageCategoriesModalOpen, setIsManageCategoriesModalOpen] = useState(false);
@@ -381,8 +395,8 @@ export default function PromptsLibraryPage() {
       });
       setPromptTemplates(updatedTemplates);
 
-      if (activeCategory === oldName) {
-        setActiveCategory(trimmed);
+      if (selectedCategories.includes(oldName)) {
+        setSelectedCategories(prev => prev.map(c => c === oldName ? trimmed : c));
       }
       if (adminForm.categories.includes(oldName)) {
         setAdminForm(prev => ({
@@ -436,8 +450,8 @@ export default function PromptsLibraryPage() {
           });
           setPromptTemplates(updatedTemplates);
 
-          if (activeCategory === catName) {
-            setActiveCategory("all");
+          if (selectedCategories.includes(catName)) {
+            setSelectedCategories(prev => prev.filter(c => c !== catName));
           }
           setAdminForm(prev => {
             let newCats = prev.categories.filter(c => c !== catName);
@@ -498,8 +512,8 @@ export default function PromptsLibraryPage() {
   const filteredPrompts = useMemo(() => {
     return promptTemplates.filter(p => {
       const pCats = getPromptCategories(p);
-      const matchesCategory = activeCategory === "all" || 
-        pCats.some(c => c.toLowerCase().trim() === activeCategory.toLowerCase().trim());
+      const matchesCategory = selectedCategories.length === 0 || 
+        pCats.some(c => selectedCategories.some(sc => sc.toLowerCase().trim() === c.toLowerCase().trim()));
       const q = searchQuery.toLowerCase().trim();
       const matchesSearch = !q || 
         p.title.toLowerCase().includes(q) || 
@@ -507,7 +521,7 @@ export default function PromptsLibraryPage() {
         pCats.some(c => c.toLowerCase().includes(q));
       return matchesCategory && matchesSearch;
     });
-  }, [promptTemplates, activeCategory, searchQuery]);
+  }, [promptTemplates, selectedCategories, searchQuery]);
 
   // ════════════════════════════════════════════════════════
   // CLIENT FLOW
@@ -917,51 +931,77 @@ export default function PromptsLibraryPage() {
             type="button"
             onClick={() => setIsStyleFilterModalOpen(true)}
             className={`px-3.5 sm:px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shrink-0 shadow-2xs ${
-              activeCategory === "all"
+              selectedCategories.length === 0
                 ? "bg-slate-900 hover:bg-slate-800 text-white"
                 : "bg-indigo-600 hover:bg-indigo-700 text-white ring-2 ring-indigo-500/20 shadow-indigo-200"
             }`}
             title="Abrir selector de estilos visuales"
           >
-            <span>{activeCategory === "all" ? "⚡" : "🎨"}</span>
+            <span>{selectedCategories.length === 0 ? "⚡" : "🎨"}</span>
             <span className="hidden sm:inline font-black">
-              {activeCategory === "all" ? "Filtrar Estilos" : activeCategory}
+              {selectedCategories.length === 0
+                ? "Filtrar Estilos"
+                : selectedCategories.length === 1
+                ? selectedCategories[0]
+                : `${selectedCategories.length} Estilos`}
             </span>
             <span className="sm:hidden font-black">
-              {activeCategory === "all" ? "Estilos" : activeCategory}
+              {selectedCategories.length === 0
+                ? "Estilos"
+                : selectedCategories.length === 1
+                ? selectedCategories[0]
+                : `${selectedCategories.length} Estilos`}
             </span>
             <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${
-              activeCategory === "all" 
+              selectedCategories.length === 0 
                 ? "bg-slate-800 text-slate-300 border border-slate-700" 
                 : "bg-indigo-700 text-white"
             }`}>
-              {activeCategory === "all" ? activeCategoriesSorted.length : (categoryCounts[activeCategory] || 0)}
+              {selectedCategories.length === 0
+                ? activeCategoriesSorted.length
+                : selectedCategories.length === 1
+                ? (categoryCounts[selectedCategories[0]] || 0)
+                : selectedCategories.length}
             </span>
           </button>
         </div>
 
-        {/* Barra de Filtro Activo si no es 'all' */}
-        {activeCategory !== "all" && (
-          <div className="mt-2.5 pt-2.5 border-t border-slate-100 flex items-center justify-between animate-in fade-in duration-150">
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-bold text-slate-400">Filtrando por:</span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                <span>{getCategoryIconComponent(activeCategory)}</span>
-                <span>{activeCategory}</span>
-                <span className="text-[10px] bg-indigo-100 text-indigo-800 px-1.5 py-0.2 rounded-full font-black">
-                  {categoryCounts[activeCategory] || 0}
-                </span>
-                <button 
-                  onClick={() => setActiveCategory("all")}
-                  className="text-indigo-400 hover:text-indigo-800 font-bold ml-1 transition-colors"
-                  title="Eliminar filtro y ver todos"
+        {/* Barra de Filtro Activo si hay categorías seleccionadas */}
+        {selectedCategories.length > 0 && (
+          <div className="mt-2.5 pt-2.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 animate-in fade-in duration-150">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[11px] font-bold text-slate-400 mr-1">Filtrando por:</span>
+              {selectedCategories.map(cat => (
+                <span 
+                  key={cat}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200"
                 >
-                  ✕
+                  <span>{getCategoryIconComponent(cat)}</span>
+                  <span>{cat}</span>
+                  <span className="text-[10px] bg-indigo-100 text-indigo-800 px-1.5 py-0.2 rounded-full font-black">
+                    {categoryCounts[cat] || 0}
+                  </span>
+                  <button 
+                    onClick={() => setSelectedCategories(prev => prev.filter(c => c !== cat))}
+                    className="text-indigo-400 hover:text-indigo-800 font-bold ml-0.5 transition-colors"
+                    title={`Remover filtro "${cat}"`}
+                  >
+                    ✕
+                  </button>
+                </span>
+              ))}
+              {selectedCategories.length > 1 && (
+                <button 
+                  onClick={() => setSelectedCategories([])}
+                  className="text-xs font-bold text-slate-500 hover:text-slate-800 underline ml-2 transition-colors"
+                  title="Quitar todos los filtros"
+                >
+                  Limpiar todos
                 </button>
-              </span>
+              )}
             </div>
-            <div className="text-xs font-bold text-slate-400">
-              {filteredPrompts.length} {filteredPrompts.length === 1 ? "plantilla" : "plantillas"}
+            <div className="text-xs font-bold text-slate-400 ml-auto">
+              {filteredPrompts.length} {filteredPrompts.length === 1 ? "plantilla encontrada" : "plantillas encontradas"}
             </div>
           </div>
         )}
@@ -1027,10 +1067,10 @@ export default function PromptsLibraryPage() {
                     onClick={(e) => {
                       e.stopPropagation();
                       const primaryCat = getPromptCategories(prompt)[0] || prompt.category;
-                      if (primaryCat) setActiveCategory(primaryCat);
+                      if (primaryCat) setSelectedCategories([primaryCat]);
                     }}
                     className="text-xs font-semibold uppercase tracking-wider text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer truncate"
-                    title={`Filtrar por categoría: ${getPromptCategories(prompt).join(', ')}`}
+                    title={`Filtrar solo por: ${getPromptCategories(prompt).join(', ')}`}
                   >
                     {getPromptCategories(prompt).join(' • ') || prompt.category || "General"}
                   </span>
@@ -1623,10 +1663,10 @@ export default function PromptsLibraryPage() {
             <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-4 sticky top-0 bg-white z-10">
               <div>
                 <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
-                  <span>🎨</span> Seleccionar Estilo Visual
+                  <span>🎨</span> Seleccionar Estilos Visuales
                 </h3>
                 <p className="text-slate-500 text-xs mt-0.5 font-medium">
-                  Categorías ordenadas por cantidad de plantillas disponibles
+                  Puedes seleccionar uno o varios estilos para filtrar simultáneamente
                 </p>
               </div>
               <button 
@@ -1638,30 +1678,27 @@ export default function PromptsLibraryPage() {
               </button>
             </div>
 
-            {/* Grid táctil de estilos */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-1">
+            {/* Grid táctil de estilos con selección múltiple */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-1 flex-1">
               {/* Opción 'Todos los Estilos' */}
               <button
                 type="button"
-                onClick={() => {
-                  setActiveCategory("all");
-                  setIsStyleFilterModalOpen(false);
-                }}
+                onClick={() => toggleCategory("all")}
                 className={`p-3.5 rounded-2xl text-left transition-all flex items-center justify-between group border ${
-                  activeCategory === "all"
+                  selectedCategories.length === 0
                     ? "border-indigo-500 bg-indigo-50/80 shadow-xs ring-1 ring-indigo-500/30"
                     : "border-slate-200/90 hover:border-indigo-300 hover:bg-slate-50"
                 }`}
               >
                 <div className="flex items-center gap-3">
                   <span className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm shadow-xs ${
-                    activeCategory === "all" ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-700"
+                    selectedCategories.length === 0 ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-700"
                   }`}>
                     ✨
                   </span>
                   <div>
                     <div className={`text-xs font-black ${
-                      activeCategory === "all" ? "text-indigo-950" : "text-slate-900 group-hover:text-indigo-600"
+                      selectedCategories.length === 0 ? "text-indigo-950" : "text-slate-900 group-hover:text-indigo-600"
                     }`}>
                       Todos los Estilos
                     </div>
@@ -1672,26 +1709,23 @@ export default function PromptsLibraryPage() {
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <span className={`text-xs font-black px-2 py-0.5 rounded-full ${
-                    activeCategory === "all" ? "bg-indigo-200 text-indigo-800" : "bg-slate-100 text-slate-600"
+                    selectedCategories.length === 0 ? "bg-indigo-200 text-indigo-800" : "bg-slate-100 text-slate-600"
                   }`}>
                     {categoryCounts.all || 0}
                   </span>
-                  {activeCategory === "all" && <Check className="w-4 h-4 text-indigo-600" />}
+                  {selectedCategories.length === 0 && <Check className="w-4 h-4 text-indigo-600" />}
                 </div>
               </button>
 
               {/* Categorías con plantillas activas (> 0) */}
               {activeCategoriesSorted.map(cat => {
                 const count = categoryCounts[cat] || 0;
-                const isSelected = activeCategory === cat;
+                const isSelected = selectedCategories.includes(cat);
                 return (
                   <button
                     key={cat}
                     type="button"
-                    onClick={() => {
-                      setActiveCategory(cat);
-                      setIsStyleFilterModalOpen(false);
-                    }}
+                    onClick={() => toggleCategory(cat)}
                     className={`p-3.5 rounded-2xl text-left transition-all flex items-center justify-between group border ${
                       isSelected
                         ? "border-indigo-500 bg-indigo-50/80 shadow-xs ring-1 ring-indigo-500/30"
@@ -1726,6 +1760,31 @@ export default function PromptsLibraryPage() {
                   </button>
                 );
               })}
+            </div>
+
+            {/* Footer sticky con botón de aplicar y limpiar */}
+            <div className="pt-4 mt-3 border-t border-slate-100 sticky bottom-0 bg-white/95 backdrop-blur-xs flex items-center justify-between gap-3">
+              <div className="text-xs text-slate-500 font-medium">
+                {selectedCategories.length === 0 ? (
+                  <span className="text-slate-400">Mostrando todos los estilos</span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCategories([])}
+                    className="text-indigo-600 hover:text-indigo-800 font-bold underline transition-colors"
+                  >
+                    Limpiar selección ({selectedCategories.length})
+                  </button>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsStyleFilterModalOpen(false)}
+                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shadow-md shadow-indigo-200 transition-all flex items-center gap-1.5"
+              >
+                <span>Ver {filteredPrompts.length} {filteredPrompts.length === 1 ? "plantilla" : "plantillas"}</span>
+              </button>
             </div>
           </div>
         </div>
