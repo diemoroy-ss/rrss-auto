@@ -14,6 +14,7 @@ import { usePostActions } from "../../../hooks/usePostActions";
 
 // Componentes de UI
 import DashboardHeader from "../../../components/panel/DashboardHeader";
+import UpcomingTimeline from "../../../components/panel/UpcomingTimeline";
 import PostFilters from "../../../components/panel/PostFilters";
 import PostGrid from "../../../components/panel/PostGrid";
 import BulkActionBar from "../../../components/panel/BulkActionBar";
@@ -199,6 +200,17 @@ export default function RrssDashboard() {
         userPlan={quota.userPlan}
         onOpenUpgradeModal={() => setUpgradeModalOpen(true)}
       />
+
+      {/* Selector de Días/Semanas y Cards Destacadas Inmediatas (Estilo Flow / Santisoft) */}
+      {dashboard.activeTab === "upcoming" && (
+        <UpcomingTimeline
+          posts={dashboard.posts}
+          selectedDateFilter={dashboard.selectedDateFilter}
+          onSelectDateFilter={dashboard.setSelectedDateFilter}
+          onGenerateMedia={actions.handleGenerateMedia}
+          onClickPost={dashboard.setSelectedPost}
+        />
+      )}
 
       {/* Filtros + calendario */}
       <PostFilters
