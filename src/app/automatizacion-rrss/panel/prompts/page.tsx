@@ -861,10 +861,10 @@ export default function PromptsLibraryPage() {
       <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black text-slate-900 mb-3 flex items-center gap-3">
-            <span className="text-4xl">✨</span> Biblioteca de Prompts IA
+            <span className="text-4xl">✨</span> Catálogo de Estilos Visuales
           </h1>
           <p className="text-slate-600 font-medium max-w-2xl">
-            Explora nuestra colección de instrucciones predefinidas optimizadas para IA. Selecciona una, edítala libremente y genera imágenes de altísima calidad en segundos.
+            Explora nuestra colección de escenarios fotográficos y publicitarios listos para usar. Elige un estilo, adáptalo a tu negocio y genera piezas de calidad de estudio en segundos.
           </p>
         </div>
         {isAdminUser && (
@@ -894,7 +894,7 @@ export default function PromptsLibraryPage() {
               }}
               className="shrink-0 bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-slate-900/20 transition-all flex items-center gap-2 text-sm"
             >
-              + Añadir Nuevo Prompt
+              + Añadir Estilo
             </button>
           </div>
         )}
@@ -1302,7 +1302,7 @@ export default function PromptsLibraryPage() {
           <div className="relative bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto custom-scrollbar animate-in zoom-in-95 duration-200">
             <div className="sticky top-0 bg-slate-950 px-6 py-4 flex items-center justify-between z-10">
               <h2 className="text-xl font-black text-white flex items-center gap-2">
-                {editingPromptId ? "✏️ Editar Prompt" : "👑 Añadir Nuevo Prompt"}
+                {editingPromptId ? "✏️ Editar Estilo" : "👑 Añadir Nuevo Estilo"}
               </h2>
               <button disabled={isAdminGenerating} onClick={() => { setIsAdminModalOpen(false); setEditingPromptId(null); setExistingPreviewUrl(null); }} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white transition-colors">✕</button>
             </div>
@@ -1310,7 +1310,7 @@ export default function PromptsLibraryPage() {
             <div className="p-6 md:p-8 space-y-5">
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Título del Prompt</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Título del Estilo</label>
                   <input 
                     type="text" 
                     value={adminForm.title}
