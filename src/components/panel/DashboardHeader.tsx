@@ -93,24 +93,15 @@ export default function DashboardHeader({
           </p>
         </div>
 
-        {/* Acciones y Cuenta */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          {/* Badge Cuenta Activa */}
-          <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs">
-            <span className="text-slate-400 font-semibold">Cuenta:</span>
-            <span className="font-bold text-slate-900">{displayName || "Usuario"}</span>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-orange-100 text-orange-700 border border-orange-200">
-              {planConfig.name}
-            </span>
-          </div>
-
+        {/* Acciones: WhatsApp Bot, Agendar Estrategia y Nueva Publicación */}
+        <div className="flex items-center gap-2 sm:gap-3">
           {/* Botón WhatsApp Bot */}
           <a
             href="https://wa.me/56965909543?text=Hola%20Santisoft!%20Quiero%20gestionar%20mi%20cuenta"
             target="_blank"
             rel="noopener noreferrer"
             title="Abre el asistente de WhatsApp para gestionar tus posts"
-            className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold py-2.5 px-3.5 rounded-xl transition-all shadow-xs flex items-center gap-1.5 text-xs"
+            className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold py-2.5 px-3 sm:px-3.5 rounded-xl transition-all shadow-xs flex items-center gap-1.5 text-xs whitespace-nowrap"
           >
             <FaWhatsapp className="text-emerald-600 text-sm" />
             <span className="hidden sm:inline">WhatsApp Bot</span>
@@ -121,7 +112,7 @@ export default function DashboardHeader({
             <button
               type="button"
               onClick={() => setIsStrategyOpen(!isStrategyOpen)}
-              className="bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 px-3.5 sm:px-4 rounded-xl transition-all shadow-sm flex items-center gap-2 text-xs border border-slate-700 hover:border-slate-600"
+              className="bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 px-3 sm:px-3.5 rounded-xl transition-all shadow-sm flex items-center gap-1.5 sm:gap-2 text-xs border border-slate-700 hover:border-slate-600 whitespace-nowrap"
             >
               <Target className="w-3.5 h-3.5 text-orange-400" />
               <span>Agendar Estrategia</span>
@@ -196,19 +187,19 @@ export default function DashboardHeader({
             )}
           </div>
 
-          {/* Botón Crear / Agendar Post */}
+          {/* Botón Crear / Nueva Publicación */}
           <Link
             id="tour-btn-new-post"
             href={isAtLimit ? "#" : "/automatizacion-rrss/panel/crear"}
             onClick={handleNewPostClick}
-            className={`font-black py-2.5 px-4 sm:px-5 rounded-xl transition-all shadow-sm flex items-center gap-2 text-xs text-white ${
+            className={`font-black py-2.5 px-3.5 sm:px-4 rounded-xl transition-all shadow-sm flex items-center gap-1.5 sm:gap-2 text-xs text-white whitespace-nowrap ${
               isAtLimit
                 ? "bg-amber-600 hover:bg-amber-700"
                 : "bg-orange-500 hover:bg-orange-600 shadow-orange-500/25 hover:scale-[1.01]"
             }`}
           >
             {isAtLimit ? <Zap className="w-3.5 h-3.5" /> : <Plus className="w-4 h-4" />}
-            <span>{isAtLimit ? "Ampliar Plan" : "Agendar Publicación"}</span>
+            <span>{isAtLimit ? "Ampliar Plan" : "Nueva Publicación"}</span>
           </Link>
         </div>
       </div>
