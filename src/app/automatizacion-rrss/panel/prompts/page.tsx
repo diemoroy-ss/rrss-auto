@@ -16,9 +16,54 @@ import {
   HARDCODED_STYLES,
   getPromptCategories 
 } from "../../../../lib/prompt-templates";
+import { 
+  Search, 
+  X, 
+  Sparkles, 
+  ChevronDown, 
+  Check, 
+  Camera, 
+  Box, 
+  Palette, 
+  Megaphone, 
+  ShoppingBag, 
+  Layers, 
+  Newspaper, 
+  UtensilsCrossed, 
+  Tag 
+} from "lucide-react";
 
 export type { ImageRequirement, PromptTemplate };
 export { promptCategories, HARDCODED_STYLES };
+
+function getCategoryIconComponent(category: string) {
+  const normalized = category.toLowerCase().trim();
+  if (normalized.includes("foto") || normalized.includes("realism")) {
+    return <Camera className="w-3.5 h-3.5 shrink-0" />;
+  }
+  if (normalized.includes("3d") || normalized.includes("diseño") || normalized.includes("diseno")) {
+    return <Box className="w-3.5 h-3.5 shrink-0" />;
+  }
+  if (normalized.includes("artístic") || normalized.includes("artistic") || normalized.includes("concept") || normalized.includes("creat")) {
+    return <Palette className="w-3.5 h-3.5 shrink-0" />;
+  }
+  if (normalized.includes("publicidad") || normalized.includes("ads") || normalized.includes("cartel")) {
+    return <Megaphone className="w-3.5 h-3.5 shrink-0" />;
+  }
+  if (normalized.includes("producto") || normalized.includes("e-commerce") || normalized.includes("tienda")) {
+    return <ShoppingBag className="w-3.5 h-3.5 shrink-0" />;
+  }
+  if (normalized.includes("técnic") || normalized.includes("tecnic") || normalized.includes("exploded")) {
+    return <Layers className="w-3.5 h-3.5 shrink-0" />;
+  }
+  if (normalized.includes("editorial") || normalized.includes("revista")) {
+    return <Newspaper className="w-3.5 h-3.5 shrink-0" />;
+  }
+  if (normalized.includes("gastro") || normalized.includes("comida") || normalized.includes("restauran")) {
+    return <UtensilsCrossed className="w-3.5 h-3.5 shrink-0" />;
+  }
+  return <Tag className="w-3.5 h-3.5 shrink-0" />;
+}
 
 export default function PromptsLibraryPage() {
   const router = useRouter();
@@ -38,6 +83,20 @@ export default function PromptsLibraryPage() {
   const [editingCategoryName, setEditingCategoryName] = useState<string | null>(null);
   const [editingCategoryNewValue, setEditingCategoryNewValue] = useState("");
   const [quickNewCategory, setQuickNewCategory] = useState("");
+
+  // Category Popover State for "+ Más estilos (X) ▾"
+  const [isMoreCategoriesOpen, setIsMoreCategoriesOpen] = useState(false);
+  const moreCategoriesRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (moreCategoriesRef.current && !moreCategoriesRef.current.contains(event.target as Node)) {
+        setIsMoreCategoriesOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Status Modal State (Reemplazo moderno de alerts y confirms)
   const [statusModal, setStatusModal] = useState<{
@@ -399,6 +458,24 @@ export default function PromptsLibraryPage() {
     });
     return counts;
   }, [promptTemplates, categoriesList]);
+
+  // Categorías ordenadas dinámicamente de mayor a menor según cantidad de plantillas activas (> 0)
+  // Las categorías con 0 plantillas quedan ocultas de los filtros principales
+  const activeCategoriesSorted = useMemo(() => {
+    return categoriesList
+      .filter(cat => (categoryCounts[cat] || 0) > 0)
+      .sort((a, b) => {
+        const countDiff = (categoryCounts[b] || 0) - (categoryCounts[a] || 0);
+        if (countDiff !== 0) return countDiff;
+        return a.localeCompare(b);
+      });
+  }, [categoriesList, categoryCounts]);
+
+  const topCategories = useMemo(() => activeCategoriesSorted.slice(0, 5), [activeCategoriesSorted]);
+  const remainingCategories = useMemo(() => activeCategoriesSorted.slice(5), [activeCategoriesSorted]);
+  const isRemainingCategoryActive = useMemo(() => {
+    return remainingCategories.includes(activeCategory);
+  }, [remainingCategories, activeCategory]);
 
   const filteredPrompts = useMemo(() => {
     return promptTemplates.filter(p => {
@@ -791,73 +868,160 @@ export default function PromptsLibraryPage() {
         )}
       </div>
 
-      {/* Search Bar & Category Chips */}
-      <div className="space-y-4 mb-8">
-        {/* Barra de búsqueda y contador */}
-        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
-          <div className="relative flex-1 max-w-md">
-            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
+      {/* ══════════════════════════════════════════════════════════════
+          BARRA UNIFICADA: BUSCADOR + FILTROS HORIZONTALES LIMPIOS
+      ══════════════════════════════════════════════════════════════ */}
+      <div className="bg-slate-50/80 border border-slate-200/90 rounded-2xl p-2 sm:p-2.5 mb-8 shadow-2xs">
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2.5">
+          {/* Buscador Integrado */}
+          <div className="relative w-full lg:w-72 xl:w-80 shrink-0">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar por título, estilo o descripción..."
-              className="w-full pl-10 pr-8 py-2.5 bg-white border border-slate-200 rounded-2xl text-xs sm:text-sm font-medium text-slate-900 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 shadow-sm"
+              placeholder="Buscar por título, estilo..."
+              className="w-full pl-9 pr-8 py-2 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 shadow-2xs transition-all"
             />
             {searchQuery && (
               <button 
                 onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 text-[10px] flex items-center justify-center font-bold transition-colors"
                 title="Limpiar búsqueda"
               >
-                ✕
+                <X className="w-3 h-3" />
               </button>
             )}
           </div>
-          
-          <div className="text-xs font-bold text-slate-500 self-end sm:self-center">
-            {filteredPrompts.length} {filteredPrompts.length === 1 ? 'plantilla encontrada' : 'plantillas encontradas'}
-          </div>
-        </div>
 
-        {/* Categorías en Chips Multi-línea (flex-wrap 100% visibles) */}
-        <div className="flex flex-wrap gap-2 pt-1">
-          <button
-            onClick={() => setActiveCategory("all")}
-            className={`px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${
-              activeCategory === "all"
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 ring-2 ring-indigo-500/20'
-                : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200/80 shadow-sm'
-            }`}
-          >
-            <span>Todos los Estilos</span>
-            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${activeCategory === "all" ? 'bg-indigo-700 text-white' : 'bg-slate-100 text-slate-500'}`}>
-              {categoryCounts.all || 0}
-            </span>
-          </button>
+          {/* Filtros de Categorías en una sola línea horizontal */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 max-w-full">
+            {/* Botón "Todos los Estilos" */}
+            <button
+              onClick={() => {
+                setActiveCategory("all");
+                setIsMoreCategoriesOpen(false);
+              }}
+              className={`px-3 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+                activeCategory === "all"
+                  ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-200 ring-2 ring-indigo-500/20'
+                  : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200/90 shadow-2xs'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span>Todos los Estilos</span>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${
+                activeCategory === "all" ? 'bg-indigo-700 text-white' : 'bg-slate-100 text-slate-500'
+              }`}>
+                {categoryCounts.all || 0}
+              </span>
+            </button>
 
-          {categoriesList.map(cat => {
-            const count = categoryCounts[cat] || 0;
-            const isSelected = activeCategory === cat;
-            return (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${
-                  isSelected
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 ring-2 ring-indigo-500/20'
-                    : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200/80 shadow-sm'
-                }`}
-              >
-                <span>{cat}</span>
-                {count > 0 && (
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${isSelected ? 'bg-indigo-700 text-white' : 'bg-slate-100 text-slate-500'}`}>
+            {/* Top 5 Categorías con más plantillas activas (> 0) */}
+            {topCategories.map(cat => {
+              const count = categoryCounts[cat] || 0;
+              const isSelected = activeCategory === cat;
+              return (
+                <button
+                  key={cat}
+                  onClick={() => {
+                    setActiveCategory(cat);
+                    setIsMoreCategoriesOpen(false);
+                  }}
+                  className={`px-3 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+                    isSelected
+                      ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-200 ring-2 ring-indigo-500/20'
+                      : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200/90 shadow-2xs'
+                  }`}
+                >
+                  <span className={isSelected ? 'text-indigo-200' : 'text-slate-400'}>
+                    {getCategoryIconComponent(cat)}
+                  </span>
+                  <span>{cat}</span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-black ${
+                    isSelected ? 'bg-indigo-700 text-white' : 'bg-slate-100 text-slate-500'
+                  }`}>
                     {count}
                   </span>
+                </button>
+              );
+            })}
+
+            {/* Popover elegante para las categorías restantes: "+ Más estilos (X) ▾" */}
+            {remainingCategories.length > 0 && (
+              <div className="relative shrink-0" ref={moreCategoriesRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsMoreCategoriesOpen(!isMoreCategoriesOpen)}
+                  className={`px-3 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 whitespace-nowrap border ${
+                    isRemainingCategoryActive
+                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm shadow-indigo-200 ring-2 ring-indigo-500/20'
+                      : isMoreCategoriesOpen
+                      ? 'bg-slate-100 text-slate-900 border-slate-300'
+                      : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200/90 shadow-2xs'
+                  }`}
+                >
+                  <span>
+                    {isRemainingCategoryActive ? activeCategory : `+ Más estilos (${remainingCategories.length})`}
+                  </span>
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isMoreCategoriesOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {isMoreCategoriesOpen && (
+                  <div className="absolute right-0 mt-2 w-64 sm:w-72 bg-white rounded-2xl shadow-xl border border-slate-200 p-2 z-30 animate-in fade-in zoom-in-95 duration-150">
+                    <div className="px-3 py-2 border-b border-slate-100 flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                        Otros Estilos Disponibles
+                      </span>
+                      <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                        {remainingCategories.length} estilos
+                      </span>
+                    </div>
+
+                    <div className="p-1 space-y-1 max-h-60 overflow-y-auto custom-scrollbar">
+                      {remainingCategories.map(cat => {
+                        const count = categoryCounts[cat] || 0;
+                        const isSelected = activeCategory === cat;
+                        return (
+                          <button
+                            key={cat}
+                            type="button"
+                            onClick={() => {
+                              setActiveCategory(cat);
+                              setIsMoreCategoriesOpen(false);
+                            }}
+                            className={`w-full flex items-center justify-between p-2 rounded-xl text-left text-xs font-semibold transition-all ${
+                              isSelected
+                                ? 'bg-indigo-50 text-indigo-700 font-bold'
+                                : 'hover:bg-slate-50 text-slate-700'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 truncate">
+                              <span className="text-slate-400 shrink-0">{getCategoryIconComponent(cat)}</span>
+                              <span className="truncate">{cat}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                                isSelected ? 'bg-indigo-200 text-indigo-800' : 'bg-slate-100 text-slate-500'
+                              }`}>
+                                {count}
+                              </span>
+                              {isSelected && <Check className="w-3.5 h-3.5 text-indigo-600" />}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 )}
-              </button>
-            );
-          })}
+              </div>
+            )}
+          </div>
+
+          {/* Contador sutil */}
+          <div className="hidden 2xl:flex items-center text-xs font-bold text-slate-400 shrink-0 px-2 whitespace-nowrap">
+            <span>{filteredPrompts.length} {filteredPrompts.length === 1 ? 'plantilla' : 'plantillas'}</span>
+          </div>
         </div>
       </div>
 
@@ -874,7 +1038,7 @@ export default function PromptsLibraryPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredPrompts.map(prompt => (
             <div key={prompt.id} className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-lg transition-all hover:border-indigo-200 flex flex-col group">
-              {/* Imagen limpia de preview - Abre Lightbox Modal al hacer clic */}
+              {/* Imagen limpia de preview - Con Badges Flotantes Elegantes */}
               <div 
                 onClick={() => setPreviewLightbox({ url: prompt.previewUrl, title: prompt.title, category: prompt.category, prompt })}
                 className="relative h-60 w-full overflow-hidden bg-slate-950 flex items-center justify-center cursor-zoom-in group/img"
@@ -885,59 +1049,62 @@ export default function PromptsLibraryPage() {
                   alt={prompt.title} 
                   className="max-w-full max-h-full object-contain group-hover/img:scale-105 transition-transform duration-500" 
                 />
+
+                {/* Badge técnico flotante en la esquina superior izquierda */}
+                {prompt.imageRequirement === 'required' && (
+                  <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded-full border border-white/10 flex items-center gap-1.5 shadow-sm pointer-events-none">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                    <span>Requiere Base</span>
+                  </div>
+                )}
+                {prompt.imageRequirement === 'optional' && (
+                  <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded-full border border-white/10 flex items-center gap-1.5 shadow-sm pointer-events-none">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+                    <span>Img2Img</span>
+                  </div>
+                )}
+
+                {/* Badge cartel flotante en la esquina superior derecha */}
+                {prompt.isCommercialPoster && (
+                  <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md text-purple-200 text-[10px] font-bold px-2.5 py-1 rounded-full border border-white/10 flex items-center gap-1.5 shadow-sm pointer-events-none">
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
+                    <span>Cartel</span>
+                  </div>
+                )}
+
                 <div className="absolute bottom-2.5 right-2.5 bg-black/60 backdrop-blur text-white text-[10px] font-bold px-2 py-1 rounded-md opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center gap-1">
                   🔍 Ampliar
                 </div>
               </div>
 
-              {/* Contenido y badges organizados debajo de la imagen */}
+              {/* Contenido limpio y descongestionado debajo de la imagen */}
               <div className="p-5 flex-1 flex flex-col">
-                {/* Barra de etiquetas y acciones */}
-                <div className="flex items-center justify-between gap-2 mb-3">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {getPromptCategories(prompt).map(cat => (
-                      <button
-                        key={cat}
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveCategory(cat);
-                        }}
-                        className="bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/80 text-indigo-700 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-lg transition-colors cursor-pointer"
-                        title={`Filtrar por categoría "${cat}"`}
-                      >
-                        {cat}
-                      </button>
-                    ))}
-                    {prompt.imageRequirement === 'required' && (
-                      <span className="bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-1" title="Requiere subir imagen base">
-                        📷 Requiere Base
-                      </span>
-                    )}
-                    {prompt.imageRequirement === 'optional' && (
-                      <span className="bg-blue-50 border border-blue-200 text-blue-800 text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-1" title="Permite subir imagen base opcional">
-                        🖼️ Img2Img
-                      </span>
-                    )}
-                    {prompt.isCommercialPoster && (
-                      <span className="bg-purple-50 border border-purple-200 text-purple-800 text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-1" title="Cartel publicitario">
-                        🏷️ Cartel
-                      </span>
-                    )}
-                  </div>
+                {/* Línea limpia: Categoría sutil a la izquierda + Botones de acción a la derecha */}
+                <div className="flex items-center justify-between gap-2 mb-2.5">
+                  <span 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const primaryCat = getPromptCategories(prompt)[0] || prompt.category;
+                      if (primaryCat) setActiveCategory(primaryCat);
+                    }}
+                    className="text-xs font-semibold uppercase tracking-wider text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer truncate"
+                    title={`Filtrar por categoría: ${getPromptCategories(prompt).join(', ')}`}
+                  >
+                    {getPromptCategories(prompt).join(' • ') || prompt.category || "General"}
+                  </span>
 
                   {isAdminUser && (
                     <div className="flex items-center gap-1.5 shrink-0">
                       <button 
                         onClick={(e) => { e.stopPropagation(); handleEditPrompt(prompt); }}
-                        className="p-1.5 bg-slate-50 hover:bg-indigo-50 text-slate-600 hover:text-indigo-600 border border-slate-200 hover:border-indigo-300 rounded-lg transition-all text-xs flex items-center justify-center shadow-sm"
+                        className="p-1.5 bg-slate-50 hover:bg-indigo-50 text-slate-500 hover:text-indigo-600 border border-slate-200 hover:border-indigo-300 rounded-lg transition-all text-xs flex items-center justify-center shadow-xs"
                         title="Editar Plantilla"
                       >
                         ✏️
                       </button>
                       <button 
                         onClick={(e) => { e.stopPropagation(); handleDeletePrompt(prompt.id); }}
-                        className="p-1.5 bg-slate-50 hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-200 hover:border-rose-300 rounded-lg transition-all text-xs flex items-center justify-center shadow-sm"
+                        className="p-1.5 bg-slate-50 hover:bg-rose-50 text-slate-500 hover:text-rose-600 border border-slate-200 hover:border-rose-300 rounded-lg transition-all text-xs flex items-center justify-center shadow-xs"
                         title="Eliminar Plantilla"
                       >
                         🗑️
