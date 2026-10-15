@@ -15,6 +15,7 @@ import { usePostActions } from "../../../hooks/usePostActions";
 // Componentes de UI
 import DashboardHeader from "../../../components/panel/DashboardHeader";
 import UpcomingTimeline from "../../../components/panel/UpcomingTimeline";
+import PublishedStatsHero from "../../../components/panel/PublishedStatsHero";
 import PostFilters from "../../../components/panel/PostFilters";
 import PostGrid from "../../../components/panel/PostGrid";
 import BulkActionBar from "../../../components/panel/BulkActionBar";
@@ -209,6 +210,17 @@ export default function RrssDashboard() {
           onSelectDateFilter={dashboard.setSelectedDateFilter}
           onGenerateMedia={actions.handleGenerateMedia}
           onClickPost={dashboard.setSelectedPost}
+        />
+      )}
+
+      {/* Historial, Estadísticas de Efectividad y Selector Días/Semanas para Posts Publicados */}
+      {dashboard.activeTab === "published" && (
+        <PublishedStatsHero
+          posts={dashboard.posts}
+          selectedDateFilter={dashboard.selectedDateFilter}
+          onSelectDateFilter={dashboard.setSelectedDateFilter}
+          networkFilter={dashboard.networkFilter}
+          onSelectNetworkFilter={dashboard.setNetworkFilter}
         />
       )}
 

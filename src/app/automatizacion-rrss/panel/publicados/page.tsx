@@ -9,6 +9,7 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths,
 import { es } from "date-fns/locale";
 import { useProfile } from "../../../../contexts/ProfileContext";
 import { getQuotaUsage, getPlanLimit, getVideoPlanLimit } from "../../../../lib/quota";
+import PublishedStatsHero from "../../../../components/panel/PublishedStatsHero";
 
 // Unique-ID SVG icons to avoid duplicate gradient IDs across multiple rendered cards
 function NetworkIcon({ network, postId }: { network: string; postId: string }) {
@@ -1041,6 +1042,17 @@ export default function RrssDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Historial, Estadísticas de Efectividad y Selector Días/Semanas */}
+      {activeTab === 'published' && (
+        <PublishedStatsHero
+          posts={combinedPosts as any}
+          selectedDateFilter={selectedDateFilter}
+          onSelectDateFilter={setSelectedDateFilter}
+          networkFilter={networkFilter}
+          onSelectNetworkFilter={setNetworkFilter}
+        />
+      )}
 
       {/* 2. Filtros y Calendario */}
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-8 bg-white p-5 rounded-[24px] border border-slate-200 shadow-sm">
