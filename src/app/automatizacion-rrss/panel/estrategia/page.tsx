@@ -15,6 +15,7 @@ import PlanProductsSelector from "../../../../components/strategy/PlanProductsSe
 import { PromptTemplate } from "../../../../lib/prompt-templates";
 import { appendContactInfo } from "../../../../lib/contact-helper";
 import { getScheduleContinuityFromList, ScheduleContinuityResult } from "../../../../lib/schedule-continuity";
+import { getPlanConfig } from "../../../../lib/plans";
 
 interface StrategyGoal {
   id: string;
@@ -522,7 +523,9 @@ export default function EstrategiaPage() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs uppercase font-black tracking-wider text-indigo-300">Plan {userPlan.toUpperCase()}</span>
+              <span className="text-xs uppercase font-black tracking-wider text-indigo-300">
+                {getPlanConfig(userPlan).name}
+              </span>
               {isUserAdmin(user?.email) && <span className="bg-emerald-500/20 text-emerald-300 text-[10px] font-black px-2 py-0.5 rounded-full border border-emerald-500/30">ADMIN</span>}
             </div>
             <p className="text-xs text-slate-300 font-medium">Cuotas disponibles este mes (nuestros agentes adaptarán la estrategia a tu saldo):</p>
@@ -589,10 +592,12 @@ export default function EstrategiaPage() {
           {userPlan === 'free' && !isUserAdmin(user?.email) && (
               <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex flex-col items-center justify-center p-8 text-center rounded-[32px]">
                   <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center text-4xl mb-6 shadow-2xl border-4 border-slate-700">🔒</div>
-                  <h3 className="text-3xl font-black text-white mb-3">Función Premium</h3>
-                  <p className="text-slate-200 font-medium max-w-md mb-8 leading-relaxed">El <strong className="text-white">Plan Free</strong> no cuenta con esta opción. Sube de nivel para desbloquear tu Estratega Digital con Agentes y multiplicar tus resultados.</p>
-                  <Link href="/automatizacion-rrss/panel/planes" className="bg-indigo-600 hover:bg-indigo-500 text-white font-black py-4 px-10 rounded-2xl transition-all shadow-lg hover:shadow-indigo-500/50 hover:-translate-y-1">
-                      Ver Planes Pro
+                  <h3 className="text-3xl font-black text-white mb-3">Planifica el Mes con Agentes</h3>
+                  <p className="text-slate-200 font-medium max-w-md mb-8 leading-relaxed">
+                    El generador de calendario estratégico está disponible desde el <strong className="text-white">Plan PyME Esencial ($59.990)</strong> y <strong className="text-white">Plan PyME Crecimiento ($99.990)</strong>. Actívalo para tener tu mes completo de contenido listo en minutos.
+                  </p>
+                  <Link href="/confirmar-plan?plan=crecimiento" className="bg-indigo-600 hover:bg-indigo-500 text-white font-black py-4 px-10 rounded-2xl transition-all shadow-lg hover:shadow-indigo-500/50 hover:-translate-y-1">
+                      Activar Plan PyME Crecimiento ($99.990)
                   </Link>
               </div>
           )}

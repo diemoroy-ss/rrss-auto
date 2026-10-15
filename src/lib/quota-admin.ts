@@ -60,27 +60,31 @@ export async function getPlanLimitAdmin(plan: string, email?: string): Promise<n
     
     // Fallback to hardcoded values if Firestore fails
     const fallbacks: Record<string, number> = {
-        free:     5,   // 5 posts totales (prueba de 10 días)
-        starter:  20,  // 20 posts/mes
-        growth:   40,  // 40 posts/mes
-        pro:      80,  // 80 posts/mes
-        elite:    80,  // alias legacy → pro
-        business: 200, // 200 posts/mes
-        agency:   999  // 999 posts/mes (ilimitado)
+        free:                5,   // 5 posts totales (prueba de 10 días)
+        esencial:            15,  // 15 posts/mes (~3 a 4 por semana)
+        starter:             15,  // alias legacy → esencial
+        crecimiento:         30,  // 30 posts/mes (grilla mensual completa)
+        growth:              30,  // alias legacy → crecimiento
+        pro:                 30,  // alias legacy → crecimiento
+        elite:               30,  // alias legacy → crecimiento
+        "piloto-automatico": 60,  // 60 posts/mes
+        piloto_automatico:   60,  // 60 posts/mes
+        business:            60,  // alias legacy → piloto automático
+        agency:              999  // 999 posts/mes (ilimitado)
     };
-    return fallbacks[planId] ?? 5;
+    return fallbacks[planId] ?? 15;
 }
 
 export async function getAiPlanLimitAdmin(plan: string, type: 'image' | 'video' | 'blog', email?: string): Promise<number> {
     if (isAdminAdmin(email)) return 999999;
     const planId = (plan || 'free').toLowerCase();
     if (planId === 'unlimited') return 999999;
-    if (!adminDb) return type === 'image' ? 8 : 0;
+    if (!adminDb) return type === 'image' ? 15 : 0;
     try {
         const plansDoc = await adminDb.collection("system_config").doc("plans").get();
         if (plansDoc.exists) {
             const config = plansDoc.data() as any;
-            if (type === 'image') return config[planId]?.aiImagesLimit ?? config[planId]?.postsLimit ?? 8;
+            if (type === 'image') return config[planId]?.aiImagesLimit ?? config[planId]?.postsLimit ?? 15;
             if (type === 'video') return config[planId]?.aiVideosLimit ?? config[planId]?.videosLimit ?? 0;
             if (type === 'blog') return config[planId]?.seoBlogsLimit ?? 0;
         }
@@ -91,15 +95,19 @@ export async function getAiPlanLimitAdmin(plan: string, type: 'image' | 'video' 
     // video: videos (Reels/TikTok/Shorts)
     // blog: artículos SEO/GEO
     const fallbacks: Record<string, { image: number, video: number, blog: number }> = {
-        free:     { image: 8,   video: 0,  blog: 0  },
-        starter:  { image: 20,  video: 2,  blog: 0  },
-        growth:   { image: 40,  video: 6,  blog: 2  },
-        pro:      { image: 80,  video: 12, blog: 8  },
-        elite:    { image: 80,  video: 12, blog: 8  }, // alias legacy → pro
-        business: { image: 200, video: 30, blog: 20 },
-        agency:   { image: 999, video: 80, blog: 50 },
+        free:                { image: 5,   video: 0,   blog: 0  },
+        esencial:            { image: 15,  video: 8,   blog: 0  },
+        starter:             { image: 15,  video: 8,   blog: 0  },
+        crecimiento:         { image: 40,  video: 30,  blog: 4  },
+        growth:              { image: 40,  video: 30,  blog: 4  },
+        pro:                 { image: 40,  video: 30,  blog: 4  },
+        elite:               { image: 40,  video: 30,  blog: 4  },
+        "piloto-automatico": { image: 120, video: 60,  blog: 20 },
+        piloto_automatico:   { image: 120, video: 60,  blog: 20 },
+        business:            { image: 120, video: 60,  blog: 20 },
+        agency:              { image: 999, video: 999, blog: 50 },
     };
-    return fallbacks[planId]?.[type] ?? (type === 'image' ? 8 : 0);
+    return fallbacks[planId]?.[type] ?? (type === 'image' ? 15 : 0);
 }
 
 export async function getAiGenerationUsageAdmin(userId: string, type: 'image' | 'video' | 'blog'): Promise<number> {

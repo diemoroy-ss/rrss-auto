@@ -1127,6 +1127,26 @@ export default function RrssCreatePost() {
     if (e) e.preventDefault();
     setError("");
 
+    // Validación de cuota mensual según el plan activo
+    if (!isAdmin && postsThisMonth >= postLimit) {
+      setStatusModal({
+        isOpen: true,
+        type: "error",
+        title: "Límite de publicaciones alcanzado",
+        message: `Has completado tus ${postsThisMonth} de ${postLimit} publicaciones de este mes. Pasa al Plan PyME Crecimiento ($99.990) para obtener 30 publicaciones mensuales, TikTok, LinkedIn y soporte continuo.`,
+        onConfirm: () => {
+          setStatusModal(prev => ({ ...prev, isOpen: false }));
+          window.open(
+            `https://wa.me/56965909543?text=${encodeURIComponent(
+              "Hola Santisoft! Completé los 15 posts de mi Plan Esencial y quiero subir al Plan Crecimiento para seguir publicando."
+            )}`,
+            "_blank"
+          );
+        }
+      });
+      return;
+    }
+
     const hasTextText = creationMode === 'ai' ? postText.trim().length > 0 : manualCaption.trim().length > 0;
     const isReel = postType === 'Reel';
     const hasReelVideo = isReel 
@@ -1439,6 +1459,7 @@ export default function RrssCreatePost() {
             )}
 
             <PostConfigForm 
+              userPlan={userPlan}
               idea={idea} setIdea={setIdea}
               imageExpectation={imageExpectation} setImageExpectation={setImageExpectation}
               imageStyle={imageStyle} setImageStyle={setImageStyle}
@@ -1490,6 +1511,7 @@ export default function RrssCreatePost() {
         {/* Columna Derecha: Texto y contenido */}
         <div className="lg:col-span-6 space-y-6 w-full">
           <PostConfigForm 
+            userPlan={userPlan}
             idea={idea} setIdea={setIdea}
             imageExpectation={imageExpectation} setImageExpectation={setImageExpectation}
             imageStyle={imageStyle} setImageStyle={setImageStyle}

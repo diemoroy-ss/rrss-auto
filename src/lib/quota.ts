@@ -37,17 +37,17 @@ async function getPlansConfig(): Promise<SystemPlansConfig> {
     
     // Fallback to hardcoded values if Firestore fails
     return {
-        free:              { postsLimit: 5,   videosLimit: 0  },
-        esencial:          { postsLimit: 15,  videosLimit: 8  },
-        starter:           { postsLimit: 15,  videosLimit: 8  },
-        crecimiento:       { postsLimit: 40,  videosLimit: 20 },
-        growth:            { postsLimit: 40,  videosLimit: 20 },
-        pro:               { postsLimit: 40,  videosLimit: 20 },
-        elite:             { postsLimit: 80,  videosLimit: 20 },
-        "piloto-automatico": { postsLimit: 120, videosLimit: 40 },
-        piloto_automatico: { postsLimit: 120, videosLimit: 40 },
-        business:          { postsLimit: 120, videosLimit: 40 },
-        agency:            { postsLimit: 999, videosLimit: 80 },
+        free:                { postsLimit: 5,   videosLimit: 0,  aiImagesLimit: 5,   seoBlogsLimit: 0 },
+        esencial:            { postsLimit: 15,  videosLimit: 8,  aiImagesLimit: 15,  seoBlogsLimit: 0 },
+        starter:             { postsLimit: 15,  videosLimit: 8,  aiImagesLimit: 15,  seoBlogsLimit: 0 },
+        crecimiento:         { postsLimit: 30,  videosLimit: 30, aiImagesLimit: 40,  seoBlogsLimit: 4 },
+        growth:              { postsLimit: 30,  videosLimit: 30, aiImagesLimit: 40,  seoBlogsLimit: 4 },
+        pro:                 { postsLimit: 30,  videosLimit: 30, aiImagesLimit: 40,  seoBlogsLimit: 4 },
+        elite:               { postsLimit: 30,  videosLimit: 30, aiImagesLimit: 40,  seoBlogsLimit: 4 },
+        "piloto-automatico": { postsLimit: 60,  videosLimit: 60, aiImagesLimit: 120, seoBlogsLimit: 20 },
+        piloto_automatico:   { postsLimit: 60,  videosLimit: 60, aiImagesLimit: 120, seoBlogsLimit: 20 },
+        business:            { postsLimit: 60,  videosLimit: 60, aiImagesLimit: 120, seoBlogsLimit: 20 },
+        agency:              { postsLimit: 999, videosLimit: 999, aiImagesLimit: 999, seoBlogsLimit: 50 },
     };
 }
 
@@ -175,15 +175,19 @@ export async function getAiPlanLimit(plan: string, type: 'image' | 'video' | 'bl
     }
 
     const fallbacks: Record<string, { image: number, video: number, blog: number }> = {
-        free:     { image: 8,   video: 0,  blog: 0  },
-        starter:  { image: 20,  video: 2,  blog: 0  },
-        growth:   { image: 40,  video: 6,  blog: 2  },
-        pro:      { image: 80,  video: 12, blog: 8  },
-        elite:    { image: 80,  video: 12, blog: 8  },
-        business: { image: 200, video: 30, blog: 20 },
-        agency:   { image: 999, video: 80, blog: 50 },
+        free:                { image: 5,   video: 0,  blog: 0  },
+        esencial:            { image: 15,  video: 8,  blog: 0  },
+        starter:             { image: 15,  video: 8,  blog: 0  },
+        crecimiento:         { image: 40,  video: 30, blog: 4  },
+        growth:              { image: 40,  video: 30, blog: 4  },
+        pro:                 { image: 40,  video: 30, blog: 4  },
+        elite:               { image: 40,  video: 30, blog: 4  },
+        "piloto-automatico": { image: 120, video: 60, blog: 20 },
+        piloto_automatico:   { image: 120, video: 60, blog: 20 },
+        business:            { image: 120, video: 60, blog: 20 },
+        agency:              { image: 999, video: 999, blog: 50 },
     };
-    return fallbacks[planId]?.[type] ?? (type === 'image' ? 8 : 0);
+    return fallbacks[planId]?.[type] ?? (type === 'image' ? 15 : 0);
 }
 
 /**

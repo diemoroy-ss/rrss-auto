@@ -233,18 +233,16 @@ export default function AdminUsersPage() {
                            onChange={(e) => updateUserField(u.id, 'plan', e.target.value)}
                            className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[10px] font-black uppercase tracking-widest text-slate-700 outline-none focus:border-indigo-500 cursor-pointer shadow-sm hover:bg-slate-50 transition-colors focus:ring-2 focus:ring-indigo-500/20"
                         >
-                            {availablePlans.length > 0 ? (
-                                availablePlans.map(p => (
-                                    <option key={p.id} value={p.id}>{p.name}</option>
-                                ))
-                            ) : (
-                                <>
-                                   <option value="free">Free</option>
-                                   <option value="pro">Pro</option>
-                                   <option value="business">Business</option>
-                                   <option value="agency">Agency</option>
-                                </>
-                            )}
+                            <option value="esencial">Esencial ($59.990)</option>
+                            <option value="crecimiento">Crecimiento ($99.990)</option>
+                            <option value="piloto_automatico">Piloto Automático ($249.990)</option>
+                            <option value="free">Prueba Gratuita (Free)</option>
+                            <option value="pro">Pro (Legacy)</option>
+                            <option value="business">Business (Legacy)</option>
+                            <option value="agency">Agency (Ilimitado)</option>
+                            {availablePlans.filter(p => !['esencial', 'crecimiento', 'piloto_automatico', 'free', 'pro', 'business', 'agency'].includes(p.id)).map(p => (
+                                <option key={p.id} value={p.id}>{p.name}</option>
+                            ))}
                         </select>
                      </td>
                      <td className="p-6">
@@ -405,10 +403,13 @@ export default function AdminUsersPage() {
                                 onChange={(e) => updateUserField(selectedUser.id, 'plan', e.target.value)}
                                 className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 text-sm font-black text-slate-900 outline-none focus:border-indigo-500 transition-all cursor-pointer"
                               >
-                                <option value="free">FREE Tier</option>
-                                <option value="pro">PRO Professional</option>
-                                <option value="business">BUSINESS Enterprise</option>
-                                <option value="agency">AGENCY Unlimited</option>
+                                <option value="esencial">Plan PyME Esencial ($59.990)</option>
+                                <option value="crecimiento">Plan PyME Crecimiento ($99.990)</option>
+                                <option value="piloto_automatico">Plan Piloto Automático VIP ($249.990)</option>
+                                <option value="free">Prueba Gratuita (Free)</option>
+                                <option value="pro">Plan Pro (Legacy)</option>
+                                <option value="business">Plan Business (Legacy)</option>
+                                <option value="agency">Plan Agency (Ilimitado)</option>
                               </select>
                           </div>
                           <div>

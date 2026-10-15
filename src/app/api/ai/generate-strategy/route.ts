@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Convert connectedPlatforms object to array of names
-    const platforms: string[] = [];
+    let platforms: string[] = [];
     if (connectedPlatforms) {
         if (connectedPlatforms.facebook) platforms.push("Facebook");
         if (connectedPlatforms.instagram) platforms.push("Instagram");
@@ -145,6 +145,19 @@ export async function POST(req: NextRequest) {
     } = await import('../../../../lib/quota-admin');
 
     const isAdmin = isAdminAdmin(userEmail);
+    const { getPlanConfig } = await import('../../../../lib/plans');
+    const planConfig = getPlanConfig(userPlan);
+
+    // Filtrar plataformas disponibles según el plan del usuario (Esencial: solo IG y FB; Crecimiento/Piloto: Multicanal)
+    if (!isAdmin) {
+        platforms = platforms.filter(p => {
+            const pLower = p.toLowerCase();
+            return planConfig.allowedPlatforms.some(ap => pLower.includes(ap));
+        });
+        if (platforms.length === 0) {
+            platforms = ["Instagram", "Facebook"];
+        }
+    }
 
     // 2. Límites según el plan configurado
     const postsLimit = await getPlanLimitAdmin(userPlan, userEmail);
@@ -161,48 +174,39 @@ export async function POST(req: NextRequest) {
     const remainingVideos = isAdmin ? 999999 : Math.max(0, videosLimit - videosUsed);
     const remainingImages = isAdmin ? 999999 : Math.max(0, imagesLimit - imagesUsed);
 
-    console.log(`[STRATEGY] Cuotas usuario ${userId} (${userPlan}): Posts ${postsUsed}/${postsLimit} (restan ${remainingPosts}), Videos ${videosUsed}/${videosLimit} (restan ${remainingVideos}), Imágenes ${imagesUsed}/${imagesLimit} (restan ${remainingImages})`);
+    console.log(`[STRATEGY] Cuotas usuario ${userId} (${planConfig.id}): Posts ${postsUsed}/${postsLimit} (restan ${remainingPosts}), Videos ${videosUsed}/${videosLimit} (restan ${remainingVideos}), Imágenes ${imagesUsed}/${imagesLimit} (restan ${remainingImages})`);
 
     // Validación: Si el usuario ya completó el 100% de sus publicaciones mensuales
     if (!isAdmin && remainingPosts <= 0) {
         return NextResponse.json({ 
-            error: `Has completado tu cuota de publicaciones de este mes (${postsUsed}/${postsLimit} posts). Puedes mejorar tu plan o esperar a tu próximo ciclo mensual para planificar nuevas publicaciones.` 
+            error: `Has completado tu cuota de publicaciones de este mes (${postsUsed}/${postsLimit} posts del ${planConfig.name}). Puedes mejorar tu plan o esperar a tu próximo ciclo mensual para planificar nuevas publicaciones.` 
         }, { status: 403 });
     }
 
-    // 5. Pacing de publicaciones por estrategia según el plan, sin exceder el remanente mensual
-    let defaultPlanPosts = 5;
-    if (userPlan === 'free') defaultPlanPosts = 3;
-    else if (userPlan === 'starter') defaultPlanPosts = 3;
-    else if (userPlan === 'growth') defaultPlanPosts = 5;
-    else if (userPlan === 'pro' || userPlan === 'elite') defaultPlanPosts = 5;
-    else if (userPlan === 'business') defaultPlanPosts = 7;
-    else if (userPlan === 'agency') defaultPlanPosts = 10;
+    // 5. Pacing de publicaciones por estrategia según el plan
+    // Plan Esencial: 15 publicaciones estratégicas en el mes
+    // Plan Crecimiento: 30 publicaciones (grilla mensual completa)
+    // Plan Piloto Automático: 30 a 60 publicaciones
+    let targetMonthlyPosts = planConfig.maxPostsPerMonth;
+    if (isAdmin) targetMonthlyPosts = postsPerWeek || 30;
 
-    let effectivePosts = postsPerWeek ? Math.min(postsPerWeek, defaultPlanPosts * 2) : defaultPlanPosts;
+    let defaultPlanPosts = 15;
+    if (planConfig.id === 'free') defaultPlanPosts = 3;
+    else if (planConfig.id === 'esencial') defaultPlanPosts = 15;
+    else if (planConfig.id === 'crecimiento') defaultPlanPosts = 30;
+    else if (planConfig.id === 'piloto_automatico') defaultPlanPosts = 30;
+
+    let effectivePosts = postsPerWeek ? Math.min(postsPerWeek, targetMonthlyPosts) : defaultPlanPosts;
     // Topado estrictamente por las publicaciones restantes del usuario
     effectivePosts = Math.min(effectivePosts, remainingPosts);
     effectivePosts = Math.max(1, effectivePosts);
 
-    // 6. Asignación de Videos según plan y cuota pendiente real
+    // 6. Asignación de Videos / Reels según plan y cuota pendiente real
     let maxVideos = 0;
-    if (userPlan !== 'free' && remainingVideos > 0) {
-        let planMaxVideosPerStrategy = 1;
-        if (userPlan === 'starter') {
-            // Starter tiene 2 videos/mes. Si tiene saldo, asignamos 1 por semana/estrategia (o 2 si le quedan 2 y la estrategia es de 4+ posts)
-            planMaxVideosPerStrategy = effectivePosts >= 4 ? Math.min(remainingVideos, 2) : Math.min(remainingVideos, 1);
-        } else if (userPlan === 'growth') {
-            planMaxVideosPerStrategy = Math.min(remainingVideos, 2);
-        } else if (userPlan === 'pro' || userPlan === 'elite') {
-            planMaxVideosPerStrategy = Math.min(remainingVideos, 3);
-        } else if (userPlan === 'business') {
-            planMaxVideosPerStrategy = Math.min(remainingVideos, 5);
-        } else if (userPlan === 'agency') {
-            planMaxVideosPerStrategy = Math.min(remainingVideos, 10);
-        } else {
-            planMaxVideosPerStrategy = Math.min(remainingVideos, 2);
-        }
-        maxVideos = Math.min(planMaxVideosPerStrategy, effectivePosts);
+    if (planConfig.maxReelsScripts > 0 && remainingVideos > 0) {
+        // En esencial máx 8 reels en el mes; en crecimiento hasta 30; en piloto hasta 60
+        const planAllowedReels = Math.min(planConfig.maxReelsScripts, remainingVideos);
+        maxVideos = Math.min(planAllowedReels, effectivePosts);
     } else {
         maxVideos = 0; // Free o sin cuota de videos disponible
     }

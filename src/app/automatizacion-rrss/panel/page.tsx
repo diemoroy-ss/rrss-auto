@@ -196,6 +196,8 @@ export default function RrssDashboard() {
         imageLimit={quota.imageLimit}
         videosUsed={quota.videosUsed}
         videoLimit={quota.videoLimit}
+        userPlan={quota.userPlan}
+        onOpenUpgradeModal={() => setUpgradeModalOpen(true)}
       />
 
       {/* Filtros + calendario */}

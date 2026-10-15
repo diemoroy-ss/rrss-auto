@@ -7,6 +7,8 @@ import { onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, getDay, addMonths, subMonths } from "date-fns";
 import { es } from "date-fns/locale";
+import UpsellGate from "../../../../components/panel/UpsellGate";
+import { hasPlanFeature } from "../../../../lib/plans";
 
 interface BlogPost {
   id: string;
@@ -26,6 +28,7 @@ export default function SeoAutopilotPanel() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'articulos' | 'calendario' | 'integracion'>('articulos');
   const [loading, setLoading] = useState(true);
+  const [isLocked, setIsLocked] = useState(false);
   const [posts, setPosts] = useState<BlogPost[]>([]);
   
   const [user, setUser] = useState<any>(null);
@@ -323,20 +326,25 @@ export default function SeoAutopilotPanel() {
 
           if (isAdminUser) {
             limit = 999999;
+            setIsLocked(false);
           } else {
+            const planId = data.plan || 'free';
+            const featureAvailable = hasPlanFeature(planId, 'blogSeo');
+
             try {
                 const plansDoc = await getDoc(doc(db, "system_config", "plans"));
                 if (plansDoc.exists()) {
                     const plansConfig = plansDoc.data() as any;
-                    const planId = data.plan || 'free';
                     limit = plansConfig[planId]?.seoBlogsLimit || 0;
                 }
             } catch(e) {}
             
-            if (limit === 0) {
-               router.push("/automatizacion-rrss/panel/planes");
+            if (!featureAvailable && limit <= 0) {
+               setIsLocked(true);
+               setLoading(false);
                return;
             }
+            setIsLocked(false);
           }
           setBlogLimit(limit);
 
@@ -539,6 +547,25 @@ export default function SeoAutopilotPanel() {
 
   if (loading) {
      return <div className="animate-pulse space-y-4 max-w-2xl"><div className="h-10 bg-slate-200 rounded w-1/3"></div><div className="h-64 bg-slate-200 rounded"></div></div>;
+  }
+
+  if (isLocked) {
+     return (
+       <UpsellGate
+         moduleName="Blog SEO & Posicionamiento en IA"
+         badge="Exclusivo Plan PyME Crecimiento"
+         title="Multiplica las Visitas de tu Negocio en Google y Motores de IA"
+         description="Los clientes buscan en Google y preguntan a ChatGPT o Perplexity antes de comprar. Con este módulo, nuestros agentes redactan artículos extensos, optimizados para SEO local y estructurados para que la IA recomiende tu negocio."
+         benefits={[
+           "Redacción automática de artículos de 1.000+ palabras con tono 100% humano.",
+           "Estrategia de palabras clave según tu rubro para atraer clientes con intención de compra.",
+           "Publicación y sincronización automática vía WordPress, Webhook o API Feed.",
+           "Ahorra los $150.000 a $300.000 CLP/mes que cobraría un redactor SEO externo."
+         ]}
+         requiredPlanName="Plan PyME Crecimiento"
+         upgradePlanId="crecimiento"
+       />
+     );
   }
 
   const publishedPosts = posts.filter(p => p.status === 'published');

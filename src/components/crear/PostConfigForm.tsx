@@ -13,8 +13,10 @@ import TikTokPostSettings, { TikTokSettingsState } from "./TikTokPostSettings";
 import { PromptTemplate, HARDCODED_STYLES } from "../../lib/prompt-templates";
 import PromptStylePickerModal from "./PromptStylePickerModal";
 import PreferredStylesModal, { StyleOption } from "./PreferredStylesModal";
+import { isPlatformAllowed } from "../../lib/plans";
 
 interface PostConfigFormProps {
+  userPlan?: string;
   // AI states
   idea: string;
   setIdea: (val: string) => void;
@@ -128,6 +130,7 @@ const DEFAULT_PREFERRED_STYLE_IDS = [
 ];
 
 export default function PostConfigForm({
+  userPlan = "esencial",
   idea, setIdea,
   imageExpectation, setImageExpectation,
   imageStyle, setImageStyle,
@@ -354,29 +357,82 @@ export default function PostConfigForm({
                   <FaInstagram className="text-2xl" />
                 </button>
               )}
-              {/* LinkedIn - Deshabilitado temporalmente hasta pasar verificación legal
+              {/* LinkedIn */}
               {hasLi && (
-                <button
-                  type="button"
-                  onClick={() => setNetworks({ ...networks, linkedin: !networks.linkedin })}
-                  className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all ${
-                    networks.linkedin ? 'bg-[#0077b5] text-white scale-105 shadow-md shadow-[#0077b5]/20' : 'bg-slate-200 text-slate-400 opacity-60 hover:opacity-100 hover:text-slate-650'
-                  }`}
-                >
-                  <FaLinkedinIn />
-                </button>
+                (() => {
+                  const allowed = isAdmin || isPlatformAllowed(userPlan, 'linkedin');
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!allowed) {
+                          window.open(
+                            `https://wa.me/56965909543?text=${encodeURIComponent(
+                              "Hola Santisoft! Quiero activar LinkedIn en mis publicaciones. ¿Cómo puedo subir al Plan Crecimiento?"
+                            )}`,
+                            "_blank"
+                          );
+                          return;
+                        }
+                        setNetworks({ ...networks, linkedin: !networks.linkedin });
+                      }}
+                      className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all relative ${
+                        !allowed
+                          ? 'bg-slate-100 text-slate-400 border border-dashed border-slate-300 opacity-60 cursor-pointer'
+                          : networks.linkedin
+                          ? 'bg-[#0077b5] text-white scale-105 shadow-md shadow-[#0077b5]/20'
+                          : 'bg-slate-200 text-slate-400 opacity-60 hover:opacity-100 hover:text-slate-650'
+                      }`}
+                      title={!allowed ? "LinkedIn: Disponible en Plan PyME Crecimiento (Click para activar)" : "LinkedIn"}
+                    >
+                      <FaLinkedinIn />
+                      {!allowed && (
+                        <span className="absolute -top-1.5 -right-1.5 bg-amber-500 text-slate-900 text-[8px] font-black px-1 rounded-full shadow-sm">
+                          🔒
+                        </span>
+                      )}
+                    </button>
+                  );
+                })()
               )}
-              */}
+
+              {/* TikTok */}
               {hasTt && (
-                <button
-                  type="button"
-                  onClick={() => setNetworks({ ...networks, tiktok: !networks.tiktok })}
-                  className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all ${
-                    networks.tiktok ? 'bg-black text-white scale-105 shadow-md shadow-black/20' : 'bg-slate-200 text-slate-400 opacity-60 hover:opacity-100 hover:text-slate-650'
-                  }`}
-                >
-                  <FaTiktok />
-                </button>
+                (() => {
+                  const allowed = isAdmin || isPlatformAllowed(userPlan, 'tiktok');
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!allowed) {
+                          window.open(
+                            `https://wa.me/56965909543?text=${encodeURIComponent(
+                              "Hola Santisoft! Quiero activar TikTok en mis publicaciones. ¿Cómo puedo subir al Plan Crecimiento?"
+                            )}`,
+                            "_blank"
+                          );
+                          return;
+                        }
+                        setNetworks({ ...networks, tiktok: !networks.tiktok });
+                      }}
+                      className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all relative ${
+                        !allowed
+                          ? 'bg-slate-100 text-slate-400 border border-dashed border-slate-300 opacity-60 cursor-pointer'
+                          : networks.tiktok
+                          ? 'bg-black text-white scale-105 shadow-md shadow-black/20'
+                          : 'bg-slate-200 text-slate-400 opacity-60 hover:opacity-100 hover:text-slate-650'
+                      }`}
+                      title={!allowed ? "TikTok: Disponible en Plan PyME Crecimiento (Click para activar)" : "TikTok"}
+                    >
+                      <FaTiktok />
+                      {!allowed && (
+                        <span className="absolute -top-1.5 -right-1.5 bg-amber-500 text-slate-900 text-[8px] font-black px-1 rounded-full shadow-sm">
+                          🔒
+                        </span>
+                      )}
+                    </button>
+                  );
+                })()
               )}
               {hasGbp && (
                 <button

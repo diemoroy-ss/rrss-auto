@@ -12,6 +12,8 @@ import { PromptTemplate } from "../../../../lib/prompt-templates";
 import { appendContactInfo } from "../../../../lib/contact-helper";
 import StatusModal from "../../../../components/StatusModal";
 import { getScheduleContinuityFromList, parseScheduledDate, ScheduleContinuityResult } from "../../../../lib/schedule-continuity";
+import UpsellGate from "../../../../components/panel/UpsellGate";
+import { hasPlanFeature } from "../../../../lib/plans";
 
 export default function NicheRadarPage() {
   const router = useRouter();
@@ -738,6 +740,27 @@ export default function NicheRadarPage() {
     setCopiedHookId(id);
     setTimeout(() => setCopiedHookId(null), 2000);
   };
+
+  const isLocked = !isSantisoftAdmin && !hasPlanFeature(userPlan, 'competitorSpy');
+
+  if (isLocked) {
+    return (
+      <UpsellGate
+        moduleName="Radar de Nicho & Espía de Competencia"
+        badge="Exclusivo Plan PyME Crecimiento"
+        title="Espía a tu Competencia y Descubre las Tendencias Ganadoras de tu Rubro"
+        description="¿Qué dudas tiene tu cliente ideal antes de comprar? ¿Qué temas se están viralizando en tu nicho en los últimos 30 días? Nuestro radar monitorea las discusiones activas para entregarte ideas de contenido y ganchos (hooks) con alta retención comprobada."
+        benefits={[
+          "Monitoreo en vivo de tendencias y temas calientes en los últimos 30 días.",
+          "Generador de ganchos 'Scroll-Stoppers' validados para retener la atención en Reels y posts.",
+          "Preguntas reales que hacen los clientes en redes para responder con autoridad.",
+          "Ahorra semanas de prueba y error o los $250.000+ CLP que cobraría una consultoría de mercado."
+        ]}
+        requiredPlanName="Plan PyME Crecimiento"
+        upgradePlanId="crecimiento"
+      />
+    );
+  }
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8">

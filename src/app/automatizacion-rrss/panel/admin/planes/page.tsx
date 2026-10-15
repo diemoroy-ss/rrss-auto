@@ -25,7 +25,7 @@ type PlanConfig = {
     features: string[];
 };
 
-const PLAN_ORDER = ["free", "starter", "growth", "pro", "business", "agency"];
+const PLAN_ORDER = ["esencial", "crecimiento", "piloto_automatico", "free", "starter", "growth", "pro", "business", "agency"];
 
 function PlanPreviewCard({ plan }: { plan: PlanConfig }) {
     const isUnlimited = plan.postsLimit >= 999999;
@@ -74,7 +74,7 @@ export default function AdminPlansPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [seeding, setSeeding] = useState(false);
-    const [selectedPlanId, setSelectedPlanId] = useState<string>("pro");
+    const [selectedPlanId, setSelectedPlanId] = useState<string>("crecimiento");
 
     const [modal, setModal] = useState<{
         isOpen: boolean;

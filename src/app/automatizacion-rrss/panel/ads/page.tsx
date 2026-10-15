@@ -1,10 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { auth } from "../../../../lib/firebase";
+import { auth, db } from "../../../../lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 import { useProfile } from "../../../../contexts/ProfileContext";
 import AdsWizard from "../../../../components/ads/AdsWizard";
+import UpsellGate from "../../../../components/panel/UpsellGate";
+import { hasPlanFeature } from "../../../../lib/plans";
+import { isUserAdmin } from "../../../../lib/quota";
 
 interface Campaign {
     id: string;
@@ -20,6 +24,8 @@ interface Campaign {
 export default function AdsDashboard() {
     const { activeProfile } = useProfile();
     const [user, setUser] = useState<any>(null);
+    const [userPlan, setUserPlan] = useState<string>("free");
+    const [isAdmin, setIsAdmin] = useState(false);
     const [loading, setLoading] = useState(true);
     const [campaigns, setCampaigns] = useState<Campaign[]>([]);
     const [errorMsg, setErrorMsg] = useState("");
@@ -27,9 +33,20 @@ export default function AdsDashboard() {
     const [isWizardOpen, setIsWizardOpen] = useState(false);
 
     useEffect(() => {
-        const unsub = onAuthStateChanged(auth, u => {
+        const unsub = onAuthStateChanged(auth, async u => {
             setUser(u);
-            if (!u) setLoading(false);
+            if (!u) {
+                setLoading(false);
+                return;
+            }
+            try {
+                const userDoc = await getDoc(doc(db, "users", u.uid));
+                const uData = userDoc.data() || {};
+                setUserPlan(uData.plan || "free");
+                setIsAdmin(isUserAdmin(u.email || "") || uData.role === "admin");
+            } catch (err) {
+                console.warn("Error cargando perfil para Ads:", err);
+            }
         });
         return () => unsub();
     }, []);
@@ -68,6 +85,25 @@ export default function AdsDashboard() {
     const avgCpc = totalClicks > 0 ? (totalSpend / totalClicks) : 0;
 
     if (loading) return <div className="animate-pulse space-y-4 max-w-4xl"><div className="h-10 bg-slate-200 rounded w-1/3"></div><div className="h-64 bg-slate-200 rounded"></div></div>;
+
+    if (!isAdmin && !hasPlanFeature(userPlan, 'adsGenerator')) {
+        return (
+            <UpsellGate
+                moduleName="Campañas de Meta Ads & Anuncios Pagados"
+                badge="Exclusivo Plan PyME Crecimiento"
+                title="Consigue Clientes Diarios con Campañas de Anuncios Calibradas"
+                description="Deja de gastar presupuesto en anuncios que no convierten. Nuestros agentes analizan a tu competencia, redactan variantes de copy con fórmulas probadas de alta conversión y configuran tus campañas directo en Meta Ads."
+                benefits={[
+                    "Generador de copies y creativos para Meta Ads (Facebook & Instagram).",
+                    "Hooks y llamadas a la acción probados para PyMEs con presupuestos pequeños ($10-$100/día).",
+                    "Monitoreo de gasto, impresiones, clics y costo por clic (CPC) en tiempo real.",
+                    "Ahorro de los $300.000 a $500.000 CLP/mes que cobra un Media Buyer o agencia tradicional."
+                ]}
+                requiredPlanName="Plan PyME Crecimiento"
+                upgradePlanId="crecimiento"
+            />
+        );
+    }
 
     if (!activeProfile?.facebookToken_enc) {
         return (
