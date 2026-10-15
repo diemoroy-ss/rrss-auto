@@ -36,7 +36,6 @@ import {
   Video,
   Layers,
   FileText,
-  DollarSign,
   RefreshCw,
   FileDown,
   Send,
@@ -850,19 +849,19 @@ export default function MetricasDashboard() {
         </div>
       )}
 
-      {/* ── 5 CARDS DE KPIS CLAVE PARA PYME ── */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 print:hidden">
+      {/* ── 4 CARDS DE KPIS MEDIBLES Y REALES PARA LA PYME ── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 print:hidden">
         {/* KPI 1: Alcance Total */}
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group hover:border-slate-300 transition-colors">
           <div className="flex items-center justify-between text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">
-            <span>Alcance</span>
+            <span>Alcance Total</span>
             <Eye className="w-4 h-4 text-slate-400" />
           </div>
           <div className="text-3xl font-black text-slate-900 tracking-tight">
             {totalReach.toLocaleString("es-ES")}
           </div>
           <p className="text-[11px] text-emerald-600 font-bold mt-2 flex items-center gap-1">
-            <span>↑</span> ~{avgReachPerPost} por post
+            <span>↑</span> ~{avgReachPerPost} promedio por post
           </p>
         </div>
 
@@ -876,14 +875,14 @@ export default function MetricasDashboard() {
             {totalInteractions.toLocaleString("es-ES")}
           </div>
           <p className="text-[11px] text-slate-400 font-medium mt-2">
-            Likes, comentarios y shares
+            Likes, comentarios y compartidos
           </p>
         </div>
 
         {/* KPI 3: Tasa de Engagement */}
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group hover:border-slate-300 transition-colors">
           <div className="flex items-center justify-between text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">
-            <span>Engagement</span>
+            <span>Tasa Engagement</span>
             <TrendingUp className="w-4 h-4 text-orange-500" />
           </div>
           <div className="text-3xl font-black text-orange-600 tracking-tight">
@@ -897,28 +896,14 @@ export default function MetricasDashboard() {
         {/* KPI 4: Posts Entregados */}
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group hover:border-slate-300 transition-colors">
           <div className="flex items-center justify-between text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">
-            <span>Entregados</span>
+            <span>Posts Entregados</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-500" />
           </div>
           <div className="text-3xl font-black text-slate-900 tracking-tight">
             {publishedPosts.length}
           </div>
           <p className="text-[11px] text-emerald-600 font-bold mt-2">
-            100% efectividad
-          </p>
-        </div>
-
-        {/* KPI 5: Ahorro Comercial PyME */}
-        <div className="col-span-2 md:col-span-1 bg-gradient-to-br from-[#0B0F19] to-[#0F172A] text-white p-5 rounded-2xl border border-slate-800 shadow-md relative overflow-hidden">
-          <div className="flex items-center justify-between text-orange-400 text-xs font-bold uppercase tracking-wider mb-1">
-            <span>Ahorro PyME</span>
-            <DollarSign className="w-4 h-4 text-emerald-400" />
-          </div>
-          <div className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-            $450.000+
-          </div>
-          <p className="text-[11px] text-slate-300 mt-2">
-            vs agencia mensual
+            100% efectividad de entrega
           </p>
         </div>
       </div>
