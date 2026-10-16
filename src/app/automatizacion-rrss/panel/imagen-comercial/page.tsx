@@ -6,6 +6,7 @@ import { auth, db } from "../../../../lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { useProfile } from "../../../../contexts/ProfileContext";
+import { removeLogoBackground } from "../../../../lib/logo-bg-remover";
 import {
   Sparkles,
   Layers,
@@ -27,6 +28,7 @@ import {
   RefreshCw,
   Loader2,
   Sliders,
+  Wand2,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -250,23 +252,82 @@ export default function ImagenComercialPage() {
   const [isPublishing, setIsPublishing] = useState<boolean>(false);
   const [publishSuccess, setPublishSuccess] = useState<string>("");
 
+  // Redes sociales conectadas y seleccionadas
+  const [connectedNetworks, setConnectedNetworks] = useState<{
+    instagram: boolean;
+    facebook: boolean;
+    linkedin: boolean;
+    tiktok: boolean;
+    youtube: boolean;
+    x: boolean;
+  }>({
+    instagram: false,
+    facebook: false,
+    linkedin: false,
+    tiktok: false,
+    youtube: false,
+    x: false,
+  });
+  const [selectedNetworks, setSelectedNetworks] = useState<string[]>(["instagram", "facebook"]);
+  const [isGeneratingCopy, setIsGeneratingCopy] = useState<boolean>(false);
+  const [isRemovingBgWithRemover, setIsRemovingBgWithRemover] = useState<boolean>(false);
+
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const activeSlide = slides[activeSlideIndex] || slides[0];
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
       setUser(u);
-      if (u && activeProfile?.logoUrl && !activeSlide.logoUrl) {
-        setSlides((prev) =>
-          prev.map((s, idx) => (idx === 0 ? { ...s, logoUrl: activeProfile.logoUrl, useLogo: true } : s))
-        );
-      }
-      if (u && editId) {
-        loadDesignForEditing(editId);
+      if (u) {
+        // Detectar redes sociales conectadas según tokens en activeProfile o documento de usuario
+        try {
+          const userSnap = await getDoc(doc(db, "users", u.uid));
+          if (userSnap.exists()) {
+            const data = userSnap.data();
+            const isDefault = activeProfile?.id === "default";
+            const isValidToken = (t: any) => !!t && t !== "null" && t !== "undefined" && t !== "";
+            const fbOK = isValidToken(activeProfile?.facebookToken_enc) || (isDefault && isValidToken(data.facebookToken_enc));
+            const igOK = isValidToken(activeProfile?.instagramToken_enc) || (isDefault && isValidToken(data.instagramToken_enc));
+            const liOK = isValidToken(activeProfile?.linkedinUserToken_enc) || isValidToken(activeProfile?.linkedinToken_enc) || (isDefault && (isValidToken(data.linkedinUserToken_enc) || isValidToken(data.linkedinToken_enc)));
+            const ttOK = isValidToken(activeProfile?.tiktokToken_enc) || (isDefault && isValidToken(data.tiktokToken_enc));
+            const ytOK = isValidToken(activeProfile?.youtubeToken_enc || activeProfile?.accounts?.youtube?.token) || (isDefault && isValidToken(data.youtubeToken_enc));
+            const xOK = isValidToken(activeProfile?.xToken_enc || activeProfile?.accounts?.x?.token) || (isDefault && isValidToken(data.xToken_enc));
+
+            const nets = {
+              instagram: Boolean(igOK),
+              facebook: Boolean(fbOK),
+              linkedin: Boolean(liOK),
+              tiktok: Boolean(ttOK),
+              youtube: Boolean(ytOK),
+              x: Boolean(xOK),
+            };
+            setConnectedNetworks(nets);
+
+            const initialSelected: string[] = [];
+            if (igOK) initialSelected.push("instagram");
+            if (fbOK) initialSelected.push("facebook");
+            if (liOK) initialSelected.push("linkedin");
+            if (ttOK) initialSelected.push("tiktok");
+            if (xOK) initialSelected.push("x");
+            if (ytOK) initialSelected.push("youtube");
+            setSelectedNetworks(initialSelected.length > 0 ? initialSelected : ["instagram"]);
+          }
+        } catch (netErr) {
+          console.warn("Error leyendo redes sociales vinculadas:", netErr);
+        }
+
+        if (activeProfile?.logoUrl && !activeSlide.logoUrl) {
+          setSlides((prev) =>
+            prev.map((s, idx) => (idx === 0 ? { ...s, logoUrl: activeProfile.logoUrl, useLogo: true } : s))
+          );
+        }
+        if (editId) {
+          loadDesignForEditing(editId);
+        }
       }
     });
     return () => unsub();
-  }, [editId, activeProfile?.logoUrl]);
+  }, [editId, activeProfile?.logoUrl, activeProfile?.id]);
 
   // Carga de diseño existente si viene de la Biblioteca
   const loadDesignForEditing = async (id: string) => {
@@ -424,6 +485,34 @@ export default function ImagenComercialPage() {
     } catch (err: any) {
       console.warn("Error recortando fondo:", err);
       setErrorMessage("No se pudo procesar el fondo del logo.");
+    }
+  };
+
+  // Eliminar fondo de logo usando removeLogoBackground (BG Remover de alta precisión)
+  const handleRemoveBgWithLogoRemover = async () => {
+    if (!activeSlide.logoUrl) return;
+    setIsRemovingBgWithRemover(true);
+    setStatusMessage("Eliminando fondo con BG Remover...");
+    try {
+      const transparentDataUrl = await removeLogoBackground(activeSlide.logoUrl, {
+        tolerance: 38,
+        mode: "contiguous",
+        feather: true,
+      });
+      updateActiveSlide((s) => ({
+        ...s,
+        logoUrl: transparentDataUrl,
+        logoTransparent: true,
+        logoBlendMode: "normal",
+        logoBgMode: "transparent",
+      }));
+      setStatusMessage("✅ ¡Fondo eliminado con BG Remover con éxito!");
+      setTimeout(() => setStatusMessage(""), 3500);
+    } catch (err: any) {
+      console.error("Error en BG Remover:", err);
+      setErrorMessage("No se pudo procesar el fondo con BG Remover.");
+    } finally {
+      setIsRemovingBgWithRemover(false);
     }
   };
 
@@ -668,15 +757,129 @@ export default function ImagenComercialPage() {
     }
   };
 
-  // Descargar imagen actual
-  const handleDownload = () => {
-    const url = activeSlide.finalRenderUrl || activeSlide.baseImageUrl;
-    if (!url) return;
+  // Descargar imagen actual completa con textos y logo
+  const triggerDownloadFile = (url: string) => {
     const link = document.createElement("a");
     link.href = url;
     link.target = "_blank";
-    link.download = `cartel-comercial-${activeSlide.aspectRatio.replace(":", "x")}-${Date.now()}.jpg`;
+    link.download = `cartel-comercial-hd-${activeSlide.aspectRatio.replace(":", "x")}-${Date.now()}.jpg`;
+    document.body.appendChild(link);
     link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleDownloadCompleteImage = async () => {
+    if (!activeSlide.baseImageUrl) return;
+
+    // Si ya fue renderizada en HD, descargarla directamente
+    if (activeSlide.finalRenderUrl) {
+      triggerDownloadFile(activeSlide.finalRenderUrl);
+      return;
+    }
+
+    // Renderizar versión final completa antes de descargar
+    setStatusMessage("Generando render completo en alta resolución con textos y logo...");
+    setIsRenderingFinal(true);
+    try {
+      const token = user ? await user.getIdToken() : "";
+      const res = await fetch("/api/imagen-comercial/render-final", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify({
+          baseImageUrl: activeSlide.baseImageUrl,
+          textLayers: activeSlide.textLayers,
+          useLogo: activeSlide.useLogo,
+          logoUrl: activeSlide.logoUrl,
+          logoX: activeSlide.logoX,
+          logoY: activeSlide.logoY,
+          logoWidth: activeSlide.logoWidth,
+          logoTransparent: activeSlide.logoTransparent,
+          logoBlendMode: activeSlide.logoBlendMode || (activeSlide.logoTransparent ? "screen" : "normal"),
+          logoBgMode: activeSlide.logoBgMode || (activeSlide.logoTransparent ? "transparent" : "white"),
+          aspectRatio: activeSlide.aspectRatio,
+          customFonts,
+          saveToLibrary: true,
+          prompt: activeSlide.prompt,
+          isCarousel: slides.length > 1,
+          slideIndex: activeSlideIndex,
+          commercialDesignData: {
+            slides,
+            activeSlideIndex,
+            customFonts,
+          },
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.finalImageUrl) {
+        throw new Error(data.error || "No se pudo renderizar la imagen final.");
+      }
+
+      updateActiveSlide((s) => ({
+        ...s,
+        finalRenderUrl: data.finalImageUrl,
+      }));
+
+      setStatusMessage("✅ ¡Cartel completo listo! Iniciando descarga...");
+      triggerDownloadFile(data.finalImageUrl);
+      setTimeout(() => setStatusMessage(""), 4000);
+    } catch (err: any) {
+      console.warn("Fallo Butterfly HD, usando exportador de respaldo del lienzo:", err);
+      if (canvasContainerRef.current) {
+        try {
+          const { toJpeg } = await import("html-to-image");
+          const dataUrl = await toJpeg(canvasContainerRef.current, { quality: 0.96, pixelRatio: 2.5 });
+          triggerDownloadFile(dataUrl);
+          setStatusMessage("✅ Cartel completo descargado.");
+          setTimeout(() => setStatusMessage(""), 4000);
+          return;
+        } catch (canvasErr) {
+          console.error(canvasErr);
+        }
+      }
+      setErrorMessage("No se pudo descargar la imagen completa.");
+    } finally {
+      setIsRenderingFinal(false);
+    }
+  };
+
+  // Generar copy con nuestros agentes basado en los textos de las imágenes
+  const handleGenerateCopyFromSlides = async () => {
+    setIsGeneratingCopy(true);
+    setStatusMessage("Nuestros agentes están redactando el copy persuasivo...");
+    try {
+      const token = user ? await user.getIdToken() : "";
+      const res = await fetch("/api/imagen-comercial/generate-copy", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify({
+          slides,
+          prompt: activeSlide.prompt,
+          targetProfile: activeProfile,
+          networks: selectedNetworks,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.copy) {
+        throw new Error(data.error || "No se pudo generar el copy con nuestros agentes.");
+      }
+
+      setPostCaption(data.copy);
+      setStatusMessage("✅ Copy generado con éxito por nuestros agentes.");
+      setTimeout(() => setStatusMessage(""), 4000);
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || "Error generando copy con nuestros agentes.");
+    } finally {
+      setIsGeneratingCopy(false);
+    }
   };
 
   // Gestión de slides para carrusel (1 a 5)
@@ -705,12 +908,61 @@ export default function ImagenComercialPage() {
 
   // Publicar o Agendar
   const handleExecutePublishOrSchedule = async () => {
+    if (selectedNetworks.length === 0) {
+      alert("Por favor selecciona al menos una red social para publicar.");
+      return;
+    }
+
     setIsPublishing(true);
     setPublishSuccess("");
     try {
-      const targetUrl = activeSlide.finalRenderUrl || activeSlide.baseImageUrl;
+      let targetUrl = activeSlide.finalRenderUrl;
+      // Si la diapositiva no tiene render final HD, renderizarlo antes de publicar
+      if (!targetUrl && activeSlide.baseImageUrl) {
+        setStatusMessage("Generando versión final en alta resolución antes de publicar...");
+        const token = user ? await user.getIdToken() : "";
+        const rRes = await fetch("/api/imagen-comercial/render-final", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+          body: JSON.stringify({
+            baseImageUrl: activeSlide.baseImageUrl,
+            textLayers: activeSlide.textLayers,
+            useLogo: activeSlide.useLogo,
+            logoUrl: activeSlide.logoUrl,
+            logoX: activeSlide.logoX,
+            logoY: activeSlide.logoY,
+            logoWidth: activeSlide.logoWidth,
+            logoTransparent: activeSlide.logoTransparent,
+            logoBlendMode: activeSlide.logoBlendMode || (activeSlide.logoTransparent ? "screen" : "normal"),
+            logoBgMode: activeSlide.logoBgMode || (activeSlide.logoTransparent ? "transparent" : "white"),
+            aspectRatio: activeSlide.aspectRatio,
+            customFonts,
+            saveToLibrary: true,
+            prompt: activeSlide.prompt,
+            isCarousel: slides.length > 1,
+            slideIndex: activeSlideIndex,
+            commercialDesignData: {
+              slides,
+              activeSlideIndex,
+              customFonts,
+            },
+          }),
+        });
+        const rData = await rRes.json();
+        if (rRes.ok && rData.finalImageUrl) {
+          targetUrl = rData.finalImageUrl;
+          updateActiveSlide((s) => ({ ...s, finalRenderUrl: rData.finalImageUrl }));
+        }
+      }
+
       if (!targetUrl) {
-        throw new Error("No hay imagen generada para publicar.");
+        targetUrl = activeSlide.baseImageUrl;
+      }
+      if (!targetUrl) {
+        throw new Error("No hay imagen disponible para publicar.");
       }
 
       const token = user ? await user.getIdToken() : "";
@@ -725,36 +977,55 @@ export default function ImagenComercialPage() {
         copy: postCaption || activeSlide.textLayers.map((l) => l.text).join("\n"),
         idea: activeSlide.prompt,
         aspectRatio: activeSlide.aspectRatio,
+        networks: selectedNetworks,
         scheduledFor: isSchedule ? new Date(scheduleDateTime).toISOString() : new Date().toISOString(),
         status: isSchedule ? "scheduled" : "ready_to_publish",
+        isCopyFinalized: true,
       };
 
+      // 1. Crear documento en social_posts
+      const newPostRef = await addDoc(collection(db, "social_posts"), {
+        ...payload,
+        createdAt: serverTimestamp(),
+      });
+
       if (!isSchedule) {
-        // Publicar ahora
+        // 2. Publicar ahora vía /api/publish-now enviando postId
         const pubRes = await fetch("/api/publish-now", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             ...(token && { Authorization: `Bearer ${token}` }),
           },
-          body: JSON.stringify(payload),
+          body: JSON.stringify({ postId: newPostRef.id }),
         });
         const pubData = await pubRes.json();
         if (!pubRes.ok) throw new Error(pubData.error || "Error al publicar.");
-        setPublishSuccess("🎉 ¡Publicado con éxito en tus redes sociales!");
+        setPublishSuccess("🎉 ¡Publicado con éxito en tus redes sociales seleccionadas!");
       } else {
-        // Agendar en Firestore
-        await addDoc(collection(db, "social_posts"), {
-          ...payload,
-          createdAt: serverTimestamp(),
-        });
+        // Agendar con Cloud Tasks
+        try {
+          await fetch("/api/tasks/schedule", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(token && { Authorization: `Bearer ${token}` }),
+            },
+            body: JSON.stringify({
+              postId: newPostRef.id,
+              scheduledFor: new Date(scheduleDateTime).toISOString(),
+            }),
+          });
+        } catch (schedErr) {
+          console.warn("Schedule task notification:", schedErr);
+        }
         setPublishSuccess("📅 ¡Programado con éxito en tu calendario de publicaciones!");
       }
 
       setTimeout(() => {
         setIsPublishModalOpen(false);
         setPublishSuccess("");
-      }, 2500);
+      }, 3000);
     } catch (err: any) {
       console.error(err);
       alert(err.message || "Error al procesar la publicación.");
@@ -1071,15 +1342,31 @@ export default function ImagenComercialPage() {
                         <input type="file" accept="image/png,image/svg+xml,image/jpeg" onChange={handleUploadLogo} className="hidden" />
                       </label>
                       {activeSlide.logoUrl && (
-                        <button
-                          type="button"
-                          onClick={handleRemoveBlackFromLogo}
-                          className="py-2 px-2.5 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 font-bold text-[11px] transition-all flex items-center gap-1 shadow-2xs"
-                          title="Recorta matemáticamente los píxeles negros en un archivo PNG transparente real"
-                        >
-                          <Sparkles className="w-3 h-3 text-orange-600" />
-                          <span>Recortar fondo negro</span>
-                        </button>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={handleRemoveBgWithLogoRemover}
+                            disabled={isRemovingBgWithRemover}
+                            className="py-2 px-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold text-[11px] transition-all flex items-center gap-1 shadow-2xs disabled:opacity-50"
+                            title="Elimina el fondo del logo usando nuestro algoritmo de BG Remover"
+                          >
+                            {isRemovingBgWithRemover ? (
+                              <Loader2 className="w-3 h-3 animate-spin text-indigo-600" />
+                            ) : (
+                              <Wand2 className="w-3 h-3 text-indigo-600" />
+                            )}
+                            <span>🪄 Quitar fondo (BG Remover)</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleRemoveBlackFromLogo}
+                            className="py-2 px-2.5 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 font-bold text-[11px] transition-all flex items-center gap-1 shadow-2xs"
+                            title="Recorta matemáticamente los píxeles negros en un archivo PNG transparente real"
+                          >
+                            <Sparkles className="w-3 h-3 text-orange-600" />
+                            <span>Recortar negro</span>
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -1322,12 +1609,13 @@ export default function ImagenComercialPage() {
             <div className="w-full flex items-center justify-between gap-3 pt-6 border-t border-white/10 mt-6 flex-wrap">
               <div className="flex items-center gap-2">
                 <button
-                  onClick={handleDownload}
-                  disabled={!activeSlide.baseImageUrl}
-                  className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs transition-all flex items-center gap-1.5 disabled:opacity-40 shadow-sm"
+                  onClick={handleDownloadCompleteImage}
+                  disabled={!activeSlide.baseImageUrl || isRenderingFinal}
+                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-500/20 to-amber-500/20 hover:from-orange-500/30 hover:to-amber-500/30 border border-orange-500/40 text-orange-200 font-bold text-xs transition-all flex items-center gap-1.5 disabled:opacity-40 shadow-sm"
+                  title="Renderiza y descarga el cartel final en alta resolución con tipografías y logo integrados"
                 >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Descargar PNG</span>
+                  {isRenderingFinal ? <Loader2 className="w-3.5 h-3.5 animate-spin text-orange-400" /> : <Download className="w-3.5 h-3.5 text-orange-400" />}
+                  <span>{isRenderingFinal ? "Renderizando HD..." : "Descargar Imagen Completa HD"}</span>
                 </button>
               </div>
 
@@ -1660,15 +1948,99 @@ export default function ImagenComercialPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Texto del Copy para la publicación
-                  </label>
+                {/* Selector de Redes Sociales Conectadas */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-700">
+                      Publicar en redes sociales
+                    </label>
+                    <span className="text-[10px] text-slate-400">
+                      Selecciona las plataformas activas
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { id: "instagram", name: "Instagram" },
+                      { id: "facebook", name: "Facebook" },
+                      { id: "linkedin", name: "LinkedIn" },
+                      { id: "tiktok", name: "TikTok" },
+                      { id: "x", name: "X (Twitter)" },
+                      { id: "youtube", name: "YouTube" },
+                    ].map((net) => {
+                      const isConnected = (connectedNetworks as any)[net.id];
+                      const isSelected = selectedNetworks.includes(net.id);
+
+                      return (
+                        <button
+                          key={net.id}
+                          type="button"
+                          onClick={() => {
+                            if (isSelected) {
+                              setSelectedNetworks(selectedNetworks.filter((n) => n !== net.id));
+                            } else {
+                              setSelectedNetworks([...selectedNetworks, net.id]);
+                            }
+                          }}
+                          className={`p-2 rounded-xl border text-left text-xs transition-all relative flex flex-col gap-1 ${
+                            isSelected
+                              ? "border-slate-900 bg-slate-900 text-white shadow-sm"
+                              : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-[11px] truncate">{net.name}</span>
+                            {isSelected && <Check className="w-3 h-3 text-emerald-400 shrink-0" />}
+                          </div>
+                          <span
+                            className={`text-[9px] font-medium ${
+                              isSelected
+                                ? isConnected
+                                  ? "text-emerald-300"
+                                  : "text-amber-200"
+                                : isConnected
+                                ? "text-emerald-600"
+                                : "text-slate-400"
+                            }`}
+                          >
+                            {isConnected ? "● Conectada" : "○ Sin vincular"}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Campo de Copy con botón de generación con agentes */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-700">
+                      Texto del Copy para la publicación
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleGenerateCopyFromSlides}
+                      disabled={isGeneratingCopy}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors border border-indigo-200 disabled:opacity-50"
+                    >
+                      {isGeneratingCopy ? (
+                        <>
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                          <span>Redactando con agentes...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-3 h-3 text-indigo-600" />
+                          <span>Generar copy con nuestros agentes</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                   <textarea
                     rows={4}
                     value={postCaption}
                     onChange={(e) => setPostCaption(e.target.value)}
-                    placeholder="Escribe el texto persuasivo que acompañará la imagen o carrusel..."
+                    placeholder="Escribe el texto persuasivo que acompañará la imagen o presiona 'Generar copy con nuestros agentes'..."
                     className="w-full text-xs p-3 rounded-2xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none"
                   />
                 </div>
