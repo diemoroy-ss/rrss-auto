@@ -130,6 +130,15 @@ export default function DescargarLogoPage() {
     URL.revokeObjectURL(url);
   };
 
+  const getPreviewBgStyle = (bg: BgOption): React.CSSProperties => {
+    if (bg === "dark") return { background: "#0A0A0B" };
+    if (bg === "white") return { background: "#FFFFFF" };
+    if (bg === "orange") return { background: "linear-gradient(135deg, #FFB000, #FF6B00 55%, #FF3D00)" };
+    return {
+      background: "repeating-conic-gradient(#1b1b1f 0% 25%, #26262c 0% 50%) 50% / 16px 16px",
+    };
+  };
+
   return (
     <div style={{ minHeight: "100vh", background: "#0A0A0B", color: "#fff", fontFamily: "sans-serif", padding: "40px 20px" }}>
       <div style={{ maxWidth: "640px", margin: "0 auto", textAlign: "center" }}>
@@ -144,7 +153,8 @@ export default function DescargarLogoPage() {
         </p>
 
         {/* Vista previa cuadrada + circular (como se ve en perfil de Instagram/TikTok) */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "24px", flexWrap: "wrap", marginBottom: "24px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "28px", flexWrap: "wrap", marginBottom: "28px" }}>
+          {/* Cuadrada */}
           <div style={{ textAlign: "center" }}>
             <div style={{
               background: "repeating-conic-gradient(#1b1b1f 0% 25%, #26262c 0% 50%) 50% / 16px 16px",
@@ -154,11 +164,54 @@ export default function DescargarLogoPage() {
               boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
               border: "1px solid rgba(255,255,255,0.1)"
             }}>
-              <canvas ref={canvasRef} width={size} height={size} style={{ width: "160px", height: "160px", borderRadius: "16px", display: "block" }} />
+              <div
+                style={{
+                  width: "160px",
+                  height: "160px",
+                  borderRadius: "16px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  border: bgType === "dark" ? "1px solid rgba(255,255,255,0.08)" : "none",
+                  ...getPreviewBgStyle(bgType),
+                }}
+              >
+                <LogoMark size={108} color={bgType === "orange" ? "#FFFFFF" : "#FF6B00"} />
+              </div>
             </div>
-            <div style={{ fontSize: "11px", color: "#888", marginTop: "8px", fontWeight: 600 }}>Vista Cuadrada</div>
+            <div style={{ fontSize: "12px", color: "#aaa", marginTop: "8px", fontWeight: 600 }}>Vista Cuadrada (App / Post)</div>
+          </div>
+
+          {/* Circular (Perfil RRSS) */}
+          <div style={{ textAlign: "center" }}>
+            <div style={{
+              background: "linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)",
+              borderRadius: "9999px",
+              padding: "4px",
+              display: "inline-block",
+              boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
+            }}>
+              <div
+                style={{
+                  width: "160px",
+                  height: "160px",
+                  borderRadius: "9999px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  border: "3px solid #0A0A0B",
+                  ...getPreviewBgStyle(bgType),
+                }}
+              >
+                <LogoMark size={104} color={bgType === "orange" ? "#FFFFFF" : "#FF6B00"} />
+              </div>
+            </div>
+            <div style={{ fontSize: "12px", color: "#aaa", marginTop: "8px", fontWeight: 600 }}>Perfil Instagram / TikTok</div>
           </div>
         </div>
+
+        {/* Canvas oculto de respaldo */}
+        <canvas ref={canvasRef} width={size} height={size} style={{ display: "none" }} />
 
         {/* Opciones de Fondo */}
         <div style={{ marginBottom: "28px", display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "8px" }}>
