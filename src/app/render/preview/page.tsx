@@ -215,36 +215,52 @@ export default async function RenderPreviewPage(props: {
         )}
 
         {/* Capas de Texto */}
-        {data.textLayers && data.textLayers.map((layer: any, idx: number) => (
-          <div
-            key={idx}
-            style={{
-              position: "absolute",
-              left: `${layer.x}%`,
-              top: `${layer.y}%`,
-              transform: "translate(-50%, -50%)",
-              zIndex: 10 + idx,
-              color: layer.color,
-              fontFamily: layer.fontFamily || layer.font || "'Montserrat', sans-serif",
-              fontSize: `${layer.size}px`,
-              fontWeight: layer.isBold === false ? "normal" : "bold",
-              fontStyle: layer.isItalic ? "italic" : "normal",
-              textShadow: layer.shadowLevel === "none" ? "none" : layer.shadowLevel === "soft" ? "1px 1px 3px rgba(0,0,0,0.5)" : "2px 2px 8px rgba(0,0,0,0.8)",
-              backgroundColor: layer.backgroundColor && layer.backgroundColor !== "transparent" ? layer.backgroundColor : "transparent",
-              borderRadius: layer.isPill ? "9999px" : "4px",
-              padding: layer.backgroundColor && layer.backgroundColor !== "transparent" ? (layer.isPill ? "8px 24px" : "4px 12px") : "0",
-              textTransform: layer.textTransform || "none",
-              letterSpacing: layer.letterSpacing === "widest" ? "0.1em" : layer.letterSpacing === "wide" ? "0.05em" : "normal",
-              WebkitTextStroke: layer.textStroke ? `1px ${layer.color === "#ffffff" ? "#000000" : "#ffffff"}` : "none",
-              opacity: layer.opacity ?? 1,
-              maxWidth: layer.maxWidth ? `${layer.maxWidth}px` : undefined,
-              whiteSpace: layer.maxWidth ? "normal" : layer.whiteSpace || "nowrap",
-              textAlign: layer.textAlign || "center"
-            }}
-          >
-            {layer.text}
-          </div>
-        ))}
+        {data.textLayers && data.textLayers.map((layer: any, idx: number) => {
+          const isPill = Boolean(layer.isPill);
+          const layerWidth = layer.boxWidth !== undefined && layer.boxWidth !== null
+            ? (layer.boxWidth === 0 ? "max-content" : `${layer.boxWidth}%`)
+            : isPill
+            ? "max-content"
+            : layer.maxWidth
+            ? `${layer.maxWidth}px`
+            : "88%";
+
+          const whiteSpace = layerWidth === "max-content" ? "nowrap" : "pre-line";
+
+          return (
+            <div
+              key={idx}
+              style={{
+                position: "absolute",
+                left: `${layer.x}%`,
+                top: `${layer.y}%`,
+                transform: "translate(-50%, -50%)",
+                zIndex: 10 + idx,
+                color: layer.color,
+                fontFamily: layer.fontFamily || layer.font || "'Montserrat', sans-serif",
+                fontSize: `${layer.size}px`,
+                fontWeight: layer.isBold === false ? "normal" : "bold",
+                fontStyle: layer.isItalic ? "italic" : "normal",
+                textShadow: layer.shadowLevel === "none" ? "none" : layer.shadowLevel === "soft" ? "1px 1px 3px rgba(0,0,0,0.5)" : "2px 2px 8px rgba(0,0,0,0.8)",
+                backgroundColor: layer.backgroundColor && layer.backgroundColor !== "transparent" ? layer.backgroundColor : "transparent",
+                borderRadius: isPill ? "9999px" : "4px",
+                padding: layer.backgroundColor && layer.backgroundColor !== "transparent" ? (isPill ? "8px 24px" : "4px 12px") : "0",
+                textTransform: layer.textTransform || "none",
+                letterSpacing: layer.letterSpacing === "widest" ? "0.1em" : layer.letterSpacing === "wide" ? "0.05em" : "normal",
+                WebkitTextStroke: layer.textStroke ? `1px ${layer.color === "#ffffff" ? "#000000" : "#ffffff"}` : "none",
+                opacity: layer.opacity ?? 1,
+                width: layerWidth,
+                maxWidth: "96%",
+                whiteSpace,
+                textAlign: layer.textAlign || "center",
+                wordBreak: "break-word",
+                lineHeight: 1.18,
+              }}
+            >
+              {layer.text}
+            </div>
+          );
+        })}
 
         {/* Logo Corporativo */}
         {data.useLogo && data.logoUrl && (
@@ -259,13 +275,13 @@ export default async function RenderPreviewPage(props: {
               // Para el lienzo de 1080px en Butterfly, escalamos el logo correspondientemente (multiplicado por 2.4).
               width: data.logoWidth ? `${Math.round(data.logoWidth * 2.4)}px` : "160px",
               height: data.logoWidth ? `${Math.round(data.logoWidth * 2.4)}px` : "160px",
-              backgroundColor: data.logoBg === "transparent" ? "transparent" : (data.logoBg || "white"),
-              borderRadius: data.logoBg === "transparent" ? "0" : "16px",
-              padding: data.logoBg === "transparent" ? "0" : "10px",
+              backgroundColor: (data.logoBgMode === "white" || data.logoBg === "white") ? "#FFFFFF" : "transparent",
+              borderRadius: (data.logoBgMode === "white" || data.logoBg === "white") ? "16px" : "0",
+              padding: (data.logoBgMode === "white" || data.logoBg === "white") ? "12px" : "0",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              boxShadow: data.logoBg === "transparent" ? "none" : "0 8px 32px rgba(0,0,0,0.3)"
+              boxShadow: (data.logoBgMode === "white" || data.logoBg === "white") ? "0 8px 32px rgba(0,0,0,0.3)" : "none"
             }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -275,7 +291,8 @@ export default async function RenderPreviewPage(props: {
                 maxWidth: "100%", 
                 maxHeight: "100%", 
                 objectFit: "contain",
-                filter: data.logoBg === "transparent" ? "drop-shadow(0 4px 12px rgba(0,0,0,0.5))" : "none"
+                mixBlendMode: data.logoBlendMode || (data.logoBgMode === "screen" ? "screen" : data.logoBgMode === "multiply" ? "multiply" : (data.logoTransparent !== false && data.logoBg !== "white") ? "screen" : "normal"),
+                filter: (data.logoBgMode === "white" || data.logoBg === "white") ? "none" : "drop-shadow(0 4px 12px rgba(0,0,0,0.5))"
               }} 
               alt="logo" 
             />

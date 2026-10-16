@@ -45,6 +45,8 @@ interface TextLayer {
   isItalic: boolean;
   letterSpacing: "normal" | "wide" | "widest";
   maxWidth?: number;
+  boxWidth?: number; // 0 = auto / max-content, 40 a 100 (%)
+  textAlign?: "left" | "center" | "right";
 }
 
 interface CustomFont {
@@ -62,6 +64,8 @@ interface SlideData {
   useLogo: boolean;
   logoUrl: string;
   logoTransparent: boolean;
+  logoBlendMode?: "screen" | "normal" | "multiply";
+  logoBgMode?: "transparent" | "white";
   logoX: number;
   logoY: number;
   logoWidth: number;
@@ -102,6 +106,45 @@ const PROMPT_PRESETS = [
   },
 ];
 
+function removeBlackBackground(imageUrl: string): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return resolve(imageUrl);
+        ctx.drawImage(img, 0, 0);
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imgData.data;
+        for (let i = 0; i < data.length; i += 4) {
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+          // Brillo perceptual
+          const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
+          if (brightness < 28) {
+            data[i + 3] = 0; // 100% transparente
+          } else if (brightness < 60) {
+            // Suavizado anti-alias
+            const factor = (brightness - 28) / 32;
+            data[i + 3] = Math.round(data[i + 3] * factor);
+          }
+        }
+        ctx.putImageData(imgData, 0, 0);
+        resolve(canvas.toDataURL("image/png"));
+      } catch (e) {
+        resolve(imageUrl);
+      }
+    };
+    img.onerror = () => resolve(imageUrl);
+    img.src = imageUrl;
+  });
+}
+
 function createInitialSlide(id: string): SlideData {
   return {
     id,
@@ -124,6 +167,8 @@ function createInitialSlide(id: string): SlideData {
         isBold: true,
         isItalic: false,
         letterSpacing: "wide",
+        boxWidth: 0,
+        textAlign: "center",
       },
       {
         id: "layer-2",
@@ -139,6 +184,8 @@ function createInitialSlide(id: string): SlideData {
         isItalic: false,
         letterSpacing: "normal",
         maxWidth: 960,
+        boxWidth: 88,
+        textAlign: "center",
       },
       {
         id: "layer-3",
@@ -154,11 +201,15 @@ function createInitialSlide(id: string): SlideData {
         isBold: true,
         isItalic: false,
         letterSpacing: "normal",
+        boxWidth: 0,
+        textAlign: "center",
       },
     ],
     useLogo: false,
     logoUrl: "",
     logoTransparent: true,
+    logoBlendMode: "screen",
+    logoBgMode: "transparent",
     logoX: 86,
     logoY: 14,
     logoWidth: 110,
@@ -244,6 +295,8 @@ export default function ImagenComercialPage() {
           useLogo: Boolean(data.useLogo),
           logoUrl: data.logoUrl || "",
           logoTransparent: data.logoTransparent !== undefined ? data.logoTransparent : true,
+          logoBlendMode: data.logoBlendMode || (data.logoTransparent ? "screen" : "normal"),
+          logoBgMode: data.logoBgMode || (data.logoBg === "white" ? "white" : "transparent"),
           logoX: data.logoX || 86,
           logoY: data.logoY || 14,
           logoWidth: data.logoWidth || 110,
@@ -344,10 +397,34 @@ export default function ImagenComercialPage() {
           ...s,
           logoUrl: reader.result as string,
           useLogo: true,
+          logoTransparent: true,
+          logoBlendMode: "screen",
+          logoBgMode: "transparent",
         }));
       }
     };
     reader.readAsDataURL(file);
+  };
+
+  // Convertir archivo de logo a PNG transparente real quitando píxeles negros
+  const handleRemoveBlackFromLogo = async () => {
+    if (!activeSlide.logoUrl) return;
+    setStatusMessage("Limpiando fondo negro del logo...");
+    try {
+      const transparentUrl = await removeBlackBackground(activeSlide.logoUrl);
+      updateActiveSlide((s) => ({
+        ...s,
+        logoUrl: transparentUrl,
+        logoTransparent: true,
+        logoBlendMode: "normal",
+        logoBgMode: "transparent",
+      }));
+      setStatusMessage("✅ Fondo negro eliminado del archivo con éxito.");
+      setTimeout(() => setStatusMessage(""), 3500);
+    } catch (err: any) {
+      console.warn("Error recortando fondo:", err);
+      setErrorMessage("No se pudo procesar el fondo del logo.");
+    }
   };
 
   // Lógica Drag & Drop sobre el lienzo
@@ -427,6 +504,8 @@ export default function ImagenComercialPage() {
       isBold: true,
       isItalic: false,
       letterSpacing: "normal",
+      boxWidth: 80,
+      textAlign: "center",
     };
     updateActiveSlide((s) => ({
       ...s,
@@ -554,6 +633,8 @@ export default function ImagenComercialPage() {
           logoY: activeSlide.logoY,
           logoWidth: activeSlide.logoWidth,
           logoTransparent: activeSlide.logoTransparent,
+          logoBlendMode: activeSlide.logoBlendMode || (activeSlide.logoTransparent ? "screen" : "normal"),
+          logoBgMode: activeSlide.logoBgMode || (activeSlide.logoTransparent ? "transparent" : "white"),
           aspectRatio: activeSlide.aspectRatio,
           customFonts,
           saveToLibrary: true,
@@ -609,6 +690,9 @@ export default function ImagenComercialPage() {
     newSlide.aspectRatio = activeSlide.aspectRatio;
     newSlide.useLogo = activeSlide.useLogo;
     newSlide.logoUrl = activeSlide.logoUrl;
+    newSlide.logoTransparent = activeSlide.logoTransparent;
+    newSlide.logoBlendMode = activeSlide.logoBlendMode;
+    newSlide.logoBgMode = activeSlide.logoBgMode;
     setSlides((prev) => [...prev, newSlide]);
     setActiveSlideIndex(slides.length);
   };
@@ -916,9 +1000,10 @@ export default function ImagenComercialPage() {
                         </button>
                       </div>
                     </div>
-                    <input
-                      type="text"
+                    <textarea
+                      rows={2}
                       value={layer.text}
+                      placeholder="Escribe el texto de la capa (usa Enter para saltos de línea)..."
                       onChange={(e) =>
                         updateActiveSlide((s) => ({
                           ...s,
@@ -927,7 +1012,7 @@ export default function ImagenComercialPage() {
                           ),
                         }))
                       }
-                      className="w-full text-xs font-bold p-2 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none"
+                      className="w-full text-xs font-bold p-2.5 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:outline-none resize-y leading-tight"
                     />
                   </div>
                 );
@@ -956,32 +1041,131 @@ export default function ImagenComercialPage() {
             </div>
 
             {activeSlide.useLogo && (
-              <div className="space-y-3 pt-1">
+              <div className="space-y-4 pt-1">
                 <div className="flex items-center gap-3">
-                  <div className="w-16 h-16 rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-center p-2 overflow-hidden shrink-0">
+                  <div
+                    className={`w-16 h-16 rounded-2xl border flex items-center justify-center p-2 overflow-hidden shrink-0 transition-colors ${
+                      activeSlide.logoBgMode === "white"
+                        ? "bg-white border-slate-300"
+                        : "bg-slate-900 border-slate-800"
+                    }`}
+                  >
                     {activeSlide.logoUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={activeSlide.logoUrl} alt="Logo" className="max-w-full max-h-full object-contain" />
+                      <img
+                        src={activeSlide.logoUrl}
+                        alt="Logo"
+                        style={{
+                          mixBlendMode: activeSlide.logoBlendMode || (activeSlide.logoTransparent ? "screen" : "normal"),
+                        }}
+                        className="max-w-full max-h-full object-contain"
+                      />
                     ) : (
                       <span className="text-[10px] text-slate-400 font-bold">Sin logo</span>
                     )}
                   </div>
                   <div className="space-y-1.5 flex-1">
-                    <label className="inline-block py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer transition-all">
-                      <span>📁 Subir Logo PNG</span>
-                      <input type="file" accept="image/png,image/svg+xml,image/jpeg" onChange={handleUploadLogo} className="hidden" />
-                    </label>
-                    <div className="flex items-center gap-3 pt-1">
-                      <label className="text-xs font-semibold text-slate-600 flex items-center gap-1.5 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={activeSlide.logoTransparent}
-                          onChange={(e) => updateActiveSlide((s) => ({ ...s, logoTransparent: e.target.checked }))}
-                          className="rounded text-orange-600"
-                        />
-                        <span>Fondo Transparente</span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <label className="inline-block py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer transition-all">
+                        <span>📁 Subir Logo</span>
+                        <input type="file" accept="image/png,image/svg+xml,image/jpeg" onChange={handleUploadLogo} className="hidden" />
                       </label>
+                      {activeSlide.logoUrl && (
+                        <button
+                          type="button"
+                          onClick={handleRemoveBlackFromLogo}
+                          className="py-2 px-2.5 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 font-bold text-[11px] transition-all flex items-center gap-1 shadow-2xs"
+                          title="Recorta matemáticamente los píxeles negros en un archivo PNG transparente real"
+                        >
+                          <Sparkles className="w-3 h-3 text-orange-600" />
+                          <span>Recortar fondo negro</span>
+                        </button>
+                      )}
                     </div>
+                  </div>
+                </div>
+
+                {/* Modos de Fondo de Logo */}
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 mb-1.5">
+                    Modo de Transparencia del Logo:
+                  </label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateActiveSlide((s) => ({
+                          ...s,
+                          logoTransparent: true,
+                          logoBlendMode: "screen",
+                          logoBgMode: "transparent",
+                        }))
+                      }
+                      className={`px-2.5 py-1.5 rounded-xl border text-[11px] font-bold text-left transition-all ${
+                        activeSlide.logoBlendMode === "screen" && activeSlide.logoBgMode !== "white"
+                          ? "bg-orange-50 border-orange-400 text-orange-700 ring-1 ring-orange-300"
+                          : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                      }`}
+                    >
+                      <span>🖤 Quitar fondo negro</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateActiveSlide((s) => ({
+                          ...s,
+                          logoTransparent: true,
+                          logoBlendMode: "normal",
+                          logoBgMode: "transparent",
+                        }))
+                      }
+                      className={`px-2.5 py-1.5 rounded-xl border text-[11px] font-bold text-left transition-all ${
+                        activeSlide.logoBlendMode === "normal" && activeSlide.logoBgMode !== "white"
+                          ? "bg-orange-50 border-orange-400 text-orange-700 ring-1 ring-orange-300"
+                          : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                      }`}
+                    >
+                      <span>💎 PNG Transparente</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateActiveSlide((s) => ({
+                          ...s,
+                          logoTransparent: true,
+                          logoBlendMode: "multiply",
+                          logoBgMode: "transparent",
+                        }))
+                      }
+                      className={`px-2.5 py-1.5 rounded-xl border text-[11px] font-bold text-left transition-all ${
+                        activeSlide.logoBlendMode === "multiply" && activeSlide.logoBgMode !== "white"
+                          ? "bg-orange-50 border-orange-400 text-orange-700 ring-1 ring-orange-300"
+                          : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                      }`}
+                    >
+                      <span>⚪ Quitar fondo blanco</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateActiveSlide((s) => ({
+                          ...s,
+                          logoTransparent: false,
+                          logoBlendMode: "normal",
+                          logoBgMode: "white",
+                        }))
+                      }
+                      className={`px-2.5 py-1.5 rounded-xl border text-[11px] font-bold text-left transition-all ${
+                        activeSlide.logoBgMode === "white"
+                          ? "bg-orange-50 border-orange-400 text-orange-700 ring-1 ring-orange-300"
+                          : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                      }`}
+                    >
+                      <span>🔲 Placa blanca</span>
+                    </button>
                   </div>
                 </div>
 
@@ -1050,6 +1234,17 @@ export default function ImagenComercialPage() {
               {/* CAPAS DE TEXTO ARRASTRABLES */}
               {activeSlide.textLayers.map((layer) => {
                 const isSelected = layer.id === selectedLayerId;
+                const isPill = Boolean(layer.isPill);
+                const layerWidth = layer.boxWidth !== undefined && layer.boxWidth !== null
+                  ? (layer.boxWidth === 0 ? "max-content" : `${layer.boxWidth}%`)
+                  : isPill
+                  ? "max-content"
+                  : layer.maxWidth
+                  ? `${Math.round((layer.maxWidth / 1080) * 100)}%`
+                  : "88%";
+
+                const whiteSpace = layerWidth === "max-content" ? "nowrap" : "pre-line";
+
                 return (
                   <div
                     key={layer.id}
@@ -1058,6 +1253,11 @@ export default function ImagenComercialPage() {
                       left: `${layer.x}%`,
                       top: `${layer.y}%`,
                       transform: "translate(-50%, -50%)",
+                      width: layerWidth,
+                      maxWidth: "96%",
+                      whiteSpace,
+                      textAlign: layer.textAlign || "center",
+                      wordBreak: "break-word",
                       color: layer.color,
                       fontFamily: layer.fontFamily,
                       fontSize: `${Math.round(layer.size * 0.45)}px`, // Escala para preview
@@ -1074,7 +1274,7 @@ export default function ImagenComercialPage() {
                           ? "1px 1px 4px rgba(0,0,0,0.6)"
                           : "2px 2px 8px rgba(0,0,0,0.9)",
                     }}
-                    className={`absolute z-10 cursor-move transition-shadow text-center max-w-[92%] leading-tight ${
+                    className={`absolute z-10 cursor-move transition-shadow leading-tight ${
                       isSelected
                         ? "ring-2 ring-orange-400 ring-offset-2 ring-offset-black/50 shadow-lg"
                         : "hover:ring-1 hover:ring-white/40"
@@ -1095,16 +1295,25 @@ export default function ImagenComercialPage() {
                     transform: "translate(-50%, -50%)",
                     width: `${Math.round(activeSlide.logoWidth * 0.55)}px`,
                     height: `${Math.round(activeSlide.logoWidth * 0.55)}px`,
-                    backgroundColor: activeSlide.logoTransparent ? "transparent" : "#FFFFFF",
-                    borderRadius: activeSlide.logoTransparent ? "0px" : "12px",
-                    padding: activeSlide.logoTransparent ? "0px" : "6px",
+                    backgroundColor: activeSlide.logoBgMode === "white" ? "#FFFFFF" : "transparent",
+                    borderRadius: activeSlide.logoBgMode === "white" ? "12px" : "0px",
+                    padding: activeSlide.logoBgMode === "white" ? "6px" : "0px",
+                    boxShadow: activeSlide.logoBgMode === "white" ? "0 4px 14px rgba(0,0,0,0.25)" : "none",
                   }}
                   className={`absolute z-20 cursor-move flex items-center justify-center ${
                     isDraggingLogo ? "ring-2 ring-orange-400 ring-offset-2 ring-offset-black" : "hover:ring-1 hover:ring-white/40"
                   }`}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={activeSlide.logoUrl} alt="Logo" className="max-w-full max-h-full object-contain pointer-events-none" />
+                  <img
+                    src={activeSlide.logoUrl}
+                    alt="Logo"
+                    style={{
+                      mixBlendMode: activeSlide.logoBlendMode || (activeSlide.logoTransparent ? "screen" : "normal"),
+                      filter: activeSlide.logoBgMode === "white" ? "none" : "drop-shadow(0 2px 8px rgba(0,0,0,0.4))",
+                    }}
+                    className="max-w-full max-h-full object-contain pointer-events-none"
+                  />
                 </div>
               )}
             </div>
@@ -1256,6 +1465,88 @@ export default function ImagenComercialPage() {
                   >
                     {selectedLayer.isPill ? "Píldora Activa" : "Rectangular"}
                   </button>
+                </div>
+              </div>
+
+              {/* Controles de Ancho Fijo y Alineación */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+                {/* Ancho del Bloque (boxWidth) */}
+                <div>
+                  <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 mb-1">
+                    <span>
+                      Ancho del Bloque:{" "}
+                      <strong className="text-slate-800">
+                        {selectedLayer.boxWidth === 0 || selectedLayer.isPill
+                          ? "Automático"
+                          : `${selectedLayer.boxWidth || 88}%`}
+                      </strong>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateSelectedLayer({
+                          boxWidth: selectedLayer.boxWidth === 0 ? 88 : 0,
+                        })
+                      }
+                      className="text-[10px] font-bold text-orange-600 hover:text-orange-700 bg-orange-50 px-2 py-0.5 rounded-md"
+                    >
+                      {selectedLayer.boxWidth === 0 ? "Fijar Ancho" : "Ajuste Auto"}
+                    </button>
+                  </div>
+                  <input
+                    type="range"
+                    min={35}
+                    max={100}
+                    disabled={selectedLayer.boxWidth === 0}
+                    value={selectedLayer.boxWidth || 88}
+                    onChange={(e) => updateSelectedLayer({ boxWidth: Number(e.target.value) })}
+                    className="w-full accent-orange-500 disabled:opacity-40"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    Mantiene el ancho fijo al mover el texto a la derecha o izquierda sin apretarse.
+                  </p>
+                </div>
+
+                {/* Alineación de Texto */}
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 mb-1">
+                    Alineación del Texto
+                  </label>
+                  <div className="grid grid-cols-3 gap-1">
+                    <button
+                      type="button"
+                      onClick={() => updateSelectedLayer({ textAlign: "left" })}
+                      className={`py-1.5 px-2 rounded-lg text-xs font-bold border transition-all ${
+                        selectedLayer.textAlign === "left"
+                          ? "bg-orange-50 border-orange-300 text-orange-700 font-black"
+                          : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                      }`}
+                    >
+                      ⬅ Izq
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateSelectedLayer({ textAlign: "center" })}
+                      className={`py-1.5 px-2 rounded-lg text-xs font-bold border transition-all ${
+                        !selectedLayer.textAlign || selectedLayer.textAlign === "center"
+                          ? "bg-orange-50 border-orange-300 text-orange-700 font-black"
+                          : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                      }`}
+                    >
+                      ↔ Centro
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateSelectedLayer({ textAlign: "right" })}
+                      className={`py-1.5 px-2 rounded-lg text-xs font-bold border transition-all ${
+                        selectedLayer.textAlign === "right"
+                          ? "bg-orange-50 border-orange-300 text-orange-700 font-black"
+                          : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                      }`}
+                    >
+                      ➡ Der
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
