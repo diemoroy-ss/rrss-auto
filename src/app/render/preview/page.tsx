@@ -1,11 +1,20 @@
+import { adminDb } from "../../../lib/firebase-admin";
 import { db } from "../../../lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
 
+export const dynamic = "force-dynamic";
+
 // Server Component - No "use client"
-// Butterfly IA necesita el HTML renderizado desde el servidor.
+// Butterfly Social necesita el HTML renderizado desde el servidor.
 
 async function getPreviewData(id: string) {
   try {
+    if (adminDb) {
+      const snap = await adminDb.collection("preview_renders").doc(id).get();
+      if (snap.exists) {
+        return snap.data();
+      }
+    }
     const docRef = doc(db, "preview_renders", id);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
@@ -19,9 +28,10 @@ async function getPreviewData(id: string) {
 }
 
 export default async function RenderPreviewPage(props: {
-  searchParams: Promise<{ id?: string }>;
+  searchParams: Promise<{ id?: string }> | { id?: string };
 }) {
-  const { id } = await props.searchParams;
+  const resolvedParams = await Promise.resolve(props.searchParams);
+  const id = resolvedParams?.id;
 
   if (!id) {
     return <div style={{ color: "red", padding: 20 }}>Falta el ID de previsualización.</div>;
@@ -34,15 +44,43 @@ export default async function RenderPreviewPage(props: {
   }
 
   const isVertical = data.aspectRatio === "9:16";
+  const isPortrait45 = data.aspectRatio === "4:5";
   const W = 1080;
-  const H = isVertical ? 1920 : 1080;
+  const H = isVertical ? 1920 : isPortrait45 ? 1350 : 1080;
 
   const FONTS_URL = "https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Caveat:wght@600;700&family=Dancing+Script:wght@600;700&family=Montserrat:wght@400;700;900&family=Outfit:wght@400;700&family=Pacifico&family=Playfair+Display:ital,wght@0,700;1,700&family=Roboto:wght@400;700&display=swap";
+
+  const customFonts: Array<{ name: string; url: string; isCssUrl?: boolean }> = Array.isArray(data.customFonts) ? data.customFonts : [];
+  const cssUrlFonts = customFonts.filter(f => f.isCssUrl || f.url?.includes("fonts.googleapis.com"));
+  const directFileFonts = customFonts.filter(f => !f.isCssUrl && !f.url?.includes("fonts.googleapis.com"));
 
   return (
     <>
       {/* eslint-disable-next-line @next/next/no-page-custom-font */}
       <link rel="stylesheet" href={FONTS_URL} />
+      {cssUrlFonts.map((f, i) => (
+        // eslint-disable-next-line @next/next/no-page-custom-font
+        <link key={i} rel="stylesheet" href={f.url} />
+      ))}
+      {directFileFonts.length > 0 && (
+        <style
+          dangerouslySetInnerHTML={{
+            __html: directFileFonts
+              .map(
+                (f) => `
+                @font-face {
+                  font-family: '${f.name}';
+                  src: url('${f.url}') format('${f.url.endsWith(".woff2") ? "woff2" : "truetype"}');
+                  font-weight: normal;
+                  font-style: normal;
+                  font-display: block;
+                }
+              `
+              )
+              .join("\n"),
+          }}
+        />
+      )}
       
       <div
         id="link-preview"
@@ -187,19 +225,20 @@ export default async function RenderPreviewPage(props: {
               transform: "translate(-50%, -50%)",
               zIndex: 10 + idx,
               color: layer.color,
-              fontFamily: layer.font,
+              fontFamily: layer.fontFamily || layer.font || "'Montserrat', sans-serif",
               fontSize: `${layer.size}px`,
               fontWeight: layer.isBold === false ? "normal" : "bold",
               fontStyle: layer.isItalic ? "italic" : "normal",
               textShadow: layer.shadowLevel === "none" ? "none" : layer.shadowLevel === "soft" ? "1px 1px 3px rgba(0,0,0,0.5)" : "2px 2px 8px rgba(0,0,0,0.8)",
               backgroundColor: layer.backgroundColor && layer.backgroundColor !== "transparent" ? layer.backgroundColor : "transparent",
               borderRadius: layer.isPill ? "9999px" : "4px",
-              padding: layer.backgroundColor && layer.backgroundColor !== "transparent" ? "4px 12px" : "0",
+              padding: layer.backgroundColor && layer.backgroundColor !== "transparent" ? (layer.isPill ? "8px 24px" : "4px 12px") : "0",
               textTransform: layer.textTransform || "none",
               letterSpacing: layer.letterSpacing === "widest" ? "0.1em" : layer.letterSpacing === "wide" ? "0.05em" : "normal",
               WebkitTextStroke: layer.textStroke ? `1px ${layer.color === "#ffffff" ? "#000000" : "#ffffff"}` : "none",
               opacity: layer.opacity ?? 1,
-              whiteSpace: "nowrap",
+              maxWidth: layer.maxWidth ? `${layer.maxWidth}px` : undefined,
+              whiteSpace: layer.maxWidth ? "normal" : layer.whiteSpace || "nowrap",
               textAlign: layer.textAlign || "center"
             }}
           >

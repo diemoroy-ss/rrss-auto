@@ -1,31 +1,35 @@
-# Lista de Tareas (TODO): Landing Page Comercial
+# Todo: Implementación Módulo "Imagen Comercial"
 
-- [x] Task 1: Crear la página base en `src/app/como-funciona/page.tsx` con metadatos y contenedor principal
-  - Acceptance: La ruta `/como-funciona` compila y renderiza el layout institucional sin errores.
-  - Verify: Comprobar renderizado y estructura en código.
-  - Files: `src/app/como-funciona/page.tsx`
+- [ ] Task 1: Soporte de fuentes personalizadas en `/render/preview`
+  - Acceptance: `/render/preview` inyecta las etiquetas `@font-face` y `<link>` para cualquier fuente personalizada enviada en `data.customFonts`.
+  - Verify: Comprobar que el HTML generado incluya la fuente inyectada y no lance errores.
+  - Files: `src/app/render/preview/page.tsx`
 
-- [x] Task 2: Implementar Secciones 1 a 3 (Hero persuasivo, Los 3 Dolores de Clientes y Los 4 Pasos de Nuestros Agentes)
-  - Acceptance: Copys 100% humanos, cero tecnicismos, explicación clara del Radar, Plan, Arte y Publicación.
-  - Verify: Inspección de código y textos.
-  - Files: `src/app/como-funciona/page.tsx`
+- [ ] Task 2: Endpoints backend de Imagen Comercial
+  - Acceptance:
+    - `POST /api/imagen-comercial/generate-base`: Genera la imagen base limpia en formato 4:5, 1:1 o 9:16 con n8n/Flux.
+    - `POST /api/imagen-comercial/upload-font`: Recibe archivo .ttf/.woff2, lo guarda en Firebase Storage y devuelve la URL.
+  - Verify: Probar peticiones con curl/fetch y verificar respuesta con URLs públicas válidas.
+  - Files:
+    - `src/app/api/imagen-comercial/generate-base/route.ts`
+    - `src/app/api/imagen-comercial/upload-font/route.ts`
 
-- [x] Task 3: Implementar Secciones 4 a 6 (Diferencial de Fotos Reales con Selector Antes/Después, Reels Dinámicos y Comando por WhatsApp)
-  - Acceptance: Interactividad con cambio de estilos (Split Lateral, Gourmet, Receta), mockup de WhatsApp y visuales claros.
-  - Verify: Verificar interactividad de pestañas y estilos.
-  - Files: `src/app/como-funciona/page.tsx`
+- [ ] Task 3: Página interactiva `/panel/imagen-comercial` con Editor Drag & Drop y Carrusel
+  - Acceptance:
+    - Formulario de entrada con 3 bloques (Prompt/Escena, Textos, Logo).
+    - Lienzo interactivo con drag and drop libre para textos y logo.
+    - Selector de tipografías por capa + modal para subir fuente (.ttf) o pegar URL.
+    - Carrusel de hasta 5 imágenes con navegación entre slides.
+    - Botones de "Publicar Ahora", "Agendar" y "Descargar Alta Resolución (Butterfly Social)".
+  - Verify: Carga fluida en el navegador, dragging sin parpadeos, cambio de fuentes en tiempo real.
+  - Files: `src/app/automatizacion-rrss/panel/imagen-comercial/page.tsx`
 
-- [x] Task 4: Implementar Secciones 7 a 9 (Canales 360°, Tabla Comparativa y Doble CTA de Muestra en Vivo + WhatsApp)
-  - Acceptance: Tabla comparativa legible en móviles y escritorio, botón para generar muestra comercial interactiva y botón de WhatsApp configurado.
-  - Verify: Probar enlaces y formulario express de muestra.
-  - Files: `src/app/como-funciona/page.tsx`
+- [ ] Task 4: Enlace en el sidebar del panel
+  - Acceptance: El sidebar de `panel/layout.tsx` muestra "Imagen Comercial" con icono 🎨 bajo la categoría "CREACIÓN".
+  - Verify: Navegación directa desde el menú lateral hacia `/automatizacion-rrss/panel/imagen-comercial`.
+  - Files: `src/app/automatizacion-rrss/panel/layout.tsx`
 
-- [x] Task 5: Enlazar la nueva página en `src/components/BrandHeader.tsx` y `src/components/BrandFooter.tsx`
-  - Acceptance: Los usuarios pueden navegar fácilmente a "Cómo Funciona" desde el menú superior y pie de página.
-  - Verify: Comprobar enlaces en el header y footer.
-  - Files: `src/components/BrandHeader.tsx`, `src/components/BrandFooter.tsx`
-
-- [x] Task 6: Build de producción, verificación integral y git push
-  - Acceptance: `npm run build` pasa con exit code 0.
-  - Verify: Ejecución de build y push a `origin/main`.
-  - Files: Todos los archivos modificados.
+- [ ] Task 5: Validación completa y Build
+  - Acceptance: `npm run build` compila con éxito (Exit code 0) sin errores de tipos TypeScript.
+  - Verify: Ejecutar `npm run build` en consola.
+  - Files: Todos los modificados.

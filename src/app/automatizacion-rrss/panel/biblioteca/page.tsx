@@ -22,6 +22,7 @@ interface GeneratedImage {
   scenes?: any[];
   audioScript?: string;
   hasRemotionScenes?: boolean;
+  commercialDesignId?: string;
 }
 
 export default function BibliotecaPage() {
@@ -108,7 +109,8 @@ export default function BibliotecaPage() {
             copy: data.copy || data.text || "",
             scenes: data.scenes || [],
             audioScript: data.audioScript || "",
-            hasRemotionScenes: Boolean(data.scenes && data.scenes.length > 0)
+            hasRemotionScenes: Boolean(data.scenes && data.scenes.length > 0),
+            commercialDesignId: data.commercialDesignId || (data.source === "imagen_comercial" ? d.id : undefined)
           });
         }
       });
@@ -519,6 +521,13 @@ export default function BibliotecaPage() {
                       className="py-2 px-2 text-center rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-[9px] uppercase tracking-wider transition-all"
                     >
                       ✏️ Editar
+                    </Link>
+                  ) : img.commercialDesignId ? (
+                    <Link
+                      href={`/automatizacion-rrss/panel/imagen-comercial?editId=${encodeURIComponent(img.commercialDesignId)}`}
+                      className="py-2 px-2 text-center rounded-lg bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 font-black text-[9px] uppercase tracking-wider transition-all"
+                    >
+                      🎨 Editar Cartel
                     </Link>
                   ) : null}
                 </div>
