@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useId } from "react";
 
 export interface LogoMarkProps extends React.SVGAttributes<SVGSVGElement> {
   size?: number | string;
@@ -17,12 +17,15 @@ export default function LogoMark({
   height = size || 32,
   color = "#FF6B00",
   fill,
-  strokeWidth = 16,
+  strokeWidth,
   className = "",
   animated = false,
   ...props
 }: LogoMarkProps) {
-  const strokeColor = fill || color;
+  const rawId = useId();
+  const gradId = `santisoft-grad-${rawId.replace(/:/g, "")}`;
+  const useDefaultGrad = !fill && color.toUpperCase() === "#FF6B00";
+  const paint = useDefaultGrad ? `url(#${gradId})` : fill || color;
 
   return (
     <svg
@@ -35,14 +38,33 @@ export default function LogoMark({
       aria-hidden="true"
       {...props}
     >
-      <path
-        d="M 64 8 L 32 8 L 8 32 L 56 32 L 32 56 L 0 56"
-        stroke={strokeColor}
-        strokeWidth={strokeWidth}
-        fill="none"
-        strokeLinecap="butt"
-        strokeLinejoin="bevel"
+      {useDefaultGrad && (
+        <defs>
+          <linearGradient id={gradId} x1="6" y1="4" x2="58" y2="60" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stopColor="#FFB000" />
+            <stop offset="0.5" stopColor="#FF6B00" />
+            <stop offset="1" stopColor="#FF3D00" />
+          </linearGradient>
+        </defs>
+      )}
+      <ellipse
+        cx="32"
+        cy="32"
+        rx="29.5"
+        ry="11"
+        transform="rotate(-30 32 32)"
+        stroke={paint}
+        strokeWidth="2.6"
+        opacity="0.88"
       />
+      <path
+        d="M44 17H24L17 24.5L24 32H40L47 39.5L40 47H20"
+        stroke={paint}
+        strokeWidth={strokeWidth || 6.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="57.2" cy="17.5" r="4.3" fill={paint} />
     </svg>
   );
 }

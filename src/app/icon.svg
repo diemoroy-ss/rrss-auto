@@ -1,3 +1,12 @@
 <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M 64 8 L 32 8 L 8 32 L 56 32 L 32 56 L 0 56" stroke="#FF6B00" stroke-width="16" fill="none" stroke-linecap="butt" stroke-linejoin="bevel" />
+  <defs>
+    <linearGradient id="g" x1="6" y1="4" x2="58" y2="60" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFB000"/>
+      <stop offset="0.5" stop-color="#FF6B00"/>
+      <stop offset="1" stop-color="#FF3D00"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="32" cy="32" rx="29.5" ry="11" transform="rotate(-30 32 32)" stroke="url(#g)" stroke-width="2.6" opacity="0.88"/>
+  <path d="M44 17H24L17 24.5L24 32H40L47 39.5L40 47H20" stroke="url(#g)" stroke-width="6.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="57.2" cy="17.5" r="4.3" fill="url(#g)"/>
 </svg>
