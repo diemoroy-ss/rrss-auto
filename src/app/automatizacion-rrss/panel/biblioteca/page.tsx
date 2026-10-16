@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { auth, db } from "../../../../lib/firebase";
 import { collection, query, where, getDocs, deleteDoc, doc, getDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import Link from "next/link";
 import { useProfile } from "../../../../contexts/ProfileContext";
 import RemotionReelPlayer from "../../../../components/video/RemotionReelPlayer";
+
+export type DateFilterType = "all" | "today" | "7days" | "30days" | "this_month" | "custom";
 
 interface GeneratedImage {
   id: string;
@@ -29,6 +31,11 @@ export default function BibliotecaPage() {
   const [loading, setLoading] = useState(true);
   const [filterSource, setFilterSource] = useState<"all" | "ia" | "editor" | "upload">("all");
   const [filterType, setFilterType] = useState<"all" | "Post" | "Historia" | "Carrusel" | "Reel">("all");
+  const [filterDate, setFilterDate] = useState<DateFilterType>("all");
+  const [customStartDate, setCustomStartDate] = useState<string>("");
+  const [customEndDate, setCustomEndDate] = useState<string>("");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const ITEMS_PER_PAGE = 12;
   const [error, setError] = useState("");
   const { activeProfile } = useProfile();
   
@@ -216,11 +223,72 @@ export default function BibliotecaPage() {
     }
   };
 
-  const filteredImages = images.filter((img) => {
-    if (filterSource !== "all" && img.source !== filterSource) return false;
-    if (filterType !== "all" && img.type !== filterType) return false;
+  const isDateInRange = (date: Date) => {
+    if (filterDate === "all") return true;
+
+    const now = new Date();
+    const itemTime = date.getTime();
+
+    if (filterDate === "today") {
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      return itemTime >= startOfToday;
+    }
+
+    if (filterDate === "7days") {
+      const sevenDaysAgo = now.getTime() - 7 * 24 * 60 * 60 * 1000;
+      return itemTime >= sevenDaysAgo;
+    }
+
+    if (filterDate === "30days") {
+      const thirtyDaysAgo = now.getTime() - 30 * 24 * 60 * 60 * 1000;
+      return itemTime >= thirtyDaysAgo;
+    }
+
+    if (filterDate === "this_month") {
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+      return itemTime >= startOfMonth;
+    }
+
+    if (filterDate === "custom") {
+      if (customStartDate && customEndDate) {
+        const start = new Date(customStartDate + "T00:00:00").getTime();
+        const end = new Date(customEndDate + "T23:59:59").getTime();
+        return itemTime >= start && itemTime <= end;
+      } else if (customStartDate) {
+        const start = new Date(customStartDate + "T00:00:00").getTime();
+        return itemTime >= start;
+      } else if (customEndDate) {
+        const end = new Date(customEndDate + "T23:59:59").getTime();
+        return itemTime <= end;
+      }
+      return true;
+    }
+
     return true;
-  });
+  };
+
+  const filteredImages = useMemo(() => {
+    return images.filter((img) => {
+      if (filterSource !== "all" && img.source !== filterSource) return false;
+      if (filterType !== "all" && img.type !== filterType) return false;
+      if (!isDateInRange(img.createdAt)) return false;
+      return true;
+    });
+  }, [images, filterSource, filterType, filterDate, customStartDate, customEndDate]);
+
+  // Resetear a página 1 al cambiar cualquier filtro
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterSource, filterType, filterDate, customStartDate, customEndDate]);
+
+  const totalItems = filteredImages.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, totalItems);
+
+  const paginatedImages = useMemo(() => {
+    return filteredImages.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredImages, startIndex]);
 
   const limit = planLimits[userPlan] || 15;
   const isOverLimit = images.length > limit;
@@ -233,7 +301,7 @@ export default function BibliotecaPage() {
           <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
             <span>🖼️ Biblioteca de Medios</span>
             <span className="text-xs px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 font-extrabold uppercase tracking-wider">
-              {images.length} {images.length === 1 ? "Elemento Guardado" : "Elementos Guardados"}
+              {filteredImages.length} {filteredImages.length === 1 ? "Elemento" : "Elementos"}{filteredImages.length !== images.length ? ` de ${images.length}` : " Guardados"}
             </span>
           </h1>
           <p className="text-slate-500 text-sm font-medium mt-1">
@@ -255,40 +323,109 @@ export default function BibliotecaPage() {
         </div>
       )}
 
-      {/* 2. Barra de Filtros */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-slate-100/70 p-2 rounded-2xl border border-slate-200 overflow-x-auto">
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-          <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 px-3">Origen:</span>
-          {(["all", "ia", "editor", "upload"] as const).map((s) => (
-            <button
-              key={s}
-              onClick={() => setFilterSource(s)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all whitespace-nowrap ${
-                filterSource === s
-                  ? "bg-white text-indigo-600 shadow-sm"
-                  : "text-slate-500 hover:text-slate-800"
-              }`}
-            >
-              {s === "all" ? "Todos" : s === "ia" ? "✨ Agentes" : s === "editor" ? "🎨 Editor" : "📥 Subidos"}
-            </button>
-          ))}
+      {/* 2. Barra de Filtros con Origen, Formato y Fecha */}
+      <div className="bg-white border border-slate-200/90 rounded-2xl p-3 sm:p-4 shadow-2xs space-y-3">
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+          {/* Origen */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0 scrollbar-none">
+            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 shrink-0 pr-1">Origen:</span>
+            {(["all", "ia", "editor", "upload"] as const).map((s) => (
+              <button
+                key={s}
+                onClick={() => setFilterSource(s)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all whitespace-nowrap ${
+                  filterSource === s
+                    ? "bg-slate-900 text-white shadow-sm"
+                    : "bg-slate-100 hover:bg-slate-200/70 text-slate-600"
+                }`}
+              >
+                {s === "all" ? "Todos" : s === "ia" ? "✨ Agentes" : s === "editor" ? "🎨 Editor" : "📥 Subidos"}
+              </button>
+            ))}
+          </div>
+
+          {/* Formato */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0 scrollbar-none">
+            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 shrink-0 pr-1">Formato:</span>
+            {(["all", "Post", "Historia", "Carrusel", "Reel"] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setFilterType(t)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all whitespace-nowrap ${
+                  filterType === t
+                    ? "bg-slate-900 text-white shadow-sm"
+                    : "bg-slate-100 hover:bg-slate-200/70 text-slate-600"
+                }`}
+              >
+                {t === "all" ? "Todos" : t}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-          <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 px-3">Formato:</span>
-          {(["all", "Post", "Historia", "Carrusel", "Reel"] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setFilterType(t)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all whitespace-nowrap ${
-                filterType === t
-                  ? "bg-white text-indigo-600 shadow-sm"
-                  : "text-slate-500 hover:text-slate-800"
-              }`}
-            >
-              {t === "all" ? "Todos" : t}
-            </button>
-          ))}
+        {/* Fila Filtro de Fecha */}
+        <div className="pt-2.5 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 shrink-0 pr-1">Fecha:</span>
+            {[
+              { id: "all", label: "Todas" },
+              { id: "today", label: "Hoy" },
+              { id: "7days", label: "Últimos 7 días" },
+              { id: "30days", label: "Últimos 30 días" },
+              { id: "this_month", label: "Este mes" },
+              { id: "custom", label: "📅 Rango..." },
+            ].map((d) => (
+              <button
+                key={d.id}
+                onClick={() => setFilterDate(d.id as DateFilterType)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all whitespace-nowrap ${
+                  filterDate === d.id
+                    ? "bg-indigo-600 text-white shadow-sm ring-1 ring-indigo-400"
+                    : "bg-slate-100 hover:bg-slate-200/70 text-slate-600"
+                }`}
+              >
+                {d.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Rango de fechas personalizado */}
+          {filterDate === "custom" && (
+            <div className="flex items-center gap-2 bg-indigo-50/60 border border-indigo-100 p-1.5 rounded-xl">
+              <input
+                type="date"
+                value={customStartDate}
+                onChange={(e) => setCustomStartDate(e.target.value)}
+                className="px-2.5 py-1 text-xs font-bold rounded-lg border border-slate-200 bg-white text-slate-800 focus:outline-none focus:border-indigo-500"
+                title="Fecha desde"
+              />
+              <span className="text-xs text-slate-400 font-bold">-</span>
+              <input
+                type="date"
+                value={customEndDate}
+                onChange={(e) => setCustomEndDate(e.target.value)}
+                className="px-2.5 py-1 text-xs font-bold rounded-lg border border-slate-200 bg-white text-slate-800 focus:outline-none focus:border-indigo-500"
+                title="Fecha hasta"
+              />
+              {(customStartDate || customEndDate) && (
+                <button
+                  onClick={() => {
+                    setCustomStartDate("");
+                    setCustomEndDate("");
+                  }}
+                  className="text-xs font-bold text-slate-400 hover:text-slate-700 px-1"
+                  title="Limpiar rango"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Total de resultados */}
+          <div className="text-[11px] font-bold text-slate-400 sm:ml-auto">
+            {filteredImages.length} resultado{filteredImages.length === 1 ? "" : "s"}
+          </div>
         </div>
       </div>
 
@@ -321,7 +458,7 @@ export default function BibliotecaPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {filteredImages.map((img) => (
+          {paginatedImages.map((img) => (
             <div
               key={img.id}
               className="bg-white rounded-3xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all overflow-hidden group flex flex-col"
@@ -344,7 +481,7 @@ export default function BibliotecaPage() {
                   <span className={`text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg backdrop-blur-md shadow-sm border ${
                     img.source === "ia" ? "bg-indigo-900/80 text-indigo-100 border-indigo-500/30" : img.source === "upload" ? "bg-amber-900/80 text-amber-100 border-amber-500/30" : "bg-emerald-900/80 text-emerald-100 border-emerald-500/30"
                   }`}>
-                    {img.source === "ia" ? "🤖 IA" : img.source === "upload" ? "📥 Subido" : "🎨 Editor"}
+                    {img.source === "ia" ? "✨ Agentes" : img.source === "upload" ? "📥 Subido" : "🎨 Editor"}
                   </span>
                   <span className="text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg bg-black/60 text-white backdrop-blur-md border border-white/10">
                     {img.type}
@@ -388,6 +525,89 @@ export default function BibliotecaPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* 4. Controles de Paginación */}
+      {totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/90 shadow-2xs">
+          <div className="text-xs font-bold text-slate-500">
+            Mostrando <span className="text-slate-900 font-black">{totalItems > 0 ? startIndex + 1 : 0} - {endIndex}</span> de{" "}
+            <span className="text-slate-900 font-black">{totalItems}</span> elementos
+            {filteredImages.length < images.length && (
+              <span className="text-indigo-600 font-semibold ml-1">({images.length} en total)</span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            {/* Botón Anterior */}
+            <button
+              onClick={() => {
+                setCurrentPage((p) => Math.max(1, p - 1));
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              disabled={currentPage === 1}
+              className="px-3.5 py-2 rounded-xl text-xs font-bold transition-all border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed text-slate-700 flex items-center gap-1 shadow-2xs"
+            >
+              <span>←</span>
+              <span className="hidden sm:inline">Anterior</span>
+            </button>
+
+            {/* Números de página */}
+            <div className="flex items-center gap-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter((p) => {
+                  if (p === 1 || p === totalPages) return true;
+                  return Math.abs(p - currentPage) <= 1;
+                })
+                .reduce<(number | string)[]>((acc, p, idx, arr) => {
+                  if (idx > 0 && typeof arr[idx - 1] === "number" && (p as number) - (arr[idx - 1] as number) > 1) {
+                    acc.push("...");
+                  }
+                  acc.push(p);
+                  return acc;
+                }, [])
+                .map((item, idx) => {
+                  if (typeof item === "string") {
+                    return (
+                      <span key={`ellipsis-${idx}`} className="px-1.5 text-xs font-bold text-slate-400">
+                        ...
+                      </span>
+                    );
+                  }
+                  const isCurrent = item === currentPage;
+                  return (
+                    <button
+                      key={item}
+                      onClick={() => {
+                        setCurrentPage(item);
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
+                      className={`w-9 h-9 rounded-xl text-xs font-black transition-all ${
+                        isCurrent
+                          ? "bg-slate-900 text-white shadow-sm"
+                          : "bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200"
+                      }`}
+                    >
+                      {item}
+                    </button>
+                  );
+                })}
+            </div>
+
+            {/* Botón Siguiente */}
+            <button
+              onClick={() => {
+                setCurrentPage((p) => Math.min(totalPages, p + 1));
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              disabled={currentPage === totalPages}
+              className="px-3.5 py-2 rounded-xl text-xs font-bold transition-all border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed text-slate-700 flex items-center gap-1 shadow-2xs"
+            >
+              <span className="hidden sm:inline">Siguiente</span>
+              <span>→</span>
+            </button>
+          </div>
         </div>
       )}
 
