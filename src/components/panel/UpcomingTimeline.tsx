@@ -123,7 +123,7 @@ export default function UpcomingTimeline({
         className: "bg-blue-50 text-blue-700 border-blue-200",
       };
     }
-    if (post.network === "linkedin" || post.network === "blog") {
+    if (post.networks?.includes("linkedin") || post.networks?.includes("blog")) {
       return {
         label: "B2B / Autoridad",
         icon: <FileText className="w-3 h-3 mr-1" />,
@@ -369,7 +369,7 @@ export default function UpcomingTimeline({
                         <div>
                           <div className="text-[11px] font-black text-slate-900 flex items-center gap-1">
                             <span>Agendado</span>
-                            <NetworkIcon network={post.network || "instagram"} postId={`top-${post.id}`} />
+                            <NetworkIcon network={post.networks?.[0] || "instagram"} postId={`top-${post.id}`} />
                           </div>
                           <div className="text-[10px] text-slate-400 flex items-center gap-1">
                             <Clock className="w-2.5 h-2.5" />
@@ -387,19 +387,26 @@ export default function UpcomingTimeline({
                     </div>
 
                     {/* Contenido / Copy */}
-                    <h5 className="text-xs font-black text-slate-800 line-clamp-1 mb-1">
-                      {post.caption?.split("\n")[0]?.replace(/^[#*-\s]+/, "") || "Publicación Programada"}
-                    </h5>
-                    <p className="text-[11px] text-slate-500 leading-relaxed line-clamp-2">
-                      {post.caption?.split("\n").slice(1).join(" ") || post.caption || "Sin contenido"}
-                    </p>
+                    {(() => {
+                      const rawContent = post.text || post.copy || post.postText || post.idea || "";
+                      return (
+                        <>
+                          <h5 className="text-xs font-black text-slate-800 line-clamp-1 mb-1">
+                            {rawContent.split("\n")[0]?.replace(/^[#*-\s]+/, "") || "Publicación Programada"}
+                          </h5>
+                          <p className="text-[11px] text-slate-500 leading-relaxed line-clamp-2">
+                            {rawContent.split("\n").slice(1).join(" ") || rawContent || "Sin contenido"}
+                          </p>
+                        </>
+                      );
+                    })()}
                   </div>
 
                   {/* Footer con Estado y Botón de Acción */}
                   <div className="space-y-2 pt-2 border-t border-slate-100">
                     <div className="flex items-center justify-between text-[10px]">
                       <span className="text-slate-500 font-semibold capitalize">
-                        {post.network || "Red Social"}
+                        {post.networks?.[0] || "Red Social"}
                       </span>
                       {hasMedia ? (
                         <span className="text-emerald-600 font-bold flex items-center gap-1">

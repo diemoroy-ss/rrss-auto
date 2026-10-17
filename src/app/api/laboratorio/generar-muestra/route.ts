@@ -16,6 +16,12 @@ interface GenerateMuestraPayload {
   catalogItems?: any[];
   catalogUsage?: "mixed" | "all";
   selectedStyles?: any[];
+  visualStyleSource?: "preset_styles" | "commercial_image";
+  commercialIdea?: string;
+  commercialIncludeText?: boolean;
+  commercialCustomText?: string;
+  badgeCustomText?: string;
+  productPrice?: string;
   isCommercialPoster?: boolean;
   imageTextOption?: "con_texto" | "sin_texto" | "mixto";
   agentTone?: string;
@@ -108,6 +114,12 @@ export async function POST(req: NextRequest) {
       catalogItems = [],
       catalogUsage = "mixed",
       selectedStyles = [],
+      visualStyleSource = "preset_styles",
+      commercialIdea = "",
+      commercialIncludeText = true,
+      commercialCustomText = "",
+      badgeCustomText = "",
+      productPrice = "",
       isCommercialPoster = false,
       imageTextOption = body.isCommercialPoster ? "con_texto" : "mixto",
       agentTone = "directo_cercano",
@@ -116,11 +128,16 @@ export async function POST(req: NextRequest) {
       userId = uid,
     } = body;
 
+    const isCommercialImageEngine = visualStyleSource === "commercial_image";
+
     // Normalizar modo visual: "con_texto", "sin_texto" o "mixto"
-    const finalImageTextMode: "con_texto" | "sin_texto" | "mixto" = 
-      imageTextOption === "con_texto" || imageTextOption === "sin_texto" || imageTextOption === "mixto"
-        ? imageTextOption
-        : isCommercialPoster ? "con_texto" : "mixto";
+    const finalImageTextMode: "con_texto" | "sin_texto" | "mixto" = isCommercialImageEngine
+      ? (commercialIncludeText === false ? "sin_texto" : "con_texto")
+      : imageTextOption === "con_texto" || imageTextOption === "sin_texto" || imageTextOption === "mixto"
+      ? imageTextOption
+      : isCommercialPoster
+      ? "con_texto"
+      : "mixto";
 
     // Validar cantidad: mínimo 1 y máximo 5
     const clampedCount = Math.max(1, Math.min(5, Number(postsCount) || 3));
@@ -131,7 +148,7 @@ export async function POST(req: NextRequest) {
       : ["post"];
     const finalAllowedTypes = validAllowedTypes.length > 0 ? validAllowedTypes : ["post"];
 
-    console.log(`[Lab Generar Muestra] Solicitando ${clampedCount} posts para ${businessName} (${rubro}). Modo imagen: ${finalImageTextMode}. Formatos permitidos:`, finalAllowedTypes);
+    console.log(`[Lab Generar Muestra] Solicitando ${clampedCount} posts para ${businessName} (${rubro}). Motor: ${visualStyleSource}. Modo imagen: ${finalImageTextMode}. Formatos permitidos:`, finalAllowedTypes);
 
     // Preparar contexto del catálogo
     const catalogFormatted = catalogItems.length > 0
@@ -142,7 +159,9 @@ export async function POST(req: NextRequest) {
       : "No se proporcionó catálogo explícito.";
 
     // Preparar estilos visuales seleccionados
-    const stylesContext = selectedStyles.length > 0
+    const stylesContext = isCommercialImageEngine
+      ? `Motor de Imagen Comercial Activo (Fondo comercial limpio + Capas vectoriales de nuestro editor). Idea visual solicitada: "${commercialIdea || body.offerText || body.dishOrProductName || `Destacar lo mejor de ${businessName} en ${rubro}`}". ${commercialCustomText ? `Texto comercial solicitado en capas: "${commercialCustomText}".` : ""}`
+      : selectedStyles.length > 0
       ? selectedStyles.map((s) => `- ${s.title}: ${s.description} (Keywords: ${s.styleKeywords || s.description})`).join("\n")
       : HARDCODED_STYLES.slice(0, 3).map((s) => `- ${s.title}: ${s.description}`).join("\n");
 
@@ -174,9 +193,11 @@ REGLAS ABSOLUTAS:
    - CERO frases robóticas ("en el vertiginoso mundo", "descubre", "sumérgete", "en conclusión").
    - NUNCA menciones "IA" o "Inteligencia Artificial". Refiérete siempre a "nuestros agentes" o "nuestro equipo de agentes especializados".
 
-3. CARTEL COMERCIAL & TEXTOS EN IMAGEN (MODO: ${finalImageTextMode.toUpperCase()}):
+3. CARTEL COMERCIAL & TEXTOS EN IMAGEN (MOTOR: ${isCommercialImageEngine ? "IMAGEN COMERCIAL CON CAPAS" : finalImageTextMode.toUpperCase()}):
    ${
-     finalImageTextMode === "con_texto"
+     isCommercialImageEngine
+       ? "ESTÁS USANDO EL MOTOR DE IMAGEN COMERCIAL CON CAPAS DE NUESTRO EDITOR: En 'imagePromptEnglish' y 'carouselPrompts', describe una escena fotográfica o estudio comercial de altísima estética con el sujeto/producto en el 60% inferior y un área limpia de espacio negativo (copyspace) en el 35%-40% superior, e indica ESTRICTAMENTE: 'clean background photography, negative space in upper third, STRICT NEGATIVE: no text, no typography, no letters, no words, no watermarks'. Nuestro motor de capas estampará los textos comerciales limpios encima."
+       : finalImageTextMode === "con_texto"
        ? "TODAS las publicaciones deben ser diseñadas como CARTEL COMERCIAL con tipografía publicitaria integrada ('isCommercialPoster': true). En 'imagePromptEnglish', incluye instrucciones explícitas de layout publicitario con titular en mayúsculas, subtítulo, badge de precio destacado (ej: '$24.900') y botón o sticker con llamado a la acción ('¡ORDENA AHORA!')."
        : finalImageTextMode === "sin_texto"
        ? "TODAS las publicaciones deben ser diseñadas como FOTOGRAFÍA LIMPIA sin textos superpuestos ('isCommercialPoster': false). En 'imagePromptEnglish', describe una fotografía comercial, editorial o de autor de alta estética centrada en el producto o servicio, indicando explícitamente: clean photography without text, no typography, no words, no overlays."
@@ -409,9 +430,14 @@ ${stylesContext}`;
     console.log(`[Lab Generar Muestra] Generando imágenes para las ${parsedPublications.length} publicaciones...`);
     const finalPublications = await Promise.all(
       parsedPublications.map(async (pub, idx) => {
-        const prodName = pub.dishOrProductName || businessName;
+        const prodName = pub.dishOrProductName || body.dishOrProductName || businessName;
         const catalogMatch = catalogItems.find((it) => it.name?.toLowerCase() === prodName.toLowerCase() || it.id === pub.productId);
-        const hasCatalogRealPhoto = catalogMatch?.imageUrl && catalogMatch.imageUrl.startsWith("http");
+        const hasCatalogRealPhoto = Boolean(catalogMatch?.imageUrl && catalogMatch.imageUrl.startsWith("http"));
+        const effectiveRealPhotoUrl = hasCatalogRealPhoto
+          ? catalogMatch.imageUrl
+          : body.baseImageUrl && body.baseImageUrl.startsWith("http")
+          ? body.baseImageUrl
+          : "";
 
         // Determinar si esta publicación específica llevará texto comercial o foto limpia
         let postIsCommercial = true;
@@ -424,13 +450,29 @@ ${stylesContext}`;
           postIsCommercial = typeof pub.isCommercialPoster === "boolean" ? pub.isCommercialPoster : (idx % 2 === 0);
         }
 
+        const effectivePrice = pub.productPrice || productPrice || catalogMatch?.offerPrice || catalogMatch?.price || "";
+        const effectiveDescription =
+          commercialCustomText ||
+          body.offerText ||
+          catalogMatch?.description ||
+          pub.title ||
+          "";
+        const effectiveIdea = commercialIdea || pub.hook || pub.title || prodName;
+
         let promptEnglish = pub.imagePromptEnglish || "";
-        if (!promptEnglish) {
+        if (isCommercialImageEngine) {
+          // En modo Imagen Comercial, el fondo base SIEMPRE es limpio sin letras incrustadas para que Nuestro Editor estampe las capas vectoriales
+          if (!promptEnglish) {
+            promptEnglish = `Professional commercial advertising studio photography for ${prodName} (${rubro}), subject positioned cleanly in lower 60% of frame, clean dark atmospheric negative space in upper 40% for overlays, dramatic studio lighting, 8k resolution, photorealistic, STRICT NEGATIVE: no text, no typography, no letters, no words, no watermark`;
+          } else {
+            promptEnglish = `${promptEnglish}, clean background with upper negative space, STRICT NEGATIVE: no text, no typography, no letters, no words, no watermark`;
+          }
+        } else if (!promptEnglish) {
           promptEnglish = postIsCommercial
-            ? `Commercial food advertising poster layout for ${prodName}, two-tier composition: mouth-watering hero food dish positioned cleanly in LOWER 55%-60% of frame, UPPER 40%-45% features clean dark atmospheric negative space (copyspace) with bold crisp typography text overlay reading "${prodName.toUpperCase()}", highlighted yellow price badge "${pub.productPrice || '$24.900'}" in upper corner, rounded yellow CTA button "¡ORDENA AHORA!", STRICT RULE: all rendered text overlays must stay strictly in the upper negative space and NEVER overlap, touch or obscure the food dish, warm restaurant lighting, 8k resolution`
+            ? `Commercial food advertising poster layout for ${prodName}, two-tier composition: mouth-watering hero food dish positioned cleanly in LOWER 55%-60% of frame, UPPER 40%-45% features clean dark atmospheric negative space (copyspace) with bold crisp typography text overlay reading "${prodName.toUpperCase()}", highlighted yellow price badge "${effectivePrice || '$24.900'}" in upper corner, rounded yellow CTA button "¡ORDENA AHORA!", STRICT RULE: all rendered text overlays must stay strictly in the upper negative space and NEVER overlap, touch or obscure the food dish, warm restaurant lighting, 8k resolution`
             : `Professional commercial advertising food photography of ${prodName}, gourmet restaurant plating, dramatic warm lighting, 8k resolution, photorealistic, clean shot, STRICT NEGATIVE: no text, no typography, no letters, no words, no watermark, no overlays`;
         } else if (postIsCommercial && !promptEnglish.toLowerCase().includes("typography") && !promptEnglish.toLowerCase().includes("text overlay")) {
-          promptEnglish = `Commercial advertising poster graphic design, two-tier composition with dark upper copyspace, bold crisp typography text overlay reading "${prodName.toUpperCase()}", price badge "${pub.productPrice || '$24.900'}" in upper margin, compact CTA button "¡ORDENA AHORA!", STRICT RULE: typography must never overlap or cover the food hero in lower half, ${promptEnglish}`;
+          promptEnglish = `Commercial advertising poster graphic design, two-tier composition with dark upper copyspace, bold crisp typography text overlay reading "${prodName.toUpperCase()}", price badge "${effectivePrice || '$24.900'}" in upper margin, compact CTA button "¡ORDENA AHORA!", STRICT RULE: typography must never overlap or cover the food hero in lower half, ${promptEnglish}`;
         } else if (!postIsCommercial) {
           promptEnglish = `${promptEnglish}, clean commercial photography, STRICT NEGATIVE: no text, no typography, no letters, no words, no watermark, no overlays`;
         }
@@ -438,129 +480,151 @@ ${stylesContext}`;
         if (pub.type === "carrusel") {
           // Generar 3 slides para carrusel
           let coverUrl = "";
-          if (hasCatalogRealPhoto) {
-            if (postIsCommercial) {
-              try {
-                console.log(`[Lab Generar Muestra] 🦋 Componiendo portada de carrusel con Butterfly Social para: ${prodName}`);
-                const { composeRealProductBanner } = await import("../../../../lib/real-product-compositor");
-                coverUrl = await composeRealProductBanner({
-                  baseImageUrl: catalogMatch.imageUrl,
-                  productName: prodName,
-                  productDescription: catalogMatch.description || pub.title,
-                  price: pub.productPrice || catalogMatch.price || "",
-                  idea: pub.hook || pub.title,
-                  rubro,
-                  businessName,
-                  aspectRatio: "1:1",
-                  userId,
-                  includeLogo: true,
-                });
-              } catch (bErr) {
-                console.warn("[Lab Generar Muestra] Error en Butterfly para portada de carrusel, usando foto directa:", bErr);
-                coverUrl = catalogMatch.imageUrl;
-              }
-            } else {
-              // Foto limpia sin textos superpuestos
-              coverUrl = catalogMatch.imageUrl;
-            }
-          }
+          let commercialEditId: string | undefined;
 
           const slidePrompts: string[] = Array.isArray(pub.carouselPrompts) && pub.carouselPrompts.length >= 3
-            ? pub.carouselPrompts
+            ? pub.carouselPrompts.map((p: string) =>
+                isCommercialImageEngine
+                  ? `${p}, clean background with upper negative space, STRICT NEGATIVE: no text, no typography, no letters`
+                  : p
+              )
             : [
-                `${promptEnglish}, wide appetizing cover view, commercial poster composition`,
+                `${promptEnglish}, wide appetizing cover view`,
                 `${promptEnglish}, close-up detailed texture, fresh ingredients in focus`,
-                `${promptEnglish}, complete delicious meal combo with beverage and sides, promotional showcase`,
+                `${promptEnglish}, complete showcase with dramatic lighting`,
               ];
 
-          const slideUrls = await Promise.all([
-            coverUrl ? Promise.resolve(coverUrl) : generateSingleImage(slidePrompts[0], rubro, prodName, "1:1"),
+          const baseCoverUrl = effectiveRealPhotoUrl || (await generateSingleImage(slidePrompts[0], rubro, prodName, "1:1"));
+
+          if ((effectiveRealPhotoUrl || isCommercialImageEngine) && postIsCommercial) {
+            try {
+              const { composeCommercialSlideWithEditor } = await import("../../../../lib/real-product-compositor");
+              const composed = await composeCommercialSlideWithEditor({
+                baseImageUrl: baseCoverUrl,
+                productName: prodName,
+                productDescription: effectiveDescription,
+                price: effectivePrice,
+                idea: effectiveIdea,
+                rubro,
+                businessName,
+                aspectRatio: "1:1",
+                logoUrl: body.logoUrl || undefined,
+                userId,
+                includeLogo: Boolean(body.logoUrl),
+                saveEditableInLibrary: true,
+                customBadgeText: badgeCustomText,
+              });
+              coverUrl = composed.finalImageUrl;
+              commercialEditId = composed.editDocId;
+            } catch (bErr) {
+              console.warn("[Lab Generar Muestra] Error componiendo portada de carrusel, usando base:", bErr);
+              coverUrl = baseCoverUrl;
+            }
+          } else {
+            coverUrl = baseCoverUrl;
+          }
+
+          const [slide2, slide3] = await Promise.all([
             generateSingleImage(slidePrompts[1], rubro, prodName, "1:1"),
             generateSingleImage(slidePrompts[2], rubro, prodName, "1:1"),
           ]);
 
+          const slideUrls = [coverUrl, slide2, slide3];
+
           return {
             ...pub,
             imageUrl: slideUrls[0],
+            baseImageUrl: baseCoverUrl,
             carouselImages: slideUrls,
             isCommercialPoster: postIsCommercial,
+            visualStyleSource,
+            commercialEditId,
           };
         } else if (pub.type === "reel") {
           // Generar visual vertical 9:16 para reel
           let reelImageUrl = "";
-          if (hasCatalogRealPhoto) {
-            if (postIsCommercial) {
-              try {
-                console.log(`[Lab Generar Muestra] 🦋 Componiendo portada vertical Reel con Butterfly Social para: ${prodName}`);
-                const { composeRealProductBanner } = await import("../../../../lib/real-product-compositor");
-                reelImageUrl = await composeRealProductBanner({
-                  baseImageUrl: catalogMatch.imageUrl,
-                  productName: prodName,
-                  productDescription: catalogMatch.description || pub.title,
-                  price: pub.productPrice || catalogMatch.price || "",
-                  idea: pub.hook || pub.title,
-                  rubro,
-                  businessName,
-                  aspectRatio: "9:16",
-                  userId,
-                  includeLogo: true,
-                });
-              } catch (bErr) {
-                console.warn("[Lab Generar Muestra] Error en Butterfly para Reel vertical, fallback a generador:", bErr);
-              }
-            } else {
-              // Foto limpia de catálogo
-              reelImageUrl = catalogMatch.imageUrl;
-            }
-          }
+          let commercialEditId: string | undefined;
+          const reelPrompt = `${promptEnglish}, cinematic vertical framing, 9:16 aspect ratio, dramatic studio lighting`;
+          const baseReelUrl = effectiveRealPhotoUrl || (await generateSingleImage(reelPrompt, rubro, prodName, "9:16"));
 
-          if (!reelImageUrl) {
-            const reelPrompt = `${promptEnglish}, cinematic vertical framing, 9:16 aspect ratio, dramatic motion blur, studio lighting`;
-            reelImageUrl = await generateSingleImage(reelPrompt, rubro, prodName, "9:16");
+          if ((effectiveRealPhotoUrl || isCommercialImageEngine) && postIsCommercial) {
+            try {
+              const { composeCommercialSlideWithEditor } = await import("../../../../lib/real-product-compositor");
+              const composed = await composeCommercialSlideWithEditor({
+                baseImageUrl: baseReelUrl,
+                productName: prodName,
+                productDescription: effectiveDescription,
+                price: effectivePrice,
+                idea: effectiveIdea,
+                rubro,
+                businessName,
+                aspectRatio: "9:16",
+                logoUrl: body.logoUrl || undefined,
+                userId,
+                includeLogo: Boolean(body.logoUrl),
+                saveEditableInLibrary: true,
+                customBadgeText: badgeCustomText,
+              });
+              reelImageUrl = composed.finalImageUrl;
+              commercialEditId = composed.editDocId;
+            } catch (bErr) {
+              console.warn("[Lab Generar Muestra] Error componiendo portada vertical Reel, usando base:", bErr);
+              reelImageUrl = baseReelUrl;
+            }
+          } else {
+            reelImageUrl = baseReelUrl;
           }
 
           return {
             ...pub,
             imageUrl: reelImageUrl,
+            baseImageUrl: baseReelUrl,
             aspectRatio: "9:16",
             isCommercialPoster: postIsCommercial,
+            visualStyleSource,
+            commercialEditId,
           };
         } else {
           // Post estándar 1:1
           let finalImgUrl = "";
-          if (hasCatalogRealPhoto) {
-            if (postIsCommercial) {
-              try {
-                console.log(`[Lab Generar Muestra] 🦋 Componiendo post 1:1 con Butterfly Social para foto real: ${prodName}`);
-                const { composeRealProductBanner } = await import("../../../../lib/real-product-compositor");
-                finalImgUrl = await composeRealProductBanner({
-                  baseImageUrl: catalogMatch.imageUrl,
-                  productName: prodName,
-                  productDescription: catalogMatch.description || pub.title,
-                  price: pub.productPrice || catalogMatch.price || "",
-                  idea: pub.hook || pub.title,
-                  rubro,
-                  businessName,
-                  aspectRatio: "1:1",
-                  userId,
-                  includeLogo: true,
-                });
-              } catch (bErr) {
-                console.warn("[Lab Generar Muestra] Error en Butterfly para post 1:1, usando foto directa:", bErr);
-                finalImgUrl = catalogMatch.imageUrl;
-              }
-            } else {
-              // Foto limpia de catálogo sin textos superpuestos
-              finalImgUrl = catalogMatch.imageUrl;
+          let commercialEditId: string | undefined;
+          const basePostUrl = effectiveRealPhotoUrl || (await generateSingleImage(promptEnglish, rubro, prodName, "1:1"));
+
+          if ((effectiveRealPhotoUrl || isCommercialImageEngine) && postIsCommercial) {
+            try {
+              const { composeCommercialSlideWithEditor } = await import("../../../../lib/real-product-compositor");
+              const composed = await composeCommercialSlideWithEditor({
+                baseImageUrl: basePostUrl,
+                productName: prodName,
+                productDescription: effectiveDescription,
+                price: effectivePrice,
+                idea: effectiveIdea,
+                rubro,
+                businessName,
+                aspectRatio: "1:1",
+                logoUrl: body.logoUrl || undefined,
+                userId,
+                includeLogo: Boolean(body.logoUrl),
+                saveEditableInLibrary: true,
+                customBadgeText: badgeCustomText,
+              });
+              finalImgUrl = composed.finalImageUrl;
+              commercialEditId = composed.editDocId;
+            } catch (bErr) {
+              console.warn("[Lab Generar Muestra] Error componiendo post 1:1 con capas, usando base:", bErr);
+              finalImgUrl = basePostUrl;
             }
           } else {
-            finalImgUrl = await generateSingleImage(promptEnglish, rubro, prodName, "1:1");
+            finalImgUrl = basePostUrl;
           }
 
           return {
             ...pub,
             imageUrl: finalImgUrl,
+            baseImageUrl: basePostUrl,
             isCommercialPoster: postIsCommercial,
+            visualStyleSource,
+            commercialEditId,
           };
         }
       })
@@ -582,6 +646,7 @@ ${stylesContext}`;
       sellerName: body.sellerName || "Equipo Comercial",
       sellerEmail: body.sellerEmail || "vendedores@santisoft.cl",
       createdAt: new Date(),
+      visualStyleSource,
       publications: finalPublications,
       strategy: parsedStrategy,
       generatedImageUrl: finalPublications[0]?.imageUrl || "",

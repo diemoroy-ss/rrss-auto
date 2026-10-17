@@ -120,7 +120,7 @@ const ADMIN_EMAILS = [
 const PUBLIC_APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://rrss.santisoft.cl";
 const EVOLUTION_URL = process.env.NEXT_PUBLIC_EVOLUTION_URL || "https://evoapi.grupofugas.cl";
 const EVOLUTION_INSTANCE = process.env.NEXT_PUBLIC_EVOLUTION_INSTANCE || "Santisoft";
-const EVOLUTION_API_KEY = process.env.NEXT_PUBLIC_EVOLUTION_API_KEY || "6833CC358FA4-42E4-8F45-E74D35CC85A7";
+const EVOLUTION_API_KEY = process.env.NEXT_PUBLIC_EVOLUTION_API_KEY || "";
 const N8N_EVOAPI_WEBHOOK_URL = "https://n8n.santisoft.cl/webhook/evoapi";
 
 function buildWhatsAppCopy(
@@ -259,7 +259,11 @@ export default function VendedoresPwaPage() {
   const [isRemovingLogoBg, setIsRemovingLogoBg] = useState(false);
   const [logoPosition, setLogoPosition] = useState<"top-left" | "top-right" | "bottom-left" | "bottom-right">("top-right");
 
-  // Step 3: Styles
+  // Step 3: Styles & Motor Visual (Nuestro Estilo Visual vs Imagen Comercial)
+  const [visualStyleSource, setVisualStyleSource] = useState<"preset_styles" | "commercial_image">("preset_styles");
+  const [commercialIdea, setCommercialIdea] = useState("");
+  const [commercialIncludeText, setCommercialIncludeText] = useState(true);
+  const [commercialCustomText, setCommercialCustomText] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Todas");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState<PromptTemplate | null>(null);
@@ -638,9 +642,14 @@ export default function VendedoresPwaPage() {
           dishOrProductName: dishOrProductName.trim(),
           offerText: offerText.trim(),
           productPrice: productPrice.trim(),
-          isCommercialPoster,
+          badgeCustomText: badgeCustomText.trim(),
+          visualStyleSource,
+          commercialIdea: commercialIdea.trim(),
+          commercialIncludeText,
+          commercialCustomText: commercialCustomText.trim(),
+          isCommercialPoster: visualStyleSource === "commercial_image" ? commercialIncludeText : isCommercialPoster,
           catalogItems,
-          selectedStyles,
+          selectedStyles: visualStyleSource === "preset_styles" ? selectedStyles : [],
           logoUrl: uploadedLogoUrl || "",
           baseImageUrl: uploadedBaseImageUrl || "",
           sellerName: currentUser?.displayName || currentUser?.email?.split("@")[0] || "Equipo Comercial",
@@ -1908,16 +1917,23 @@ export default function VendedoresPwaPage() {
               </div>
             </section>
 
-            {/* PASO 4: SELECCIÓN DE ESTILO VISUAL */}
-            <section className="bg-white border border-slate-200/80 rounded-3xl p-5 sm:p-6 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
+            {/* PASO 4: SELECCIÓN DE ESTILO VISUAL O IMAGEN COMERCIAL */}
+            <section className="bg-white border border-slate-200/80 rounded-3xl p-5 sm:p-6 shadow-sm space-y-5">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <span className="w-7 h-7 rounded-full bg-indigo-50 text-indigo-600 text-xs font-black flex items-center justify-center border border-indigo-100">
                     4
                   </span>
-                  <h2 className="text-sm sm:text-base font-black text-slate-900">Estilo Visual Publicitario</h2>
+                  <div>
+                    <h2 className="text-sm sm:text-base font-black text-slate-900">
+                      ¿Cómo quieres diseñar el Estilo Visual de la Imagen?
+                    </h2>
+                    <p className="text-[11px] text-slate-500 font-medium">
+                      Elige entre usar uno de nuestros diseños previamente cargados o crear una Imagen Comercial con capas de Nuestro Editor.
+                    </p>
+                  </div>
                 </div>
-                {selectedTemplate && (
+                {visualStyleSource === "preset_styles" && selectedTemplate && (
                   <button
                     type="button"
                     onClick={() => setSelectedTemplate(null)}
@@ -1928,80 +1944,227 @@ export default function VendedoresPwaPage() {
                 )}
               </div>
 
-              {/* Categorías y Búsqueda */}
-              <div className="space-y-3 mb-4">
-                <div className="relative">
-                  <FaSearch className="absolute left-3.5 top-3 text-slate-400 text-xs" />
-                  <input
-                    type="text"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Buscar estilo (ej. Gourmet, Neón, Cyber, Blanco)..."
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-9 pr-4 py-2 text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition-all font-medium"
-                  />
-                </div>
+              {/* Selector de Modo Visual: Nuestro Estilo Visual vs Imagen Comercial */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setVisualStyleSource("preset_styles")}
+                  className={`p-4 rounded-2xl border-2 text-left transition-all cursor-pointer flex items-start gap-3 ${
+                    visualStyleSource === "preset_styles"
+                      ? "bg-indigo-50/70 border-indigo-600 shadow-md shadow-indigo-600/10 ring-2 ring-indigo-500/20"
+                      : "bg-slate-50 border-slate-200 hover:bg-slate-100"
+                  }`}
+                >
+                  <span className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-lg shrink-0 shadow-xs">
+                    🎨
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs sm:text-sm font-black text-slate-900">
+                        Nuestro Estilo Visual
+                      </span>
+                      {visualStyleSource === "preset_styles" && (
+                        <span className="px-2 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-black">
+                          Activo
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-600 font-medium mt-1 leading-relaxed">
+                      Utiliza uno de nuestros diseños y estilos visuales previamente cargados en el catálogo.
+                    </p>
+                  </div>
+                </button>
 
-                {/* Chips de Categoría */}
-                <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-                  {["Todas", ...promptCategories].slice(0, 8).map((cat) => (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => setSelectedCategory(cat)}
-                      className={`whitespace-nowrap px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all border ${
-                        selectedCategory === cat
-                          ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
-                          : "bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200"
-                      }`}
-                    >
-                      {cat}
-                    </button>
-                  ))}
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setVisualStyleSource("commercial_image")}
+                  className={`p-4 rounded-2xl border-2 text-left transition-all cursor-pointer flex items-start gap-3 ${
+                    visualStyleSource === "commercial_image"
+                      ? "bg-amber-50/80 border-amber-500 shadow-md shadow-amber-500/10 ring-2 ring-amber-500/20"
+                      : "bg-slate-50 border-slate-200 hover:bg-slate-100"
+                  }`}
+                >
+                  <span className="w-10 h-10 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center text-lg shrink-0 shadow-xs">
+                    ✨
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs sm:text-sm font-black text-slate-900">
+                        Imagen Comercial
+                      </span>
+                      {visualStyleSource === "commercial_image" && (
+                        <span className="px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black">
+                          Activo
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-600 font-medium mt-1 leading-relaxed">
+                      Nuestros agentes crean un fondo limpio y arman las capas de texto, oferta y logo con Nuestro Editor.
+                    </p>
+                  </div>
+                </button>
               </div>
 
-              {/* Grid de Estilos */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-80 overflow-y-auto pr-1">
-                {filteredTemplates.slice(0, 24).map((template) => {
-                  const isSelected = selectedTemplate?.id === template.id;
-                  return (
-                    <div
-                      key={template.id}
-                      onClick={() => setSelectedTemplate(template)}
-                      className={`group relative rounded-2xl overflow-hidden border cursor-pointer transition-all ${
-                        isSelected
-                          ? "border-indigo-600 ring-2 ring-indigo-600 shadow-md shadow-indigo-600/20 bg-indigo-50/50"
-                          : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-xs"
-                      }`}
+              {visualStyleSource === "preset_styles" ? (
+                <>
+                  {/* Categorías y Búsqueda */}
+                  <div className="space-y-3">
+                    <div className="relative">
+                      <FaSearch className="absolute left-3.5 top-3 text-slate-400 text-xs" />
+                      <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder="Buscar estilo (ej. Gourmet, Neón, Cyber, Blanco)..."
+                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-9 pr-4 py-2 text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition-all font-medium"
+                      />
+                    </div>
+
+                    {/* Chips de Categoría */}
+                    <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                      {["Todas", ...promptCategories].slice(0, 8).map((cat) => (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => setSelectedCategory(cat)}
+                          className={`whitespace-nowrap px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all border ${
+                            selectedCategory === cat
+                              ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
+                              : "bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200"
+                          }`}
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Grid de Estilos */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-80 overflow-y-auto pr-1">
+                    {filteredTemplates.slice(0, 24).map((template) => {
+                      const isSelected = selectedTemplate?.id === template.id;
+                      return (
+                        <div
+                          key={template.id}
+                          onClick={() => setSelectedTemplate(template)}
+                          className={`group relative rounded-2xl overflow-hidden border cursor-pointer transition-all ${
+                            isSelected
+                              ? "border-indigo-600 ring-2 ring-indigo-600 shadow-md shadow-indigo-600/20 bg-indigo-50/50"
+                              : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-xs"
+                          }`}
+                        >
+                          <div className="aspect-square relative overflow-hidden bg-slate-100">
+                            {template.previewUrl ? (
+                              <img
+                                src={template.previewUrl}
+                                alt={template.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-slate-400">
+                                <FaImage className="text-2xl" />
+                              </div>
+                            )}
+                            {isSelected && (
+                              <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-md">
+                                <FaCheck className="text-[10px]" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="p-2.5">
+                            <h4 className="text-xs font-bold text-slate-900 truncate">{template.title}</h4>
+                            <p className="text-[10px] text-slate-500 line-clamp-1 mt-0.5">
+                              {template.category}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : (
+                /* Configuración de Imagen Comercial (Motor de Capas + Nuestro Editor) */
+                <div className="p-4 sm:p-5 rounded-2xl bg-amber-50/50 border border-amber-200/80 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-200/60 pb-3">
+                    <div>
+                      <h3 className="text-xs sm:text-sm font-black text-slate-900 flex items-center gap-1.5">
+                        <span>✨</span> Configuración de Imagen Comercial
+                      </h3>
+                      <p className="text-[11px] text-slate-600 font-medium">
+                        Nuestros agentes generarán la escena limpia y compondrán las capas tipográficas vectoriales. Podrás editar cada capa en Nuestro Editor si lo deseas.
+                      </p>
+                    </div>
+                    <a
+                      href="/automatizacion-rrss/panel/imagen-comercial"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-3 py-1.5 rounded-xl bg-white hover:bg-amber-100/60 text-amber-800 border border-amber-300 text-[11px] font-black transition-all shrink-0 self-start sm:self-auto"
                     >
-                      <div className="aspect-square relative overflow-hidden bg-slate-100">
-                        {template.previewUrl ? (
-                          <img
-                            src={template.previewUrl}
-                            alt={template.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-slate-400">
-                            <FaImage className="text-2xl" />
-                          </div>
-                        )}
-                        {isSelected && (
-                          <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-md">
-                            <FaCheck className="text-[10px]" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="p-2.5">
-                        <h4 className="text-xs font-bold text-slate-900 truncate">{template.title}</h4>
-                        <p className="text-[10px] text-slate-500 line-clamp-1 mt-0.5">
-                          {template.category}
-                        </p>
+                      🎨 Ir al Editor Completo ↗
+                    </a>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                      ¿Qué idea o escena necesitas mostrar? (Opcional)
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={commercialIdea}
+                      onChange={(e) => setCommercialIdea(e.target.value)}
+                      placeholder="Ej: Un escritorio moderno o escena atractiva del servicio con iluminación cálida. Si lo dejas en blanco, nuestros agentes usarán los datos del negocio y oferta del Paso 1."
+                      className="w-full bg-white border border-amber-200 rounded-2xl px-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 transition-all font-medium resize-none"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                        ¿Incluir Capas de Texto en la Imagen?
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setCommercialIncludeText(true)}
+                          className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                            commercialIncludeText
+                              ? "bg-amber-500 text-slate-950 border-amber-500 shadow-xs"
+                              : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                          }`}
+                        >
+                          ✅ Sí, con textos
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCommercialIncludeText(false)}
+                          className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                            !commercialIncludeText
+                              ? "bg-slate-800 text-white border-slate-800 shadow-xs"
+                              : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                          }`}
+                        >
+                          🖼️ Solo fondo limpio
+                        </button>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+
+                    {commercialIncludeText && (
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                          Texto específico a destacar (Opcional)
+                        </label>
+                        <input
+                          type="text"
+                          value={commercialCustomText}
+                          onChange={(e) => setCommercialCustomText(e.target.value)}
+                          placeholder="Ej: Evaluación Gratis · Agenda Hoy por WhatsApp"
+                          className="w-full bg-white border border-amber-200 rounded-2xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 transition-all font-medium"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </section>
 
             {/* BOTÓN PRINCIPAL DE GENERACIÓN */}
@@ -2215,6 +2378,16 @@ export default function VendedoresPwaPage() {
                           </button>
                         )}
                       </div>
+                      {activePub?.commercialEditId && (
+                        <a
+                          href={`/automatizacion-rrss/panel/imagen-comercial?editId=${activePub.commercialEditId}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="w-full py-2.5 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 text-xs font-black text-center transition-colors flex items-center justify-center gap-2"
+                        >
+                          <span>🎨</span> Ajustar Capas de esta Imagen en Nuestro Editor ↗
+                        </a>
+                      )}
                     </div>
 
                     {/* COPY Y ENVÍO POR WHATSAPP */}

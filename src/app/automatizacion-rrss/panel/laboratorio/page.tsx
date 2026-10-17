@@ -159,6 +159,9 @@ export default function LaboratorioPage() {
     "reel",
   ]);
   const [sampleImageTextOption, setSampleImageTextOption] = useState<"mixto" | "con_texto" | "sin_texto">("mixto");
+  const [sampleVisualStyleSource, setSampleVisualStyleSource] = useState<"preset_styles" | "commercial_image">("preset_styles");
+  const [sampleCommercialIdea, setSampleCommercialIdea] = useState<string>("");
+  const [sampleCommercialCustomText, setSampleCommercialCustomText] = useState<string>("");
   const [generatingMuestra, setGeneratingMuestra] = useState(false);
   const [generatedMuestraResult, setGeneratedMuestraResult] = useState<{
     demoId: string;
@@ -747,9 +750,21 @@ export default function LaboratorioPage() {
             keepOriginalPhoto: item.keepOriginalPhoto !== false,
           })),
           catalogUsage,
-          selectedStyles: usePromptStyles ? selectedStyles : [],
+          selectedStyles: sampleVisualStyleSource === "preset_styles" && usePromptStyles ? selectedStyles : [],
+          visualStyleSource: sampleVisualStyleSource,
+          commercialIdea: sampleCommercialIdea.trim(),
+          commercialIncludeText: sampleImageTextOption !== "sin_texto",
+          commercialCustomText: sampleCommercialCustomText.trim(),
+          logoUrl: currentTestProfile?.logoUrl || brandForm.logoUrl || "",
           imageTextOption: sampleImageTextOption,
-          isCommercialPoster: sampleImageTextOption === "con_texto" ? true : sampleImageTextOption === "sin_texto" ? false : isCommercialPosterOnly,
+          isCommercialPoster:
+            sampleVisualStyleSource === "commercial_image"
+              ? sampleImageTextOption !== "sin_texto"
+              : sampleImageTextOption === "con_texto"
+              ? true
+              : sampleImageTextOption === "sin_texto"
+              ? false
+              : isCommercialPosterOnly,
           agentTone,
           customAgentInstruction,
           nicheContext: radarData ? JSON.stringify(radarData.trends || radarData.summary || "") : "",
@@ -2290,6 +2305,117 @@ export default function LaboratorioPage() {
                 </div>
               </div>
 
+              {/* 4. Selector de Motor / Estilo Visual: Nuestro Estilo Visual vs Imagen Comercial */}
+              <div className="bg-white p-4 sm:p-5 rounded-2xl border border-indigo-100 shadow-2xs space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <label className="text-xs font-black text-slate-900 uppercase tracking-wider block">
+                      4. ¿Cómo quieres diseñar el Estilo Visual de la Muestra?
+                    </label>
+                    <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                      Elige entre usar nuestros diseños previamente cargados o crear una Imagen Comercial con el motor de capas de Nuestro Editor.
+                    </p>
+                  </div>
+                  <a
+                    href="/automatizacion-rrss/panel/imagen-comercial"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-[11px] font-black transition-all shrink-0 self-start sm:self-auto"
+                  >
+                    🎨 Abrir Asistente de Imagen Comercial ↗
+                  </a>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setSampleVisualStyleSource("preset_styles")}
+                    className={`p-3.5 rounded-2xl border-2 text-left transition-all cursor-pointer flex items-start gap-3 ${
+                      sampleVisualStyleSource === "preset_styles"
+                        ? "bg-indigo-50/70 border-indigo-600 shadow-xs ring-2 ring-indigo-500/20"
+                        : "bg-slate-50 border-slate-200 hover:bg-slate-100"
+                    }`}
+                  >
+                    <span className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-base shrink-0">
+                      🎨
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-black text-slate-900">
+                          Nuestro Estilo Visual (Diseños Precargados)
+                        </span>
+                        {sampleVisualStyleSource === "preset_styles" && (
+                          <span className="px-2 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-black">
+                            Activo
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-slate-600 font-medium mt-1 leading-relaxed">
+                        Utiliza los diseños y estilos visuales seleccionados arriba en el catálogo.
+                      </p>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSampleVisualStyleSource("commercial_image")}
+                    className={`p-3.5 rounded-2xl border-2 text-left transition-all cursor-pointer flex items-start gap-3 ${
+                      sampleVisualStyleSource === "commercial_image"
+                        ? "bg-amber-50/80 border-amber-500 shadow-xs ring-2 ring-amber-500/20"
+                        : "bg-slate-50 border-slate-200 hover:bg-slate-100"
+                    }`}
+                  >
+                    <span className="w-9 h-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center text-base shrink-0">
+                      ✨
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-black text-slate-900">
+                          Crear Imagen Comercial (Capas + Nuestro Editor)
+                        </span>
+                        {sampleVisualStyleSource === "commercial_image" && (
+                          <span className="px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black">
+                            Activo
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-slate-600 font-medium mt-1 leading-relaxed">
+                        Genera escena limpia y estampa capas vectoriales de titular, oferta, precio y logo editables en Nuestro Editor.
+                      </p>
+                    </div>
+                  </button>
+                </div>
+
+                {sampleVisualStyleSource === "commercial_image" && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-amber-200/70">
+                    <div>
+                      <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
+                        Idea o escena visual para la Imagen Comercial (Opcional)
+                      </label>
+                      <input
+                        type="text"
+                        value={sampleCommercialIdea}
+                        onChange={(e) => setSampleCommercialIdea(e.target.value)}
+                        placeholder="Ej: Escena profesional del servicio o producto con iluminación de estudio..."
+                        className="w-full bg-amber-50/40 border border-amber-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1">
+                        Texto o promoción a destacar en las capas (Opcional)
+                      </label>
+                      <input
+                        type="text"
+                        value={sampleCommercialCustomText}
+                        onChange={(e) => setSampleCommercialCustomText(e.target.value)}
+                        placeholder="Ej: 20% DCTO esta semana · Agenda por WhatsApp"
+                        className="w-full bg-amber-50/40 border border-amber-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* RESULTADO: TARJETA DE LANDING DE MUESTRA GENERADA & WHATSAPP */}
               {generatedMuestraResult && (
                 <div className="bg-emerald-50/90 border-2 border-emerald-300 rounded-3xl p-5 sm:p-6 space-y-4 shadow-sm animate-in fade-in">
@@ -2342,6 +2468,30 @@ export default function LaboratorioPage() {
                       className="w-full bg-transparent font-mono text-[11px] text-slate-700 outline-none select-all"
                     />
                   </div>
+
+                  {/* Botones rápidos para abrir las Imágenes Comerciales en Nuestro Editor */}
+                  {Array.isArray(generatedMuestraResult.publications) &&
+                    generatedMuestraResult.publications.some((p: any) => p.commercialEditId) && (
+                      <div className="flex flex-wrap items-center gap-2 bg-amber-50/90 p-3 rounded-xl border border-amber-200">
+                        <span className="text-xs font-black text-amber-900">
+                          🎨 Editar Capas en Nuestro Editor:
+                        </span>
+                        {generatedMuestraResult.publications.map(
+                          (pub: any, pIdx: number) =>
+                            pub.commercialEditId && (
+                              <a
+                                key={pIdx}
+                                href={`/automatizacion-rrss/panel/imagen-comercial?editId=${pub.commercialEditId}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="px-3 py-1.5 rounded-lg bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold transition-all"
+                              >
+                                Post #{pIdx + 1} ({pub.dishOrProductName || pub.type}) ↗
+                              </a>
+                            )
+                        )}
+                      </div>
+                    )}
 
                   {/* Módulo de Envío por WhatsApp */}
                   <div className="space-y-2.5 bg-white/70 p-4 rounded-2xl border border-emerald-200">

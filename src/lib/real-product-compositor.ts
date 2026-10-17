@@ -19,6 +19,15 @@ export interface RealProductBannerParams {
   logoUrl?: string;
   userId?: string;
   includeLogo?: boolean;
+  saveEditableInLibrary?: boolean;
+  customBadgeText?: string;
+}
+
+export interface ComposedCommercialSlideResult {
+  finalImageUrl: string;
+  editDocId?: string;
+  renderId?: string;
+  textLayers?: any[];
 }
 
 /**
@@ -42,12 +51,19 @@ function mapFontFamily(style?: string): string {
 }
 
 /**
- * Motor de Composición para Fotos Reales (Sin retoque de comida):
- * Preserva 100% la foto original del plato o producto físico y estampa
+ * Motor de Composición para Fotos Reales e Imagen Comercial:
+ * Preserva 100% la foto o escena base limpia y estampa
  * tipografía publicitaria (cursivas, badges, precios y ofertas) usando
- * Butterfly Social (renderizado headless) con fallback resiliente a Sharp + SVG.
+ * nuestro motor de renderizado con fallback resiliente a Sharp + SVG.
  */
 export async function composeRealProductBanner(params: RealProductBannerParams): Promise<string> {
+  const result = await composeCommercialSlideWithEditor(params);
+  return result.finalImageUrl;
+}
+
+export async function composeCommercialSlideWithEditor(
+  params: RealProductBannerParams
+): Promise<ComposedCommercialSlideResult> {
   const {
     baseImageUrl,
     productName,
@@ -56,7 +72,7 @@ export async function composeRealProductBanner(params: RealProductBannerParams):
     idea = "",
     rubro = "Gastronomía",
     businessName = "Mi Negocio",
-    fontStyle = "script_handwritten",
+    fontStyle = "bold_modern",
     layoutPosition = "top_banner",
     secondaryScript,
     ingredients,
@@ -64,6 +80,8 @@ export async function composeRealProductBanner(params: RealProductBannerParams):
     logoUrl,
     userId = "system",
     includeLogo = true,
+    saveEditableInLibrary = false,
+    customBadgeText = "",
   } = params;
 
   const isVertical = aspectRatio === "9:16";
@@ -98,7 +116,15 @@ export async function composeRealProductBanner(params: RealProductBannerParams):
     };
   }
 
+  if (customBadgeText && customBadgeText.trim()) {
+    bannerCopy.badgeText = customBadgeText.trim();
+  }
+
   // 2. Intento Primario: Renderizado Tipográfico con Butterfly Social
+  let savedEditDocId: string | undefined;
+  let savedRenderId: string | undefined;
+  let builtTextLayers: any[] = [];
+
   try {
     const selectedFont = mapFontFamily(fontStyle);
     const isScript = fontStyle === "script_handwritten";
@@ -111,9 +137,10 @@ export async function composeRealProductBanner(params: RealProductBannerParams):
       textLayers = [
         // Kicker / Cursiva superior al costado
         {
+          id: "layer_badge",
           x: 28,
           y: isVertical ? 28 : 26,
-          text: secondaryScript || bannerCopy.badgeText || "Especial del Chef",
+          text: secondaryScript || bannerCopy.badgeText || "Especial",
           color: "#fcd34d",
           font: "'Dancing Script', cursive, sans-serif",
           size: isVertical ? 32 : 26,
@@ -125,6 +152,7 @@ export async function composeRealProductBanner(params: RealProductBannerParams):
         },
         // Titular Principal al Costado
         {
+          id: "layer_headline",
           x: 28,
           y: isVertical ? 38 : 36,
           text: isScript ? capitalizeWords(bannerCopy.mainHeadline) : bannerCopy.mainHeadline,
@@ -140,6 +168,7 @@ export async function composeRealProductBanner(params: RealProductBannerParams):
         },
         // Beneficio / Detalle
         {
+          id: "layer_benefit",
           x: 28,
           y: isVertical ? 48 : 46,
           text: bannerCopy.benefitText,
@@ -155,6 +184,7 @@ export async function composeRealProductBanner(params: RealProductBannerParams):
         ...(price
           ? [
               {
+                id: "layer_price",
                 x: 28,
                 y: isVertical ? 56 : 54,
                 text: price,
@@ -171,6 +201,7 @@ export async function composeRealProductBanner(params: RealProductBannerParams):
           : []),
         // Botón CTA al Costado
         {
+          id: "layer_cta",
           x: 28,
           y: isVertical ? 66 : 64,
           text: bannerCopy.ctaText,
@@ -188,6 +219,7 @@ export async function composeRealProductBanner(params: RealProductBannerParams):
       textLayers = [
         // 1. Badge Superior
         {
+          id: "layer_badge",
           x: 50,
           y: isVertical ? 12 : 10,
           text: bannerCopy.badgeText,
@@ -202,6 +234,7 @@ export async function composeRealProductBanner(params: RealProductBannerParams):
         },
         // 2. Titular Principal
         {
+          id: "layer_headline",
           x: 50,
           y: isVertical ? 21 : 19,
           text: isScript
@@ -218,6 +251,7 @@ export async function composeRealProductBanner(params: RealProductBannerParams):
         },
         // 3. Beneficio / Detalle del Plato o Precio
         {
+          id: "layer_benefit",
           x: 50,
           y: isVertical ? 29 : 27,
           text: bannerCopy.benefitText,
@@ -233,6 +267,7 @@ export async function composeRealProductBanner(params: RealProductBannerParams):
         ...(!isRecipe
           ? [
               {
+                id: "layer_cta",
                 x: 50,
                 y: isVertical ? 93 : 93,
                 text: bannerCopy.ctaText,
@@ -249,65 +284,117 @@ export async function composeRealProductBanner(params: RealProductBannerParams):
       ];
     }
 
-    // Registrar en Firestore para el endpoint /render/preview
-    const renderDoc = await adminDb.collection("preview_renders").add({
-      baseImageUrl,
-      userId,
-      layoutPosition,
-      ingredients: ingredients && ingredients.length > 0 ? ingredients : null,
-      useLogo: Boolean(includeLogo && logoUrl),
-      logoUrl: logoUrl || null,
-      logoX: isSplit ? 90 : 14,
-      logoY: isVertical ? 8 : 10,
-      logoWidth: 100,
-      logoBg: "transparent",
-      textLayers,
-      watermarkSantisoft: false,
-      aspectRatio,
-      useScrim: true,
-      createdAt: new Date(),
-    });
+    builtTextLayers = textLayers;
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://rrss.santisoft.cl";
-    const previewUrl = `${baseUrl}/render/preview?id=${renderDoc.id}`;
-    const butterflyUrl = `https://butterfly.santisoft.cl/link-previews/v1?url=${encodeURIComponent(previewUrl)}`;
+    if (adminDb) {
+      // Registrar en Firestore para el endpoint /render/preview
+      const renderDoc = await adminDb.collection("preview_renders").add({
+        baseImageUrl,
+        userId,
+        layoutPosition: "commercial_custom",
+        ingredients: ingredients && ingredients.length > 0 ? ingredients : null,
+        useLogo: Boolean(includeLogo && logoUrl),
+        logoUrl: logoUrl || null,
+        logoX: isSplit ? 90 : 86,
+        logoY: isVertical ? 8 : 12,
+        logoWidth: 100,
+        logoBg: "transparent",
+        logoTransparent: true,
+        textLayers,
+        watermarkSantisoft: false,
+        aspectRatio,
+        useScrim: true,
+        createdAt: new Date(),
+      });
 
-    console.log(`[RealProductCompositor] Render registrado (#${renderDoc.id}). Solicitando render a Butterfly Social...`);
+      savedRenderId = renderDoc.id;
 
-    // Descargar el render de Butterfly con timeout de 9s
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 9000);
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://rrss.santisoft.cl";
+      const previewUrl = `${baseUrl}/render/preview?id=${renderDoc.id}`;
+      const butterflyUrl = `https://butterfly.santisoft.cl/link-previews/v1?url=${encodeURIComponent(previewUrl)}`;
 
-    const bfRes = await fetch(butterflyUrl, { signal: controller.signal });
-    clearTimeout(timeoutId);
+      console.log(`[RealProductCompositor] Render registrado (#${renderDoc.id}). Solicitando render a nuestro motor...`);
 
-    if (bfRes.ok) {
-      const buffer = Buffer.from(await bfRes.arrayBuffer());
-      if (buffer.length > 5000 && adminStorage) {
-        const bucket = adminStorage.bucket();
-        const dest = `users/${userId}/real_product_banners/${Date.now()}.jpg`;
-        const file = bucket.file(dest);
+      // Descargar el render con timeout de 12s
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 12000);
 
-        await file.save(buffer, {
-          metadata: {
-            contentType: "image/jpeg",
-            cacheControl: "public, max-age=31536000",
-          },
-        });
-        await file.makePublic();
+      const bfRes = await fetch(butterflyUrl, { signal: controller.signal });
+      clearTimeout(timeoutId);
 
-        const storedUrl = `https://storage.googleapis.com/${bucket.name}/${dest}`;
-        console.log(`[RealProductCompositor] ✅ Imagen Butterfly guardada en Storage: ${storedUrl}`);
-        return storedUrl;
+      if (bfRes.ok) {
+        const buffer = Buffer.from(await bfRes.arrayBuffer());
+        if (buffer.length > 5000 && adminStorage) {
+          const bucket = adminStorage.bucket();
+          const dest = `users/${userId}/real_product_banners/${Date.now()}.jpg`;
+          const file = bucket.file(dest);
+
+          await file.save(buffer, {
+            metadata: {
+              contentType: "image/jpeg",
+              cacheControl: "public, max-age=31536000",
+            },
+          });
+          await file.makePublic();
+
+          const storedUrl = `https://storage.googleapis.com/${bucket.name}/${dest}`;
+          console.log(`[RealProductCompositor] ✅ Imagen guardada en Storage: ${storedUrl}`);
+
+          if (saveEditableInLibrary && adminDb) {
+            try {
+              const libDoc = await adminDb.collection("generated_images").add({
+                url: storedUrl,
+                baseImageUrl,
+                userId,
+                source: "imagen_comercial",
+                type: isVertical ? "Historia" : "Post",
+                aspectRatio,
+                prompt: `Imagen Comercial - ${productName} (${businessName})`,
+                copy: textLayers.map((l) => l.text).filter(Boolean).join(" · "),
+                commercialDesignId: savedRenderId,
+                commercialDesignData: {
+                  slides: [
+                    {
+                      baseImageUrl,
+                      finalRenderUrl: storedUrl,
+                      textLayers,
+                      useLogo: Boolean(includeLogo && logoUrl),
+                      logoUrl: logoUrl || null,
+                      logoX: isSplit ? 90 : 86,
+                      logoY: isVertical ? 8 : 12,
+                      logoWidth: 100,
+                      logoTransparent: true,
+                      aspectRatio,
+                    },
+                  ],
+                  isCarousel: false,
+                  slideIndex: 0,
+                },
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              });
+              savedEditDocId = libDoc.id;
+            } catch (libErr) {
+              console.warn("[RealProductCompositor] Error guardando documento editable en generated_images:", libErr);
+            }
+          }
+
+          return {
+            finalImageUrl: storedUrl,
+            editDocId: savedEditDocId,
+            renderId: savedRenderId,
+            textLayers: builtTextLayers,
+          };
+        }
       }
     }
   } catch (bfErr: any) {
-    console.warn("[RealProductCompositor] Butterfly no disponible o timeout, ejecutando fallback local Sharp:", bfErr.message || bfErr);
+    console.warn("[RealProductCompositor] Motor de renderizado no disponible o timeout, ejecutando fallback local Sharp:", bfErr.message || bfErr);
   }
 
   // 3. Fallback Resiliente: Motor Sharp + SVG local en servidor
   console.log(`[RealProductCompositor] Ejecutando compositor Sharp de alta velocidad...`);
-  return await composeBannerOnImage({
+  const sharpUrl = await composeBannerOnImage({
     baseImageUrl,
     bannerCopy,
     logoUrl,
@@ -315,6 +402,52 @@ export async function composeRealProductBanner(params: RealProductBannerParams):
     aspectRatio,
     includeLogo,
   });
+
+  if (saveEditableInLibrary && adminDb) {
+    try {
+      const libDoc = await adminDb.collection("generated_images").add({
+        url: sharpUrl,
+        baseImageUrl,
+        userId,
+        source: "imagen_comercial",
+        type: isVertical ? "Historia" : "Post",
+        aspectRatio,
+        prompt: `Imagen Comercial - ${productName} (${businessName})`,
+        copy: builtTextLayers.map((l) => l.text).filter(Boolean).join(" · "),
+        commercialDesignId: savedRenderId || null,
+        commercialDesignData: {
+          slides: [
+            {
+              baseImageUrl,
+              finalRenderUrl: sharpUrl,
+              textLayers: builtTextLayers,
+              useLogo: Boolean(includeLogo && logoUrl),
+              logoUrl: logoUrl || null,
+              logoX: 86,
+              logoY: isVertical ? 8 : 12,
+              logoWidth: 100,
+              logoTransparent: true,
+              aspectRatio,
+            },
+          ],
+          isCarousel: false,
+          slideIndex: 0,
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      savedEditDocId = libDoc.id;
+    } catch (libErr) {
+      console.warn("[RealProductCompositor] Error guardando fallback en generated_images:", libErr);
+    }
+  }
+
+  return {
+    finalImageUrl: sharpUrl,
+    editDocId: savedEditDocId,
+    renderId: savedRenderId,
+    textLayers: builtTextLayers,
+  };
 }
 
 function capitalizeWords(str: string): string {

@@ -26,8 +26,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No se proporcionó ningún archivo." }, { status: 400 });
     }
 
-    if (!file.type.startsWith("image/")) {
-      return NextResponse.json({ error: "El archivo debe ser una imagen válida." }, { status: 400 });
+    const allowedMimeTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"];
+    if (!allowedMimeTypes.includes(file.type.toLowerCase())) {
+      return NextResponse.json(
+        { error: "Formato no permitido. Usa JPG, PNG, WebP o GIF." },
+        { status: 400 }
+      );
     }
 
     if (file.size > 15 * 1024 * 1024) {
@@ -39,7 +43,14 @@ export async function POST(req: NextRequest) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const ext = file.type.split("/")[1]?.replace("svg+xml", "svg") || "png";
+    const extMap: Record<string, string> = {
+      "image/jpeg": "jpg",
+      "image/jpg": "jpg",
+      "image/png": "png",
+      "image/webp": "webp",
+      "image/gif": "gif",
+    };
+    const ext = extMap[file.type.toLowerCase()] || "png";
     const bucket = adminStorage.bucket();
     const dest = `users/${uid}/commercial_assets/${assetType}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
     const storageFile = bucket.file(dest);
