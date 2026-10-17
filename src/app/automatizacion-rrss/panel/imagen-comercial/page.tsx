@@ -218,6 +218,137 @@ function createInitialSlide(id: string): SlideData {
   };
 }
 
+// Extraer capas de texto comerciales desde la sintaxis de un prompt
+export function extractTypographyLayersFromPrompt(promptText: string): TextLayer[] {
+  if (!promptText || !promptText.trim()) return [];
+
+  const lines = promptText.split("\n");
+  const extracted: { prefix: string; text: string }[] = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    // Buscar comillas dobles o tipográficas en la línea
+    const match = trimmed.match(/^(.*?)[":“]([^"”]+)["”](.*?)$/);
+    if (match) {
+      const prefix = match[1].trim().toLowerCase();
+      const text = match[2].trim();
+      // Filtrar códigos de color o cosas irrelevantes
+      if (text.length >= 2 && !text.startsWith("#") && !text.match(/^[0-9a-fA-F]{3,8}$/)) {
+        extracted.push({ prefix, text });
+      }
+    }
+  }
+
+  // Fallback si venía en un solo párrafo o sin saltos estándar
+  if (extracted.length === 0) {
+    const typoIdx = promptText.search(/TYPOGRAPHY/i);
+    const searchArea = typoIdx !== -1 ? promptText.slice(typoIdx) : promptText;
+    const allQuotes = Array.from(searchArea.matchAll(/["“]([^"”]{3,180})["”]/g));
+    for (const q of allQuotes) {
+      const text = q[1].trim();
+      if (!text.startsWith("#") && !text.match(/^[0-9a-fA-F]{3,8}$/)) {
+        extracted.push({ prefix: "", text });
+      }
+    }
+  }
+
+  if (extracted.length === 0) return [];
+
+  const total = extracted.length;
+
+  return extracted.map((item, idx) => {
+    const p = item.prefix;
+    let size = 26;
+    let color = "#FFFFFF";
+    let isBold = true;
+    let isItalic = false;
+    let isPill = false;
+    let backgroundColor = "transparent";
+    let shadowLevel: "none" | "soft" | "hard" = "hard";
+    let textAlign: "left" | "center" | "right" = "center";
+    let x = 50;
+    let y = 15;
+    let boxWidth = 88;
+
+    // Detectar colores en el prefijo
+    if (p.includes("red") || p.includes("orange") || p.includes("rojo") || p.includes("naranja")) {
+      color = "#FF5500";
+    } else if (p.includes("yellow") || p.includes("amarillo")) {
+      color = "#F59E0B";
+    } else if (p.includes("green") || p.includes("emerald") || p.includes("verde")) {
+      color = "#10B981";
+    } else if (p.includes("white") || p.includes("blanco")) {
+      color = "#FFFFFF";
+    }
+
+    // Detectar si es Pill o Badge
+    if (p.includes("pill") || p.includes("badge") || p.includes("sub-badge")) {
+      isPill = true;
+      size = 18;
+      boxWidth = 0;
+      if (color === "#FFFFFF") {
+        backgroundColor = "#FFFFFF";
+        color = "#0B1120";
+      } else {
+        backgroundColor = color;
+      }
+    }
+
+    // Jerarquía según etiqueta o índice
+    if (p.includes("top") || p.includes("header") || p.includes("headline") || idx === 0) {
+      size = total > 4 ? 30 : 42;
+      isBold = true;
+      textAlign = "center";
+      x = 50;
+      y = isPill ? 8 : 14;
+    } else if (p.includes("body") || p.includes("desc") || p.includes("cuerpo")) {
+      size = total > 4 ? 16 : 19;
+      isBold = false;
+      color = color === "#FFFFFF" ? "#E2E8F0" : color;
+      textAlign = "left";
+      x = 50;
+      boxWidth = 86;
+      y = Math.min(88, Math.round(18 + idx * (70 / total)));
+    } else if (p.includes("title") || p.includes("titular") || p.includes("card") || p.includes("item")) {
+      size = total > 4 ? 22 : 26;
+      isBold = true;
+      textAlign = "left";
+      x = 50;
+      boxWidth = 86;
+      y = Math.min(85, Math.round(14 + idx * (70 / total)));
+    } else if (p.includes("bottom") || idx === total - 1) {
+      size = 18;
+      isPill = true;
+      boxWidth = 0;
+      y = 92;
+      x = 50;
+    } else {
+      // Distribución uniforme
+      y = Math.min(88, Math.round(15 + idx * (70 / Math.max(1, total - 1))));
+    }
+
+    return {
+      id: `layer-extracted-${idx + 1}-${Date.now()}`,
+      text: item.text,
+      fontFamily: "'Montserrat', sans-serif",
+      size,
+      color,
+      backgroundColor,
+      isPill,
+      shadowLevel,
+      isBold,
+      isItalic,
+      letterSpacing: isPill ? "wide" : "normal",
+      boxWidth,
+      textAlign,
+      x,
+      y,
+    };
+  });
+}
+
 export default function ImagenComercialPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -389,6 +520,38 @@ export default function ImagenComercialPage() {
       const copy = [...prev];
       copy[activeSlideIndex] = updater(copy[activeSlideIndex]);
       return copy;
+    });
+  };
+
+  // Detección inteligente de capas de texto en el prompt del slide activo
+  const detectedTypographyLayers = useMemo(
+    () => extractTypographyLayersFromPrompt(activeSlide.prompt),
+    [activeSlide.prompt]
+  );
+
+  const handleApplyDetectedTypography = (layers: TextLayer[]) => {
+    if (!layers || layers.length === 0) return;
+    updateActiveSlide((s) => ({
+      ...s,
+      textLayers: layers,
+    }));
+    setSelectedLayerId(layers[0]?.id || null);
+    setStatusMessage(`✨ ¡Se cargaron automáticamente ${layers.length} capas de texto desde el prompt!`);
+    setTimeout(() => setStatusMessage(""), 4000);
+  };
+
+  const handlePromptChange = (val: string) => {
+    updateActiveSlide((s) => {
+      const updated = { ...s, prompt: val };
+      // Si las capas actuales están completamente vacías y el nuevo prompt contiene capas detectables, auto-poblarlas
+      const isCurrentlyEmpty = s.textLayers.every((l) => !l.text.trim());
+      if (isCurrentlyEmpty) {
+        const extracted = extractTypographyLayersFromPrompt(val);
+        if (extracted && extracted.length > 0) {
+          updated.textLayers = extracted;
+        }
+      }
+      return updated;
     });
   };
 
@@ -1293,12 +1456,37 @@ export default function ImagenComercialPage() {
               </label>
               <textarea
                 value={activeSlide.prompt}
-                onChange={(e) => updateActiveSlide((s) => ({ ...s, prompt: e.target.value }))}
+                onChange={(e) => handlePromptChange(e.target.value)}
                 rows={3}
                 placeholder="Describe la composición visual, elementos 3D o escenario para el fondo limpio..."
                 className="w-full text-xs p-3 rounded-2xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-orange-500 focus:outline-none transition-all leading-relaxed"
               />
             </div>
+
+            {/* Banner interactivo si se detectan capas de texto en el prompt */}
+            {detectedTypographyLayers && detectedTypographyLayers.length > 0 && (
+              <div className="p-3 bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-orange-500/10 border border-orange-300 rounded-2xl flex items-center justify-between gap-2.5 animate-in fade-in">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-base shrink-0">✨</span>
+                  <div className="min-w-0">
+                    <div className="text-xs font-black text-slate-900 truncate">
+                      {detectedTypographyLayers.length} textos detectados en el prompt
+                    </div>
+                    <div className="text-[10px] text-slate-500 font-medium truncate">
+                      {detectedTypographyLayers.map((l) => l.text).filter(Boolean).slice(0, 2).join(" · ")}...
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleApplyDetectedTypography(detectedTypographyLayers)}
+                  className="px-3 py-1.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-black text-[11px] shadow-sm transition-all shrink-0 flex items-center gap-1 cursor-pointer"
+                >
+                  <span>Cargar en Capas</span>
+                  <span>→</span>
+                </button>
+              </div>
+            )}
 
             {/* Presets Rápidos */}
             <div className="space-y-1.5">
@@ -1307,7 +1495,7 @@ export default function ImagenComercialPage() {
                 {PROMPT_PRESETS.map((p) => (
                   <button
                     key={p.title}
-                    onClick={() => updateActiveSlide((s) => ({ ...s, prompt: p.prompt }))}
+                    onClick={() => handlePromptChange(p.prompt)}
                     className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-orange-50 hover:text-orange-700 text-slate-600 transition-colors"
                   >
                     {p.title}
@@ -1343,13 +1531,26 @@ export default function ImagenComercialPage() {
                 </span>
                 <h3 className="font-extrabold text-slate-900 text-sm">Capas de Texto</h3>
               </div>
-              <button
-                onClick={handleAddTextLayer}
-                className="px-2.5 py-1 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 font-bold text-[11px] flex items-center gap-1 transition-all"
-              >
-                <Plus className="w-3 h-3" />
-                <span>Añadir Capa</span>
-              </button>
+              <div className="flex items-center gap-1.5">
+                {detectedTypographyLayers && detectedTypographyLayers.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => handleApplyDetectedTypography(detectedTypographyLayers)}
+                    className="px-2.5 py-1 rounded-xl bg-gradient-to-r from-orange-500/15 to-amber-500/15 hover:from-orange-500/25 hover:to-amber-500/25 text-orange-700 border border-orange-300 font-bold text-[11px] flex items-center gap-1 transition-all cursor-pointer"
+                    title="Extrae y carga los textos entre comillas especificados en el prompt"
+                  >
+                    <Sparkles className="w-3 h-3 text-orange-600" />
+                    <span>Auto-extraer ({detectedTypographyLayers.length})</span>
+                  </button>
+                )}
+                <button
+                  onClick={handleAddTextLayer}
+                  className="px-2.5 py-1 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 font-bold text-[11px] flex items-center gap-1 transition-all"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>Añadir Capa</span>
+                </button>
+              </div>
             </div>
 
             <div className="space-y-2.5 max-h-[280px] overflow-y-auto pr-1">
