@@ -247,6 +247,7 @@ export default function ImagenComercialPage() {
 
   const [isPublishModalOpen, setIsPublishModalOpen] = useState<boolean>(false);
   const [publishAction, setPublishAction] = useState<"now" | "schedule">("now");
+  const [publishFormat, setPublishFormat] = useState<"post" | "historia">("post");
   const [scheduleDateTime, setScheduleDateTime] = useState<string>("");
   const [postCaption, setPostCaption] = useState<string>("");
   const [isPublishing, setIsPublishing] = useState<boolean>(false);
@@ -994,11 +995,13 @@ export default function ImagenComercialPage() {
 
       const token = user ? await user.getIdToken() : "";
       const isSchedule = publishAction === "schedule";
+      const resolvedType =
+        slides.length > 1 ? "Carrusel" : publishFormat === "historia" ? "Historia" : "Post";
 
       const payload = {
         userId: user?.uid,
         profileId: activeProfile?.id || "default",
-        type: slides.length > 1 ? "carrusel" : "post",
+        type: resolvedType,
         imageUrl: targetUrl,
         carouselImages: slides.map((s) => s.finalRenderUrl || s.baseImageUrl).filter(Boolean),
         copy: postCaption || activeSlide.textLayers.map((l) => l.text).join("\n"),
@@ -1101,14 +1104,6 @@ export default function ImagenComercialPage() {
             <span>📚</span>
             <span>Biblioteca</span>
           </Link>
-          <button
-            onClick={handleRenderFinal}
-            disabled={isRenderingFinal || !activeSlide.baseImageUrl}
-            className="px-5 py-2.5 rounded-xl bg-linear-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs shadow-md shadow-orange-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
-          >
-            {isRenderingFinal ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-            <span>Renderizar HD</span>
-          </button>
         </div>
       </div>
 
@@ -1634,15 +1629,25 @@ export default function ImagenComercialPage() {
 
             {/* BOTONES DE ACCIÓN POST-DISEÑO */}
             <div className="w-full flex items-center justify-between gap-3 pt-6 border-t border-white/10 mt-6 flex-wrap">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  onClick={handleRenderFinal}
+                  disabled={isRenderingFinal || !activeSlide.baseImageUrl}
+                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs shadow-md shadow-orange-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-1.5"
+                  title="Renderiza el cartel en alta definición y lo guarda en tu Biblioteca para re-editarlo cuando quieras"
+                >
+                  {isRenderingFinal ? <Loader2 className="w-3.5 h-3.5 animate-spin text-white" /> : <Sparkles className="w-3.5 h-3.5 text-white" />}
+                  <span>{isRenderingFinal ? "Guardando..." : "Renderizar y Guardar"}</span>
+                </button>
+
                 <button
                   onClick={handleDownloadCompleteImage}
                   disabled={!activeSlide.baseImageUrl || isRenderingFinal}
-                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-500/20 to-amber-500/20 hover:from-orange-500/30 hover:to-amber-500/30 border border-orange-500/40 text-orange-200 font-bold text-xs transition-all flex items-center gap-1.5 disabled:opacity-40 shadow-sm"
-                  title="Renderiza y descarga el cartel final en alta resolución con tipografías y logo integrados"
+                  className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-xs transition-all flex items-center gap-1.5 disabled:opacity-40 shadow-sm"
+                  title="Descarga el cartel directamente a tu computador"
                 >
                   {isRenderingFinal ? <Loader2 className="w-3.5 h-3.5 animate-spin text-orange-400" /> : <Download className="w-3.5 h-3.5 text-orange-400" />}
-                  <span>{isRenderingFinal ? "Renderizando HD..." : "Descargar Imagen Completa HD"}</span>
+                  <span>{isRenderingFinal ? "Procesando..." : "Descargar Imagen"}</span>
                 </button>
               </div>
 
@@ -1975,6 +1980,81 @@ export default function ImagenComercialPage() {
               </div>
             ) : (
               <div className="space-y-4">
+                {/* Selección de Formato: Historia vs Post (para 1 slide) o Carrusel automático (para >1 slides) */}
+                {slides.length === 1 ? (
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700">
+                      ¿Qué formato deseas publicar?
+                    </label>
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => setPublishFormat("post")}
+                        className={`p-3 rounded-2xl border text-left transition-all flex items-center justify-between ${
+                          publishFormat === "post"
+                            ? "border-indigo-600 bg-indigo-50/60 ring-2 ring-indigo-500/20 shadow-xs"
+                            : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/60"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="text-xl shrink-0">📱</span>
+                          <div className="min-w-0">
+                            <div className="text-xs font-black text-slate-900 truncate">Post en el Feed</div>
+                            <div className="text-[10px] text-slate-400 font-medium truncate">Publicación estándar</div>
+                          </div>
+                        </div>
+                        <div
+                          className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ml-1.5 ${
+                            publishFormat === "post" ? "bg-indigo-600 text-white" : "border border-slate-300"
+                          }`}
+                        >
+                          {publishFormat === "post" && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setPublishFormat("historia")}
+                        className={`p-3 rounded-2xl border text-left transition-all flex items-center justify-between ${
+                          publishFormat === "historia"
+                            ? "border-indigo-600 bg-indigo-50/60 ring-2 ring-indigo-500/20 shadow-xs"
+                            : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/60"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="text-xl shrink-0">⏱️</span>
+                          <div className="min-w-0">
+                            <div className="text-xs font-black text-slate-900 truncate">Historia (Story)</div>
+                            <div className="text-[10px] text-slate-400 font-medium truncate">Duración 24 horas</div>
+                          </div>
+                        </div>
+                        <div
+                          className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ml-1.5 ${
+                            publishFormat === "historia" ? "bg-indigo-600 text-white" : "border border-slate-300"
+                          }`}
+                        >
+                          {publishFormat === "historia" && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-3 bg-indigo-50/70 border border-indigo-200/80 rounded-2xl flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-xl">📚</span>
+                      <div>
+                        <div className="text-xs font-black text-indigo-950">Formato automático: Carrusel</div>
+                        <div className="text-[10px] text-indigo-600 font-medium">
+                          Se publicarán las {slides.length} diapositivas diseñadas en secuencia
+                        </div>
+                      </div>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-lg bg-indigo-600 text-white text-[10px] font-black uppercase tracking-wider shrink-0 shadow-xs">
+                      {slides.length} Slides
+                    </span>
+                  </div>
+                )}
+
                 {/* Selector de Redes Sociales Conectadas */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
@@ -2160,8 +2240,10 @@ export default function ImagenComercialPage() {
                   <div className="font-bold text-slate-700">Formato a publicar:</div>
                   <div>
                     {slides.length > 1
-                      ? `Carrusel con ${slides.length} diapositivas en formato ${activeSlide.aspectRatio}`
-                      : `Post individual en formato ${activeSlide.aspectRatio}`}
+                      ? `📚 Carrusel con ${slides.length} diapositivas en formato ${activeSlide.aspectRatio}`
+                      : publishFormat === "historia"
+                      ? `⏱️ Historia (Story) en formato ${activeSlide.aspectRatio}`
+                      : `📱 Post individual en el Feed en formato ${activeSlide.aspectRatio}`}
                   </div>
                 </div>
 

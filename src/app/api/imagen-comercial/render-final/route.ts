@@ -144,7 +144,7 @@ export async function POST(req: NextRequest) {
           baseImageUrl,
           userId: uid,
           source: "imagen_comercial",
-          type: isCarousel ? "Carrusel" : "Post",
+          type: isCarousel ? "Carrusel" : aspectRatio === "9:16" ? "Historia" : "Post",
           aspectRatio,
           prompt: prompt || "Diseño de Cartel Comercial",
           copy: textLayers.map((l: any) => l.text).filter(Boolean).join(" · "),
