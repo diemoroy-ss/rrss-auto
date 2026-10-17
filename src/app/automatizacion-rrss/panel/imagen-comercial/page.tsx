@@ -147,68 +147,15 @@ function removeBlackBackground(imageUrl: string): Promise<string> {
   });
 }
 
-function createInitialSlide(id: string): SlideData {
+function createInitialSlide(id: string, aspectRatio: "4:5" | "1:1" | "9:16" = "4:5", logoUrl = ""): SlideData {
   return {
     id,
-    prompt:
-      "Vertical 4:5 commercial SaaS poster background, dark navy tech background (#0B1120) with glowing orange (#FF5500) and indigo (#4F46E5) perspective grid lines at the bottom. In the lower half, a floating 3D glassmorphism balance scale. Clean negative space in the upper 40% for typography. No text, no letters.",
+    prompt: "",
     baseImageUrl: "",
-    aspectRatio: "4:5",
-    textLayers: [
-      {
-        id: "layer-1",
-        text: "DIAGNÓSTICO PARA PYMES EN CHILE",
-        x: 50,
-        y: 8.5,
-        fontFamily: "'Montserrat', sans-serif",
-        size: 21,
-        color: "#FFFFFF",
-        backgroundColor: "#FF5500",
-        isPill: true,
-        shadowLevel: "hard",
-        isBold: true,
-        isItalic: false,
-        letterSpacing: "wide",
-        boxWidth: 0,
-        textAlign: "center",
-      },
-      {
-        id: "layer-2",
-        text: "¿PAGAR $550.000/MES A UNA AGENCIA O AUTOMATIZAR CON EL ADN DE TU NEGOCIO?",
-        x: 50,
-        y: 22,
-        fontFamily: "'Montserrat', sans-serif",
-        size: 46,
-        color: "#FFFFFF",
-        backgroundColor: "transparent",
-        shadowLevel: "hard",
-        isBold: true,
-        isItalic: false,
-        letterSpacing: "normal",
-        maxWidth: 960,
-        boxWidth: 88,
-        textAlign: "center",
-      },
-      {
-        id: "layer-3",
-        text: "Desliza y ahorra un 85% 👉",
-        x: 74,
-        y: 93,
-        fontFamily: "'Montserrat', sans-serif",
-        size: 22,
-        color: "#0B1120",
-        backgroundColor: "#FFFFFF",
-        isPill: true,
-        shadowLevel: "hard",
-        isBold: true,
-        isItalic: false,
-        letterSpacing: "normal",
-        boxWidth: 0,
-        textAlign: "center",
-      },
-    ],
-    useLogo: false,
-    logoUrl: "",
+    aspectRatio,
+    textLayers: [],
+    useLogo: Boolean(logoUrl),
+    logoUrl: logoUrl || "",
     logoTransparent: true,
     logoBlendMode: "screen",
     logoBgMode: "transparent",
@@ -349,6 +296,104 @@ export function extractTypographyLayersFromPrompt(promptText: string): TextLayer
   });
 }
 
+// Construir capas de texto limpias cuando el usuario ingresa texto libre manual por slide
+function buildLayersFromManualText(rawText: string): TextLayer[] {
+  if (!rawText || !rawText.trim()) return [];
+  const extracted = extractTypographyLayersFromPrompt(rawText);
+  if (extracted && extracted.length > 0) return extracted;
+
+  const lines = rawText
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  if (lines.length === 0) return [];
+
+  if (lines.length === 1) {
+    return [
+      {
+        id: `layer-manual-1-${Date.now()}`,
+        text: lines[0],
+        fontFamily: "'Montserrat', sans-serif",
+        size: 38,
+        color: "#FFFFFF",
+        backgroundColor: "transparent",
+        isPill: false,
+        shadowLevel: "hard",
+        isBold: true,
+        isItalic: false,
+        letterSpacing: "normal",
+        boxWidth: 86,
+        textAlign: "center",
+        x: 50,
+        y: 18,
+      },
+    ];
+  }
+
+  if (lines.length === 2) {
+    return [
+      {
+        id: `layer-manual-1-${Date.now()}`,
+        text: lines[0],
+        fontFamily: "'Montserrat', sans-serif",
+        size: 38,
+        color: "#FFFFFF",
+        backgroundColor: "transparent",
+        isPill: false,
+        shadowLevel: "hard",
+        isBold: true,
+        isItalic: false,
+        letterSpacing: "normal",
+        boxWidth: 86,
+        textAlign: "center",
+        x: 50,
+        y: 16,
+      },
+      {
+        id: `layer-manual-2-${Date.now()}`,
+        text: lines[1],
+        fontFamily: "'Montserrat', sans-serif",
+        size: 20,
+        color: "#E2E8F0",
+        backgroundColor: "transparent",
+        isPill: false,
+        shadowLevel: "soft",
+        isBold: false,
+        isItalic: false,
+        letterSpacing: "normal",
+        boxWidth: 84,
+        textAlign: "center",
+        x: 50,
+        y: 32,
+      },
+    ];
+  }
+
+  return lines.map((line, idx) => {
+    const isFirst = idx === 0;
+    const isSecond = idx === 1;
+    const isLast = idx === lines.length - 1 && lines.length >= 3;
+    return {
+      id: `layer-manual-${idx + 1}-${Date.now()}`,
+      text: line,
+      fontFamily: "'Montserrat', sans-serif",
+      size: isFirst ? 16 : isSecond ? 36 : isLast ? 17 : 19,
+      color: isFirst ? "#FFFFFF" : isSecond ? "#FFFFFF" : isLast ? "#0B1120" : "#E2E8F0",
+      backgroundColor: isFirst ? "#FF5500" : isLast ? "#FFFFFF" : "transparent",
+      isPill: isFirst || isLast,
+      shadowLevel: isSecond ? "hard" : "soft",
+      isBold: isFirst || isSecond || isLast,
+      isItalic: false,
+      letterSpacing: isFirst || isLast ? "wide" : "normal",
+      boxWidth: isFirst || isLast ? 0 : 86,
+      textAlign: "center",
+      x: 50,
+      y: isFirst ? 8 : isSecond ? 20 : isLast ? 90 : Math.min(78, 34 + (idx - 2) * 14),
+    };
+  });
+}
+
 export default function ImagenComercialPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -359,7 +404,21 @@ export default function ImagenComercialPage() {
   const [slides, setSlides] = useState<SlideData[]>([createInitialSlide("slide-1")]);
   const [activeSlideIndex, setActiveSlideIndex] = useState<number>(0);
 
-  const [selectedLayerId, setSelectedLayerId] = useState<string | null>("layer-2");
+  // Estados del Asistente Previo ("¿Qué quieres hacer?")
+  const [isWizardCompleted, setIsWizardCompleted] = useState<boolean>(Boolean(editId));
+  const [wizardContentType, setWizardContentType] = useState<"post" | "historia" | "carrusel">("post");
+  const [wizardSlideCount, setWizardSlideCount] = useState<number>(3);
+  const [wizardAspectRatio, setWizardAspectRatio] = useState<"4:5" | "1:1" | "9:16">("4:5");
+  const [wizardDesignMode, setWizardDesignMode] = useState<"idea" | "clear">("idea");
+  const [wizardIdea, setWizardIdea] = useState<string>("");
+  const [wizardIncludeText, setWizardIncludeText] = useState<boolean>(true);
+  const [wizardTextMode, setWizardTextMode] = useState<"agent" | "manual">("agent");
+  const [wizardManualTexts, setWizardManualTexts] = useState<string[]>(["", "", "", "", ""]);
+  const [wizardManualPrompts, setWizardManualPrompts] = useState<string[]>(["", "", "", "", ""]);
+  const [isPlanningSlides, setIsPlanningSlides] = useState<boolean>(false);
+  const [isGeneratingAllBases, setIsGeneratingAllBases] = useState<boolean>(false);
+
+  const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [isDraggingLogo, setIsDraggingLogo] = useState<boolean>(false);
   const [customFonts, setCustomFonts] = useState<CustomFont[]>([]);
 
@@ -483,13 +542,23 @@ export default function ImagenComercialPage() {
         if (Array.isArray(data.slides) && data.slides.length > 0) {
           setSlides(data.slides);
           setActiveSlideIndex(data.activeSlideIndex || 0);
+          if (data.slides.length > 1) {
+            setWizardContentType("carrusel");
+            setWizardSlideCount(data.slides.length);
+          } else if (data.slides[0]?.aspectRatio === "9:16") {
+            setWizardContentType("historia");
+            setPublishFormat("historia");
+          } else {
+            setWizardContentType("post");
+            setPublishFormat("post");
+          }
         } else {
           const loadedSlide: SlideData = {
             id: "slide-1",
-            prompt: data.prompt || "Diseño cargado",
+            prompt: data.prompt || "",
             baseImageUrl: data.baseImageUrl || "",
             aspectRatio: data.aspectRatio || "4:5",
-            textLayers: Array.isArray(data.textLayers) && data.textLayers.length > 0 ? data.textLayers : createInitialSlide("slide-1").textLayers,
+            textLayers: Array.isArray(data.textLayers) ? data.textLayers : [],
             useLogo: Boolean(data.useLogo),
             logoUrl: data.logoUrl || "",
             logoTransparent: data.logoTransparent !== undefined ? data.logoTransparent : true,
@@ -500,11 +569,19 @@ export default function ImagenComercialPage() {
             logoWidth: data.logoWidth || 110,
           };
           setSlides([loadedSlide]);
+          if (loadedSlide.aspectRatio === "9:16") {
+            setWizardContentType("historia");
+            setPublishFormat("historia");
+          } else {
+            setWizardContentType("post");
+            setPublishFormat("post");
+          }
         }
         if (Array.isArray(data.customFonts)) {
           setCustomFonts(data.customFonts);
         }
         setCurrentLibraryDocId(id);
+        setIsWizardCompleted(true);
         setStatusMessage("✅ Diseño cargado con éxito para edición.");
         setTimeout(() => setStatusMessage(""), 3000);
       }
@@ -597,6 +674,67 @@ export default function ImagenComercialPage() {
       console.error(err);
       setErrorMessage(err.message || "Error generando imagen base.");
     } finally {
+      setIsGeneratingBase(false);
+    }
+  };
+
+  // Generar todas las imágenes base del carrusel secuencialmente
+  const handleGenerateAllCarouselBases = async (customSlidesList?: SlideData[]) => {
+    const listToProcess = customSlidesList || slides;
+    const slidesWithPrompt = listToProcess.filter((s) => s.prompt && s.prompt.trim().length > 0);
+    if (slidesWithPrompt.length === 0) {
+      setErrorMessage("Por favor asegúrate de que las diapositivas tengan una descripción visual antes de generar.");
+      return;
+    }
+
+    setErrorMessage("");
+    setIsGeneratingAllBases(true);
+    setIsGeneratingBase(true);
+
+    try {
+      const token = user ? await user.getIdToken() : "";
+      for (let i = 0; i < listToProcess.length; i++) {
+        const slideItem = listToProcess[i];
+        if (!slideItem.prompt.trim()) continue;
+
+        setActiveSlideIndex(i);
+        setStatusMessage(
+          `✨ Nuestros agentes están generando el fondo de la diapositiva ${i + 1} de ${listToProcess.length}...`
+        );
+
+        const res = await fetch("/api/imagen-comercial/generate-base", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+          body: JSON.stringify({
+            prompt: slideItem.prompt,
+            aspectRatio: slideItem.aspectRatio,
+            rubro: activeProfile?.rubro || "Comercial",
+            productName: activeProfile?.businessName || "",
+          }),
+        });
+
+        const data = await res.json();
+        if (res.ok && data.baseImageUrl) {
+          setSlides((prev) =>
+            prev.map((s, idx) =>
+              idx === i ? { ...s, baseImageUrl: data.baseImageUrl, finalRenderUrl: undefined } : s
+            )
+          );
+        }
+      }
+      setActiveSlideIndex(0);
+      setStatusMessage(
+        `✅ ¡Se generaron los fondos de las ${listToProcess.length} diapositivas con éxito! Ahora puedes ajustar tus textos o renderizar.`
+      );
+      setTimeout(() => setStatusMessage(""), 5000);
+    } catch (err: any) {
+      console.error(err);
+      setErrorMessage(err.message || "Error generando los fondos de las diapositivas.");
+    } finally {
+      setIsGeneratingAllBases(false);
       setIsGeneratingBase(false);
     }
   };
@@ -1175,6 +1313,151 @@ export default function ImagenComercialPage() {
     }
   };
 
+  // Selección de tipo de contenido en el Asistente Inicial
+  const handleSelectWizardContentType = (type: "post" | "historia" | "carrusel") => {
+    setWizardContentType(type);
+    if (type === "historia") {
+      setWizardAspectRatio("9:16");
+      setPublishFormat("historia");
+    } else {
+      if (wizardAspectRatio === "9:16") {
+        setWizardAspectRatio("4:5");
+      }
+      setPublishFormat("post");
+    }
+  };
+
+  // Completar el Asistente Inicial y construir los slides + textos
+  const handleCompleteWizard = async (autoGenerateBases = false) => {
+    const totalSlides = wizardContentType === "carrusel" ? Math.min(Math.max(wizardSlideCount, 2), 5) : 1;
+    const effectiveRatio: "4:5" | "1:1" | "9:16" =
+      wizardContentType === "historia" ? "9:16" : wizardAspectRatio === "9:16" ? "4:5" : wizardAspectRatio;
+    const defaultLogo = activeProfile?.logoUrl || "";
+
+    setErrorMessage("");
+
+    // MODO A: "Necesito que diseñen las imágenes (tengo una idea)"
+    if (wizardDesignMode === "idea") {
+      if (!wizardIdea.trim()) {
+        setErrorMessage("Por favor cuéntanos brevemente de qué trata tu idea para que nuestros agentes diseñen las escenas.");
+        return;
+      }
+
+      setIsPlanningSlides(true);
+      setStatusMessage(
+        totalSlides > 1
+          ? `Nuestros agentes están diseñando la estructura, prompts visuales y capas de texto para tus ${totalSlides} diapositivas...`
+          : "Nuestros agentes están diseñando el prompt visual y las capas de texto para tu pieza..."
+      );
+
+      try {
+        const token = user ? await user.getIdToken() : "";
+        const res = await fetch("/api/imagen-comercial/plan-slides", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+          body: JSON.stringify({
+            contentType: wizardContentType,
+            slideCount: totalSlides,
+            aspectRatio: effectiveRatio,
+            idea: wizardIdea.trim(),
+            includeText: wizardIncludeText,
+            textMode: wizardTextMode,
+            customTexts: wizardManualTexts.slice(0, totalSlides),
+            businessName: activeProfile?.businessName || "",
+            rubro: activeProfile?.rubro || "Comercial",
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok || !Array.isArray(data.slides) || data.slides.length === 0) {
+          throw new Error(data.error || "No se pudo planificar el diseño con nuestros agentes.");
+        }
+
+        const plannedSlides: SlideData[] = data.slides.slice(0, totalSlides).map((item: any, idx: number) => ({
+          ...createInitialSlide(`slide-${idx + 1}-${Date.now()}`, effectiveRatio, defaultLogo),
+          prompt: item.prompt || "",
+          textLayers: wizardIncludeText && Array.isArray(item.textLayers) ? item.textLayers : [],
+        }));
+
+        setSlides(plannedSlides);
+        setActiveSlideIndex(0);
+        setSelectedLayerId(plannedSlides[0]?.textLayers[0]?.id || null);
+        setPublishFormat(wizardContentType === "historia" ? "historia" : "post");
+        setIsWizardCompleted(true);
+        setStatusMessage(
+          `✨ ¡Nuestros agentes prepararon ${
+            totalSlides > 1 ? `los ${totalSlides} slides de tu carrusel` : "tu diseño"
+          } con sus escenas visuales y capas de texto listas!`
+        );
+        setTimeout(() => setStatusMessage(""), 5000);
+
+        if (autoGenerateBases) {
+          await handleGenerateAllCarouselBases(plannedSlides);
+        }
+      } catch (err: any) {
+        console.error(err);
+        setErrorMessage(err.message || "Error al planificar las diapositivas con nuestros agentes.");
+      } finally {
+        setIsPlanningSlides(false);
+      }
+      return;
+    }
+
+    // MODO B: "Ya tengo la descripción clara de lo que necesito"
+    const hasAtLeastOnePrompt = wizardManualPrompts.slice(0, totalSlides).some((p) => p.trim().length > 0);
+    if (!hasAtLeastOnePrompt) {
+      setErrorMessage("Por favor escribe o pega la descripción visual de al menos la primera diapositiva.");
+      return;
+    }
+
+    const manualBuiltSlides: SlideData[] = Array.from({ length: totalSlides }).map((_, idx) => {
+      const rawPrompt = (wizardManualPrompts[idx] || "").trim();
+      const rawManualText = (wizardManualTexts[idx] || "").trim();
+
+      let layers: TextLayer[] = [];
+      if (wizardIncludeText) {
+        if (rawManualText) {
+          layers = buildLayersFromManualText(rawManualText);
+        } else if (rawPrompt) {
+          layers = extractTypographyLayersFromPrompt(rawPrompt);
+        }
+      }
+
+      return {
+        ...createInitialSlide(`slide-${idx + 1}-${Date.now()}`, effectiveRatio, defaultLogo),
+        prompt: rawPrompt,
+        textLayers: layers,
+      };
+    });
+
+    setSlides(manualBuiltSlides);
+    setActiveSlideIndex(0);
+    setSelectedLayerId(manualBuiltSlides[0]?.textLayers[0]?.id || null);
+    setPublishFormat(wizardContentType === "historia" ? "historia" : "post");
+    setIsWizardCompleted(true);
+    setStatusMessage("✅ Descripciones y capas de texto cargadas en nuestro editor.");
+    setTimeout(() => setStatusMessage(""), 4000);
+
+    if (autoGenerateBases) {
+      await handleGenerateAllCarouselBases(manualBuiltSlides);
+    }
+  };
+
+  // Reiniciar y volver al asistente inicial con campos en blanco
+  const handleResetToWizard = () => {
+    const defaultLogo = activeProfile?.logoUrl || "";
+    setSlides([createInitialSlide("slide-1", "4:5", defaultLogo)]);
+    setActiveSlideIndex(0);
+    setSelectedLayerId(null);
+    setCurrentLibraryDocId(null);
+    setErrorMessage("");
+    setStatusMessage("");
+    setIsWizardCompleted(false);
+  };
+
   // Gestión de slides para carrusel (1 a 5)
   const handleAddSlide = () => {
     if (slides.length >= 5) {
@@ -1184,51 +1467,14 @@ export default function ImagenComercialPage() {
     const newSlideId = `slide-${slides.length + 1}-${Date.now()}`;
     // Crear diapositiva con escena visual y capas de texto completamente en blanco
     const newSlide: SlideData = {
-      id: newSlideId,
-      prompt: "", // En blanco
-      baseImageUrl: "", // En blanco
-      aspectRatio: activeSlide.aspectRatio,
-      textLayers: [
-        {
-          id: `layer-1-${Date.now()}`,
-          text: "", // En blanco
-          fontFamily: activeSlide.textLayers[0]?.fontFamily || "Inter, sans-serif",
-          fontSize: 14,
-          color: "#FF5500",
-          backgroundColor: "#FF5500",
-          backgroundOpacity: 0.15,
-          fontWeight: "800",
-          textAlign: "center",
-          isPill: true,
-          x: 50,
-          y: 8,
-          rotation: 0,
-        },
-        {
-          id: `layer-2-${Date.now()}`,
-          text: "", // En blanco
-          fontFamily: activeSlide.textLayers[1]?.fontFamily || "Inter, sans-serif",
-          fontSize: 32,
-          color: "#FFFFFF",
-          backgroundColor: "transparent",
-          backgroundOpacity: 0,
-          fontWeight: "900",
-          textAlign: "center",
-          isPill: false,
-          x: 50,
-          y: 22,
-          rotation: 0,
-        },
-      ],
+      ...createInitialSlide(newSlideId, activeSlide.aspectRatio, activeSlide.logoUrl),
       useLogo: activeSlide.useLogo,
-      logoUrl: activeSlide.logoUrl,
       logoTransparent: activeSlide.logoTransparent,
       logoBlendMode: activeSlide.logoBlendMode,
       logoBgMode: activeSlide.logoBgMode,
       logoX: activeSlide.logoX,
       logoY: activeSlide.logoY,
       logoWidth: activeSlide.logoWidth,
-      finalRenderUrl: "",
     };
 
     setSlides((prev) => [...prev, newSlide]);
@@ -1420,13 +1666,17 @@ export default function ImagenComercialPage() {
       {/* Encabezado */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs font-black uppercase tracking-widest text-orange-600 bg-orange-50 px-2.5 py-1 rounded-full border border-orange-200">
               Estudio de Diseño Comercial
             </span>
-            {slides.length > 1 && (
+            {isWizardCompleted && (
               <span className="text-xs font-black uppercase tracking-widest text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full border border-indigo-200">
-                Carrusel ({slides.length}/5 slides)
+                {wizardContentType === "carrusel" || slides.length > 1
+                  ? `Carrusel (${slides.length}/5 slides · ${activeSlide.aspectRatio})`
+                  : wizardContentType === "historia"
+                  ? `Historia (1 slide · 9:16)`
+                  : `Post (1 slide · ${activeSlide.aspectRatio})`}
               </span>
             )}
           </div>
@@ -1441,6 +1691,16 @@ export default function ImagenComercialPage() {
 
         {/* Acciones principales superiores */}
         <div className="flex items-center gap-2 flex-wrap">
+          {isWizardCompleted && (
+            <button
+              type="button"
+              onClick={handleResetToWizard}
+              className="px-4 py-2.5 rounded-xl border border-orange-200 bg-orange-50/60 text-xs font-bold text-orange-700 hover:bg-orange-100 transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>¿Qué quieres hacer? / Nueva idea</span>
+            </button>
+          )}
           <Link
             href="/automatizacion-rrss/panel/biblioteca"
             className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-all flex items-center gap-1.5 shadow-2xs"
@@ -1465,162 +1725,735 @@ export default function ImagenComercialPage() {
         </div>
       )}
 
-      {/* Selector de Slides del Carrusel */}
-      <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between gap-3 overflow-x-auto">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-black uppercase tracking-wider text-slate-400 mr-1">Diapositivas:</span>
-          {slides.map((s, idx) => (
-            <div key={s.id} className="relative flex items-center group">
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveSlideIndex(idx);
-                  setSelectedLayerId(s.textLayers[0]?.id || null);
-                }}
-                className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 ${
-                  activeSlideIndex === idx
-                    ? "bg-slate-900 text-white shadow-sm ring-2 ring-slate-900/10"
-                    : "bg-slate-100 hover:bg-slate-200 text-slate-700"
-                } ${slides.length > 1 ? "pr-7" : ""}`}
-              >
-                <span>Slide {idx + 1}</span>
-                {s.baseImageUrl ? (
-                  <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-                ) : (
-                  <span className="w-2 h-2 rounded-full bg-slate-300"></span>
-                )}
-              </button>
-
-              {slides.length > 1 && (
-                <button
-                  type="button"
-                  onClick={(e) => handleRemoveSlide(idx, e)}
-                  className={`absolute right-1.5 p-1 rounded-md transition-colors ${
-                    activeSlideIndex === idx
-                      ? "text-slate-400 hover:text-rose-300 hover:bg-slate-800"
-                      : "text-slate-400 hover:text-rose-600 hover:bg-slate-200"
-                  }`}
-                  title={`Eliminar Diapositiva ${idx + 1}`}
-                >
-                  <X className="w-3.5 h-3.5 stroke-[2.5]" />
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {slides.length < 5 && (
-          <button
-            onClick={handleAddSlide}
-            className="px-3.5 py-1.5 rounded-xl border border-dashed border-orange-300 bg-orange-50/50 hover:bg-orange-50 text-orange-700 font-bold text-xs flex items-center gap-1 transition-all shrink-0"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Añadir Slide ({slides.length}/5)</span>
-          </button>
-        )}
-      </div>
-
-      {/* Grid Principal: Panel de Configuración (Izq) + Lienzo Drag & Drop (Der) */}
-      <div className="grid lg:grid-cols-12 gap-8 items-start">
-        {/* COLUMNA IZQUIERDA: 3 Pasos de Configuración */}
-        <div className="lg:col-span-5 space-y-6">
-          {/* PASO 1: Escena Visual & Prompt */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="w-6 h-6 rounded-lg bg-orange-100 text-orange-700 font-black text-xs flex items-center justify-center">
-                  1
-                </span>
-                <h3 className="font-extrabold text-slate-900 text-sm">Escena Visual & Formato</h3>
+      {/* ASISTENTE PREVIO: "¿QUÉ QUIERES HACER?" */}
+      {!isWizardCompleted ? (
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 max-w-4xl mx-auto space-y-8 animate-in fade-in">
+          {/* Paso 1: Tipo de pieza */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2.5">
+              <span className="w-7 h-7 rounded-xl bg-orange-100 text-orange-700 font-black text-xs flex items-center justify-center">
+                1
+              </span>
+              <div>
+                <h2 className="text-lg font-black text-slate-900">¿Qué quieres hacer hoy?</h2>
+                <p className="text-xs text-slate-500">
+                  Elige el tipo de publicación para configurar las diapositivas y el formato ideal.
+                </p>
               </div>
-              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
-                {(["4:5", "1:1", "9:16"] as const).map((ratio) => (
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+              {[
+                {
+                  id: "post" as const,
+                  icon: "📱",
+                  title: "Post Individual",
+                  desc: "1 sola imagen para el Feed (sin slides adicionales)",
+                  badge: "1 Slide · 4:5 o 1:1",
+                },
+                {
+                  id: "historia" as const,
+                  icon: "⏱️",
+                  title: "Historia (Story)",
+                  desc: "1 sola imagen vertical pantalla completa",
+                  badge: "1 Slide · Formato 9:16",
+                },
+                {
+                  id: "carrusel" as const,
+                  icon: "📚",
+                  title: "Carrusel",
+                  desc: "Secuencia deslizable de 2 hasta 5 imágenes",
+                  badge: "2 a 5 Slides · 4:5 o 1:1",
+                },
+              ].map((option) => {
+                const isSelected = wizardContentType === option.id;
+                return (
                   <button
-                    key={ratio}
-                    onClick={() => updateActiveSlide((s) => ({ ...s, aspectRatio: ratio }))}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-black transition-all ${
-                      activeSlide.aspectRatio === ratio
-                        ? "bg-white text-slate-900 shadow-2xs"
-                        : "text-slate-500 hover:text-slate-900"
+                    key={option.id}
+                    type="button"
+                    onClick={() => handleSelectWizardContentType(option.id)}
+                    className={`p-4 rounded-2xl border text-left transition-all flex flex-col justify-between gap-3 cursor-pointer ${
+                      isSelected
+                        ? "border-orange-500 bg-orange-50/40 ring-2 ring-orange-500/20 shadow-xs"
+                        : "border-slate-200 bg-slate-50/40 hover:border-slate-300 hover:bg-white"
                     }`}
                   >
-                    {ratio}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-2xl">{option.icon}</span>
+                        <span
+                          className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${
+                            isSelected
+                              ? "bg-orange-600 text-white border-orange-600"
+                              : "bg-white text-slate-500 border-slate-200"
+                          }`}
+                        >
+                          {option.badge}
+                        </span>
+                      </div>
+                      <div className="font-black text-sm text-slate-900">{option.title}</div>
+                      <p className="text-xs text-slate-500 leading-relaxed">{option.desc}</p>
+                    </div>
                   </button>
-                ))}
+                );
+              })}
+            </div>
+
+            {/* Sub-opciones de cantidad de slides (si es Carrusel) y Formato */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+              {wizardContentType === "carrusel" && (
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
+                  <label className="block text-xs font-extrabold text-slate-800">
+                    ¿Cuántas imágenes tendrá tu carrusel? (Máximo 5)
+                  </label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {[2, 3, 4, 5].map((num) => (
+                      <button
+                        key={num}
+                        type="button"
+                        onClick={() => setWizardSlideCount(num)}
+                        className={`py-2 px-3 rounded-xl font-black text-xs border transition-all cursor-pointer ${
+                          wizardSlideCount === num
+                            ? "bg-slate-900 text-white border-slate-900 shadow-xs"
+                            : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
+                        }`}
+                      >
+                        {num} Slides
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
+                <label className="block text-xs font-extrabold text-slate-800">
+                  Formato de proporción (Aspect Ratio)
+                </label>
+                {wizardContentType === "historia" ? (
+                  <div className="py-2 px-3 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-900 text-xs font-black flex items-center justify-between">
+                    <span>📱 Vertical Historia (9:16 — 1080×1920)</span>
+                    <span className="text-[10px] uppercase bg-indigo-600 text-white px-2 py-0.5 rounded-md">
+                      Automático
+                    </span>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { ratio: "4:5" as const, label: "4:5 Vertical Feed (Recomendado)" },
+                      { ratio: "1:1" as const, label: "1:1 Cuadrado Clásico" },
+                    ].map((r) => (
+                      <button
+                        key={r.ratio}
+                        type="button"
+                        onClick={() => setWizardAspectRatio(r.ratio)}
+                        className={`py-2 px-3 rounded-xl font-black text-xs border transition-all cursor-pointer ${
+                          wizardAspectRatio === r.ratio
+                            ? "bg-slate-900 text-white border-slate-900 shadow-xs"
+                            : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
+                        }`}
+                      >
+                        {r.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Paso 2: ¿Necesita diseño desde una idea o ya tiene la descripción clara? */}
+          <div className="space-y-4 pt-6 border-t border-slate-200">
+            <div className="flex items-center gap-2.5">
+              <span className="w-7 h-7 rounded-xl bg-orange-100 text-orange-700 font-black text-xs flex items-center justify-center">
+                2
+              </span>
+              <div>
+                <h2 className="text-lg font-black text-slate-900">¿Cómo quieres armar las imágenes?</h2>
+                <p className="text-xs text-slate-500">
+                  Puedes darnos tu idea para que nuestros agentes creen los prompts y textos, o pegar directamente la descripción si ya la tienes clara.
+                </p>
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                Descripción de la imagen (Prompt del fondo)
-              </label>
-              <textarea
-                value={activeSlide.prompt}
-                onChange={(e) => handlePromptChange(e.target.value)}
-                rows={3}
-                placeholder="Describe la composición visual, elementos 3D o escenario para el fondo limpio..."
-                className="w-full text-xs p-3 rounded-2xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-orange-500 focus:outline-none transition-all leading-relaxed"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <button
+                type="button"
+                onClick={() => setWizardDesignMode("idea")}
+                className={`p-4 rounded-2xl border text-left transition-all cursor-pointer space-y-1.5 ${
+                  wizardDesignMode === "idea"
+                    ? "border-orange-500 bg-orange-50/40 ring-2 ring-orange-500/20 shadow-xs"
+                    : "border-slate-200 bg-slate-50/40 hover:border-slate-300 hover:bg-white"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black uppercase tracking-wider text-orange-600">
+                    Opción A · Asistido por Nuestros Agentes
+                  </span>
+                  {wizardDesignMode === "idea" && <Check className="w-4 h-4 text-orange-600 stroke-[3]" />}
+                </div>
+                <div className="font-black text-sm text-slate-900">
+                  Necesito que me diseñen las imágenes (tengo una idea)
+                </div>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Cuéntanos tu idea y nuestros agentes generarán los prompts visuales de cada imagen y ordenarán los textos en las capas de nuestro editor.
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setWizardDesignMode("clear")}
+                className={`p-4 rounded-2xl border text-left transition-all cursor-pointer space-y-1.5 ${
+                  wizardDesignMode === "clear"
+                    ? "border-orange-500 bg-orange-50/40 ring-2 ring-orange-500/20 shadow-xs"
+                    : "border-slate-200 bg-slate-50/40 hover:border-slate-300 hover:bg-white"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black uppercase tracking-wider text-indigo-600">
+                    Opción B · Descripción Directa
+                  </span>
+                  {wizardDesignMode === "clear" && <Check className="w-4 h-4 text-orange-600 stroke-[3]" />}
+                </div>
+                <div className="font-black text-sm text-slate-900">
+                  Ya tengo la descripción clara de lo que necesito
+                </div>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Ingresa o pega directamente el prompt visual y los textos que quieres para tu post, historia o cada slide del carrusel.
+                </p>
+              </button>
+            </div>
+          </div>
+
+          {/* Paso 3: Detalles de la Idea o Prompts + Textos */}
+          <div className="space-y-5 pt-6 border-t border-slate-200">
+            <div className="flex items-center gap-2.5">
+              <span className="w-7 h-7 rounded-xl bg-orange-100 text-orange-700 font-black text-xs flex items-center justify-center">
+                3
+              </span>
+              <div>
+                <h2 className="text-lg font-black text-slate-900">
+                  {wizardDesignMode === "idea"
+                    ? "Describe tu idea y configura los textos"
+                    : "Ingresa la descripción y textos de tus imágenes"}
+                </h2>
+                <p className="text-xs text-slate-500">
+                  {wizardDesignMode === "idea"
+                    ? "Con esta información generaremos los prompts de cada imagen y dejaremos los textos listos en las capas del editor."
+                    : "Si pegas un prompt que ya trae textos entre comillas, los cargaremos automáticamente en las capas de texto."}
+                </p>
+              </div>
             </div>
 
-            {/* Banner interactivo si se detectan capas de texto en el prompt */}
-            {detectedTypographyLayers && detectedTypographyLayers.length > 0 && (
-              <div className="p-3 bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-orange-500/10 border border-orange-300 rounded-2xl flex items-center justify-between gap-2.5 animate-in fade-in">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-base shrink-0">✨</span>
-                  <div className="min-w-0">
-                    <div className="text-xs font-black text-slate-900 truncate">
-                      {detectedTypographyLayers.length} textos detectados en el prompt
+            {wizardDesignMode === "idea" ? (
+              <div className="space-y-5">
+                <div>
+                  <label className="block text-xs font-extrabold text-slate-800 mb-1.5">
+                    ¿De qué trata tu publicación o qué necesitas transmitir?
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={wizardIdea}
+                    onChange={(e) => setWizardIdea(e.target.value)}
+                    placeholder={
+                      wizardContentType === "carrusel"
+                        ? "Ej: Quiero un carrusel mostrando los 3 errores que cometen las PyMEs al publicar en redes sociales y cómo resolverlos con automatización..."
+                        : "Ej: Quiero promocionar nuestro servicio de diagnóstico gratuito para empresas con una estética moderna, tecnológica y profesional..."
+                    }
+                    className="w-full text-xs p-3.5 rounded-2xl border border-slate-200 bg-slate-50/60 focus:bg-white focus:border-orange-500 focus:outline-none leading-relaxed"
+                  />
+                </div>
+
+                {/* ¿Llevarán texto? */}
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <div className="text-xs font-extrabold text-slate-900">
+                        ¿Necesitas que las imágenes lleven texto sobre el lienzo?
+                      </div>
+                      <div className="text-[11px] text-slate-500">
+                        Los textos se ordenarán automáticamente en las capas editables de nuestro editor.
+                      </div>
                     </div>
-                    <div className="text-[10px] text-slate-500 font-medium truncate">
-                      {detectedTypographyLayers.map((l) => l.text).filter(Boolean).slice(0, 2).join(" · ")}...
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setWizardIncludeText(true)}
+                        className={`px-3.5 py-1.5 rounded-xl text-xs font-black border transition-all cursor-pointer ${
+                          wizardIncludeText
+                            ? "bg-slate-900 text-white border-slate-900"
+                            : "bg-white text-slate-600 border-slate-200"
+                        }`}
+                      >
+                        Sí, incluir textos
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setWizardIncludeText(false)}
+                        className={`px-3.5 py-1.5 rounded-xl text-xs font-black border transition-all cursor-pointer ${
+                          !wizardIncludeText
+                            ? "bg-slate-900 text-white border-slate-900"
+                            : "bg-white text-slate-600 border-slate-200"
+                        }`}
+                      >
+                        No, sin textos
+                      </button>
                     </div>
                   </div>
+
+                  {wizardIncludeText && (
+                    <div className="space-y-3 pt-3 border-t border-slate-200/80">
+                      <label className="block text-xs font-bold text-slate-700">
+                        ¿Qué texto quieres poner en {wizardContentType === "carrusel" ? "las imágenes" : "la imagen"}?
+                      </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <button
+                          type="button"
+                          onClick={() => setWizardTextMode("agent")}
+                          className={`p-3 rounded-xl border text-left text-xs transition-all cursor-pointer ${
+                            wizardTextMode === "agent"
+                              ? "border-orange-500 bg-white font-black text-slate-900 shadow-2xs"
+                              : "border-slate-200 bg-white/60 text-slate-600 hover:bg-white"
+                          }`}
+                        >
+                          ✨ Que nuestros agentes propongan y ordenen los textos según mi idea
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setWizardTextMode("manual")}
+                          className={`p-3 rounded-xl border text-left text-xs transition-all cursor-pointer ${
+                            wizardTextMode === "manual"
+                              ? "border-orange-500 bg-white font-black text-slate-900 shadow-2xs"
+                              : "border-slate-200 bg-white/60 text-slate-600 hover:bg-white"
+                          }`}
+                        >
+                          ✍️ Escribir yo mismo qué textos quiero poner
+                        </button>
+                      </div>
+
+                      {wizardTextMode === "manual" && (
+                        <div className="space-y-3 pt-2">
+                          {Array.from({
+                            length: wizardContentType === "carrusel" ? wizardSlideCount : 1,
+                          }).map((_, idx) => (
+                            <div key={idx} className="space-y-1">
+                              <label className="block text-[11px] font-bold text-slate-700">
+                                {wizardContentType === "carrusel"
+                                  ? `Textos para Slide ${idx + 1} (usa saltos de línea para separar titular, bajada y botón)`
+                                  : "Textos que quieres incluir en la imagen (usa saltos de línea para separar titular y bajada)"}
+                              </label>
+                              <textarea
+                                rows={2}
+                                value={wizardManualTexts[idx] || ""}
+                                onChange={(e) => {
+                                  const next = [...wizardManualTexts];
+                                  next[idx] = e.target.value;
+                                  setWizardManualTexts(next);
+                                }}
+                                placeholder="Ej:&#10;DIAGNÓSTICO GRATUITO&#10;Automatiza tus redes en 5 minutos&#10;Agenda hoy en nuestro link"
+                                className="w-full text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:border-orange-500 focus:outline-none"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => handleApplyDetectedTypography(detectedTypographyLayers)}
-                  className="px-3 py-1.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-black text-[11px] shadow-sm transition-all shrink-0 flex items-center gap-1 cursor-pointer"
-                >
-                  <span>Cargar en Capas</span>
-                  <span>→</span>
-                </button>
+              </div>
+            ) : (
+              /* MODO DESCRIPCIÓN CLARA */
+              <div className="space-y-4">
+                <div className="flex items-center justify-between bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80">
+                  <div>
+                    <div className="text-xs font-extrabold text-slate-900">
+                      ¿Tus imágenes llevarán capas de texto editables?
+                    </div>
+                    <div className="text-[11px] text-slate-500">
+                      Si pegas un prompt con textos entre comillas o los escribes abajo, los ordenaremos en las capas del editor.
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setWizardIncludeText(true)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-black border transition-all cursor-pointer ${
+                        wizardIncludeText
+                          ? "bg-slate-900 text-white border-slate-900"
+                          : "bg-white text-slate-600 border-slate-200"
+                      }`}
+                    >
+                      Sí, con texto
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setWizardIncludeText(false)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-black border transition-all cursor-pointer ${
+                        !wizardIncludeText
+                          ? "bg-slate-900 text-white border-slate-900"
+                          : "bg-white text-slate-600 border-slate-200"
+                      }`}
+                    >
+                      No, sin texto
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {Array.from({
+                    length: wizardContentType === "carrusel" ? wizardSlideCount : 1,
+                  }).map((_, idx) => {
+                    const currentPromptVal = wizardManualPrompts[idx] || "";
+                    const autoDetected = extractTypographyLayersFromPrompt(currentPromptVal);
+                    return (
+                      <div
+                        key={idx}
+                        className="p-4 rounded-2xl border border-slate-200 bg-slate-50/40 space-y-3"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-black uppercase tracking-wider text-slate-800">
+                            {wizardContentType === "carrusel"
+                              ? `Diapositiva ${idx + 1} de ${wizardSlideCount}`
+                              : "Configuración de tu Imagen"}
+                          </span>
+                          {wizardIncludeText && autoDetected.length > 0 && (
+                            <span className="text-[11px] font-bold text-orange-700 bg-orange-50 px-2.5 py-0.5 rounded-full border border-orange-200">
+                              ✨ {autoDetected.length} textos detectados automáticamente en el prompt
+                            </span>
+                          )}
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                            Descripción visual (Prompt para generar el fondo)
+                          </label>
+                          <textarea
+                            rows={3}
+                            value={currentPromptVal}
+                            onChange={(e) => {
+                              const next = [...wizardManualPrompts];
+                              next[idx] = e.target.value;
+                              setWizardManualPrompts(next);
+                            }}
+                            placeholder="Pega o escribe aquí la descripción visual de la escena..."
+                            className="w-full text-xs p-3 rounded-xl border border-slate-200 bg-white focus:border-orange-500 focus:outline-none leading-relaxed"
+                          />
+                        </div>
+
+                        {wizardIncludeText && (
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                              Textos para las capas del editor{" "}
+                              <span className="font-normal text-slate-400">
+                                (Opcional si ya vienen entre comillas dentro del prompt superior)
+                              </span>
+                            </label>
+                            <textarea
+                              rows={2}
+                              value={wizardManualTexts[idx] || ""}
+                              onChange={(e) => {
+                                const next = [...wizardManualTexts];
+                                next[idx] = e.target.value;
+                                setWizardManualTexts(next);
+                              }}
+                              placeholder="Escribe aquí el titular, subtítulo o llamado a la acción (una línea por capa)..."
+                              className="w-full text-xs p-2.5 rounded-xl border border-slate-200 bg-white focus:border-orange-500 focus:outline-none"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
-            {/* Presets Rápidos */}
-            <div className="space-y-1.5">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Plantillas de prompt:</span>
-              <div className="flex flex-wrap gap-1.5">
-                {PROMPT_PRESETS.map((p) => (
-                  <button
-                    key={p.title}
-                    onClick={() => handlePromptChange(p.prompt)}
-                    className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-orange-50 hover:text-orange-700 text-slate-600 transition-colors"
-                  >
-                    {p.title}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+            {/* Botones de Confirmación del Asistente */}
+            <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
               <button
-                onClick={handleGenerateBaseImage}
-                disabled={isGeneratingBase}
-                className="flex-1 py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+                type="button"
+                onClick={() => {
+                  const totalSlides =
+                    wizardContentType === "carrusel" ? Math.min(Math.max(wizardSlideCount, 2), 5) : 1;
+                  const effectiveRatio: "4:5" | "1:1" | "9:16" =
+                    wizardContentType === "historia"
+                      ? "9:16"
+                      : wizardAspectRatio === "9:16"
+                      ? "4:5"
+                      : wizardAspectRatio;
+                  const defaultLogo = activeProfile?.logoUrl || "";
+                  const blankSlides = Array.from({ length: totalSlides }).map((_, idx) =>
+                    createInitialSlide(`slide-${idx + 1}-${Date.now()}`, effectiveRatio, defaultLogo)
+                  );
+                  setSlides(blankSlides);
+                  setActiveSlideIndex(0);
+                  setSelectedLayerId(null);
+                  setPublishFormat(wizardContentType === "historia" ? "historia" : "post");
+                  setIsWizardCompleted(true);
+                }}
+                className="text-xs font-bold text-slate-500 hover:text-slate-800 py-2 px-3 rounded-xl transition-colors text-left cursor-pointer"
               >
-                {isGeneratingBase ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-orange-400" />}
-                <span>Generar Fondo con Agentes</span>
+                Abrir el editor directamente en blanco →
               </button>
 
-              <label className="py-2.5 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs cursor-pointer transition-all flex items-center gap-1.5 shadow-2xs">
-                <Upload className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Subir Foto</span>
-                <input type="file" accept="image/*" onChange={handleUploadBaseImage} className="hidden" />
-              </label>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                <button
+                  type="button"
+                  disabled={isPlanningSlides || isGeneratingAllBases}
+                  onClick={() => handleCompleteWizard(false)}
+                  className="px-5 py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 cursor-pointer"
+                >
+                  {isPlanningSlides ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-orange-400" />
+                      <span>Preparando con Nuestros Agentes...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 text-orange-400" />
+                      <span>
+                        {wizardDesignMode === "idea"
+                          ? "Generar Prompts y Ordenar Textos →"
+                          : "Cargar en Nuestro Editor →"}
+                      </span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  disabled={isPlanningSlides || isGeneratingAllBases}
+                  onClick={() => handleCompleteWizard(true)}
+                  className="px-5 py-3 rounded-2xl bg-orange-600 hover:bg-orange-500 text-white font-black text-xs transition-all flex items-center justify-center gap-2 shadow-md shadow-orange-600/20 disabled:opacity-50 cursor-pointer"
+                >
+                  {isPlanningSlides || isGeneratingAllBases ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Diseñando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Wand2 className="w-4 h-4" />
+                      <span>
+                        {wizardDesignMode === "idea"
+                          ? "Generar Prompts, Textos y Crear Imágenes"
+                          : "Cargar y Generar Fondos Ahora"}
+                      </span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
+        </div>
+      ) : (
+        <>
+          {/* Selector de Slides (En Post e Historia solo muestra Slide 1 sin opción de agregar más; en Carrusel hasta 5) */}
+          <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between gap-3 overflow-x-auto">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-black uppercase tracking-wider text-slate-400 mr-1">
+                {wizardContentType === "carrusel" || slides.length > 1
+                  ? "Diapositivas del Carrusel:"
+                  : wizardContentType === "historia"
+                  ? "Historia (1 Slide):"
+                  : "Post Individual (1 Slide):"}
+              </span>
+              {slides.map((s, idx) => (
+                <div key={s.id} className="relative flex items-center group">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveSlideIndex(idx);
+                      setSelectedLayerId(s.textLayers[0]?.id || null);
+                    }}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 ${
+                      activeSlideIndex === idx
+                        ? "bg-slate-900 text-white shadow-sm ring-2 ring-slate-900/10"
+                        : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                    } ${slides.length > 1 ? "pr-7" : ""}`}
+                  >
+                    <span>Slide {idx + 1}</span>
+                    {s.baseImageUrl ? (
+                      <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                    ) : (
+                      <span className="w-2 h-2 rounded-full bg-slate-300"></span>
+                    )}
+                  </button>
+
+                  {slides.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={(e) => handleRemoveSlide(idx, e)}
+                      className={`absolute right-1.5 p-1 rounded-md transition-colors ${
+                        activeSlideIndex === idx
+                          ? "text-slate-400 hover:text-rose-300 hover:bg-slate-800"
+                          : "text-slate-400 hover:text-rose-600 hover:bg-slate-200"
+                      }`}
+                      title={`Eliminar Diapositiva ${idx + 1}`}
+                    >
+                      <X className="w-3.5 h-3.5 stroke-[2.5]" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              {slides.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => handleGenerateAllCarouselBases()}
+                  disabled={isGeneratingBase || isGeneratingAllBases}
+                  className="px-3.5 py-1.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-black text-xs flex items-center gap-1.5 transition-all shadow-xs disabled:opacity-50 cursor-pointer"
+                >
+                  {isGeneratingAllBases ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="w-3.5 h-3.5" />
+                  )}
+                  <span>Generar los {slides.length} Fondos del Carrusel</span>
+                </button>
+              )}
+
+              {wizardContentType === "carrusel" && slides.length < 5 && (
+                <button
+                  onClick={handleAddSlide}
+                  className="px-3.5 py-1.5 rounded-xl border border-dashed border-orange-300 bg-orange-50/50 hover:bg-orange-50 text-orange-700 font-bold text-xs flex items-center gap-1 transition-all shrink-0"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Añadir Slide ({slides.length}/5)</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Grid Principal: Panel de Configuración (Izq) + Lienzo Drag & Drop (Der) */}
+          <div className="grid lg:grid-cols-12 gap-8 items-start">
+            {/* COLUMNA IZQUIERDA: 3 Pasos de Configuración */}
+            <div className="lg:col-span-5 space-y-6">
+              {/* PASO 1: Escena Visual & Prompt */}
+              <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-lg bg-orange-100 text-orange-700 font-black text-xs flex items-center justify-center">
+                      1
+                    </span>
+                    <h3 className="font-extrabold text-slate-900 text-sm">Escena Visual & Formato</h3>
+                  </div>
+                  <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+                    {(wizardContentType === "historia"
+                      ? (["9:16"] as const)
+                      : (["4:5", "1:1"] as const)
+                    ).map((ratio) => (
+                      <button
+                        key={ratio}
+                        onClick={() =>
+                          setSlides((prev) => prev.map((s) => ({ ...s, aspectRatio: ratio })))
+                        }
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-black transition-all ${
+                          activeSlide.aspectRatio === ratio
+                            ? "bg-white text-slate-900 shadow-2xs"
+                            : "text-slate-500 hover:text-slate-900"
+                        }`}
+                      >
+                        {ratio}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    Descripción de la imagen (Prompt del fondo)
+                  </label>
+                  <textarea
+                    value={activeSlide.prompt}
+                    onChange={(e) => handlePromptChange(e.target.value)}
+                    rows={3}
+                    placeholder="Describe la composición visual, elementos 3D o escenario para el fondo limpio..."
+                    className="w-full text-xs p-3 rounded-2xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-orange-500 focus:outline-none transition-all leading-relaxed"
+                  />
+                </div>
+
+                {/* Banner interactivo si se detectan capas de texto en el prompt */}
+                {detectedTypographyLayers && detectedTypographyLayers.length > 0 && (
+                  <div className="p-3 bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-orange-500/10 border border-orange-300 rounded-2xl flex items-center justify-between gap-2.5 animate-in fade-in">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-base shrink-0">✨</span>
+                      <div className="min-w-0">
+                        <div className="text-xs font-black text-slate-900 truncate">
+                          {detectedTypographyLayers.length} textos detectados en el prompt
+                        </div>
+                        <div className="text-[10px] text-slate-500 font-medium truncate">
+                          {detectedTypographyLayers.map((l) => l.text).filter(Boolean).slice(0, 2).join(" · ")}...
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleApplyDetectedTypography(detectedTypographyLayers)}
+                      className="px-3 py-1.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-black text-[11px] shadow-sm transition-all shrink-0 flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>Cargar en Capas</span>
+                      <span>→</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* Presets Rápidos */}
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Plantillas de prompt:</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {PROMPT_PRESETS.map((p) => (
+                      <button
+                        key={p.title}
+                        onClick={() => handlePromptChange(p.prompt)}
+                        className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-orange-50 hover:text-orange-700 text-slate-600 transition-colors"
+                      >
+                        {p.title}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2 pt-2 border-t border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleGenerateBaseImage}
+                      disabled={isGeneratingBase}
+                      className="flex-1 py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+                    >
+                      {isGeneratingBase ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-orange-400" />}
+                      <span>
+                        {slides.length > 1
+                          ? `Generar Fondo Slide ${activeSlideIndex + 1}`
+                          : "Generar Fondo con Agentes"}
+                      </span>
+                    </button>
+
+                    <label className="py-2.5 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs cursor-pointer transition-all flex items-center gap-1.5 shadow-2xs">
+                      <Upload className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Subir Foto</span>
+                      <input type="file" accept="image/*" onChange={handleUploadBaseImage} className="hidden" />
+                    </label>
+                  </div>
+
+                  {slides.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleGenerateAllCarouselBases()}
+                      disabled={isGeneratingBase || isGeneratingAllBases}
+                      className="w-full py-2.5 px-4 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 font-black text-xs transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+                    >
+                      {isGeneratingAllBases ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Wand2 className="w-4 h-4 text-orange-600" />
+                      )}
+                      <span>Generar los {slides.length} Fondos del Carrusel Automáticamente</span>
+                    </button>
+                  )}
+                </div>
+              </div>
 
           {/* PASO 2: Capas de Texto Comerciales */}
           <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
@@ -2266,6 +3099,8 @@ export default function ImagenComercialPage() {
           )}
         </div>
       </div>
+      </>
+      )}
 
       {/* MODAL: SUBIR FUENTE PERSONALIZADA (.TTF / URL) */}
       {isFontModalOpen && (
