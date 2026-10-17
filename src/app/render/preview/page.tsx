@@ -81,6 +81,23 @@ export default async function RenderPreviewPage(props: {
           }}
         />
       )}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+            html, body {
+              margin: 0 !important;
+              padding: 0 !important;
+              width: ${W}px !important;
+              height: ${H}px !important;
+              min-width: ${W}px !important;
+              min-height: ${H}px !important;
+              box-sizing: border-box !important;
+              overflow: hidden !important;
+              background-color: #0B1120 !important;
+            }
+          `,
+        }}
+      />
       
       <div
         id="link-preview"

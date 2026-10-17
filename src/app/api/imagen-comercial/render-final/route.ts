@@ -105,9 +105,34 @@ export async function POST(req: NextRequest) {
       console.warn("[render-final] Butterfly Social timeout o error:", bfErr.message || bfErr);
     }
 
-    // Fallback si Butterfly no respondió o falló
+    // Fallback con clientDataUrl generado directamente por el lienzo del cliente si Butterfly no está disponible
+    if (!finalImageUrl && body.clientDataUrl && adminStorage) {
+      try {
+        const matches = body.clientDataUrl.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+        if (matches && matches.length === 3) {
+          const mimeType = matches[1];
+          const buffer = Buffer.from(matches[2], "base64");
+          const bucket = adminStorage.bucket();
+          const dest = `users/${uid}/commercial_final/${renderId}_${Date.now()}.jpg`;
+          const file = bucket.file(dest);
+          await file.save(buffer, {
+            metadata: {
+              contentType: mimeType,
+              cacheControl: "public, max-age=31536000",
+            },
+          });
+          await file.makePublic();
+          finalImageUrl = `https://storage.googleapis.com/${bucket.name}/${dest}`;
+          console.log(`[render-final] ✅ Imagen final desde render de cliente guardada en Storage: ${finalImageUrl}`);
+        }
+      } catch (clientSaveErr) {
+        console.warn("[render-final] Error guardando clientDataUrl en Storage:", clientSaveErr);
+      }
+    }
+
+    // Fallback final seguro
     if (!finalImageUrl) {
-      finalImageUrl = butterflyUrl;
+      finalImageUrl = baseImageUrl;
     }
 
     // 3. Guardado en la Biblioteca (collection `generated_images`) para persistencia y re-edición posterior
