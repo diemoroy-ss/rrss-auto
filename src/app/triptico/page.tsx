@@ -26,7 +26,7 @@ import {
   FaGlobe,
 } from "react-icons/fa";
 
-const WA_NUMBER = "56965909543";
+const WA_NUMBER = "56934428848";
 
 const WA_SETUP_MSG = encodeURIComponent(
   "¡Hola Santisoft! Leí el tríptico comercial y quiero reservar un cupo con el Setup Llave en Mano GRATIS para mi negocio."
@@ -215,7 +215,7 @@ export default function TripticoPitchPage() {
             </div>
             <div className="text-right text-xs text-slate-700 flex items-center gap-4 font-medium">
               <span className="flex items-center gap-1 text-emerald-700 font-bold">
-                <FaWhatsapp /> +56 9 6590 9543
+                <FaWhatsapp /> +56 9 3442 8848
               </span>
               <span className="flex items-center gap-1 text-slate-600">
                 <FaGlobe /> rrss.santisoft.cl
@@ -319,7 +319,7 @@ export default function TripticoPitchPage() {
             </div>
             <div className="text-right text-xs text-slate-700 flex items-center gap-4 font-medium">
               <span className="flex items-center gap-1 text-emerald-700 font-bold">
-                <FaWhatsapp /> +56 9 6590 9543
+                <FaWhatsapp /> +56 9 3442 8848
               </span>
               <span className="flex items-center gap-1 text-slate-600">
                 <FaGlobe /> rrss.santisoft.cl
@@ -482,7 +482,7 @@ export default function TripticoPitchPage() {
             </div>
             <div className="text-right text-xs text-slate-700 flex items-center gap-4 font-medium">
               <span className="flex items-center gap-1 text-emerald-700 font-bold">
-                <FaWhatsapp /> +56 9 6590 9543
+                <FaWhatsapp /> +56 9 3442 8848
               </span>
               <span className="flex items-center gap-1 text-slate-600">
                 <FaGlobe /> rrss.santisoft.cl
@@ -791,7 +791,7 @@ export default function TripticoPitchPage() {
                   </p>
                 </div>
                 <div className="text-right text-[11px] font-bold text-emerald-800">
-                  <div className="flex items-center gap-1 justify-end"><FaPhoneAlt /> +56 9 6590 9543</div>
+                  <div className="flex items-center gap-1 justify-end"><FaPhoneAlt /> +56 9 3442 8848</div>
                   <div className="text-slate-600 text-[10px] font-normal">rrss.santisoft.cl</div>
                 </div>
               </div>

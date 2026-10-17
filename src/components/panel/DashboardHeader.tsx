@@ -97,7 +97,7 @@ export default function DashboardHeader({
         <div className="flex items-center gap-2 sm:gap-3">
           {/* Botón WhatsApp Bot */}
           <a
-            href="https://wa.me/56965909543?text=Hola%20Santisoft!%20Quiero%20gestionar%20mi%20cuenta"
+            href="https://wa.me/56934428848?text=Hola%20Santisoft!%20Quiero%20gestionar%20mi%20cuenta"
             target="_blank"
             rel="noopener noreferrer"
             title="Abre el asistente de WhatsApp para gestionar tus posts"

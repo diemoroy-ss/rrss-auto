@@ -1137,7 +1137,7 @@ export default function RrssCreatePost() {
         onConfirm: () => {
           setStatusModal(prev => ({ ...prev, isOpen: false }));
           window.open(
-            `https://wa.me/56965909543?text=${encodeURIComponent(
+            `https://wa.me/56934428848?text=${encodeURIComponent(
               "Hola Santisoft! Completé los 15 posts de mi Plan Esencial y quiero subir al Plan Crecimiento para seguir publicando."
             )}`,
             "_blank"

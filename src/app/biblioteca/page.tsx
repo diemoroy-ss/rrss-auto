@@ -26,7 +26,7 @@ import { FLOW_COMMANDS, FlowCommandDef } from "../../lib/flow-command-translator
 import { HARDCODED_STYLES, PromptTemplate } from "../../lib/prompt-templates";
 import { DEFAULT_TEXT_TEMPLATES, TextTemplate, formatTemplateText } from "../../lib/text-templates";
 
-const WA_BASE_URL = "https://wa.me/56965909543";
+const WA_BASE_URL = "https://wa.me/56934428848";
 
 // Imagen de respaldo garantizada en Firebase Storage
 const FALLBACK_IMG =

@@ -256,7 +256,7 @@ export default function Home() {
               </div>
               <div className="space-y-2">
                 <a
-                  href="https://wa.me/56965909543?text=%C2%A1Hola!%20Quiero%20asegurar%20uno%20de%20los%20cupos%20del%20Plan%20PyME%20Crecimiento%20de%20Santisoft%20con%20Setup%20Gratis."
+                  href="https://wa.me/56934428848?text=%C2%A1Hola!%20Quiero%20asegurar%20uno%20de%20los%20cupos%20del%20Plan%20PyME%20Crecimiento%20de%20Santisoft%20con%20Setup%20Gratis."
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full py-3 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-xs text-center flex items-center justify-center gap-2 shadow-lg shadow-orange-500/25 transition-all"

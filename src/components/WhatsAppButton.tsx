@@ -12,7 +12,7 @@ export default function WhatsAppButton() {
 
   if (!isVisible) return null;
 
-  const phoneNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "56965909543";
+  const phoneNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "56934428848";
   const message = encodeURIComponent("¡Hola Santisoft! Me gustaría saber más sobre la automatización de redes sociales.");
   const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
 

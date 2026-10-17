@@ -453,7 +453,7 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
   };
 
   const businessName = demo?.prospectBusiness || "tu negocio";
-  const santisoftWhatsAppNumber = "56965909543";
+  const santisoftWhatsAppNumber = "56934428848";
   const contactMsg = encodeURIComponent(
     `¡Hola Santisoft! Vi la propuesta que prepararon sus agentes para ${businessName} (Demo #${demoId.substring(0, 6)}) y me gustaría conversar sobre cómo activarlo para mi marca.`
   );

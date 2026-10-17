@@ -12,7 +12,7 @@ interface UpgradeModalProps {
 export default function UpgradeModal({ isOpen, onClose }: UpgradeModalProps) {
   if (!isOpen) return null;
 
-  const whatsappUrl = `https://wa.me/56965909543?text=${encodeURIComponent(
+  const whatsappUrl = `https://wa.me/56934428848?text=${encodeURIComponent(
     "Hola Santisoft! Llegué al límite de publicaciones de mi plan y quiero pasar al Plan PyME Crecimiento ($99.990) para seguir publicando."
   )}`;
 

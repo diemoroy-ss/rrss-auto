@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { FaCheck, FaWhatsapp, FaShieldAlt, FaRocket, FaGift } from "react-icons/fa";
 
-const WA_NUMBER = "56965909543";
+const WA_NUMBER = "56934428848";
 
 interface PyMEPlan {
   id: string;

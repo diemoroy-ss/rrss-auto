@@ -367,7 +367,7 @@ export default function PostConfigForm({
                       onClick={() => {
                         if (!allowed) {
                           window.open(
-                            `https://wa.me/56965909543?text=${encodeURIComponent(
+                            `https://wa.me/56934428848?text=${encodeURIComponent(
                               "Hola Santisoft! Quiero activar LinkedIn en mis publicaciones. ¿Cómo puedo subir al Plan Crecimiento?"
                             )}`,
                             "_blank"
@@ -406,7 +406,7 @@ export default function PostConfigForm({
                       onClick={() => {
                         if (!allowed) {
                           window.open(
-                            `https://wa.me/56965909543?text=${encodeURIComponent(
+                            `https://wa.me/56934428848?text=${encodeURIComponent(
                               "Hola Santisoft! Quiero activar TikTok en mis publicaciones. ¿Cómo puedo subir al Plan Crecimiento?"
                             )}`,
                             "_blank"

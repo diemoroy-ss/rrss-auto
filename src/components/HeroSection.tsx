@@ -131,7 +131,7 @@ export default function HeroSection() {
             </p>
             <div className="hero-ctas flex flex-col sm:flex-row justify-center lg:justify-start gap-3 mt-8 w-full">
               <a
-                href="https://wa.me/56965909543?text=%C2%A1Hola%20Santisoft!%20Quiero%20recibir%20los%203%20posts%20de%20prueba%20gratis%20creados%20para%20mi%20negocio%20por%20WhatsApp.%20Mi%20rubro%20es%3A%20"
+                href="https://wa.me/56934428848?text=%C2%A1Hola%20Santisoft!%20Quiero%20recibir%20los%203%20posts%20de%20prueba%20gratis%20creados%20para%20mi%20negocio%20por%20WhatsApp.%20Mi%20rubro%20es%3A%20"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn btn-primary w-full sm:w-auto justify-center text-center !bg-gradient-to-r !from-emerald-500 !to-teal-500 hover:!from-emerald-600 hover:!to-teal-600 !text-white !font-black !shadow-lg !shadow-emerald-500/30 flex items-center gap-2"

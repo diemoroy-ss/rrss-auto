@@ -23,7 +23,7 @@ export default function UpsellGate({
   requiredPlanName = "Plan PyME Crecimiento",
   upgradePlanId = "crecimiento",
 }: UpsellGateProps) {
-  const whatsappUrl = `https://wa.me/56965909543?text=${encodeURIComponent(
+  const whatsappUrl = `https://wa.me/56934428848?text=${encodeURIComponent(
     `Hola Santisoft! Quiero activar el módulo de ${moduleName} y actualizar mi cuenta al ${requiredPlanName}. ¿Me ayudan con los detalles?`
   )}`;
 

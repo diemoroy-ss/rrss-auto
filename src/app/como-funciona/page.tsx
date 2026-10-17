@@ -8,7 +8,7 @@ import DotCanvas from "../../components/DotCanvas";
 import PageTracker from "../../components/PageTracker";
 import WebChatWidget from "../../components/WebChatWidget";
 
-const WA_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "56965909543";
+const WA_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "56934428848";
 const WA_MSG = encodeURIComponent(
   "¡Hola Santisoft! Vi la página de cómo funciona su equipo de agentes para redes y quiero ver una muestra para mi negocio."
 );
