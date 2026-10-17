@@ -602,40 +602,91 @@ export default function ImagenComercialPage() {
   };
 
   // Subir imagen base manual si el usuario ya tiene su foto
-  const handleUploadBaseImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUploadBaseImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") {
-        updateActiveSlide((s) => ({
-          ...s,
-          baseImageUrl: reader.result as string,
-          finalRenderUrl: undefined,
-        }));
+
+    // Vista previa inmediata con blob URL local
+    const localUrl = URL.createObjectURL(file);
+    updateActiveSlide((s) => ({
+      ...s,
+      baseImageUrl: localUrl,
+      finalRenderUrl: undefined,
+    }));
+    setStatusMessage("Subiendo imagen base a tu nube...");
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("type", "base_image");
+      const token = user ? await user.getIdToken() : "";
+
+      const uploadRes = await fetch("/api/imagen-comercial/upload-asset", {
+        method: "POST",
+        headers: { ...(token && { Authorization: `Bearer ${token}` }) },
+        body: formData,
+      });
+
+      if (uploadRes.ok) {
+        const uploadData = await uploadRes.json();
+        if (uploadData?.url) {
+          updateActiveSlide((s) => ({
+            ...s,
+            baseImageUrl: uploadData.url,
+          }));
+          setStatusMessage("✅ Imagen base guardada en la nube con éxito.");
+          setTimeout(() => setStatusMessage(""), 3000);
+          return;
+        }
       }
-    };
-    reader.readAsDataURL(file);
+    } catch (uploadErr) {
+      console.warn("Upload asset failed, keeping local URL:", uploadErr);
+    }
   };
 
   // Subir logo manual
-  const handleUploadLogo = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUploadLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") {
-        updateActiveSlide((s) => ({
-          ...s,
-          logoUrl: reader.result as string,
-          useLogo: true,
-          logoTransparent: true,
-          logoBlendMode: "screen",
-          logoBgMode: "transparent",
-        }));
+
+    const localUrl = URL.createObjectURL(file);
+    updateActiveSlide((s) => ({
+      ...s,
+      logoUrl: localUrl,
+      useLogo: true,
+      logoTransparent: true,
+      logoBlendMode: "screen",
+      logoBgMode: "transparent",
+    }));
+    setStatusMessage("Subiendo logo a tu nube...");
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("type", "logo");
+      const token = user ? await user.getIdToken() : "";
+
+      const uploadRes = await fetch("/api/imagen-comercial/upload-asset", {
+        method: "POST",
+        headers: { ...(token && { Authorization: `Bearer ${token}` }) },
+        body: formData,
+      });
+
+      if (uploadRes.ok) {
+        const uploadData = await uploadRes.json();
+        if (uploadData?.url) {
+          updateActiveSlide((s) => ({
+            ...s,
+            logoUrl: uploadData.url,
+          }));
+          setStatusMessage("✅ Logo guardado en la nube con éxito.");
+          setTimeout(() => setStatusMessage(""), 3000);
+          return;
+        }
       }
-    };
-    reader.readAsDataURL(file);
+    } catch (uploadErr) {
+      console.warn("Upload logo failed, keeping local URL:", uploadErr);
+    }
   };
 
   // Convertir archivo de logo a PNG transparente real quitando píxeles negros
@@ -883,6 +934,29 @@ export default function ImagenComercialPage() {
         return s.finalRenderUrl || s.baseImageUrl;
       }).filter(Boolean);
 
+      // Preparar versión ligera y limpia de slides para Firestore/API (sin dataURLs pesadas)
+      const sanitizedSlides = slides.map((s) => ({
+        ...s,
+        baseImageUrl: s.baseImageUrl?.startsWith("data:") ? "[imagen_local]" : s.baseImageUrl,
+        logoUrl: s.logoUrl?.startsWith("data:") ? "[logo_local]" : s.logoUrl,
+        finalRenderUrl: s.finalRenderUrl?.startsWith("data:") ? undefined : s.finalRenderUrl,
+      }));
+
+      // Capturar vista rápida de canvas del cliente como respaldo por si Butterfly Social se demora
+      let clientDataUrl = "";
+      if (canvasContainerRef.current) {
+        try {
+          const { toJpeg } = await import("html-to-image");
+          clientDataUrl = await toJpeg(canvasContainerRef.current, {
+            quality: 0.92,
+            pixelRatio: 1.8,
+            cacheBust: true,
+          });
+        } catch (e) {
+          console.warn("Client fallback render ignored:", e);
+        }
+      }
+
       const res = await fetch("/api/imagen-comercial/render-final", {
         method: "POST",
         headers: {
@@ -891,6 +965,7 @@ export default function ImagenComercialPage() {
         },
         body: JSON.stringify({
           baseImageUrl: activeSlide.baseImageUrl,
+          clientDataUrl: clientDataUrl || undefined,
           textLayers: activeSlide.textLayers,
           useLogo: activeSlide.useLogo,
           logoUrl: activeSlide.logoUrl,
@@ -910,14 +985,23 @@ export default function ImagenComercialPage() {
           coverImageUrl: slides[0]?.finalRenderUrl || slides[0]?.baseImageUrl || activeSlide.baseImageUrl,
           libraryDocId: currentLibraryDocId,
           commercialDesignData: {
-            slides,
+            slides: sanitizedSlides,
             activeSlideIndex,
             customFonts,
           },
         }),
       });
 
-      const data = await res.json();
+      let data: any = {};
+      const resText = await res.text();
+      try {
+        data = JSON.parse(resText);
+      } catch (parseErr) {
+        if (!res.ok) {
+          throw new Error(`El servidor respondió con error ${res.status}: ${res.statusText || "El archivo o carrusel es muy pesado para el servidor"}`);
+        }
+      }
+
       if (!res.ok || !data.finalImageUrl) {
         throw new Error(data.error || "No se pudo renderizar la imagen final.");
       }
@@ -1024,7 +1108,12 @@ export default function ImagenComercialPage() {
             isCarousel: slides.length > 1,
             slideIndex: activeSlideIndex,
             commercialDesignData: {
-              slides,
+              slides: slides.map((s) => ({
+                ...s,
+                baseImageUrl: s.baseImageUrl?.startsWith("data:") ? "[imagen_local]" : s.baseImageUrl,
+                logoUrl: s.logoUrl?.startsWith("data:") ? "[logo_local]" : s.logoUrl,
+                finalRenderUrl: s.finalRenderUrl?.startsWith("data:") ? undefined : s.finalRenderUrl,
+              })),
               activeSlideIndex,
               customFonts,
             },
@@ -1217,13 +1306,24 @@ export default function ImagenComercialPage() {
             isCarousel: slides.length > 1,
             slideIndex: activeSlideIndex,
             commercialDesignData: {
-              slides,
+              slides: slides.map((s) => ({
+                ...s,
+                baseImageUrl: s.baseImageUrl?.startsWith("data:") ? "[imagen_local]" : s.baseImageUrl,
+                logoUrl: s.logoUrl?.startsWith("data:") ? "[logo_local]" : s.logoUrl,
+                finalRenderUrl: s.finalRenderUrl?.startsWith("data:") ? undefined : s.finalRenderUrl,
+              })),
               activeSlideIndex,
               customFonts,
             },
           }),
         });
-        const rData = await rRes.json();
+        const rText = await rRes.text();
+        let rData: any = {};
+        try {
+          rData = JSON.parse(rText);
+        } catch (e) {
+          console.warn("Could not parse render-final response as JSON:", e);
+        }
         if (rRes.ok && rData.finalImageUrl) {
           targetUrl = rData.finalImageUrl;
           updateActiveSlide((s) => ({ ...s, finalRenderUrl: rData.finalImageUrl }));

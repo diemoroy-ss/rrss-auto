@@ -47,14 +47,61 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Firestore no está disponible." }, { status: 500 });
     }
 
+    let finalBaseImageUrl = baseImageUrl;
+    let finalLogoUrl = logoUrl || null;
+
+    // Si baseImageUrl viene como dataURL base64, persistirlo en Storage para evitar documentos pesados
+    if (finalBaseImageUrl && finalBaseImageUrl.startsWith("data:") && adminStorage) {
+      try {
+        const matches = finalBaseImageUrl.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+        if (matches && matches.length === 3) {
+          const mimeType = matches[1];
+          const buffer = Buffer.from(matches[2], "base64");
+          const ext = mimeType.split("/")[1] || "jpg";
+          const bucket = adminStorage.bucket();
+          const dest = `users/${uid}/commercial_base/base_${Date.now()}.${ext}`;
+          const file = bucket.file(dest);
+          await file.save(buffer, {
+            metadata: { contentType: mimeType, cacheControl: "public, max-age=31536000" },
+          });
+          await file.makePublic();
+          finalBaseImageUrl = `https://storage.googleapis.com/${bucket.name}/${dest}`;
+        }
+      } catch (saveErr) {
+        console.warn("[render-final] Error guardando baseImageUrl base64 en storage:", saveErr);
+      }
+    }
+
+    // Si logoUrl viene como dataURL base64, persistirlo en Storage
+    if (finalLogoUrl && finalLogoUrl.startsWith("data:") && adminStorage) {
+      try {
+        const matches = finalLogoUrl.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+        if (matches && matches.length === 3) {
+          const mimeType = matches[1];
+          const buffer = Buffer.from(matches[2], "base64");
+          const ext = mimeType.split("/")[1] || "png";
+          const bucket = adminStorage.bucket();
+          const dest = `users/${uid}/commercial_logos/logo_${Date.now()}.${ext}`;
+          const file = bucket.file(dest);
+          await file.save(buffer, {
+            metadata: { contentType: mimeType, cacheControl: "public, max-age=31536000" },
+          });
+          await file.makePublic();
+          finalLogoUrl = `https://storage.googleapis.com/${bucket.name}/${dest}`;
+        }
+      } catch (saveLogoErr) {
+        console.warn("[render-final] Error guardando logoUrl base64 en storage:", saveLogoErr);
+      }
+    }
+
     // 1. Guardar en preview_renders con adminDb
     const renderDocRef = await adminDb.collection("preview_renders").add({
-      baseImageUrl,
+      baseImageUrl: finalBaseImageUrl,
       userId: uid,
       layoutPosition: "commercial_custom",
       ingredients: null,
-      useLogo: Boolean(useLogo && logoUrl),
-      logoUrl: logoUrl || null,
+      useLogo: Boolean(useLogo && finalLogoUrl),
+      logoUrl: finalLogoUrl,
       logoX: Number(logoX) || 86,
       logoY: Number(logoY) || 14,
       logoWidth: Number(logoWidth) || 100,
