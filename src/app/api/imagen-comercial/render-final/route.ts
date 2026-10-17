@@ -136,37 +136,75 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. Guardado en la Biblioteca (collection `generated_images`) para persistencia y re-edición posterior
-    let libraryDocId = null;
+    let libraryDocId = body.libraryDocId || null;
     if (saveToLibrary && uid !== "anon") {
       try {
-        const libDoc = await adminDb.collection("generated_images").add({
-          url: finalImageUrl,
-          baseImageUrl,
+        const carouselImagesList: string[] = Array.isArray(body.carouselImages) && body.carouselImages.length > 0
+          ? body.carouselImages
+          : isCarousel && Array.isArray(commercialDesignData?.slides)
+          ? commercialDesignData.slides.map((s: any) => s.finalRenderUrl || s.baseImageUrl).filter(Boolean)
+          : [];
+
+        // Si es carrusel y finalImageUrl se acaba de generar para este slide, incluirlo
+        if (isCarousel && finalImageUrl) {
+          const idx = Number(slideIndex) || 0;
+          if (idx >= 0) {
+            carouselImagesList[idx] = finalImageUrl;
+          }
+        }
+
+        const coverImage = isCarousel
+          ? (carouselImagesList[0] || finalImageUrl || baseImageUrl)
+          : finalImageUrl;
+
+        const allCopies = isCarousel && Array.isArray(commercialDesignData?.slides)
+          ? commercialDesignData.slides
+              .map((s: any) => (s.textLayers || []).map((l: any) => l.text).filter(Boolean).join(" · "))
+              .filter(Boolean)
+              .join("\n\n")
+          : textLayers.map((l: any) => l.text).filter(Boolean).join(" · ");
+
+        const docPayload: any = {
+          url: coverImage,
+          baseImageUrl: isCarousel ? (commercialDesignData?.slides?.[0]?.baseImageUrl || baseImageUrl) : baseImageUrl,
           userId: uid,
           source: "imagen_comercial",
           type: isCarousel ? "Carrusel" : aspectRatio === "9:16" ? "Historia" : "Post",
           aspectRatio,
-          prompt: prompt || "Diseño de Cartel Comercial",
-          copy: textLayers.map((l: any) => l.text).filter(Boolean).join(" · "),
+          prompt: prompt || (isCarousel ? `Carrusel Comercial (${carouselImagesList.length || 2} diapositivas)` : "Diseño de Cartel Comercial"),
+          copy: allCopies || textLayers.map((l: any) => l.text).filter(Boolean).join(" · "),
           commercialDesignId: renderId,
+          carouselImages: carouselImagesList,
           commercialDesignData: commercialDesignData || {
-            baseImageUrl,
-            textLayers,
-            useLogo,
-            logoUrl,
-            logoX,
-            logoY,
-            logoWidth,
-            logoTransparent,
-            aspectRatio,
+            slides: [{ baseImageUrl, textLayers, useLogo, logoUrl, logoX, logoY, logoWidth, logoTransparent, aspectRatio }],
             customFonts,
             isCarousel,
             slideIndex,
           },
-          createdAt: new Date(),
-        });
-        libraryDocId = libDoc.id;
-        console.log(`[render-final] 📚 Guardado en Biblioteca de Medios (#${libraryDocId})`);
+          updatedAt: new Date(),
+        };
+
+        // Si ya tenemos un ID de biblioteca provisto o si ya existe un documento para este diseño comercial
+        if (libraryDocId) {
+          await adminDb.collection("generated_images").doc(libraryDocId).set(docPayload, { merge: true });
+        } else {
+          // Si el diseño proviene de un commercialDesignId previo, actualizarlo
+          const existingQuery = await adminDb.collection("generated_images")
+            .where("userId", "==", uid)
+            .where("commercialDesignId", "==", renderId)
+            .limit(1)
+            .get();
+
+          if (!existingQuery.empty) {
+            libraryDocId = existingQuery.docs[0].id;
+            await adminDb.collection("generated_images").doc(libraryDocId).set(docPayload, { merge: true });
+          } else {
+            docPayload.createdAt = new Date();
+            const newDoc = await adminDb.collection("generated_images").add(docPayload);
+            libraryDocId = newDoc.id;
+          }
+        }
+        console.log(`[render-final] 📚 Guardado/actualizado en Biblioteca de Medios (#${libraryDocId}) como lote de ${docPayload.type}`);
       } catch (libErr) {
         console.warn("[render-final] Error guardando en generated_images:", libErr);
       }

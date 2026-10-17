@@ -168,6 +168,8 @@ interface GeneratedImage {
   audioScript?: string;
   hasRemotionScenes?: boolean;
   commercialDesignId?: string;
+  carouselImages?: string[];
+  commercialDesignData?: any;
 }
 
 export default function BibliotecaPage() {
@@ -183,12 +185,12 @@ export default function BibliotecaPage() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [isStyleFilterModalOpen, setIsStyleFilterModalOpen] = useState<boolean>(false);
+  const [selectedImage, setSelectedImage] = useState<GeneratedImage | null>(null);
+  const [carouselPreviewIndex, setCarouselPreviewIndex] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const ITEMS_PER_PAGE = 12;
   const [error, setError] = useState("");
   const { activeProfile } = useProfile();
-  
-  const [selectedImage, setSelectedImage] = useState<GeneratedImage | null>(null);
 
   const planLimits: Record<string, number> = {
     free: 15,
@@ -265,6 +267,12 @@ export default function BibliotecaPage() {
             audioScript: data.audioScript || "",
             hasRemotionScenes: Boolean(data.scenes && data.scenes.length > 0),
             commercialDesignId: data.commercialDesignId || (data.source === "imagen_comercial" ? d.id : undefined),
+            carouselImages: Array.isArray(data.carouselImages) && data.carouselImages.length > 0
+              ? data.carouselImages
+              : data.commercialDesignData?.slides
+              ? data.commercialDesignData.slides.map((s: any) => s.finalRenderUrl || s.baseImageUrl).filter(Boolean)
+              : [],
+            commercialDesignData: data.commercialDesignData || null,
           });
         }
       });
@@ -797,8 +805,10 @@ export default function BibliotecaPage() {
                   }`}>
                     {img.source === "ia" ? "✨ Agentes" : img.source === "upload" ? "📥 Subido" : "🎨 Editor"}
                   </span>
-                  <span className="text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg bg-black/60 text-white backdrop-blur-md border border-white/10">
-                    {img.type}
+                  <span className="text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg bg-black/60 text-white backdrop-blur-md border border-white/10 flex items-center gap-1">
+                    {img.type === "Carrusel"
+                      ? `📚 Carrusel (${img.carouselImages?.length || "Lote"})`
+                      : img.type}
                   </span>
                 </div>
               </div>
@@ -958,6 +968,70 @@ export default function BibliotecaPage() {
                     />
                   );
                 })()
+              ) : selectedImage.carouselImages && selectedImage.carouselImages.length > 1 ? (
+                <div className="relative w-full flex flex-col items-center justify-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={selectedImage.carouselImages[carouselPreviewIndex] || selectedImage.url}
+                    alt={`${selectedImage.prompt || "Diseño"} - Slide ${carouselPreviewIndex + 1}`}
+                    className="w-full h-auto object-contain max-h-[75vh] rounded-2xl shadow-lg transition-all duration-300"
+                    onError={(e) => {
+                      if (selectedImage.baseImageUrl && e.currentTarget.src !== selectedImage.baseImageUrl) {
+                        e.currentTarget.src = selectedImage.baseImageUrl;
+                      }
+                    }}
+                  />
+
+                  {/* Flechas de navegación para el lote de carrusel */}
+                  {carouselPreviewIndex > 0 && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCarouselPreviewIndex((prev) => Math.max(0, prev - 1));
+                      }}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-slate-900/80 hover:bg-slate-900 text-white flex items-center justify-center font-bold text-base shadow-xl backdrop-blur-xs transition-transform hover:scale-110"
+                      title="Diapositiva anterior"
+                    >
+                      ←
+                    </button>
+                  )}
+
+                  {carouselPreviewIndex < selectedImage.carouselImages.length - 1 && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCarouselPreviewIndex((prev) => Math.min(selectedImage.carouselImages!.length - 1, prev + 1));
+                      }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-slate-900/80 hover:bg-slate-900 text-white flex items-center justify-center font-bold text-base shadow-xl backdrop-blur-xs transition-transform hover:scale-110"
+                      title="Siguiente diapositiva"
+                    >
+                      →
+                    </button>
+                  )}
+
+                  {/* Selector / Indicador de diapositivas del carrusel */}
+                  <div className="flex items-center gap-1.5 mt-3 bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-lg">
+                    {selectedImage.carouselImages.map((_, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCarouselPreviewIndex(idx);
+                        }}
+                        className={`text-[10px] font-black px-2 py-0.5 rounded-md transition-all ${
+                          carouselPreviewIndex === idx
+                            ? "bg-indigo-600 text-white shadow-sm"
+                            : "text-slate-400 hover:text-white hover:bg-white/10"
+                        }`}
+                      >
+                        Slide {idx + 1}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               ) : (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img
@@ -998,7 +1072,13 @@ export default function BibliotecaPage() {
               </div>
               
               <h4 className="font-black text-slate-900 text-base mb-4 flex items-center gap-2">
-                {selectedImage.type === 'Post' ? '📱' : selectedImage.type === 'Historia' ? '📱' : '🎬'} Formato: {selectedImage.type}
+                {selectedImage.type === 'Carrusel'
+                  ? `📚 Formato: Carrusel (${selectedImage.carouselImages?.length || 2} diapositivas)`
+                  : selectedImage.type === 'Post'
+                  ? '📱 Formato: Post'
+                  : selectedImage.type === 'Historia'
+                  ? '⏱️ Formato: Historia'
+                  : '🎬 Formato: Video/Reel'}
               </h4>
               
               {selectedImage.prompt && (

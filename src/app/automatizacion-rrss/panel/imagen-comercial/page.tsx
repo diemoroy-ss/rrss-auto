@@ -237,6 +237,7 @@ export default function ImagenComercialPage() {
   const [isRenderingFinal, setIsRenderingFinal] = useState<boolean>(false);
   const [statusMessage, setStatusMessage] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const [currentLibraryDocId, setCurrentLibraryDocId] = useState<string | null>(editId || null);
 
   // Modales
   const [isFontModalOpen, setIsFontModalOpen] = useState<boolean>(false);
@@ -348,25 +349,31 @@ export default function ImagenComercialPage() {
       }
 
       if (data) {
-        const loadedSlide: SlideData = {
-          id: "slide-1",
-          prompt: data.prompt || "Diseño cargado",
-          baseImageUrl: data.baseImageUrl || "",
-          aspectRatio: data.aspectRatio || "4:5",
-          textLayers: Array.isArray(data.textLayers) && data.textLayers.length > 0 ? data.textLayers : createInitialSlide("slide-1").textLayers,
-          useLogo: Boolean(data.useLogo),
-          logoUrl: data.logoUrl || "",
-          logoTransparent: data.logoTransparent !== undefined ? data.logoTransparent : true,
-          logoBlendMode: data.logoBlendMode || (data.logoTransparent ? "screen" : "normal"),
-          logoBgMode: data.logoBgMode || (data.logoBg === "white" ? "white" : "transparent"),
-          logoX: data.logoX || 86,
-          logoY: data.logoY || 14,
-          logoWidth: data.logoWidth || 110,
-        };
-        setSlides([loadedSlide]);
+        if (Array.isArray(data.slides) && data.slides.length > 0) {
+          setSlides(data.slides);
+          setActiveSlideIndex(data.activeSlideIndex || 0);
+        } else {
+          const loadedSlide: SlideData = {
+            id: "slide-1",
+            prompt: data.prompt || "Diseño cargado",
+            baseImageUrl: data.baseImageUrl || "",
+            aspectRatio: data.aspectRatio || "4:5",
+            textLayers: Array.isArray(data.textLayers) && data.textLayers.length > 0 ? data.textLayers : createInitialSlide("slide-1").textLayers,
+            useLogo: Boolean(data.useLogo),
+            logoUrl: data.logoUrl || "",
+            logoTransparent: data.logoTransparent !== undefined ? data.logoTransparent : true,
+            logoBlendMode: data.logoBlendMode || (data.logoTransparent ? "screen" : "normal"),
+            logoBgMode: data.logoBgMode || (data.logoBg === "white" ? "white" : "transparent"),
+            logoX: data.logoX || 86,
+            logoY: data.logoY || 14,
+            logoWidth: data.logoWidth || 110,
+          };
+          setSlides([loadedSlide]);
+        }
         if (Array.isArray(data.customFonts)) {
           setCustomFonts(data.customFonts);
         }
+        setCurrentLibraryDocId(id);
         setStatusMessage("✅ Diseño cargado con éxito para edición.");
         setTimeout(() => setStatusMessage(""), 3000);
       }
@@ -708,6 +715,11 @@ export default function ImagenComercialPage() {
 
     try {
       const token = user ? await user.getIdToken() : "";
+      const carouselImages = slides.map((s, idx) => {
+        if (idx === activeSlideIndex) return activeSlide.finalRenderUrl || activeSlide.baseImageUrl;
+        return s.finalRenderUrl || s.baseImageUrl;
+      }).filter(Boolean);
+
       const res = await fetch("/api/imagen-comercial/render-final", {
         method: "POST",
         headers: {
@@ -728,9 +740,12 @@ export default function ImagenComercialPage() {
           aspectRatio: activeSlide.aspectRatio,
           customFonts,
           saveToLibrary: true,
-          prompt: activeSlide.prompt,
+          prompt: activeSlide.prompt || (slides.length > 1 ? `Carrusel Comercial (${slides.length} diapositivas)` : "Cartel Comercial"),
           isCarousel: slides.length > 1,
           slideIndex: activeSlideIndex,
+          carouselImages,
+          coverImageUrl: slides[0]?.finalRenderUrl || slides[0]?.baseImageUrl || activeSlide.baseImageUrl,
+          libraryDocId: currentLibraryDocId,
           commercialDesignData: {
             slides,
             activeSlideIndex,
@@ -744,11 +759,19 @@ export default function ImagenComercialPage() {
         throw new Error(data.error || "No se pudo renderizar la imagen final.");
       }
 
+      if (data.libraryDocId) {
+        setCurrentLibraryDocId(data.libraryDocId);
+      }
+
       updateActiveSlide((s) => ({
         ...s,
         finalRenderUrl: data.finalImageUrl,
       }));
-      setStatusMessage("✅ ¡Cartel renderizado y guardado en tu Biblioteca con éxito!");
+      setStatusMessage(
+        slides.length > 1
+          ? "✅ ¡Carrusel renderizado y guardado en tu Biblioteca como lote único!"
+          : "✅ ¡Cartel renderizado y guardado en tu Biblioteca con éxito!"
+      );
       setTimeout(() => setStatusMessage(""), 5000);
     } catch (err: any) {
       console.error(err);
@@ -906,22 +929,80 @@ export default function ImagenComercialPage() {
       alert("El límite para carruseles en la plataforma es de 5 diapositivas.");
       return;
     }
-    const newSlideId = `slide-${slides.length + 1}`;
-    const newSlide = createInitialSlide(newSlideId);
-    newSlide.aspectRatio = activeSlide.aspectRatio;
-    newSlide.useLogo = activeSlide.useLogo;
-    newSlide.logoUrl = activeSlide.logoUrl;
-    newSlide.logoTransparent = activeSlide.logoTransparent;
-    newSlide.logoBlendMode = activeSlide.logoBlendMode;
-    newSlide.logoBgMode = activeSlide.logoBgMode;
+    const newSlideId = `slide-${slides.length + 1}-${Date.now()}`;
+    // Crear diapositiva con escena visual y capas de texto completamente en blanco
+    const newSlide: SlideData = {
+      id: newSlideId,
+      prompt: "", // En blanco
+      baseImageUrl: "", // En blanco
+      aspectRatio: activeSlide.aspectRatio,
+      textLayers: [
+        {
+          id: `layer-1-${Date.now()}`,
+          text: "", // En blanco
+          fontFamily: activeSlide.textLayers[0]?.fontFamily || "Inter, sans-serif",
+          fontSize: 14,
+          color: "#FF5500",
+          backgroundColor: "#FF5500",
+          backgroundOpacity: 0.15,
+          fontWeight: "800",
+          textAlign: "center",
+          isPill: true,
+          x: 50,
+          y: 8,
+          rotation: 0,
+        },
+        {
+          id: `layer-2-${Date.now()}`,
+          text: "", // En blanco
+          fontFamily: activeSlide.textLayers[1]?.fontFamily || "Inter, sans-serif",
+          fontSize: 32,
+          color: "#FFFFFF",
+          backgroundColor: "transparent",
+          backgroundOpacity: 0,
+          fontWeight: "900",
+          textAlign: "center",
+          isPill: false,
+          x: 50,
+          y: 22,
+          rotation: 0,
+        },
+      ],
+      useLogo: activeSlide.useLogo,
+      logoUrl: activeSlide.logoUrl,
+      logoTransparent: activeSlide.logoTransparent,
+      logoBlendMode: activeSlide.logoBlendMode,
+      logoBgMode: activeSlide.logoBgMode,
+      logoX: activeSlide.logoX,
+      logoY: activeSlide.logoY,
+      logoWidth: activeSlide.logoWidth,
+      finalRenderUrl: "",
+    };
+
     setSlides((prev) => [...prev, newSlide]);
     setActiveSlideIndex(slides.length);
+    setSelectedLayerId(null);
   };
 
-  const handleRemoveSlide = (idx: number) => {
-    if (slides.length <= 1) return;
-    setSlides((prev) => prev.filter((_, i) => i !== idx));
-    setActiveSlideIndex((cur) => Math.max(0, cur >= idx ? cur - 1 : cur));
+  const handleRemoveSlide = (idx: number, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (slides.length <= 1) {
+      alert("Un carrusel o afiche debe tener al menos 1 diapositiva.");
+      return;
+    }
+    const confirmDelete = window.confirm(`¿Deseas eliminar la diapositiva ${idx + 1}?`);
+    if (!confirmDelete) return;
+
+    const newSlides = slides.filter((_, i) => i !== idx);
+    setSlides(newSlides);
+
+    // Ajustar slide activa
+    if (activeSlideIndex >= newSlides.length) {
+      setActiveSlideIndex(Math.max(0, newSlides.length - 1));
+    } else if (activeSlideIndex === idx) {
+      setActiveSlideIndex(Math.max(0, idx - 1));
+    }
+    setSelectedLayerId(null);
   };
 
   // Publicar o Agendar
@@ -1126,28 +1207,39 @@ export default function ImagenComercialPage() {
         <div className="flex items-center gap-2">
           <span className="text-xs font-black uppercase tracking-wider text-slate-400 mr-1">Diapositivas:</span>
           {slides.map((s, idx) => (
-            <div key={s.id} className="flex items-center gap-1">
+            <div key={s.id} className="relative flex items-center group">
               <button
+                type="button"
                 onClick={() => {
                   setActiveSlideIndex(idx);
                   setSelectedLayerId(s.textLayers[0]?.id || null);
                 }}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 ${
                   activeSlideIndex === idx
-                    ? "bg-slate-900 text-white shadow-sm"
+                    ? "bg-slate-900 text-white shadow-sm ring-2 ring-slate-900/10"
                     : "bg-slate-100 hover:bg-slate-200 text-slate-700"
-                }`}
+                } ${slides.length > 1 ? "pr-7" : ""}`}
               >
                 <span>Slide {idx + 1}</span>
-                {s.baseImageUrl && <span className="w-2 h-2 rounded-full bg-emerald-400"></span>}
+                {s.baseImageUrl ? (
+                  <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                ) : (
+                  <span className="w-2 h-2 rounded-full bg-slate-300"></span>
+                )}
               </button>
+
               {slides.length > 1 && (
                 <button
-                  onClick={() => handleRemoveSlide(idx)}
-                  className="p-1 text-slate-300 hover:text-rose-500 rounded-lg transition-colors"
-                  title="Eliminar slide"
+                  type="button"
+                  onClick={(e) => handleRemoveSlide(idx, e)}
+                  className={`absolute right-1.5 p-1 rounded-md transition-colors ${
+                    activeSlideIndex === idx
+                      ? "text-slate-400 hover:text-rose-300 hover:bg-slate-800"
+                      : "text-slate-400 hover:text-rose-600 hover:bg-slate-200"
+                  }`}
+                  title={`Eliminar Diapositiva ${idx + 1}`}
                 >
-                  <X className="w-3.5 h-3.5" />
+                  <X className="w-3.5 h-3.5 stroke-[2.5]" />
                 </button>
               )}
             </div>
