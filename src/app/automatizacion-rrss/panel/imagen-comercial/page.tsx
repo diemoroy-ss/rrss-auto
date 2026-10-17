@@ -695,7 +695,7 @@ export default function ImagenComercialPage() {
     }
   };
 
-  // Renderizar versión final en alta resolución con Butterfly Social
+  // Renderizar versión final en alta resolución con el editor
   const handleRenderFinal = async () => {
     if (!activeSlide.baseImageUrl) {
       setErrorMessage("Primero debes generar o subir la imagen base.");
@@ -703,7 +703,7 @@ export default function ImagenComercialPage() {
     }
     setErrorMessage("");
     setIsRenderingFinal(true);
-    setStatusMessage("Procesando renderizado de alta fidelidad con Butterfly Social...");
+    setStatusMessage("Procesando renderizado de alta fidelidad...");
 
     try {
       const token = user ? await user.getIdToken() : "";
@@ -1088,7 +1088,7 @@ export default function ImagenComercialPage() {
           </h1>
           <p className="text-sm text-slate-500 max-w-2xl mt-1">
             Genera imágenes base de alta resolución con nuestros agentes y estampa tipografías comerciales y logos con{" "}
-            <strong>Butterfly Social</strong>. Arrastra las capas libremente en el lienzo.
+            <strong>nuestro editor</strong>. Arrastra las capas libremente en el lienzo.
           </p>
         </div>
 

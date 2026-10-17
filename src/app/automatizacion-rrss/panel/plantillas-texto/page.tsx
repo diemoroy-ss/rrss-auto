@@ -1200,7 +1200,7 @@ export default function PlantillasTextoPage() {
                   <span>✨</span> Previsualizar en Foto Real: {testingTemplate.name}
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Mira cómo lucirá la plantilla estampada con Butterfly Social sobre tus fotos.
+                  Mira cómo lucirá la plantilla estampada con nuestro editor sobre tus fotos.
                 </p>
               </div>
               <button
@@ -1235,7 +1235,7 @@ export default function PlantillasTextoPage() {
                 </div>
 
                 <p className="text-[11px] text-slate-400 mt-2 text-center">
-                  💡 Butterfly Social renderiza estos textos con ortografía exacta y tipografía nítida sobre la foto.
+                  💡 Nuestro editor renderiza estos textos con ortografía exacta y tipografía nítida sobre la foto.
                 </p>
               </div>
 
