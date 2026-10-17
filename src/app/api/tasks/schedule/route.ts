@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '../../../../lib/firebase-admin';
 import { enqueuePostTask, deletePostTask } from '../../../../lib/gcp-tasks';
+import { isAdminAdmin } from '../../../../lib/quota-admin';
 
 export async function POST(req: Request) {
     try {
@@ -24,6 +25,24 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Falta postId o fecha' }, { status: 400 });
         }
 
+        if (!adminDb) {
+            return NextResponse.json({ error: 'Database no disponible' }, { status: 500 });
+        }
+
+        const postRef = adminDb.collection('social_posts').doc(postId);
+        const postSnap = await postRef.get();
+        if (!postSnap.exists) {
+            return NextResponse.json({ error: 'Post no encontrado' }, { status: 404 });
+        }
+
+        const postData = postSnap.data()!;
+        const isOwner = postData.userId === decodedToken.uid;
+        const isAdmin = isAdminAdmin(decodedToken.email);
+
+        if (!isOwner && !isAdmin) {
+            return NextResponse.json({ error: 'No tienes permiso para modificar este post' }, { status: 403 });
+        }
+
         const scheduledDate = new Date(scheduledForIso);
         
         // Check if date is strictly in the future (plus a 30 sec buffer)
@@ -32,13 +51,9 @@ export async function POST(req: Request) {
         const targetDate = scheduledDate < now ? new Date(now.getTime() + 30000) : scheduledDate;
 
         // Borrar tarea previa en GCP si existe
-        const postRef = adminDb.collection('social_posts').doc(postId);
-        const postSnap = await postRef.get();
-        if (postSnap.exists) {
-            const oldTaskName = postSnap.data()?.gcpTaskName;
-            if (oldTaskName) {
-                await deletePostTask(oldTaskName);
-            }
+        const oldTaskName = postData.gcpTaskName;
+        if (oldTaskName) {
+            await deletePostTask(oldTaskName);
         }
 
         const taskName = await enqueuePostTask(postId, targetDate);

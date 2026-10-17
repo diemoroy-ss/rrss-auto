@@ -10,9 +10,9 @@ export async function POST(req: Request) {
     try {
         // Validación de Seguridad
         const authHeader = req.headers.get('Authorization');
-        const expectedAuth = `Bearer ${process.env.CRON_SECRET || 'santisoft-n8n-cron-key-123'}`;
+        const cronSecret = process.env.CRON_SECRET;
         
-        if (authHeader !== expectedAuth) {
+        if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
             console.error("[GCP EXECUTE] Unauthorized request received");
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
@@ -111,7 +111,10 @@ export async function POST(req: Request) {
         
         const publishRes = await fetch(publishUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${cronSecret}`
+            },
             body: JSON.stringify({ postId })
         });
 

@@ -597,9 +597,13 @@ export function usePostActions(deps: UsePostActionsDeps) {
           setPublishingPostId(postId);
           setConfirmModalState(null);
           try {
+            const token = await auth.currentUser?.getIdToken();
             const res = await fetch("/api/publish-now", {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: {
+                "Content-Type": "application/json",
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              },
               body: JSON.stringify({ postId }),
             });
             const data = await res.json();

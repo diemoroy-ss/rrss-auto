@@ -1,19 +1,60 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { auth, db } from "../../../../lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc, collection, addDoc, query, where, getDocs, orderBy } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs, orderBy } from "firebase/firestore";
 import { useProfile } from "../../../../contexts/ProfileContext";
 import { useRouter } from "next/navigation";
-import PromptStyleSelector from "../../../../components/strategy/PromptStyleSelector";
-import PlanProductsSelector from "../../../../components/strategy/PlanProductsSelector";
-import { PromptTemplate } from "../../../../lib/prompt-templates";
-import { appendContactInfo } from "../../../../lib/contact-helper";
 import StatusModal from "../../../../components/StatusModal";
-import { getScheduleContinuityFromList, parseScheduledDate, ScheduleContinuityResult } from "../../../../lib/schedule-continuity";
 import UpsellGate from "../../../../components/panel/UpsellGate";
 import { hasPlanFeature } from "../../../../lib/plans";
+
+interface TrendItem {
+  id: string;
+  source?: string;
+  topic?: string;
+  velocity?: "high" | "medium" | "low" | string;
+  description?: string;
+  opportunity?: string;
+}
+
+interface AudienceQuestion {
+  id: string;
+  source?: string;
+  suggestedAngle?: string;
+  question: string;
+}
+
+interface HighRetentionHook {
+  id: string;
+  framework?: string;
+  hookText: string;
+  explanation?: string;
+}
+
+interface ContentIdea {
+  id: string;
+  title: string;
+  description?: string;
+  format?: "Reel" | "Carrusel" | "Post Estático" | "Historias" | string;
+  suggestedFormat?: string;
+  draftHook?: string;
+  angle?: string;
+  summary?: string;
+}
+
+interface RadarAnalysisResult {
+  id?: string;
+  niche: string;
+  updatedAt: string;
+  summary?: string;
+  ideas?: ContentIdea[];
+  contentIdeas?: ContentIdea[];
+  trends?: TrendItem[];
+  audienceQuestions?: AudienceQuestion[];
+  highRetentionHooks?: HighRetentionHook[];
+}
 
 export default function NicheRadarPage() {
   const router = useRouter();
@@ -31,7 +72,7 @@ export default function NicheRadarPage() {
   const [copiedHookId, setCopiedHookId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string>("");
 
-  // Status Modal State (Reemplazo moderno de alerts)
+  // Status Modal State
   const [statusModal, setStatusModal] = useState<{
     isOpen: boolean;
     type: "success" | "error" | "info" | "confirm";
@@ -52,106 +93,13 @@ export default function NicheRadarPage() {
   const [postsThisMonth, setPostsThisMonth] = useState<number>(0);
   const [videosThisMonth, setVideosThisMonth] = useState<number>(0);
 
-  // Strategy State
-  const [strategyGoal, setStrategyGoal] = useState<string>("");
-  const [strategyExpectations, setStrategyExpectations] = useState<string>("");
-  const [usePromptStyles, setUsePromptStyles] = useState<boolean>(false);
-  const [selectedPromptStyles, setSelectedPromptStyles] = useState<PromptTemplate[]>([]);
-  const [isCommercialPosterOnly, setIsCommercialPosterOnly] = useState<boolean>(false);
-  const [radarCatalogItems, setRadarCatalogItems] = useState<any[]>([]);
-  const [selectedCatalogItemIds, setSelectedCatalogItemIds] = useState<string[]>([]);
-  const [loadingRadarCatalog, setLoadingRadarCatalog] = useState<boolean>(false);
-  const [startDate, setStartDate] = useState<string>(() => {
-    const d = new Date();
-    if (d.getHours() >= 18) d.setDate(d.getDate() + 1);
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-  });
-  const [startTime, setStartTime] = useState<string>("10:00");
-  const [generatingStrategy, setGeneratingStrategy] = useState<boolean>(false);
-  const [strategyResult, setStrategyResult] = useState<any[] | null>(null);
-  const [acceptingStrategy, setAcceptingStrategy] = useState<boolean>(false);
-  const [scheduleContinuityInfo, setScheduleContinuityInfo] = useState<ScheduleContinuityResult | null>(null);
-
-  // Modal State
+  // Modal State para convertir idea en Post/Reel
   const [postModal, setPostModal] = useState<{isOpen: boolean, idea: ContentIdea | null}>({isOpen: false, idea: null});
 
   // History State
   const [historicalAnalyses, setHistoricalAnalyses] = useState<any[]>([]);
-  const [includeLogoInStrategy, setIncludeLogoInStrategy] = useState<boolean>(true);
 
-  // Test Mode State (Exclusivo santisoftai@gmail.com)
   const isSantisoftAdmin = user?.email === "santisoftai@gmail.com";
-  const [userData, setUserData] = useState<any>(null);
-  const [isTestMode, setIsTestMode] = useState<boolean>(false);
-  const [testRubro, setTestRubro] = useState<string>("");
-  const [testBusinessDescription, setTestBusinessDescription] = useState<string>("");
-  const [testGoalDescription, setTestGoalDescription] = useState<string>("");
-  const [testSelectedNetworks, setTestSelectedNetworks] = useState<string[]>([
-    "instagram",
-    "facebook",
-    "tiktok",
-    "googleBusiness"
-  ]);
-  const [testProducts, setTestProducts] = useState<Array<{
-    id: string;
-    name: string;
-    type: "producto" | "servicio";
-    description: string;
-    price?: string;
-  }>>([]);
-  const [newProductName, setNewProductName] = useState<string>("");
-  const [newProductType, setNewProductType] = useState<"producto" | "servicio">("producto");
-  const [newProductDesc, setNewProductDesc] = useState<string>("");
-  const [newProductPrice, setNewProductPrice] = useState<string>("");
-  const [previewPostModal, setPreviewPostModal] = useState<any | null>(null);
-
-  // Resolver perfil de santisoftai@gmail.com que contiene los tokens sociales conectados
-  const santisoftProfile = useMemo(() => {
-    if (!isSantisoftAdmin || !userData) return null;
-    const profiles = Array.isArray(userData.profiles) ? userData.profiles : [];
-    return (
-      profiles.find(
-        (p: any) =>
-          p.instagramToken_enc ||
-          p.facebookToken_enc ||
-          p.tiktokToken_enc ||
-          p.googleBusinessToken_enc
-      ) ||
-      profiles.find((p: any) => p.id === "default") ||
-      profiles[0] ||
-      null
-    );
-  }, [isSantisoftAdmin, userData]);
-
-  // Cuentas sociales disponibles configuradas en santisoftai@gmail.com
-  const availableSantisoftAccounts = useMemo(() => {
-    const p = santisoftProfile || {};
-    const u = userData || {};
-    return {
-      instagram: !!(p.instagramToken_enc || u.instagramToken_enc),
-      facebook: !!(p.facebookToken_enc || u.facebookToken_enc),
-      tiktok: !!(p.tiktokToken_enc || u.tiktokToken_enc),
-      googleBusiness: !!(p.googleBusinessToken_enc || u.googleBusinessToken_enc),
-      linkedin: !!(p.linkedinUserToken_enc || p.linkedinToken_enc || u.linkedinUserToken_enc),
-      youtube: !!(p.youtubeToken_enc || p.accounts?.youtube),
-      x: !!(p.xToken_enc || p.accounts?.x)
-    };
-  }, [santisoftProfile, userData]);
-
-  // Sincronizar selección inicial de redes con las realmente vinculadas
-  useEffect(() => {
-    if (isSantisoftAdmin && userData) {
-      const activeKeys = Object.entries(availableSantisoftAccounts)
-        .filter(([_, hasToken]) => hasToken)
-        .map(([key]) => key);
-      if (activeKeys.length > 0) {
-        setTestSelectedNetworks(activeKeys);
-      }
-    }
-  }, [isSantisoftAdmin, userData, availableSantisoftAccounts]);
 
   const formatRadarDate = (createdAt: any) => {
     if (!createdAt) return "";
@@ -168,94 +116,15 @@ export default function NicheRadarPage() {
     return isNaN(d.getTime()) ? "" : d.toLocaleDateString();
   };
 
-  const resolveStrategyDates = (strategy: any[], existingDates: number[], startD: string, startT: string) => {
-    const allocated: number[] = [...existingDates];
-    const now = Date.now();
-
-    const [y, m, d] = (startD || new Date().toISOString().split('T')[0]).split('-').map(Number);
-    let baseDate = new Date(y, m - 1, d);
-
-    // Si existen posts futuros agendados y la fecha de inicio es anterior o igual al último post agendado,
-    // ajustamos la fecha base para que continúe al día siguiente del último agendado.
-    const futureExisting = existingDates.filter(ts => ts > now);
-    if (futureExisting.length > 0) {
-      const maxExistingTs = Math.max(...futureExisting);
-      const maxExistingDate = new Date(maxExistingTs);
-      if (baseDate.getTime() <= maxExistingDate.getTime()) {
-        const nextDay = new Date(maxExistingTs);
-        nextDay.setDate(nextDay.getDate() + 1);
-        baseDate = nextDay;
-      }
-    }
-
-    return strategy.map((post, idx) => {
-      let targetDate = new Date(baseDate);
-      const dayOffset = typeof post.dayOffset === 'number' ? post.dayOffset : idx;
-      targetDate.setDate(targetDate.getDate() + dayOffset);
-
-      let timeStr = (dayOffset === 0 && startT) ? startT : (post.suggestedTime || startT || "10:00");
-      let hour = 10;
-      let minute = 0;
-      if (timeStr && timeStr.includes(':')) {
-        const [h, min] = timeStr.split(':');
-        hour = parseInt(h, 10) || 10;
-        minute = parseInt(min, 10) || 0;
-      }
-      targetDate.setHours(hour, minute, 0, 0);
-
-      // Si la fecha calculada ya pasó o está muy cerca de este momento (menos de 30 mins)
-      if (targetDate.getTime() < now + 30 * 60 * 1000) {
-        targetDate.setTime(now + 45 * 60 * 1000);
-      }
-
-      // Evitar colisión con posts existentes o previos (mínimo 3 horas de diferencia)
-      let attempts = 0;
-      while (allocated.some(ts => Math.abs(ts - targetDate.getTime()) < 3 * 60 * 60 * 1000) && attempts < 30) {
-        attempts++;
-        targetDate.setHours(targetDate.getHours() + 3);
-        if (targetDate.getHours() >= 21 || targetDate.getHours() < 9) {
-          targetDate.setDate(targetDate.getDate() + 1);
-          targetDate.setHours(11, 0, 0, 0);
-        }
-      }
-
-      allocated.push(targetDate.getTime());
-      return {
-        ...post,
-        computedScheduledDate: targetDate
-      };
-    });
-  };
-
-  const goals = [
-    { id: 'ventas', title: 'Ventas & Conversión', description: 'Maximizar pedidos y ventas', icon: '💰' },
-    { id: 'autoridad', title: 'Autoridad & Marca', description: 'Posicionarte como experto', icon: '🎙️' },
-    { id: 'viralidad', title: 'Viralidad & Alcance', description: 'Llegar a miles de cuentas', icon: '🚀' },
-    { id: 'lealtad', title: 'Comunidad & Lealtad', description: 'Crear fans y embajadores', icon: '❤️' },
-    { id: 'prospectos', title: 'Captación de Prospectos', description: 'Atraer registros y DMs', icon: '📥' }
-  ];
-
   useEffect(() => {
     if (typeof window !== "undefined") {
       const urlParams = new URLSearchParams(window.location.search);
       const autoGoal = urlParams.get('autoGoal');
       if (autoGoal) {
-        const mapping: any = {
-           crecimiento: 'viralidad',
-           ventas: 'ventas',
-           autoridad: 'autoridad',
-           interaccion: 'lealtad'
-        };
-        const targetId = mapping[autoGoal.toLowerCase()] || autoGoal.toLowerCase();
-        if (goals.find(g => g.id === targetId)) {
-           setStrategyGoal(targetId);
-           setTimeout(() => {
-               document.getElementById('generador-estrategia')?.scrollIntoView({ behavior: 'smooth' });
-           }, 800);
-        }
+        router.push(`/automatizacion-rrss/panel/estrategia?goal=${encodeURIComponent(autoGoal)}&useRadar=true`);
       }
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
@@ -272,7 +141,6 @@ export default function NicheRadarPage() {
           const userDoc = await getDoc(doc(db, "users", u.uid));
           if (userDoc.exists()) {
              const uData = userDoc.data();
-             setUserData(uData);
              setUserPlan(uData.plan || "free");
              
              const firstDayOfMonth = new Date();
@@ -303,26 +171,6 @@ export default function NicheRadarPage() {
     return () => unsub();
   }, []);
 
-  // Cargar continuidad de publicaciones agendadas para la marca activa
-  useEffect(() => {
-    async function checkScheduleContinuity() {
-      if (!user) return;
-      try {
-        const qPosts = query(collection(db, "social_posts"), where("userId", "==", user.uid));
-        const snapPosts = await getDocs(qPosts);
-        const postsList = snapPosts.docs.map(d => ({ id: d.id, ...d.data() }));
-        const cont = getScheduleContinuityFromList(postsList, activeProfile?.id, 10);
-        setScheduleContinuityInfo(cont);
-        if (cont.hasFuturePosts) {
-          setStartDate(cont.nextDateString);
-        }
-      } catch (e) {
-        console.warn("No se pudo cargar la continuidad de programación:", e);
-      }
-    }
-    checkScheduleContinuity();
-  }, [user, activeProfile?.id]);
-
   // Set default niche input when activeProfile changes
   useEffect(() => {
     if (activeProfile) {
@@ -335,30 +183,7 @@ export default function NicheRadarPage() {
         setAudienceInput(prof.targetAudience);
       }
     }
-  }, [activeProfile]);
-
-  // Cargar catálogo de productos/servicios del perfil activo
-  useEffect(() => {
-    async function loadRadarCatalog() {
-      if (!user || !activeProfile?.id) return;
-      setLoadingRadarCatalog(true);
-      try {
-        const token = await user.getIdToken();
-        const res = await fetch(`/api/catalogo?profileId=${activeProfile.id}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const data = await res.json();
-        const items = data.items || [];
-        setRadarCatalogItems(items);
-        setSelectedCatalogItemIds(items.map((i: any) => i.id));
-      } catch (e) {
-        console.warn("Error cargando catálogo en radar:", e);
-      } finally {
-        setLoadingRadarCatalog(false);
-      }
-    }
-    loadRadarCatalog();
-  }, [user, activeProfile?.id]);
+  }, [activeProfile, nicheInput, audienceInput]);
 
   // Cargar análisis previo si existe
   useEffect(() => {
@@ -476,246 +301,6 @@ export default function NicheRadarPage() {
       setErrorMsg(err.message || "Error al conectar con nuestros agentes.");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleAddTestProduct = () => {
-    if (!newProductName.trim()) return;
-    const item = {
-      id: `test-${Date.now()}`,
-      name: newProductName.trim(),
-      type: newProductType,
-      description: newProductDesc.trim(),
-      price: newProductPrice.trim() || undefined
-    };
-    setTestProducts(prev => [...prev, item]);
-    setNewProductName("");
-    setNewProductDesc("");
-    setNewProductPrice("");
-  };
-
-  const handleRemoveTestProduct = (id: string) => {
-    setTestProducts(prev => prev.filter(p => p.id !== id));
-  };
-
-  const handleLoadExampleTestProducts = () => {
-    setTestRubro("Cafetería de Especialidad & Pastelería");
-    setTestBusinessDescription("Cafetería boutique que tuesta sus propios granos de origen y ofrece pastelería artesanal horneada cada mañana, con ambiente pet friendly y opciones veganas.");
-    setTestGoalDescription("Aumentar visitas los fines de semana y vender packs de café en grano para regalo");
-    setStrategyGoal("ventas");
-    setTestProducts([
-      {
-        id: "ex-1",
-        name: "Café de Especialidad Etiopía Yirgacheffe 250g",
-        type: "producto",
-        description: "Granos 100% arábica con notas florales y cítricas, tostado medio artesanal.",
-        price: "$12.990 CLP"
-      },
-      {
-        id: "ex-2",
-        name: "Brunch para Dos Fines de Semana",
-        type: "servicio",
-        description: "2 cafés de especialidad a elección, tostadas con palta y huevo pochado, y 2 croissants artesanales.",
-        price: "$19.990 CLP"
-      },
-      {
-        id: "ex-3",
-        name: "Cinnamon Roll Glaseado Artesanal",
-        type: "producto",
-        description: "Roll de canela recién horneado con glaseado cremoso de queso crema y nueces pecanas.",
-        price: "$3.500 CLP"
-      }
-    ]);
-  };
-
-  const handleGenerateStrategy = async () => {
-    if (!strategyGoal) {
-      setErrorMsg("Selecciona una meta para tu estrategia.");
-      return;
-    }
-
-    if (isSantisoftAdmin && isTestMode && !testRubro.trim()) {
-      setErrorMsg("Por favor, ingresa el rubro de prueba para continuar.");
-      return;
-    }
-
-    setGeneratingStrategy(true);
-    setStrategyResult(null);
-
-    let postsPerWeek = 1;
-    if (userPlan === 'starter') postsPerWeek = 3;
-    if (userPlan === 'pro') postsPerWeek = 5;
-    if (userPlan === 'business') postsPerWeek = 20;
-    if (userPlan === 'agency') postsPerWeek = 50;
-
-    const isRunningTestMode = isSantisoftAdmin && isTestMode;
-    const prof = activeProfile as any;
-    const effectiveBusinessType = isRunningTestMode ? testRubro.trim() : (prof?.rubro || "General");
-    const effectiveExpectations = isRunningTestMode 
-      ? [testGoalDescription ? `Lo que se busca: ${testGoalDescription}` : "", strategyExpectations].filter(Boolean).join(". ")
-      : strategyExpectations;
-    const effectiveBusinessData = isRunningTestMode 
-      ? {
-          businessName: "Negocio de Prueba",
-          businessDescription: testBusinessDescription.trim() || `Negocio del rubro ${testRubro}`,
-          website: "https://ejemplo.com",
-          phone: "+56912345678",
-          whatsapp: "+56912345678",
-          email: "contacto@ejemplo.com",
-          address: "Santiago, Chile"
-        }
-      : {
-          businessName: prof?.name || prof?.businessName || "Mi Negocio",
-          businessDescription: prof?.businessDescription || "",
-          website: prof?.website || "",
-          phone: prof?.phone || "",
-          whatsapp: prof?.whatsapp || prof?.phone || "",
-          email: prof?.email || "",
-          address: prof?.address || ""
-        };
-
-    try {
-      const token = await user.getIdToken();
-      const res = await fetch("/api/ai/generate-strategy", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify({
-          goal: strategyGoal,
-          goalName: goals.find(g => g.id === strategyGoal)?.title,
-          businessType: effectiveBusinessType,
-          userId: user.uid,
-          expectations: effectiveExpectations,
-          businessData: effectiveBusinessData,
-          connectedPlatforms: {
-              facebook: isRunningTestMode ? testSelectedNetworks.includes('facebook') : !!prof?.facebookToken_enc,
-              instagram: isRunningTestMode ? testSelectedNetworks.includes('instagram') : !!prof?.instagramToken_enc,
-              tiktok: isRunningTestMode ? testSelectedNetworks.includes('tiktok') : !!prof?.tiktokToken_enc,
-              linkedin: isRunningTestMode ? testSelectedNetworks.includes('linkedin') : !!prof?.linkedinUserToken_enc
-          },
-          nicheContext: isRunningTestMode
-            ? `${analysis?.summary ? analysis.summary + " " : ""}Contexto de prueba: ${testBusinessDescription}`
-            : (analysis?.summary || ""),
-          postsPerWeek: isRunningTestMode ? 5 : postsPerWeek,
-          usePromptStyles,
-          selectedPromptStyles: usePromptStyles ? selectedPromptStyles : [],
-          isCommercialPoster: isCommercialPosterOnly,
-          catalogoItems: (isRunningTestMode ? testProducts : radarCatalogItems.filter(p => selectedCatalogItemIds.includes(p.id))).map((item: any) => ({
-            id: item.id,
-            name: item.name,
-            description: item.description,
-            type: item.type,
-            price: item.price || null,
-            offerPrice: item.offerPrice || null,
-            imageUrl: item.imageUrl || null,
-            hasImage: Boolean(item.imageUrl && typeof item.imageUrl === 'string' && item.imageUrl.startsWith('http'))
-          })),
-          catalogUsage: isRunningTestMode 
-            ? (testProducts.length > 0 ? "all" : undefined)
-            : (selectedCatalogItemIds.length > 0 ? "mixed" : undefined)
-        })
-      });
-
-      if (!res.ok) throw new Error("Error al generar estrategia");
-      const data = await res.json();
-
-      let upcomingTimestamps: number[] = [];
-      try {
-        const qPosts = query(
-          collection(db, "social_posts"),
-          where("userId", "==", user.uid)
-        );
-        const snapPosts = await getDocs(qPosts);
-        snapPosts.docs.forEach(d => {
-          const p = d.data();
-          if (activeProfile?.id && p.profileId && p.profileId !== activeProfile.id) return;
-          const status = p.status || '';
-          if (status !== 'confirmed' && status !== 'pending') return;
-          const dateObj = parseScheduledDate(p.scheduledFor);
-          if (dateObj) upcomingTimestamps.push(dateObj.getTime());
-        });
-      } catch (qErr) {
-        console.warn("No se pudieron consultar posts previos para evitar solapamientos:", qErr);
-      }
-
-      const resolved = resolveStrategyDates(data.strategy || [], upcomingTimestamps, startDate, startTime);
-      setStrategyResult(resolved);
-    } catch (err: any) {
-      setErrorMsg("Error al generar la estrategia.");
-    } finally {
-      setGeneratingStrategy(false);
-    }
-  };
-
-  const handleAcceptStrategy = async () => {
-    if (!strategyResult || !user) return;
-    setAcceptingStrategy(true);
-    try {
-      const postsRef = collection(db, "social_posts");
-      const isRunningTestMode = isSantisoftAdmin && isTestMode;
-      const targetProfileId = isRunningTestMode
-        ? (santisoftProfile?.id || 'default')
-        : (activeProfile?.id || 'default');
-      const targetNetworks = isRunningTestMode
-        ? (testSelectedNetworks.length > 0 ? testSelectedNetworks : ['instagram', 'facebook'])
-        : ['instagram', 'facebook'];
-
-      for (const post of strategyResult) {
-          const scheduledDate = post.computedScheduledDate ? new Date(post.computedScheduledDate) : new Date();
-
-          const fmt = post.format?.toLowerCase() || "";
-          const postType = fmt.includes('reel') || fmt.includes('video') ? 'Reel' : (fmt.includes('historia') || fmt.includes('story') ? 'Story' : 'Post');
-
-          const postBaseText = `${post.content}\n\n${post.cta}`;
-          const finalTextWithContact = appendContactInfo(postBaseText, isRunningTestMode ? null : activeProfile);
-
-          const newPostRef = await addDoc(postsRef, {
-              userId: user.uid,
-              profileId: targetProfileId,
-              text: finalTextWithContact,
-              idea: post.hook,
-              type: postType,
-              status: 'confirmed', // DIRECTAMENTE CONFIRMADO Y AGENDADO
-              scheduledFor: scheduledDate,
-              createdAt: new Date(),
-              networks: targetNetworks,
-              generatedBy: isRunningTestMode ? 'ai_strategy_radar_test' : 'ai_strategy_radar',
-              isTestMode: isRunningTestMode,
-              testMode: isRunningTestMode,
-              testAccountUser: isRunningTestMode ? 'santisoftai@gmail.com' : null,
-              includeLogo: includeLogoInStrategy,
-              visualStyle: post.visualStyle || null,
-              promptTemplateId: post.promptTemplateId || null,
-              previewUrl: post.previewUrl || null,
-              imageDirection: post.imageDirection || null,
-              productId: post.productId || null,
-              productName: post.productName || null,
-              productDescription: post.productDescription || null,
-              baseImageUrl: post.baseImageUrl || null,
-              hasProductImage: Boolean(post.baseImageUrl),
-              isCommercialPoster: Boolean(post.isCommercialPoster ?? isCommercialPosterOnly)
-          });
-
-          try {
-              const idToken = await auth.currentUser?.getIdToken();
-              await fetch('/api/tasks/schedule', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
-                  body: JSON.stringify({ postId: newPostRef.id, scheduledFor: scheduledDate.toISOString() })
-              });
-          } catch (scheduleErr) {
-              console.error("Warning: Could not schedule GCP task from radar", scheduleErr);
-          }
-      }
-      setStatusModal({
-          isOpen: true,
-          type: "success",
-          title: "¡Planificación Agendada!",
-          message: "Tus publicaciones han quedado inmediatamente agendadas y confirmadas en tu calendario de redes sociales.",
-          onConfirm: () => router.push("/automatizacion-rrss/panel")
-      });
-    } catch (e) {
-      setErrorMsg("Error al guardar planificación.");
-      setAcceptingStrategy(false);
     }
   };
 
@@ -1135,559 +720,31 @@ export default function NicheRadarPage() {
             </div>
           )}
 
-          {/* ESTRATEGIA GENERATOR */}
-          <div id="generador-estrategia" className="bg-white rounded-2xl p-6 md:p-8 border border-slate-200 shadow-sm mt-8 space-y-6">
-              
-              {/* MODO PRUEBA / SIMULADOR - EXCLUSIVO santisoftai@gmail.com */}
-              {isSantisoftAdmin && (
-                <div className="p-6 bg-gradient-to-br from-amber-500/10 via-indigo-500/10 to-purple-500/10 rounded-3xl border-2 border-amber-300/80 shadow-md space-y-5">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <span className="text-3xl">🧪</span>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-black uppercase tracking-widest bg-amber-500 text-white px-2.5 py-0.5 rounded-md">
-                            Exclusivo Admin
-                          </span>
-                          <h3 className="text-base font-black text-slate-900">
-                            Modo Prueba & Simulador de Estrategia
-                          </h3>
-                        </div>
-                        <p className="text-xs text-slate-600 font-medium mt-0.5">
-                          Prueba rubros, descripciones de negocio y productos/servicios para simular cómo van quedando los posts antes de publicar.
-                        </p>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => setIsTestMode(!isTestMode)}
-                      className={`px-5 py-2.5 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-2 shadow-sm ${
-                        isTestMode
-                          ? 'bg-amber-500 hover:bg-amber-600 text-white ring-4 ring-amber-300/50'
-                          : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-300'
-                      }`}
-                    >
-                      <span>{isTestMode ? '✓ Modo Prueba ACTIVADO' : '⚪ Activar Modo Prueba'}</span>
-                    </button>
-                  </div>
-
-                  {isTestMode && (
-                    <div className="pt-4 border-t border-amber-200/60 space-y-5 animate-in fade-in duration-300">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-amber-950 flex items-center gap-1.5">
-                          <span>⚙️</span> Parámetros del Negocio de Prueba:
-                        </span>
-                        <button
-                          type="button"
-                          onClick={handleLoadExampleTestProducts}
-                          className="text-[11px] font-bold text-indigo-700 hover:text-indigo-800 bg-white hover:bg-indigo-50 border border-indigo-200 px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 shadow-2xs"
-                        >
-                          <span>⚡</span> Cargar Datos de Ejemplo (Cafetería & Pastelería)
-                        </button>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-xs font-black text-slate-800 mb-1.5">
-                            Rubro / Industria de Prueba <span className="text-rose-500">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            value={testRubro}
-                            onChange={(e) => setTestRubro(e.target.value)}
-                            placeholder="Ej: Clínica Dental, Pastelería Artesanal, Gimnasio Boutique"
-                            className="w-full bg-white border border-amber-300/80 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-indigo-600 transition-all shadow-inner"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-black text-slate-800 mb-1.5">
-                            Lo que se busca (Objetivo de la Estrategia) <span className="text-rose-500">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            value={testGoalDescription}
-                            onChange={(e) => setTestGoalDescription(e.target.value)}
-                            placeholder="Ej: Aumentar visitas los fines de semana y vender packs de café"
-                            className="w-full bg-white border border-amber-300/80 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-indigo-600 transition-all shadow-inner"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-black text-slate-800 mb-1.5">
-                          Descripción del Negocio de Prueba <span className="text-rose-500">*</span>
-                        </label>
-                        <textarea
-                          value={testBusinessDescription}
-                          onChange={(e) => setTestBusinessDescription(e.target.value)}
-                          placeholder="Describe qué hace el negocio, su propuesta única de valor, su cliente ideal y qué lo diferencia..."
-                          rows={3}
-                          className="w-full bg-white border border-amber-300/80 px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-800 outline-none focus:border-indigo-600 transition-all shadow-inner resize-none"
-                        />
-                      </div>
-
-                      {/* CUENTAS DE PUBLICACIÓN VINCULADAS A santisoftai@gmail.com */}
-                      <div className="bg-white/90 backdrop-blur-xs rounded-2xl p-4 md:p-5 border border-amber-200/80 space-y-3">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-lg">📢</span>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">
-                                  Cuentas de publicación (santisoftai@gmail.com)
-                                </h4>
-                                <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-md">
-                                  ✓ Cuentas Activas
-                                </span>
-                              </div>
-                              <p className="text-[11px] text-slate-500 font-medium">
-                                Los posts de prueba se publicarán utilizando las cuentas configuradas con tu usuario.
-                              </p>
-                            </div>
-                          </div>
-
-                          {santisoftProfile && (
-                            <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-2.5 py-1 rounded-xl w-fit">
-                              Perfil: {santisoftProfile.name || santisoftProfile.businessName || "Santisoft AI"}
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
-                          {/* Instagram */}
-                          <label className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
-                            testSelectedNetworks.includes('instagram')
-                              ? 'bg-gradient-to-r from-pink-50 to-purple-50 border-purple-300 text-purple-950 font-bold shadow-2xs'
-                              : 'bg-slate-50 border-slate-200 text-slate-400 opacity-60'
-                          }`}>
-                            <input
-                              type="checkbox"
-                              checked={testSelectedNetworks.includes('instagram')}
-                              onChange={(e) => {
-                                if (e.target.checked) setTestSelectedNetworks(prev => [...prev, 'instagram']);
-                                else setTestSelectedNetworks(prev => prev.filter(n => n !== 'instagram'));
-                              }}
-                              className="rounded text-purple-600 focus:ring-purple-500"
-                            />
-                            <div className="flex items-center gap-1.5 text-xs">
-                              <span>📸</span>
-                              <span>Instagram</span>
-                              {availableSantisoftAccounts.instagram && (
-                                <span className="text-[9px] bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded font-black">OK</span>
-                              )}
-                            </div>
-                          </label>
-
-                          {/* Facebook */}
-                          <label className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
-                            testSelectedNetworks.includes('facebook')
-                              ? 'bg-blue-50 border-blue-300 text-blue-950 font-bold shadow-2xs'
-                              : 'bg-slate-50 border-slate-200 text-slate-400 opacity-60'
-                          }`}>
-                            <input
-                              type="checkbox"
-                              checked={testSelectedNetworks.includes('facebook')}
-                              onChange={(e) => {
-                                if (e.target.checked) setTestSelectedNetworks(prev => [...prev, 'facebook']);
-                                else setTestSelectedNetworks(prev => prev.filter(n => n !== 'facebook'));
-                              }}
-                              className="rounded text-blue-600 focus:ring-blue-500"
-                            />
-                            <div className="flex items-center gap-1.5 text-xs">
-                              <span>📘</span>
-                              <span>Facebook</span>
-                              {availableSantisoftAccounts.facebook && (
-                                <span className="text-[9px] bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded font-black">OK</span>
-                              )}
-                            </div>
-                          </label>
-
-                          {/* TikTok */}
-                          <label className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
-                            testSelectedNetworks.includes('tiktok')
-                              ? 'bg-slate-900 text-white border-slate-800 font-bold shadow-2xs'
-                              : 'bg-slate-50 border-slate-200 text-slate-400 opacity-60'
-                          }`}>
-                            <input
-                              type="checkbox"
-                              checked={testSelectedNetworks.includes('tiktok')}
-                              onChange={(e) => {
-                                if (e.target.checked) setTestSelectedNetworks(prev => [...prev, 'tiktok']);
-                                else setTestSelectedNetworks(prev => prev.filter(n => n !== 'tiktok'));
-                              }}
-                              className="rounded text-slate-900 focus:ring-slate-900"
-                            />
-                            <div className="flex items-center gap-1.5 text-xs">
-                              <span>🎵</span>
-                              <span>TikTok</span>
-                              {availableSantisoftAccounts.tiktok && (
-                                <span className="text-[9px] bg-emerald-500 text-white px-1.5 py-0.2 rounded font-black">OK</span>
-                              )}
-                            </div>
-                          </label>
-
-                          {/* Google Business */}
-                          <label className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
-                            testSelectedNetworks.includes('googleBusiness')
-                              ? 'bg-amber-50 border-amber-300 text-amber-950 font-bold shadow-2xs'
-                              : 'bg-slate-50 border-slate-200 text-slate-400 opacity-60'
-                          }`}>
-                            <input
-                              type="checkbox"
-                              checked={testSelectedNetworks.includes('googleBusiness')}
-                              onChange={(e) => {
-                                if (e.target.checked) setTestSelectedNetworks(prev => [...prev, 'googleBusiness']);
-                                else setTestSelectedNetworks(prev => prev.filter(n => n !== 'googleBusiness'));
-                              }}
-                              className="rounded text-amber-600 focus:ring-amber-500"
-                            />
-                            <div className="flex items-center gap-1.5 text-xs">
-                              <span>📍</span>
-                              <span>Google Business</span>
-                              {availableSantisoftAccounts.googleBusiness && (
-                                <span className="text-[9px] bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded font-black">OK</span>
-                              )}
-                            </div>
-                          </label>
-                        </div>
-                      </div>
-
-                      {/* PRODUCTOS Y SERVICIOS DE PRUEBA */}
-                      <div className="bg-white/80 backdrop-blur-xs rounded-2xl p-4 md:p-5 border border-amber-200/80 space-y-4">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-lg">📦</span>
-                            <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">
-                              Productos y Servicios de Prueba ({testProducts.length})
-                            </h4>
-                          </div>
-                          <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-md">
-                            Nuestros agentes los incluirán en los posts
-                          </span>
-                        </div>
-
-                        {/* Formulario para agregar nuevo producto/servicio */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5">
-                          <div>
-                            <input
-                              type="text"
-                              value={newProductName}
-                              onChange={(e) => setNewProductName(e.target.value)}
-                              placeholder="Nombre del ítem..."
-                              className="w-full bg-white border border-slate-200 px-3 py-2 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-indigo-500 transition-all"
-                            />
-                          </div>
-                          <div>
-                            <select
-                              value={newProductType}
-                              onChange={(e) => setNewProductType(e.target.value as any)}
-                              className="w-full bg-white border border-slate-200 px-3 py-2 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-indigo-500 transition-all"
-                            >
-                              <option value="producto">Producto</option>
-                              <option value="servicio">Servicio</option>
-                            </select>
-                          </div>
-                          <div>
-                            <input
-                              type="text"
-                              value={newProductDesc}
-                              onChange={(e) => setNewProductDesc(e.target.value)}
-                              placeholder="Descripción o detalle..."
-                              className="w-full bg-white border border-slate-200 px-3 py-2 rounded-xl text-xs font-medium text-slate-800 outline-none focus:border-indigo-500 transition-all"
-                            />
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="text"
-                              value={newProductPrice}
-                              onChange={(e) => setNewProductPrice(e.target.value)}
-                              placeholder="Precio (ej: $15.000)"
-                              className="w-full bg-white border border-slate-200 px-3 py-2 rounded-xl text-xs font-medium text-slate-800 outline-none focus:border-indigo-500 transition-all"
-                            />
-                            <button
-                              type="button"
-                              onClick={handleAddTestProduct}
-                              disabled={!newProductName.trim()}
-                              className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white text-xs font-black px-3.5 py-2 rounded-xl transition-all shrink-0"
-                            >
-                              + Añadir
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Listado de items de prueba agregados */}
-                        {testProducts.length > 0 ? (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-2">
-                            {testProducts.map((p) => (
-                              <div
-                                key={p.id}
-                                className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-start justify-between gap-2 shadow-2xs"
-                              >
-                                <div className="space-y-1 min-w-0">
-                                  <div className="flex items-center gap-1.5 flex-wrap">
-                                    <span className="text-xs">
-                                      {p.type === "producto" ? "📦" : "🛠️"}
-                                    </span>
-                                    <span className="text-xs font-black text-slate-900 truncate">
-                                      {p.name}
-                                    </span>
-                                    <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-100">
-                                      {p.type}
-                                    </span>
-                                  </div>
-                                  {p.description && (
-                                    <p className="text-[11px] text-slate-600 font-medium line-clamp-2">
-                                      {p.description}
-                                    </p>
-                                  )}
-                                  {p.price && (
-                                    <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60 inline-block">
-                                      {p.price}
-                                    </span>
-                                  )}
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveTestProduct(p.id)}
-                                  className="text-slate-400 hover:text-rose-600 p-1 transition-colors shrink-0"
-                                  title="Eliminar ítem"
-                                >
-                                  ✕
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="p-3 bg-amber-50/60 rounded-xl border border-dashed border-amber-200 text-center text-xs text-amber-800 font-medium">
-                            No has agregado productos o servicios de prueba aún. Puedes agregar uno arriba o pulsar "Cargar Datos de Ejemplo".
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
+          {/* CTA: PLANIFICAR CON LOS HALLAZGOS DEL RADAR */}
+          <div className="bg-gradient-to-br from-indigo-900 via-slate-900 to-indigo-950 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden mt-8 border border-indigo-500/20">
+            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="space-y-2 max-w-xl">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-xs font-bold uppercase tracking-wider">
+                  <span>🚀</span> Paso Siguiente
                 </div>
-              )}
-
-              <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
-                <span>🤖</span> Planificación Estratégica Automática
-              </h2>
-              <p className="text-sm text-slate-500">¿Qué deseas lograr? Selecciona tu meta para crear un calendario de posts usando los insights del Radar.</p>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                 {goals.map(g => (
-                   <button
-                     key={g.id}
-                     onClick={() => setStrategyGoal(g.id)}
-                     className={`flex items-center gap-3 px-4 py-3 rounded-2xl border-2 transition-all text-left ${
-                       strategyGoal === g.id
-                       ? 'border-indigo-500 bg-indigo-50 shadow-md shadow-indigo-100'
-                       : 'border-slate-100 bg-slate-50 hover:border-indigo-200 hover:bg-white'
-                     }`}
-                   >
-                     <span className="text-xl">{g.icon}</span>
-                     <div>
-                       <div className={`font-black text-xs ${strategyGoal === g.id ? 'text-indigo-900' : 'text-slate-800'}`}>{g.title}</div>
-                     </div>
-                   </button>
-                 ))}
+                <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                  Lleva estas ideas directo a tu calendario
+                </h3>
+                <p className="text-sm text-indigo-200/80 leading-relaxed font-medium">
+                  Nuestros agentes ya tienen cargados los ganchos, ángulos y preguntas de este análisis. Pasa a Planificación para programar las fechas, elegir tus productos y agendar tus publicaciones en segundos.
+                </p>
               </div>
 
-              <div>
-                  <textarea 
-                     value={strategyExpectations}
-                     onChange={e => setStrategyExpectations(e.target.value)}
-                     placeholder="¿Alguna expectativa u oferta especial para estos días? (Opcional)"
-                     className="w-full bg-slate-50 border-2 border-slate-100 px-4 py-3 rounded-[20px] font-medium text-slate-700 outline-none focus:border-indigo-500 transition-colors resize-none text-sm"
-                     rows={2}
-                  />
+              <div className="flex flex-col sm:flex-row gap-3 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => router.push("/automatizacion-rrss/panel/estrategia?useRadar=true")}
+                  className="px-6 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white font-black text-sm rounded-2xl shadow-lg shadow-indigo-600/40 transition-all flex items-center justify-center gap-2"
+                >
+                  <span>🗓️ Crear Planificación con Radar</span>
+                </button>
               </div>
-
-              {/* SELECCIÓN DE PRODUCTOS Y SERVICIOS PARA LA PLANIFICACIÓN DEL RADAR */}
-              {!isTestMode && radarCatalogItems.length > 0 && (
-                <PlanProductsSelector
-                  items={radarCatalogItems}
-                  selectedItemIds={selectedCatalogItemIds}
-                  onChangeSelectedIds={setSelectedCatalogItemIds}
-                  loading={loadingRadarCatalog}
-                  title="Productos y Servicios para esta Planificación"
-                  subtitle="Elige qué productos o servicios de tu catálogo integrarán nuestros agentes en el calendario."
-                />
-              )}
-
-              {/* INTEGRACIÓN DE ESTILOS VISUALES DE PROMPTS IA */}
-              <PromptStyleSelector
-                enabled={usePromptStyles}
-                onToggleEnabled={setUsePromptStyles}
-                selectedStyles={selectedPromptStyles}
-                onChangeSelectedStyles={setSelectedPromptStyles}
-                isCommercialPosterOnly={isCommercialPosterOnly}
-                onToggleCommercialPosterOnly={setIsCommercialPosterOnly}
-              />
-
-              {/* FECHA Y HORA DE INICIO DE LA PLANIFICACIÓN */}
-              <div className="p-5 bg-gradient-to-br from-indigo-50/70 via-purple-50/50 to-white rounded-2xl border border-indigo-100 space-y-3">
-                  <div className="flex items-center gap-2.5">
-                      <span className="text-xl">📅</span>
-                      <div>
-                          <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider">Fecha y Hora de Inicio</h4>
-                          <p className="text-[11px] font-medium text-slate-500">¿A partir de qué fecha y hora deseas que comience a publicarse este calendario?</p>
-                      </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                          <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                            Fecha de Inicio (Primer Post)
-                          </label>
-                          <input 
-                            type="date"
-                            value={startDate}
-                            min={new Date().toISOString().split('T')[0]}
-                            onChange={e => setStartDate(e.target.value)}
-                            className="w-full bg-white border border-slate-200 px-3.5 py-2.5 rounded-xl font-bold text-slate-800 outline-none focus:border-indigo-500 transition-all text-xs"
-                          />
-                      </div>
-
-                      <div>
-                          <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                            Hora Preferida
-                          </label>
-                          <input 
-                            type="time"
-                            value={startTime}
-                            onChange={e => setStartTime(e.target.value)}
-                            className="w-full bg-white border border-slate-200 px-3.5 py-2.5 rounded-xl font-bold text-slate-800 outline-none focus:border-indigo-500 transition-all text-xs"
-                          />
-                      </div>
-                  </div>
-
-                  {scheduleContinuityInfo?.hasFuturePosts && (
-                    <div className="p-3.5 bg-emerald-50/90 border border-emerald-200 rounded-xl flex items-start gap-2.5">
-                      <span className="text-base shrink-0">🗓️</span>
-                      <div className="text-[11px] text-emerald-900 leading-relaxed font-medium">
-                        <strong className="font-bold text-emerald-950 block">Continuación Inteligente de Calendario</strong>
-                        Tienes publicaciones agendadas hasta el <strong>{scheduleContinuityInfo.lastScheduledDate?.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</strong>. Nuestros agentes han configurado el inicio de esta nueva estrategia para continuar inmediatamente el <strong>{new Date(startDate + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</strong> para evitar solapamientos.
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="p-2.5 bg-indigo-50/80 rounded-xl border border-indigo-100 text-[11px] text-indigo-900 font-semibold flex items-center gap-2">
-                      <span>💡</span>
-                      <span>
-                        Primer post programado para el <strong className="text-indigo-950 font-black">{new Date(startDate + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</strong> a las <strong className="text-indigo-950 font-black">{startTime} hrs</strong>.
-                      </span>
-                  </div>
-              </div>
-
-              {/* CONTROL DE LOGO DE MARCA */}
-               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl">
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl">🏷️</span>
-                    <div>
-                      <p className="text-xs font-black text-slate-800">Incluir Logo en las Imágenes</p>
-                      <p className="text-[11px] font-medium text-slate-500">
-                        {activeProfile?.logoUrl 
-                          ? `Se estampará tu logo oficial en la esquina inferior de las imágenes generadas.` 
-                          : `Sube tu logo en la pestaña Configuración para que nuestros agentes lo estampen en tus posts.`}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setIncludeLogoInStrategy(!includeLogoInStrategy)}
-                    className={`px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 ${
-                      includeLogoInStrategy 
-                        ? 'bg-indigo-600 text-white shadow-sm' 
-                        : 'bg-white border border-slate-200 text-slate-500 hover:text-slate-700'
-                    }`}
-                  >
-                    <span>{includeLogoInStrategy ? '✓ Logo Activado' : 'Sin Logo'}</span>
-                  </button>
-               </div>
-
-              <div className="flex justify-end pt-2">
-                  <button
-                     onClick={handleGenerateStrategy}
-                     disabled={generatingStrategy || !strategyGoal}
-                     className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-extrabold py-3 px-8 rounded-xl shadow-md transition-all flex items-center gap-2"
-                  >
-                     {generatingStrategy ? 'Generando...' : 'Crear Calendario Semanal 📅'}
-                  </button>
-              </div>
-
-              {strategyResult && strategyResult.length > 0 && (
-                  <div className="mt-8 pt-8 border-t border-slate-100 space-y-6">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                           <h3 className="text-lg font-black text-slate-900">Tu Plan Estratégico Generado</h3>
-                           <span className="text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200/60 px-3 py-1 rounded-full flex items-center gap-1.5 w-fit">
-                             <span>🗓️</span> Fechas sincronizadas sin solapamientos
-                           </span>
-                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {strategyResult.map((post, idx) => {
-                             const dt = post.computedScheduledDate ? new Date(post.computedScheduledDate) : null;
-                             const dateDisplay = dt 
-                               ? dt.toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short' }) + ' - ' + dt.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) + ' hrs' 
-                               : `Día ${post.dayOffset} a las ${post.suggestedTime}`;
-
-                             return (
-                               <div key={idx} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3 shadow-sm hover:border-indigo-200 transition-colors">
-                                   <div className="flex justify-between items-center text-xs">
-                                       <span className="font-extrabold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100/80 flex items-center gap-1">
-                                         <span>📅</span> {dateDisplay}
-                                       </span>
-                                       <span className="bg-white border border-slate-200 text-slate-700 font-bold px-2 py-0.5 rounded-full">{post.format}</span>
-                                   </div>
-
-                                   {/* Style badge if assigned */}
-                                   {post.visualStyle && (
-                                      <div className="flex items-center gap-2 p-2 rounded-xl bg-indigo-50/90 border border-indigo-100">
-                                        {post.previewUrl ? (
-                                          <img 
-                                            src={post.previewUrl} 
-                                            alt={post.visualStyle} 
-                                            className="w-9 h-9 rounded-lg object-cover border border-indigo-200 shadow-xs shrink-0" 
-                                          />
-                                        ) : (
-                                          <span className="w-9 h-9 rounded-lg bg-indigo-100 flex items-center justify-center text-sm shrink-0">🎨</span>
-                                        )}
-                                        <div className="min-w-0 flex-1">
-                                          <div className="text-[9px] font-bold text-indigo-500 uppercase tracking-wider">Estilo Prompt IA</div>
-                                          <div className="text-xs font-black text-indigo-950 truncate">{post.visualStyle}</div>
-                                          {post.imageDirection && (
-                                            <div className="text-[10px] text-slate-500 font-medium line-clamp-1 mt-0.5">{post.imageDirection}</div>
-                                          )}
-                                        </div>
-                                      </div>
-                                   )}
-
-                                    <p className="font-black text-sm text-slate-800">"{post.hook}"</p>
-                                    <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed">{post.content}</p>
-
-                                    <button
-                                      type="button"
-                                      onClick={() => setPreviewPostModal(post)}
-                                      className="w-full py-2 bg-white hover:bg-indigo-50 text-indigo-700 text-xs font-bold rounded-xl transition-all border border-indigo-200/80 flex items-center justify-center gap-1.5 shadow-2xs"
-                                    >
-                                      <span>👁️</span> Previsualizar Post Completo
-                                    </button>
-                                </div>
-                             );
-                          })}
-                      </div>
-                      <div className="flex justify-end mt-4">
-                          <button
-                             onClick={handleAcceptStrategy}
-                             disabled={acceptingStrategy}
-                             className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-black py-3 px-8 rounded-xl shadow-md transition-all flex items-center gap-2"
-                          >
-                             {acceptingStrategy ? 'Agendando...' : 'Aceptar y Agendar Posts ✅'}
-                          </button>
-                      </div>
-                  </div>
-              )}
+            </div>
           </div>
         </div>
       ) : (
@@ -1789,95 +846,7 @@ export default function NicheRadarPage() {
            </div>
         </div>
       )}
-      {/* MODAL DE PREVISUALIZACIÓN DE POST DE LA ESTRATEGIA */}
-      {previewPostModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-[32px] p-6 md:p-8 max-w-xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto space-y-5">
-            <button 
-              onClick={() => setPreviewPostModal(null)}
-              className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 transition-colors font-black text-lg"
-            >
-              ✕
-            </button>
 
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">📱</span>
-              <div>
-                <h3 className="text-base font-black text-slate-900">Previsualización del Post</h3>
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                  Generado por nuestros agentes especializados
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="bg-indigo-50 border border-indigo-200 text-indigo-700 font-black text-xs px-3 py-1 rounded-xl flex items-center gap-1.5">
-                <span>📅</span>
-                {previewPostModal.computedScheduledDate
-                  ? new Date(previewPostModal.computedScheduledDate).toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' }) + ' - ' + new Date(previewPostModal.computedScheduledDate).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }) + ' hrs'
-                  : `Día ${previewPostModal.dayOffset} a las ${previewPostModal.suggestedTime}`}
-              </span>
-              <span className="bg-slate-100 border border-slate-200 text-slate-700 font-extrabold text-xs px-3 py-1 rounded-xl">
-                Formato: {previewPostModal.format}
-              </span>
-            </div>
-
-            {/* Visual Style Info */}
-            {previewPostModal.visualStyle && (
-              <div className="p-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl border border-indigo-100 flex items-center gap-3">
-                {previewPostModal.previewUrl ? (
-                  <img
-                    src={previewPostModal.previewUrl}
-                    alt={previewPostModal.visualStyle}
-                    className="w-12 h-12 rounded-xl object-cover border border-indigo-200 shadow-xs shrink-0"
-                  />
-                ) : (
-                  <div className="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center text-xl shrink-0">🎨</div>
-                )}
-                <div>
-                  <span className="text-[10px] font-black uppercase tracking-wider text-indigo-600 block">Estilo Visual Asignado</span>
-                  <p className="text-xs font-black text-indigo-950">{previewPostModal.visualStyle}</p>
-                  {previewPostModal.imageDirection && (
-                    <p className="text-[11px] text-slate-600 font-medium mt-0.5">{previewPostModal.imageDirection}</p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Hook */}
-            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-1">
-              <span className="text-[10px] font-black uppercase tracking-wider text-indigo-500 block">Gancho (Hook)</span>
-              <p className="text-sm font-black text-slate-900 leading-snug">"{previewPostModal.hook}"</p>
-            </div>
-
-            {/* Contenido / Copy */}
-            <div className="space-y-1.5">
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 block">Cuerpo del Contenido / Copy</span>
-              <div className="p-4 bg-slate-50/70 rounded-2xl border border-slate-200 text-xs font-medium text-slate-700 whitespace-pre-wrap leading-relaxed">
-                {previewPostModal.content}
-              </div>
-            </div>
-
-            {/* CTA */}
-            {previewPostModal.cta && (
-              <div className="p-3.5 bg-emerald-50/80 rounded-2xl border border-emerald-200/80 space-y-1">
-                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 block">Llamado a la Acción (CTA)</span>
-                <p className="text-xs font-bold text-emerald-950">{previewPostModal.cta}</p>
-              </div>
-            )}
-
-            <div className="flex justify-end pt-2">
-              <button
-                type="button"
-                onClick={() => setPreviewPostModal(null)}
-                className="bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs px-6 py-2.5 rounded-xl transition-all shadow-sm"
-              >
-                Cerrar Previsualización
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* STATUS MODAL MODERNO */}
       <StatusModal

@@ -70,7 +70,8 @@ export interface UseDashboardPostsReturn {
  */
 export function useDashboardPosts(
   userId: string | null | undefined,
-  profileId: string | undefined
+  profileId: string | undefined,
+  initialTab: "upcoming" | "published" = "upcoming"
 ): UseDashboardPostsReturn {
   const [posts, setPosts] = useState<SocialPost[]>([]);
   const [blogPosts, setBlogPosts] = useState<SocialPost[]>([]);
@@ -78,7 +79,7 @@ export function useDashboardPosts(
   const [selectedPost, setSelectedPost] = useState<SocialPost | null>(null);
 
   // Filters
-  const [activeTab, setActiveTab] = useState<"upcoming" | "published">("upcoming");
+  const [activeTab, setActiveTab] = useState<"upcoming" | "published">(initialTab);
   const [networkFilter, setNetworkFilter] = useState<string>("all");
   const [selectedDateFilter, setSelectedDateFilter] = useState<Date | null>(null);
   const [currentPage, setCurrentPage] = useState(1);

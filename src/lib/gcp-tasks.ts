@@ -100,7 +100,7 @@ export async function enqueuePostTask(postId: string, scheduledFor: Date): Promi
             headers: {
                 'Content-Type': 'application/json',
                 // Add a secret cron key to prevent unauthorized hits to this endpoint
-                'Authorization': `Bearer ${process.env.CRON_SECRET || 'santisoft-n8n-cron-key-123'}`
+                'Authorization': `Bearer ${process.env.CRON_SECRET || ''}`
             },
             body: Buffer.from(payload).toString('base64'),
         },
@@ -224,7 +224,7 @@ export async function enqueueMuestraFollowUpTask(demoId: string, scheduledFor: D
             url: url,
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.CRON_SECRET || 'santisoft-n8n-cron-key-123'}`
+                'Authorization': `Bearer ${process.env.CRON_SECRET || ''}`
             },
             body: Buffer.from(payload).toString('base64'),
         },

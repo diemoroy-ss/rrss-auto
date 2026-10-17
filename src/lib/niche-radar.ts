@@ -34,6 +34,7 @@ export interface ContentIdea {
 }
 
 export interface RadarAnalysisResult {
+  id?: string;
   niche: string;
   updatedAt: string;
   summary: string;
@@ -41,6 +42,7 @@ export interface RadarAnalysisResult {
   audienceQuestions: AudienceQuestion[];
   hooks: HookItem[];
   contentIdeas: ContentIdea[];
+  ideas?: ContentIdea[];
 }
 
 export interface RadarInputParams {

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { adminDb } from '../../../lib/firebase-admin';
+import { adminAuth, adminDb } from '../../../lib/firebase-admin';
 import { decrypt, encrypt } from '../../../lib/encryption';
-import { getQuotaUsageAdmin, getPlanLimitAdmin } from '../../../lib/quota-admin';
+import { getQuotaUsageAdmin, getPlanLimitAdmin, isAdminAdmin } from '../../../lib/quota-admin';
 import nodemailer from 'nodemailer';
 import { renderAndUploadReel } from '../../../lib/video-renderer';
 
@@ -47,6 +47,31 @@ function explainError(msg: string): string {
 
 export async function POST(req: Request) {
     try {
+        // 1. Verificación de Seguridad: Token Bearer o CRON_SECRET interno
+        const authHeader = req.headers.get("Authorization") || "";
+        const cronSecret = process.env.CRON_SECRET;
+        const isCronAuthorized = Boolean(cronSecret && authHeader === `Bearer ${cronSecret}`);
+        let callerUid: string | null = null;
+        let isCallerAdmin = false;
+
+        if (!isCronAuthorized && authHeader.startsWith("Bearer ") && adminAuth) {
+            try {
+                const token = authHeader.split("Bearer ")[1];
+                const decoded = await adminAuth.verifyIdToken(token);
+                callerUid = decoded.uid;
+                isCallerAdmin = isAdminAdmin(decoded.email);
+            } catch (authErr) {
+                console.warn("[publish-now] Token de sesión inválido:", authErr);
+            }
+        }
+
+        if (!isCronAuthorized && !callerUid) {
+            return NextResponse.json(
+                { error: "No autorizado. Token de sesión o clave cron requerida." },
+                { status: 401 }
+            );
+        }
+
         const { postId } = await req.json();
 
         if (!postId) return NextResponse.json({ error: "postId is required" }, { status: 400 });
@@ -66,6 +91,14 @@ export async function POST(req: Request) {
         const uid = post.userId;
         const profileId = post.profileId;
 
+        // 2. Validación de Propiedad del Post (IDOR protection)
+        if (!isCronAuthorized && !isCallerAdmin && callerUid !== uid) {
+            return NextResponse.json(
+                { error: "No tienes permiso para publicar este post." },
+                { status: 403 }
+            );
+        }
+
         const userSnap = await adminDb.collection("users").doc(uid).get();
         if (!userSnap.exists) return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
 
@@ -78,8 +111,9 @@ export async function POST(req: Request) {
         if (!targetProfile) targetProfile = userData;
 
         // Si es post de modo prueba, garantizar que use las cuentas y credenciales configuradas del usuario santisoftai@gmail.com
+        // SEGURIDAD: Solo se permite testMode si la llamada viene de Cloud Tasks o de un administrador verificado
         let effectiveUid = uid;
-        if (post.isTestMode || post.testMode) {
+        if ((post.isTestMode || post.testMode) && (isCronAuthorized || isCallerAdmin)) {
           try {
             const santiSnap = await adminDb.collection("users").where("email", "==", "santisoftai@gmail.com").limit(1).get();
             if (!santiSnap.empty) {
