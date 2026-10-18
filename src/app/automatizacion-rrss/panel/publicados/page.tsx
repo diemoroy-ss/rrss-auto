@@ -196,6 +196,42 @@ export default function PublicadosPage() {
         onSelectNetworkFilter={dashboard.setNetworkFilter}
       />
 
+      {/* Selector de Rango de Historial (Por defecto: Últimos 30 días) */}
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+        <div className="flex items-center gap-2">
+          <span className="text-base">🕰️</span>
+          <div>
+            <p className="text-xs font-black text-slate-800">Rango de Publicaciones</p>
+            <p className="text-[11px] text-slate-500 font-medium">Por defecto se muestran los últimos 30 días de actividad</p>
+          </div>
+        </div>
+
+        <div className="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200/70 text-xs font-bold">
+          <button
+            type="button"
+            onClick={() => dashboard.setHistoryRange("30days")}
+            className={`px-3 py-1.5 rounded-lg transition-all ${
+              dashboard.historyRange === "30days"
+                ? "bg-white text-indigo-700 shadow-xs font-black"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            Últimos 30 días
+          </button>
+          <button
+            type="button"
+            onClick={() => dashboard.setHistoryRange("all")}
+            className={`px-3 py-1.5 rounded-lg transition-all ${
+              dashboard.historyRange === "all"
+                ? "bg-white text-indigo-700 shadow-xs font-black"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            Todo el historial ({dashboard.posts.filter(p => p.status === 'published').length})
+          </button>
+        </div>
+      </div>
+
       {/* Filtros + selector de fecha */}
       <PostFilters
         networkFilter={dashboard.networkFilter}

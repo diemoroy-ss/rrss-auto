@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
           // Extraer colores hex que aparezcan repetidamente en el HTML/CSS inline
           const hexMatches = html.match(/#(?:[0-9a-fA-F]{3}){1,2}\b/g) || [];
           const colorCount: Record<string, number> = {};
-          hexMatches.forEach((hex) => {
+          hexMatches.forEach((hex: string) => {
             const h = hex.toUpperCase();
             if (h !== '#FFF' && h !== '#FFFFFF' && h !== '#000' && h !== '#000000') {
               colorCount[h] = (colorCount[h] || 0) + 1;

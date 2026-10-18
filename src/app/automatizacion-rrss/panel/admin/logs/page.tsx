@@ -69,7 +69,7 @@ export default function AdminLogsPage() {
             }
 
             const snapshot = await getDocs(q);
-            const loadedLogs = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as AdminLog));
+            const loadedLogs = snapshot.docs.map(d => ({ id: d.id, ...(d.data() as any) } as AdminLog));
             setLogs(loadedLogs);
             setTotalFetched(loadedLogs.length);
         } catch (err: any) {

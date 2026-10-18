@@ -56,6 +56,9 @@ export default function RrssCreatePost() {
   const [selectedPromptTemplate, setSelectedPromptTemplate] = useState<PromptTemplate | null>(null);
   /** Texto/copy explícito que el usuario escribe o genera con IA */
   const [postText, setPostText] = useState("");
+  /** Imagen base opcional para anclar producto a estilos visuales */
+  const [baseImageUrl, setBaseImageUrl] = useState<string>("");
+  const [uploadingBaseImage, setUploadingBaseImage] = useState<boolean>(false);
   /** Configuración del cartel publicitario (opcional) */
   const [posterConfig, setPosterConfig] = useState<PosterConfig>(DEFAULT_POSTER_CONFIG);
   /** Incluir logo recreado con IA en la imagen generada */
@@ -417,18 +420,19 @@ export default function RrssCreatePost() {
     }
   }, [networks, postType, socialRules]);
 
-  const appendContactInfo = (baseText: string): string => {
+  const appendContactInfo = (baseText: string, customProfile?: any): string => {
     if (!baseText) return "";
     let extra = "";
+    const targetProf = customProfile || activeProfile;
     
-    const showWeb = activeProfile?.includeWebsiteInCopy !== false && activeProfile?.website;
-    const showPhone = activeProfile?.includePhoneInCopy !== false && activeProfile?.phone;
-    const showEmail = activeProfile?.includeEmailInCopy !== false && activeProfile?.email;
+    const showWeb = targetProf?.includeWebsiteInCopy !== false && targetProf?.website;
+    const showPhone = targetProf?.includePhoneInCopy !== false && (targetProf?.whatsapp || targetProf?.phone);
+    const showEmail = targetProf?.includeEmailInCopy !== false && targetProf?.email;
 
     const parts: string[] = [];
-    if (showWeb) parts.push(`🌐 Web: ${activeProfile.website}`);
-    if (showPhone) parts.push(`📞 Teléfono: ${activeProfile.phone}`);
-    if (showEmail) parts.push(`✉️ Email: ${activeProfile.email}`);
+    if (showWeb) parts.push(`🌐 Web: ${targetProf.website}`);
+    if (showPhone) parts.push(`📞 Teléfono: ${targetProf.whatsapp || targetProf.phone}`);
+    if (showEmail) parts.push(`✉️ Email: ${targetProf.email}`);
 
     const socialParts: string[] = [];
     if (activeProfile?.instagramUsername) {
@@ -770,6 +774,7 @@ export default function RrssCreatePost() {
           profileId: activeProfile?.id || "",
           userProvidedCopy: postText,
           posterConfig,
+          baseImageUrl: baseImageUrl || selectedCatalogoItem?.imageUrl || null,
           catalogoItem: selectedCatalogoItem ? {
             name: selectedCatalogoItem.name,
             description: selectedCatalogoItem.description || "",
@@ -810,10 +815,13 @@ export default function RrssCreatePost() {
 
       // Refrescar contador de uso de imágenes y videos
       if (user?.uid) {
-        getAiGenerationUsage(user.uid).then(usage => {
-          setImagesUsed(usage.imagesCount);
-          setVideosUsed(usage.videosCount);
-        }).catch(err => console.warn("No se pudo refrescar uso de IA:", err));
+        fetchUserQuotas(activeProfile?.id || 'default').then(serverQuotas => {
+          if (serverQuotas) {
+            setImagesUsed(serverQuotas.imagesUsed);
+            setVideosUsed(serverQuotas.videosUsed);
+            setPostsThisMonth(serverQuotas.postsUsed);
+          }
+        }).catch(err => console.warn("No se pudo refrescar uso de cuotas:", err));
       }
 
       // ── PERSISTENCIA: Guardar las imágenes en la Biblioteca de Firestore ──
@@ -1019,6 +1027,25 @@ export default function RrssCreatePost() {
       } catch (persistErr) {
         console.error("Error al guardar imagen editada en biblioteca:", persistErr);
       }
+  };
+
+  // Upload base image for Visual Styles (Product Vision anchoring)
+  const handleUploadBaseImage = async (file: File) => {
+    if (!user?.uid) return;
+    setUploadingBaseImage(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const filename = `base_product_${Date.now()}.${ext}`;
+      const storageRef = ref(storage, `social_media_uploads/${user.uid}/${filename}`);
+      await uploadBytes(storageRef, file);
+      const downloadUrl = await getDownloadURL(storageRef);
+      setBaseImageUrl(downloadUrl);
+    } catch (err) {
+      console.error("Error al subir imagen base:", err);
+      setError("No pudimos subir la foto del producto.");
+    } finally {
+      setUploadingBaseImage(false);
+    }
   };
 
   // Upload templates manual/gallery
@@ -1348,7 +1375,7 @@ export default function RrssCreatePost() {
       <div className="mb-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-4xl font-black text-slate-900 tracking-tight">Nueva Publicación</h1>
-          <p className="text-slate-500 mt-3 font-medium text-lg">Danos una idea y el bot se encarga del diseño (IA) y la publicación.</p>
+          <p className="text-slate-500 mt-2 font-medium text-base md:text-lg">Danos una idea y nuestros agentes se encargarán del diseño visual y la estrategia de publicación.</p>
         </div>
         {(previewSlides.length > 0 || selectedTemplate) && (
           <button
@@ -1357,6 +1384,7 @@ export default function RrssCreatePost() {
               setImageExpectation("");
               setPostText("");
               setManualCaption("");
+              setBaseImageUrl("");
               setPreviewSlides([]);
               setSelectedTemplate(null);
               setPosterConfig(DEFAULT_POSTER_CONFIG);
@@ -1383,16 +1411,61 @@ export default function RrssCreatePost() {
         </div>
       )}
 
-      {/* 1. SECCIÓN SUPERIOR: CARTEL PUBLICITARIO (PANTALLA COMPLETA) */}
-      <div className="w-full">
-        <PosterSection
-          config={posterConfig}
-          setConfig={setPosterConfig}
-          profileLogoUrl={activeProfile?.logoUrl}
-          profileName={activeProfile?.name}
-          profilePhone={activeProfile?.phone}
-          profileEmail={activeProfile?.email}
-        />
+      {/* 1. SECCIÓN SUPERIOR: SELECTOR DE FLUJO VISUAL (VIÑETAS UNIFICADAS) */}
+      <div className="mb-8">
+        <label className="block text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">
+          ¿Qué tipo de publicación deseas crear hoy?
+        </label>
+        <div className="grid md:grid-cols-2 gap-4">
+          {/* Viñeta 1: Publicación Estándar */}
+          <div className="p-5 rounded-2xl border-2 border-indigo-500 bg-gradient-to-br from-indigo-50/70 via-white to-purple-50/30 shadow-sm relative overflow-hidden transition-all">
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <div className="flex items-center gap-2.5">
+                <span className="text-2xl">✨</span>
+                <div>
+                  <h3 className="text-base font-black text-slate-900 leading-tight">Publicación Estándar</h3>
+                  <p className="text-[11px] font-bold text-indigo-700">Imagen limpia, Carrusel, Historia o Reel</p>
+                </div>
+              </div>
+              <span className="text-[9px] font-black uppercase tracking-wider bg-indigo-600 text-white px-2.5 py-1 rounded-full shadow-xs shrink-0">
+                Flujo Activo
+              </span>
+            </div>
+            <p className="text-xs text-slate-600 font-medium leading-relaxed">
+              Diseños fotográficos, conceptuales o animados sin textos montados sobre la imagen. El mensaje persuasivo y hashtags van redactados directamente en el copy de tu publicación.
+            </p>
+          </div>
+
+          {/* Viñeta 2: Afiche / Diseño con Textos */}
+          <div className="p-5 rounded-2xl border-2 border-slate-200 bg-white hover:border-amber-400 hover:shadow-md transition-all group relative overflow-hidden flex flex-col justify-between">
+            <div>
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <div className="flex items-center gap-2.5">
+                  <span className="text-2xl group-hover:scale-110 transition-transform">🎯</span>
+                  <div>
+                    <h3 className="text-base font-black text-slate-900 leading-tight">Afiche / Diseño con Textos</h3>
+                    <p className="text-[11px] font-bold text-amber-700">Flyer comercial con capas de texto y precios</p>
+                  </div>
+                </div>
+                <span className="text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-full shrink-0">
+                  Cartel Comercial
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 font-medium leading-relaxed mb-4">
+                Diseños publicitarios con textos tipográficos sobre la imagen, titulares de oferta, precios y llamadas a la acción directamente sobre el diseño visual.
+              </p>
+            </div>
+            <div>
+              <Link
+                href="/automatizacion-rrss/panel/imagen-comercial"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all"
+              >
+                <span>🎨 Crear Afiche Publicitario con Capas</span>
+                <span>→</span>
+              </Link>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* 2. SECCIÓN MEDIA: GRID DE 2 COLUMNAS (PARÁMETROS A LA IZQ Y CONTENIDO A LA DER) */}
@@ -1413,6 +1486,7 @@ export default function RrssCreatePost() {
                     const found = catalogoItems.find((i: any) => i.id === e.target.value);
                     setSelectedCatalogoItem(found || null);
                     if (found && !idea) setIdea(found.name);
+                    if (found?.imageUrl) setBaseImageUrl(found.imageUrl);
                   }}
                   className="w-full border-2 border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-800 outline-none bg-white"
                 >
@@ -1476,6 +1550,9 @@ export default function RrssCreatePost() {
               tiktokSettings={tiktokSettings} setTiktokSettings={setTiktokSettings}
               attachWebsiteLink={attachWebsiteLink} setAttachWebsiteLink={setAttachWebsiteLink}
               websiteUrl={websiteUrl} setWebsiteUrl={setWebsiteUrl}
+              baseImageUrl={baseImageUrl} setBaseImageUrl={setBaseImageUrl}
+              onUploadBaseImage={handleUploadBaseImage}
+              uploadingBaseImage={uploadingBaseImage}
               hasFb={hasFb} hasIg={hasIg} hasLi={hasLi} hasTt={hasTt} hasGbp={hasGbp} hasYt={hasYt} hasX={hasX}
               needsConnection={needsConnection}
               handleImproveWithAI={handleImproveWithAI}
@@ -1494,53 +1571,56 @@ export default function RrssCreatePost() {
               manualCaption={manualCaption}
               setManualCaption={setManualCaption}
               manualTemplates={manualTemplates}
-            selectedTemplate={selectedTemplate}
-            setSelectedTemplate={setSelectedTemplate}
-            loadingTemplates={loadingTemplates}
-            onUploadNewTemplate={handleUploadNewTemplate}
-            onDeleteTemplate={handleDeleteTemplate}
-            showScheduler={showScheduler}
-            setShowScheduler={setShowScheduler}
-            constraints={constraints}
-            posterConfig={posterConfig}
-            renderSection="parameters"
-            hideAI={hideAIParam}
-          />
-        </div>
+              selectedTemplate={selectedTemplate}
+              setSelectedTemplate={setSelectedTemplate}
+              loadingTemplates={loadingTemplates}
+              onUploadNewTemplate={handleUploadNewTemplate}
+              onDeleteTemplate={handleDeleteTemplate}
+              showScheduler={showScheduler}
+              setShowScheduler={setShowScheduler}
+              constraints={constraints}
+              posterConfig={posterConfig}
+              renderSection="parameters"
+              hideAI={hideAIParam}
+            />
+          </div>
 
-        {/* Columna Derecha: Texto y contenido */}
-        <div className="lg:col-span-6 space-y-6 w-full">
-          <PostConfigForm 
-            userPlan={userPlan}
-            idea={idea} setIdea={setIdea}
-            imageExpectation={imageExpectation} setImageExpectation={setImageExpectation}
-            imageStyle={imageStyle} setImageStyle={setImageStyle}
-            selectedPromptTemplate={selectedPromptTemplate}
-            setSelectedPromptTemplate={setSelectedPromptTemplate}
-            postText={postText} setPostText={setPostText}
-            postType={postType} setPostType={setPostType}
-            hideSubmit={true}
-            carouselCount={carouselCount} setCarouselCount={setCarouselCount}
-            businessType={businessType} setBusinessType={setBusinessType}
-            date={date} setDate={setDate}
-            time={time} setTime={setTime}
-            networks={networks} setNetworks={setNetworks}
-            tiktokSettings={tiktokSettings} setTiktokSettings={setTiktokSettings}
-            attachWebsiteLink={attachWebsiteLink} setAttachWebsiteLink={setAttachWebsiteLink}
-            websiteUrl={websiteUrl} setWebsiteUrl={setWebsiteUrl}
-            hasFb={hasFb} hasIg={hasIg} hasLi={hasLi} hasTt={hasTt} hasGbp={hasGbp} hasYt={hasYt} hasX={hasX}
-            needsConnection={needsConnection}
-            handleImproveWithAI={handleImproveWithAI}
-            handleGeneratePreview={handleGeneratePreview}
-            handleSubmit={handleSubmit}
-            improveLoading={improveLoading}
-            previewLoading={previewLoading || promptLoading}
-            loading={loading}
-            error={error}
-            isAdmin={isAdmin}
-            allowVideo={videoLimit > 0 || isAdmin}
-            creationMode={creationMode}
-            setCreationMode={setCreationMode}
+          {/* Columna Derecha: Texto y contenido */}
+          <div className="lg:col-span-6 space-y-6 w-full">
+            <PostConfigForm 
+              userPlan={userPlan}
+              idea={idea} setIdea={setIdea}
+              imageExpectation={imageExpectation} setImageExpectation={setImageExpectation}
+              imageStyle={imageStyle} setImageStyle={setImageStyle}
+              selectedPromptTemplate={selectedPromptTemplate}
+              setSelectedPromptTemplate={setSelectedPromptTemplate}
+              postText={postText} setPostText={setPostText}
+              postType={postType} setPostType={setPostType}
+              hideSubmit={true}
+              carouselCount={carouselCount} setCarouselCount={setCarouselCount}
+              businessType={businessType} setBusinessType={setBusinessType}
+              date={date} setDate={setDate}
+              time={time} setTime={setTime}
+              networks={networks} setNetworks={setNetworks}
+              tiktokSettings={tiktokSettings} setTiktokSettings={setTiktokSettings}
+              attachWebsiteLink={attachWebsiteLink} setAttachWebsiteLink={setAttachWebsiteLink}
+              websiteUrl={websiteUrl} setWebsiteUrl={setWebsiteUrl}
+              baseImageUrl={baseImageUrl} setBaseImageUrl={setBaseImageUrl}
+              onUploadBaseImage={handleUploadBaseImage}
+              uploadingBaseImage={uploadingBaseImage}
+              hasFb={hasFb} hasIg={hasIg} hasLi={hasLi} hasTt={hasTt} hasGbp={hasGbp} hasYt={hasYt} hasX={hasX}
+              needsConnection={needsConnection}
+              handleImproveWithAI={handleImproveWithAI}
+              handleGeneratePreview={handleGeneratePreview}
+              handleSubmit={handleSubmit}
+              improveLoading={improveLoading}
+              previewLoading={previewLoading || promptLoading}
+              loading={loading}
+              error={error}
+              isAdmin={isAdmin}
+              allowVideo={videoLimit > 0 || isAdmin}
+              creationMode={creationMode}
+              setCreationMode={setCreationMode}
             manualFiles={manualFiles}
             setManualFiles={setManualFiles}
             manualCaption={manualCaption}

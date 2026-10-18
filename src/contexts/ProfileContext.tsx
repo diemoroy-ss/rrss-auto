@@ -78,6 +78,13 @@ export type BusinessProfile = {
   logoPrompt?: string;         // Descripción textual del logo generada por Gemini Vision
   email?: string;
   phone?: string;
+  whatsapp?: string;
+  address?: string;
+  businessName?: string;
+  businessType?: string;
+  logo?: string;
+  visualIdentity?: any;
+  tiktokDefaults?: any;
   includeWebsiteInCopy?: boolean;
   includeEmailInCopy?: boolean;
   includePhoneInCopy?: boolean;

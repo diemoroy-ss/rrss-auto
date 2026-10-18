@@ -23,9 +23,9 @@ import {
   Sparkles,
 } from "lucide-react";
 
-export type DateFilterType = "all" | "today" | "7days" | "30days" | "this_month" | "custom";
+type DateFilterType = "all" | "today" | "7days" | "30days" | "this_month" | "custom";
 
-export const STYLE_CATEGORIES = [
+const STYLE_CATEGORIES = [
   "Publicidad y Ads",
   "Gastronomía & Carteles",
   "Editorial y Revista",
@@ -37,7 +37,7 @@ export const STYLE_CATEGORIES = [
   "Minimalista",
 ];
 
-export function getCategoryIconComponent(category: string) {
+function getCategoryIconComponent(category: string) {
   const normalized = category.toLowerCase().trim();
   if (normalized.includes("foto") || normalized.includes("realism")) {
     return <Camera className="w-3.5 h-3.5 shrink-0" />;
@@ -66,7 +66,7 @@ export function getCategoryIconComponent(category: string) {
   return <Tag className="w-3.5 h-3.5 shrink-0" />;
 }
 
-export function getCategorySubtitle(category: string): string {
+function getCategorySubtitle(category: string): string {
   const normalized = category.toLowerCase().trim();
   if (normalized.includes("publicidad") || normalized.includes("ads") || normalized.includes("cartel")) {
     return "Vallas, anuncios y fotos lifestyle";
@@ -98,7 +98,7 @@ export function getCategorySubtitle(category: string): string {
   return "Estilos visuales variados";
 }
 
-export function getImageCategories(img: GeneratedImage): string[] {
+function getImageCategories(img: GeneratedImage): string[] {
   const cats: string[] = [];
   const text = `${img.prompt || ""} ${img.copy || ""} ${img.type || ""}`.toLowerCase();
 

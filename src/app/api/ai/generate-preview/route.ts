@@ -235,6 +235,7 @@ export async function POST(req: NextRequest) {
             /** Configuración del cartel publicitario (opcional) */
             posterConfig,
             catalogoItem,
+            baseImageUrl,
         }: {
             idea?: string;
             imageExpectation?: string;
@@ -252,6 +253,7 @@ export async function POST(req: NextRequest) {
             userProvidedCopy?: string;
             posterConfig?: PosterConfig | null;
             catalogoItem?: { name: string; description: string; imageUrl: string | null } | null;
+            baseImageUrl?: string | null;
             userId?: string;
         } = body;
 
@@ -374,6 +376,26 @@ export async function POST(req: NextRequest) {
             enrichedPrompts = [enriched];
         }
 
+        // Si se envió una imagen base, nuestro Agente Revisor de Producto ancla visualmente sus rasgos
+        let productAnalysis = null;
+        if (baseImageUrl && typeof baseImageUrl === "string" && baseImageUrl.startsWith("http")) {
+            try {
+                console.log(`[GENERATE-PREVIEW-PROXY] Invocando Agente de Visión de Producto sobre imagen base:`, baseImageUrl);
+                const { analyzeAndAnchorProductPrompt } = await import("../../../../lib/agents/agent-product-vision");
+                const agentResult = await analyzeAndAnchorProductPrompt(
+                    baseImageUrl,
+                    enrichedPrompts[0] || "",
+                    businessType
+                );
+                if (agentResult?.enrichedPrompt) {
+                    enrichedPrompts[0] = agentResult.enrichedPrompt;
+                }
+                productAnalysis = agentResult?.analysis || null;
+            } catch (visionErr) {
+                console.warn("[GENERATE-PREVIEW-PROXY] Advertencia en Agente de Visión de Producto, continuando con prompt generado:", visionErr);
+            }
+        }
+
         console.log(`[GENERATE-PREVIEW-PROXY] Sending enriched prompts to n8n webhook at: ${n8nUrl}`);
         console.log(`[GENERATE-PREVIEW-PROXY] Prompt preview (first 300 chars): ${enrichedPrompts[0]?.substring(0, 300)}...`);
 
@@ -388,6 +410,8 @@ export async function POST(req: NextRequest) {
         const n8nPayload: any = {
             prompt: enrichedPrompts[0] || "",
             promptEnglish: enrichedPrompts[0] || "",
+            baseImageUrl: baseImageUrl || "",
+            productAnalysis: productAnalysis || null,
             idea: enrichedIdea,
             imageExpectation: imageExpectation || "",
             userProvidedCopy: userProvidedCopy || "",

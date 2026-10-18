@@ -42,6 +42,12 @@ interface StrategyPost {
   baseImageUrl?: string;
   hasProductImage?: boolean;
   isCommercialPoster?: boolean;
+  videoCommand?: string;
+  videoTemplateName?: string;
+  videoCategory?: string;
+  videoMotionStyle?: string;
+  videoPrompt?: string;
+  needsBaseImageFirst?: boolean;
 }
 
 export default function EstrategiaPage() {
@@ -66,6 +72,14 @@ export default function EstrategiaPage() {
       const d = params.get('duration');
       if (d === '7' || d === '14' || d === 'month') {
         setStrategyDuration(d as any);
+      }
+      const g = params.get('goal');
+      if (g) {
+        setSelectedGoal(g);
+      }
+      const r = params.get('useRadar');
+      if (r === 'true') {
+        setUseRadarContext(true);
       }
     }
   }, []);
@@ -270,25 +284,28 @@ export default function EstrategiaPage() {
           }
 
           // Cargar último análisis del Radar de Nicho para este perfil
-          try {
-              const radarRes = await fetch("/api/nicho/radar", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-                  body: JSON.stringify({
-                      checkCacheOnly: true,
-                      userId: u.uid,
-                      businessId: activeProfile?.id || 'default',
-                      niche: activeProfile?.rubro || data.rubro || 'General'
-                  })
-              });
-              if (radarRes.ok) {
-                  const rData = await radarRes.json();
-                  if (rData.success && rData.analysis) {
-                      setRadarAnalysis(rData.analysis);
+          const currentRubro = activeProfile?.rubro || (activeProfile as any)?.businessType || (userDoc.exists() ? userDoc.data()?.rubro : "") || businessType || "";
+          if (currentRubro) {
+              try {
+                  const radarRes = await fetch("/api/nicho/radar", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+                      body: JSON.stringify({
+                          checkCacheOnly: true,
+                          userId: u.uid,
+                          businessId: activeProfile?.id || 'default',
+                          niche: currentRubro
+                      })
+                  });
+                  if (radarRes.ok) {
+                      const rData = await radarRes.json();
+                      if (rData.success && rData.analysis) {
+                          setRadarAnalysis(rData.analysis);
+                      }
                   }
+              } catch (rErr) {
+                  console.warn("No se pudo cargar análisis previo del radar:", rErr);
               }
-          } catch (rErr) {
-              console.warn("No se pudo cargar análisis previo del radar:", rErr);
           }
 
           // Load catalog items for context
@@ -777,7 +794,7 @@ export default function EstrategiaPage() {
               </div>
 
               {/* RADAR DE NICHO VINCULADO */}
-              {radarAnalysis && (
+              {radarAnalysis ? (
                 <div className="p-5 bg-gradient-to-r from-sky-500/10 via-indigo-500/10 to-purple-500/10 rounded-3xl border-2 border-sky-400/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in fade-in">
                     <div className="flex items-center gap-3">
                        <span className="text-3xl">📡</span>
@@ -801,7 +818,22 @@ export default function EstrategiaPage() {
                        <span className="text-xs font-bold text-sky-800">Conectar Radar</span>
                     </label>
                 </div>
-              )}
+              ) : (!activeProfile?.rubro && !businessType) ? (
+                <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-left">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-xl">⚠️</span>
+                    <p className="text-xs text-amber-800 font-medium">
+                      Para que nuestros agentes analicen tendencias con el <strong>Radar de Nicho</strong>, necesitas configurar el <strong>rubro</strong> de tu negocio.
+                    </p>
+                  </div>
+                  <Link 
+                    href="/automatizacion-rrss/panel/configuracion" 
+                    className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl transition-all shrink-0"
+                  >
+                    Configurar Rubro
+                  </Link>
+                </div>
+              ) : null}
 
               {/* INTEGRACIÓN DEL CATÁLOGO DE PRODUCTOS/SERVICIOS */}
               {catalogoItems.length > 0 && (

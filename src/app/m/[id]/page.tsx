@@ -444,9 +444,10 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
     }
   };
 
-  const handleCopyCaption = () => {
-    if (demo?.generatedPostCaption && typeof window !== "undefined") {
-      navigator.clipboard.writeText(demo.generatedPostCaption);
+  const handleCopyCaption = (customText?: any) => {
+    const textToCopy = (typeof customText === "string" && customText) ? customText : (demo?.generatedPostCaption || "");
+    if (textToCopy && typeof window !== "undefined") {
+      navigator.clipboard.writeText(textToCopy);
       setCopiedCaption(true);
       setTimeout(() => setCopiedCaption(false), 2500);
     }
@@ -1310,7 +1311,7 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
 
                   <button
                     type="button"
-                    onClick={handleCopyCaption}
+                    onClick={() => handleCopyCaption()}
                     className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold flex items-center gap-2 transition-all shadow-sm shadow-indigo-600/20 active:scale-95 cursor-pointer"
                   >
                     {copiedCaption ? <FaCheck className="text-white" /> : <FaCopy />}

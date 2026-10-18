@@ -59,7 +59,7 @@ export default function HeroSection() {
     // Validate with Zod Schema
     const validationResult = DemoFormSchema.safeParse({ nombre, email, rubro, promo });
     if (!validationResult.success) {
-      alert("Por favor completa los campos correctamente: " + validationResult.error.errors.map(err => err.message).join(', '));
+      alert("Por favor completa los campos correctamente: " + validationResult.error.issues.map(err => err.message).join(', '));
       return;
     }
 

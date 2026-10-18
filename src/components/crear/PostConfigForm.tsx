@@ -12,7 +12,7 @@ import { FaFacebookF, FaInstagram, FaLinkedinIn, FaTiktok, FaGoogle, FaYoutube, 
 import TikTokPostSettings, { TikTokSettingsState } from "./TikTokPostSettings";
 import { PromptTemplate, HARDCODED_STYLES } from "../../lib/prompt-templates";
 import PromptStylePickerModal from "./PromptStylePickerModal";
-import PreferredStylesModal, { StyleOption } from "./PreferredStylesModal";
+import PreferredStylesModal from "./PreferredStylesModal";
 import { isPlatformAllowed } from "../../lib/plans";
 
 interface PostConfigFormProps {
@@ -72,6 +72,12 @@ interface PostConfigFormProps {
   setAttachWebsiteLink?: (val: boolean) => void;
   websiteUrl?: string;
   setWebsiteUrl?: (val: string) => void;
+
+  // Base Image optional for Visual Styles
+  baseImageUrl?: string;
+  setBaseImageUrl?: (val: string) => void;
+  onUploadBaseImage?: (file: File) => Promise<void>;
+  uploadingBaseImage?: boolean;
 
   // Poster configuration (For references/logo defaults)
   posterConfig?: PosterConfig;
@@ -156,6 +162,10 @@ export default function PostConfigForm({
   setAttachWebsiteLink,
   websiteUrl = "",
   setWebsiteUrl,
+  baseImageUrl = "",
+  setBaseImageUrl,
+  onUploadBaseImage,
+  uploadingBaseImage = false,
   hasFb, hasIg, hasLi, hasTt, hasGbp, hasYt, hasX,
   posterConfig,
   needsConnection,
@@ -774,6 +784,61 @@ export default function PostConfigForm({
                   <p className="mt-2 text-[10px] font-semibold text-purple-700 bg-purple-100/70 p-2 rounded-lg border border-purple-200">
                     🎬 <b>Modo Video:</b> Este estilo se aplicará tanto a la foto de portada como a las directrices de animación e iluminación del video.
                   </p>
+                )}
+              </div>
+
+              {/* IMAGEN BASE / FOTO DE PRODUCTO REAL OPCIONAL */}
+              <div className="mt-3 bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm">📸</span>
+                    <label className="text-[10px] font-black text-slate-800 uppercase tracking-wider">
+                      Imagen Base de tu Producto (Opcional)
+                    </label>
+                  </div>
+                  {baseImageUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setBaseImageUrl?.("")}
+                      className="text-[10px] text-rose-500 font-bold hover:underline"
+                    >
+                      Quitar foto base
+                    </button>
+                  )}
+                </div>
+
+                {baseImageUrl ? (
+                  <div className="flex items-center gap-3 p-2.5 bg-indigo-50/60 border border-indigo-200 rounded-xl">
+                    <img
+                      src={baseImageUrl}
+                      alt="Base del producto"
+                      className="w-12 h-12 rounded-lg object-cover border border-indigo-200 shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-black text-indigo-950 truncate">Foto base activa</p>
+                      <p className="text-[10px] text-indigo-700 font-medium">Nuestros agentes anclarán este producto al estilo elegido.</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <label className="cursor-pointer flex items-center justify-center gap-2 px-3 py-2.5 bg-slate-50 hover:bg-indigo-50 border border-dashed border-slate-300 hover:border-indigo-400 rounded-xl text-xs font-bold text-slate-600 hover:text-indigo-700 transition-all w-full">
+                      <span>{uploadingBaseImage ? "⏳ Subiendo imagen..." : "📤 Subir foto real de tu producto"}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        disabled={uploadingBaseImage}
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          if (onUploadBaseImage) await onUploadBaseImage(file);
+                        }}
+                      />
+                    </label>
+                    <p className="text-[10px] text-slate-500 font-medium leading-relaxed italic bg-slate-50 p-2.5 rounded-xl border border-slate-150">
+                      💡 <b>Nota:</b> Si no subes una imagen base, no te preocupes: nuestros agentes se encargarán de generar una desde cero basándose en tu idea.
+                    </p>
+                  </div>
                 )}
               </div>
 

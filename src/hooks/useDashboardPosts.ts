@@ -35,6 +35,8 @@ export interface UseDashboardPostsReturn {
   // Filters
   activeTab: "upcoming" | "published";
   setActiveTab: Dispatch<SetStateAction<"upcoming" | "published">>;
+  historyRange: "30days" | "all";
+  setHistoryRange: Dispatch<SetStateAction<"30days" | "all">>;
   networkFilter: string;
   setNetworkFilter: Dispatch<SetStateAction<string>>;
   selectedDateFilter: Date | null;
@@ -80,6 +82,7 @@ export function useDashboardPosts(
 
   // Filters
   const [activeTab, setActiveTab] = useState<"upcoming" | "published">(initialTab);
+  const [historyRange, setHistoryRange] = useState<"30days" | "all">("30days");
   const [networkFilter, setNetworkFilter] = useState<string>("all");
   const [selectedDateFilter, setSelectedDateFilter] = useState<Date | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -90,22 +93,20 @@ export function useDashboardPosts(
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeTab, selectedDateFilter, networkFilter]);
+  }, [activeTab, historyRange, selectedDateFilter, networkFilter]);
 
   // --- Firestore subscriptions ---
   useEffect(() => {
     if (!userId || !profileId) return;
 
     setLoading(true);
-    const thirtyDaysAgo = subDays(new Date(), 30);
 
     const q = query(
       collection(db, "social_posts"),
       where("userId", "==", userId),
       where("profileId", "==", profileId),
-      where("scheduledFor", ">=", thirtyDaysAgo),
       orderBy("scheduledFor", "desc"),
-      limit(24)
+      limit(150)
     );
 
     const unsubscribe = onSnapshot(
@@ -213,9 +214,24 @@ export function useDashboardPosts(
   }, [posts, blogPosts, activeTab]);
 
   const filteredPosts = useMemo<SocialPost[]>(() => {
+    const thirtyDaysAgo = subDays(new Date(), 30);
+
     return combinedPosts.filter((p) => {
       if (activeTab === "upcoming" && p.status === "published") return false;
       if (activeTab === "published" && p.status !== "published") return false;
+
+      // Por defecto en publicados se muestran los últimos 30 días, salvo que el usuario active 'all' o un filtro de fecha específico
+      if (activeTab === "published" && historyRange === "30days" && !selectedDateFilter) {
+        const val = p.publishedAt || p.scheduledFor || p.createdAt;
+        let postDate: Date | null = null;
+        if (val?.toDate) postDate = val.toDate();
+        else if (val?.seconds) postDate = new Date(val.seconds * 1000);
+        else if (val) postDate = new Date(val);
+
+        if (postDate && !isNaN(postDate.getTime()) && postDate < thirtyDaysAgo) {
+          return false;
+        }
+      }
 
       if (selectedDateFilter) {
         const postDate = p.scheduledFor?.toDate ? p.scheduledFor.toDate() : null;
@@ -234,7 +250,7 @@ export function useDashboardPosts(
 
       return true;
     });
-  }, [combinedPosts, activeTab, selectedDateFilter, networkFilter]);
+  }, [combinedPosts, activeTab, historyRange, selectedDateFilter, networkFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredPosts.length / POSTS_PER_PAGE));
   const paginatedPosts = filteredPosts.slice(
@@ -283,6 +299,8 @@ export function useDashboardPosts(
     getDotsForDate,
     activeTab,
     setActiveTab,
+    historyRange,
+    setHistoryRange,
     networkFilter,
     setNetworkFilter,
     selectedDateFilter,

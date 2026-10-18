@@ -12,7 +12,7 @@ export default function ContactForm() {
     // Zod Validation
     const validation = ContactFormSchema.safeParse(contactForm);
     if (!validation.success) {
-      alert("Por favor revisa los campos: " + validation.error.errors.map(err => err.message).join(', '));
+      alert("Por favor revisa los campos: " + validation.error.issues.map(err => err.message).join(', '));
       return;
     }
 

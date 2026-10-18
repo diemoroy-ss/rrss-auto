@@ -3,12 +3,25 @@
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useProfile } from "../contexts/ProfileContext";
+import GuiaRapidaModal from "./GuiaRapidaModal";
 
 export default function NetworkSwitcher() {
   const { activeProfile, profiles, setActiveProfile, addProfile, isBusiness, loading, planConfig } = useProfile();
   const [isOpen, setIsOpen] = useState(false);
+  const [showGuia, setShowGuia] = useState(false);
   const pathname = usePathname();
   const isLaboratorio = pathname?.includes("/laboratorio");
+
+  // Mostrar automáticamente la guía rápida en la primera sesión
+  useEffect(() => {
+    try {
+      const seen = localStorage.getItem("santisoft_guia_rapida_seen");
+      if (!seen) {
+        localStorage.setItem("santisoft_guia_rapida_seen", "true");
+        setShowGuia(true);
+      }
+    } catch (_) {}
+  }, []);
   
   // Filtrar empresas demo: solo deben existir y gestionarse dentro del Laboratorio
   const realProfiles = profiles.filter(
@@ -57,18 +70,41 @@ export default function NetworkSwitcher() {
 
   return (
     <>
-      {/* 🚀 EL BOTÓN DEL NAVBAR 🚀 */}
-      <button 
-         onClick={() => setIsOpen(true)}
-         className="mr-6 flex items-center gap-3 bg-white border border-slate-200 hover:border-indigo-300 hover:shadow-md px-4 py-2 rounded-xl transition-all group"
-      >
-         <span className="text-xl group-hover:scale-110 transition-transform">{effectiveActiveProfile.icon || '🏢'}</span>
-         <div className="text-left hidden md:block">
-            <div className="text-[9px] font-black uppercase tracking-widest text-slate-400">Cuenta Activa</div>
-            <div className="text-sm font-bold text-slate-800 leading-tight line-clamp-1 max-w-[120px]">{effectiveActiveProfile.name}</div>
-         </div>
-         <span className="text-slate-300 ml-2 group-hover:text-indigo-400">▼</span>
-      </button>
+      {/* 🚀 EL BOTÓN DEL NAVBAR CON ENGRANAJE DE CONFIGURACIÓN 🚀 */}
+      <div className="flex items-center gap-2 mr-2 md:mr-6">
+        <button 
+           onClick={() => setIsOpen(true)}
+           className="flex items-center gap-2.5 md:gap-3 bg-white border border-slate-200 hover:border-indigo-300 hover:shadow-md px-3 md:px-4 py-1.5 md:py-2 rounded-xl transition-all group shrink-0"
+           title="Cambiar cuenta activa"
+        >
+           <span className="text-lg md:text-xl group-hover:scale-110 transition-transform">{effectiveActiveProfile.icon || '🏢'}</span>
+           <div className="text-left hidden sm:block">
+              <div className="text-[9px] font-black uppercase tracking-widest text-slate-400">Cuenta Activa</div>
+              <div className="text-xs md:text-sm font-bold text-slate-800 leading-tight line-clamp-1 max-w-[110px] md:max-w-[130px]">{effectiveActiveProfile.name}</div>
+           </div>
+           <span className="text-slate-300 ml-1 md:ml-2 group-hover:text-indigo-400 text-xs">▼</span>
+        </button>
+
+        {/* ⚙️ ACCESO RÁPIDO A CONFIGURACIÓN DE MARCA Y REDES */}
+        <a
+          href="/automatizacion-rrss/panel/configuracion"
+          className="flex items-center justify-center w-9 h-9 md:w-10 md:h-10 bg-white border border-slate-200 hover:border-indigo-400 hover:text-indigo-600 text-slate-500 rounded-xl shadow-xs hover:shadow-md transition-all group shrink-0"
+          title="Configuración de Marca y Redes Sociales"
+        >
+          <span className="text-base md:text-lg group-hover:rotate-45 transition-transform duration-300">⚙️</span>
+        </a>
+
+        {/* 💡 ACCESO A GUÍA RÁPIDA DE PRIMEROS PASOS */}
+        <button
+          type="button"
+          onClick={() => setShowGuia(true)}
+          className="flex items-center gap-1.5 px-2.5 md:px-3 py-1.5 md:py-2 bg-white border border-slate-200 hover:border-amber-300 hover:bg-amber-50/50 text-slate-600 hover:text-amber-800 rounded-xl shadow-xs hover:shadow-md transition-all group shrink-0 text-xs font-bold"
+          title="Ver Guía Rápida de Inicio"
+        >
+          <span className="text-base group-hover:scale-110 transition-transform">💡</span>
+          <span className="hidden xl:inline">Guía Rápida</span>
+        </button>
+      </div>
 
       {/* 🎬 EL MODAL NETFLIX STYLE 🎬 */}
       {isOpen && (
@@ -182,6 +218,9 @@ export default function NetworkSwitcher() {
            </div>
         </div>
       )}
+
+      {/* 💡 MODAL DE GUÍA RÁPIDA DE INICIO */}
+      <GuiaRapidaModal isOpen={showGuia} onClose={() => setShowGuia(false)} />
     </>
   );
 }

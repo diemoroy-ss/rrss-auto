@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, Suspense } from "react";
 import { auth, storage, db } from "../../../../lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, collection, getDocs, addDoc, deleteDoc, updateDoc, setDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useProfile } from "../../../../contexts/ProfileContext";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import StatusModal from "../../../../components/StatusModal";
+import VideoPromptsView from "../../../../components/prompts/VideoPromptsView";
+import TextTemplatesView from "../../../../components/prompts/TextTemplatesView";
 
 import { 
   type ImageRequirement, 
@@ -33,8 +35,7 @@ import {
   Tag 
 } from "lucide-react";
 
-export type { ImageRequirement, PromptTemplate };
-export { promptCategories, HARDCODED_STYLES };
+
 
 function getCategoryIconComponent(category: string) {
   const normalized = category.toLowerCase().trim();
@@ -100,8 +101,27 @@ function getCategorySubtitle(category: string): string {
   return "Instrucciones optimizadas de estilo";
 }
 
-export default function PromptsLibraryPage() {
+function PromptsLibraryContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState<"imagenes" | "videos" | "textos">(
+    tabParam === "videos" ? "videos" : tabParam === "textos" ? "textos" : "imagenes"
+  );
+
+  useEffect(() => {
+    if (tabParam === "videos") setActiveTab("videos");
+    else if (tabParam === "textos") setActiveTab("textos");
+    else if (tabParam === "imagenes") setActiveTab("imagenes");
+  }, [tabParam]);
+
+  const handleTabChange = (newTab: "imagenes" | "videos" | "textos") => {
+    setActiveTab(newTab);
+    const params = new URLSearchParams(window.location.search);
+    params.set("tab", newTab);
+    window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
+  };
+
   const [user, setUser] = useState<any>(null);
   const [userDoc, setUserDoc] = useState<any>(null);
   const { activeProfile } = useProfile();
@@ -858,20 +878,20 @@ export default function PromptsLibraryPage() {
 
   return (
     <div className="p-6 md:p-10 max-w-7xl mx-auto animate-in fade-in">
-      <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 mb-3 flex items-center gap-3">
-            <span className="text-4xl">✨</span> Catálogo de Estilos Visuales
+          <h1 className="text-3xl font-black text-slate-900 mb-2 flex items-center gap-3">
+            <span className="text-4xl">✨</span> Estilos Visuales
           </h1>
-          <p className="text-slate-600 font-medium max-w-2xl">
-            Explora nuestra colección de escenarios fotográficos y publicitarios listos para usar. Elige un estilo, adáptalo a tu negocio y genera piezas de calidad de estudio en segundos.
+          <p className="text-slate-600 font-medium max-w-2xl text-sm md:text-base">
+            Explora nuestra colección de escenarios fotográficos, animaciones de video y plantillas tipográficas. Selecciona un estilo para tus publicaciones o genera piezas de impacto con nuestros agentes.
           </p>
         </div>
-        {isAdminUser && (
+        {activeTab === "imagenes" && isAdminUser && (
           <div className="flex flex-wrap items-center gap-3">
             <button 
               onClick={() => setIsManageCategoriesModalOpen(true)}
-              className="shrink-0 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold py-3 px-5 rounded-xl shadow-sm transition-all flex items-center gap-2 text-sm"
+              className="shrink-0 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold py-2.5 px-4 rounded-xl shadow-sm transition-all flex items-center gap-2 text-xs md:text-sm"
               title="Crear, renombrar y eliminar categorías"
             >
               🏷️ Gestionar Categorías
@@ -892,7 +912,7 @@ export default function PromptsLibraryPage() {
                 });
                 setIsAdminModalOpen(true);
               }}
-              className="shrink-0 bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-slate-900/20 transition-all flex items-center gap-2 text-sm"
+              className="shrink-0 bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 px-5 rounded-xl shadow-lg shadow-slate-900/20 transition-all flex items-center gap-2 text-xs md:text-sm"
             >
               + Añadir Estilo
             </button>
@@ -901,9 +921,64 @@ export default function PromptsLibraryPage() {
       </div>
 
       {/* ══════════════════════════════════════════════════════════════
-          BARRA UNIFICADA: BUSCADOR + BOTÓN DRAWER FILTRAR ESTILOS (OPCIÓN 2)
+          PESTAÑAS DE UNIFICACIÓN: IMÁGENES / VIDEOS / PLANTILLAS DE TEXTO
       ══════════════════════════════════════════════════════════════ */}
-      <div className="bg-white border border-slate-200/90 rounded-2xl p-2.5 sm:p-3 shadow-2xs mb-8">
+      <div className="flex flex-wrap items-center gap-2 mb-8 bg-slate-100 p-1.5 rounded-2xl w-fit border border-slate-200 shadow-2xs">
+        <button
+          type="button"
+          onClick={() => handleTabChange("imagenes")}
+          className={`flex items-center gap-2 px-4 md:px-5 py-2.5 rounded-xl font-black text-xs md:text-sm transition-all ${
+            activeTab === "imagenes"
+              ? "bg-white text-indigo-700 shadow-sm border border-slate-200"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          <span>🖼️</span>
+          <span>Estilos de Imágenes</span>
+          <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+            activeTab === "imagenes" ? "bg-indigo-50 text-indigo-700" : "bg-slate-200 text-slate-600"
+          }`}>
+            {promptTemplates.length}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleTabChange("videos")}
+          className={`flex items-center gap-2 px-4 md:px-5 py-2.5 rounded-xl font-black text-xs md:text-sm transition-all ${
+            activeTab === "videos"
+              ? "bg-white text-indigo-700 shadow-sm border border-slate-200"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          <span>🎥</span>
+          <span>Estilos de Video & Reels</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleTabChange("textos")}
+          className={`flex items-center gap-2 px-4 md:px-5 py-2.5 rounded-xl font-black text-xs md:text-sm transition-all ${
+            activeTab === "textos"
+              ? "bg-white text-indigo-700 shadow-sm border border-slate-200"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+        >
+          <span>🏷️</span>
+          <span>Plantillas de Texto & Afiches</span>
+        </button>
+      </div>
+
+      {activeTab === "videos" ? (
+        <VideoPromptsView />
+      ) : activeTab === "textos" ? (
+        <TextTemplatesView />
+      ) : (
+        <>
+          {/* ══════════════════════════════════════════════════════════════
+              BARRA UNIFICADA: BUSCADOR + BOTÓN DRAWER FILTRAR ESTILOS (OPCIÓN 2)
+          ══════════════════════════════════════════════════════════════ */}
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-2.5 sm:p-3 shadow-2xs mb-8">
         <div className="flex items-center justify-between gap-2.5 sm:gap-3">
           {/* Buscador Integrado */}
           <div className="relative flex-1">
@@ -1971,6 +2046,8 @@ export default function PromptsLibraryPage() {
           </div>
         </div>
       )}
+        </>
+      )}
 
       {/* STATUS MODAL MODERNO */}
       <StatusModal
@@ -1996,4 +2073,10 @@ export default function PromptsLibraryPage() {
   );
 }
 
-// Trigger CI build
+export default function PromptsLibraryPage() {
+  return (
+    <Suspense fallback={<div className="p-10 text-center font-bold text-slate-400">Cargando Estilos Visuales...</div>}>
+      <PromptsLibraryContent />
+    </Suspense>
+  );
+}

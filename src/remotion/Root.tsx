@@ -31,9 +31,9 @@ export interface ReelProps {
 export const RemotionRoot: React.FC = () => {
   return (
     <>
-      <Composition<ReelProps>
+      <Composition
         id="SantisoftReel"
-        component={ReelComposition}
+        component={ReelComposition as any}
         durationInFrames={300}
         fps={30}
         width={1080}

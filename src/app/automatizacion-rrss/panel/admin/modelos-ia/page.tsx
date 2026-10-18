@@ -566,7 +566,7 @@ export default function AdminAiModelsPage() {
         title={modal.title}
         message={modal.message}
         onConfirm={modal.onConfirm}
-        onClose={() => setModal((prev) => ({ ...prev, isOpen: false }))}
+        onCancel={() => setModal((prev) => ({ ...prev, isOpen: false }))}
       />
     </div>
   );

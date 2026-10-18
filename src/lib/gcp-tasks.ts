@@ -21,7 +21,7 @@ function formatPrivateKey(key: string | undefined): string | undefined {
     let cleanKey = key.replace(/^["']|["']$/g, '').replace(/\\n/g, '\n');
     if (cleanKey.includes('\n') && cleanKey.split('\n').length > 3) return cleanKey;
     
-    const match = cleanKey.match(/-----BEGIN PRIVATE KEY-----(.*?)-----END PRIVATE KEY-----/s);
+    const match = cleanKey.match(/-----BEGIN PRIVATE KEY-----([\s\S]*?)-----END PRIVATE KEY-----/);
     if (match) {
         const base64Part = match[1].replace(/\s+/g, '');
         const chunks = base64Part.match(/.{1,64}/g) || [];

@@ -64,13 +64,6 @@ export default function CatalogoPage() {
       setUser(u);
       if (!u) {
         setLoading(false);
-      } else {
-        try {
-          const token = await u.getIdToken();
-          setUserToken(token);
-        } catch (e) {
-          console.error("Error getting token", e);
-        }
       }
     });
     return () => unsub();

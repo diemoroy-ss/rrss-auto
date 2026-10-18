@@ -1,4 +1,4 @@
-import sharp from "sharp";
+import sharp, { OverlayOptions } from "sharp";
 import { adminStorage } from "./firebase-admin";
 import { BannerCopyResult } from "./agents/agent-banner-copy";
 
@@ -203,7 +203,7 @@ export async function composeBannerOnImage(options: BannerCompositorOptions): Pr
     `;
 
     const svgBuffer = Buffer.from(svgOverlay);
-    const composites: sharp.OverlayOptions[] = [{ input: svgBuffer, top: 0, left: 0 }];
+    const composites: OverlayOptions[] = [{ input: svgBuffer, top: 0, left: 0 }];
 
     // 5. Descargar y superponer logo PNG si está configurado
     if (includeLogo && logoUrl) {

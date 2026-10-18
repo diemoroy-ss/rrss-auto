@@ -128,9 +128,7 @@ function PanelLayoutContent({
       title: "CREACIÓN",
       items: [
         { href: "/automatizacion-rrss/panel/crear", label: "Nuevo Post", icon: "✍️", exact: false },
-        { href: "/automatizacion-rrss/panel/imagen-comercial", label: "Imagen Comercial", icon: "🎨", exact: false },
         { href: "/automatizacion-rrss/panel/poc-video", label: "Generar Video", icon: "🎬", exact: false },
-        { href: "/automatizacion-rrss/panel/prompts-video", label: "Prompts de Video", icon: "🎥", exact: true },
         // ...(isAdminUser ? [{ href: "/automatizacion-rrss/panel/ads", label: "Meta Ads", icon: "🎯", exact: true }] : []),
       ]
     },
@@ -140,17 +138,15 @@ function PanelLayoutContent({
         { href: "/automatizacion-rrss/panel/radar", label: "Radar de Nicho", icon: "📡", exact: false },
         { href: "/automatizacion-rrss/panel/estrategia", label: "Estrategia", icon: "🚀", exact: false },
         { href: "/automatizacion-rrss/panel/blog", label: "SEO / GEO", icon: "🌐", exact: false },
-        { href: "/automatizacion-rrss/panel/prompts", label: "Comandos de Agentes", icon: "✨", exact: true },
       ]
     },
     {
       title: "RECURSOS Y MARCA",
       items: [
+        { href: "/automatizacion-rrss/panel/prompts", label: "Estilos Visuales", icon: "✨", exact: false },
         { href: "/automatizacion-rrss/panel/catalogo", label: "Productos / Servicios", icon: "🛍️", exact: false },
-        { href: "/automatizacion-rrss/panel/plantillas-texto", label: "Plantillas de Texto", icon: "🏷️", exact: false },
         ...(isMenuDigitalEnabled ? [{ href: "/automatizacion-rrss/panel/menu-qr", label: "Carta Menú & QR", icon: "📱", exact: false }] : []),
         { href: "/automatizacion-rrss/panel/biblioteca", label: "Biblioteca", icon: "🖼️", exact: false },
-        { href: "/automatizacion-rrss/panel/configuracion", label: "Configuración de Marca", icon: "🏪", exact: false },
       ]
     }
   ];
@@ -214,7 +210,7 @@ function PanelLayoutContent({
                   <span>Santisoft AI</span>
                 </h2>
               </Link>
-              <p className="text-slate-600 text-[9px] mt-1.5 font-black uppercase tracking-[0.2em]">Automatización IA</p>
+              <p className="text-slate-600 text-[9px] mt-1.5 font-black uppercase tracking-[0.2em]">Equipo de Agentes</p>
             </div>
             <nav className="flex-1 py-4 px-3 space-y-4 overflow-y-auto">
               {navSections.map(section => (

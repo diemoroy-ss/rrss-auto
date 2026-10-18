@@ -13,7 +13,7 @@ export interface AgentDefinition {
   categoryLabel: string;
   icon: string;
   role: string;
-  architecture: "LangGraph StateGraph" | "Direct Engine" | "Multi-Agent Cluster" | "Webhook / Cloud Tasks" | "Pipeline Asíncrono";
+  architecture: "LangGraph StateGraph" | "Direct Engine" | "Multi-Agent Cluster" | "Webhook / Cloud Tasks" | "Pipeline Asíncrono" | "Direct Engine + Sharp SVG Compositor";
   sourceFile: string;
   backendModel: string;
   triggers: string;

@@ -166,7 +166,7 @@ function createInitialSlide(id: string, aspectRatio: "4:5" | "1:1" | "9:16" = "4
 }
 
 // Extraer capas de texto comerciales desde la sintaxis de un prompt
-export function extractTypographyLayersFromPrompt(promptText: string): TextLayer[] {
+function extractTypographyLayersFromPrompt(promptText: string): TextLayer[] {
   if (!promptText || !promptText.trim()) return [];
 
   const lines = promptText.split("\n");
