@@ -278,10 +278,12 @@ export function buildVeoPromptFromCommand(
     ? ` Additional artistic direction: ${options.additionalDetails}.`
     : "";
 
+  const ratioNote = options?.aspectRatio ? ` Render in ${options.aspectRatio} aspect ratio.` : "";
+
   const base = cmdDef.defaultEnglishPrompt.replace(
     /the (central product|product|subject)/gi,
     productSubject
   );
 
-  return `${base}${nicheContext}.${extraNotes} Camera: ${cmdDef.cameraMovement}. Lighting: ${cmdDef.lightingStyle}. Maximum duration: 10 seconds. Preserving image composition and brand fidelity.`;
+  return `${base}${nicheContext}.${extraNotes}${ratioNote} Camera: ${cmdDef.cameraMovement}. Lighting: ${cmdDef.lightingStyle}. Maximum duration: 10 seconds. Preserving image composition and brand fidelity.`;
 }

@@ -44,13 +44,15 @@ export function VideoPromptsView() {
   const [templates, setTemplates] = useState<FlowCommandDef[]>(FLOW_COMMANDS);
   const [loadingTemplates, setLoadingTemplates] = useState<boolean>(true);
 
-  // Filtros
-  const [selectedCategory, setSelectedCategory] = useState<string>("Todas");
+  // Filtros interactivos
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [isCategoryFilterModalOpen, setIsCategoryFilterModalOpen] = useState<boolean>(false);
+  const [showTranslatorModal, setShowTranslatorModal] = useState<boolean>(false);
   const [searchFilter, setSearchFilter] = useState<string>("");
   const [copiedCommand, setCopiedCommand] = useState<string | null>(null);
   const [viewModes, setViewModes] = useState<Record<string, "image" | "video">>({});
 
-  // Generador interactivo superior
+  // Generador interactivo de comandos
   const [selectedCommandForGen, setSelectedCommandForGen] = useState<string>("/smoke reveal");
   const [customProduct, setCustomProduct] = useState<string>(activeProfile?.name || "");
   const [customNiche, setCustomNiche] = useState<string>(activeProfile?.rubro || "");
@@ -94,6 +96,7 @@ export function VideoPromptsView() {
   const [agentGeneratingImage, setAgentGeneratingImage] = useState<boolean>(false);
   const [agentImageSuccess, setAgentImageSuccess] = useState<string>("");
   const [agentImageAspectRatio, setAgentImageAspectRatio] = useState<"9:16" | "1:1">("9:16");
+  const [userVideoFormat, setUserVideoFormat] = useState<"9:16" | "1:1" | "16:9">("9:16");
   const [userNiche, setUserNiche] = useState<string>("");
   const [includeLogo, setIncludeLogo] = useState<boolean>(!!activeProfile?.logoUrl);
   const [userLogoUrl, setUserLogoUrl] = useState<string>(activeProfile?.logoUrl || "");
@@ -169,33 +172,47 @@ export function VideoPromptsView() {
     }
   };
 
-  // Categorías únicas organizadas
-  const categories = useMemo(() => {
+  // Categorías disponibles y conteos
+  const availableCategories = useMemo(() => {
     const priority = [
-      "Todas",
       "E-Commerce & Productos",
       "Servicios & Marcas",
       "Lanzamientos & Revelación",
       "Creativos & Tendencias",
     ];
-    const presentCats = Array.from(new Set(templates.map((c) => c.category)));
-    const merged = ["Todas", ...priority.filter(p => p !== "Todas" && presentCats.includes(p)), ...presentCats.filter(c => !priority.includes(c))];
-    return merged;
+    const presentCats = Array.from(new Set(templates.map((c) => c.category))).filter(Boolean);
+    const sorted = [
+      ...priority.filter((p) => presentCats.includes(p)),
+      ...presentCats.filter((c) => !priority.includes(c)),
+    ];
+    return sorted;
   }, [templates]);
 
-  // Filtrado de comandos
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    templates.forEach((t) => {
+      if (t.category) {
+        counts[t.category] = (counts[t.category] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [templates]);
+
+  // Filtrado interactivo de comandos de video
   const filteredCommands = useMemo(() => {
     return templates.filter((cmd) => {
-      const matchCat = selectedCategory === "Todas" || cmd.category === selectedCategory;
+      const matchCat =
+        selectedCategories.length === 0 || selectedCategories.includes(cmd.category);
       const q = searchFilter.toLowerCase().trim();
       const matchSearch =
         !q ||
         cmd.command.toLowerCase().includes(q) ||
         cmd.name.toLowerCase().includes(q) ||
-        cmd.description.toLowerCase().includes(q);
+        cmd.description.toLowerCase().includes(q) ||
+        (cmd.category && cmd.category.toLowerCase().includes(q));
       return matchCat && matchSearch;
     });
-  }, [templates, selectedCategory, searchFilter]);
+  }, [templates, selectedCategories, searchFilter]);
 
   // Prompt interactivo superior
   const activeGenCmd = useMemo(() => {
@@ -407,6 +424,8 @@ export function VideoPromptsView() {
   // ── GESTIÓN DE USUARIO: ABRIR MODAL CREACIÓN ─────────────────────────────────
   const openUserCreateModal = (effect: FlowCommandDef) => {
     setActiveUserEffect(effect);
+    setUserVideoFormat("9:16");
+    setAgentImageAspectRatio("9:16");
     setCatalogSearch("");
     setUserModalError("");
     setAgentImageSuccess("");
@@ -531,18 +550,18 @@ export function VideoPromptsView() {
     }
   };
 
-  // Prompt específico para el usuario en el modal enriquecido con descripción de producto
+  // Prompt específico para el usuario en el modal enriquecido con descripción de producto y formato
   const userFinalPrompt = useMemo(() => {
     if (!activeUserEffect) return "";
     return buildVeoPromptFromCommand(activeUserEffect, {
       productName: userProductName || activeProfile?.name || "el producto",
       rubro: userNiche || activeProfile?.rubro || "comercial",
-      aspectRatio: agentImageAspectRatio,
+      aspectRatio: userVideoFormat,
       additionalDetails: userProductDescription
         ? `Product visual features: ${userProductDescription}`
         : undefined,
     });
-  }, [activeUserEffect, userProductName, userNiche, activeProfile, agentImageAspectRatio, userProductDescription]);
+  }, [activeUserEffect, userProductName, userNiche, activeProfile, userVideoFormat, userProductDescription]);
 
   // Verificar si la cuota permite video
   const hasVideoQuota = useMemo(() => {
@@ -554,29 +573,29 @@ export function VideoPromptsView() {
   const handleGenerateUserVideo = async () => {
     if (!user || !activeUserEffect) return;
 
-    let effectiveImageUrl = userImageUrl;
-
-    // Si está en modo generación asistida y no generó la imagen previa, ejecutar primero el Paso 1
-    if (imageSourceMode === "agent_generate" && !effectiveImageUrl) {
-      setVideoGenProgress("Paso 1 de 2: Nuestros agentes están generando la fotografía publicitaria de producto...");
-      setGeneratingVideo(true);
-      const generatedImg = await handleGenerateBaseImageWithAgent();
-      if (!generatedImg) {
-        setGeneratingVideo(false);
-        setVideoGenProgress("");
-        return;
-      }
-      effectiveImageUrl = generatedImg;
-    }
-
-    if (!effectiveImageUrl) {
-      setUserModalError("Por favor sube una imagen de producto, selecciona una de tu biblioteca o genera una con nuestros agentes.");
-      return;
-    }
-
     if (!hasVideoQuota) {
       setUserModalError("Has alcanzado el límite mensual de videos de tu plan.");
       return;
+    }
+
+    let effectiveImageUrl = userImageUrl;
+
+    // Si no tiene imagen previa pero tiene un nombre de producto definido, generar la fotografía con nuestros agentes (Paso 1)
+    if (!effectiveImageUrl) {
+      if (userProductName.trim()) {
+        setVideoGenProgress("Paso 1 de 2: Nuestros agentes están generando la fotografía publicitaria de producto...");
+        setGeneratingVideo(true);
+        const generatedImg = await handleGenerateBaseImageWithAgent();
+        if (!generatedImg) {
+          setGeneratingVideo(false);
+          setVideoGenProgress("");
+          return;
+        }
+        effectiveImageUrl = generatedImg;
+      } else {
+        setUserModalError("Por favor selecciona un producto de tu catálogo, sube una foto o escribe el nombre de tu producto para que nuestros agentes lo generen.");
+        return;
+      }
     }
 
     setGeneratingVideo(true);
@@ -615,6 +634,7 @@ export function VideoPromptsView() {
           logoUrl: includeLogo ? userLogoUrl : "",
           profileId: activeProfile?.id || "default",
           userId: user.uid,
+          aspectRatio: userVideoFormat,
         }),
       });
 
@@ -635,256 +655,176 @@ export function VideoPromptsView() {
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8 animate-fadeIn">
-      {/* ── HEADER PRINCIPAL ── */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 md:p-10 text-white shadow-2xl border border-indigo-900/40 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
-        <div className="relative z-10 max-w-3xl">
-          <div className="flex flex-wrap items-center gap-2 mb-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-xs font-bold uppercase tracking-wider">
-              <FaFilm className="text-indigo-400" />
-              <span>Google Flow & Veo 3.1 / Omni Video Showcase</span>
+      {/* ── HEADER LIMPIO & BARRA DE ACCIONES ── */}
+      <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200/80 shadow-sm space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold uppercase tracking-wider">
+                <FaFilm className="text-indigo-600" />
+                <span>Estilos de Video & Product Reveals</span>
+              </div>
+
+              {/* Chip de cuota de video */}
+              <div
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${
+                  hasVideoQuota
+                    ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                    : "bg-amber-50 border-amber-200 text-amber-800"
+                }`}
+              >
+                <FaVideo className="text-[10px]" />
+                <span>
+                  Cuota Videos: {isAdminUser ? "Ilimitados (Admin)" : `${videosUsed} / ${videoLimit} este mes`}
+                </span>
+              </div>
             </div>
 
-            {/* Chip de cuota de video */}
-            <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${
-              hasVideoQuota 
-                ? "bg-emerald-500/15 border-emerald-400/30 text-emerald-300"
-                : "bg-amber-500/15 border-amber-400/30 text-amber-300"
-            }`}>
-              <FaVideo className="text-[10px]" />
-              <span>
-                Cuota Videos: {isAdminUser ? "Ilimitados (Admin)" : `${videosUsed} / ${videoLimit} este mes`}
-              </span>
-            </div>
+            <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
+              Efectos de Movimiento & Animación de Producto
+            </h1>
+            <p className="text-slate-500 text-sm mt-1 max-w-3xl">
+              Transforma la fotografía fija de tu producto en un video publicitario de alto impacto. Selecciona un efecto para animarlo con nuestros agentes.
+            </p>
           </div>
 
-          <h1 className="text-3xl md:text-5xl font-black tracking-tight mb-3">
-            Prompts de Video & Product Reveals
-          </h1>
-          <p className="text-slate-300 text-base md:text-lg leading-relaxed mb-6 font-normal">
-            Descubre exactamente cómo transformar una fotografía fija en un video publicitario de alto impacto. 
-            Nuestros agentes traducen los comandos de Flow a prompts de 6 capas y generan tu video con opción de logo en Remotion.
-          </p>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <Link
-              href="/automatizacion-rrss/panel/poc-video"
-              className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-5 py-2.5 rounded-xl transition-all shadow-lg shadow-indigo-600/30 text-sm"
+          {/* Botones de Acción */}
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => setShowTranslatorModal(true)}
+              className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2.5 rounded-xl transition-all shadow-sm text-xs"
+              title="Abre el generador y traductor de comandos interactivo"
             >
-              <FaPlay className="text-xs" />
-              <span>Generador Libre de Video</span>
-            </Link>
+              <FaMagic className="text-xs" />
+              <span>⚡ Convertir comando en prompt</span>
+            </button>
 
             {isAdminUser && (
               <button
+                type="button"
                 onClick={() => openAdminEdit()}
-                className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-5 py-2.5 rounded-xl transition-all shadow-lg shadow-emerald-600/30 text-sm"
+                className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2.5 rounded-xl transition-all shadow-sm text-xs"
+                title="Añadir nueva muestra de video al catálogo"
               >
                 <FaPlus className="text-xs" />
-                <span>Subir Nueva Muestra (Admin)</span>
+                <span>+ Crear Nuevo Prompt (Admin)</span>
               </button>
             )}
 
-            <a
-              href="#comandos-grid"
-              className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/15 text-white font-semibold px-5 py-2.5 rounded-xl transition-all border border-white/15 text-sm"
+            <Link
+              href="/automatizacion-rrss/panel/poc-video"
+              className="inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-2.5 rounded-xl transition-all text-xs"
             >
-              <span>Ver Catálogo ({templates.length})</span>
-              <FaArrowRight className="text-xs text-indigo-300" />
-            </a>
-          </div>
-        </div>
-      </div>
-
-      {/* ── GENERADOR Y TRADUCTOR RÁPIDO ── */}
-      <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200/80 shadow-xl shadow-slate-100/60">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-6 border-b border-slate-100">
-          <div>
-            <div className="inline-flex items-center gap-2 text-indigo-600 font-bold text-xs uppercase tracking-wider mb-1">
-              <FaMagic /> Generador & Traductor de Comandos
-            </div>
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-              Convierte cualquier comando en un prompt maestro
-            </h2>
-            <p className="text-slate-500 text-sm mt-0.5">
-              Personaliza el comando con tu producto y obtén el prompt listo para usar en Flow Labs o generar con nuestros agentes.
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-500">Formato:</span>
-            {(["9:16", "16:9", "1:1"] as const).map((ratio) => (
-              <button
-                key={ratio}
-                onClick={() => setFormatRatio(ratio)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  formatRatio === ratio
-                    ? "bg-slate-900 text-white shadow-sm"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                }`}
-              >
-                {ratio} {ratio === "9:16" ? "(Reel)" : ratio === "16:9" ? "(Paisaje)" : "(Post)"}
-              </button>
-            ))}
+              <FaPlay className="text-[10px]" />
+              <span>Generador Libre</span>
+            </Link>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-5 space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                Comando Flow / Efecto
-              </label>
-              <select
-                value={selectedCommandForGen}
-                onChange={(e) => setSelectedCommandForGen(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 text-slate-900 font-bold text-sm rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white"
+        {/* Barra de Filtro Interactivo (Buscador + Selector de Categorías) */}
+        <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          {/* Buscador */}
+          <div className="relative flex-1">
+            <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
+            <input
+              type="text"
+              value={searchFilter}
+              onChange={(e) => setSearchFilter(e.target.value)}
+              placeholder="Buscar por comando, nombre o descripción (ej: /smoke, macro, fuego)..."
+              className="w-full pl-9 pr-8 py-2.5 bg-slate-50 hover:bg-slate-100/70 focus:bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all"
+            />
+            {searchFilter && (
+              <button
+                type="button"
+                onClick={() => setSearchFilter("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-600 text-[10px] flex items-center justify-center font-bold transition-colors"
+                title="Limpiar búsqueda"
               >
-                {templates.map((cmd) => (
-                  <option key={cmd.command} value={cmd.command}>
-                    {cmd.icon} {cmd.command} — {cmd.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Producto o Sujeto
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ej: Hamburguesa Doble, Perfume, etc."
-                  value={customProduct}
-                  onChange={(e) => setCustomProduct(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Rubro / Estilo
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ej: Gastronomía, Barbería, Joyería"
-                  value={customNiche}
-                  onChange={(e) => setCustomNiche(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                Detalles artísticos adicionales (opcional)
-              </label>
-              <input
-                type="text"
-                placeholder="Ej: warm golden glow, water drops on the glass surface"
-                value={customDetails}
-                onChange={(e) => setCustomDetails(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white"
-              />
-            </div>
-
-            <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 text-xs space-y-2">
-              <div className="flex items-start gap-2">
-                <span className="font-bold text-slate-700 w-28 shrink-0">Cámara:</span>
-                <span className="text-slate-600">{activeGenCmd.cameraMovement}</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="font-bold text-slate-700 w-28 shrink-0">Física del Efecto:</span>
-                <span className="text-slate-600">{activeGenCmd.physicsEffect}</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="font-bold text-slate-700 w-28 shrink-0">Iluminación:</span>
-                <span className="text-slate-600">{activeGenCmd.lightingStyle}</span>
-              </div>
-            </div>
+                <FaTimes />
+              </button>
+            )}
           </div>
 
-          <div className="lg:col-span-7 flex flex-col">
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-xs font-bold text-indigo-950 uppercase tracking-wider">
-                Prompt Maestro Optimizado (Veo 3.1 & Flow)
-              </label>
-              <button
-                onClick={handleCopyInteractive}
-                className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors"
-              >
-                {copiedInteractivePrompt ? (
-                  <>
-                    <FaCheck className="text-emerald-600" />
-                    <span className="text-emerald-700">¡Copiado!</span>
-                  </>
-                ) : (
-                  <>
-                    <FaCopy />
-                    <span>Copiar Prompt</span>
-                  </>
-                )}
-              </button>
-            </div>
-
-            <div className="flex-1 bg-slate-900 text-slate-100 rounded-2xl p-4 font-mono text-xs md:text-sm leading-relaxed border border-slate-800 relative group overflow-y-auto max-h-72">
-              <p className="select-all text-indigo-100 whitespace-pre-wrap">{interactivePromptText}</p>
-            </div>
-
-            <div className="mt-4 flex items-center justify-between">
-              <span className="text-xs text-slate-500">
-                Fórmula de 6 capas cinemáticas calibrada para Google Veo 3.1
-              </span>
-              <button
-                onClick={() => openUserCreateModal(activeGenCmd)}
-                className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-md"
-              >
-                <FaPlay className="text-[10px]" />
-                <span>Usar este efecto en mi foto</span>
-              </button>
-            </div>
-          </div>
+          {/* Botón Disparador del Modal de Categorías */}
+          <button
+            type="button"
+            onClick={() => setIsCategoryFilterModalOpen(true)}
+            className={`px-3.5 sm:px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shrink-0 shadow-xs ${
+              selectedCategories.length === 0
+                ? "bg-slate-900 hover:bg-slate-800 text-white"
+                : "bg-indigo-600 hover:bg-indigo-700 text-white ring-2 ring-indigo-500/20"
+            }`}
+            title="Abrir selector de categorías de video"
+          >
+            <span>{selectedCategories.length === 0 ? "⚡" : "🎨"}</span>
+            <span className="font-bold">
+              {selectedCategories.length === 0
+                ? "Filtrar Categorías"
+                : selectedCategories.length === 1
+                ? selectedCategories[0]
+                : `${selectedCategories.length} Categorías`}
+            </span>
+            <span
+              className={`text-[10px] px-2 py-0.5 rounded-full font-black ${
+                selectedCategories.length === 0
+                  ? "bg-slate-800 text-slate-300 border border-slate-700"
+                  : "bg-indigo-700 text-white"
+              }`}
+            >
+              {selectedCategories.length === 0
+                ? availableCategories.length
+                : selectedCategories.length === 1
+                ? categoryCounts[selectedCategories[0]] || 0
+                : selectedCategories.length}
+            </span>
+          </button>
         </div>
+
+        {/* Barra de Filtro Activo si hay categorías seleccionadas */}
+        {selectedCategories.length > 0 && (
+          <div className="mt-2.5 pt-2.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 animate-in fade-in duration-150">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[11px] font-bold text-slate-400 mr-1">Filtrando por:</span>
+              {selectedCategories.map((cat) => (
+                <span
+                  key={cat}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200"
+                >
+                  <span>{cat}</span>
+                  <span className="text-[10px] bg-indigo-100 text-indigo-800 px-1.5 py-0.2 rounded-full font-black">
+                    {categoryCounts[cat] || 0}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCategories((prev) => prev.filter((c) => c !== cat))}
+                    className="text-indigo-400 hover:text-indigo-800 font-bold ml-0.5 transition-colors"
+                    title={`Remover filtro "${cat}"`}
+                  >
+                    ✕
+                  </button>
+                </span>
+              ))}
+              {selectedCategories.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedCategories([])}
+                  className="text-xs font-bold text-slate-500 hover:text-slate-800 underline ml-2 transition-colors"
+                  title="Quitar todos los filtros"
+                >
+                  Limpiar todos
+                </button>
+              )}
+            </div>
+            <div className="text-xs font-bold text-slate-400 ml-auto">
+              {filteredCommands.length} {filteredCommands.length === 1 ? "efecto encontrado" : "efectos encontrados"}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── CATÁLOGO DE EFECTOS (SHOWCASE ANTES -> DESPUÉS) ── */}
-      <div id="comandos-grid" className="space-y-6 pt-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-              Catálogo de Efectos de Revelación & Movimiento
-            </h2>
-            <p className="text-slate-500 text-sm">
-              Compara la imagen estática inicial con el video final generado. Selecciona un efecto para aplicarlo a tu producto.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2.5">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Buscar comando (ej. /smoke, /fire)..."
-                value={searchFilter}
-                onChange={(e) => setSearchFilter(e.target.value)}
-                className="bg-white border border-slate-200 text-slate-900 text-xs rounded-xl pl-3.5 pr-8 py-2 w-56 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
-              />
-            </div>
-            <div className="flex flex-wrap items-center bg-slate-100 p-1 rounded-xl text-xs font-bold text-slate-600 gap-1">
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-3 py-1.5 rounded-lg transition-all ${
-                    selectedCategory === cat
-                      ? "bg-white text-indigo-600 shadow-sm"
-                      : "hover:text-slate-900"
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
+      <div id="comandos-grid" className="space-y-6 pt-2">
 
         {/* Grid de Tarjetas */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1417,6 +1357,45 @@ export function VideoPromptsView() {
               </div>
             ) : (
               <div className="space-y-5 text-xs">
+                {/* Selector de Formato de Video */}
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                  <div className="flex items-center justify-between mb-2.5">
+                    <span className="font-bold text-slate-900 text-sm">
+                      Formato y Orientación del Video:
+                    </span>
+                    <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-full">
+                      {userVideoFormat === "9:16" ? "9:16 Vertical" : userVideoFormat === "1:1" ? "1:1 Cuadrado" : "16:9 Horizontal"}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { id: "9:16", label: "Reel / TikTok", desc: "9:16 Vertical", icon: "📱" },
+                      { id: "1:1", label: "Post / Feed", desc: "1:1 Cuadrado", icon: "⏹️" },
+                      { id: "16:9", label: "Paisaje / YouTube", desc: "16:9 Horizontal", icon: "🖥️" },
+                    ].map((fmt) => (
+                      <button
+                        key={fmt.id}
+                        type="button"
+                        onClick={() => {
+                          setUserVideoFormat(fmt.id as any);
+                          setAgentImageAspectRatio(fmt.id === "16:9" ? "1:1" : (fmt.id as any));
+                        }}
+                        className={`p-2.5 rounded-xl border text-center transition-all ${
+                          userVideoFormat === fmt.id
+                            ? "bg-slate-900 border-slate-900 text-white shadow-sm"
+                            : "bg-white border-slate-200 text-slate-700 hover:bg-slate-100"
+                        }`}
+                      >
+                        <span className="text-base block mb-0.5">{fmt.icon}</span>
+                        <span className="font-bold text-xs block truncate">{fmt.label}</span>
+                        <span className={`text-[10px] block ${userVideoFormat === fmt.id ? "text-slate-300" : "text-slate-400"}`}>
+                          {fmt.desc}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Paso 1: Selección de Producto / Imagen */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
@@ -1892,20 +1871,17 @@ export function VideoPromptsView() {
                   )}
                 </div>
 
-                {/* Paso 4: Prompt Resultante */}
+                {/* Paso 4: Configuración técnica del efecto */}
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1 flex items-center justify-between">
-                    <span>Prompt maestro que se enviará al modelo:</span>
-                    <button
-                      type="button"
-                      onClick={() => handleCopy(userFinalPrompt, "user-modal-prompt")}
-                      className="text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1"
-                    >
-                      {copiedCommand === "user-modal-prompt" ? <FaCheck className="text-emerald-600" /> : <FaCopy />}
-                      <span>Copiar</span>
-                    </button>
-                  </label>
-                  <div className="bg-slate-900 text-slate-200 rounded-xl p-3 font-mono text-[11px] max-h-24 overflow-y-auto select-all">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-bold text-slate-700 text-xs">
+                      Efecto cinemático de cámara & iluminación:
+                    </span>
+                    <span className="text-[10px] text-indigo-600 font-bold bg-indigo-50 px-2 py-0.5 rounded">
+                      {activeUserEffect.command}
+                    </span>
+                  </div>
+                  <div className="bg-slate-900 text-slate-300 rounded-xl p-3 font-mono text-[11px] max-h-20 overflow-y-auto select-all border border-slate-800">
                     {userFinalPrompt}
                   </div>
                 </div>
@@ -1918,8 +1894,7 @@ export function VideoPromptsView() {
                       <span>Límite de videos alcanzado este mes ({videosUsed}/{videoLimit})</span>
                     </div>
                     <p className="text-[11px] text-amber-800 leading-relaxed">
-                      Tu plan actual ha completado su cuota de generación de videos con agentes. 
-                      Aun así, puedes copiar el prompt maestro generado arriba y usarlo directamente en Google Flow Labs o Veo 3.1 con tu foto.
+                      Tu plan actual ha completado su cuota mensual de videos. Puedes aumentar tu plan para desbloquear más generaciones con nuestros agentes.
                     </p>
                   </div>
                 )}
@@ -1950,28 +1925,13 @@ export function VideoPromptsView() {
                 </button>
 
                 <div className="flex flex-wrap gap-2 w-full sm:w-auto justify-end">
-                  {/* Botón siempre disponible: Copiar Prompt */}
-                  <button
-                    type="button"
-                    onClick={() => handleCopy(userFinalPrompt, "copy-user-prompt-btn")}
-                    className="px-4 py-2.5 rounded-xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center gap-1.5 transition-colors"
-                  >
-                    {copiedCommand === "copy-user-prompt-btn" ? <FaCheck className="text-emerald-600" /> : <FaCopy />}
-                    <span>Copiar Prompt con mi Imagen</span>
-                  </button>
-
-                  {/* Botón de Generar Video (si tiene cuota) */}
+                  {/* Botón de Generar Video (habilitado si tiene cuota) */}
                   {hasVideoQuota ? (
                     <button
                       type="button"
                       onClick={handleGenerateUserVideo}
-                      disabled={
-                        generatingVideo || 
-                        userUploadingImage || 
-                        agentGeneratingImage || 
-                        (imageSourceMode === "agent_generate" ? !userProductName.trim() : !userImageUrl)
-                      }
-                      className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-2 shadow-md disabled:opacity-50 transition-all"
+                      disabled={generatingVideo || userUploadingImage || agentGeneratingImage}
+                      className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md disabled:opacity-50 transition-all w-full sm:w-auto"
                     >
                       {generatingVideo || agentGeneratingImage ? (
                         <FaSpinner className="animate-spin" />
@@ -1996,6 +1956,275 @@ export function VideoPromptsView() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL DE FILTRO DE CATEGORÍAS ── */}
+      {isCategoryFilterModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-5 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🎨</span>
+                <h3 className="font-black text-slate-900 text-lg">Filtrar por Categoría</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCategoryFilterModalOpen(false)}
+                className="text-slate-400 hover:text-slate-700 p-1.5 rounded-full"
+              >
+                <FaTimes />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500">
+              Selecciona una o más categorías para filtrar los efectos de video en el catálogo:
+            </p>
+
+            <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCategories([]);
+                  setIsCategoryFilterModalOpen(false);
+                }}
+                className={`w-full p-3 rounded-xl border text-left flex items-center justify-between text-xs font-bold transition-all ${
+                  selectedCategories.length === 0
+                    ? "bg-indigo-50 border-indigo-300 text-indigo-700 shadow-xs"
+                    : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span>✨</span>
+                  <span>Todas las Categorías</span>
+                </div>
+                <span className="text-[10px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full font-black">
+                  {templates.length}
+                </span>
+              </button>
+
+              {availableCategories.map((cat) => {
+                const isSelected = selectedCategories.includes(cat);
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => {
+                      if (isSelected) {
+                        setSelectedCategories((prev) => prev.filter((c) => c !== cat));
+                      } else {
+                        setSelectedCategories((prev) => [...prev, cat]);
+                      }
+                    }}
+                    className={`w-full p-3 rounded-xl border text-left flex items-center justify-between text-xs font-bold transition-all ${
+                      isSelected
+                        ? "bg-indigo-50 border-indigo-400 text-indigo-700 shadow-xs ring-1 ring-indigo-400"
+                        : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span
+                        className={`w-4 h-4 rounded-md border flex items-center justify-center text-[10px] ${
+                          isSelected ? "bg-indigo-600 border-indigo-600 text-white" : "border-slate-300 bg-white"
+                        }`}
+                      >
+                        {isSelected && <FaCheck />}
+                      </span>
+                      <span>{cat}</span>
+                    </div>
+                    <span className="text-[10px] bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full font-black">
+                      {categoryCounts[cat] || 0}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setSelectedCategories([])}
+                className="text-xs font-bold text-slate-500 hover:text-slate-800"
+              >
+                Limpiar selección
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsCategoryFilterModalOpen(false)}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-2 rounded-xl text-xs shadow-sm"
+              >
+                Listo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL: CONVERTIR COMANDO EN PROMPT MAESTRO ── */}
+      {showTranslatorModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-4xl w-full p-6 md:p-8 shadow-2xl border border-slate-200 space-y-6 my-8 animate-in zoom-in-95 duration-200 relative">
+            <button
+              type="button"
+              onClick={() => setShowTranslatorModal(false)}
+              className="absolute top-5 right-5 text-slate-400 hover:text-slate-700 p-2 rounded-full"
+            >
+              <FaTimes />
+            </button>
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 pr-10">
+              <div>
+                <div className="inline-flex items-center gap-2 text-indigo-600 font-bold text-xs uppercase tracking-wider mb-1">
+                  <FaMagic /> Generador & Traductor de Comandos
+                </div>
+                <h3 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">
+                  Convierte cualquier comando en un prompt maestro
+                </h3>
+                <p className="text-slate-500 text-xs mt-0.5">
+                  Personaliza el comando con tu producto y obtén el prompt calibrado para Google Flow y Veo 3.1.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl self-start sm:self-center">
+                {(["9:16", "16:9", "1:1"] as const).map((ratio) => (
+                  <button
+                    key={ratio}
+                    type="button"
+                    onClick={() => setFormatRatio(ratio)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      formatRatio === ratio
+                        ? "bg-slate-900 text-white shadow-xs"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    {ratio} {ratio === "9:16" ? "(Reel)" : ratio === "16:9" ? "(Paisaje)" : "(Post)"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              <div className="lg:col-span-5 space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Comando Flow / Efecto
+                  </label>
+                  <select
+                    value={selectedCommandForGen}
+                    onChange={(e) => setSelectedCommandForGen(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 font-bold text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white"
+                  >
+                    {templates.map((cmd) => (
+                      <option key={cmd.command} value={cmd.command}>
+                        {cmd.icon} {cmd.command} — {cmd.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                      Producto o Sujeto
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej: Hamburguesa Doble, Perfume..."
+                      value={customProduct}
+                      onChange={(e) => setCustomProduct(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                      Rubro / Estilo
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej: Gastronomía, Barbería..."
+                      value={customNiche}
+                      onChange={(e) => setCustomNiche(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Detalles artísticos adicionales (opcional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ej: warm golden glow, water drops on the glass surface"
+                    value={customDetails}
+                    onChange={(e) => setCustomDetails(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-xs rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white"
+                  />
+                </div>
+
+                <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-3.5 text-xs space-y-1.5">
+                  <div className="flex items-start gap-2">
+                    <span className="font-bold text-slate-700 w-24 shrink-0">Cámara:</span>
+                    <span className="text-slate-600 line-clamp-2">{activeGenCmd.cameraMovement}</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="font-bold text-slate-700 w-24 shrink-0">Física:</span>
+                    <span className="text-slate-600 line-clamp-2">{activeGenCmd.physicsEffect}</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="font-bold text-slate-700 w-24 shrink-0">Iluminación:</span>
+                    <span className="text-slate-600 line-clamp-2">{activeGenCmd.lightingStyle}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="lg:col-span-7 flex flex-col">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-bold text-indigo-950 uppercase tracking-wider">
+                    Prompt Maestro Optimizado (Veo 3.1 & Flow)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleCopyInteractive}
+                    className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors"
+                  >
+                    {copiedInteractivePrompt ? (
+                      <>
+                        <FaCheck className="text-emerald-600" />
+                        <span className="text-emerald-700">¡Copiado!</span>
+                      </>
+                    ) : (
+                      <>
+                        <FaCopy />
+                        <span>Copiar Prompt</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <div className="flex-1 bg-slate-900 text-slate-100 rounded-2xl p-4 font-mono text-xs leading-relaxed border border-slate-800 relative group overflow-y-auto max-h-64">
+                  <p className="select-all text-indigo-100 whitespace-pre-wrap">{interactivePromptText}</p>
+                </div>
+
+                <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-100">
+                  <span className="text-xs text-slate-500">
+                    Fórmula calibrada para Google Veo 3.1
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowTranslatorModal(false);
+                      openUserCreateModal(activeGenCmd);
+                    }}
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs transition-all shadow-md"
+                  >
+                    <FaPlay className="text-[10px]" />
+                    <span>Usar este efecto en mi foto</span>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
