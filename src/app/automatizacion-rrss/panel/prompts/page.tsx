@@ -3,13 +3,14 @@
 import { useState, useEffect, useRef, useMemo, Suspense } from "react";
 import { auth, storage, db } from "../../../../lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc, collection, getDocs, addDoc, deleteDoc, updateDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, collection, getDocs, addDoc, deleteDoc, updateDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useProfile } from "../../../../contexts/ProfileContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import StatusModal from "../../../../components/StatusModal";
 import VideoPromptsView from "../../../../components/prompts/VideoPromptsView";
 import TextTemplatesView from "../../../../components/prompts/TextTemplatesView";
+import { FaFacebookF, FaInstagram, FaLinkedinIn, FaTiktok, FaTwitter } from "react-icons/fa";
 
 import { 
   type ImageRequirement, 
@@ -210,6 +211,23 @@ function PromptsLibraryContent() {
   const [error, setError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Catálogo de Productos/Servicios
+  const [catalogoItems, setCatalogoItems] = useState<any[]>([]);
+  const [selectedCatalogoItem, setSelectedCatalogoItem] = useState<any | null>(null);
+
+  // Publicación Inmediata post-generación
+  const [publishCopy, setPublishCopy] = useState("");
+  const [isGeneratingCopy, setIsGeneratingCopy] = useState(false);
+  const [isPublishingNow, setIsPublishingNow] = useState(false);
+  const [publishSuccess, setPublishSuccess] = useState(false);
+  const [publishNetworks, setPublishNetworks] = useState({
+    facebook: false,
+    instagram: false,
+    linkedin: false,
+    tiktok: false,
+    x: false,
+  });
+
   // Admin Modal
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [editingPromptId, setEditingPromptId] = useState<string | null>(null);
@@ -288,6 +306,34 @@ function PromptsLibraryContent() {
     fetchPrompts();
     return () => unsub();
   }, []);
+
+  // Cargar catálogo de productos/servicios del perfil activo
+  useEffect(() => {
+    if (!user || !activeProfile?.id) return;
+    const loadCatalog = async () => {
+      try {
+        const token = await user.getIdToken();
+        const res = await fetch(`/api/catalogo?profileId=${activeProfile.id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        setCatalogoItems(data.items || []);
+      } catch (e) {
+        console.warn("[Prompts] Error loading catalogo items:", e);
+      }
+    };
+    loadCatalog();
+  }, [user, activeProfile?.id]);
+
+  // Redes sociales conectadas
+  const isDefaultProfile = activeProfile?.id === 'default';
+  const isValidToken = (t: any) => !!t && t !== "null" && t !== "undefined" && t !== "";
+  const hasFb = isValidToken(activeProfile?.facebookToken_enc) || (isDefaultProfile && isValidToken(userDoc?.facebookToken_enc));
+  const hasIg = isValidToken(activeProfile?.instagramToken_enc) || (isDefaultProfile && isValidToken(userDoc?.instagramToken_enc));
+  const hasLi = isValidToken(activeProfile?.linkedinUserToken_enc) || isValidToken(activeProfile?.linkedinToken_enc) || (isDefaultProfile && (isValidToken(userDoc?.linkedinUserToken_enc) || isValidToken(userDoc?.linkedinToken_enc)));
+  const hasTt = isValidToken(activeProfile?.tiktokToken_enc) || (isDefaultProfile && isValidToken(userDoc?.tiktokToken_enc));
+  const hasX = isValidToken(activeProfile?.xToken_enc || activeProfile?.accounts?.x?.token) || (isDefaultProfile && isValidToken(userDoc?.xToken_enc));
+  const hasAnyNetwork = hasFb || hasIg || hasLi || hasTt || hasX;
 
   const fetchCategories = async (loadedPrompts?: PromptTemplate[]) => {
     try {
@@ -569,9 +615,20 @@ function PromptsLibraryContent() {
     setVariableValues(initialValues);
     setIsFreeEditMode(parsed.length === 0); // Default to free mode if no vars
 
+    setSelectedCatalogoItem(null);
     setBaseImageFile(null);
     setBaseImagePreview(null);
     setGeneratedImage(null);
+    setPublishCopy("");
+    setIsPublishingNow(false);
+    setPublishSuccess(false);
+    setPublishNetworks({
+      facebook: hasFb,
+      instagram: hasIg,
+      linkedin: hasLi,
+      tiktok: false,
+      x: hasX,
+    });
     setError("");
     setIsModalOpen(true);
   };
@@ -582,7 +639,154 @@ function PromptsLibraryContent() {
       setSelectedPrompt(null);
       setParsedVariables([]);
       setVariableValues({});
+      setSelectedCatalogoItem(null);
+      setPublishCopy("");
+      setIsPublishingNow(false);
+      setPublishSuccess(false);
     }, 300);
+  };
+
+  const handleSelectCatalogoItem = (itemId: string) => {
+    if (!itemId) {
+      setSelectedCatalogoItem(null);
+      return;
+    }
+    const item = catalogoItems.find(i => i.id === itemId);
+    if (!item) return;
+    setSelectedCatalogoItem(item);
+
+    // 1. Rellenar variable en el prompt si existen
+    if (parsedVariables.length > 0) {
+      const targetVar = parsedVariables.find(v => 
+        /producto|product|nombre|plato|comida|servicio|item|objeto/i.test(v.name)
+      ) || parsedVariables[0];
+
+      const newVals = { ...variableValues, [targetVar.raw]: item.name };
+      setVariableValues(newVals);
+
+      let newText = selectedPrompt!.prompt;
+      parsedVariables.forEach(pv => {
+        const valToUse = newVals[pv.raw] || pv.example;
+        if (valToUse) {
+          newText = newText.replaceAll(`[${pv.raw}]`, valToUse);
+        }
+      });
+      setEditedPromptText(newText);
+    } else {
+      if (!editedPromptText || editedPromptText === selectedPrompt?.prompt) {
+        setEditedPromptText(`${selectedPrompt?.prompt}. Product: ${item.name}`);
+      }
+    }
+
+    // 2. Si el producto tiene foto cargada, usarla automáticamente como baseImagePreview
+    if (item.imageUrl) {
+      setBaseImagePreview(item.imageUrl);
+      setBaseImageFile(null);
+    }
+  };
+
+  const handleGenerateCopy = async () => {
+    setIsGeneratingCopy(true);
+    try {
+      const idToken = await auth.currentUser?.getIdToken();
+      const targetProduct = selectedCatalogoItem?.name || selectedPrompt?.title || "";
+      const promptToSend = editedPromptText || targetProduct;
+
+      const res = await fetch("/api/ai/copywriter", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${idToken}`
+        },
+        body: JSON.stringify({
+          prompt: promptToSend,
+          idea: targetProduct ? `Publicación sobre ${targetProduct}` : promptToSend,
+          businessType: userDoc?.rubro || activeProfile?.rubro || "",
+          postType: "Post",
+          businessData: {
+            phone: activeProfile?.phone,
+            whatsapp: activeProfile?.whatsapp || activeProfile?.phone,
+            email: activeProfile?.email,
+            website: activeProfile?.website,
+            address: activeProfile?.address,
+            businessName: activeProfile?.name || activeProfile?.businessName
+          },
+          maxWords: 150
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.options && data.options.length > 0) {
+          setPublishCopy(data.options[0]);
+        }
+      }
+    } catch (err) {
+      console.warn("Error generando copy asistido:", err);
+    } finally {
+      setIsGeneratingCopy(false);
+    }
+  };
+
+  const handlePublishNow = async () => {
+    if (!generatedImage || !user) return;
+    const hasSelectedNetwork = Object.values(publishNetworks).some(Boolean);
+    if (!hasSelectedNetwork) {
+      showStatus("error", "Red Social Requerida", "Por favor selecciona al menos una red social para publicar.");
+      return;
+    }
+
+    setIsPublishingNow(true);
+    try {
+      const idToken = await auth.currentUser?.getIdToken();
+      const today = new Date().toISOString().split("T")[0];
+      const nowTime = new Date().toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", hour12: false });
+
+      const postPayload = {
+        userId: user.uid,
+        profileId: activeProfile?.id || "default",
+        postText: publishCopy || `Nueva publicación desde Estilos Visuales`,
+        mediaUrls: [generatedImage],
+        type: "Post",
+        date: today,
+        time: nowTime,
+        status: "publishing",
+        scheduledDate: new Date(),
+        networks: publishNetworks,
+        isCopyFinalized: true,
+        selectedPromptTemplate: selectedPrompt ? {
+          id: selectedPrompt.id,
+          title: selectedPrompt.title,
+        } : null,
+        catalogoId: selectedCatalogoItem?.id || null,
+        catalogoName: selectedCatalogoItem?.name || null,
+        createdAt: serverTimestamp(),
+      };
+
+      const docRef = await addDoc(collection(db, "social_posts"), postPayload);
+
+      const pubRes = await fetch("/api/publish-now", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${idToken}`
+        },
+        body: JSON.stringify({ postId: docRef.id })
+      });
+
+      if (!pubRes.ok) {
+        const pubData = await pubRes.json().catch(() => ({}));
+        throw new Error(pubData.error || "No se pudo completar la publicación en todas las redes.");
+      }
+
+      setPublishSuccess(true);
+      showStatus("success", "¡Publicado Exitosamente!", "Tu imagen y copy han sido publicados de inmediato en tus redes sociales.");
+    } catch (pubErr: any) {
+      console.error("Error al publicar de inmediato:", pubErr);
+      showStatus("error", "Error al Publicar", pubErr.message || "Ocurrió un inconveniente al enviar la publicación a tus redes.");
+    } finally {
+      setIsPublishingNow(false);
+    }
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -644,8 +848,8 @@ function PromptsLibraryContent() {
   const handleClientGenerate = async () => {
     if (!selectedPrompt) return;
     
-    if (selectedPrompt.imageRequirement === 'required' && !baseImageFile) {
-      setError("Este prompt requiere obligatoriamente que subas una imagen base.");
+    if (selectedPrompt.imageRequirement === 'required' && !baseImageFile && !selectedCatalogoItem?.imageUrl && !baseImagePreview) {
+      setError("Este estilo requiere obligatoriamente una imagen base. Sube una foto o selecciona un producto con imagen de tu catálogo.");
       return;
     }
     if (!editedPromptText.trim()) {
@@ -662,6 +866,10 @@ function PromptsLibraryContent() {
         const storageRef = ref(storage, `users/${user.uid}/base_images/${Date.now()}_${baseImageFile.name}`);
         await uploadBytes(storageRef, baseImageFile);
         baseImageUrl = await getDownloadURL(storageRef);
+      } else if (selectedCatalogoItem?.imageUrl && !baseImageFile) {
+        baseImageUrl = selectedCatalogoItem.imageUrl;
+      } else if (baseImagePreview && baseImagePreview.startsWith("http")) {
+        baseImageUrl = baseImagePreview;
       }
 
       // Translate the edited text to English before sending to the model
@@ -1204,6 +1412,79 @@ function PromptsLibraryContent() {
             <div className="p-6 md:p-8 space-y-6">
               {!generatedImage ? (
                 <>
+                  {/* Selector de Producto / Servicio del Catálogo */}
+                  {catalogoItems.length > 0 && (
+                    <div className="p-4 bg-gradient-to-r from-amber-50/80 via-orange-50/40 to-amber-50/80 border border-amber-200/90 rounded-2xl shadow-xs">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-[11px] font-black uppercase tracking-wider text-amber-950 flex items-center gap-1.5">
+                          <span>🛍️</span> Producto o Servicio del Catálogo
+                        </label>
+                        <span className="text-[10px] font-bold text-amber-800 bg-amber-100/90 border border-amber-300 px-2 py-0.5 rounded-full">
+                          Opcional
+                        </span>
+                      </div>
+                      <select
+                        value={selectedCatalogoItem?.id || ""}
+                        onChange={(e) => handleSelectCatalogoItem(e.target.value)}
+                        className="w-full bg-white border border-amber-300 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 outline-none focus:border-amber-500 shadow-xs"
+                      >
+                        <option value="">— Ninguno (personalizar manualmente) —</option>
+                        {catalogoItems.map((item: any) => (
+                          <option key={item.id} value={item.id}>
+                            {item.type === "producto" ? "📦" : "⚙️"} {item.name}
+                            {item.offerPrice ? ` · PROMO ${item.offerPrice}` : item.price ? ` · ${item.price}` : ""}
+                          </option>
+                        ))}
+                      </select>
+                      {selectedCatalogoItem && (
+                        <div className="mt-3 flex items-center gap-3 p-2.5 bg-white rounded-xl border border-amber-200 shadow-xs">
+                          {selectedCatalogoItem.imageUrl ? (
+                            <img
+                              src={selectedCatalogoItem.imageUrl}
+                              alt={selectedCatalogoItem.name}
+                              className="w-12 h-12 rounded-lg object-cover border border-amber-200 shrink-0 shadow-2xs"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 rounded-lg bg-amber-100 flex items-center justify-center text-lg shrink-0">
+                              📦
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="text-xs font-black text-slate-900 truncate">{selectedCatalogoItem.name}</p>
+                              {selectedCatalogoItem.offerPrice ? (
+                                <span className="text-[9px] font-black bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded-md">
+                                  PROMO {selectedCatalogoItem.offerPrice}
+                                </span>
+                              ) : selectedCatalogoItem.price ? (
+                                <span className="text-[9px] font-black bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-md">
+                                  {selectedCatalogoItem.price}
+                                </span>
+                              ) : null}
+                            </div>
+                            <p className="text-[10px] text-emerald-700 font-bold mt-0.5 flex items-center gap-1">
+                              {selectedCatalogoItem.imageUrl
+                                ? "📸 Foto de producto anclada como imagen base"
+                                : "📝 Datos aplicados al estilo visual"}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedCatalogoItem(null);
+                              setBaseImagePreview(null);
+                              setBaseImageFile(null);
+                            }}
+                            className="text-slate-400 hover:text-rose-500 text-xs px-2 py-1 font-bold rounded-lg hover:bg-rose-50 transition-colors"
+                            title="Quitar selección"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {parsedVariables.length > 0 && !isFreeEditMode ? (
                     <div className="space-y-4 mb-6 bg-slate-50 border border-slate-200 rounded-2xl p-5">
                       <div className="flex items-center justify-between mb-2">
@@ -1292,7 +1573,7 @@ function PromptsLibraryContent() {
                           <span className="text-[10px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full">Opcional</span>
                         )}
                       </h3>
-                      <p className="text-xs text-slate-500 mb-4">Sube un boceto o foto base para guiar a la IA.</p>
+                      <p className="text-xs text-slate-500 mb-4">Sube una foto de tu producto o boceto base para guiar a nuestros agentes.</p>
                       
                       <div 
                         onClick={() => fileInputRef.current?.click()}
@@ -1324,40 +1605,230 @@ function PromptsLibraryContent() {
                     <button 
                       onClick={handleClientGenerate}
                       disabled={isGenerating}
-                      className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-black py-4 rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 text-lg active:scale-98"
+                      className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-black py-4 rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 text-base active:scale-98 cursor-pointer"
                     >
                       {isGenerating ? (
                         <>
                           <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          Generando Magia...
+                          Nuestros agentes están diseñando tu pieza...
                         </>
                       ) : (
-                        <>🪄 Generar Imagen con IA</>
+                        <>✨ Generar Imagen con nuestros Agentes</>
                       )}
                     </button>
                   </div>
                 </>
               ) : (
-                <div className="text-center animate-in zoom-in duration-300">
-                  <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-2xl mx-auto mb-4">✓</div>
-                  <h3 className="text-2xl font-black text-slate-900 mb-2">¡Imagen Generada!</h3>
-                  <div className="rounded-2xl overflow-hidden shadow-xl mb-8 bg-slate-100 inline-block border border-slate-200">
-                    <img src={generatedImage} alt="Generada" className="max-h-80 w-auto object-contain" />
+                <div className="space-y-6 animate-in zoom-in duration-300">
+                  {/* Header de Éxito */}
+                  <div className="text-center">
+                    <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-xl mx-auto mb-2 font-black">
+                      ✓
+                    </div>
+                    <h3 className="text-xl font-black text-slate-900">¡Pieza Diseñada con Éxito!</h3>
+                    <p className="text-xs text-slate-500 font-medium">
+                      Nuestros agentes han generado tu diseño. Puedes publicarlo de inmediato en tus redes o abrirlo en el editor.
+                    </p>
                   </div>
-                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                    <button 
+
+                  {/* Imagen Generada */}
+                  <div className="text-center">
+                    <div className="rounded-2xl overflow-hidden shadow-lg bg-slate-100 inline-block border border-slate-200 max-h-72">
+                      <img src={generatedImage} alt="Diseño generado" className="max-h-72 w-auto object-contain mx-auto" />
+                    </div>
+                  </div>
+
+                  {/* Card de Publicación Inmediata */}
+                  <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-5 space-y-4 text-left">
+                    <div className="border-b border-slate-200 pb-3">
+                      <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-2">
+                        <span>🚀</span> Publicar de Inmediato en Redes Sociales
+                      </h4>
+                      <p className="text-[11px] text-slate-500 font-medium">
+                        Elige las redes, genera o edita el texto persuasivo y publica en un clic.
+                      </p>
+                    </div>
+
+                    {/* Selector de Redes */}
+                    <div>
+                      <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">
+                        1. Selecciona las Redes de Destino
+                      </label>
+                      {!hasAnyNetwork ? (
+                        <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 font-semibold">
+                          ⚠️ No tienes redes conectadas aún. Ve a{" "}
+                          <a href="/automatizacion-rrss/panel/configuracion" className="underline font-bold text-amber-950">
+                            Conexiones
+                          </a>{" "}
+                          para enlazar tus cuentas.
+                        </div>
+                      ) : (
+                        <div className="flex flex-wrap gap-2.5">
+                          {hasFb && (
+                            <button
+                              type="button"
+                              onClick={() => setPublishNetworks(prev => ({ ...prev, facebook: !prev.facebook }))}
+                              className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                                publishNetworks.facebook
+                                  ? "bg-[#1877F2] text-white shadow-xs scale-102"
+                                  : "bg-white text-slate-600 border border-slate-200 hover:border-slate-300"
+                              }`}
+                            >
+                              <FaFacebookF />
+                              <span>Facebook</span>
+                            </button>
+                          )}
+                          {hasIg && (
+                            <button
+                              type="button"
+                              onClick={() => setPublishNetworks(prev => ({ ...prev, instagram: !prev.instagram }))}
+                              className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                                publishNetworks.instagram
+                                  ? "text-white shadow-xs scale-102"
+                                  : "bg-white text-slate-600 border border-slate-200 hover:border-slate-300"
+                              }`}
+                              style={
+                                publishNetworks.instagram
+                                  ? {
+                                      background:
+                                        "linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)",
+                                    }
+                                  : {}
+                              }
+                            >
+                              <FaInstagram className="text-sm" />
+                              <span>Instagram</span>
+                            </button>
+                          )}
+                          {hasLi && (
+                            <button
+                              type="button"
+                              onClick={() => setPublishNetworks(prev => ({ ...prev, linkedin: !prev.linkedin }))}
+                              className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                                publishNetworks.linkedin
+                                  ? "bg-[#0077b5] text-white shadow-xs scale-102"
+                                  : "bg-white text-slate-600 border border-slate-200 hover:border-slate-300"
+                              }`}
+                            >
+                              <FaLinkedinIn />
+                              <span>LinkedIn</span>
+                            </button>
+                          )}
+                          {hasTt && (
+                            <button
+                              type="button"
+                              onClick={() => setPublishNetworks(prev => ({ ...prev, tiktok: !prev.tiktok }))}
+                              className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                                publishNetworks.tiktok
+                                  ? "bg-black text-white shadow-xs scale-102"
+                                  : "bg-white text-slate-600 border border-slate-200 hover:border-slate-300"
+                              }`}
+                            >
+                              <FaTiktok />
+                              <span>TikTok</span>
+                            </button>
+                          )}
+                          {hasX && (
+                            <button
+                              type="button"
+                              onClick={() => setPublishNetworks(prev => ({ ...prev, x: !prev.x }))}
+                              className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                                publishNetworks.x
+                                  ? "bg-black text-white shadow-xs scale-102"
+                                  : "bg-white text-slate-600 border border-slate-200 hover:border-slate-300"
+                              }`}
+                            >
+                              <FaTwitter />
+                              <span>X (Twitter)</span>
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Copy de la Publicación */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                          2. Copy que acompañará tu publicación
+                        </label>
+                        <button
+                          type="button"
+                          onClick={handleGenerateCopy}
+                          disabled={isGeneratingCopy}
+                          className="text-[10px] font-black uppercase tracking-wider bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-2.5 py-1 rounded-lg transition-all shadow-2xs flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                        >
+                          {isGeneratingCopy ? "Redactando..." : "✨ Redactar Copy con nuestros Agentes"}
+                        </button>
+                      </div>
+                      <textarea
+                        rows={3}
+                        value={publishCopy}
+                        onChange={(e) => setPublishCopy(e.target.value)}
+                        placeholder="Escribe el copy para tus redes o pulsa 'Redactar Copy con nuestros Agentes' para que nuestro equipo redacte el texto comercial con hashtags..."
+                        className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-slate-800 outline-none focus:border-indigo-500 shadow-inner resize-none custom-scrollbar"
+                      />
+                    </div>
+
+                    {/* Botón de Publicación Inmediata */}
+                    {publishSuccess ? (
+                      <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-center space-y-1">
+                        <p className="text-xs font-black text-emerald-800">
+                          🎉 ¡Publicado exitosamente en tus redes sociales!
+                        </p>
+                        <a
+                          href="/automatizacion-rrss/panel/publicados"
+                          className="inline-block text-[11px] font-bold text-emerald-700 underline hover:text-emerald-900"
+                        >
+                          Ver historial de publicaciones →
+                        </a>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handlePublishNow}
+                        disabled={isPublishingNow || !hasAnyNetwork}
+                        className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black py-3.5 rounded-xl shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isPublishingNow ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            <span>Publicando en tus Redes...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>🚀</span>
+                            <span>Publicar Ahora en Redes Sociales</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Acciones Secundarias */}
+                  <div className="flex flex-col sm:flex-row gap-2.5 justify-center pt-2">
+                    <button
                       onClick={useImageInPost}
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-indigo-600/30 transition-all active:scale-95"
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-5 rounded-xl text-xs shadow-sm transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
                     >
-                      ✍️ Usar en Nuevo Post
+                      <span>✍️</span> Abrir en Editor / Programar
+                    </button>
+                    <button
+                      onClick={() => {
+                        setGeneratedImage(null);
+                        setPublishSuccess(false);
+                      }}
+                      className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 px-5 rounded-xl text-xs transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      <span>🔄</span> Diseñar Otra Pieza
                     </button>
                     {isAdminUser && (
-                      <button 
+                      <button
                         onClick={handleSetAsCover}
-                        className="bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-slate-800/30 transition-all active:scale-95"
+                        className="bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 px-5 rounded-xl text-xs shadow-sm transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
                         title="Actualizar la foto de ejemplo de esta plantilla"
                       >
-                        🖼️ Guardar como Portada
+                        <span>🖼️</span> Guardar como Portada
                       </button>
                     )}
                   </div>
@@ -1521,7 +1992,7 @@ function PromptsLibraryContent() {
                         Analizando...
                       </>
                     ) : (
-                      <>✨ Optimizar con IA</>
+                      <>✨ Optimizar con nuestros Agentes</>
                     )}
                   </button>
                 </div>
