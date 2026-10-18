@@ -17,7 +17,7 @@ import CarouselWizard, { CarouselSlide } from "../../../../components/crear/Caro
 import CanvasEditor from "../../../../components/crear/CanvasEditor";
 import StatusModal from "../../../../components/StatusModal";
 import AIOptionsModal from "../../../../components/crear/AIOptionsModal";
-import PosterSection from "../../../../components/crear/PosterSection";
+import PosterFormView from "../../../../components/crear/PosterFormView";
 import GeneratingModal, { type GeneratingStep } from "../../../../components/crear/GeneratingModal";
 import { FaFacebookF, FaInstagram, FaLinkedinIn, FaTiktok, FaGoogle, FaYoutube, FaTwitter } from "react-icons/fa";
 import TikTokPostSettings, { TikTokSettingsState, DEFAULT_TIKTOK_SETTINGS } from "../../../../components/crear/TikTokPostSettings";
@@ -59,6 +59,8 @@ export default function RrssCreatePost() {
   /** Imagen base opcional para anclar producto a estilos visuales */
   const [baseImageUrl, setBaseImageUrl] = useState<string>("");
   const [uploadingBaseImage, setUploadingBaseImage] = useState<boolean>(false);
+  /** Flujo de creación activo: 'estandar' (post sin texto en imagen) o 'afiche' (cartel publicitario con tipografías y datos) */
+  const [activeCreationFlow, setActiveCreationFlow] = useState<'estandar' | 'afiche'>('estandar');
   /** Configuración del cartel publicitario (opcional) */
   const [posterConfig, setPosterConfig] = useState<PosterConfig>(DEFAULT_POSTER_CONFIG);
   /** Incluir logo recreado con IA en la imagen generada */
@@ -513,8 +515,11 @@ export default function RrssCreatePost() {
   // FLUJO PRINCIPAL DE GENERACIÓN CON REVISIÓN INTERNA DE PROMPTS
   // ──────────────────────────────────────────────────────────────
   const handleGeneratePreview = async (forceReplan = false) => {
-    const targetIdea = idea.trim() || postText.trim() || imageExpectation.trim();
+    const targetIdea = idea.trim() || posterConfig.mainText?.trim() || postText.trim() || imageExpectation.trim();
     let targetExpectation = imageExpectation.trim();
+    if (posterConfig.enabled && posterConfig.mainText) {
+      targetExpectation = targetExpectation ? `${targetExpectation}. Poster headline: ${posterConfig.mainText}` : `Commercial poster layout for ${posterConfig.mainText}`;
+    }
     if (imageStyle) {
       targetExpectation = targetExpectation ? `${targetExpectation}, ${imageStyle}` : imageStyle;
     }
@@ -1418,58 +1423,135 @@ export default function RrssCreatePost() {
         </label>
         <div className="grid md:grid-cols-2 gap-4">
           {/* Viñeta 1: Publicación Estándar */}
-          <div className="p-5 rounded-2xl border-2 border-indigo-500 bg-gradient-to-br from-indigo-50/70 via-white to-purple-50/30 shadow-sm relative overflow-hidden transition-all">
-            <div className="flex items-start justify-between gap-3 mb-2">
-              <div className="flex items-center gap-2.5">
-                <span className="text-2xl">✨</span>
-                <div>
-                  <h3 className="text-base font-black text-slate-900 leading-tight">Publicación Estándar</h3>
-                  <p className="text-[11px] font-bold text-indigo-700">Imagen limpia, Carrusel, Historia o Reel</p>
-                </div>
-              </div>
-              <span className="text-[9px] font-black uppercase tracking-wider bg-indigo-600 text-white px-2.5 py-1 rounded-full shadow-xs shrink-0">
-                Flujo Activo
-              </span>
-            </div>
-            <p className="text-xs text-slate-600 font-medium leading-relaxed">
-              Diseños fotográficos, conceptuales o animados sin textos montados sobre la imagen. El mensaje persuasivo y hashtags van redactados directamente en el copy de tu publicación.
-            </p>
-          </div>
-
-          {/* Viñeta 2: Afiche / Diseño con Textos */}
-          <div className="p-5 rounded-2xl border-2 border-slate-200 bg-white hover:border-amber-400 hover:shadow-md transition-all group relative overflow-hidden flex flex-col justify-between">
+          <button
+            type="button"
+            onClick={() => {
+              setActiveCreationFlow('estandar');
+              setPosterConfig((prev) => ({ ...prev, enabled: false }));
+            }}
+            className={`p-5 rounded-2xl border-2 text-left transition-all relative overflow-hidden flex flex-col justify-between cursor-pointer ${
+              activeCreationFlow === 'estandar'
+                ? "border-indigo-500 bg-gradient-to-br from-indigo-50/70 via-white to-purple-50/30 shadow-md ring-2 ring-indigo-500/20"
+                : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm"
+            }`}
+          >
             <div>
               <div className="flex items-start justify-between gap-3 mb-2">
                 <div className="flex items-center gap-2.5">
-                  <span className="text-2xl group-hover:scale-110 transition-transform">🎯</span>
+                  <span className="text-2xl">✨</span>
                   <div>
-                    <h3 className="text-base font-black text-slate-900 leading-tight">Afiche / Diseño con Textos</h3>
-                    <p className="text-[11px] font-bold text-amber-700">Flyer comercial con capas de texto y precios</p>
+                    <h3 className="text-base font-black text-slate-900 leading-tight">Publicación Estándar</h3>
+                    <p className={`text-[11px] font-bold ${activeCreationFlow === 'estandar' ? "text-indigo-700" : "text-slate-500"}`}>
+                      Imagen limpia, Carrusel, Historia o Reel
+                    </p>
                   </div>
                 </div>
-                <span className="text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-full shrink-0">
-                  Cartel Comercial
-                </span>
+                {activeCreationFlow === 'estandar' ? (
+                  <span className="text-[9px] font-black uppercase tracking-wider bg-indigo-600 text-white px-2.5 py-1 rounded-full shadow-xs shrink-0">
+                    Flujo Activo
+                  </span>
+                ) : (
+                  <span className="text-[9px] font-black uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-200 px-2 py-0.5 rounded-full shrink-0">
+                    Seleccionar
+                  </span>
+                )}
               </div>
-              <p className="text-xs text-slate-500 font-medium leading-relaxed mb-4">
+              <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                Diseños fotográficos, conceptuales o animados sin textos montados sobre la imagen. El mensaje persuasivo y hashtags van redactados directamente en el copy de tu publicación.
+              </p>
+            </div>
+          </button>
+
+          {/* Viñeta 2: Afiche / Diseño con Textos */}
+          <button
+            type="button"
+            onClick={() => {
+              setActiveCreationFlow('afiche');
+              setPosterConfig((prev) => ({
+                ...prev,
+                enabled: true,
+                includeBusinessName: prev.includeBusinessName || true,
+                businessName: prev.businessName || activeProfile?.name || "",
+                includeMainText: prev.includeMainText || true,
+                mainText: prev.mainText || idea || "",
+              }));
+            }}
+            className={`p-5 rounded-2xl border-2 text-left transition-all relative overflow-hidden flex flex-col justify-between cursor-pointer ${
+              activeCreationFlow === 'afiche'
+                ? "border-amber-500 bg-gradient-to-br from-amber-50/80 via-white to-orange-50/30 shadow-md ring-2 ring-amber-500/20"
+                : "border-slate-200 bg-white hover:border-amber-300 hover:shadow-sm"
+            }`}
+          >
+            <div>
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <div className="flex items-center gap-2.5">
+                  <span className="text-2xl">🎯</span>
+                  <div>
+                    <h3 className="text-base font-black text-slate-900 leading-tight">Afiche / Diseño con Textos</h3>
+                    <p className={`text-[11px] font-bold ${activeCreationFlow === 'afiche' ? "text-amber-800" : "text-slate-500"}`}>
+                      Flyer comercial con capas de texto y precios
+                    </p>
+                  </div>
+                </div>
+                {activeCreationFlow === 'afiche' ? (
+                  <span className="text-[9px] font-black uppercase tracking-wider bg-amber-600 text-white px-2.5 py-1 rounded-full shadow-xs shrink-0">
+                    Flujo Activo
+                  </span>
+                ) : (
+                  <span className="text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-full shrink-0">
+                    Cartel Comercial
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-600 font-medium leading-relaxed">
                 Diseños publicitarios con textos tipográficos sobre la imagen, titulares de oferta, precios y llamadas a la acción directamente sobre el diseño visual.
               </p>
             </div>
-            <div>
-              <Link
-                href="/automatizacion-rrss/panel/imagen-comercial"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all"
-              >
-                <span>🎨 Crear Afiche Publicitario con Capas</span>
-                <span>→</span>
-              </Link>
-            </div>
-          </div>
+          </button>
         </div>
       </div>
 
-      {/* 2. SECCIÓN MEDIA: GRID DE 2 COLUMNAS (PARÁMETROS A LA IZQ Y CONTENIDO A LA DER) */}
+      {/* 2. SECCIÓN MEDIA: SEGÚN FLUJO ACTIVO (ESTÁNDAR O AFICHE) */}
       {!openEditorParam && (
+        activeCreationFlow === 'afiche' ? (
+          <div className="mb-10">
+            <PosterFormView
+              userPlan={userPlan}
+              posterConfig={posterConfig}
+              setPosterConfig={setPosterConfig}
+              idea={idea}
+              setIdea={setIdea}
+              imageExpectation={imageExpectation}
+              setImageExpectation={setImageExpectation}
+              postText={postText}
+              setPostText={setPostText}
+              baseImageUrl={baseImageUrl}
+              setBaseImageUrl={setBaseImageUrl}
+              onUploadBaseImage={handleUploadBaseImage}
+              uploadingBaseImage={uploadingBaseImage}
+              networks={networks}
+              setNetworks={setNetworks}
+              hasFb={hasFb}
+              hasIg={hasIg}
+              hasLi={hasLi}
+              hasTt={hasTt}
+              hasGbp={hasGbp}
+              hasYt={hasYt}
+              hasX={hasX}
+              needsConnection={needsConnection}
+              activeProfile={activeProfile}
+              userLogo={userLogo}
+              previewLoading={previewLoading || promptLoading}
+              improveLoading={improveLoading}
+              handleGeneratePreview={handleGeneratePreview}
+              handleImproveWithAI={handleImproveWithAI}
+              isAdmin={isAdmin}
+              catalogoItems={catalogoItems}
+              selectedCatalogoItem={selectedCatalogoItem}
+              setSelectedCatalogoItem={setSelectedCatalogoItem}
+            />
+          </div>
+        ) : (
         <div className="grid lg:grid-cols-12 gap-8 items-start mb-10">
           {/* Columna Izquierda: Parámetros del post */}
           <div className="lg:col-span-6 space-y-6 w-full">
@@ -1640,6 +1722,7 @@ export default function RrssCreatePost() {
           />
         </div>
       </div>
+        )
       )}
 
       {/* 3. SECCIÓN INFERIOR: ÁREA DE VISUALIZACIÓN A PANTALLA COMPLETA ABAJO */}
