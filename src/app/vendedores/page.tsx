@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -128,27 +128,44 @@ function buildWhatsAppCopy(
   pBusiness: string,
   pDishOrProduct: string,
   pOffer: string,
-  demoId?: string
+  demoId?: string,
+  schedulePlan?: any[],
+  publications?: any[]
 ) {
   const namePart = pName.trim() ? `¡Hola ${pName.trim()}!` : "¡Hola!";
-  const businessPart = pBusiness.trim() ? ` para ${pBusiness.trim()}` : "";
-  const offerOrDish = pDishOrProduct.trim()
-    ? ` su especialidad "${pDishOrProduct.trim()}"${pOffer.trim() ? ` y la promo "${pOffer.trim()}"` : ""}`
-    : (pOffer.trim() ? ` destacando "${pOffer.trim()}"` : "");
-  const offerPart = offerOrDish ? ` destacando${offerOrDish}` : "";
-
+  const businessName = pBusiness.trim() || "tu marca";
   const demoLink = demoId
     ? `${PUBLIC_APP_URL}/m/${demoId}`
     : `${PUBLIC_APP_URL}/m/[ID_DE_MUESTRA]`;
 
-  return `${namePart} 👋 Estuve revisando lo que hacen en tu marca y le pedí a nuestro equipo de agentes que diseñara esta propuesta visual y de video exclusiva${businessPart}${offerPart}:
+  let scheduleSection = "";
+  if (Array.isArray(schedulePlan) && schedulePlan.length > 0) {
+    const lines = schedulePlan.slice(0, 5).map((item, i) => {
+      const numEmoji = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣"][i] || `•`;
+      const fmtLabel = item.format === "carrusel" ? "Carrusel (3 slides)" : "Post (1:1)";
+      return `${numEmoji} ${item.day || `Día ${i + 1}`} · ${fmtLabel}\n   🎯 ${item.objective || item.hook || "Publicación estratégica"}`;
+    }).join("\n\n");
+    scheduleSection = `\n\n📅 Plan de Publicaciones Estratégico (Radar de Nicho):\n${lines}`;
+  }
 
-🚀 Puedes ver la muestra interactiva y el copy listo para publicar aquí:
-${demoLink}
+  let samplesSection = "";
+  if (Array.isArray(publications) && publications.length > 0) {
+    const lines = publications.slice(0, 3).map((pub, i) => {
+      const fmtIcon = pub.type === "carrusel" ? "🎠" : "📸";
+      const briefCopy = (pub.copy || "").split("\n")[0] || pub.title || "Publicación de alto impacto";
+      return `${fmtIcon} Muestra #${i + 1} (${pub.visualStyleTitle || "Estilo Visual"}): ${pub.title || pub.dishOrProductName}\n"${briefCopy.length > 110 ? briefCopy.substring(0, 107) + '...' : briefCopy}"`;
+    }).join("\n\n");
+    samplesSection = `\n\n✨ Publicaciones de Muestra Diseñadas:\n${lines}`;
+  }
+
+  return `${namePart} 👋 Estuve revisando lo que hacen en ${businessName} y nuestro equipo de agentes especializados preparó esta propuesta estratégica exclusiva con publicaciones listas para tus redes y planificación de nicho:
+
+🚀 Ver propuesta interactiva completa:
+${demoLink}${scheduleSection}${samplesSection}
 
 Diseñamos este contenido con su identidad para que veas la calidad y el impacto que tendrían sus redes semana a semana sin quitarte tiempo.
 
-¿Qué te parece el estilo?`;
+¿Qué te parece la propuesta para comenzar esta semana?`;
 }
 
 function buildFollowUpCopy(
@@ -259,15 +276,43 @@ export default function VendedoresPwaPage() {
   const [isRemovingLogoBg, setIsRemovingLogoBg] = useState(false);
   const [logoPosition, setLogoPosition] = useState<"top-left" | "top-right" | "bottom-left" | "bottom-right">("top-right");
 
-  // Step 3: Styles & Motor Visual (Nuestro Estilo Visual vs Imagen Comercial)
+  // Step 3: Styles & Motor Visual
   const [visualStyleSource, setVisualStyleSource] = useState<"preset_styles" | "commercial_image">("preset_styles");
   const [commercialIdea, setCommercialIdea] = useState("");
   const [commercialIncludeText, setCommercialIncludeText] = useState(true);
   const [commercialCustomText, setCommercialCustomText] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("Todas");
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedTemplate, setSelectedTemplate] = useState<PromptTemplate | null>(null);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [isStyleFilterModalOpen, setIsStyleFilterModalOpen] = useState(false);
+  const [selectedStyles, setSelectedStyles] = useState<PromptTemplate[]>([HARDCODED_STYLES[0]]);
+  const [selectedTemplate, setSelectedTemplate] = useState<PromptTemplate | null>(HARDCODED_STYLES[0]);
   const [allTemplates, setAllTemplates] = useState<PromptTemplate[]>(HARDCODED_STYLES);
+
+  // Sincronizar selectedTemplate con el primer estilo seleccionado
+  useEffect(() => {
+    if (selectedStyles.length > 0) {
+      setSelectedTemplate(selectedStyles[0]);
+    } else {
+      setSelectedTemplate(null);
+    }
+  }, [selectedStyles]);
+
+  // Manejo de multiselección de estilos (hasta 3)
+  const handleToggleStyle = (template: PromptTemplate) => {
+    setSelectedStyles((prev) => {
+      const exists = prev.some((s) => s.id === template.id);
+      if (exists) {
+        if (prev.length === 1) return prev; // Mantener al menos 1
+        return prev.filter((s) => s.id !== template.id);
+      } else {
+        if (prev.length >= 3) {
+          // Si ya hay 3, rotar reemplazando el último
+          return [prev[0], prev[1], template];
+        }
+        return [...prev, template];
+      }
+    });
+  };
 
   // Step 4: Generation State
   const [isGenerating, setIsGenerating] = useState(false);
@@ -281,12 +326,11 @@ export default function VendedoresPwaPage() {
   const [copySuccess, setCopySuccess] = useState(false);
   const [copyPostSuccess, setCopyPostSuccess] = useState(false);
 
-  // Novedades de Laboratorio: Cantidad de Posts, Formatos, Precios y Estrategia
-  const [postsCount, setPostsCount] = useState<number>(3); // 1 a 5
-  const [allowedTypes, setAllowedTypes] = useState<("post" | "carrusel" | "reel")[]>([
+  // Novedades de Laboratorio: Cantidad de Posts (máx 3), Formatos (post y carrusel), Precios y Estrategia
+  const [postsCount, setPostsCount] = useState<number>(3); // 1 a 3
+  const [allowedTypes, setAllowedTypes] = useState<("post" | "carrusel")[]>([
     "post",
     "carrusel",
-    "reel",
   ]);
   const [isCommercialPoster, setIsCommercialPoster] = useState<boolean>(true);
   const [productPrice, setProductPrice] = useState<string>("");
@@ -294,7 +338,7 @@ export default function VendedoresPwaPage() {
   const [generatedStrategy, setGeneratedStrategy] = useState<any>(null);
   const [selectedPreviewPubIndex, setSelectedPreviewPubIndex] = useState<number>(0);
 
-  const handleToggleType = (type: "post" | "carrusel" | "reel") => {
+  const handleToggleType = (type: "post" | "carrusel") => {
     setAllowedTypes((prev) => {
       if (prev.includes(type)) {
         if (prev.length === 1) return prev;
@@ -484,14 +528,52 @@ export default function VendedoresPwaPage() {
       prospectBusiness,
       dishOrProductName,
       offerText,
-      createdDemoId
+      createdDemoId,
+      generatedStrategy?.schedulePlan,
+      generatedPublications
     );
     setCustomWhatsappCopy(defaultMsg);
-  }, [prospectName, prospectBusiness, offerText, dishOrProductName, createdDemoId]);
+  }, [prospectName, prospectBusiness, offerText, dishOrProductName, createdDemoId, generatedStrategy, generatedPublications]);
 
-  // 5. Filtro de estilos
+  // 5. Filtro de estilos interactivo y conteo de categorías
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: allTemplates.length };
+    allTemplates.forEach((t) => {
+      const cats = getPromptCategories(t);
+      cats.forEach((c) => {
+        counts[c] = (counts[c] || 0) + 1;
+      });
+    });
+    return counts;
+  }, [allTemplates]);
+
+  const allCategoryNames = useMemo(() => {
+    const set = new Set<string>();
+    allTemplates.forEach((t) => {
+      getPromptCategories(t).forEach((c) => set.add(c));
+    });
+    return Array.from(set).sort();
+  }, [allTemplates]);
+
+  const toggleCategory = (cat: string) => {
+    if (cat === "all") {
+      setSelectedCategories([]);
+      return;
+    }
+    setSelectedCategories((prev) => {
+      if (prev.includes(cat)) {
+        return prev.filter((c) => c !== cat);
+      } else {
+        return [...prev, cat];
+      }
+    });
+  };
+
   const filteredTemplates = allTemplates.filter((template) => {
-    const matchCategory = selectedCategory === "Todas" || getPromptCategories(template).includes(selectedCategory);
+    const cats = getPromptCategories(template);
+    const matchCategory =
+      selectedCategories.length === 0 ||
+      selectedCategories.some((c) => cats.includes(c));
     const matchSearch =
       searchTerm.trim() === "" ||
       template.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -559,7 +641,7 @@ export default function VendedoresPwaPage() {
     }
 
     if (allowedTypes.length === 0) {
-      alert("Selecciona al menos un formato de publicación (Post, Carrusel o Reel).");
+      alert("Selecciona al menos un formato de publicación (Post o Carrusel).");
       return;
     }
 
@@ -611,8 +693,10 @@ export default function VendedoresPwaPage() {
           ]
         : [];
 
-      // 4. Preparar estilos seleccionados
-      const selectedStyles = selectedTemplate ? [selectedTemplate] : [];
+      // 4. Preparar estilos seleccionados (hasta 3)
+      const stylesToSend = selectedStyles.length > 0
+        ? selectedStyles.slice(0, 3)
+        : (selectedTemplate ? [selectedTemplate] : []);
 
       // 5. Teléfono formateado
       const phoneToSave = prospectPhone.trim()
@@ -622,7 +706,7 @@ export default function VendedoresPwaPage() {
       setGeneratingStep(
         `Nuestros agentes están diseñando ${postsCount} ${
           postsCount === 1 ? "publicación" : "publicaciones"
-        } y la estrategia comercial...`
+        } y el plan de 5 posts de nicho...`
       );
 
       const token = await auth.currentUser?.getIdToken();
@@ -649,7 +733,7 @@ export default function VendedoresPwaPage() {
           commercialCustomText: commercialCustomText.trim(),
           isCommercialPoster: visualStyleSource === "commercial_image" ? commercialIncludeText : isCommercialPoster,
           catalogItems,
-          selectedStyles: visualStyleSource === "preset_styles" ? selectedStyles : [],
+          selectedStyles: visualStyleSource === "preset_styles" ? stylesToSend : [],
           logoUrl: uploadedLogoUrl || "",
           baseImageUrl: uploadedBaseImageUrl || "",
           sellerName: currentUser?.displayName || currentUser?.email?.split("@")[0] || "Equipo Comercial",
@@ -680,10 +764,18 @@ export default function VendedoresPwaPage() {
       setCanvasImageUrl(mainImg);
       setGeneratedPostCaption(firstPub?.copy || "");
 
-      // Mensaje de WhatsApp sanitizado
+      // Mensaje de WhatsApp enriquecido con enlace, plan de 5 posts y copys
       const whatsappMsg =
         data.whatsappMessage ||
-        buildWhatsAppCopy(prospectName, prospectBusiness, dishOrProductName, offerText, savedDemoId);
+        buildWhatsAppCopy(
+          prospectName,
+          prospectBusiness,
+          dishOrProductName,
+          offerText,
+          savedDemoId,
+          data.strategy?.schedulePlan,
+          data.publications
+        );
       setCustomWhatsappCopy(whatsappMsg);
 
       // Recargar historial para reflejar la nueva muestra en tiempo real
@@ -1600,7 +1692,7 @@ export default function VendedoresPwaPage() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Selector de Cantidad de Publicaciones */}
+                  {/* Selector de Cantidad de Publicaciones (Máx 3) */}
                   <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-black text-slate-800 uppercase tracking-wider">
@@ -1611,7 +1703,7 @@ export default function VendedoresPwaPage() {
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      {[1, 2, 3, 4, 5].map((num) => (
+                      {[1, 2, 3].map((num) => (
                         <button
                           key={num}
                           type="button"
@@ -1627,11 +1719,11 @@ export default function VendedoresPwaPage() {
                       ))}
                     </div>
                     <p className="text-[10px] text-slate-400">
-                      Recomendado: 3 publicaciones (1 Post, 1 Carrusel y 1 Reel).
+                      Recomendado: 3 publicaciones de muestra para presentar al prospecto.
                     </p>
                   </div>
 
-                  {/* Selector de Formatos de Publicaciones */}
+                  {/* Selector de Formatos de Publicaciones (Solo Post y Carrusel) */}
                   <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-black text-slate-800 uppercase tracking-wider">
@@ -1641,11 +1733,10 @@ export default function VendedoresPwaPage() {
                         {allowedTypes.length} activos
                       </span>
                     </div>
-                    <div className="grid grid-cols-3 gap-1.5">
+                    <div className="grid grid-cols-2 gap-2">
                       {[
-                        { id: "post" as const, label: "Post", icon: "📸", sub: "1:1" },
+                        { id: "post" as const, label: "Post Cuadrado", icon: "📸", sub: "1:1 Feed" },
                         { id: "carrusel" as const, label: "Carrusel", icon: "🎠", sub: "3 Slides" },
-                        { id: "reel" as const, label: "Reel", icon: "🎬", sub: "9:16" },
                       ].map((fmt) => {
                         const isChecked = allowedTypes.includes(fmt.id);
                         return (
@@ -1653,14 +1744,14 @@ export default function VendedoresPwaPage() {
                             key={fmt.id}
                             type="button"
                             onClick={() => handleToggleType(fmt.id)}
-                            className={`p-2 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                            className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
                               isChecked
                                 ? "bg-white border-purple-500 shadow-xs ring-1 ring-purple-500/30"
                                 : "bg-slate-100 border-slate-200 opacity-60 hover:opacity-90"
                             }`}
                           >
                             <div className="flex items-center justify-between">
-                              <span className="text-xs">{fmt.icon}</span>
+                              <span className="text-sm">{fmt.icon}</span>
                               <span className={`text-[10px] font-black ${isChecked ? "text-purple-600" : "text-transparent"}`}>
                                 ✓
                               </span>
@@ -1673,35 +1764,6 @@ export default function VendedoresPwaPage() {
                         );
                       })}
                     </div>
-                  </div>
-                </div>
-
-                {/* Toggle de Cartel Comercial */}
-                <div
-                  onClick={() => setIsCommercialPoster(!isCommercialPoster)}
-                  className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
-                    isCommercialPoster
-                      ? "bg-indigo-50/60 border-indigo-300"
-                      : "bg-slate-50 border-slate-200"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl">🏷️</span>
-                    <div>
-                      <p className="text-xs font-black text-slate-900 leading-tight">
-                        Diseñar como Cartel Comercial con Tipografía Integrada
-                      </p>
-                      <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
-                        {isCommercialPoster
-                          ? "Activo: Si subes foto real, se preserva 100% y se integran tipografías de oferta y sellos. Si no, se genera cartel comercial completo."
-                          : "Inactivo: Generación de fotografía de producto limpia sin tipografías impresas en la imagen."}
-                      </p>
-                    </div>
-                  </div>
-                  <div className={`w-10 h-6 flex items-center rounded-full p-1 duration-300 cursor-pointer shrink-0 ${
-                    isCommercialPoster ? "bg-indigo-600 justify-end" : "bg-slate-300 justify-start"
-                  }`}>
-                    <div className="bg-white w-4 h-4 rounded-full shadow-md transform transition-all" />
                   </div>
                 </div>
               </div>
@@ -1917,254 +1979,289 @@ export default function VendedoresPwaPage() {
               </div>
             </section>
 
-            {/* PASO 4: SELECCIÓN DE ESTILO VISUAL O IMAGEN COMERCIAL */}
-            <section className="bg-white border border-slate-200/80 rounded-3xl p-5 sm:p-6 shadow-sm space-y-5">
-              <div className="flex items-center justify-between">
+            {/* SECCIÓN 4: ESTILOS VISUALES Y DATOS COMERCIALES DE MUESTRA */}
+            <section className="bg-white border border-slate-200/80 rounded-3xl p-5 sm:p-6 shadow-sm space-y-6">
+              {/* Cabecera de la Sección */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2.5">
                   <span className="w-7 h-7 rounded-full bg-indigo-50 text-indigo-600 text-xs font-black flex items-center justify-center border border-indigo-100">
                     4
                   </span>
                   <div>
                     <h2 className="text-sm sm:text-base font-black text-slate-900">
-                      ¿Cómo quieres diseñar el Estilo Visual de la Imagen?
+                      Estilos Visuales y Datos Comerciales de Muestra
                     </h2>
                     <p className="text-[11px] text-slate-500 font-medium">
-                      Elige entre usar uno de nuestros diseños previamente cargados o crear una Imagen Comercial con capas de Nuestro Editor.
+                      Paso 1: Selecciona hasta 3 estilos visuales · Paso 2: Personaliza los textos y datos de las muestras.
                     </p>
                   </div>
                 </div>
-                {visualStyleSource === "preset_styles" && selectedTemplate && (
-                  <button
-                    type="button"
-                    onClick={() => setSelectedTemplate(null)}
-                    className="text-xs text-indigo-600 hover:underline font-bold"
-                  >
-                    Limpiar selección
-                  </button>
-                )}
+                <div className="flex items-center gap-2 self-start sm:self-auto">
+                  <span className="text-[11px] font-black text-indigo-700 bg-indigo-50 border border-indigo-200 px-3 py-1 rounded-full">
+                    🎨 {selectedStyles.length} de 3 estilos seleccionados
+                  </span>
+                </div>
               </div>
 
-              {/* Selector de Modo Visual: Nuestro Estilo Visual vs Imagen Comercial */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setVisualStyleSource("preset_styles")}
-                  className={`p-4 rounded-2xl border-2 text-left transition-all cursor-pointer flex items-start gap-3 ${
-                    visualStyleSource === "preset_styles"
-                      ? "bg-indigo-50/70 border-indigo-600 shadow-md shadow-indigo-600/10 ring-2 ring-indigo-500/20"
-                      : "bg-slate-50 border-slate-200 hover:bg-slate-100"
-                  }`}
-                >
-                  <span className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-lg shrink-0 shadow-xs">
-                    🎨
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs sm:text-sm font-black text-slate-900">
-                        Nuestro Estilo Visual
-                      </span>
-                      {visualStyleSource === "preset_styles" && (
-                        <span className="px-2 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-black">
-                          Activo
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-[11px] text-slate-600 font-medium mt-1 leading-relaxed">
-                      Utiliza uno de nuestros diseños y estilos visuales previamente cargados en el catálogo.
-                    </p>
+              {/* PASO 1: SELECCIÓN DE ESTILOS VISUALES (HASTA 3) */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full bg-slate-900 text-white text-[10px] font-black uppercase tracking-wider">
+                      Paso 1
+                    </span>
+                    <h3 className="text-xs sm:text-sm font-black text-slate-900">
+                      Selecciona los Estilos Visuales (Máximo 3)
+                    </h3>
                   </div>
-                </button>
+                  <p className="text-[10px] text-slate-400 font-medium hidden sm:block">
+                    Haz clic para marcar o desmarcar estilos (#1, #2, #3)
+                  </p>
+                </div>
 
-                <button
-                  type="button"
-                  onClick={() => setVisualStyleSource("commercial_image")}
-                  className={`p-4 rounded-2xl border-2 text-left transition-all cursor-pointer flex items-start gap-3 ${
-                    visualStyleSource === "commercial_image"
-                      ? "bg-amber-50/80 border-amber-500 shadow-md shadow-amber-500/10 ring-2 ring-amber-500/20"
-                      : "bg-slate-50 border-slate-200 hover:bg-slate-100"
-                  }`}
-                >
-                  <span className="w-10 h-10 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center text-lg shrink-0 shadow-xs">
-                    ✨
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs sm:text-sm font-black text-slate-900">
-                        Imagen Comercial
-                      </span>
-                      {visualStyleSource === "commercial_image" && (
-                        <span className="px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black">
-                          Activo
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-[11px] text-slate-600 font-medium mt-1 leading-relaxed">
-                      Nuestros agentes crean un fondo limpio y arman las capas de texto, oferta y logo con Nuestro Editor.
-                    </p>
-                  </div>
-                </button>
-              </div>
-
-              {visualStyleSource === "preset_styles" ? (
-                <>
-                  {/* Categorías y Búsqueda */}
-                  <div className="space-y-3">
-                    <div className="relative">
-                      <FaSearch className="absolute left-3.5 top-3 text-slate-400 text-xs" />
+                {/* BARRA UNIFICADA: BUSCADOR + BOTÓN MODAL FILTRAR ESTILOS */}
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-2.5 shadow-2xs">
+                  <div className="flex items-center justify-between gap-2.5">
+                    {/* Buscador Integrado */}
+                    <div className="relative flex-1">
+                      <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none" />
                       <input
                         type="text"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder="Buscar estilo (ej. Gourmet, Neón, Cyber, Blanco)..."
-                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-9 pr-4 py-2 text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition-all font-medium"
+                        placeholder="Buscar por estilo, temática o palabras clave..."
+                        className="w-full pl-9 pr-8 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 shadow-2xs transition-all"
                       />
-                    </div>
-
-                    {/* Chips de Categoría */}
-                    <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-                      {["Todas", ...promptCategories].slice(0, 8).map((cat) => (
+                      {searchTerm && (
                         <button
-                          key={cat}
                           type="button"
-                          onClick={() => setSelectedCategory(cat)}
-                          className={`whitespace-nowrap px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all border ${
-                            selectedCategory === cat
-                              ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
-                              : "bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200"
-                          }`}
+                          onClick={() => setSearchTerm("")}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-600 text-[10px] flex items-center justify-center font-bold transition-colors cursor-pointer"
+                          title="Limpiar búsqueda"
                         >
-                          {cat}
+                          ✕
                         </button>
-                      ))}
+                      )}
                     </div>
-                  </div>
 
-                  {/* Grid de Estilos */}
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-80 overflow-y-auto pr-1">
-                    {filteredTemplates.slice(0, 24).map((template) => {
-                      const isSelected = selectedTemplate?.id === template.id;
-                      return (
-                        <div
-                          key={template.id}
-                          onClick={() => setSelectedTemplate(template)}
-                          className={`group relative rounded-2xl overflow-hidden border cursor-pointer transition-all ${
-                            isSelected
-                              ? "border-indigo-600 ring-2 ring-indigo-600 shadow-md shadow-indigo-600/20 bg-indigo-50/50"
-                              : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-xs"
-                          }`}
-                        >
-                          <div className="aspect-square relative overflow-hidden bg-slate-100">
-                            {template.previewUrl ? (
-                              <img
-                                src={template.previewUrl}
-                                alt={template.title}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-slate-400">
-                                <FaImage className="text-2xl" />
-                              </div>
-                            )}
-                            {isSelected && (
-                              <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-md">
-                                <FaCheck className="text-[10px]" />
-                              </div>
-                            )}
-                          </div>
-                          <div className="p-2.5">
-                            <h4 className="text-xs font-bold text-slate-900 truncate">{template.title}</h4>
-                            <p className="text-[10px] text-slate-500 line-clamp-1 mt-0.5">
-                              {template.category}
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              ) : (
-                /* Configuración de Imagen Comercial (Motor de Capas + Nuestro Editor) */
-                <div className="p-4 sm:p-5 rounded-2xl bg-amber-50/50 border border-amber-200/80 space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-200/60 pb-3">
-                    <div>
-                      <h3 className="text-xs sm:text-sm font-black text-slate-900 flex items-center gap-1.5">
-                        <span>✨</span> Configuración de Imagen Comercial
-                      </h3>
-                      <p className="text-[11px] text-slate-600 font-medium">
-                        Nuestros agentes generarán la escena limpia y compondrán las capas tipográficas vectoriales. Podrás editar cada capa en Nuestro Editor si lo deseas.
-                      </p>
-                    </div>
-                    <a
-                      href="/automatizacion-rrss/panel/imagen-comercial"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="px-3 py-1.5 rounded-xl bg-white hover:bg-amber-100/60 text-amber-800 border border-amber-300 text-[11px] font-black transition-all shrink-0 self-start sm:self-auto"
+                    {/* Botón Disparador del Modal de Estilos */}
+                    <button
+                      type="button"
+                      onClick={() => setIsStyleFilterModalOpen(true)}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shrink-0 cursor-pointer shadow-2xs ${
+                        selectedCategories.length === 0
+                          ? "bg-slate-900 hover:bg-slate-800 text-white"
+                          : "bg-indigo-600 hover:bg-indigo-700 text-white ring-2 ring-indigo-500/20 shadow-indigo-200"
+                      }`}
+                      title="Abrir selector de categorías de estilos"
                     >
-                      🎨 Ir al Editor Completo ↗
-                    </a>
+                      <span>{selectedCategories.length === 0 ? "⚡" : "🎨"}</span>
+                      <span className="font-black">
+                        {selectedCategories.length === 0
+                          ? "Filtrar Estilos"
+                          : selectedCategories.length === 1
+                          ? selectedCategories[0]
+                          : `${selectedCategories.length} Filtros`}
+                      </span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${
+                        selectedCategories.length === 0
+                          ? "bg-slate-800 text-slate-300 border border-slate-700"
+                          : "bg-indigo-700 text-white"
+                      }`}>
+                        {selectedCategories.length === 0
+                          ? allCategoryNames.length
+                          : selectedCategories.length === 1
+                          ? (categoryCounts[selectedCategories[0]] || 0)
+                          : selectedCategories.length}
+                      </span>
+                    </button>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                      ¿Qué idea o escena necesitas mostrar? (Opcional)
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={commercialIdea}
-                      onChange={(e) => setCommercialIdea(e.target.value)}
-                      placeholder="Ej: Un escritorio moderno o escena atractiva del servicio con iluminación cálida. Si lo dejas en blanco, nuestros agentes usarán los datos del negocio y oferta del Paso 1."
-                      className="w-full bg-white border border-amber-200 rounded-2xl px-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 transition-all font-medium resize-none"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                        ¿Incluir Capas de Texto en la Imagen?
-                      </label>
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setCommercialIncludeText(true)}
-                          className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-                            commercialIncludeText
-                              ? "bg-amber-500 text-slate-950 border-amber-500 shadow-xs"
-                              : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-                          }`}
-                        >
-                          ✅ Sí, con textos
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setCommercialIncludeText(false)}
-                          className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-                            !commercialIncludeText
-                              ? "bg-slate-800 text-white border-slate-800 shadow-xs"
-                              : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-                          }`}
-                        >
-                          🖼️ Solo fondo limpio
-                        </button>
+                  {/* Barra de Filtros Activos si hay categorías seleccionadas */}
+                  {selectedCategories.length > 0 && (
+                    <div className="mt-2.5 pt-2 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-[11px] font-bold text-slate-400 mr-1">Filtrando por:</span>
+                        {selectedCategories.map((cat) => (
+                          <span
+                            key={cat}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200"
+                          >
+                            <span>🏷️</span>
+                            <span>{cat}</span>
+                            <span className="text-[10px] bg-indigo-100 text-indigo-800 px-1.5 py-0.2 rounded-full font-black">
+                              {categoryCounts[cat] || 0}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedCategories((prev) => prev.filter((c) => c !== cat))}
+                              className="text-indigo-400 hover:text-indigo-800 font-bold ml-0.5 transition-colors cursor-pointer"
+                            >
+                              ✕
+                            </button>
+                          </span>
+                        ))}
                       </div>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedCategories([])}
+                        className="text-[11px] text-slate-500 hover:text-indigo-600 font-bold hover:underline cursor-pointer"
+                      >
+                        Limpiar filtros
+                      </button>
                     </div>
+                  )}
+                </div>
 
-                    {commercialIncludeText && (
+                {/* GRID DE ESTILOS VISUALES */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-88 overflow-y-auto pr-1">
+                  {filteredTemplates.slice(0, 36).map((template) => {
+                    const selectedIndex = selectedStyles.findIndex((s) => s.id === template.id);
+                    const isSelected = selectedIndex !== -1;
+
+                    return (
+                      <div
+                        key={template.id}
+                        onClick={() => handleToggleStyle(template)}
+                        className={`group relative rounded-2xl overflow-hidden border cursor-pointer transition-all ${
+                          isSelected
+                            ? "border-indigo-600 ring-2 ring-indigo-600 shadow-md shadow-indigo-600/20 bg-indigo-50/50"
+                            : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-xs"
+                        }`}
+                      >
+                        <div className="aspect-square relative overflow-hidden bg-slate-100">
+                          {template.previewUrl ? (
+                            <img
+                              src={template.previewUrl}
+                              alt={template.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-slate-400">
+                              <FaImage className="text-2xl" />
+                            </div>
+                          )}
+
+                          {/* Badge Numérico de Selección (#1, #2, #3) */}
+                          {isSelected && (
+                            <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-indigo-600 text-white text-[11px] font-black flex items-center gap-1 shadow-md border border-white/20">
+                              <FaCheck className="text-[9px]" />
+                              <span>#{selectedIndex + 1}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-2.5">
+                          <h4 className="text-xs font-bold text-slate-900 truncate">{template.title}</h4>
+                          <p className="text-[10px] text-slate-500 line-clamp-1 mt-0.5">
+                            {template.category}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* PASO 2: TEXTOS COMERCIALES Y PRECIOS PARA LAS MUESTRAS */}
+              <div className="mt-6 pt-5 border-t border-slate-100 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-black uppercase tracking-wider">
+                      Paso 2
+                    </span>
+                    <h3 className="text-xs sm:text-sm font-black text-slate-900">
+                      ¿Deseas agregar textos y precios a las publicaciones de muestra?
+                    </h3>
+                  </div>
+                  <div
+                    onClick={() => setIsCommercialPoster(!isCommercialPoster)}
+                    className={`w-11 h-6 flex items-center rounded-full p-1 duration-300 cursor-pointer shrink-0 ${
+                      isCommercialPoster ? "bg-indigo-600 justify-end" : "bg-slate-300 justify-start"
+                    }`}
+                  >
+                    <div className="bg-white w-4 h-4 rounded-full shadow-md transform transition-all" />
+                  </div>
+                </div>
+
+                {isCommercialPoster ? (
+                  <div className="p-4 sm:p-5 rounded-2xl bg-indigo-50/50 border border-indigo-200/80 space-y-4 animate-in fade-in">
+                    <p className="text-xs text-indigo-950 font-medium">
+                      Nuestros agentes integrarán tipografías publicitarias llamativas, oferta y precio visible en las muestras para que el prospecto visualice de inmediato el impacto comercial en sus redes.
+                    </p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                       <div>
                         <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                          Texto específico a destacar (Opcional)
+                          Producto o Servicio a Destacar
+                        </label>
+                        <input
+                          type="text"
+                          value={dishOrProductName}
+                          onChange={(e) => setDishOrProductName(e.target.value)}
+                          placeholder="Ej. Hamburguesa Doble Cheddar / Limpieza Dental"
+                          className="w-full bg-white border border-indigo-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition-all font-medium"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                          Titular o Texto Comercial Destacado
                         </label>
                         <input
                           type="text"
                           value={commercialCustomText}
                           onChange={(e) => setCommercialCustomText(e.target.value)}
-                          placeholder="Ej: Evaluación Gratis · Agenda Hoy por WhatsApp"
-                          className="w-full bg-white border border-amber-200 rounded-2xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 transition-all font-medium"
+                          placeholder="Ej. ¡2x1 HOY! / ESPECIAL DE LA SEMANA"
+                          className="w-full bg-white border border-indigo-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition-all font-medium"
                         />
                       </div>
-                    )}
+
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                          Precio u Oferta
+                        </label>
+                        <input
+                          type="text"
+                          value={productPrice}
+                          onChange={(e) => setProductPrice(e.target.value)}
+                          placeholder="Ej. $19.990 o 30% OFF"
+                          className="w-full bg-white border border-indigo-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition-all font-medium"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                          Llamado a la Acción (CTA) / Botón
+                        </label>
+                        <input
+                          type="text"
+                          value={badgeCustomText}
+                          onChange={(e) => setBadgeCustomText(e.target.value)}
+                          placeholder="Ej. ¡Pide por WhatsApp! o Reserva Aquí"
+                          className="w-full bg-white border border-indigo-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition-all font-medium"
+                        />
+                      </div>
+
+                      <div className="sm:col-span-2">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                          Subtítulo o Detalle de la Oferta (Opcional)
+                        </label>
+                        <input
+                          type="text"
+                          value={offerText}
+                          onChange={(e) => setOfferText(e.target.value)}
+                          placeholder="Ej. Incluye papas y bebida · Válido de Lunes a Jueves con todo medio de pago"
+                          className="w-full bg-white border border-indigo-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition-all font-medium"
+                        />
+                      </div>
+                    </div>
                   </div>
-                </div>
-              )}
+                ) : (
+                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-500 font-medium">
+                    Fotografía limpia activada: Las publicaciones de muestra se generarán con estética fotográfica publicitaria pura, sin textos ni precios sobreimpresos en la imagen.
+                  </div>
+                )}
+              </div>
             </section>
 
             {/* BOTÓN PRINCIPAL DE GENERACIÓN */}
@@ -2234,8 +2331,8 @@ export default function VendedoresPwaPage() {
                       <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
                         {generatedPublications.map((pub, idx) => {
                           const isSel = selectedPreviewPubIndex === idx;
-                          const icon = pub.type === "reel" ? "🎬" : pub.type === "carrusel" ? "🎠" : "📸";
-                          const label = pub.type === "reel" ? "Reel 9:16" : pub.type === "carrusel" ? "Carrusel" : "Post 1:1";
+                          const icon = pub.type === "carrusel" ? "🎠" : "📸";
+                          const label = pub.type === "carrusel" ? "Carrusel" : "Post 1:1";
                           return (
                             <button
                               key={idx}
@@ -2259,56 +2356,35 @@ export default function VendedoresPwaPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                     {/* IMAGEN / VISUAL GENERADO */}
                     <div className="space-y-3">
-                      {/* Formato Reel: 9:16 o Carrusel/Post: 1:1 */}
-                      {activePub?.type === "reel" ? (
-                        <div className="max-w-[280px] mx-auto aspect-[9/16] relative rounded-3xl overflow-hidden border border-slate-200 bg-slate-950 shadow-lg">
-                          <img
-                            src={activeImg}
-                            alt={activePub?.title || "Reel 9:16"}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              const target = e.currentTarget;
-                              if (generatedImageUrl && target.src !== generatedImageUrl) {
-                                target.src = generatedImageUrl;
-                              }
-                            }}
-                          />
-                          <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-black/70 backdrop-blur-md text-[10px] font-black text-white flex items-center gap-1.5 border border-white/10">
-                            <span>🎬</span> Reel Vertical 9:16
+                      <div className="aspect-square relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 shadow-sm">
+                        <img
+                          src={activeImg}
+                          alt="Flyer Muestra"
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.currentTarget;
+                            if (generatedImageUrl && target.src !== generatedImageUrl) {
+                              target.src = generatedImageUrl;
+                            } else if (baseImagePreview && target.src !== baseImagePreview) {
+                              target.src = baseImagePreview;
+                            }
+                          }}
+                        />
+                        {activePub?.type === "carrusel" ? (
+                          <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-purple-900/80 backdrop-blur-md text-[10px] font-black text-white flex items-center gap-1.5 border border-purple-400/30">
+                            <span>🎠</span> Carrusel (3 Slides)
                           </div>
-                          {activePub?.visualStyleTitle && (
-                            <div className="absolute bottom-3 left-3 right-3 px-2.5 py-1 rounded-xl bg-black/75 backdrop-blur-md text-[10px] font-bold text-slate-200 border border-white/10 truncate">
-                              🎨 {activePub.visualStyleTitle}
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="aspect-square relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 shadow-sm">
-                          <img
-                            src={activeImg}
-                            alt="Flyer Muestra"
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              const target = e.currentTarget;
-                              if (generatedImageUrl && target.src !== generatedImageUrl) {
-                                target.src = generatedImageUrl;
-                              } else if (baseImagePreview && target.src !== baseImagePreview) {
-                                target.src = baseImagePreview;
-                              }
-                            }}
-                          />
-                          {activePub?.type === "carrusel" && (
-                            <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-purple-900/80 backdrop-blur-md text-[10px] font-black text-white flex items-center gap-1.5 border border-purple-400/30">
-                              <span>🎠</span> Carrusel (3 Slides)
-                            </div>
-                          )}
-                          {activePub?.visualStyleTitle && activePub?.type !== "carrusel" && (
-                            <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-[10px] font-black text-white flex items-center gap-1">
-                              <span>🎨</span> {activePub.visualStyleTitle}
-                            </div>
-                          )}
-                        </div>
-                      )}
+                        ) : (
+                          <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-indigo-900/80 backdrop-blur-md text-[10px] font-black text-white flex items-center gap-1.5 border border-indigo-400/30">
+                            <span>📸</span> Post (1:1 Feed)
+                          </div>
+                        )}
+                        {activePub?.visualStyleTitle && (
+                          <div className="absolute bottom-3 left-3 right-3 px-2.5 py-1 rounded-xl bg-black/70 backdrop-blur-md text-[10px] font-bold text-white border border-white/10 truncate">
+                            🎨 {activePub.visualStyleTitle}
+                          </div>
+                        )}
+                      </div>
 
                       {/* Miniaturas de Carrusel si existen */}
                       {activePub?.type === "carrusel" && activePub?.carouselImages && activePub.carouselImages.length > 1 && (
@@ -2324,47 +2400,15 @@ export default function VendedoresPwaPage() {
                         </div>
                       )}
 
-                      {/* Guión Técnico de Reel si existe */}
-                      {activePub?.type === "reel" && activePub?.reelScript && (
-                        <div className="p-3.5 rounded-2xl bg-purple-50/70 border border-purple-200 text-xs space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="font-black text-purple-900 uppercase text-[10px] tracking-wider flex items-center gap-1">
-                              <span>🎬</span> Guión Técnico del Reel
-                            </span>
-                            <span className="text-[10px] font-bold text-purple-700 bg-white px-2 py-0.5 rounded-md border border-purple-200">
-                              0-30 seg
-                            </span>
-                          </div>
-                          {activePub.reelScript.hook3s && (
-                            <div>
-                              <span className="text-[10px] font-black text-purple-800 uppercase block">⚡ Hook (0-3 seg):</span>
-                              <p className="text-slate-800 italic font-medium text-[11px] mt-0.5">"{activePub.reelScript.hook3s}"</p>
-                            </div>
-                          )}
-                          {activePub.reelScript.body && (
-                            <div>
-                              <span className="text-[10px] font-black text-purple-800 uppercase block">🗣️ Desarrollo:</span>
-                              <p className="text-slate-700 font-medium text-[11px] mt-0.5">{activePub.reelScript.body}</p>
-                            </div>
-                          )}
-                          {activePub.reelScript.cta && (
-                            <div>
-                              <span className="text-[10px] font-black text-purple-800 uppercase block">📢 Llamada a la Acción (CTA):</span>
-                              <p className="text-emerald-700 font-bold text-[11px] mt-0.5">{activePub.reelScript.cta}</p>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
                       <div className="flex gap-2">
                         {createdDemoId && (
                           <a
                             href={`${PUBLIC_APP_URL}/m/${createdDemoId}`}
                             target="_blank"
                             rel="noreferrer"
-                            className="flex-1 py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-xs font-bold text-center text-slate-700 transition-colors flex items-center justify-center gap-1.5"
+                            className="flex-1 py-2.5 px-3 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-xs font-black text-center text-indigo-700 transition-colors flex items-center justify-center gap-1.5"
                           >
-                            <FaEye className="text-indigo-600" /> Ver Landing Pública
+                            <FaEye className="text-indigo-600" /> Ver Landing Pública ↗
                           </a>
                         )}
                         {createdDemoId && (
@@ -2392,17 +2436,84 @@ export default function VendedoresPwaPage() {
 
                     {/* COPY Y ENVÍO POR WHATSAPP */}
                     <div className="space-y-4">
-                      {/* ENVIAR WHATSAPP BOTÓN AUTOMATIZADO CON EVOLUTION Y N8N */}
+                      {/* CAJA DE ENVÍO POR WHATSAPP */}
                       <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-3">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1.5">
-                            <FaWhatsapp className="text-emerald-600 text-base" /> Envío Directo al Prospecto
+                            <FaWhatsapp className="text-emerald-600 text-base" /> Envío de la Propuesta por WhatsApp
                           </span>
                           {fullPhoneForPreview && (
                             <span className="text-xs font-bold text-emerald-700 font-mono">
                               {fullPhoneForPreview}
                             </span>
                           )}
+                        </div>
+
+                        {/* Botón 1: Abrir Directo en WhatsApp (wa.me) */}
+                        {fullPhoneForPreview ? (
+                          <a
+                            href={`https://wa.me/${fullPhoneForPreview.replace("+", "")}?text=${encodeURIComponent(customWhatsappCopy)}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="w-full py-3 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 transform active:scale-[0.99] transition-all cursor-pointer"
+                          >
+                            <FaWhatsapp className="text-lg" />
+                            <span>Abrir en WhatsApp (wa.me)</span>
+                          </a>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const cleanPhone = (prospectPhone.trim() ? `${countryCode}${prospectPhone.trim().replace(/^0+/, "")}` : "").replace(/[\s\-\(\)\+]/g, "");
+                              if (cleanPhone) {
+                                window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(customWhatsappCopy)}`, "_blank");
+                              } else {
+                                window.open(`https://wa.me/?text=${encodeURIComponent(customWhatsappCopy)}`, "_blank");
+                              }
+                            }}
+                            className="w-full py-3 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 transform active:scale-[0.99] transition-all cursor-pointer"
+                          >
+                            <FaWhatsapp className="text-lg" />
+                            <span>Abrir en WhatsApp con Propuesta</span>
+                          </button>
+                        )}
+
+                        <div className="flex gap-2">
+                          {/* Botón 2: Envío Automático con Evolution API y n8n */}
+                          <button
+                            type="button"
+                            onClick={() => handleSendWhatsApp()}
+                            disabled={isSendingWhatsApp}
+                            className="flex-1 py-2.5 px-3 rounded-xl bg-white hover:bg-emerald-100/60 border border-emerald-300 text-emerald-800 font-bold text-xs shadow-2xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                          >
+                            {isSendingWhatsApp ? (
+                              <>
+                                <div className="w-3.5 h-3.5 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+                                <span>Enviando...</span>
+                              </>
+                            ) : (
+                              <>
+                                <FaPaperPlane className="text-emerald-600 text-xs" />
+                                <span>Enviar con Agentes</span>
+                              </>
+                            )}
+                          </button>
+
+                          {/* Botón 3: Copiar Texto Completo */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (typeof navigator !== "undefined" && navigator.clipboard) {
+                                navigator.clipboard.writeText(customWhatsappCopy);
+                                setCopySuccess(true);
+                                setTimeout(() => setCopySuccess(false), 2500);
+                              }
+                            }}
+                            className="py-2.5 px-3 rounded-xl bg-white hover:bg-emerald-100/60 border border-emerald-300 text-emerald-800 font-bold text-xs shadow-2xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                          >
+                            <FaCopy className="text-emerald-600 text-xs" />
+                            <span>{copySuccess ? "¡Copiado!" : "Copiar Mensaje"}</span>
+                          </button>
                         </div>
 
                         {/* Checkbox para adjuntar archivo de imagen */}
@@ -2421,25 +2532,6 @@ export default function VendedoresPwaPage() {
                           </div>
                         </label>
 
-                        <button
-                          type="button"
-                          onClick={() => handleSendWhatsApp()}
-                          disabled={isSendingWhatsApp}
-                          className="w-full py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-black text-sm shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 transform active:scale-[0.99] transition-all cursor-pointer"
-                        >
-                          {isSendingWhatsApp ? (
-                            <>
-                              <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                              <span>Enviando por WhatsApp mediante Agentes y n8n...</span>
-                            </>
-                          ) : (
-                            <>
-                              <FaWhatsapp className="text-lg" />
-                              <span>Enviar Propuesta por WhatsApp</span>
-                            </>
-                          )}
-                        </button>
-
                         {whatsAppSuccessMsg && (
                           <div className="p-3 bg-emerald-100/90 border border-emerald-300 rounded-xl text-xs font-bold text-emerald-800 flex items-center gap-2 animate-in fade-in">
                             <FaCheck className="text-emerald-600 shrink-0 text-sm" />
@@ -2453,18 +2545,8 @@ export default function VendedoresPwaPage() {
                               <span>⚠️ {whatsAppErrorMsg}</span>
                             </div>
                             <p className="text-[11px] text-slate-600">
-                              Puedes abrir WhatsApp Web o tu aplicación móvil directamente para enviarlo:
+                              Puedes abrir WhatsApp Web o tu aplicación móvil directamente para enviarlo.
                             </p>
-                            {fullPhoneForPreview && (
-                              <a
-                                href={`https://wa.me/${fullPhoneForPreview.replace("+", "")}?text=${encodeURIComponent(customWhatsappCopy)}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:underline"
-                              >
-                                <FaWhatsapp /> Abrir en WhatsApp Web / App
-                              </a>
-                            )}
                           </div>
                         )}
                       </div>
@@ -2560,22 +2642,36 @@ export default function VendedoresPwaPage() {
                         </div>
                       )}
 
-                      {/* Horarios y Días de Publicación */}
+                      {/* Plan de 5 Publicaciones del Radar de Nicho */}
                       {generatedStrategy.schedulePlan && generatedStrategy.schedulePlan.length > 0 && (
                         <div className="space-y-1.5 pt-1">
-                          <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 block">
-                            Plan de Publicación Recomendado:
-                          </span>
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                            {generatedStrategy.schedulePlan.map((item: any, sIdx: number) => (
-                              <div key={sIdx} className="bg-white p-2.5 rounded-xl border border-slate-200 text-xs">
-                                <div className="flex items-center justify-between font-bold text-slate-800 mb-0.5">
-                                  <span>{item.day} {item.time ? `· ${item.time}` : ""}</span>
-                                  <span className="text-[9px] text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded uppercase font-black">
-                                    {item.format}
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-indigo-700 flex items-center gap-1">
+                              <span>📅</span> Plan de Publicaciones Estratégico (5 Posts · Radar de Nicho):
+                            </span>
+                            <span className="text-[10px] font-bold text-slate-500">
+                              {generatedStrategy.schedulePlan.length} publicaciones planificadas
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+                            {generatedStrategy.schedulePlan.slice(0, 5).map((item: any, sIdx: number) => (
+                              <div key={sIdx} className="bg-white p-2.5 rounded-2xl border border-slate-200 text-xs shadow-2xs space-y-1">
+                                <div className="flex items-center justify-between font-bold text-slate-800">
+                                  <span className="text-[11px] font-black text-indigo-900">
+                                    {["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣"][sIdx] || "•"} {item.day}
+                                  </span>
+                                  <span className="text-[9px] text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded-full uppercase font-black border border-purple-100">
+                                    {item.format === "carrusel" ? "Carrusel" : "Post"}
                                   </span>
                                 </div>
-                                <p className="text-[10px] text-slate-500 truncate">{item.hook || item.objective}</p>
+                                {item.time && (
+                                  <div className="text-[10px] text-slate-400 font-medium">
+                                    ⏰ {item.time}
+                                  </div>
+                                )}
+                                <p className="text-[11px] text-slate-600 line-clamp-2 leading-tight">
+                                  {item.objective || item.hook}
+                                </p>
                               </div>
                             ))}
                           </div>
@@ -3152,6 +3248,115 @@ export default function VendedoresPwaPage() {
           </div>
         )}
       </main>
+
+      {/* MODAL / DRAWER INTERACTIVO PARA FILTRAR CATEGORÍAS DE ESTILOS */}
+      {isStyleFilterModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 space-y-5 animate-in zoom-in-95 duration-200 max-h-[85vh] flex flex-col"
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                  <span>🎨</span> Filtrar Estilos por Categoría
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Selecciona una o varias categorías para acotar el catálogo de estilos visuales
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsStyleFilterModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-sm transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="overflow-y-auto space-y-2 pr-1 flex-1">
+              {/* Opción Todos los Estilos */}
+              <button
+                type="button"
+                onClick={() => toggleCategory("all")}
+                className={`w-full p-3.5 rounded-2xl text-left transition-all flex items-center justify-between border cursor-pointer ${
+                  selectedCategories.length === 0
+                    ? "border-indigo-600 bg-indigo-50/80 shadow-xs ring-1 ring-indigo-500/30"
+                    : "border-slate-200 hover:bg-slate-50"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm ${
+                    selectedCategories.length === 0 ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-700"
+                  }`}>
+                    ✨
+                  </span>
+                  <div>
+                    <p className="text-xs font-black text-slate-900">Todos los Estilos</p>
+                    <p className="text-[10px] text-slate-500">Ver todo el catálogo completo</p>
+                  </div>
+                </div>
+                <span className="text-xs font-black px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                  {categoryCounts.all || allTemplates.length}
+                </span>
+              </button>
+
+              {/* Categorías individuales */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                {allCategoryNames.map((cat) => {
+                  const isSelected = selectedCategories.includes(cat);
+                  const count = categoryCounts[cat] || 0;
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => toggleCategory(cat)}
+                      className={`p-3 rounded-2xl text-left transition-all flex items-center justify-between border cursor-pointer ${
+                        isSelected
+                          ? "border-indigo-600 bg-indigo-50/80 shadow-xs ring-1 ring-indigo-500/30"
+                          : "border-slate-200 hover:bg-slate-50"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 truncate">
+                        <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs shrink-0 ${
+                          isSelected ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-700"
+                        }`}>
+                          🏷️
+                        </span>
+                        <span className="text-xs font-bold text-slate-900 truncate">{cat}</span>
+                      </div>
+                      <span className={`text-[11px] font-black px-2 py-0.5 rounded-full shrink-0 ${
+                        isSelected ? "bg-indigo-200 text-indigo-900" : "bg-slate-100 text-slate-600"
+                      }`}>
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-3">
+              {selectedCategories.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedCategories([])}
+                  className="text-xs font-bold text-slate-500 hover:text-indigo-600 cursor-pointer"
+                >
+                  Restablecer a todos
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setIsStyleFilterModalOpen(false)}
+                className="ml-auto py-2.5 px-5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
+              >
+                Aplicar Filtros ({selectedCategories.length === 0 ? "Todos" : selectedCategories.length})
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* MODAL CAMBIAR CONTRASEÑA DEL VENDEDOR */}
       {showChangePassModal && (

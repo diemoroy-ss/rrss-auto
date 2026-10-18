@@ -139,16 +139,16 @@ export async function POST(req: NextRequest) {
       ? "con_texto"
       : "mixto";
 
-    // Validar cantidad: mínimo 1 y máximo 5
-    const clampedCount = Math.max(1, Math.min(5, Number(postsCount) || 3));
+    // Validar cantidad: mínimo 1 y máximo 3
+    const clampedCount = Math.max(1, Math.min(3, Number(postsCount) || 3));
 
-    // Validar tipos de publicaciones: al menos 1
+    // Validar tipos de publicaciones: solo "post" y "carrusel" (sin reels)
     const validAllowedTypes = (Array.isArray(allowedTypes) && allowedTypes.length > 0)
-      ? allowedTypes.filter((t) => ["post", "carrusel", "reel"].includes(t))
-      : ["post"];
-    const finalAllowedTypes = validAllowedTypes.length > 0 ? validAllowedTypes : ["post"];
+      ? allowedTypes.filter((t) => ["post", "carrusel"].includes(t))
+      : ["post", "carrusel"];
+    const finalAllowedTypes = validAllowedTypes.length > 0 ? validAllowedTypes : ["post", "carrusel"];
 
-    console.log(`[Lab Generar Muestra] Solicitando ${clampedCount} posts para ${businessName} (${rubro}). Motor: ${visualStyleSource}. Modo imagen: ${finalImageTextMode}. Formatos permitidos:`, finalAllowedTypes);
+    console.log(`[Lab Generar Muestra] Solicitando ${clampedCount} publicaciones de muestra y plan de 5 posts de nicho para ${businessName} (${rubro}). Motor: ${visualStyleSource}. Modo imagen: ${finalImageTextMode}. Formatos:`, finalAllowedTypes);
 
     // Preparar contexto del catálogo
     const catalogFormatted = catalogItems.length > 0
@@ -158,12 +158,13 @@ export async function POST(req: NextRequest) {
         }).join("\n")
       : "No se proporcionó catálogo explícito.";
 
-    // Preparar estilos visuales seleccionados
+    // Preparar estilos visuales seleccionados (hasta 3)
     const stylesContext = isCommercialImageEngine
       ? `Motor de Imagen Comercial Activo (Fondo comercial limpio + Capas vectoriales de nuestro editor). Idea visual solicitada: "${commercialIdea || body.offerText || body.dishOrProductName || `Destacar lo mejor de ${businessName} en ${rubro}`}". ${commercialCustomText ? `Texto comercial solicitado en capas: "${commercialCustomText}".` : ""}`
       : selectedStyles.length > 0
-      ? selectedStyles.map((s) => `- ${s.title}: ${s.description} (Keywords: ${s.styleKeywords || s.description})`).join("\n")
-      : HARDCODED_STYLES.slice(0, 3).map((s) => `- ${s.title}: ${s.description}`).join("\n");
+      ? `Estilos visuales seleccionados para las muestras:\n` +
+        selectedStyles.slice(0, 3).map((s, i) => `- Muestra #${i + 1} -> Estilo: "${s.title}" (${s.description}) [Keywords: ${s.styleKeywords || s.description}]`).join("\n")
+      : HARDCODED_STYLES.slice(0, 3).map((s, i) => `- Muestra #${i + 1} -> Estilo: "${s.title}" (${s.description})`).join("\n");
 
     // Tono de voz de los agentes
     const toneMap: Record<string, string> = {
@@ -177,15 +178,14 @@ export async function POST(req: NextRequest) {
     // Prompt de estructuración para nuestros agentes con Gemini
     const systemPrompt = `Eres el Director Creativo y Estratega Senior de nuestro equipo de agentes especializados.
 Tu misión es estructurar:
-1. Una ESTRATEGIA Y PLANIFICACIÓN integral para la marca "${businessName}" en el rubro "${rubro}".
-2. EXACTAMENTE ${clampedCount} publicaciones publicitarias para redes sociales.
+1. Una PLANIFICACIÓN SEMANAL ESTRATÉGICA acotada a EXACTAMENTE 5 PUBLICACIONES en 'strategy.schedulePlan' basadas en el Radar de Nicho para "${businessName}" en el rubro "${rubro}".
+2. EXACTAMENTE ${clampedCount} publicaciones de muestra completas ('publications') diseñadas según los estilos visuales seleccionados.
 
 REGLAS ABSOLUTAS:
-1. FORMATOS PERMITIDOS: Solo puedes asignar formatos que estén en esta lista: ${JSON.stringify(finalAllowedTypes)}.
-   - "post": Publicación estándar de feed (1:1), fotografía o cartel publicitario.
+1. FORMATOS PERMITIDOS: Solo puedes asignar formatos de esta lista: ${JSON.stringify(finalAllowedTypes)}.
+   - "post": Publicación estándar de feed (1:1), fotografía o cartel publicitario de impacto.
    - "carrusel": Publicación de 3 diapositivas secuenciales (Slide 1: Gancho, Slide 2: Detalle/Beneficio, Slide 3: Oferta y llamado).
-   - "reel": Video corto vertical (9:16) con guión estructurado (Gancho 0-3s, Demostración 3-15s, CTA 15-25s).
-   Distribuye los formatos permitidos de forma atractiva entre las ${clampedCount} publicaciones.
+   (No incluir videos ni reels).
 
 2. HUMANIZACIÓN Y TONO:
    - Tono: ${toneInstruction}
@@ -193,7 +193,11 @@ REGLAS ABSOLUTAS:
    - CERO frases robóticas ("en el vertiginoso mundo", "descubre", "sumérgete", "en conclusión").
    - NUNCA menciones "IA" o "Inteligencia Artificial". Refiérete siempre a "nuestros agentes" o "nuestro equipo de agentes especializados".
 
-3. CARTEL COMERCIAL & TEXTOS EN IMAGEN (MOTOR: ${isCommercialImageEngine ? "IMAGEN COMERCIAL CON CAPAS" : finalImageTextMode.toUpperCase()}):
+3. ESTILOS VISUALES EN LAS MUESTRAS:
+   Debes asignar a cada una de las ${clampedCount} publicaciones de muestra el estilo visual correspondiente indicado en la lista de estilos seleccionados.
+   Indica en 'visualStyleTitle' el nombre exacto del estilo asignado.
+
+4. CARTEL COMERCIAL & TEXTOS EN IMAGEN (MOTOR: ${isCommercialImageEngine ? "IMAGEN COMERCIAL CON CAPAS" : finalImageTextMode.toUpperCase()}):
    ${
      isCommercialImageEngine
        ? "ESTÁS USANDO EL MOTOR DE IMAGEN COMERCIAL CON CAPAS DE NUESTRO EDITOR: En 'imagePromptEnglish' y 'carouselPrompts', describe una escena fotográfica o estudio comercial de altísima estética con el sujeto/producto en el 60% inferior y un área limpia de espacio negativo (copyspace) en el 35%-40% superior, e indica ESTRICTAMENTE: 'clean background photography, negative space in upper third, STRICT NEGATIVE: no text, no typography, no letters, no words, no watermarks'. Nuestro motor de capas estampará los textos comerciales limpios encima."
@@ -204,12 +208,12 @@ REGLAS ABSOLUTAS:
        : "Esta planificación es MIXTA: debes combinar publicaciones tipo CARTEL COMERCIAL ('isCommercialPoster': true) con tipografía visible de oferta y precio, y publicaciones de FOTOGRAFÍA LIMPIA ('isCommercialPoster': false) con alta estética y sin ningún texto superpuesto sobre la imagen. Alterna los formatos entre las publicaciones."
    }
 
-4. CONTACTO Y LLAMADO A LA ACCIÓN:
+5. CONTACTO Y LLAMADO A LA ACCIÓN:
    ${phone ? `- WhatsApp de contacto: ${phone}` : ""}
    ${website ? `- Sitio Web: ${website}` : ""}
    Incluye siempre un llamado a la acción (CTA) concreto en cada copy.
 
-5. RESPUESTA ESTRICTA EN JSON:
+6. RESPUESTA ESTRICTA EN JSON:
 Devuelve ÚNICAMENTE un objeto JSON válido con las claves "strategy" y "publications".
 {
   "strategy": {
@@ -237,10 +241,11 @@ Devuelve ÚNICAMENTE un objeto JSON válido con las claves "strategy" y "publica
       }
     ],
     "schedulePlan": [
+      // EXACTAMENTE 5 PUBLICACIONES ESTRATÉGICAS DEL RADAR DE NICHO:
       {
         "day": "Día sugerido (ej. Martes)",
         "time": "Horario óptimo (ej. 20:00 hrs)",
-        "format": "post" | "carrusel" | "reel",
+        "format": "post" | "carrusel",
         "objective": "Objetivo comercial de esta publicación",
         "hook": "Gancho magnético usado para capturar la atención"
       }
@@ -252,9 +257,10 @@ Devuelve ÚNICAMENTE un objeto JSON válido con las claves "strategy" y "publica
     ]
   },
   "publications": [
+    // EXACTAMENTE ${clampedCount} PUBLICACIONES DE MUESTRA COMPLETAS:
     {
       "id": "pub_1",
-      "type": "post" | "carrusel" | "reel",
+      "type": "post" | "carrusel",
       "title": "Título corto y atractivo",
       "dishOrProductName": "Nombre del plato o servicio asignado",
       "productPrice": "Precio asignado si aplica o null",
@@ -262,14 +268,9 @@ Devuelve ÚNICAMENTE un objeto JSON válido con las claves "strategy" y "publica
       "copy": "Texto completo y humanizado listo para publicar en redes",
       "cta": "Llamado a la acción con canal de contacto",
       "visualStyleTitle": "Nombre del estilo visual aplicado",
-      "isCommercialPoster": true, // true si es cartel con textos y precios, false si es foto limpia sin textos superpuestos
+      "isCommercialPoster": true,
       "imagePromptEnglish": "Prompt descriptivo en inglés (60 a 90 palabras) para fotografía profesional o cartel publicitario",
-      "carouselPrompts": ["Prompt slide 1 en inglés", "Prompt slide 2 en inglés", "Prompt slide 3 en inglés"], // solo si type === 'carrusel'
-      "reelScript": { // solo si type === 'reel'
-        "hook3s": "Gancho inicial en los primeros 3 segundos",
-        "body": "Desarrollo dinámico del reel en 15 segundos",
-        "cta": "Llamado a la acción final"
-      }
+      "carouselPrompts": ["Prompt slide 1 en inglés", "Prompt slide 2 en inglés", "Prompt slide 3 en inglés"]
     }
   ]
 }`;
@@ -331,6 +332,9 @@ ${stylesContext}`;
       const catalogItem = catalogItems[nextIdx % Math.max(1, catalogItems.length)] || null;
       const prodName = catalogItem?.name || `${businessName} Especial #${nextIdx + 1}`;
       const prodPrice = catalogItem?.offerPrice || catalogItem?.price || null;
+      const fallbackStyle = (selectedStyles && selectedStyles.length > 0)
+        ? selectedStyles[nextIdx % selectedStyles.length]
+        : null;
 
       parsedPublications.push({
         id: `pub_${nextIdx + 1}`,
@@ -341,38 +345,48 @@ ${stylesContext}`;
         hook: `¿Buscabas la mejor opción de ${rubro.toLowerCase()} para compartir hoy?`,
         copy: `Te presentamos una de las opciones favoritas de ${businessName}. Preparada con los mejores ingredientes y el toque característico que nos distingue. Pídela hoy mismo y compruébalo.`,
         cta: phone ? `Escríbenos directamente al WhatsApp ${phone}` : "Contáctanos y haz tu pedido hoy",
-        visualStyleTitle: isCommercialPoster ? "Cartel Comercial de Alto Impacto" : "Fotografía Gastronómica & Publicitaria",
+        visualStyleTitle: fallbackStyle?.title || (isCommercialPoster ? "Cartel Comercial de Alto Impacto" : "Fotografía Gastronómica & Publicitaria"),
         imagePromptEnglish: isCommercialPoster
-          ? `Commercial food advertising poster layout for ${prodName}, strict two-tier composition: mouth-watering hero food dish positioned cleanly in LOWER 55%-60% of frame resting on a dark rustic table, UPPER 40%-45% features clean dark atmospheric negative space (copyspace) with bold crisp on-image typography text overlay reading "${prodName.toUpperCase()}", highlighted yellow price badge "${prodPrice || '$24.900'}" in upper corner, compact yellow CTA button "¡ORDENA AHORA!", STRICT RULE: all typography and text overlays must stay strictly in the upper negative space and NEVER overlap, touch or obscure the food dish, warm restaurant lighting, 8k resolution`
-          : `Professional commercial advertising food photography of ${prodName}, appetizing warm lighting, rustic restaurant atmosphere, high-end plating, ultra-detailed 8k.`,
+          ? `Commercial advertising poster layout for ${prodName}, strict two-tier composition: mouth-watering hero product or dish positioned cleanly in LOWER 55%-60% of frame resting on a high-end presentation surface, UPPER 40%-45% features clean dark atmospheric negative space (copyspace) with bold crisp on-image typography text overlay reading "${prodName.toUpperCase()}", highlighted yellow price badge "${prodPrice || '$24.900'}" in upper corner, compact yellow CTA button "¡ORDENA AHORA!", STRICT RULE: all typography and text overlays must stay strictly in the upper negative space and NEVER overlap, touch or obscure the product or dish, warm commercial lighting, 8k resolution`
+          : `Professional commercial advertising photography of ${prodName}, appetizing lighting, premium commercial atmosphere, high-end presentation, ultra-detailed 8k.`,
         carouselPrompts: assignedType === "carrusel" ? (isCommercialPoster ? [
-          `Commercial poster cover for ${prodName}, two-tier composition, clean dark upper copyspace with bold on-image typography headline "${prodName.toUpperCase()}", food hero clean and unobstructed in lower 60%, advertising layout`,
-          `Detailed macro close-up of fresh textures and ingredients of ${prodName}, promotional badge "INGREDIENTES FRESCOS" in upper corner`,
-          `Complete meal combo spread for ${prodName} with beverage and sides on dark rustic table, vibrant yellow price badge "${prodPrice || '$24.900'}" in top margin and compact CTA button "¡ORDENA AHORA!" at bottom edge clear of food`
+          `Commercial poster cover for ${prodName}, two-tier composition, clean dark upper copyspace with bold on-image typography headline "${prodName.toUpperCase()}", product hero clean and unobstructed in lower 60%, advertising layout`,
+          `Detailed macro close-up of fresh textures and details of ${prodName}, promotional badge "CALIDAD GARANTIZADA" in upper corner`,
+          `Complete presentation pack for ${prodName} with accompaniment on clean presentation surface, vibrant yellow price badge "${prodPrice || '$24.900'}" in top margin and compact CTA button "¡ORDENA AHORA!" at bottom edge clear of product`
         ] : [
-          `Appetizing hero shot of ${prodName}, rustic table setting`,
-          `Detailed macro close-up of fresh textures and ingredients of ${prodName}`,
-          `Complete meal combo spread with sides and refreshing drink, commercial poster`
+          `Appetizing hero shot of ${prodName}, commercial table setting`,
+          `Detailed macro close-up of fresh textures and details of ${prodName}`,
+          `Complete presentation pack with accessories and beverage, commercial poster`
         ]) : undefined,
-        reelScript: assignedType === "reel" ? {
-          hook3s: `Mira de cerca esta delicia de ${businessName}`,
-          body: `Tomas en primer plano mostrando la preparación artesanal y el vapor saliendo del plato recién hecho.`,
-          cta: `Pide la tuya hoy por WhatsApp antes de que se agote.`
-        } : undefined
       });
     }
 
-    // Asegurar que no exceda clampedCount y que cada formato sea válido
+    // Asegurar que no exceda clampedCount, que cada formato sea válido y asignar estilo seleccionado
     parsedPublications = parsedPublications.slice(0, clampedCount).map((pub, idx) => {
       const assignedType = finalAllowedTypes.includes(pub.type) ? pub.type : finalAllowedTypes[idx % finalAllowedTypes.length];
+      const matchedStyle = (selectedStyles && selectedStyles.length > 0)
+        ? selectedStyles[idx % selectedStyles.length]
+        : null;
+
       return {
         ...pub,
         id: pub.id || `pub_${idx + 1}`,
         type: assignedType,
+        visualStyleTitle: matchedStyle?.title || pub.visualStyleTitle || (isCommercialPoster ? "Cartel Comercial de Alto Impacto" : "Estilo Publicitario"),
       };
     });
 
-    // Asegurar estrategia estructurada válida
+    // Asegurar estrategia estructurada válida con EXACTAMENTE 5 publicaciones en el Radar de Nicho
+    const planDefaultDays = ["Martes", "Jueves", "Viernes", "Sábado", "Domingo"];
+    const planDefaultTimes = ["13:00 hrs", "19:30 hrs", "20:00 hrs", "21:00 hrs", "12:30 hrs"];
+    const planDefaultObjectives = [
+      `Lanzamiento de oferta irresistible y antojable de la semana en ${rubro.toLowerCase()}.`,
+      `Demostración de calidad y valor diferencial frente a competidores locales.`,
+      `Combo o especial pensado para compartir y consumo grupal o familiar.`,
+      `Activación de fin de semana con llamado directo a reservas y pedidos por WhatsApp.`,
+      `Fidelización y recordación de marca para cerrar la semana con alta demanda.`
+    ];
+
     if (!parsedStrategy || typeof parsedStrategy !== "object") {
       parsedStrategy = {
         objective: `Aumentar la visibilidad de ${businessName} y activar ventas recurrentes con publicaciones de alto impacto visual y llamados a la acción claros.`,
@@ -398,33 +412,40 @@ ${stylesContext}`;
             icon: "🤝"
           }
         ],
-        schedulePlan: parsedPublications.map((p, idx) => ({
-          day: defaultDays[idx % defaultDays.length],
-          time: defaultTimes[idx % defaultTimes.length],
-          format: p.type,
-          objective: `Posicionar ${p.dishOrProductName || businessName} y captar pedidos activos.`,
-          hook: p.hook || `Propuesta destacada #${idx + 1}`,
-          linkedPublicationId: p.id
-        })),
+        schedulePlan: [],
         nicheOpportunities: [
           `Los usuarios de ${rubro.toLowerCase()} responden un 50% más rápido cuando la publicación muestra precio y canal directo de WhatsApp.`,
-          "Las imágenes en formato vertical y carruseles tienen mayor tiempo de retención que posts planos.",
-          "Publicar en horarios cercanos a las comidas o toma de decisión incrementa las consultas directas."
+          "Las publicaciones tipo carrusel y carteles con contraste generan hasta 3x más retención y compartidos en redes.",
+          "Publicar en horarios cercanos a la toma de decisión incrementa las consultas directas."
         ]
       };
-    } else {
-      // Sincronizar schedulePlan con las publicaciones reales
-      if (!Array.isArray(parsedStrategy.schedulePlan) || parsedStrategy.schedulePlan.length === 0) {
-        parsedStrategy.schedulePlan = parsedPublications.map((p, idx) => ({
-          day: defaultDays[idx % defaultDays.length],
-          time: defaultTimes[idx % defaultTimes.length],
-          format: p.type,
-          objective: `Posicionar ${p.dishOrProductName || businessName} y captar pedidos activos.`,
-          hook: p.hook || `Propuesta destacada #${idx + 1}`,
-          linkedPublicationId: p.id
-        }));
-      }
     }
+
+    // Normalizar y forzar EXACTAMENTE 5 publicaciones en el plan del Radar de Nicho
+    let completeSchedulePlan: any[] = Array.isArray(parsedStrategy.schedulePlan) ? parsedStrategy.schedulePlan : [];
+    completeSchedulePlan = completeSchedulePlan.map((item: any, idx: number) => ({
+      ...item,
+      day: item.day || planDefaultDays[idx % planDefaultDays.length],
+      time: item.time || planDefaultTimes[idx % planDefaultTimes.length],
+      format: ["post", "carrusel"].includes(item.format) ? item.format : (idx % 2 === 0 ? "post" : "carrusel"),
+      objective: item.objective || planDefaultObjectives[idx % planDefaultObjectives.length],
+      hook: item.hook || `Propuesta estratégica #${idx + 1} para ${businessName}`,
+      linkedPublicationId: parsedPublications[idx]?.id || undefined,
+    }));
+
+    while (completeSchedulePlan.length < 5) {
+      const pIdx = completeSchedulePlan.length;
+      completeSchedulePlan.push({
+        day: planDefaultDays[pIdx % planDefaultDays.length],
+        time: planDefaultTimes[pIdx % planDefaultTimes.length],
+        format: pIdx % 2 === 0 ? "post" : "carrusel",
+        objective: planDefaultObjectives[pIdx % planDefaultObjectives.length],
+        hook: `Especial de ${businessName} para clientes de ${rubro.toLowerCase()}`,
+        linkedPublicationId: parsedPublications[pIdx]?.id || undefined,
+      });
+    }
+
+    parsedStrategy.schedulePlan = completeSchedulePlan.slice(0, 5);
 
     // Generar imágenes reales concurrentemente para cada publicación
     console.log(`[Lab Generar Muestra] Generando imágenes para las ${parsedPublications.length} publicaciones...`);
@@ -672,22 +693,33 @@ ${stylesContext}`;
 
     const publicDemoUrl = `${baseUrl}/m/${demoId}`;
 
-    // Construir mensaje de WhatsApp profesional y humanizado listo para enviar
-    const formatsDescription = finalAllowedTypes.map((t) => {
-      if (t === "post") return "posts de diseño";
-      if (t === "carrusel") return "carruseles interactivos";
-      if (t === "reel") return "reels con guión dinámico";
-      return t;
-    }).join(", ");
+    // Construir mensaje de WhatsApp profesional y humanizado con landing, plan de 5 posts de nicho y muestras
+    const scheduleItemsText = (parsedStrategy?.schedulePlan || []).slice(0, 5).map((item: any, i: number) => {
+      const numEmoji = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣"][i] || `•`;
+      const fmtLabel = item.format === "carrusel" ? "Carrusel (3 slides)" : "Post (1:1)";
+      return `${numEmoji} ${item.day || `Día ${i + 1}`} · ${fmtLabel}\n   🎯 ${item.objective || item.hook || "Publicación estratégica"}`;
+    }).join("\n\n");
 
-    const whatsappMessage = `¡Hola ${businessName}! 👋 Estuve revisando lo que hacen y nuestro equipo de agentes especializados preparó esta propuesta con ${finalPublications.length} publicaciones listas para tus redes (${formatsDescription}) y la estrategia completa de publicación:
+    const samplesText = finalPublications.slice(0, 3).map((pub: any, i: number) => {
+      const fmtIcon = pub.type === "carrusel" ? "🎠" : "📸";
+      const briefCopy = (pub.copy || "").split("\n")[0] || pub.title || "Publicación de alto impacto";
+      return `${fmtIcon} Muestra #${i + 1} (${pub.visualStyleTitle || "Estilo Visual"}): ${pub.title || pub.dishOrProductName}\n"${briefCopy.length > 110 ? briefCopy.substring(0, 107) + '...' : briefCopy}"`;
+    }).join("\n\n");
 
-🚀 Puedes revisar la muestra interactiva y la planificación aquí:
+    const whatsappMessage = `¡Hola ${businessName}! 👋 Estuve revisando lo que hacen y nuestro equipo de agentes especializados preparó esta propuesta estratégica con ${finalPublications.length} publicaciones de muestra listas y una planificación semanal basada en nuestro radar de nicho:
+
+🚀 Ver propuesta interactiva completa:
 ${publicDemoUrl}
 
-Diseñamos cada publicación pensando en captar clientes y mantener activo tu perfil sin que tengas que dedicarle horas de trabajo.
+📅 Plan de Publicaciones Estratégico (Radar de Nicho):
+${scheduleItemsText}
 
-¿Qué te parece la propuesta?`;
+✨ Publicaciones de Muestra Diseñadas:
+${samplesText}
+
+Diseñamos este contenido con su identidad para que veas la calidad y el impacto que tendrían sus redes semana a semana sin quitarte tiempo.
+
+¿Qué te parece la propuesta para comenzar esta semana?`;
 
     const whatsappUrl = cleanPhone
       ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(whatsappMessage)}`
