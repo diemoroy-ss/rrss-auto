@@ -337,6 +337,7 @@ export default function VendedoresPwaPage() {
   const [generatedPublications, setGeneratedPublications] = useState<any[]>([]);
   const [generatedStrategy, setGeneratedStrategy] = useState<any>(null);
   const [selectedPreviewPubIndex, setSelectedPreviewPubIndex] = useState<number>(0);
+  const [isGeneratingSingleImg, setIsGeneratingSingleImg] = useState<boolean>(false);
 
   const handleToggleType = (type: "post" | "carrusel") => {
     setAllowedTypes((prev) => {
@@ -838,6 +839,62 @@ export default function VendedoresPwaPage() {
     } finally {
       setIsGenerating(false);
       setGeneratingStep("");
+    }
+  };
+
+  // 8b. Generar imagen individualmente (1 por 1) vía webhook de nuestros agentes
+  const handleGenerateSingleImage = async (pubIndex: number) => {
+    const pub = generatedPublications[pubIndex];
+    if (!pub) return;
+
+    setIsGeneratingSingleImg(true);
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch("/api/laboratorio/generar-imagen-individual", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          demoId: createdDemoId,
+          pubIndex,
+          promptEnglish: pub.imagePromptEnglish || pub.title,
+          rubro,
+          productName: pub.dishOrProductName || dishOrProductName || prospectBusiness,
+          aspectRatio: pub.type === "reel" ? "9:16" : "1:1",
+        }),
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || "No se pudo generar la imagen individual.");
+      }
+
+      const data = await res.json();
+      if (data.imageUrl) {
+        setGeneratedPublications((prev) => {
+          const copy = [...prev];
+          if (copy[pubIndex]) {
+            copy[pubIndex] = {
+              ...copy[pubIndex],
+              imageUrl: data.imageUrl,
+              baseImageUrl: data.imageUrl,
+            };
+          }
+          return copy;
+        });
+
+        if (pubIndex === 0) {
+          setGeneratedImageUrl(data.imageUrl);
+          setCanvasImageUrl(data.imageUrl);
+        }
+      }
+    } catch (err: any) {
+      console.error("Error generando imagen individual con agentes:", err);
+      alert(`No se pudo generar la imagen individual: ${err.message}`);
+    } finally {
+      setIsGeneratingSingleImg(false);
     }
   };
 
@@ -2441,6 +2498,32 @@ export default function VendedoresPwaPage() {
                           ))}
                         </div>
                       )}
+
+                      {/* BOTÓN GENERAR IMAGEN INDIVIDUAL CON NUESTROS AGENTES (1 A 1) */}
+                      <button
+                        type="button"
+                        disabled={isGeneratingSingleImg}
+                        onClick={() => handleGenerateSingleImage(selectedPreviewPubIndex)}
+                        className={`w-full py-2.5 px-3 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-2 border shadow-xs ${
+                          isGeneratingSingleImg
+                            ? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed"
+                            : "bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600 shadow-indigo-600/20 active:scale-98 cursor-pointer"
+                        }`}
+                      >
+                        {isGeneratingSingleImg ? (
+                          <>
+                            <FaSyncAlt className="animate-spin text-xs" />
+                            <span>Nuestros agentes están diseñando esta imagen...</span>
+                          </>
+                        ) : (
+                          <>
+                            <FaMagic className="text-xs" />
+                            <span>
+                              {activePub?.imageUrl ? "🎨 Regenerar imagen con nuestros agentes (1 a 1)" : "🎨 Generar imagen con nuestros agentes"}
+                            </span>
+                          </>
+                        )}
+                      </button>
 
                       <div className="flex gap-2">
                         {createdDemoId && (
