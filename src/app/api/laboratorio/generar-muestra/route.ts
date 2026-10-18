@@ -299,12 +299,12 @@ ${stylesContext}`;
 
     let generatedPlanText = "";
     try {
-      // jsonMode = true para respuesta estructurada nativa ultra-rápida de Gemini
-      generatedPlanText = await generateFreeText(userPromptContent, systemPrompt, true);
+      // jsonMode = true y taskKey = 'generate_post' (flash-lite/flash) para respuesta ultra-rápida (2-4s) sin retardo de thinking
+      generatedPlanText = await generateFreeText(userPromptContent, systemPrompt, true, undefined, "generate_post");
     } catch (llmErr: any) {
       console.warn("[Lab Generar Muestra] Reintentando estructuración en modo estándar:", llmErr);
       try {
-        generatedPlanText = await generateFreeText(userPromptContent, systemPrompt, false);
+        generatedPlanText = await generateFreeText(userPromptContent, systemPrompt, false, undefined, "generate_post");
       } catch (retryErr: any) {
         console.error("[Lab Generar Muestra] Error definitivo al estructurar posts:", retryErr);
         throw new Error("Nuestros agentes están procesando una alta demanda en este momento. Por favor intenta nuevamente en unos segundos.");
