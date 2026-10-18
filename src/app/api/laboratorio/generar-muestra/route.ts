@@ -38,18 +38,20 @@ interface GenerateMuestraPayload {
   baseImageUrl?: string;
 }
 
-// Genera una imagen vía n8n con fallback inmediato a Flux
+// Genera una imagen vía n8n con timeout optimizado y fallback inmediato
 async function generateSingleImage(
   promptEnglish: string,
   rubro: string,
   productName: string,
-  aspectRatio: "1:1" | "9:16" = "1:1"
+  aspectRatio: "1:1" | "9:16" = "1:1",
+  timeoutMs = 6000,
+  fallbackUrl?: string
 ): Promise<string> {
   const width = aspectRatio === "9:16" ? 720 : 1080;
   const height = aspectRatio === "9:16" ? 1280 : 1080;
   const seed = Math.floor(Math.random() * 1000000);
 
-  // Intento n8n con timeout de 10 segundos
+  // Intento n8n con timeout controlado (máximo 6s para no bloquear la experiencia móvil)
   try {
     const n8nWebhookUrl = "https://n8n.santisoft.cl/webhook/img-rrss-auto";
     const n8nRes = await fetch(n8nWebhookUrl, {
@@ -63,7 +65,7 @@ async function generateSingleImage(
         dishOrProduct: productName,
         type: aspectRatio === "9:16" ? "story" : "rrss",
       }),
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.timeout(timeoutMs),
     });
 
     if (n8nRes.ok) {
@@ -83,6 +85,11 @@ async function generateSingleImage(
     }
   } catch {
     // Si n8n demora o falla, pasamos al fallback sin bloquear al usuario
+  }
+
+  // Si hay fallbackUrl de estilo visual verificado, usarlo si aplica
+  if (fallbackUrl && typeof fallbackUrl === "string" && fallbackUrl.startsWith("http")) {
+    return fallbackUrl;
   }
 
   // Fallback rápido y confiable a Flux (Pollinations)
@@ -290,10 +297,16 @@ ${stylesContext}`;
 
     let generatedPlanText = "";
     try {
-      generatedPlanText = await generateFreeText(userPromptContent, systemPrompt);
+      // jsonMode = true para respuesta estructurada nativa ultra-rápida de Gemini
+      generatedPlanText = await generateFreeText(userPromptContent, systemPrompt, true);
     } catch (llmErr: any) {
-      console.error("[Lab Generar Muestra] Error al estructurar posts con Gemini:", llmErr);
-      throw new Error("No fue posible estructurar las publicaciones con nuestros agentes. Intenta nuevamente.");
+      console.warn("[Lab Generar Muestra] Reintentando estructuración en modo estándar:", llmErr);
+      try {
+        generatedPlanText = await generateFreeText(userPromptContent, systemPrompt, false);
+      } catch (retryErr: any) {
+        console.error("[Lab Generar Muestra] Error definitivo al estructurar posts:", retryErr);
+        throw new Error("Nuestros agentes están procesando una alta demanda en este momento. Por favor intenta nuevamente en unos segundos.");
+      }
     }
 
     // Parsear JSON devuelto
@@ -447,10 +460,14 @@ ${stylesContext}`;
 
     parsedStrategy.schedulePlan = completeSchedulePlan.slice(0, 5);
 
-    // Generar imágenes reales concurrentemente para cada publicación
+    // Generar imágenes reales concurrentemente para cada publicación con protección individual
     console.log(`[Lab Generar Muestra] Generando imágenes para las ${parsedPublications.length} publicaciones...`);
     const finalPublications = await Promise.all(
       parsedPublications.map(async (pub, idx) => {
+        const matchedStyle = (selectedStyles && selectedStyles.length > 0)
+          ? selectedStyles[idx % selectedStyles.length]
+          : null;
+        const styleFallbackUrl = matchedStyle?.previewUrl || "";
         const prodName = pub.dishOrProductName || body.dishOrProductName || businessName;
         const catalogMatch = catalogItems.find((it) => it.name?.toLowerCase() === prodName.toLowerCase() || it.id === pub.productId);
         const hasCatalogRealPhoto = Boolean(catalogMatch?.imageUrl && catalogMatch.imageUrl.startsWith("http"));
@@ -498,154 +515,167 @@ ${stylesContext}`;
           promptEnglish = `${promptEnglish}, clean commercial photography, STRICT NEGATIVE: no text, no typography, no letters, no words, no watermark, no overlays`;
         }
 
-        if (pub.type === "carrusel") {
-          // Generar 3 slides para carrusel
-          let coverUrl = "";
-          let commercialEditId: string | undefined;
+        try {
+          if (pub.type === "carrusel") {
+            // Generar 3 slides para carrusel
+            let coverUrl = "";
+            let commercialEditId: string | undefined;
 
-          const slidePrompts: string[] = Array.isArray(pub.carouselPrompts) && pub.carouselPrompts.length >= 3
-            ? pub.carouselPrompts.map((p: string) =>
-                isCommercialImageEngine
-                  ? `${p}, clean background with upper negative space, STRICT NEGATIVE: no text, no typography, no letters`
-                  : p
-              )
-            : [
-                `${promptEnglish}, wide appetizing cover view`,
-                `${promptEnglish}, close-up detailed texture, fresh ingredients in focus`,
-                `${promptEnglish}, complete showcase with dramatic lighting`,
-              ];
+            const slidePrompts: string[] = Array.isArray(pub.carouselPrompts) && pub.carouselPrompts.length >= 3
+              ? pub.carouselPrompts.map((p: string) =>
+                  isCommercialImageEngine
+                    ? `${p}, clean background with upper negative space, STRICT NEGATIVE: no text, no typography, no letters`
+                    : p
+                )
+              : [
+                  `${promptEnglish}, wide appetizing cover view`,
+                  `${promptEnglish}, close-up detailed texture, fresh ingredients in focus`,
+                  `${promptEnglish}, complete showcase with dramatic lighting`,
+                ];
 
-          const baseCoverUrl = effectiveRealPhotoUrl || (await generateSingleImage(slidePrompts[0], rubro, prodName, "1:1"));
+            const baseCoverUrl = effectiveRealPhotoUrl || (await generateSingleImage(slidePrompts[0], rubro, prodName, "1:1", 6000, styleFallbackUrl));
 
-          if ((effectiveRealPhotoUrl || isCommercialImageEngine) && postIsCommercial) {
-            try {
-              const { composeCommercialSlideWithEditor } = await import("../../../../lib/real-product-compositor");
-              const composed = await composeCommercialSlideWithEditor({
-                baseImageUrl: baseCoverUrl,
-                productName: prodName,
-                productDescription: effectiveDescription,
-                price: effectivePrice,
-                idea: effectiveIdea,
-                rubro,
-                businessName,
-                aspectRatio: "1:1",
-                logoUrl: body.logoUrl || undefined,
-                userId,
-                includeLogo: Boolean(body.logoUrl),
-                saveEditableInLibrary: true,
-                customBadgeText: badgeCustomText,
-              });
-              coverUrl = composed.finalImageUrl;
-              commercialEditId = composed.editDocId;
-            } catch (bErr) {
-              console.warn("[Lab Generar Muestra] Error componiendo portada de carrusel, usando base:", bErr);
+            if ((effectiveRealPhotoUrl || isCommercialImageEngine) && postIsCommercial) {
+              try {
+                const { composeCommercialSlideWithEditor } = await import("../../../../lib/real-product-compositor");
+                const composed = await composeCommercialSlideWithEditor({
+                  baseImageUrl: baseCoverUrl,
+                  productName: prodName,
+                  productDescription: effectiveDescription,
+                  price: effectivePrice,
+                  idea: effectiveIdea,
+                  rubro,
+                  businessName,
+                  aspectRatio: "1:1",
+                  logoUrl: body.logoUrl || undefined,
+                  userId,
+                  includeLogo: Boolean(body.logoUrl),
+                  saveEditableInLibrary: true,
+                  customBadgeText: badgeCustomText,
+                });
+                coverUrl = composed.finalImageUrl;
+                commercialEditId = composed.editDocId;
+              } catch (bErr) {
+                console.warn("[Lab Generar Muestra] Error componiendo portada de carrusel, usando base:", bErr);
+                coverUrl = baseCoverUrl;
+              }
+            } else {
               coverUrl = baseCoverUrl;
             }
-          } else {
-            coverUrl = baseCoverUrl;
-          }
 
-          const [slide2, slide3] = await Promise.all([
-            generateSingleImage(slidePrompts[1], rubro, prodName, "1:1"),
-            generateSingleImage(slidePrompts[2], rubro, prodName, "1:1"),
-          ]);
+            const [slide2, slide3] = await Promise.all([
+              generateSingleImage(slidePrompts[1], rubro, prodName, "1:1", 4000, styleFallbackUrl),
+              generateSingleImage(slidePrompts[2], rubro, prodName, "1:1", 4000, styleFallbackUrl),
+            ]);
 
-          const slideUrls = [coverUrl, slide2, slide3];
+            const slideUrls = [coverUrl, slide2, slide3];
 
-          return {
-            ...pub,
-            imageUrl: slideUrls[0],
-            baseImageUrl: baseCoverUrl,
-            carouselImages: slideUrls,
-            isCommercialPoster: postIsCommercial,
-            visualStyleSource,
-            commercialEditId,
-          };
-        } else if (pub.type === "reel") {
-          // Generar visual vertical 9:16 para reel
-          let reelImageUrl = "";
-          let commercialEditId: string | undefined;
-          const reelPrompt = `${promptEnglish}, cinematic vertical framing, 9:16 aspect ratio, dramatic studio lighting`;
-          const baseReelUrl = effectiveRealPhotoUrl || (await generateSingleImage(reelPrompt, rubro, prodName, "9:16"));
+            return {
+              ...pub,
+              imageUrl: slideUrls[0],
+              baseImageUrl: baseCoverUrl,
+              carouselImages: slideUrls,
+              isCommercialPoster: postIsCommercial,
+              visualStyleSource,
+              commercialEditId,
+            };
+          } else if (pub.type === "reel") {
+            // Generar visual vertical 9:16 para reel
+            let reelImageUrl = "";
+            let commercialEditId: string | undefined;
+            const reelPrompt = `${promptEnglish}, cinematic vertical framing, 9:16 aspect ratio, dramatic studio lighting`;
+            const baseReelUrl = effectiveRealPhotoUrl || (await generateSingleImage(reelPrompt, rubro, prodName, "9:16", 6000, styleFallbackUrl));
 
-          if ((effectiveRealPhotoUrl || isCommercialImageEngine) && postIsCommercial) {
-            try {
-              const { composeCommercialSlideWithEditor } = await import("../../../../lib/real-product-compositor");
-              const composed = await composeCommercialSlideWithEditor({
-                baseImageUrl: baseReelUrl,
-                productName: prodName,
-                productDescription: effectiveDescription,
-                price: effectivePrice,
-                idea: effectiveIdea,
-                rubro,
-                businessName,
-                aspectRatio: "9:16",
-                logoUrl: body.logoUrl || undefined,
-                userId,
-                includeLogo: Boolean(body.logoUrl),
-                saveEditableInLibrary: true,
-                customBadgeText: badgeCustomText,
-              });
-              reelImageUrl = composed.finalImageUrl;
-              commercialEditId = composed.editDocId;
-            } catch (bErr) {
-              console.warn("[Lab Generar Muestra] Error componiendo portada vertical Reel, usando base:", bErr);
+            if ((effectiveRealPhotoUrl || isCommercialImageEngine) && postIsCommercial) {
+              try {
+                const { composeCommercialSlideWithEditor } = await import("../../../../lib/real-product-compositor");
+                const composed = await composeCommercialSlideWithEditor({
+                  baseImageUrl: baseReelUrl,
+                  productName: prodName,
+                  productDescription: effectiveDescription,
+                  price: effectivePrice,
+                  idea: effectiveIdea,
+                  rubro,
+                  businessName,
+                  aspectRatio: "9:16",
+                  logoUrl: body.logoUrl || undefined,
+                  userId,
+                  includeLogo: Boolean(body.logoUrl),
+                  saveEditableInLibrary: true,
+                  customBadgeText: badgeCustomText,
+                });
+                reelImageUrl = composed.finalImageUrl;
+                commercialEditId = composed.editDocId;
+              } catch (bErr) {
+                console.warn("[Lab Generar Muestra] Error componiendo portada vertical Reel, usando base:", bErr);
+                reelImageUrl = baseReelUrl;
+              }
+            } else {
               reelImageUrl = baseReelUrl;
             }
+
+            return {
+              ...pub,
+              imageUrl: reelImageUrl,
+              baseImageUrl: baseReelUrl,
+              aspectRatio: "9:16",
+              isCommercialPoster: postIsCommercial,
+              visualStyleSource,
+              commercialEditId,
+            };
           } else {
-            reelImageUrl = baseReelUrl;
-          }
+            // Post estándar 1:1
+            let finalImgUrl = "";
+            let commercialEditId: string | undefined;
+            const basePostUrl = effectiveRealPhotoUrl || (await generateSingleImage(promptEnglish, rubro, prodName, "1:1", 6000, styleFallbackUrl));
 
-          return {
-            ...pub,
-            imageUrl: reelImageUrl,
-            baseImageUrl: baseReelUrl,
-            aspectRatio: "9:16",
-            isCommercialPoster: postIsCommercial,
-            visualStyleSource,
-            commercialEditId,
-          };
-        } else {
-          // Post estándar 1:1
-          let finalImgUrl = "";
-          let commercialEditId: string | undefined;
-          const basePostUrl = effectiveRealPhotoUrl || (await generateSingleImage(promptEnglish, rubro, prodName, "1:1"));
-
-          if ((effectiveRealPhotoUrl || isCommercialImageEngine) && postIsCommercial) {
-            try {
-              const { composeCommercialSlideWithEditor } = await import("../../../../lib/real-product-compositor");
-              const composed = await composeCommercialSlideWithEditor({
-                baseImageUrl: basePostUrl,
-                productName: prodName,
-                productDescription: effectiveDescription,
-                price: effectivePrice,
-                idea: effectiveIdea,
-                rubro,
-                businessName,
-                aspectRatio: "1:1",
-                logoUrl: body.logoUrl || undefined,
-                userId,
-                includeLogo: Boolean(body.logoUrl),
-                saveEditableInLibrary: true,
-                customBadgeText: badgeCustomText,
-              });
-              finalImgUrl = composed.finalImageUrl;
-              commercialEditId = composed.editDocId;
-            } catch (bErr) {
-              console.warn("[Lab Generar Muestra] Error componiendo post 1:1 con capas, usando base:", bErr);
+            if ((effectiveRealPhotoUrl || isCommercialImageEngine) && postIsCommercial) {
+              try {
+                const { composeCommercialSlideWithEditor } = await import("../../../../lib/real-product-compositor");
+                const composed = await composeCommercialSlideWithEditor({
+                  baseImageUrl: basePostUrl,
+                  productName: prodName,
+                  productDescription: effectiveDescription,
+                  price: effectivePrice,
+                  idea: effectiveIdea,
+                  rubro,
+                  businessName,
+                  aspectRatio: "1:1",
+                  logoUrl: body.logoUrl || undefined,
+                  userId,
+                  includeLogo: Boolean(body.logoUrl),
+                  saveEditableInLibrary: true,
+                  customBadgeText: badgeCustomText,
+                });
+                finalImgUrl = composed.finalImageUrl;
+                commercialEditId = composed.editDocId;
+              } catch (bErr) {
+                console.warn("[Lab Generar Muestra] Error componiendo post 1:1 con capas, usando base:", bErr);
+                finalImgUrl = basePostUrl;
+              }
+            } else {
               finalImgUrl = basePostUrl;
             }
-          } else {
-            finalImgUrl = basePostUrl;
-          }
 
+            return {
+              ...pub,
+              imageUrl: finalImgUrl,
+              baseImageUrl: basePostUrl,
+              isCommercialPoster: postIsCommercial,
+              visualStyleSource,
+              commercialEditId,
+            };
+          }
+        } catch (itemErr) {
+          console.warn(`[Lab Generar Muestra] Error procesando imagen de muestra #${idx + 1}, usando respaldo:`, itemErr);
+          const safeUrl = effectiveRealPhotoUrl || styleFallbackUrl || `https://image.pollinations.ai/prompt/${encodeURIComponent(promptEnglish || prodName)}?width=1080&height=1080&model=flux&nologo=true&enhance=true`;
           return {
             ...pub,
-            imageUrl: finalImgUrl,
-            baseImageUrl: basePostUrl,
+            imageUrl: safeUrl,
+            baseImageUrl: safeUrl,
+            carouselImages: pub.type === "carrusel" ? [safeUrl, safeUrl, safeUrl] : undefined,
             isCommercialPoster: postIsCommercial,
             visualStyleSource,
-            commercialEditId,
           };
         }
       })

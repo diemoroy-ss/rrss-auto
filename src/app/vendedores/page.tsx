@@ -693,10 +693,21 @@ export default function VendedoresPwaPage() {
           ]
         : [];
 
-      // 4. Preparar estilos seleccionados (hasta 3)
-      const stylesToSend = selectedStyles.length > 0
-        ? selectedStyles.slice(0, 3)
-        : (selectedTemplate ? [selectedTemplate] : []);
+      // 4. Preparar estilos seleccionados sanitizados (hasta 3)
+      const stylesToSend = (
+        selectedStyles.length > 0
+          ? selectedStyles.slice(0, 3)
+          : selectedTemplate
+          ? [selectedTemplate]
+          : []
+      ).map((s) => ({
+        id: s.id,
+        title: s.title,
+        description: s.description,
+        category: s.category,
+        previewUrl: s.previewUrl,
+        styleKeywords: s.styleKeywords || "",
+      }));
 
       // 5. Teléfono formateado
       const phoneToSave = prospectPhone.trim()
@@ -704,43 +715,70 @@ export default function VendedoresPwaPage() {
         : "";
 
       setGeneratingStep(
-        `Nuestros agentes están diseñando ${postsCount} ${
-          postsCount === 1 ? "publicación" : "publicaciones"
-        } y el plan de 5 posts de nicho...`
+        `Nuestros agentes están analizando el nicho y estructurando la estrategia...`
       );
 
-      const token = await auth.currentUser?.getIdToken();
-      const res = await fetch("/api/laboratorio/generar-muestra", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          postsCount,
-          allowedTypes,
-          businessName: prospectBusiness.trim(),
-          prospectName: prospectName.trim() || prospectBusiness.trim(),
-          phone: phoneToSave,
-          rubro,
-          dishOrProductName: dishOrProductName.trim(),
-          offerText: offerText.trim(),
-          productPrice: productPrice.trim(),
-          badgeCustomText: badgeCustomText.trim(),
-          visualStyleSource,
-          commercialIdea: commercialIdea.trim(),
-          commercialIncludeText,
-          commercialCustomText: commercialCustomText.trim(),
-          isCommercialPoster: visualStyleSource === "commercial_image" ? commercialIncludeText : isCommercialPoster,
-          catalogItems,
-          selectedStyles: visualStyleSource === "preset_styles" ? stylesToSend : [],
-          logoUrl: uploadedLogoUrl || "",
-          baseImageUrl: uploadedBaseImageUrl || "",
-          sellerName: currentUser?.displayName || currentUser?.email?.split("@")[0] || "Equipo Comercial",
-          sellerEmail: currentUser?.email || "vendedores@santisoft.cl",
-          userId: currentUser?.uid || "vendedor",
-        }),
-      });
+      const stepTimer1 = setTimeout(() => {
+        setGeneratingStep(
+          `Diseñando ${postsCount} ${postsCount === 1 ? "publicación" : "publicaciones"} con los estilos seleccionados...`
+        );
+      }, 4500);
+
+      const stepTimer2 = setTimeout(() => {
+        setGeneratingStep(
+          `Finalizando las muestras y el plan de 5 posts de nicho...`
+        );
+      }, 12000);
+
+      const abortController = new AbortController();
+      const abortTimeout = setTimeout(() => abortController.abort(), 90000);
+
+      let token = "";
+      try {
+        token = (await auth.currentUser?.getIdToken()) || "";
+      } catch {
+        // En PWA offline o token transitorio
+      }
+
+      let res: Response;
+      try {
+        res = await fetch("/api/laboratorio/generar-muestra", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            postsCount,
+            allowedTypes,
+            businessName: prospectBusiness.trim(),
+            prospectName: prospectName.trim() || prospectBusiness.trim(),
+            phone: phoneToSave,
+            rubro,
+            dishOrProductName: dishOrProductName.trim(),
+            offerText: offerText.trim(),
+            productPrice: productPrice.trim(),
+            badgeCustomText: badgeCustomText.trim(),
+            visualStyleSource,
+            commercialIdea: commercialIdea.trim(),
+            commercialIncludeText,
+            commercialCustomText: commercialCustomText.trim(),
+            isCommercialPoster: visualStyleSource === "commercial_image" ? commercialIncludeText : isCommercialPoster,
+            catalogItems,
+            selectedStyles: visualStyleSource === "preset_styles" ? stylesToSend : [],
+            logoUrl: uploadedLogoUrl || "",
+            baseImageUrl: uploadedBaseImageUrl || "",
+            sellerName: currentUser?.displayName || currentUser?.email?.split("@")[0] || "Equipo Comercial",
+            sellerEmail: currentUser?.email || "vendedores@santisoft.cl",
+            userId: currentUser?.uid || "vendedor",
+          }),
+          signal: abortController.signal,
+        });
+      } finally {
+        clearTimeout(abortTimeout);
+        clearTimeout(stepTimer1);
+        clearTimeout(stepTimer2);
+      }
 
       if (!res.ok) {
         const errJson = await res.json().catch(() => ({}));
@@ -792,7 +830,11 @@ export default function VendedoresPwaPage() {
       }
     } catch (err: any) {
       console.error("Error generando muestra con agentes:", err);
-      alert(`Hubo un problema al generar la muestra: ${err.message}`);
+      if (err.name === "AbortError" || err.message?.includes("Failed to fetch") || err.message?.includes("NetworkError")) {
+        alert("La generación tomó más tiempo del esperado por la señal móvil o la conexión se interrumpió. Por favor verifica tu internet y vuelve a intentar.");
+      } else {
+        alert(`Hubo un problema al generar la muestra: ${err.message}`);
+      }
     } finally {
       setIsGenerating(false);
       setGeneratingStep("");
