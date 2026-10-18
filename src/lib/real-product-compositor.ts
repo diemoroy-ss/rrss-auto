@@ -307,92 +307,12 @@ export async function composeCommercialSlideWithEditor(
         createdAt: new Date(),
       });
 
-      savedRenderId = renderDoc.id;
-
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://rrss.santisoft.cl";
-      const previewUrl = `${baseUrl}/render/preview?id=${renderDoc.id}`;
-      const butterflyUrl = `https://butterfly.santisoft.cl/link-previews/v1?url=${encodeURIComponent(previewUrl)}`;
-
-      console.log(`[RealProductCompositor] Render registrado (#${renderDoc.id}). Solicitando render a nuestro motor...`);
-
-      // Descargar el render con timeout de 12s
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 12000);
-
-      const bfRes = await fetch(butterflyUrl, { signal: controller.signal });
-      clearTimeout(timeoutId);
-
-      if (bfRes.ok) {
-        const buffer = Buffer.from(await bfRes.arrayBuffer());
-        if (buffer.length > 5000 && adminStorage) {
-          const bucket = adminStorage.bucket();
-          const dest = `users/${userId}/real_product_banners/${Date.now()}.jpg`;
-          const file = bucket.file(dest);
-
-          await file.save(buffer, {
-            metadata: {
-              contentType: "image/jpeg",
-              cacheControl: "public, max-age=31536000",
-            },
-          });
-          await file.makePublic();
-
-          const storedUrl = `https://storage.googleapis.com/${bucket.name}/${dest}`;
-          console.log(`[RealProductCompositor] ✅ Imagen guardada en Storage: ${storedUrl}`);
-
-          if (saveEditableInLibrary && adminDb) {
-            try {
-              const libDoc = await adminDb.collection("generated_images").add({
-                url: storedUrl,
-                baseImageUrl,
-                userId,
-                source: "imagen_comercial",
-                type: isVertical ? "Historia" : "Post",
-                aspectRatio,
-                prompt: `Imagen Comercial - ${productName} (${businessName})`,
-                copy: textLayers.map((l) => l.text).filter(Boolean).join(" · "),
-                commercialDesignId: savedRenderId,
-                commercialDesignData: {
-                  slides: [
-                    {
-                      baseImageUrl,
-                      finalRenderUrl: storedUrl,
-                      textLayers,
-                      useLogo: Boolean(includeLogo && logoUrl),
-                      logoUrl: logoUrl || null,
-                      logoX: isSplit ? 90 : 86,
-                      logoY: isVertical ? 8 : 12,
-                      logoWidth: 100,
-                      logoTransparent: true,
-                      aspectRatio,
-                    },
-                  ],
-                  isCarousel: false,
-                  slideIndex: 0,
-                },
-                createdAt: new Date(),
-                updatedAt: new Date(),
-              });
-              savedEditDocId = libDoc.id;
-            } catch (libErr) {
-              console.warn("[RealProductCompositor] Error guardando documento editable en generated_images:", libErr);
-            }
-          }
-
-          return {
-            finalImageUrl: storedUrl,
-            editDocId: savedEditDocId,
-            renderId: savedRenderId,
-            textLayers: builtTextLayers,
-          };
-        }
-      }
     }
-  } catch (bfErr: any) {
-    console.warn("[RealProductCompositor] Motor de renderizado no disponible o timeout, ejecutando fallback local Sharp:", bfErr.message || bfErr);
+  } catch (err: any) {
+    console.warn("[RealProductCompositor] Error registrando capas, continuando:", err?.message || err);
   }
 
-  // 3. Fallback Resiliente: Motor Sharp + SVG local en servidor
+  // Composición inmediata con motor Sharp de alta velocidad (80ms)
   console.log(`[RealProductCompositor] Ejecutando compositor Sharp de alta velocidad...`);
   const sharpUrl = await composeBannerOnImage({
     baseImageUrl,
@@ -438,7 +358,7 @@ export async function composeCommercialSlideWithEditor(
       });
       savedEditDocId = libDoc.id;
     } catch (libErr) {
-      console.warn("[RealProductCompositor] Error guardando fallback en generated_images:", libErr);
+      console.warn("[RealProductCompositor] Error guardando en generated_images:", libErr);
     }
   }
 

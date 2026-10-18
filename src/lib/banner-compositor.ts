@@ -254,17 +254,21 @@ export async function composeBannerOnImage(options: BannerCompositorOptions): Pr
     const bucket = adminStorage.bucket();
     const timestamp = Date.now();
     const destination = `users/${userId}/commercial_banners/${timestamp}.jpg`;
+    const downloadToken = `${timestamp}_${Math.random().toString(36).substring(2, 10)}`;
 
     const file = bucket.file(destination);
     await file.save(finalBuffer, {
       metadata: {
         contentType: "image/jpeg",
-        cacheControl: "public, max-age=31536000"
-      }
+        cacheControl: "public, max-age=31536000",
+        metadata: {
+          firebaseStorageDownloadTokens: downloadToken,
+        },
+      },
     });
 
-    await file.makePublic();
-    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${destination}`;
+    await file.makePublic().catch(() => {});
+    const publicUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(destination)}?alt=media&token=${downloadToken}`;
 
     console.log(`[BannerCompositor] 🚀 Cartel comercial generado con éxito: ${publicUrl}`);
     return publicUrl;

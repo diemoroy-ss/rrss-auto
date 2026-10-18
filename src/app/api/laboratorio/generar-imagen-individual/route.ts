@@ -76,6 +76,13 @@ export async function POST(req: NextRequest) {
       rubro = "Comercio",
       productName = "Producto",
       aspectRatio = "1:1",
+      isCommercialPoster,
+      businessName,
+      productDescription,
+      price,
+      idea,
+      logoUrl,
+      customBadgeText,
     } = body;
 
     if (!promptEnglish && !productName) {
@@ -89,14 +96,17 @@ export async function POST(req: NextRequest) {
 
     // Llamar al webhook para ESTA SOLA IMAGEN
     const effectivePrompt = promptEnglish || `Commercial advertising photography of ${productName}, premium studio lighting, 8k resolution`;
-    const newImageUrl = await generateSingleImageWebhook(
+    const baseRawImageUrl = await generateSingleImageWebhook(
       effectivePrompt,
       rubro,
       productName,
       aspectRatio === "9:16" ? "9:16" : "1:1"
     );
 
-    // Si se envió demoId, actualizar en Firestore
+    let finalComposedUrl = baseRawImageUrl;
+    let commercialEditId: string | undefined;
+
+    // Si se envió demoId, consultar datos y actualizar en Firestore
     if (demoId && adminDb) {
       try {
         const docRef = adminDb.collection("admin_prospect_demos").doc(demoId);
@@ -104,15 +114,50 @@ export async function POST(req: NextRequest) {
         if (docSnap.exists) {
           const demoData = docSnap.data();
           const publications = Array.isArray(demoData?.publications) ? [...demoData.publications] : [];
+          const targetPub = publications[pubIndex] || {};
+
+          const shouldComposeCommercial = isCommercialPoster ?? targetPub.isCommercialPoster ?? false;
+          if (shouldComposeCommercial) {
+            try {
+              const { composeCommercialSlideWithEditor } = await import("../../../../lib/real-product-compositor");
+              const composed = await composeCommercialSlideWithEditor({
+                baseImageUrl: baseRawImageUrl,
+                productName: productName || targetPub.dishOrProductName || "Producto",
+                productDescription: productDescription || targetPub.description || targetPub.title || "",
+                price: price || targetPub.productPrice || "",
+                idea: idea || targetPub.hook || targetPub.title || "",
+                rubro: rubro || demoData?.rubro || "Comercio",
+                businessName: businessName || demoData?.businessName || "Negocio",
+                aspectRatio: aspectRatio === "9:16" ? "9:16" : "1:1",
+                logoUrl: logoUrl || demoData?.logoUrl || undefined,
+                userId: uid,
+                includeLogo: Boolean(logoUrl || demoData?.logoUrl),
+                saveEditableInLibrary: true,
+                customBadgeText: customBadgeText || targetPub.badgeCustomText || "",
+              });
+              finalComposedUrl = composed.finalImageUrl;
+              commercialEditId = composed.editDocId;
+            } catch (cErr) {
+              console.warn("[Generar Imagen Individual] Error componiendo texto comercial con editor:", cErr);
+            }
+          }
+
           if (publications[pubIndex]) {
+            const isCarousel = targetPub.type === "carrusel";
+            const updatedCarouselImages = Array.isArray(targetPub.carouselImages) && targetPub.carouselImages.length > 0
+              ? [finalComposedUrl, ...targetPub.carouselImages.slice(1)]
+              : [finalComposedUrl];
+
             publications[pubIndex] = {
-              ...publications[pubIndex],
-              imageUrl: newImageUrl,
-              baseImageUrl: newImageUrl,
+              ...targetPub,
+              imageUrl: finalComposedUrl,
+              baseImageUrl: baseRawImageUrl,
+              ...(isCarousel ? { carouselImages: updatedCarouselImages } : {}),
+              ...(commercialEditId ? { commercialEditId } : {}),
             };
             await docRef.update({
               publications,
-              ...(pubIndex === 0 ? { generatedImageUrl: newImageUrl } : {}),
+              ...(pubIndex === 0 ? { generatedImageUrl: finalComposedUrl } : {}),
             });
             console.log(`[Generar Imagen Individual] Muestra ${demoId} actualizada en Firestore con nueva imagen en pub #${pubIndex + 1}.`);
           }
@@ -120,11 +165,34 @@ export async function POST(req: NextRequest) {
       } catch (dbErr) {
         console.warn("[Generar Imagen Individual] Error actualizando Firestore (no bloqueante):", dbErr);
       }
+    } else if (isCommercialPoster) {
+      try {
+        const { composeCommercialSlideWithEditor } = await import("../../../../lib/real-product-compositor");
+        const composed = await composeCommercialSlideWithEditor({
+          baseImageUrl: baseRawImageUrl,
+          productName,
+          productDescription: productDescription || "",
+          price: price || "",
+          idea: idea || "",
+          rubro,
+          businessName: businessName || "Negocio",
+          aspectRatio: aspectRatio === "9:16" ? "9:16" : "1:1",
+          logoUrl: logoUrl || undefined,
+          userId: uid,
+          includeLogo: Boolean(logoUrl),
+          saveEditableInLibrary: true,
+          customBadgeText: customBadgeText || "",
+        });
+        finalComposedUrl = composed.finalImageUrl;
+      } catch (cErr) {
+        console.warn("[Generar Imagen Individual] Error componiendo texto comercial:", cErr);
+      }
     }
 
     return NextResponse.json({
       success: true,
-      imageUrl: newImageUrl,
+      imageUrl: finalComposedUrl,
+      baseImageUrl: baseRawImageUrl,
       pubIndex,
     });
   } catch (error: any) {

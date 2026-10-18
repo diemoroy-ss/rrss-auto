@@ -538,7 +538,7 @@ ${stylesContext}`;
             const imgTimeout = idx === 0 ? 2500 : 0;
             const baseCoverUrl = effectiveRealPhotoUrl || (await generateSingleImage(slidePrompts[0], rubro, prodName, "1:1", imgTimeout, styleFallbackUrl));
 
-            if ((effectiveRealPhotoUrl || isCommercialImageEngine) && postIsCommercial) {
+            if (postIsCommercial) {
               try {
                 const { composeCommercialSlideWithEditor } = await import("../../../../lib/real-product-compositor");
                 const composed = await composeCommercialSlideWithEditor({
@@ -567,8 +567,8 @@ ${stylesContext}`;
             }
 
             const [slide2, slide3] = await Promise.all([
-              generateSingleImage(slidePrompts[1], rubro, prodName, "1:1", 0, styleFallbackUrl),
-              generateSingleImage(slidePrompts[2], rubro, prodName, "1:1", 0, styleFallbackUrl),
+              generateSingleImage(slidePrompts[1], rubro, prodName, "1:1", 0),
+              generateSingleImage(slidePrompts[2], rubro, prodName, "1:1", 0),
             ]);
 
             const slideUrls = [coverUrl, slide2, slide3];
@@ -590,7 +590,7 @@ ${stylesContext}`;
             const reelPrompt = `${promptEnglish}, cinematic vertical framing, 9:16 aspect ratio, dramatic studio lighting`;
             const baseReelUrl = effectiveRealPhotoUrl || (await generateSingleImage(reelPrompt, rubro, prodName, "9:16", imgTimeout, styleFallbackUrl));
 
-            if ((effectiveRealPhotoUrl || isCommercialImageEngine) && postIsCommercial) {
+            if (postIsCommercial) {
               try {
                 const { composeCommercialSlideWithEditor } = await import("../../../../lib/real-product-compositor");
                 const composed = await composeCommercialSlideWithEditor({
@@ -634,7 +634,7 @@ ${stylesContext}`;
             const imgTimeout = idx === 0 ? 2500 : 0;
             const basePostUrl = effectiveRealPhotoUrl || (await generateSingleImage(promptEnglish, rubro, prodName, "1:1", imgTimeout, styleFallbackUrl));
 
-            if ((effectiveRealPhotoUrl || isCommercialImageEngine) && postIsCommercial) {
+            if (postIsCommercial) {
               try {
                 const { composeCommercialSlideWithEditor } = await import("../../../../lib/real-product-compositor");
                 const composed = await composeCommercialSlideWithEditor({

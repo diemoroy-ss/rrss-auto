@@ -41,7 +41,7 @@ import {
   FaTrophy,
   FaUserCheck
 } from "react-icons/fa";
-import { VIDEO_PROMPT_STYLES, VideoPromptTemplate } from "../../lib/video-prompt-templates";
+import { FLOW_COMMANDS, FlowCommandDef } from "../../lib/flow-command-translator";
 
 interface ProspectDemo {
   id?: string;
@@ -355,7 +355,8 @@ export default function VendedoresPwaPage() {
   const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
   const [videoProgress, setVideoProgress] = useState("");
   const [videoError, setVideoError] = useState("");
-  const [selectedVideoStyle, setSelectedVideoStyle] = useState<VideoPromptTemplate>(VIDEO_PROMPT_STYLES[0]);
+  const [selectedVideoStyle, setSelectedVideoStyle] = useState<FlowCommandDef>(FLOW_COMMANDS[0]);
+  const [selectedVideoCategory, setSelectedVideoCategory] = useState<string>("Todas");
   const [customVideoPrompt, setCustomVideoPrompt] = useState("");
   const [manualVideoUrlInput, setManualVideoUrlInput] = useState("");
 
@@ -863,6 +864,13 @@ export default function VendedoresPwaPage() {
           rubro,
           productName: pub.dishOrProductName || dishOrProductName || prospectBusiness,
           aspectRatio: pub.type === "reel" ? "9:16" : "1:1",
+          isCommercialPoster: pub.isCommercialPoster ?? (commercialIncludeText && isCommercialPoster),
+          businessName: prospectBusiness || prospectName,
+          productDescription: commercialCustomText || offerText || pub.description || pub.title || "",
+          price: pub.productPrice || productPrice || "",
+          idea: commercialIdea || pub.hook || pub.title || "",
+          logoUrl: cleanedLogoUrl || logoPreview || "",
+          customBadgeText: badgeCustomText || "",
         }),
       });
 
@@ -1095,8 +1103,8 @@ export default function VendedoresPwaPage() {
           prospectBusiness: prospectBusiness.trim() || prospectName.trim(),
           dishOrProductName: dishOrProductName.trim(),
           offerText: offerText.trim(),
-          styleTitle: selectedVideoStyle?.title || "Video Comercial Cinemático",
-          prompt: customVideoPrompt || selectedVideoStyle?.baseEnglishPrompt,
+          styleTitle: selectedVideoStyle?.name || "Video Comercial Cinemático",
+          prompt: customVideoPrompt || selectedVideoStyle?.defaultEnglishPrompt,
           baseImageUrl: targetImage,
           renderMode: "raw",
         };
@@ -1127,8 +1135,8 @@ export default function VendedoresPwaPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             imageUrl: targetImage,
-            prompt: customVideoPrompt || selectedVideoStyle?.baseEnglishPrompt,
-            motionStyle: selectedVideoStyle?.id || "cinematic_slow_push_in",
+            prompt: customVideoPrompt || selectedVideoStyle?.defaultEnglishPrompt,
+            motionStyle: selectedVideoStyle?.command || "/360 product orbit",
             businessName: prospectBusiness.trim() || prospectName.trim(),
             rubro,
             renderMode: "raw",
@@ -1158,7 +1166,7 @@ export default function VendedoresPwaPage() {
             body: JSON.stringify({
               id: createdDemoId,
               generatedVideoUrl: finalVideoUrl,
-              videoStyleTitle: selectedVideoStyle?.title || null,
+              videoStyleTitle: selectedVideoStyle?.name || null,
               videoPromptEnglish: customVideoPrompt || null,
             }),
           });
@@ -2547,16 +2555,6 @@ export default function VendedoresPwaPage() {
                           </button>
                         )}
                       </div>
-                      {activePub?.commercialEditId && (
-                        <a
-                          href={`/automatizacion-rrss/panel/imagen-comercial?editId=${activePub.commercialEditId}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="w-full py-2.5 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 text-xs font-black text-center transition-colors flex items-center justify-center gap-2"
-                        >
-                          <span>🎨</span> Ajustar Capas de esta Imagen en Nuestro Editor ↗
-                        </a>
-                      )}
                     </div>
 
                     {/* COPY Y ENVÍO POR WHATSAPP */}
@@ -2829,30 +2827,60 @@ export default function VendedoresPwaPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                     {/* COLUMNA 1: SELECTOR DE ESTILO DE MOVIMIENTO */}
                     <div className="space-y-3">
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                        1. Selecciona el Estilo de Cámara y Movimiento:
-                      </label>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1">
-                        {VIDEO_PROMPT_STYLES.map((style) => {
-                          const isSelected = selectedVideoStyle?.id === style.id;
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                          1. Estilo de Cámara del Catálogo:
+                        </label>
+                        <span className="text-[10px] text-indigo-600 font-bold">
+                          {selectedVideoStyle?.name} ({selectedVideoStyle?.category})
+                        </span>
+                      </div>
+
+                      {/* FILTROS INTERACTIVOS DE CATEGORÍAS */}
+                      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                        {["Todas", "E-Commerce & Productos", "Servicios & Marcas", "Lanzamientos & Revelación", "Creativos & Tendencias"].map((cat) => {
+                          const isActive = selectedVideoCategory === cat;
+                          return (
+                            <button
+                              key={cat}
+                              type="button"
+                              onClick={() => setSelectedVideoCategory(cat)}
+                              className={`px-2.5 py-1 rounded-xl text-[10px] font-bold whitespace-nowrap transition-all cursor-pointer ${
+                                isActive
+                                  ? "bg-indigo-600 text-white shadow-xs"
+                                  : "bg-slate-100 hover:bg-slate-200 text-slate-600"
+                              }`}
+                            >
+                              {cat}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* CATÁLOGO DE COMANDOS PRECARGADOS */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1">
+                        {FLOW_COMMANDS.filter(
+                          (cmd) => selectedVideoCategory === "Todas" || cmd.category === selectedVideoCategory
+                        ).map((cmd) => {
+                          const isSelected = selectedVideoStyle?.command === cmd.command;
                           return (
                             <div
-                              key={style.id}
-                              onClick={() => setSelectedVideoStyle(style)}
+                              key={cmd.command}
+                              onClick={() => setSelectedVideoStyle(cmd)}
                               className={`p-3 rounded-2xl border cursor-pointer transition-all ${
                                 isSelected
                                   ? "bg-indigo-50 border-indigo-600 ring-2 ring-indigo-600/20 shadow-sm"
                                   : "bg-white border-slate-200 hover:border-slate-300"
                               }`}
                             >
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="text-base">{style.icon}</span>
+                              <div className="flex items-center justify-between mb-1.5">
+                                <span className="text-base">{cmd.icon}</span>
                                 <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 text-indigo-700">
-                                  {style.category}
+                                  {cmd.category}
                                 </span>
                               </div>
-                              <h5 className="text-xs font-bold text-slate-900 leading-tight">{style.title}</h5>
-                              <p className="text-[10px] text-slate-500 line-clamp-2 mt-1 leading-snug">{style.description}</p>
+                              <h5 className="text-xs font-bold text-slate-900 leading-tight">{cmd.name}</h5>
+                              <p className="text-[10px] text-slate-500 line-clamp-2 mt-1 leading-snug">{cmd.description}</p>
                             </div>
                           );
                         })}
