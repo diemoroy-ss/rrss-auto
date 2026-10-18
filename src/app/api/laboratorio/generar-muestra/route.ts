@@ -38,56 +38,58 @@ interface GenerateMuestraPayload {
   baseImageUrl?: string;
 }
 
-// Genera una imagen vía n8n con timeout optimizado y fallback inmediato
+// Genera una imagen vía n8n con timeout ultra-ágil o entrega instantánea
 async function generateSingleImage(
   promptEnglish: string,
   rubro: string,
   productName: string,
   aspectRatio: "1:1" | "9:16" = "1:1",
-  timeoutMs = 6000,
+  timeoutMs = 2500,
   fallbackUrl?: string
 ): Promise<string> {
   const width = aspectRatio === "9:16" ? 720 : 1080;
   const height = aspectRatio === "9:16" ? 1280 : 1080;
   const seed = Math.floor(Math.random() * 1000000);
 
-  // Intento n8n con timeout controlado (máximo 6s para no bloquear la experiencia móvil)
-  try {
-    const n8nWebhookUrl = "https://n8n.santisoft.cl/webhook/img-rrss-auto";
-    const n8nRes = await fetch(n8nWebhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        prompt: promptEnglish,
-        promptEnglish,
-        businessType: rubro,
-        rubro,
-        dishOrProduct: productName,
-        type: aspectRatio === "9:16" ? "story" : "rrss",
-      }),
-      signal: AbortSignal.timeout(timeoutMs),
-    });
+  // Si timeoutMs > 0, intentar n8n con timeout muy breve (máx 2.5s)
+  if (timeoutMs > 0) {
+    try {
+      const n8nWebhookUrl = "https://n8n.santisoft.cl/webhook/img-rrss-auto";
+      const n8nRes = await fetch(n8nWebhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: promptEnglish,
+          promptEnglish,
+          businessType: rubro,
+          rubro,
+          dishOrProduct: productName,
+          type: aspectRatio === "9:16" ? "story" : "rrss",
+        }),
+        signal: AbortSignal.timeout(timeoutMs),
+      });
 
-    if (n8nRes.ok) {
-      const rawData = await n8nRes.json().catch(() => ({}));
-      const data = Array.isArray(rawData) ? rawData[0] : rawData;
-      const candidateUrl =
-        data?.img_url ||
-        data?.imageUrl ||
-        data?.url ||
-        data?.output ||
-        data?.image ||
-        (typeof rawData === "string" && rawData.startsWith("http") ? rawData : null);
+      if (n8nRes.ok) {
+        const rawData = await n8nRes.json().catch(() => ({}));
+        const data = Array.isArray(rawData) ? rawData[0] : rawData;
+        const candidateUrl =
+          data?.img_url ||
+          data?.imageUrl ||
+          data?.url ||
+          data?.output ||
+          data?.image ||
+          (typeof rawData === "string" && rawData.startsWith("http") ? rawData : null);
 
-      if (candidateUrl && typeof candidateUrl === "string" && candidateUrl.startsWith("http")) {
-        return candidateUrl;
+        if (candidateUrl && typeof candidateUrl === "string" && candidateUrl.startsWith("http")) {
+          return candidateUrl;
+        }
       }
+    } catch {
+      // Si n8n demora o falla, continuar al fallback inmediato
     }
-  } catch {
-    // Si n8n demora o falla, pasamos al fallback sin bloquear al usuario
   }
 
-  // Si hay fallbackUrl de estilo visual verificado, usarlo si aplica
+  // Si hay fallbackUrl de estilo visual verificado (previewUrl de la plantilla seleccionada), usarlo
   if (fallbackUrl && typeof fallbackUrl === "string" && fallbackUrl.startsWith("http")) {
     return fallbackUrl;
   }
@@ -533,7 +535,8 @@ ${stylesContext}`;
                   `${promptEnglish}, complete showcase with dramatic lighting`,
                 ];
 
-            const baseCoverUrl = effectiveRealPhotoUrl || (await generateSingleImage(slidePrompts[0], rubro, prodName, "1:1", 6000, styleFallbackUrl));
+            const imgTimeout = idx === 0 ? 2500 : 0;
+            const baseCoverUrl = effectiveRealPhotoUrl || (await generateSingleImage(slidePrompts[0], rubro, prodName, "1:1", imgTimeout, styleFallbackUrl));
 
             if ((effectiveRealPhotoUrl || isCommercialImageEngine) && postIsCommercial) {
               try {
@@ -564,8 +567,8 @@ ${stylesContext}`;
             }
 
             const [slide2, slide3] = await Promise.all([
-              generateSingleImage(slidePrompts[1], rubro, prodName, "1:1", 4000, styleFallbackUrl),
-              generateSingleImage(slidePrompts[2], rubro, prodName, "1:1", 4000, styleFallbackUrl),
+              generateSingleImage(slidePrompts[1], rubro, prodName, "1:1", 0, styleFallbackUrl),
+              generateSingleImage(slidePrompts[2], rubro, prodName, "1:1", 0, styleFallbackUrl),
             ]);
 
             const slideUrls = [coverUrl, slide2, slide3];
@@ -583,8 +586,9 @@ ${stylesContext}`;
             // Generar visual vertical 9:16 para reel
             let reelImageUrl = "";
             let commercialEditId: string | undefined;
+            const imgTimeout = idx === 0 ? 2500 : 0;
             const reelPrompt = `${promptEnglish}, cinematic vertical framing, 9:16 aspect ratio, dramatic studio lighting`;
-            const baseReelUrl = effectiveRealPhotoUrl || (await generateSingleImage(reelPrompt, rubro, prodName, "9:16", 6000, styleFallbackUrl));
+            const baseReelUrl = effectiveRealPhotoUrl || (await generateSingleImage(reelPrompt, rubro, prodName, "9:16", imgTimeout, styleFallbackUrl));
 
             if ((effectiveRealPhotoUrl || isCommercialImageEngine) && postIsCommercial) {
               try {
@@ -627,7 +631,8 @@ ${stylesContext}`;
             // Post estándar 1:1
             let finalImgUrl = "";
             let commercialEditId: string | undefined;
-            const basePostUrl = effectiveRealPhotoUrl || (await generateSingleImage(promptEnglish, rubro, prodName, "1:1", 6000, styleFallbackUrl));
+            const imgTimeout = idx === 0 ? 2500 : 0;
+            const basePostUrl = effectiveRealPhotoUrl || (await generateSingleImage(promptEnglish, rubro, prodName, "1:1", imgTimeout, styleFallbackUrl));
 
             if ((effectiveRealPhotoUrl || isCommercialImageEngine) && postIsCommercial) {
               try {
