@@ -13,6 +13,7 @@ import TabContacto from "./TabContacto";
 import TabConexiones from "./TabConexiones";
 import TabIdentidadVisual from "./TabIdentidadVisual";
 import { BrandVisualIdentity } from "../../../../lib/prompt-templates";
+import { removeLogoBackground } from "../../../../lib/logo-bg-remover";
 import TikTokPostSettings, { TikTokSettingsState, DEFAULT_TIKTOK_SETTINGS } from "../../../../components/crear/TikTokPostSettings";
 
 function getExpirationText(timestamp?: number) {
@@ -399,6 +400,9 @@ function ConfigContent() {
   const [photoTreatment, setPhotoTreatment] = useState<'clean' | 'agent'>("clean");
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isAnalyzingLogo, setIsAnalyzingLogo] = useState(false);
+  const [isRemovingLogoBg, setIsRemovingLogoBg] = useState(false);
+  const [isSavingLogoNoBg, setIsSavingLogoNoBg] = useState(false);
+  const [processedLogoPreview, setProcessedLogoPreview] = useState<string | null>(null);
 
   // Brand Visual Identity State
   const [visualIdentity, setVisualIdentity] = useState<BrandVisualIdentity>({
@@ -569,6 +573,66 @@ function ConfigContent() {
     } finally {
         setIsUploadingLogo(false);
     }
+  };
+
+  const handleRemoveLogoBg = async () => {
+    if (!logoUrl) return;
+    setIsRemovingLogoBg(true);
+    setErrorMsg("");
+    try {
+      const transparentDataUrl = await removeLogoBackground(logoUrl, {
+        tolerance: 40,
+        mode: "contiguous",
+        feather: true,
+      });
+      setProcessedLogoPreview(transparentDataUrl);
+    } catch (err: any) {
+      console.error("Error al remover fondo del logo:", err);
+      setErrorMsg("No se pudo remover el fondo automáticamente. Verifica que la imagen sea accesible.");
+    } finally {
+      setIsRemovingLogoBg(false);
+    }
+  };
+
+  const handleSaveProcessedLogo = async () => {
+    if (!processedLogoPreview || !user || !activeProfile) return;
+    setIsSavingLogoNoBg(true);
+    setErrorMsg("");
+    try {
+      // Convertir dataUrl a Blob PNG
+      const blob = await (await fetch(processedLogoPreview)).blob();
+      const profileId = activeProfile.id || "default";
+      const storageRef = ref(storage, `users/${user.uid}/profiles/${profileId}/logo_nobg_${Date.now()}.png`);
+      await uploadBytes(storageRef, blob, { contentType: "image/png" });
+      const newUrl = await getDownloadURL(storageRef);
+
+      setLogoUrl(newUrl);
+      setProcessedLogoPreview(null);
+
+      // Actualizar en Firestore
+      const userDocRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userDocRef);
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        const updatedProfiles = (data.profiles || []).map((p: any) =>
+          p.id === activeProfile.id ? { ...p, logoUrl: newUrl } : p
+        );
+        await updateDoc(userDocRef, { profiles: updatedProfiles });
+        await loadProfiles();
+      }
+
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err: any) {
+      console.error("Error al guardar logo sin fondo:", err);
+      setErrorMsg("Error al guardar el logo transparente en la nube.");
+    } finally {
+      setIsSavingLogoNoBg(false);
+    }
+  };
+
+  const handleCancelProcessedLogo = () => {
+    setProcessedLogoPreview(null);
   };
 
   const handleSaveData = async (e: React.FormEvent) => {
@@ -1061,6 +1125,9 @@ function ConfigContent() {
               logoUrl={logoUrl}
               isUploadingLogo={isUploadingLogo}
               isAnalyzingLogo={isAnalyzingLogo}
+              isRemovingLogoBg={isRemovingLogoBg}
+              isSavingLogoNoBg={isSavingLogoNoBg}
+              processedLogoPreview={processedLogoPreview}
               alwaysIncludeLogo={alwaysIncludeLogo}
               brandName={brandName}
               rubro={rubro}
@@ -1071,6 +1138,9 @@ function ConfigContent() {
               setRubro={setRubro}
               setBusinessDescription={setBusinessDescription}
               handleLogoUpload={handleLogoUpload}
+              handleRemoveLogoBg={handleRemoveLogoBg}
+              handleSaveProcessedLogo={handleSaveProcessedLogo}
+              handleCancelProcessedLogo={handleCancelProcessedLogo}
             />
           )}
           {activeTab === 'contacto' && (

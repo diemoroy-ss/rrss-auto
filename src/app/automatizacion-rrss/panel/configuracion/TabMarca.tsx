@@ -5,6 +5,9 @@ interface TabMarcaProps {
   logoUrl: string;
   isUploadingLogo: boolean;
   isAnalyzingLogo: boolean;
+  isRemovingLogoBg?: boolean;
+  isSavingLogoNoBg?: boolean;
+  processedLogoPreview?: string | null;
   alwaysIncludeLogo: boolean;
   brandName: string;
   rubro: string;
@@ -15,13 +18,21 @@ interface TabMarcaProps {
   setRubro: (v: string) => void;
   setBusinessDescription: (v: string) => void;
   handleLogoUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleRemoveLogoBg?: () => void;
+  handleSaveProcessedLogo?: () => void;
+  handleCancelProcessedLogo?: () => void;
 }
 
 export default function TabMarca({
-  logoUrl, isUploadingLogo, isAnalyzingLogo, alwaysIncludeLogo,
-  brandName, rubro, businessDescription, activeProfileName,
+  logoUrl, isUploadingLogo, isAnalyzingLogo,
+  isRemovingLogoBg = false, isSavingLogoNoBg = false, processedLogoPreview = null,
+  alwaysIncludeLogo, brandName, rubro, businessDescription, activeProfileName,
   setAlwaysIncludeLogo, setBrandName, setRubro, setBusinessDescription, handleLogoUpload,
+  handleRemoveLogoBg, handleSaveProcessedLogo, handleCancelProcessedLogo,
 }: TabMarcaProps) {
+  const currentLogoToDisplay = processedLogoPreview || logoUrl;
+  const isDisplayingProcessed = Boolean(processedLogoPreview);
+
   return (
     <div className="bg-white p-8 rounded-[32px] border-2 border-slate-100 shadow-xl shadow-slate-200/50">
       <div className="flex items-center gap-4 mb-8 pb-6 border-b border-slate-100">
@@ -31,22 +42,88 @@ export default function TabMarca({
 
       <div className="mb-8">
         <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Logo Corporativo (Máx 2MB)</label>
-        <div className="flex gap-4 items-start">
-          <div className="w-24 h-24 bg-slate-50 rounded-2xl border-2 border-dashed border-indigo-200 flex items-center justify-center overflow-hidden shrink-0 relative hover:border-indigo-400 transition-colors">
-            {logoUrl ? <img src={logoUrl} alt="Logo" className="w-full h-full object-contain p-2" /> : <span className="text-3xl opacity-50">🖼️</span>}
-            {(isUploadingLogo || isAnalyzingLogo) && (
-              <div className="absolute inset-0 bg-white/80 flex flex-col items-center justify-center gap-1">
+        <div className="flex flex-col sm:flex-row gap-5 items-start">
+          {/* Logo Box with transparent checkerboard pattern when showing transparent preview */}
+          <div className={`w-28 h-28 rounded-2xl border-2 border-dashed flex items-center justify-center overflow-hidden shrink-0 relative transition-all shadow-sm ${
+            isDisplayingProcessed
+              ? "border-emerald-400 bg-[linear-gradient(45deg,#cbd5e1_25%,transparent_25%),linear-gradient(-45deg,#cbd5e1_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#cbd5e1_75%),linear-gradient(-45deg,transparent_75%,#cbd5e1_75%)] bg-[size:14px_14px] bg-[position:0_0,0_7px,7px_-7px,-7px_0] bg-slate-100"
+              : "border-indigo-200 bg-slate-50 hover:border-indigo-400"
+          }`}>
+            {currentLogoToDisplay ? (
+              <img src={currentLogoToDisplay} alt="Logo" className="w-full h-full object-contain p-2" />
+            ) : (
+              <span className="text-3xl opacity-50">🖼️</span>
+            )}
+            
+            {(isUploadingLogo || isAnalyzingLogo || isRemovingLogoBg || isSavingLogoNoBg) && (
+              <div className="absolute inset-0 bg-white/90 backdrop-blur-xs flex flex-col items-center justify-center gap-1.5 p-2 text-center">
                 <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-                {isAnalyzingLogo && <span className="text-[9px] font-bold text-indigo-500">Analizando…</span>}
+                <span className="text-[10px] font-black text-indigo-600 leading-tight">
+                  {isRemovingLogoBg ? "Removiendo fondo..." : isSavingLogoNoBg ? "Guardando logo..." : isAnalyzingLogo ? "Analizando..." : "Subiendo..."}
+                </span>
               </div>
             )}
           </div>
-          <div className="flex-1">
-            <p className="text-xs font-medium text-slate-500 mb-3">Sube tu logo oficial en formato PNG o JPG. Nuestros agentes lo estamparán automáticamente con nitidez original en las imágenes de tus posts cuando lo actives.</p>
-            <label className="cursor-pointer bg-white border border-slate-200 text-slate-700 font-bold px-4 py-2 rounded-lg text-sm hover:bg-slate-50 transition-colors shadow-sm inline-block">
-              {isUploadingLogo ? "Subiendo..." : logoUrl ? "Cambiar Logo" : "Subir Logo"}
-              <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} disabled={isUploadingLogo} />
-            </label>
+
+          <div className="flex-1 space-y-3">
+            <p className="text-xs font-medium text-slate-500 leading-relaxed">
+              Sube tu logo oficial en formato PNG o JPG. Nuestros agentes lo estamparán automáticamente con nitidez original en las imágenes de tus posts cuando lo actives.
+            </p>
+
+            {/* Acciones para Logo Normal */}
+            {!isDisplayingProcessed ? (
+              <div className="flex flex-wrap items-center gap-2.5 pt-1">
+                <label className="cursor-pointer bg-white border border-slate-200 hover:border-slate-300 text-slate-700 font-bold px-4 py-2 rounded-xl text-xs sm:text-sm hover:bg-slate-50 transition-colors shadow-xs inline-flex items-center gap-1.5">
+                  <span>📁</span>
+                  <span>{isUploadingLogo ? "Subiendo..." : logoUrl ? "Cambiar Logo" : "Subir Logo"}</span>
+                  <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} disabled={isUploadingLogo || isRemovingLogoBg} />
+                </label>
+
+                {logoUrl && handleRemoveLogoBg && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveLogoBg}
+                    disabled={isRemovingLogoBg || isUploadingLogo}
+                    className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 font-bold px-4 py-2 rounded-xl text-xs sm:text-sm transition-all shadow-xs inline-flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    <span>✨</span>
+                    <span>{isRemovingLogoBg ? "Procesando..." : "Quitar fondo (Hacer transparente)"}</span>
+                  </button>
+                )}
+              </div>
+            ) : (
+              /* Previsualización del Logo Procesado sin Fondo */
+              <div className="p-3.5 bg-emerald-50/80 border border-emerald-200 rounded-2xl space-y-2.5 animate-in fade-in">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs bg-emerald-500 text-white font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
+                    Vista previa sin fondo
+                  </span>
+                  <p className="text-xs font-bold text-emerald-900">
+                    ¿Te gusta cómo quedó el resultado transparente?
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleSaveProcessedLogo}
+                    disabled={isSavingLogoNoBg}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-black px-4 py-2 rounded-xl text-xs sm:text-sm transition-all shadow-sm inline-flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    <span>💾</span>
+                    <span>{isSavingLogoNoBg ? "Guardando..." : "Guardar logo sin fondo"}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancelProcessedLogo}
+                    disabled={isSavingLogoNoBg}
+                    className="bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 font-bold px-3.5 py-2 rounded-xl text-xs sm:text-sm transition-colors shadow-xs inline-flex items-center gap-1"
+                  >
+                    <span>✕</span>
+                    <span>Descartar / Conservar original</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
         {logoUrl && (
