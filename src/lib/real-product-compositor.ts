@@ -21,6 +21,7 @@ export interface RealProductBannerParams {
   includeLogo?: boolean;
   saveEditableInLibrary?: boolean;
   customBadgeText?: string;
+  skipAgentCopy?: boolean;
 }
 
 export interface ComposedCommercialSlideResult {
@@ -82,30 +83,25 @@ export async function composeCommercialSlideWithEditor(
     includeLogo = true,
     saveEditableInLibrary = false,
     customBadgeText = "",
+    skipAgentCopy = false,
   } = params;
 
   const isVertical = aspectRatio === "9:16";
 
   console.log(`[RealProductCompositor] Procesando foto real de "${productName}" para ${businessName} (Layout: ${layoutPosition}, Font: ${fontStyle})...`);
 
-  // 1. Invocación de nuestro Agente de Textos Publicitarios
+  // 1. Textos Publicitarios (Ultra-rápido: si ya se proporcionaron o skipAgentCopy=true, no invocar Gemini secundario)
   let bannerCopy: BannerCopyResult;
-  try {
-    bannerCopy = await generateBannerCopyWithAgent({
-      idea: idea || `Promoción del producto ${productName}: ${productDescription}`,
-      rubro,
-      businessName,
-      businessDescription: productDescription,
-      customOffer: price ? `Precio: ${price}` : "",
-      aspectRatio,
-    });
-  } catch (err: any) {
-    console.warn("[RealProductCompositor] Warning generando micro-copy con agente, usando defaults:", err);
+  if (skipAgentCopy || productName || customBadgeText || price) {
     bannerCopy = {
-      badgeText: price ? `🔥 ${price}` : "⭐ DESTACADO",
-      mainHeadline: productName.toUpperCase(),
-      benefitText: productDescription.slice(0, 45) || "Elaboración propia con ingredientes frescos",
-      ctaText: `📍 ${businessName}`,
+      badgeText: (customBadgeText && customBadgeText.trim())
+        ? customBadgeText.trim().toUpperCase()
+        : (price && price.trim() ? `🔥 OFERTA ${price.trim()}` : "⭐ DESTACADO"),
+      mainHeadline: productName && productName.trim() ? productName.trim().toUpperCase() : "OFERTA EXCLUSIVA",
+      benefitText: (productDescription && productDescription.trim())
+        ? productDescription.trim()
+        : "Elaboración propia con ingredientes seleccionados",
+      ctaText: businessName && businessName.trim() ? `📍 ${businessName.trim()}` : "¡ORDENA HOY!",
       visualTheme: "food_bold",
       badgeBgColor: "#fbbf24",
       badgeTextColor: "#0f172a",
@@ -114,23 +110,47 @@ export async function composeCommercialSlideWithEditor(
       benefitTextColor: "#ffffff",
       accentColor: "#fbbf24",
     };
+  } else {
+    try {
+      bannerCopy = await generateBannerCopyWithAgent({
+        idea: idea || `Promoción del producto ${productName}: ${productDescription}`,
+        rubro,
+        businessName,
+        businessDescription: productDescription,
+        customOffer: price ? `Precio: ${price}` : "",
+        aspectRatio,
+      });
+    } catch (err: any) {
+      console.warn("[RealProductCompositor] Warning generando micro-copy con agente, usando defaults:", err);
+      bannerCopy = {
+        badgeText: price ? `🔥 ${price}` : "⭐ DESTACADO",
+        mainHeadline: productName.toUpperCase(),
+        benefitText: productDescription.slice(0, 45) || "Elaboración propia con ingredientes frescos",
+        ctaText: `📍 ${businessName}`,
+        visualTheme: "food_bold",
+        badgeBgColor: "#fbbf24",
+        badgeTextColor: "#0f172a",
+        headlineColor: "#ffffff",
+        benefitBgColor: "rgba(15, 23, 42, 0.85)",
+        benefitTextColor: "#ffffff",
+        accentColor: "#fbbf24",
+      };
+    }
   }
 
-    if (customBadgeText && customBadgeText.trim()) {
-      bannerCopy.badgeText = customBadgeText.trim().toUpperCase();
-    } else if (price && price.trim()) {
-      bannerCopy.badgeText = `🔥 OFERTA ${price.trim()}`;
-    }
+  if (customBadgeText && customBadgeText.trim()) {
+    bannerCopy.badgeText = customBadgeText.trim().toUpperCase();
+  } else if (price && price.trim()) {
+    bannerCopy.badgeText = `🔥 OFERTA ${price.trim()}`;
+  }
 
-    // Prioridad absoluta al nombre de producto ingresado por el usuario
-    if (productName && productName.trim()) {
-      bannerCopy.mainHeadline = productName.trim().toUpperCase();
-    }
+  if (productName && productName.trim()) {
+    bannerCopy.mainHeadline = productName.trim().toUpperCase();
+  }
 
-    // Prioridad absoluta a la descripción u oferta personalizada
-    if (productDescription && productDescription.trim()) {
-      bannerCopy.benefitText = productDescription.trim();
-    }
+  if (productDescription && productDescription.trim()) {
+    bannerCopy.benefitText = productDescription.trim();
+  }
 
   // 2. Intento Primario: Renderizado Tipográfico con Butterfly Social
   let savedEditDocId: string | undefined;

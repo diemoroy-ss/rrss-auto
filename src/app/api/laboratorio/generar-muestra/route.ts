@@ -44,12 +44,17 @@ async function generateSingleImage(
   rubro: string,
   productName: string,
   aspectRatio: "1:1" | "9:16" = "1:1",
-  timeoutMs = 2500,
+  timeoutMs = 0,
   fallbackUrl?: string
 ): Promise<string> {
   const width = aspectRatio === "9:16" ? 720 : 1080;
   const height = aspectRatio === "9:16" ? 1280 : 1080;
   const seed = Math.floor(Math.random() * 1000000);
+
+  // Si hay fallbackUrl de estilo visual verificado (previewUrl de la plantilla seleccionada), usarlo de inmediato
+  if (fallbackUrl && typeof fallbackUrl === "string" && fallbackUrl.startsWith("http")) {
+    return fallbackUrl;
+  }
 
   // Si timeoutMs > 0, intentar n8n con timeout muy breve (máx 2.5s)
   if (timeoutMs > 0) {
@@ -89,12 +94,7 @@ async function generateSingleImage(
     }
   }
 
-  // Si hay fallbackUrl de estilo visual verificado (previewUrl de la plantilla seleccionada), usarlo
-  if (fallbackUrl && typeof fallbackUrl === "string" && fallbackUrl.startsWith("http")) {
-    return fallbackUrl;
-  }
-
-  // Fallback rápido y confiable a Flux (Pollinations)
+  // Fallback rápido a Flux (Pollinations)
   return `https://image.pollinations.ai/prompt/${encodeURIComponent(promptEnglish)}?width=${width}&height=${height}&model=flux&nologo=true&enhance=true&seed=${seed}`;
 }
 
@@ -554,7 +554,7 @@ ${stylesContext}`;
                   `${visualStyleDirective} Complete commercial showcase and dining atmosphere for ${prodName}`.trim(),
                 ];
 
-            const imgTimeout = idx === 0 ? 2500 : 0;
+            const imgTimeout = 0;
             const baseCoverUrl = effectiveRealPhotoUrl || (await generateSingleImage(slidePrompts[0], rubro, prodName, "1:1", imgTimeout, styleFallbackUrl));
 
             if (postIsCommercial) {
@@ -574,6 +574,7 @@ ${stylesContext}`;
                   includeLogo: Boolean(body.logoUrl),
                   saveEditableInLibrary: true,
                   customBadgeText: badgeCustomText,
+                  skipAgentCopy: true,
                 });
                 coverUrl = composed.finalImageUrl;
                 commercialEditId = composed.editDocId;
@@ -586,8 +587,8 @@ ${stylesContext}`;
             }
 
             const [slide2, slide3] = await Promise.all([
-              generateSingleImage(slidePrompts[1], rubro, prodName, "1:1", 0),
-              generateSingleImage(slidePrompts[2], rubro, prodName, "1:1", 0),
+              generateSingleImage(slidePrompts[1], rubro, prodName, "1:1", 0, styleFallbackUrl),
+              generateSingleImage(slidePrompts[2], rubro, prodName, "1:1", 0, styleFallbackUrl),
             ]);
 
             const slideUrls = [coverUrl, slide2, slide3];
@@ -606,7 +607,7 @@ ${stylesContext}`;
             // Generar visual vertical 9:16 para reel
             let reelImageUrl = "";
             let commercialEditId: string | undefined;
-            const imgTimeout = idx === 0 ? 2500 : 0;
+            const imgTimeout = 0;
             const reelPrompt = `${promptEnglish}, cinematic vertical framing, 9:16 aspect ratio, dramatic studio lighting`;
             const baseReelUrl = effectiveRealPhotoUrl || (await generateSingleImage(reelPrompt, rubro, prodName, "9:16", imgTimeout, styleFallbackUrl));
 
@@ -627,6 +628,7 @@ ${stylesContext}`;
                   includeLogo: Boolean(body.logoUrl),
                   saveEditableInLibrary: true,
                   customBadgeText: badgeCustomText,
+                  skipAgentCopy: true,
                 });
                 reelImageUrl = composed.finalImageUrl;
                 commercialEditId = composed.editDocId;
@@ -652,7 +654,7 @@ ${stylesContext}`;
             // Post estándar 1:1
             let finalImgUrl = "";
             let commercialEditId: string | undefined;
-            const imgTimeout = idx === 0 ? 2500 : 0;
+            const imgTimeout = 0;
             const basePostUrl = effectiveRealPhotoUrl || (await generateSingleImage(promptEnglish, rubro, prodName, "1:1", imgTimeout, styleFallbackUrl));
 
             if (postIsCommercial) {
@@ -672,6 +674,7 @@ ${stylesContext}`;
                   includeLogo: Boolean(body.logoUrl),
                   saveEditableInLibrary: true,
                   customBadgeText: badgeCustomText,
+                  skipAgentCopy: true,
                 });
                 finalImgUrl = composed.finalImageUrl;
                 commercialEditId = composed.editDocId;

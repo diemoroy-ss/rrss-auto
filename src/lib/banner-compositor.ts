@@ -67,10 +67,27 @@ export async function composeBannerOnImage(options: BannerCompositorOptions): Pr
   console.log(`[BannerCompositor] Componiendo banner publicitario ${width}x${height} para usuario: ${userId}...`);
 
   try {
-    // 1. Descargar imagen base
-    const imageRes = await fetch(baseImageUrl);
-    if (!imageRes.ok) throw new Error(`Error descargando imagen base: ${imageRes.status}`);
-    const imageBuffer = Buffer.from(await imageRes.arrayBuffer());
+    // 1. Descargar imagen base con timeout estricto para evitar colgar Vercel
+    let imageBuffer: Buffer;
+    try {
+      const imageRes = await fetch(baseImageUrl, {
+        signal: AbortSignal.timeout(4500),
+      });
+      if (!imageRes.ok) throw new Error(`HTTP ${imageRes.status}`);
+      imageBuffer = Buffer.from(await imageRes.arrayBuffer());
+    } catch (fetchErr) {
+      console.warn(`[BannerCompositor] No se pudo descargar imagen base en 4.5s (${baseImageUrl}), generando fondo de estudio:`, fetchErr);
+      imageBuffer = await sharp({
+        create: {
+          width,
+          height,
+          channels: 4,
+          background: { r: 15, g: 23, b: 42, alpha: 1 },
+        },
+      })
+        .png()
+        .toBuffer();
+    }
 
     // 2. Redimensionar imagen base al tamaño exacto
     let processedMain = sharp(imageBuffer).resize(width, height, { fit: "cover", position: "center" });
