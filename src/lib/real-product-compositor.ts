@@ -116,9 +116,21 @@ export async function composeCommercialSlideWithEditor(
     };
   }
 
-  if (customBadgeText && customBadgeText.trim()) {
-    bannerCopy.badgeText = customBadgeText.trim();
-  }
+    if (customBadgeText && customBadgeText.trim()) {
+      bannerCopy.badgeText = customBadgeText.trim().toUpperCase();
+    } else if (price && price.trim()) {
+      bannerCopy.badgeText = `🔥 OFERTA ${price.trim()}`;
+    }
+
+    // Prioridad absoluta al nombre de producto ingresado por el usuario
+    if (productName && productName.trim()) {
+      bannerCopy.mainHeadline = productName.trim().toUpperCase();
+    }
+
+    // Prioridad absoluta a la descripción u oferta personalizada
+    if (productDescription && productDescription.trim()) {
+      bannerCopy.benefitText = productDescription.trim();
+    }
 
   // 2. Intento Primario: Renderizado Tipográfico con Butterfly Social
   let savedEditDocId: string | undefined;
@@ -317,6 +329,7 @@ export async function composeCommercialSlideWithEditor(
   const sharpUrl = await composeBannerOnImage({
     baseImageUrl,
     bannerCopy,
+    price,
     logoUrl,
     userId,
     aspectRatio,

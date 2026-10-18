@@ -5,6 +5,7 @@ import { BannerCopyResult } from "./agents/agent-banner-copy";
 export interface BannerCompositorOptions {
   baseImageUrl: string;
   bannerCopy: BannerCopyResult;
+  price?: string;
   logoUrl?: string;
   userId?: string;
   aspectRatio?: "1:1" | "9:16";
@@ -15,7 +16,7 @@ export interface BannerCompositorOptions {
  * Escapa caracteres especiales para SVG XML seguro
  */
 function escapeXml(unsafe: string): string {
-  return unsafe
+  return (unsafe || "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
@@ -27,7 +28,7 @@ function escapeXml(unsafe: string): string {
  * Divide un texto largo en líneas cortas para el titular SVG
  */
 function wrapText(text: string, maxCharsPerLine: number = 18): string[] {
-  const words = text.split(" ");
+  const words = (text || "").split(" ");
   const lines: string[] = [];
   let currentLine = "";
 
@@ -52,6 +53,7 @@ export async function composeBannerOnImage(options: BannerCompositorOptions): Pr
   const {
     baseImageUrl,
     bannerCopy,
+    price,
     logoUrl,
     userId = "system",
     aspectRatio = "1:1",
@@ -90,13 +92,16 @@ export async function composeBannerOnImage(options: BannerCompositorOptions): Pr
     const badgeTextEscaped = escapeXml(bannerCopy.badgeText);
     const benefitTextEscaped = escapeXml(bannerCopy.benefitText);
     const ctaTextEscaped = escapeXml(bannerCopy.ctaText);
+    const priceTextEscaped = escapeXml(price || "");
 
     // Calcular ancho estimado del badge pill
-    const badgeWidth = Math.min(width - 120, Math.max(280, badgeTextEscaped.length * 22 + 60));
+    const badgeFontSize = badgeTextEscaped.length > 28 ? 17 : 21;
+    const badgeWidth = Math.min(width - 120, Math.max(260, badgeTextEscaped.length * (badgeFontSize * 0.75) + 50));
     const badgeX = (width - badgeWidth) / 2;
 
     // Calcular ancho del benefit pill
-    const benefitWidth = Math.min(width - 120, Math.max(340, benefitTextEscaped.length * 16 + 80));
+    const benefitFontSize = benefitTextEscaped.length > 35 ? 17 : 20;
+    const benefitWidth = Math.min(width - 100, Math.max(320, benefitTextEscaped.length * (benefitFontSize * 0.7) + 60));
     const benefitX = (width - benefitWidth) / 2;
 
     const svgOverlay = `
@@ -131,20 +136,39 @@ export async function composeBannerOnImage(options: BannerCompositorOptions): Pr
 
         <!-- 2. Badge Superior (Pastilla destacada de promoción) -->
         <g filter="url(#soft-shadow)">
-          <rect x="${badgeX}" y="${badgeY}" width="${badgeWidth}" height="56" rx="28" fill="${bannerCopy.badgeBgColor}" />
+          <rect x="${badgeX}" y="${badgeY}" width="${badgeWidth}" height="56" rx="28" fill="${bannerCopy.badgeBgColor || '#fbbf24'}" />
           <text 
             x="${width / 2}" 
             y="${badgeY + 36}" 
-            fill="${bannerCopy.badgeTextColor}" 
+            fill="${bannerCopy.badgeTextColor || '#0f172a'}" 
             font-family="system-ui, -apple-system, Montserrat, Arial, sans-serif" 
-            font-size="22" 
+            font-size="${badgeFontSize}" 
             font-weight="900" 
-            letter-spacing="1.5"
+            letter-spacing="1.2"
             text-anchor="middle"
           >
             ${badgeTextEscaped}
           </text>
         </g>
+
+        <!-- Pastilla de Precio Destacada Flotante si existe precio y no está ya en el badge -->
+        ${priceTextEscaped && !badgeTextEscaped.includes(priceTextEscaped) ? `
+        <g filter="url(#heavy-shadow)">
+          <rect x="${width - (isVertical ? 300 : 260)}" y="${isVertical ? 172 : 72}" width="${isVertical ? 250 : 210}" height="64" rx="22" fill="#fbbf24" stroke="#ffffff" stroke-width="2.5" />
+          <text 
+            x="${width - (isVertical ? 175 : 155)}" 
+            y="${isVertical ? 215 : 115}" 
+            fill="#0f172a" 
+            font-family="system-ui, -apple-system, Montserrat, Arial, sans-serif" 
+            font-size="28" 
+            font-weight="900" 
+            letter-spacing="1"
+            text-anchor="middle"
+          >
+            ${priceTextEscaped}
+          </text>
+        </g>
+        ` : ''}
 
         <!-- 3. Titular Principal en Mayúsculas con Sombra Gruesa -->
         <g filter="url(#heavy-shadow)">

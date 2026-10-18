@@ -202,9 +202,11 @@ REGLAS ABSOLUTAS:
    - CERO frases robóticas ("en el vertiginoso mundo", "descubre", "sumérgete", "en conclusión").
    - NUNCA menciones "IA" o "Inteligencia Artificial". Refiérete siempre a "nuestros agentes" o "nuestro equipo de agentes especializados".
 
-3. ESTILOS VISUALES EN LAS MUESTRAS:
-   Debes asignar a cada una de las ${clampedCount} publicaciones de muestra el estilo visual correspondiente indicado en la lista de estilos seleccionados.
-   Indica en 'visualStyleTitle' el nombre exacto del estilo asignado.
+3. ASIGNACIÓN ESTRICTA DE ESTILOS VISUALES:
+   - Para la publicación 1 ('pub_1'): Asigna OBLIGATORIAMENTE el Estilo #1: "${selectedStyles[0]?.title || 'Estilo Comercial'}".
+   - Para la publicación 2 ('pub_2'): Asigna OBLIGATORIAMENTE el Estilo #2: "${selectedStyles[1]?.title || selectedStyles[0]?.title || 'Estilo Comercial'}".
+   - Para la publicación 3 ('pub_3'): Asigna OBLIGATORIAMENTE el Estilo #3: "${selectedStyles[2]?.title || selectedStyles[0]?.title || 'Estilo Comercial'}".
+   Cada publicación DEBE tener un estilo visual diferente e indicar en 'visualStyleTitle' el nombre exacto del estilo asignado. En 'imagePromptEnglish', incluye de forma predominante la dirección de arte, paleta de color e iluminación de dicho estilo.
 
 4. CARTEL COMERCIAL & TEXTOS EN IMAGEN (MOTOR: ${isCommercialImageEngine ? "IMAGEN COMERCIAL CON CAPAS" : finalImageTextMode.toUpperCase()}):
    ${
@@ -499,7 +501,21 @@ ${stylesContext}`;
           "";
         const effectiveIdea = commercialIdea || pub.hook || pub.title || prodName;
 
+        const assignedStyle = (selectedStyles && selectedStyles.length > 0)
+          ? selectedStyles[idx % selectedStyles.length]
+          : null;
+
+        // Directriz de arte e iluminación según el estilo seleccionado para esta publicación
+        let visualStyleDirective = "";
+        if (assignedStyle) {
+          visualStyleDirective = `VISUAL STYLE "${assignedStyle.title.toUpperCase()}": ${assignedStyle.description}. Aesthetic keywords: ${assignedStyle.styleKeywords || assignedStyle.description}.`;
+        }
+
         let promptEnglish = pub.imagePromptEnglish || "";
+        if (visualStyleDirective && !promptEnglish.toLowerCase().includes(assignedStyle!.title.toLowerCase())) {
+          promptEnglish = `${visualStyleDirective} ${promptEnglish}`.trim();
+        }
+
         if (isCommercialImageEngine) {
           // En modo Imagen Comercial, el fondo base SIEMPRE es limpio sin letras incrustadas para que Nuestro Editor estampe las capas vectoriales
           if (!promptEnglish) {
@@ -524,15 +540,18 @@ ${stylesContext}`;
             let commercialEditId: string | undefined;
 
             const slidePrompts: string[] = Array.isArray(pub.carouselPrompts) && pub.carouselPrompts.length >= 3
-              ? pub.carouselPrompts.map((p: string) =>
-                  isCommercialImageEngine
-                    ? `${p}, clean background with upper negative space, STRICT NEGATIVE: no text, no typography, no letters`
-                    : p
-                )
+              ? pub.carouselPrompts.map((p: string) => {
+                  let sp = visualStyleDirective && !p.toLowerCase().includes(assignedStyle!.title.toLowerCase())
+                    ? `${visualStyleDirective} ${p}`.trim()
+                    : p;
+                  return isCommercialImageEngine
+                    ? `${sp}, clean background with upper negative space, STRICT NEGATIVE: no text, no typography, no letters`
+                    : sp;
+                })
               : [
                   `${promptEnglish}, wide appetizing cover view`,
-                  `${promptEnglish}, close-up detailed texture, fresh ingredients in focus`,
-                  `${promptEnglish}, complete showcase with dramatic lighting`,
+                  `${visualStyleDirective} Detailed macro close-up texture of ${prodName}, fresh ingredients in focus`.trim(),
+                  `${visualStyleDirective} Complete commercial showcase and dining atmosphere for ${prodName}`.trim(),
                 ];
 
             const imgTimeout = idx === 0 ? 2500 : 0;
@@ -580,6 +599,7 @@ ${stylesContext}`;
               carouselImages: slideUrls,
               isCommercialPoster: postIsCommercial,
               visualStyleSource,
+              visualStyleTitle: assignedStyle ? assignedStyle.title : pub.visualStyleTitle || "Estilo Comercial",
               commercialEditId,
             };
           } else if (pub.type === "reel") {
@@ -625,6 +645,7 @@ ${stylesContext}`;
               aspectRatio: "9:16",
               isCommercialPoster: postIsCommercial,
               visualStyleSource,
+              visualStyleTitle: assignedStyle ? assignedStyle.title : pub.visualStyleTitle || "Estilo Comercial",
               commercialEditId,
             };
           } else {
@@ -668,6 +689,7 @@ ${stylesContext}`;
               baseImageUrl: basePostUrl,
               isCommercialPoster: postIsCommercial,
               visualStyleSource,
+              visualStyleTitle: assignedStyle ? assignedStyle.title : pub.visualStyleTitle || "Estilo Comercial",
               commercialEditId,
             };
           }

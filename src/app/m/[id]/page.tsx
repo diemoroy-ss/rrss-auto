@@ -7,7 +7,7 @@ import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { db } from "../../../lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
-import { FaWhatsapp, FaImage, FaVideo, FaShareAlt, FaCheck, FaArrowRight, FaShieldAlt, FaRocket, FaClock, FaStar, FaCopy, FaPenNib } from "react-icons/fa";
+import { FaWhatsapp, FaImage, FaVideo, FaShareAlt, FaCheck, FaArrowRight, FaShieldAlt, FaRocket, FaClock, FaStar, FaCopy, FaPenNib, FaExpand } from "react-icons/fa";
 
 // Importación dinámica de RemotionReelPlayer para mantener la carga ultra-rápida en móviles
 const RemotionReelPlayer = dynamic(() => import("../../../components/video/RemotionReelPlayer"), {
@@ -305,6 +305,8 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
   const [activeMediaTab, setActiveMediaTab] = useState<"imagen" | "video">("imagen");
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedCaption, setCopiedCaption] = useState(false);
+  const [copiedCaptionIndex, setCopiedCaptionIndex] = useState<number | null>(null);
+  const [activeCarouselSlideMap, setActiveCarouselSlideMap] = useState<Record<number, number>>({});
   const [selectedPubIndex, setSelectedPubIndex] = useState(0);
   const [activeCarouselSlide, setActiveCarouselSlide] = useState(0);
   const [lightboxData, setLightboxData] = useState<{
@@ -453,6 +455,18 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
     }
   };
 
+  const handleCopyPubCaption = (text: string, idx: number) => {
+    if (text && typeof window !== "undefined") {
+      navigator.clipboard.writeText(text);
+      setCopiedCaptionIndex(idx);
+      setTimeout(() => setCopiedCaptionIndex(null), 2500);
+    }
+  };
+
+  const getCarouselSlide = (pubIdx: number) => activeCarouselSlideMap[pubIdx] || 0;
+  const setCarouselSlide = (pubIdx: number, sIdx: number) =>
+    setActiveCarouselSlideMap((prev) => ({ ...prev, [pubIdx]: sIdx }));
+
   const businessName = demo?.prospectBusiness || "tu negocio";
   const santisoftWhatsAppNumber = "56934428848";
   const contactMsg = encodeURIComponent(
@@ -563,553 +577,269 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
 
         {/* SI LA MUESTRA TIENE MÚLTIPLES PUBLICACIONES (POST, CARRUSEL, REEL) */}
         {demo.publications && demo.publications.length > 0 ? (
-          (() => {
-            const currentPub = demo.publications[selectedPubIndex] || demo.publications[0];
-            const isCarousel = currentPub.type === "carrusel";
-            const isReel = currentPub.type === "reel";
-            const isPost = currentPub.type === "post";
-            const slides = isCarousel
-              ? (currentPub.carouselImages && currentPub.carouselImages.length > 0
-                  ? currentPub.carouselImages
-                  : [currentPub.imageUrl || demo.generatedImageUrl].filter(Boolean))
-              : [];
-
-            return (
-              <div className="space-y-6">
-                {/* 1. MOSAICO / GRILLA DE TODAS LAS PUBLICACIONES GENERADAS */}
-                <div className="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-7 shadow-xs space-y-4">
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                    <div>
-                      <h2 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
-                        <span>✨</span> Publicaciones Diseñadas para {demo.prospectBusiness} ({demo.publications.length})
-                      </h2>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        Propuestas listas para tus redes. Haz clic en cualquiera para abrir su visualización y copy completo.
-                      </p>
-                    </div>
-                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-                      {demo.publications.length} de {demo.publications.length} Disponibles
-                    </span>
-                  </div>
-
-                  {/* Tarjetas resumen de cada publicación */}
-                  <div className={`grid gap-4 ${
-                    demo.publications.length === 1
-                      ? "grid-cols-1 max-w-md mx-auto"
-                      : demo.publications.length === 2
-                      ? "grid-cols-1 md:grid-cols-2"
-                      : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
-                  }`}>
-                    {demo.publications.map((pub, idx) => {
-                      const isSelected = selectedPubIndex === idx;
-                      const pubThumb = pub.type === "carrusel" && pub.carouselImages?.length
-                        ? pub.carouselImages[0]
-                        : pub.imageUrl || demo.generatedImageUrl;
-
-                      return (
-                        <div
-                          key={pub.id || idx}
-                          onClick={() => {
-                            setSelectedPubIndex(idx);
-                            setActiveCarouselSlide(0);
-                            const el = document.getElementById("visor-detalle");
-                            if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-                          }}
-                          className={`group rounded-2xl border-2 p-3.5 transition-all cursor-pointer flex flex-col justify-between ${
-                            isSelected
-                              ? "border-indigo-600 bg-indigo-50/40 shadow-lg ring-2 ring-indigo-500/20"
-                              : "border-slate-200 bg-slate-50 hover:border-indigo-300 hover:bg-white shadow-xs"
-                          }`}
-                        >
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-between gap-2">
-                              <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg flex items-center gap-1 ${
-                                isSelected ? "bg-indigo-600 text-white" : "bg-slate-200 text-slate-700"
-                              }`}>
-                                <span>{pub.type === "carrusel" ? "🎠" : pub.type === "reel" ? "🎬" : "📸"}</span>
-                                <span>{pub.type === "carrusel" ? "Carrusel (3 Slides)" : pub.type === "reel" ? "Reel (9:16)" : "Post Feed (1:1)"}</span>
-                              </span>
-                              <span className="text-xs font-black text-slate-400">
-                                #{idx + 1}
-                              </span>
-                            </div>
-
-                            <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-slate-950 border border-slate-200 shadow-inner flex items-center justify-center">
-                              <img
-                                src={pubThumb}
-                                alt={pub.title || "Post"}
-                                className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300"
-                              />
-                              <WatermarkOverlay size="small" showBanner={false} />
-                              {pub.productPrice && (
-                                <div className="absolute top-2 left-2 z-30 bg-black/80 backdrop-blur-md text-emerald-400 font-black text-xs px-2.5 py-0.5 rounded-lg border border-white/20 shadow-md">
-                                  {pub.productPrice}
-                                </div>
-                              )}
-                              {pub.type === "carrusel" && (
-                                <div className="absolute top-2 right-2 z-30 bg-black/80 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded-md border border-white/20 shadow-md">
-                                  3 Slides
-                                </div>
-                              )}
-                              {(pub.isCommercialPoster || pub.visualStyleTitle?.toLowerCase().includes("poster") || pub.visualStyleTitle?.toLowerCase().includes("combo") || pub.visualStyleTitle?.toLowerCase().includes("lanzamiento")) ? (
-                                <div className="absolute bottom-2 inset-x-2 z-30 bg-slate-950/85 backdrop-blur-md text-amber-300 text-[10px] font-black py-0.5 px-2 rounded-lg text-center truncate border border-amber-500/30 shadow-md">
-                                  🏷️ Cartel con Texto &amp; Precio
-                                </div>
-                              ) : (
-                                <div className="absolute bottom-2 inset-x-2 z-30 bg-slate-950/85 backdrop-blur-md text-emerald-300 text-[10px] font-black py-0.5 px-2 rounded-lg text-center truncate border border-emerald-500/30 shadow-md">
-                                  🖼️ Foto Limpia de Producto
-                                </div>
-                              )}
-                            </div>
-
-                            <div>
-                              <h3 className="font-extrabold text-sm text-slate-900 line-clamp-1 group-hover:text-indigo-600 transition-colors">
-                                {pub.dishOrProductName || pub.title || `Publicación #${idx + 1}`}
-                              </h3>
-                              {pub.hook && (
-                                <p className="text-xs text-slate-600 italic line-clamp-2 mt-1 leading-snug">
-                                  &quot;{pub.hook}&quot;
-                                </p>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="pt-3 border-t border-slate-200/70 mt-3 flex items-center justify-between text-xs">
-                            <span className={`font-bold flex items-center gap-1 ${
-                              isSelected ? "text-indigo-600" : "text-slate-500 group-hover:text-indigo-600"
-                            }`}>
-                              {isSelected ? "✓ Seleccionado abajo" : "Ver detalle y copy →"}
-                            </span>
-                            <span className="text-[10px] text-slate-400 font-mono">
-                              {pub.type}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+          <div className="space-y-8">
+            {/* Encabezado General de la sección */}
+            <div className="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-7 shadow-xs">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200/80 mb-2">
+                    <span>✨</span> Publicaciones Diseñadas para {demo.prospectBusiness}
+                  </span>
+                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                    Propuestas Listas para Publicar ({demo.publications.length})
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                    Cada publicación fue creada con su propio estilo visual, copy persuasivo y llamada a la acción.
+                  </p>
                 </div>
-
-                {/* 2. VISOR INTERACTIVO EN DETALLE */}
-                <div id="visor-detalle" className="scroll-mt-24 space-y-3">
-                  <div className="flex items-center justify-between gap-2 bg-white border border-slate-200/90 rounded-2xl p-3 px-4 shadow-xs">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedPubIndex((prev) => (prev > 0 ? prev - 1 : demo.publications!.length - 1));
-                        setActiveCarouselSlide(0);
-                      }}
-                      disabled={demo.publications.length <= 1}
-                      className="px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-40 cursor-pointer flex items-center gap-1"
-                    >
-                      ← Anterior
-                    </button>
-                    <div className="text-center">
-                      <span className="text-xs font-black text-slate-900 block">
-                        Inspeccionando Publicación {selectedPubIndex + 1} de {demo.publications.length}
-                      </span>
-                      <span className="text-[10px] text-indigo-600 font-bold truncate max-w-[200px] sm:max-w-md inline-block">
-                        {currentPub.dishOrProductName || currentPub.title}
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedPubIndex((prev) => (prev < demo.publications!.length - 1 ? prev + 1 : 0));
-                        setActiveCarouselSlide(0);
-                      }}
-                      disabled={demo.publications.length <= 1}
-                      className="px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-40 cursor-pointer flex items-center gap-1"
-                    >
-                      Siguiente →
-                    </button>
-                  </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3.5 py-1.5 rounded-full border border-emerald-200">
+                    {demo.publications.length} Contenidos Disponibles
+                  </span>
                 </div>
+              </div>
+            </div>
 
-                {/* ZONA DE VISUALIZACIÓN MULTIMEDIA SEGÚN EL TIPO */}
-                <section className="bg-white border border-slate-200/90 rounded-3xl p-4 sm:p-8 shadow-xs space-y-6">
-                  {/* CABECERA DEL FORMATO ACTIVO */}
-                  <div className="flex flex-wrap items-center justify-between text-xs text-slate-500 px-1 gap-2 border-b border-slate-100 pb-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">
-                        {isCarousel ? "🎠" : isReel ? "🎬" : "📸"}
+            {/* Lista Secuencial de Publicaciones: Post 1, Post 2, Post 3 */}
+            {demo.publications.map((pub, pubIdx) => {
+              const isCarousel = pub.type === "carrusel";
+              const isReel = pub.type === "reel";
+
+              const slides = isCarousel
+                ? (pub.carouselImages && pub.carouselImages.length > 0
+                    ? pub.carouselImages
+                    : [pub.imageUrl || demo.generatedImageUrl].filter(Boolean))
+                : [];
+
+              const currentSlideIndex = getCarouselSlide(pubIdx);
+              const activeSlideImg = slides[currentSlideIndex] || pub.imageUrl || demo.generatedImageUrl;
+              const mainVisualImg = isCarousel ? activeSlideImg : (pub.imageUrl || demo.generatedImageUrl);
+              const postCopyText = pub.copy || demo.generatedPostCaption || "";
+              const isCopied = copiedCaptionIndex === pubIdx;
+
+              const styleName = pub.visualStyleTitle || demo.selectedStyleTitle || "Estilo Visual";
+              const displayTitle = pub.dishOrProductName || pub.title || `Publicación #${pubIdx + 1}`;
+
+              return (
+                <article
+                  key={pub.id || pubIdx}
+                  className="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-8 shadow-xs space-y-6"
+                >
+                  {/* Encabezado del Post con Nivel, Formato y Estilo */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                    <div className="flex flex-wrap items-center gap-2.5">
+                      <span className="w-8 h-8 rounded-xl bg-indigo-600 text-white font-black text-sm flex items-center justify-center shadow-sm shadow-indigo-600/30">
+                        #{pubIdx + 1}
                       </span>
                       <div>
-                        <span className="font-extrabold text-slate-900 text-sm block">
-                          {isCarousel
-                            ? "Carrusel Multidiapositiva (3 Slides)"
-                            : isReel
-                            ? "Video Reel Vertical (Formato 9:16)"
-                            : "Post Fijo Cuadrado (Feed 1:1)"}
-                        </span>
-                        <span className="text-[11px] text-slate-500 font-normal">
-                          {currentPub.title || currentPub.dishOrProductName || `Publicación #${selectedPubIndex + 1}`}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      {currentPub.productPrice && (
-                        <span className="font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-xl text-xs">
-                          {currentPub.productPrice}
-                        </span>
-                      )}
-                      {currentPub.visualStyleTitle && (
-                        <span className="font-mono text-[11px] text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-2.5 py-1 rounded-xl font-semibold">
-                          Estilo: {currentPub.visualStyleTitle}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* 1. VISTA DE POST ESTÁNDAR 1:1 */}
-                  {isPost && (
-                    <div className="space-y-4">
-                      {/* Control superior de encuadre y zoom */}
-                      <div className="flex items-center justify-between text-xs px-1">
-                        <div className="flex items-center gap-2">
-                          {(currentPub.isCommercialPoster || currentPub.visualStyleTitle?.toLowerCase().includes("poster") || currentPub.visualStyleTitle?.toLowerCase().includes("combo") || currentPub.visualStyleTitle?.toLowerCase().includes("lanzamiento")) ? (
-                            <span className="px-2.5 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-700 border border-amber-500/30 flex items-center gap-1">
-                              <span>🏷️</span> Cartel con Tipografía &amp; Precio
-                            </span>
-                          ) : (
-                            <span className="px-2.5 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-700 border border-emerald-500/30 flex items-center gap-1">
-                              <span>🖼️</span> Fotografía Limpia de Producto
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setImageFitMode(prev => prev === "contain" ? "cover" : "contain")}
-                            className="px-2.5 py-1 rounded-lg border border-slate-200 text-[11px] font-bold text-slate-600 hover:bg-slate-50 transition-colors flex items-center gap-1 cursor-pointer"
-                            title="Alternar entre ver la imagen completa o recortada al marco"
-                          >
-                            <span>{imageFitMode === "contain" ? "🔲 Llenar marco" : "👁️ Ver completo"}</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      <div
-                        onClick={() => openLightbox(currentPub.imageUrl || demo.generatedImageUrl, currentPub)}
-                        className="relative max-w-lg mx-auto aspect-square rounded-2xl overflow-hidden bg-slate-950 border border-slate-200 shadow-xl group cursor-pointer flex items-center justify-center select-none"
-                      >
-                        <img
-                          src={currentPub.imageUrl || demo.generatedImageUrl}
-                          alt={currentPub.title || "Post"}
-                          className={`w-full h-full transition-transform duration-300 ${
-                            imageFitMode === "contain" ? "object-contain" : "object-cover"
-                          }`}
-                        />
-
-                        {/* Marca de agua de protección comercial */}
-                        <WatermarkOverlay size="normal" />
-
-                        {/* Badge sutil flotante en la esquina superior para ampliar */}
-                        <div className="absolute top-3 left-3 z-30 flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
-                          <span className="px-3 py-1.5 rounded-xl bg-black/75 backdrop-blur-md text-white text-xs font-bold border border-white/20 shadow-md flex items-center gap-1.5">
-                            <span>🔍</span> Toca para Ampliar
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="text-base sm:text-lg font-black text-slate-900">
+                            {displayTitle}
+                          </h3>
+                          <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-lg border flex items-center gap-1 ${
+                            isCarousel
+                              ? "bg-amber-50 text-amber-800 border-amber-200"
+                              : isReel
+                              ? "bg-purple-50 text-purple-800 border-purple-200"
+                              : "bg-blue-50 text-blue-800 border-blue-200"
+                          }`}>
+                            <span>{isCarousel ? "🎠" : isReel ? "🎬" : "📸"}</span>
+                            <span>{isCarousel ? "Carrusel (3 Diapositivas)" : isReel ? "Reel 9:16" : "Post Feed (1:1)"}</span>
                           </span>
                         </div>
-                      </div>
-
-                      <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-                        <button
-                          type="button"
-                          onClick={() => openLightbox(currentPub.imageUrl || demo.generatedImageUrl, currentPub)}
-                          className="px-4 py-2.5 rounded-xl border border-slate-300 hover:border-slate-400 bg-white hover:bg-slate-50 text-xs font-bold text-slate-800 shadow-xs flex items-center gap-2 transition-all cursor-pointer"
-                        >
-                          <span>🔍</span> Inspeccionar a Pantalla Completa
-                        </button>
-                        <a
-                          href={`https://wa.me/${santisoftWhatsAppNumber}?text=${encodeURIComponent(
-                            `¡Hola Santisoft! Me gustó la propuesta de "${currentPub.dishOrProductName || currentPub.title || demo.prospectBusiness}" que prepararon sus agentes. Quiero activar mi plan para descargar los diseños en alta resolución sin marca de agua.`
-                          )}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-xs font-bold text-white shadow-md flex items-center gap-2 transition-all active:scale-95 cursor-pointer"
-                        >
-                          <span>🔒</span> Activar Plan para Descargar sin Marca de Agua
-                        </a>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 2. VISTA DE CARRUSEL MULTIDIAPOSITIVA */}
-                  {isCarousel && slides.length > 0 && (
-                    <div className="space-y-4">
-                      {/* Control superior */}
-                      <div className="flex items-center justify-between text-xs px-1">
-                        <span className="text-[11px] font-bold text-slate-500">
-                          Desliza o usa las miniaturas para ver las {slides.length} diapositivas
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setImageFitMode(prev => prev === "contain" ? "cover" : "contain")}
-                          className="px-2.5 py-1 rounded-lg border border-slate-200 text-[11px] font-bold text-slate-600 hover:bg-slate-50 transition-colors flex items-center gap-1 cursor-pointer"
-                        >
-                          <span>{imageFitMode === "contain" ? "🔲 Llenar marco" : "👁️ Ver completo"}</span>
-                        </button>
-                      </div>
-
-                      <div
-                        onClick={() => openLightbox(slides[activeCarouselSlide], { ...currentPub, title: `${currentPub.dishOrProductName || currentPub.title || "Carrusel"} · Slide ${activeCarouselSlide + 1}` })}
-                        className="relative max-w-lg mx-auto aspect-square rounded-2xl overflow-hidden bg-slate-950 border border-slate-200 shadow-xl group cursor-pointer flex items-center justify-center select-none"
-                      >
-                        <img
-                          src={slides[activeCarouselSlide]}
-                          alt={`Slide ${activeCarouselSlide + 1}`}
-                          className={`w-full h-full transition-transform duration-300 ${
-                            imageFitMode === "contain" ? "object-contain" : "object-cover"
-                          }`}
-                        />
-
-                        {/* Marca de agua de protección comercial */}
-                        <WatermarkOverlay size="normal" />
-
-                        {/* Botón Slide Anterior */}
-                        {slides.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setActiveCarouselSlide((prev) => (prev > 0 ? prev - 1 : slides.length - 1));
-                            }}
-                            className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center font-bold text-sm backdrop-blur-xs transition-all shadow-md cursor-pointer z-30"
-                          >
-                            ‹
-                          </button>
-                        )}
-
-                        {/* Botón Slide Siguiente */}
-                        {slides.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setActiveCarouselSlide((prev) => (prev < slides.length - 1 ? prev + 1 : 0));
-                            }}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center font-bold text-sm backdrop-blur-xs transition-all shadow-md cursor-pointer z-30"
-                          >
-                            ›
-                          </button>
-                        )}
-
-                        {/* Badge indicador de Slide actual */}
-                        <div className="absolute top-3 left-3 z-30 bg-black/75 backdrop-blur-md text-white text-[10px] font-black px-2.5 py-1 rounded-full border border-white/20">
-                          Slide {activeCarouselSlide + 1} de {slides.length}
-                        </div>
-
-                        {/* Botón Ampliar */}
-                        <div className="absolute top-3 right-3 z-30">
-                          <span className="px-2.5 py-1 rounded-xl bg-black/75 backdrop-blur-md text-white text-[11px] font-bold border border-white/20 shadow-md flex items-center gap-1">
-                            🔍 Toca para Ampliar
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Miniaturas de las diapositivas y puntos abajo (fuera de la foto para no tapar los textos) */}
-                      <div className="flex flex-col items-center gap-2 pt-1">
-                        {slides.length > 1 && (
-                          <div className="flex items-center gap-2">
-                            {slides.map((sUrl, sIdx) => (
-                              <button
-                                key={sIdx}
-                                type="button"
-                                onClick={() => setActiveCarouselSlide(sIdx)}
-                                className={`w-14 h-14 rounded-xl overflow-hidden border-2 transition-all cursor-pointer bg-slate-900 ${
-                                  activeCarouselSlide === sIdx
-                                    ? "border-indigo-600 ring-2 ring-indigo-500/30 scale-105"
-                                    : "border-slate-200 opacity-60 hover:opacity-100"
-                                }`}
-                              >
-                                <img src={sUrl} alt={`Thumb ${sIdx + 1}`} className="w-full h-full object-cover" />
-                              </button>
-                            ))}
-                          </div>
-                        )}
-
-                        <div className="flex items-center gap-1.5 pt-1">
-                          {slides.map((_, sIdx) => (
-                            <button
-                              key={sIdx}
-                              type="button"
-                              onClick={() => setActiveCarouselSlide(sIdx)}
-                              className={`w-2.5 h-2.5 rounded-full transition-all cursor-pointer ${
-                                activeCarouselSlide === sIdx ? "bg-indigo-600 scale-125" : "bg-slate-300 hover:bg-slate-400"
-                              }`}
-                            />
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-                        <button
-                          type="button"
-                          onClick={() => openLightbox(slides[activeCarouselSlide], { ...currentPub, title: `${currentPub.dishOrProductName || currentPub.title || "Carrusel"} · Slide ${activeCarouselSlide + 1}` })}
-                          className="px-4 py-2.5 rounded-xl border border-slate-300 hover:border-slate-400 bg-white hover:bg-slate-50 text-xs font-bold text-slate-800 shadow-xs flex items-center gap-2 transition-all cursor-pointer"
-                        >
-                          <span>🔍</span> Inspeccionar Slide Completo
-                        </button>
-                        <a
-                          href={`https://wa.me/${santisoftWhatsAppNumber}?text=${encodeURIComponent(
-                            `¡Hola Santisoft! Quiero activar mi plan para descargar el carrusel completo en alta resolución sin marca de agua para ${demo.prospectBusiness}.`
-                          )}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-xs font-bold text-white shadow-md flex items-center gap-2 transition-all active:scale-95 cursor-pointer"
-                        >
-                          <span>🔒</span> Activar Plan para Descargar sin Marca de Agua
-                        </a>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 3. VISTA DE REEL VERTICAL 9:16 */}
-                  {isReel && (
-                    <div className="space-y-6">
-                      <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-                        {/* Video o Frame 9:16 */}
-                        <div
-                          onClick={() => {
-                            if (!currentPub.videoUrl) {
-                              openLightbox(currentPub.imageUrl || demo.generatedImageUrl, currentPub);
-                            }
-                          }}
-                          className={`w-full max-w-[280px] aspect-[9/16] rounded-3xl overflow-hidden bg-black border-2 border-slate-200 shadow-2xl relative group shrink-0 ${
-                            !currentPub.videoUrl ? "cursor-pointer select-none" : ""
-                          }`}
-                        >
-                          {currentPub.videoUrl ? (
-                            <video
-                              src={currentPub.videoUrl}
-                              controls
-                              playsInline
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
+                        <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1.5">
+                          <span className="font-semibold text-indigo-600">🎨 Estilo:</span>
+                          <span className="font-bold text-slate-700">{styleName}</span>
+                          {pub.productPrice && (
                             <>
-                              <img
-                                src={currentPub.imageUrl || demo.generatedImageUrl}
-                                alt="Reel Preview"
-                                className="w-full h-full object-cover"
-                              />
-                              {/* Header sutil sin oscurecer los textos publicitarios de la foto */}
-                              <div className="absolute top-3 inset-x-3 flex items-center justify-between">
-                                <span className="text-[10px] font-black uppercase tracking-wider bg-black/75 text-white backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20">
-                                  🎬 Reel 9:16
-                                </span>
-                                <span className="text-[10px] font-bold bg-black/75 text-white backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20">
-                                  🔍 Toca para Ampliar
-                                </span>
-                              </div>
-                              <div className="absolute bottom-3 left-3 pointer-events-none">
-                                <span className="text-[10px] font-bold text-white/90 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg">
-                                  {demo.prospectBusiness}
-                                </span>
-                              </div>
+                              <span className="text-slate-300">•</span>
+                              <span className="font-black text-emerald-600">{pub.productPrice}</span>
                             </>
                           )}
-                        </div>
-
-                        {/* Desglose de Guión Técnico de Grabación */}
-                        <div className="w-full max-w-md bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-3 text-left">
-                          <span className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-200 pb-2">
-                            <span>🎬</span> Guión Técnico del Reel
-                          </span>
-
-                          <div className="space-y-2 text-xs">
-                            <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
-                              <span className="text-[10px] font-black text-rose-600 uppercase tracking-wider block">
-                                ⏱️ 0-3 Segundos · Gancho de Retención:
-                              </span>
-                              <p className="text-slate-800 font-bold italic">
-                                &quot;{currentPub.reelScript?.hook3s || currentPub.hook || "Mira esto antes de pedir..."}&quot;
-                              </p>
-                            </div>
-
-                            <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
-                              <span className="text-[10px] font-black text-indigo-600 uppercase tracking-wider block">
-                                ⏱️ 3-15 Segundos · Desarrollo & Demostración:
-                              </span>
-                              <p className="text-slate-700 font-medium leading-relaxed">
-                                {currentPub.reelScript?.body || "Tomas en movimiento mostrando la preparación fresca y los ingredientes de primera calidad."}
-                              </p>
-                            </div>
-
-                            <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1">
-                              <span className="text-[10px] font-black text-emerald-600 uppercase tracking-wider block">
-                                ⏱️ 15-25 Segundos · Llamado a la Acción (CTA):
-                              </span>
-                              <p className="text-slate-700 font-bold">
-                                {currentPub.reelScript?.cta || currentPub.cta || "Comenta o contáctanos por WhatsApp para pedir el tuyo hoy."}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </section>
-
-                {/* PROPUESTA DE COPY ESPECÍFICO PARA ESTA PUBLICACIÓN */}
-                <section className="bg-white border border-indigo-100/90 rounded-3xl p-6 sm:p-8 shadow-xs space-y-4">
-                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center text-lg">
-                        <FaPenNib />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-base sm:text-lg font-black text-slate-900">
-                            Copy Sugerido para {isCarousel ? "Carrusel" : isReel ? "Reel" : "Post"} #{selectedPubIndex + 1}
-                          </h3>
-                          {currentPub.dishOrProductName && (
-                            <span className="hidden sm:inline-block text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                              {currentPub.dishOrProductName}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-slate-500">
-                          Redactado por nuestros agentes para conectar con tu audiencia y generar ventas directas
                         </p>
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => handleCopyCaption(currentPub.copy)}
-                      className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold flex items-center gap-2 transition-all shadow-sm shadow-indigo-600/20 active:scale-95 cursor-pointer"
-                    >
-                      {copiedCaption ? <FaCheck className="text-white" /> : <FaCopy />}
-                      <span>{copiedCaption ? "¡Copy Copiado!" : "Copiar Texto"}</span>
-                    </button>
-                  </div>
-
-                  {currentPub.hook && (
-                    <div className="p-3 bg-purple-50/70 rounded-xl border border-purple-100 text-xs">
-                      <span className="text-[10px] font-black uppercase text-purple-700 block mb-0.5">
-                        🎣 Gancho de Entrada:
-                      </span>
-                      <p className="font-bold text-purple-950">&quot;{currentPub.hook}&quot;</p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleCopyPubCaption(postCopyText, pubIdx)}
+                        className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer ${
+                          isCopied
+                            ? "bg-emerald-600 text-white"
+                            : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-600/20 active:scale-95"
+                        }`}
+                      >
+                        {isCopied ? <FaCheck className="text-white" /> : <FaCopy />}
+                        <span>{isCopied ? "¡Copiado!" : "Copiar Copy"}</span>
+                      </button>
                     </div>
-                  )}
-
-                  <div className="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap leading-relaxed select-all font-sans font-medium">
-                    {currentPub.copy || demo.generatedPostCaption}
                   </div>
 
-                  <div className="flex flex-wrap items-center justify-between text-[11px] text-slate-500 pt-1 gap-2">
-                    <span className="flex items-center gap-1.5 font-medium">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                      Listo para copiar y publicar en tus redes oficiales
-                    </span>
-                    <span className="text-indigo-600 font-bold">100% Personalizado por nuestros agentes</span>
+                  {/* Layout Grid: Multimedia a la izquierda, Copy a la derecha */}
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                    {/* COLUMNA VISUAL */}
+                    <div className="lg:col-span-6 space-y-3">
+                      {isCarousel ? (
+                        <div className="space-y-3">
+                          {/* Visor de Slide Activo */}
+                          <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-slate-950 border border-slate-200 shadow-md flex items-center justify-center group">
+                            <img
+                              src={activeSlideImg}
+                              alt={`${displayTitle} - Diapositiva ${currentSlideIndex + 1}`}
+                              className="w-full h-full object-contain"
+                            />
+                            <WatermarkOverlay size="normal" showBanner={true} />
+
+                            {/* Badge flotante de Slide */}
+                            <div className="absolute top-3 left-3 z-30 bg-black/75 backdrop-blur-md text-white text-[10px] font-black px-2.5 py-1 rounded-lg border border-white/20 shadow-md">
+                              Slide {currentSlideIndex + 1} de {slides.length}
+                            </div>
+
+                            {/* Botón Lupa Lightbox */}
+                            <button
+                              type="button"
+                              onClick={() => openLightbox(activeSlideImg, pub)}
+                              className="absolute top-3 right-3 z-30 p-2 rounded-xl bg-black/60 hover:bg-black/80 backdrop-blur-md text-white border border-white/20 transition-all opacity-80 group-hover:opacity-100 cursor-pointer"
+                              title="Ampliar imagen"
+                            >
+                              <FaExpand className="text-xs" />
+                            </button>
+                          </div>
+
+                          {/* Miniaturas de diapositivas del carrusel */}
+                          {slides.length > 1 && (
+                            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                              {slides.map((sUrl, sIdx) => {
+                                const isCurrent = currentSlideIndex === sIdx;
+                                return (
+                                  <button
+                                    key={sIdx}
+                                    type="button"
+                                    onClick={() => setCarouselSlide(pubIdx, sIdx)}
+                                    className={`relative flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
+                                      isCurrent
+                                        ? "border-indigo-600 ring-2 ring-indigo-500/30 scale-102"
+                                        : "border-slate-200 opacity-70 hover:opacity-100"
+                                    }`}
+                                  >
+                                    <img
+                                      src={sUrl}
+                                      alt={`Slide ${sIdx + 1}`}
+                                      className="w-full h-full object-cover"
+                                    />
+                                    <span className="absolute bottom-1 right-1 bg-black/80 text-white text-[9px] font-black px-1.5 py-0.2 rounded">
+                                      #{sIdx + 1}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      ) : isReel ? (
+                        <div className="space-y-3 flex flex-col items-center">
+                          <div className="relative aspect-[9/16] w-full max-w-[280px] sm:max-w-[320px] rounded-2xl overflow-hidden bg-slate-950 border border-slate-200 shadow-lg flex items-center justify-center group">
+                            {pub.videoUrl ? (
+                              <video
+                                src={pub.videoUrl}
+                                controls
+                                playsInline
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <img
+                                src={pub.imageUrl || demo.generatedImageUrl}
+                                alt={displayTitle}
+                                className="w-full h-full object-cover"
+                              />
+                            )}
+                            <WatermarkOverlay size="normal" showBanner={true} />
+
+                            <button
+                              type="button"
+                              onClick={() => openLightbox(pub.imageUrl || demo.generatedImageUrl, pub)}
+                              className="absolute top-3 right-3 z-30 p-2 rounded-xl bg-black/60 hover:bg-black/80 backdrop-blur-md text-white border border-white/20 transition-all opacity-80 group-hover:opacity-100 cursor-pointer"
+                              title="Ampliar imagen"
+                            >
+                              <FaExpand className="text-xs" />
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        /* Post Feed 1:1 */
+                        <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-slate-950 border border-slate-200 shadow-md flex items-center justify-center group">
+                          <img
+                            src={mainVisualImg}
+                            alt={displayTitle}
+                            className="w-full h-full object-contain"
+                          />
+                          <WatermarkOverlay size="normal" showBanner={true} />
+
+                          {pub.productPrice && (
+                            <div className="absolute top-3 left-3 z-30 bg-black/80 backdrop-blur-md text-emerald-400 font-black text-xs px-2.5 py-1 rounded-lg border border-white/20 shadow-md">
+                              {pub.productPrice}
+                            </div>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => openLightbox(mainVisualImg, pub)}
+                            className="absolute top-3 right-3 z-30 p-2 rounded-xl bg-black/60 hover:bg-black/80 backdrop-blur-md text-white border border-white/20 transition-all opacity-80 group-hover:opacity-100 cursor-pointer"
+                            title="Ampliar imagen"
+                          >
+                            <FaExpand className="text-xs" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* COLUMNA COPYWRITING */}
+                    <div className="lg:col-span-6 space-y-4">
+                      {pub.hook && (
+                        <div className="p-3.5 bg-purple-50/80 rounded-2xl border border-purple-100 text-xs">
+                          <span className="text-[10px] font-black uppercase text-purple-700 block mb-0.5">
+                            🎣 Gancho de Entrada:
+                          </span>
+                          <p className="font-bold text-purple-950 leading-snug">&quot;{pub.hook}&quot;</p>
+                        </div>
+                      )}
+
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs text-slate-500">
+                          <span className="font-bold flex items-center gap-1.5 text-slate-700">
+                            <FaPenNib className="text-indigo-600" /> Texto de la Publicación
+                          </span>
+                          <span className="text-[11px] font-semibold text-slate-400">
+                            Optimizado para Instagram / Facebook
+                          </span>
+                        </div>
+
+                        <div className="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200 text-xs sm:text-sm text-slate-800 whitespace-pre-wrap leading-relaxed select-all font-sans font-medium max-h-[360px] overflow-y-auto">
+                          {postCopyText}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 text-[11px] text-slate-500">
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                          Listo para usar en tus redes
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyPubCaption(postCopyText, pubIdx)}
+                          className="font-bold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer flex items-center gap-1"
+                        >
+                          <FaCopy className="text-[10px]" />
+                          {isCopied ? "¡Copiado al portapapeles!" : "Copiar este texto"}
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </section>
-              </div>
-            );
-          })()
+                </article>
+              );
+            })}
+          </div>
         ) : (
           /* MODO COMPATIBILIDAD CON MUESTRAS ANTIGUAS (1 SOLA IMAGEN / VIDEO) */
           <>
