@@ -931,35 +931,11 @@ export function TextTemplatesView() {
   };
 
   return (
-    <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-8 animate-fadeIn">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-6">
-        <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-bold uppercase tracking-wider mb-2">
-            🏷️ DISEÑO COMERCIAL & CAPAS DE VENTA
-          </div>
-          <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-            Plantillas de Texto y Diseño Comercial
-          </h1>
-          <p className="text-slate-600 dark:text-slate-400 text-sm md:text-base mt-1 max-w-3xl">
-            Convierte cualquier imagen —generada en nuestra plataforma o subida desde tu galería— en una pieza lista para vender. Personaliza titulares, precios destacados, etiquetas y llamados a la acción en segundos.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => handleOpenEdit()}
-            className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md transition-all flex items-center gap-2"
-          >
-            <span>✨</span> Nueva Plantilla
-          </button>
-        </div>
-      </div>
-
+    <div className="space-y-6 animate-fadeIn">
       {/* ══════════════════════════════════════════════════════════════
-          BARRA UNIFICADA: BUSCADOR + BOTÓN DRAWER FILTRAR ESTILOS
+          BARRA UNIFICADA: BUSCADOR + BOTÓN DRAWER FILTRAR ESTILOS + ACCIONES
       ══════════════════════════════════════════════════════════════ */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-2.5 sm:p-3 shadow-2xs mb-8">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-2.5 sm:p-3 shadow-2xs mb-6">
         <div className="flex items-center justify-between gap-2.5 sm:gap-3">
           {/* Buscador Integrado */}
           <div className="relative flex-1">
@@ -1019,6 +995,18 @@ export function TextTemplatesView() {
                 ? (categoryCounts[selectedCategories[0]] || 0)
                 : selectedCategories.length}
             </span>
+          </button>
+
+          {/* Botón Nueva Plantilla */}
+          <button
+            type="button"
+            onClick={() => handleOpenEdit()}
+            className="px-3.5 sm:px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs shadow-2xs transition-all flex items-center gap-1.5 shrink-0"
+            title="Crear una nueva plantilla personalizada"
+          >
+            <span>✨</span>
+            <span className="hidden sm:inline">Nueva Plantilla</span>
+            <span className="sm:hidden">Nueva</span>
           </button>
         </div>
 
