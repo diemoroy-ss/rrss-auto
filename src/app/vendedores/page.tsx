@@ -240,6 +240,568 @@ function formatRelativeTime(isoString?: string) {
   return d.toLocaleDateString("es-CL", { day: "numeric", month: "short" });
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// COMPONENTE DE PREVIEW VISUAL DE PLANTILLAS DE TEXTO (Respeta la disposición real)
+// ════════════════════════════════════════════════════════════════════════════
+function TemplateVisualPreview({
+  template,
+  productName,
+  price,
+  isModal = false,
+  showZoomButton = false,
+  onOpenModal,
+  isCurrentlyApplied = false,
+}: {
+  template: TextTemplate;
+  productName?: string;
+  price?: string;
+  isModal?: boolean;
+  showZoomButton?: boolean;
+  onOpenModal?: () => void;
+  isCurrentlyApplied?: boolean;
+}) {
+  const layout =
+    template.layoutPosition ||
+    (template.category === "Split Lateral"
+      ? "split_left"
+      : template.category === "Recetas & Ingredientes"
+      ? "recipe_ingredients"
+      : "top_banner");
+
+  const isSplitLeft = layout === "split_left" || template.category === "Split Lateral";
+  const isRecipe = layout === "recipe_ingredients" || template.category === "Recetas & Ingredientes";
+  const isImpact = template.category === "Ofertas Flash" || template.category === "Delivery";
+  const isEditorial = template.category === "Gourmet & Menú" || template.headlineFont === "elegant_serif";
+
+  const rawTitle = template.headlinePattern.replace(
+    /\{PRODUCTO\}|\{PLATO\}/gi,
+    productName?.trim() || "HAMBURGUESA ESPECIAL"
+  );
+  const priceDisplay =
+    price?.trim() ||
+    (template.priceBadgePattern
+      ? template.priceBadgePattern.replace("{PRECIO}", "$12.900")
+      : "");
+  const photoUrl =
+    template.previewSampleImage ||
+    "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=500&q=80";
+  const scriptText = template.secondaryScriptPattern;
+  const ingredients = template.ingredients || [];
+
+  const headlineFontClass =
+    template.headlineFont === "script_handwritten"
+      ? "font-serif italic"
+      : template.headlineFont === "elegant_serif"
+      ? "font-serif tracking-wide"
+      : template.headlineFont === "serif_script_mix"
+      ? "font-serif font-black tracking-tight"
+      : template.headlineFont === "bold_textured"
+      ? "font-black uppercase tracking-tighter"
+      : "font-black uppercase tracking-tight";
+
+  return (
+    <div
+      className={`relative w-full overflow-hidden bg-slate-950 select-none ${
+        isModal ? "aspect-square rounded-2xl border border-slate-800 shadow-xl" : "aspect-[4/3]"
+      }`}
+    >
+      {/* 1. Foto de Fondo */}
+      <img
+        src={photoUrl}
+        alt={template.name}
+        className={`absolute inset-0 w-full h-full object-cover opacity-90 transition-transform duration-300 ${
+          !isModal ? "group-hover:scale-105" : ""
+        }`}
+      />
+
+      {/* 2. Badge de estado "Activa" */}
+      {isCurrentlyApplied && (
+        <span
+          className={`absolute z-30 px-1.5 py-0.5 rounded-full bg-emerald-500 text-white font-black shadow-md ${
+            isModal ? "top-3 left-3 text-[10px]" : "top-1.5 left-1.5 text-[7px]"
+          }`}
+        >
+          ✓ Activa
+        </span>
+      )}
+
+      {/* 3. Botón de Lupa para abrir modal */}
+      {showZoomButton && onOpenModal && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpenModal();
+          }}
+          className="absolute bottom-1.5 right-1.5 w-6 h-6 rounded-full bg-black/70 hover:bg-black text-white flex items-center justify-center text-[10px] z-30 transition-colors cursor-pointer shadow-md"
+          title="Ver diseño completo ampliado"
+        >
+          👁️
+        </button>
+      )}
+
+      {/* ════════════════════════════════════════════════════════════════════
+          CASO A: SPLIT LATERAL (Texto y precio a la izquierda, plato a la derecha)
+         ════════════════════════════════════════════════════════════════════ */}
+      {isSplitLeft && (
+        <>
+          {/* Degradado lateral izquierdo que protege los textos */}
+          <div className="absolute inset-y-0 left-0 w-[64%] bg-gradient-to-r from-black/95 via-black/85 to-transparent pointer-events-none z-10" />
+          <div className="absolute inset-x-0 bottom-0 h-[20%] bg-gradient-to-t from-black/75 to-transparent pointer-events-none z-10" />
+
+          {/* Badge superior (colocado en la esquina superior derecha o izquierda) */}
+          {template.badgeText && (
+            <div
+              className={`absolute z-20 pointer-events-none ${
+                isModal ? "top-3 right-3" : "top-1.5 right-1.5"
+              }`}
+            >
+              <span
+                className={`font-black uppercase tracking-wider rounded shadow-md truncate ${
+                  isModal ? "text-[10px] px-2.5 py-1" : "text-[7px] px-1.5 py-0.5 max-w-[80px]"
+                }`}
+                style={{
+                  backgroundColor: template.badgeBgColor || "#0f172a",
+                  color: template.badgeTextColor || "#ffffff",
+                }}
+              >
+                {template.badgeText}
+              </span>
+            </div>
+          )}
+
+          {/* Columna lateral izquierda con los textos */}
+          <div
+            className={`absolute inset-y-0 left-0 w-[58%] z-20 pointer-events-none flex flex-col justify-center text-left ${
+              isModal ? "p-5 space-y-2" : "p-2 space-y-0.5"
+            }`}
+          >
+            {scriptText && (
+              <span
+                className={`font-serif italic text-amber-300 drop-shadow leading-tight truncate ${
+                  isModal ? "text-sm" : "text-[7.5px]"
+                }`}
+              >
+                {scriptText}
+              </span>
+            )}
+
+            <h3
+              className={`${headlineFontClass} leading-tight drop-shadow-[0_2px_6px_rgba(0,0,0,0.95)] ${
+                isModal ? "text-2xl" : "text-[10px] line-clamp-2"
+              }`}
+              style={{ color: template.headlineColor || "#ffffff" }}
+            >
+              {rawTitle}
+            </h3>
+
+            {template.subheadlinePattern && (
+              <p
+                className={`text-white/85 font-medium leading-snug drop-shadow ${
+                  isModal ? "text-xs line-clamp-2" : "text-[7px] line-clamp-1"
+                }`}
+              >
+                {template.subheadlinePattern}
+              </p>
+            )}
+
+            <div className={`flex items-center gap-1 flex-wrap ${isModal ? "pt-2" : "pt-0.5"}`}>
+              {priceDisplay && (
+                <span
+                  className={`font-black rounded shadow ${
+                    isModal ? "text-sm px-2.5 py-0.5" : "text-[7.5px] px-1 py-0.2"
+                  }`}
+                  style={{
+                    backgroundColor: template.priceBgColor || "#fbbf24",
+                    color: template.priceTextColor || "#0f172a",
+                  }}
+                >
+                  {priceDisplay}
+                </span>
+              )}
+
+              <span
+                className={`font-black uppercase tracking-wider rounded shadow truncate ${
+                  isModal ? "text-xs px-3 py-1.5" : "text-[7px] px-1 py-0.2 max-w-[62px]"
+                }`}
+                style={{
+                  backgroundColor: template.ctaBgColor || "#fbbf24",
+                  color: template.ctaTextColor || "#0f172a",
+                }}
+              >
+                {template.ctaText}
+              </span>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ════════════════════════════════════════════════════════════════════
+          CASO B: RECETA CON INGREDIENTES (Cabecera arriba + Tira de ingredientes abajo)
+         ════════════════════════════════════════════════════════════════════ */}
+      {isRecipe && (
+        <>
+          <div className="absolute inset-x-0 top-0 h-[38%] bg-gradient-to-b from-black/90 via-black/60 to-transparent pointer-events-none z-10" />
+          <div className="absolute inset-x-0 bottom-0 h-[48%] bg-gradient-to-t from-black/95 via-black/85 to-transparent pointer-events-none z-10" />
+
+          {/* Cabecera superior */}
+          <div
+            className={`absolute inset-x-0 top-0 text-center z-20 pointer-events-none space-y-0.5 ${
+              isModal ? "p-3.5 space-y-1" : "p-1.5"
+            }`}
+          >
+            <div className="flex justify-center">
+              <span
+                className={`font-black uppercase tracking-wider rounded shadow-md truncate ${
+                  isModal ? "text-[10px] px-2.5 py-0.5" : "text-[7px] px-1.5 py-0.2"
+                }`}
+                style={{
+                  backgroundColor: template.badgeBgColor || "#0f172a",
+                  color: template.badgeTextColor || "#ffffff",
+                }}
+              >
+                {template.badgeText}
+              </span>
+            </div>
+
+            <h3
+              className={`${headlineFontClass} text-white drop-shadow-[0_2px_5px_rgba(0,0,0,0.9)] px-1 leading-tight ${
+                isModal ? "text-xl" : "text-[9.5px] truncate"
+              }`}
+              style={{ color: template.headlineColor }}
+            >
+              {rawTitle}
+            </h3>
+
+            {scriptText && (
+              <p
+                className={`font-serif italic text-amber-200/90 leading-tight drop-shadow truncate ${
+                  isModal ? "text-xs" : "text-[7px]"
+                }`}
+              >
+                {scriptText}
+              </p>
+            )}
+          </div>
+
+          {/* Tira inferior de ingredientes */}
+          <div
+            className={`absolute inset-x-0 bottom-0 text-center z-20 pointer-events-none ${
+              isModal ? "p-3.5 space-y-2" : "p-1 space-y-0.5"
+            }`}
+          >
+            <div className="flex items-center justify-center gap-1 overflow-hidden px-1">
+              {(ingredients.length > 0
+                ? ingredients
+                : [
+                    { icon: "🧄", name: "Ajo", amount: "4 dientes" },
+                    { icon: "🍝", name: "Pasta", amount: "200 g" },
+                    { icon: "🫒", name: "Aceite", amount: "2 cdas" },
+                    { icon: "🧀", name: "Queso", amount: "Al gusto" },
+                  ]
+              )
+                .slice(0, isModal ? 5 : 4)
+                .map((ing, idx) => (
+                  <div
+                    key={idx}
+                    className={`flex flex-col items-center bg-black/65 backdrop-blur-xs border border-white/20 rounded shadow-xs text-center shrink-0 ${
+                      isModal ? "px-2 py-1.5 min-w-[55px] rounded-xl" : "px-1 py-0.5 min-w-[28px]"
+                    }`}
+                  >
+                    <span className={isModal ? "text-base mb-0.5" : "text-[8px] leading-none"}>
+                      {ing.icon || "🥗"}
+                    </span>
+                    <span
+                      className={`font-bold text-white leading-tight truncate ${
+                        isModal ? "text-[9px] max-w-[55px]" : "text-[6.5px] max-w-[32px]"
+                      }`}
+                    >
+                      {ing.name}
+                    </span>
+                    {isModal && ing.amount && (
+                      <span className="text-[8px] text-amber-300 font-medium leading-tight truncate max-w-[55px]">
+                        {ing.amount}
+                      </span>
+                    )}
+                  </div>
+                ))}
+            </div>
+
+            <div className="flex justify-center pt-0.5">
+              <span
+                className={`font-black uppercase tracking-wider rounded-full shadow-md truncate ${
+                  isModal ? "text-xs px-4 py-1.5" : "text-[6.5px] px-2 py-0.5 max-w-[90px]"
+                }`}
+                style={{
+                  backgroundColor: template.ctaBgColor || "#fbbf24",
+                  color: template.ctaTextColor || "#0f172a",
+                }}
+              >
+                {template.ctaText}
+              </span>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ════════════════════════════════════════════════════════════════════
+          CASO C: IMPACTO INFERIOR / OFERTAS FLASH / DELIVERY (Bloque en el tercio inferior)
+         ════════════════════════════════════════════════════════════════════ */}
+      {!isSplitLeft && !isRecipe && isImpact && (
+        <>
+          <div className="absolute inset-x-0 top-0 h-[28%] bg-gradient-to-b from-black/80 via-black/40 to-transparent pointer-events-none z-10" />
+          <div className="absolute inset-x-0 bottom-0 h-[52%] bg-gradient-to-t from-black/98 via-black/85 to-transparent pointer-events-none z-10" />
+
+          {/* Badge superior llamativo */}
+          {template.badgeText && (
+            <div
+              className={`absolute z-20 pointer-events-none ${
+                isModal ? "top-3 left-3" : "top-1.5 left-1.5"
+              }`}
+            >
+              <span
+                className={`font-black uppercase tracking-wider rounded shadow-md truncate ${
+                  isModal ? "text-xs px-3 py-1" : "text-[7.5px] px-1.5 py-0.5 max-w-[100px]"
+                }`}
+                style={{
+                  backgroundColor: template.badgeBgColor || "#dc2626",
+                  color: template.badgeTextColor || "#ffffff",
+                }}
+              >
+                {template.badgeText}
+              </span>
+            </div>
+          )}
+
+          {/* Bloque de impacto en el tercio inferior */}
+          <div
+            className={`absolute inset-x-0 bottom-0 text-left z-20 pointer-events-none ${
+              isModal ? "p-4 space-y-1.5" : "p-2 space-y-0.5"
+            }`}
+          >
+            <h3
+              className={`${headlineFontClass} leading-tight drop-shadow-[0_2px_5px_rgba(0,0,0,0.95)] ${
+                isModal ? "text-2xl" : "text-[10px] truncate"
+              }`}
+              style={{ color: template.headlineColor || "#fbbf24" }}
+            >
+              {rawTitle}
+            </h3>
+
+            {template.subheadlinePattern && (
+              <p
+                className={`text-white/90 font-medium leading-tight drop-shadow truncate ${
+                  isModal ? "text-xs" : "text-[7px]"
+                }`}
+              >
+                {template.subheadlinePattern}
+              </p>
+            )}
+
+            <div className={`flex items-center gap-1.5 ${isModal ? "pt-1" : "pt-0.5"}`}>
+              {priceDisplay && (
+                <span
+                  className={`font-black rounded shadow ${
+                    isModal ? "text-sm px-3 py-1" : "text-[7.5px] px-1.5 py-0.2"
+                  }`}
+                  style={{
+                    backgroundColor: template.priceBgColor || "#dc2626",
+                    color: template.priceTextColor || "#ffffff",
+                  }}
+                >
+                  {priceDisplay}
+                </span>
+              )}
+
+              <span
+                className={`font-black uppercase tracking-wider rounded shadow truncate ${
+                  isModal ? "text-xs px-3.5 py-1.5" : "text-[7px] px-1.5 py-0.2 max-w-[80px]"
+                }`}
+                style={{
+                  backgroundColor: template.ctaBgColor || "#fbbf24",
+                  color: template.ctaTextColor || "#0f172a",
+                }}
+              >
+                {template.ctaText}
+              </span>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ════════════════════════════════════════════════════════════════════
+          CASO D: EDITORIAL / GOURMET & MENÚ (Titular estilizado + Centro despejado)
+         ════════════════════════════════════════════════════════════════════ */}
+      {!isSplitLeft && !isRecipe && !isImpact && isEditorial && (
+        <>
+          <div className="absolute inset-x-0 top-0 h-[42%] bg-gradient-to-b from-black/85 via-black/50 to-transparent pointer-events-none z-10" />
+          <div className="absolute inset-x-0 bottom-0 h-[30%] bg-gradient-to-t from-black/85 to-transparent pointer-events-none z-10" />
+
+          {/* Cabecera Editorial arriba */}
+          <div
+            className={`absolute inset-x-0 top-0 text-center z-20 pointer-events-none ${
+              isModal ? "p-3.5 space-y-1" : "p-1.5 space-y-0.5"
+            }`}
+          >
+            {template.badgeText && (
+              <div className="flex justify-center">
+                <span
+                  className={`font-serif tracking-widest uppercase rounded shadow truncate ${
+                    isModal ? "text-[9px] px-2.5 py-0.5" : "text-[6.5px] px-1 py-0.2"
+                  }`}
+                  style={{
+                    backgroundColor: template.badgeBgColor || "rgba(15,23,42,0.8)",
+                    color: template.badgeTextColor || "#ffffff",
+                  }}
+                >
+                  {template.badgeText}
+                </span>
+              </div>
+            )}
+
+            <h3
+              className={`${headlineFontClass} text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] px-2 leading-tight ${
+                isModal ? "text-2xl" : "text-[10px] truncate"
+              }`}
+              style={{ color: template.headlineColor }}
+            >
+              {rawTitle}
+            </h3>
+
+            {template.subheadlinePattern && (
+              <p
+                className={`font-serif italic text-amber-200/90 leading-tight drop-shadow truncate ${
+                  isModal ? "text-xs" : "text-[7px]"
+                }`}
+              >
+                {template.subheadlinePattern}
+              </p>
+            )}
+          </div>
+
+          {/* Pie Editorial abajo */}
+          <div
+            className={`absolute inset-x-0 bottom-0 flex items-center justify-between z-20 pointer-events-none ${
+              isModal ? "p-4" : "p-1.5"
+            }`}
+          >
+            {priceDisplay ? (
+              <span
+                className={`font-black rounded shadow ${
+                  isModal ? "text-xs px-2.5 py-1" : "text-[7.5px] px-1 py-0.2"
+                }`}
+                style={{
+                  backgroundColor: template.priceBgColor || "#0f172a",
+                  color: template.priceTextColor || "#fbbf24",
+                }}
+              >
+                {priceDisplay}
+              </span>
+            ) : <div />}
+
+            <span
+              className={`font-black uppercase tracking-wider rounded shadow truncate ${
+                isModal ? "text-xs px-3 py-1.5" : "text-[7px] px-1.5 py-0.2 max-w-[80px]"
+              }`}
+              style={{
+                backgroundColor: template.ctaBgColor || "#fbbf24",
+                color: template.ctaTextColor || "#0f172a",
+              }}
+            >
+              {template.ctaText}
+            </span>
+          </div>
+        </>
+      )}
+
+      {/* ════════════════════════════════════════════════════════════════════
+          CASO E: TOP BANNER / PROMOCIONES & COMBOS (Estándar: Arriba y Pie)
+         ════════════════════════════════════════════════════════════════════ */}
+      {!isSplitLeft && !isRecipe && !isImpact && !isEditorial && (
+        <>
+          <div className="absolute inset-x-0 top-0 h-[42%] bg-gradient-to-b from-black/90 via-black/55 to-transparent pointer-events-none z-10" />
+          <div className="absolute inset-x-0 bottom-0 h-[30%] bg-gradient-to-t from-black/90 via-black/60 to-transparent pointer-events-none z-10" />
+
+          {/* Cabecera superior centrada */}
+          <div
+            className={`absolute inset-x-0 top-0 text-center z-20 pointer-events-none ${
+              isModal ? "p-3.5 space-y-1" : "p-1.5 space-y-0.5"
+            }`}
+          >
+            {template.badgeText && (
+              <div className="flex justify-center">
+                <span
+                  className={`font-black uppercase tracking-wider rounded shadow-md truncate ${
+                    isModal ? "text-[10px] px-2.5 py-0.5" : "text-[7px] px-1.5 py-0.2"
+                  }`}
+                  style={{
+                    backgroundColor: template.badgeBgColor || "#0f172a",
+                    color: template.badgeTextColor || "#ffffff",
+                  }}
+                >
+                  {template.badgeText}
+                </span>
+              </div>
+            )}
+
+            <h3
+              className={`${headlineFontClass} text-white drop-shadow-[0_2px_5px_rgba(0,0,0,0.95)] px-2 leading-tight ${
+                isModal ? "text-2xl" : "text-[10px] truncate"
+              }`}
+              style={{ color: template.headlineColor }}
+            >
+              {rawTitle}
+            </h3>
+
+            {template.subheadlinePattern && (
+              <p
+                className={`text-white/90 font-medium leading-tight drop-shadow truncate ${
+                  isModal ? "text-xs" : "text-[7px]"
+                }`}
+              >
+                {template.subheadlinePattern}
+              </p>
+            )}
+          </div>
+
+          {/* Pie inferior con precio y botón CTA */}
+          <div
+            className={`absolute inset-x-0 bottom-0 flex items-center justify-center gap-1.5 z-20 pointer-events-none ${
+              isModal ? "p-4 gap-2" : "p-1.5"
+            }`}
+          >
+            {priceDisplay && (
+              <span
+                className={`font-black rounded shadow ${
+                  isModal ? "text-xs px-2.5 py-1" : "text-[7.5px] px-1.5 py-0.2"
+                }`}
+                style={{
+                  backgroundColor: template.priceBgColor || "#fbbf24",
+                  color: template.priceTextColor || "#0f172a",
+                }}
+              >
+                {priceDisplay}
+              </span>
+            )}
+
+            <span
+              className={`font-black uppercase tracking-wider rounded shadow truncate ${
+                isModal ? "text-xs px-3.5 py-1.5" : "text-[7px] px-1.5 py-0.2 max-w-[80px]"
+              }`}
+              style={{
+                backgroundColor: template.ctaBgColor || "#fbbf24",
+                color: template.ctaTextColor || "#0f172a",
+              }}
+            >
+              {template.ctaText}
+            </span>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function VendedoresPwaPage() {
   const router = useRouter();
 
@@ -2767,76 +3329,16 @@ export default function VendedoresPwaPage() {
                                       : "border-slate-200 hover:border-emerald-300"
                                   }`}
                                 >
-                                  {/* Imagen de muestra con overlay */}
-                                  <div className="aspect-[4/3] w-full relative overflow-hidden bg-slate-950">
-                                    <img
-                                      src={tpl.previewSampleImage || "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=400&q=80"}
-                                      alt={tpl.name}
-                                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 opacity-90"
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/45 to-black/25 pointer-events-none" />
-
-                                    {/* Badge superior simulado con sus colores reales */}
-                                    <div className="absolute top-1.5 left-1.5 right-1.5 flex items-center justify-between gap-1 z-10 pointer-events-none">
-                                      <span
-                                        className="text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded shadow-sm truncate max-w-[75%]"
-                                        style={{
-                                          backgroundColor: tpl.badgeBgColor || "#0f172a",
-                                          color: tpl.badgeTextColor || "#ffffff",
-                                        }}
-                                      >
-                                        {tpl.badgeText || layoutTag}
-                                      </span>
-
-                                      {isCurrentlyApplied && (
-                                        <span className="px-1.5 py-0.5 rounded-full bg-emerald-500 text-white text-[8px] font-black shadow-sm shrink-0">
-                                          ✓ Activa
-                                        </span>
-                                      )}
-                                    </div>
-
-                                    {/* Botón lupa para ver preview en grande */}
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setPreviewModalTemplate(tpl);
-                                      }}
-                                      className="absolute bottom-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center text-[10px] z-10 transition-colors cursor-pointer shadow-md"
-                                      title="Ver diseño completo ampliado"
-                                    >
-                                      👁️
-                                    </button>
-
-                                    {/* Contenido inferior de la tarjeta */}
-                                    <div className="absolute bottom-1.5 left-1.5 right-8 text-left pointer-events-none space-y-0.5">
-                                      <p className="text-[10px] font-black text-white leading-tight drop-shadow truncate">
-                                        {tpl.name}
-                                      </p>
-                                      <div className="flex items-center gap-1">
-                                        {tpl.priceBadgePattern && (
-                                          <span
-                                            className="text-[8px] font-black px-1 py-0.2 rounded"
-                                            style={{
-                                              backgroundColor: tpl.priceBgColor || "#fbbf24",
-                                              color: tpl.priceTextColor || "#0f172a",
-                                            }}
-                                          >
-                                            {tpl.priceBadgePattern}
-                                          </span>
-                                        )}
-                                        <span
-                                          className="text-[7.5px] font-black uppercase px-1 py-0.2 rounded truncate max-w-[65px]"
-                                          style={{
-                                            backgroundColor: tpl.ctaBgColor || "#fbbf24",
-                                            color: tpl.ctaTextColor || "#0f172a",
-                                          }}
-                                        >
-                                          {tpl.ctaText}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  </div>
+                                  {/* Preview Visual fiel de la plantilla con distribución real */}
+                                  <TemplateVisualPreview
+                                    template={tpl}
+                                    productName={dishOrProductName.trim() || prospectBusiness.trim()}
+                                    price={productPrice.trim()}
+                                    isModal={false}
+                                    showZoomButton={true}
+                                    onOpenModal={() => setPreviewModalTemplate(tpl)}
+                                    isCurrentlyApplied={isCurrentlyApplied}
+                                  />
 
                                   {/* Barra de acción rápida inferior */}
                                   <div className="p-1.5 bg-white flex items-center justify-between gap-1 border-t border-slate-100">
@@ -2894,22 +3396,39 @@ export default function VendedoresPwaPage() {
                                   }`}
                                 >
                                   <div className="flex items-center gap-2.5 min-w-0">
-                                    {/* Thumbnail Preview de la Plantilla */}
+                                    {/* Thumbnail Preview de la Plantilla con layout esquemático real */}
                                     <div className="relative w-12 h-12 rounded-lg overflow-hidden shrink-0 border border-slate-200 bg-slate-900 shadow-2xs">
                                       <img
                                         src={tpl.previewSampleImage || "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=200&q=80"}
                                         alt={tpl.name}
                                         className="w-full h-full object-cover"
                                       />
-                                      <span
-                                        className="absolute bottom-0 inset-x-0 text-[7px] font-black text-center truncate px-0.5 py-0.2"
-                                        style={{
-                                          backgroundColor: tpl.badgeBgColor || "#0f172a",
-                                          color: tpl.badgeTextColor || "#ffffff",
-                                        }}
-                                      >
-                                        {layoutTag}
-                                      </span>
+                                      {tpl.layoutPosition === "split_left" || tpl.category === "Split Lateral" ? (
+                                        <div className="absolute inset-y-0 left-0 w-[55%] bg-black/85 flex flex-col justify-center px-1 pointer-events-none">
+                                          <span className="text-[6.5px] font-black text-white leading-none">SPLIT</span>
+                                          <span className="text-[5.5px] font-bold text-amber-300 leading-none pt-0.5">TEXTO</span>
+                                        </div>
+                                      ) : tpl.layoutPosition === "recipe_ingredients" || tpl.category === "Recetas & Ingredientes" ? (
+                                        <>
+                                          <div className="absolute inset-x-0 top-0 h-[30%] bg-black/80 flex items-center justify-center pointer-events-none">
+                                            <span className="text-[5.5px] font-black text-white leading-none">RECETA</span>
+                                          </div>
+                                          <div className="absolute inset-x-0 bottom-0 h-[35%] bg-black/85 flex items-center justify-center gap-0.5 pointer-events-none">
+                                            <span className="text-[6px]">🧄</span>
+                                            <span className="text-[6px]">🍝</span>
+                                          </div>
+                                        </>
+                                      ) : (
+                                        <span
+                                          className="absolute bottom-0 inset-x-0 text-[7px] font-black text-center truncate px-0.5 py-0.2 pointer-events-none"
+                                          style={{
+                                            backgroundColor: tpl.badgeBgColor || "#0f172a",
+                                            color: tpl.badgeTextColor || "#ffffff",
+                                          }}
+                                        >
+                                          {layoutTag}
+                                        </span>
+                                      )}
                                     </div>
 
                                     <div className="min-w-0">
@@ -3025,63 +3544,14 @@ export default function VendedoresPwaPage() {
                               </button>
                             </div>
 
-                            {/* Mockup visual grande del flyer */}
-                            <div className="aspect-square relative rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 shadow-md">
-                              <img
-                                src={previewModalTemplate.previewSampleImage || "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=600&q=80"}
-                                alt={previewModalTemplate.name}
-                                className="w-full h-full object-cover opacity-90"
-                              />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-black/30 pointer-events-none" />
-
-                              {/* Badge superior */}
-                              <div className="absolute top-3 inset-x-3 flex justify-center pointer-events-none">
-                                <span
-                                  className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-lg"
-                                  style={{
-                                    backgroundColor: previewModalTemplate.badgeBgColor,
-                                    color: previewModalTemplate.badgeTextColor,
-                                  }}
-                                >
-                                  {previewModalTemplate.badgeText}
-                                </span>
-                              </div>
-
-                              {/* Textos y titular simulado */}
-                              <div className="absolute inset-x-4 bottom-4 text-center pointer-events-none space-y-2">
-                                <h3 className="font-serif italic text-xl font-black text-white leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
-                                  {previewModalTemplate.headlinePattern.replace(/\{PRODUCTO\}|\{PLATO\}/gi, dishOrProductName.trim() || prospectBusiness.trim() || "HAMBURGUESA ESPECIAL")}
-                                </h3>
-                                {previewModalTemplate.subheadlinePattern && (
-                                  <p className="text-xs text-white/90 font-medium drop-shadow line-clamp-2">
-                                    {previewModalTemplate.subheadlinePattern}
-                                  </p>
-                                )}
-
-                                <div className="flex items-center justify-center gap-2 pt-1">
-                                  {previewModalTemplate.priceBadgePattern && (
-                                    <span
-                                      className="px-2.5 py-1 rounded-md text-xs font-black shadow"
-                                      style={{
-                                        backgroundColor: previewModalTemplate.priceBgColor || "#fbbf24",
-                                        color: previewModalTemplate.priceTextColor || "#0f172a",
-                                      }}
-                                    >
-                                      {productPrice.trim() || previewModalTemplate.priceBadgePattern.replace("{PRECIO}", "$12.900")}
-                                    </span>
-                                  )}
-                                  <span
-                                    className="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider shadow-md"
-                                    style={{
-                                      backgroundColor: previewModalTemplate.ctaBgColor,
-                                      color: previewModalTemplate.ctaTextColor,
-                                    }}
-                                  >
-                                    {previewModalTemplate.ctaText}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
+                            {/* Mockup visual grande del flyer con distribución real */}
+                            <TemplateVisualPreview
+                              template={previewModalTemplate}
+                              productName={dishOrProductName.trim() || prospectBusiness.trim()}
+                              price={productPrice.trim()}
+                              isModal={true}
+                              showZoomButton={false}
+                            />
 
                             <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-200">
                               {previewModalTemplate.description}
