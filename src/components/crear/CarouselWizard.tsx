@@ -40,6 +40,7 @@ export default function CarouselWizard({
 
   const currentSlide = slides[activeIndex];
   const isMulti = slides.length > 1;
+  const slideRoles = ["🌟 Portada", "❓ Problema", "💡 Solución", "🔍 Detalles", "🎯 Oferta + CTA"];
 
   return (
     <div className="lg:sticky lg:top-24 space-y-6">
@@ -49,14 +50,18 @@ export default function CarouselWizard({
             <button
               key={idx}
               onClick={() => setActiveIndex(idx)}
-              className={`flex-shrink-0 px-5 py-2.5 rounded-2xl text-[10px] uppercase font-black tracking-widest transition-all ${
+              className={`flex-shrink-0 px-4 py-2.5 rounded-2xl text-[11px] font-black tracking-wide transition-all flex items-center gap-2 cursor-pointer ${
                 activeIndex === idx 
-                ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20 scale-105' 
-                : 'bg-white text-slate-500 border-2 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20 scale-102 ring-2 ring-indigo-500/30' 
+                : 'bg-white text-slate-600 border-2 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
               }`}
             >
-              Imagen {idx + 1}
-              {slides[idx].finalUrl && <span className="ml-2 text-green-400">✓</span>}
+              <span>{slideRoles[idx] || `Slide ${idx + 1}`}</span>
+              {slides[idx].finalUrl ? (
+                <span className="text-emerald-400 font-black">✓</span>
+              ) : (
+                <span className="text-[9px] text-slate-400 font-bold opacity-80">#{idx + 1}</span>
+              )}
             </button>
           ))}
         </div>

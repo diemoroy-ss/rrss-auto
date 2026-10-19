@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import type { PosterConfig, VisualStyle, ContactType, PosterLayout } from "../../types/poster";
+import type { PosterConfig, VisualStyle, ContactType, PosterLayout, PosterSlideConfig } from "../../types/poster";
+import { DEFAULT_POSTER_SLIDES } from "../../types/poster";
 import VoiceMic from "../VoiceMic";
 import Link from "next/link";
 import { FaFacebookF, FaInstagram, FaLinkedinIn, FaTiktok, FaGoogle, FaYoutube, FaTwitter } from "react-icons/fa";
@@ -23,6 +24,14 @@ const CTA_OPTIONS = [
   "¡Aprovecha la promo!",
   "Escríbenos por WhatsApp",
   "Visítanos hoy",
+];
+
+export const CAROUSEL_DEFAULT_SLIDES: { role: string; label: string; placeholder: string; emoji: string; desc: string }[] = [
+  { role: "Portada / Gancho", label: "Slide 1: Portada", placeholder: "Ej: ¿Cansado de perder ventas? Descubre esto...", emoji: "🌟", desc: "Titular impactante que frena el scroll" },
+  { role: "Problema / Contexto", label: "Slide 2: Problema", placeholder: "Ej: El 80% de los negocios comete este error a diario...", emoji: "❓", desc: "Empatiza con el dolor del cliente" },
+  { role: "Solución / Beneficio", label: "Slide 3: Solución", placeholder: "Ej: Con nuestro sistema automatizas todo en minutos...", emoji: "💡", desc: "Presenta tu producto o servicio" },
+  { role: "Detalles / Características", label: "Slide 4: Detalles", placeholder: "Ej: Soporte 24/7, sincronización en vivo y sin letra chica...", emoji: "🔍", desc: "Diferenciadores y beneficios clave" },
+  { role: "Oferta + Llamado a la Acción", label: "Slide 5: Oferta + CTA", placeholder: "Ej: ¡Solo por hoy 50% OFF! Escríbenos por WhatsApp...", emoji: "🎯", desc: "Llamado a la acción claro o WhatsApp" },
 ];
 
 interface PosterFormViewProps {
@@ -67,6 +76,10 @@ interface PosterFormViewProps {
   catalogoItems?: any[];
   selectedCatalogoItem?: any;
   setSelectedCatalogoItem?: (item: any) => void;
+  postType?: string;
+  carouselCount?: number;
+  activeSlideIndex?: number;
+  setActiveSlideIndex?: (idx: number) => void;
 }
 
 export default function PosterFormView({
@@ -103,22 +116,82 @@ export default function PosterFormView({
   catalogoItems = [],
   selectedCatalogoItem,
   setSelectedCatalogoItem,
+  postType = "Post",
+  carouselCount = 5,
+  activeSlideIndex = 0,
+  setActiveSlideIndex,
 }: PosterFormViewProps) {
   const [showCustomCta, setShowCustomCta] = useState(false);
   const [customCta, setCustomCta] = useState("");
+  const [internalSlideIdx, setInternalSlideIdx] = useState(0);
+
+  const currentSlideIdx = setActiveSlideIndex ? activeSlideIndex : internalSlideIdx;
+  const setCurrentSlideIdx = (idx: number) => {
+    if (setActiveSlideIndex) setActiveSlideIndex(idx);
+    else setInternalSlideIdx(idx);
+  };
 
   const update = <K extends keyof PosterConfig>(key: K, value: PosterConfig[K]) => {
     setPosterConfig((prev) => ({ ...prev, [key]: value, enabled: true }));
   };
 
+  const updateSlideField = (field: 'mainText' | 'priceText' | 'sloganText' | 'ctaText', value: string) => {
+    setPosterConfig((prev) => {
+      const existingSlides = prev.slides && prev.slides.length > 0 ? [...prev.slides] : [...DEFAULT_POSTER_SLIDES];
+      while (existingSlides.length <= currentSlideIdx) {
+        existingSlides.push({
+          slideNumber: existingSlides.length + 1,
+          role: CAROUSEL_DEFAULT_SLIDES[existingSlides.length]?.role || `Slide ${existingSlides.length + 1}`,
+          mainText: "",
+          priceText: "",
+          sloganText: "",
+          ctaText: "",
+        });
+      }
+      existingSlides[currentSlideIdx] = {
+        ...existingSlides[currentSlideIdx],
+        [field]: value,
+      };
+      return {
+        ...prev,
+        [field]: value,
+        slides: existingSlides,
+        enabled: true,
+      };
+    });
+  };
+
+  const handleSelectSlide = (idx: number) => {
+    setCurrentSlideIdx(idx);
+    const targetSlide = posterConfig.slides?.[idx];
+    if (targetSlide) {
+      setPosterConfig((prev) => ({
+        ...prev,
+        activeSlideIndex: idx,
+        mainText: targetSlide.mainText ?? "",
+        priceText: targetSlide.priceText ?? "",
+        sloganText: targetSlide.sloganText ?? "",
+        ctaText: targetSlide.ctaText || prev.ctaText,
+      }));
+    }
+  };
+
   const handleCtaClick = (opt: string) => {
     setShowCustomCta(false);
-    update("ctaText", opt);
+    if (postType === "Carrusel") {
+      updateSlideField("ctaText", opt);
+    } else {
+      update("ctaText", opt);
+    }
   };
 
   const handleCustomCta = (val: string) => {
     setCustomCta(val);
-    update("ctaText", val);
+    if (postType === "Carrusel") {
+      updateSlideField("ctaText", val);
+    } else {
+      update("ctaText", val);
+    }
   };
 
   const maxChars = networks.x ? 280 : 2200;
@@ -297,26 +370,84 @@ export default function PosterFormView({
                 <span className="text-xl">✍️</span>
                 <div>
                   <h4 className="text-sm font-black text-slate-900 uppercase tracking-wider">
-                    Textos del Cartel (en la imagen)
+                    Textos del Cartel {postType === "Carrusel" ? `(Slide ${currentSlideIdx + 1} de ${carouselCount || 5})` : "(en la imagen)"}
                   </h4>
                   <p className="text-[11px] font-medium text-slate-500">
-                    Elementos que irán impresos en el afiche publicitario
+                    {postType === "Carrusel" 
+                      ? "Define los textos específicos para cada diapositiva de tu carrusel"
+                      : "Elementos que irán impresos en el afiche publicitario"}
                   </p>
                 </div>
               </div>
+              {postType === "Carrusel" && (
+                <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full">
+                  Diapositiva {currentSlideIdx + 1}/{carouselCount || 5}
+                </span>
+              )}
             </div>
+
+            {/* Selector de Diapositiva 1 por 1 para Carrusel */}
+            {postType === "Carrusel" && (
+              <div className="p-3.5 bg-amber-50/70 border border-amber-200/80 rounded-2xl space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase text-amber-900 tracking-wider flex items-center gap-1.5">
+                    <span>📑</span> Selecciona la diapositiva a editar:
+                  </span>
+                  <span className="text-[10px] font-bold text-amber-800 bg-amber-200/60 px-2 py-0.5 rounded-full">
+                    {CAROUSEL_DEFAULT_SLIDES[currentSlideIdx]?.role || `Slide ${currentSlideIdx + 1}`}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+                  {Array.from({ length: carouselCount || 5 }).map((_, idx) => {
+                    const isCurrent = currentSlideIdx === idx;
+                    const roleInfo = CAROUSEL_DEFAULT_SLIDES[idx] || { emoji: "📑", label: `Slide ${idx + 1}` };
+                    const hasCustomText = Boolean(posterConfig.slides?.[idx]?.mainText);
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => handleSelectSlide(idx)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                          isCurrent
+                            ? "bg-amber-600 text-white shadow-sm scale-102"
+                            : "bg-white text-slate-700 border border-slate-200 hover:border-amber-300"
+                        }`}
+                      >
+                        <span>{roleInfo.emoji}</span>
+                        <span>Slide {idx + 1}</span>
+                        {hasCustomText && <span className={isCurrent ? "text-amber-200" : "text-emerald-500"}>●</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-[10px] text-amber-800 font-medium">
+                  💡 <b>{CAROUSEL_DEFAULT_SLIDES[currentSlideIdx]?.label}:</b> {CAROUSEL_DEFAULT_SLIDES[currentSlideIdx]?.desc}
+                </p>
+              </div>
+            )}
 
             {/* Titular Principal */}
             <div>
               <label className="block text-xs font-black text-slate-800 mb-1.5 flex items-center justify-between">
-                <span>📝 Titular / Texto Principal del Cartel *</span>
+                <span>📝 Titular {postType === "Carrusel" ? `del Slide ${currentSlideIdx + 1}` : "Principal del Cartel"} *</span>
                 <span className="text-[10px] text-amber-700 font-bold">Impreso en el diseño</span>
               </label>
               <input
                 type="text"
                 value={posterConfig.mainText || ""}
-                onChange={(e) => update("mainText", e.target.value)}
-                placeholder="Ej: GRAN INAUGURACIÓN, 50% OFF, MENÚ EJECUTIVO..."
+                onChange={(e) => {
+                  if (postType === "Carrusel") {
+                    updateSlideField("mainText", e.target.value);
+                  } else {
+                    update("mainText", e.target.value);
+                  }
+                }}
+                placeholder={
+                  postType === "Carrusel"
+                    ? CAROUSEL_DEFAULT_SLIDES[currentSlideIdx]?.placeholder || "Titular de esta diapositiva..."
+                    : "Ej: GRAN INAUGURACIÓN, 50% OFF, MENÚ EJECUTIVO..."
+                }
                 className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl outline-none text-xs font-black text-slate-800 focus:border-amber-500 focus:bg-white transition-all shadow-inner"
               />
             </div>
@@ -338,7 +469,13 @@ export default function PosterFormView({
                 <input
                   type="text"
                   value={posterConfig.priceText || ""}
-                  onChange={(e) => update("priceText", e.target.value)}
+                  onChange={(e) => {
+                    if (postType === "Carrusel") {
+                      updateSlideField("priceText", e.target.value);
+                    } else {
+                      update("priceText", e.target.value);
+                    }
+                  }}
                   placeholder="Ej: $9.990 · 2x1 Solo Hoy · Desde $15.000"
                   className="w-full bg-white border border-amber-300 px-3.5 py-2.5 rounded-xl outline-none text-xs font-bold text-slate-800 focus:border-amber-500 shadow-xs"
                 />
@@ -396,7 +533,13 @@ export default function PosterFormView({
                 <input
                   type="text"
                   value={posterConfig.sloganText || ""}
-                  onChange={(e) => update("sloganText", e.target.value)}
+                  onChange={(e) => {
+                    if (postType === "Carrusel") {
+                      updateSlideField("sloganText", e.target.value);
+                    } else {
+                      update("sloganText", e.target.value);
+                    }
+                  }}
                   placeholder="Ej: Calidad garantizada en cada bocado"
                   className="w-full bg-white border border-slate-200 px-3.5 py-2.5 rounded-xl outline-none text-xs font-bold text-slate-800 focus:border-amber-500 shadow-xs"
                 />
@@ -654,39 +797,39 @@ export default function PosterFormView({
                 </span>
               </div>
             </div>
-
-            {/* Botón Principal de Generación del Cartel */}
-            <div className="pt-2">
-              <button
-                type="button"
-                onClick={() => handleGeneratePreview()}
-                disabled={
-                  previewLoading ||
-                  (!idea.trim() &&
-                    !posterConfig.mainText?.trim() &&
-                    !imageExpectation.trim() &&
-                    !postText.trim())
-                }
-                className="w-full bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-black py-4 px-6 rounded-2xl text-sm uppercase tracking-wider transition-all shadow-lg shadow-amber-500/25 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-              >
-                {previewLoading ? (
-                  <>
-                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span>Diseñando Afiche Publicitario...</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="text-lg">🎯</span>
-                    <span>Diseñar Afiche Publicitario</span>
-                  </>
-                )}
-              </button>
-            </div>
           </div>
         </div>
+      </div>
+
+      {/* Botón Principal de Generación del Cartel (A todo el ancho para mantener ambas columnas cuadradas) */}
+      <div className="pt-2">
+        <button
+          type="button"
+          onClick={() => handleGeneratePreview()}
+          disabled={
+            previewLoading ||
+            (!idea.trim() &&
+              !posterConfig.mainText?.trim() &&
+              !imageExpectation.trim() &&
+              !postText.trim())
+          }
+          className="w-full bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-black py-4 px-6 rounded-2xl text-sm uppercase tracking-wider transition-all shadow-lg shadow-amber-500/25 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+        >
+          {previewLoading ? (
+            <>
+              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span>Diseñando {postType === "Carrusel" ? `Carrusel de ${carouselCount || 5} Afiches` : "Afiche Publicitario"}...</span>
+            </>
+          ) : (
+            <>
+              <span className="text-lg">🎯</span>
+              <span>{postType === "Carrusel" ? `Diseñar Carrusel de ${carouselCount || 5} Afiches` : "Diseñar Afiche Publicitario"}</span>
+            </>
+          )}
+        </button>
       </div>
     </div>
   );

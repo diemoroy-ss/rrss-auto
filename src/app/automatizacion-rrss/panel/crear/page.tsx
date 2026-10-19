@@ -17,7 +17,7 @@ import CarouselWizard, { CarouselSlide } from "../../../../components/crear/Caro
 import CanvasEditor from "../../../../components/crear/CanvasEditor";
 import StatusModal from "../../../../components/StatusModal";
 import AIOptionsModal from "../../../../components/crear/AIOptionsModal";
-import PosterFormView from "../../../../components/crear/PosterFormView";
+import PosterFormView, { CAROUSEL_DEFAULT_SLIDES } from "../../../../components/crear/PosterFormView";
 import GeneratingModal, { type GeneratingStep } from "../../../../components/crear/GeneratingModal";
 import { FaFacebookF, FaInstagram, FaLinkedinIn, FaTiktok, FaGoogle, FaYoutube, FaTwitter } from "react-icons/fa";
 import TikTokPostSettings, { TikTokSettingsState, DEFAULT_TIKTOK_SETTINGS } from "../../../../components/crear/TikTokPostSettings";
@@ -67,7 +67,8 @@ export default function RrssCreatePost() {
   /** Incluir logo recreado con IA en la imagen generada */
   const [includeLogo, setIncludeLogo] = useState(false);
   const [postType, setPostType] = useState("Post");
-  const [carouselCount, setCarouselCount] = useState(3);
+  const [carouselCount, setCarouselCount] = useState(5);
+  const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const [businessType, setBusinessType] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
@@ -1728,7 +1729,9 @@ export default function RrssCreatePost() {
                     disabled={disabled}
                     onClick={() => {
                       setPostType(type);
-                      if (type === "Historia") {
+                      if (type === "Carrusel") {
+                        if (carouselCount < 2) setCarouselCount(5);
+                      } else if (type === "Historia") {
                         setPosterConfig((prev) => ({ ...prev, orientation: "vertical", aspectRatio: "9:16" }));
                       } else if (type === "Post") {
                         setPosterConfig((prev) => ({ ...prev, orientation: "square", aspectRatio: "1:1" }));
@@ -1756,30 +1759,128 @@ export default function RrssCreatePost() {
                 );
               })}
             </div>
-
-            {/* Selector de diapositivas si es Carrusel */}
-            {postType === "Carrusel" && (
-              <div className="flex items-center justify-between p-2.5 bg-indigo-50/50 border border-indigo-150 rounded-xl animate-in fade-in duration-200">
-                <span className="text-xs font-black text-indigo-900 flex items-center gap-1.5">
-                  <span>📑</span> Diapositivas:
-                </span>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="range"
-                    min="2"
-                    max="5"
-                    value={carouselCount}
-                    onChange={(e) => setCarouselCount(parseInt(e.target.value))}
-                    className="w-24 accent-indigo-600 cursor-pointer"
-                  />
-                  <span className="text-xs font-black px-2 py-0.5 rounded-md bg-indigo-600 text-white">
-                    {carouselCount}
-                  </span>
-                </div>
-              </div>
-            )}
           </div>
         </div>
+
+        {/* ── SECCIÓN EXPANDIDA: PLANIFICADOR DE CARRUSEL (1 A 5 SLIDES VISIBLES 1 POR 1) ── */}
+        {postType === "Carrusel" && (
+          <div className="border-t border-slate-100 pt-5 space-y-4 animate-in fade-in duration-300">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div>
+                <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                  <span>📑</span> Planificador de Carrusel ({carouselCount} Diapositivas)
+                </h4>
+                <p className="text-[11px] font-medium text-slate-500 mt-0.5">
+                  Estructura secuencial para capturar la atención, conectar con el cliente y cerrar con una oferta clara.
+                </p>
+              </div>
+
+              {/* Selector de cantidad de slides con botones 2 a 5 */}
+              <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-200 shrink-0">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider pl-1.5">
+                  Slides:
+                </span>
+                {[2, 3, 4, 5].map((cnt) => (
+                  <button
+                    key={cnt}
+                    type="button"
+                    onClick={() => {
+                      setCarouselCount(cnt);
+                      if (activeSlideIndex >= cnt) {
+                        setActiveSlideIndex(cnt - 1);
+                      }
+                    }}
+                    className={`px-3 py-1 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                      carouselCount === cnt
+                        ? "bg-indigo-600 text-white shadow-sm scale-102"
+                        : "bg-white text-slate-600 border border-slate-200 hover:border-slate-300"
+                    }`}
+                  >
+                    {cnt} {cnt === 5 ? "★" : ""}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Grid de 5 Diapositivas 1 por 1 Visible */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 pt-1">
+              {Array.from({ length: carouselCount }).map((_, idx) => {
+                const roleInfo = CAROUSEL_DEFAULT_SLIDES[idx] || {
+                  emoji: "📑",
+                  role: `Diapositiva ${idx + 1}`,
+                  desc: "Contenido del slide",
+                  placeholder: "Detalles del slide..."
+                };
+                const isSelected = activeSlideIndex === idx;
+                const slideData = posterConfig.slides?.[idx];
+                const previewText = slideData?.mainText || (idx === 0 ? idea : "");
+
+                return (
+                  <div
+                    key={idx}
+                    onClick={() => {
+                      setActiveSlideIndex(idx);
+                      if (posterConfig.slides?.[idx]) {
+                        setPosterConfig((prev) => ({
+                          ...prev,
+                          activeSlideIndex: idx,
+                          mainText: prev.slides?.[idx]?.mainText ?? "",
+                          priceText: prev.slides?.[idx]?.priceText ?? "",
+                          sloganText: prev.slides?.[idx]?.sloganText ?? "",
+                          ctaText: prev.slides?.[idx]?.ctaText || prev.ctaText,
+                        }));
+                      }
+                    }}
+                    className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between text-left relative overflow-hidden group ${
+                      isSelected
+                        ? "border-indigo-600 bg-indigo-50/70 shadow-md ring-2 ring-indigo-500/20"
+                        : "border-slate-200 bg-slate-50/50 hover:bg-white hover:border-indigo-200 hover:shadow-xs"
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-white border border-slate-200 text-slate-700 shadow-2xs flex items-center gap-1">
+                          <span>{roleInfo.emoji}</span> Slide {idx + 1}
+                        </span>
+                        {isSelected && (
+                          <span className="text-[9px] font-black uppercase tracking-widest text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-full">
+                            Activo
+                          </span>
+                        )}
+                      </div>
+                      <h5 className="text-xs font-black text-slate-900 leading-tight mb-1">
+                        {roleInfo.role}
+                      </h5>
+                      <p className="text-[10px] text-slate-500 font-medium leading-relaxed">
+                        {roleInfo.desc}
+                      </p>
+                    </div>
+
+                    <div className="mt-3 pt-2.5 border-t border-slate-200/80">
+                      <div className="text-[10px] text-slate-400 font-bold truncate">
+                        {previewText ? (
+                          <span className="text-slate-800 font-semibold italic">"{previewText}"</span>
+                        ) : (
+                          <span className="text-slate-400 font-medium">Click para redactar...</span>
+                        )}
+                      </div>
+                      <div className="mt-2 flex items-center justify-between">
+                        <span className={`text-[10px] font-bold ${isSelected ? "text-indigo-600 underline" : "text-slate-500 group-hover:text-indigo-600"}`}>
+                          {isSelected ? "Editando ✍️" : "Seleccionar →"}
+                        </span>
+                        {slideData?.priceText && (
+                          <span className="text-[9px] font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                            🏷️ Precio
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 3. SECCIÓN MEDIA: SEGÚN FLUJO ACTIVO (ESTÁNDAR O AFICHE) */}
@@ -1820,6 +1921,10 @@ export default function RrssCreatePost() {
               catalogoItems={catalogoItems}
               selectedCatalogoItem={selectedCatalogoItem}
               setSelectedCatalogoItem={setSelectedCatalogoItem}
+              postType={postType}
+              carouselCount={carouselCount}
+              activeSlideIndex={activeSlideIndex}
+              setActiveSlideIndex={setActiveSlideIndex}
             />
           </div>
         ) : (
@@ -2148,7 +2253,7 @@ export default function RrssCreatePost() {
             <div className="flex items-center gap-4">
               <span className="w-12 h-12 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-center text-2xl shadow-inner">🎨</span>
               <div>
-                <h3 className="text-xl font-black text-slate-900 tracking-tight">Propuesta de la IA</h3>
+                <h3 className="text-xl font-black text-slate-900 tracking-tight">Propuesta de nuestros agentes</h3>
                 <p className="text-xs font-medium text-slate-400 uppercase tracking-widest mt-0.5">Revisión de Estilo Visual</p>
               </div>
             </div>

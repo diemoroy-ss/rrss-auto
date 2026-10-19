@@ -14,11 +14,25 @@ export type ContactType = 'phone' | 'email' | 'whatsapp';
 
 export type PosterLayout = 'auto' | 'top_banner' | 'split_left' | 'split_right' | 'recipe_ingredients';
 
+export interface PosterSlideConfig {
+  slideNumber: number;
+  role?: string;
+  mainText?: string;
+  priceText?: string;
+  sloganText?: string;
+  ctaText?: string;
+}
+
 export interface PosterConfig {
   enabled: boolean;
   layout?: PosterLayout;
   layoutReasoning?: string;
   kickerText?: string;
+  orientation?: 'square' | 'vertical';
+  aspectRatio?: '1:1' | '9:16';
+  // Carrusel slides 1 a 5
+  slides?: PosterSlideConfig[];
+  activeSlideIndex?: number;
   // Elementos a incluir en el cartel
   includeLogo: boolean;
   logoUrl?: string;           // Auto-filled desde activeProfile.logoUrl
@@ -104,12 +118,22 @@ export function buildPosterPromptSuffix(config: PosterConfig): string {
   return ' ' + parts.join(' ');
 }
 
+export const DEFAULT_POSTER_SLIDES: PosterSlideConfig[] = [
+  { slideNumber: 1, role: "Portada / Gancho", mainText: "", priceText: "", sloganText: "", ctaText: "" },
+  { slideNumber: 2, role: "Problema / Contexto", mainText: "", priceText: "", sloganText: "", ctaText: "" },
+  { slideNumber: 3, role: "Solución / Beneficio", mainText: "", priceText: "", sloganText: "", ctaText: "" },
+  { slideNumber: 4, role: "Detalles / Características", mainText: "", priceText: "", sloganText: "", ctaText: "" },
+  { slideNumber: 5, role: "Oferta + Llamado a la Acción", mainText: "", priceText: "", sloganText: "", ctaText: "¡Contáctanos ahora!" },
+];
+
 /**
  * Valor por defecto para inicializar un PosterConfig vacío.
  */
 export const DEFAULT_POSTER_CONFIG: PosterConfig = {
   enabled: false,
   layout: 'auto',
+  slides: DEFAULT_POSTER_SLIDES,
+  activeSlideIndex: 0,
   includeLogo: false,
   includeBusinessName: true,
   includeMainText: false,
