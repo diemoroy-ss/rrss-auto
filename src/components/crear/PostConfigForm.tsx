@@ -121,6 +121,7 @@ interface PostConfigFormProps {
   hideSubmit?: boolean;
   renderSection?: 'parameters' | 'content';
   hideAI?: boolean;
+  hideNetworksAndType?: boolean;
 }
 
 const DEFAULT_PREFERRED_STYLE_IDS = [
@@ -183,7 +184,8 @@ export default function PostConfigForm({
   constraints,
   hideSubmit = false,
   renderSection,
-  hideAI = false
+  hideAI = false,
+  hideNetworksAndType = false
 }: PostConfigFormProps) {
 
   const maxChars = constraints.safeCharLimit;
@@ -336,153 +338,155 @@ export default function PostConfigForm({
           </div>
 
         {/* REDES DE DESTINO */}
-        <div>
-          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Redes de Destino</label>
-          {needsConnection ? (
-            <div className="p-4 bg-amber-50 border border-amber-250/60 rounded-2xl text-xs text-amber-800 font-semibold leading-relaxed">
-              ⚠️ No tienes cuentas vinculadas. Ve a la sección de <Link href="/automatizacion-rrss/panel/configuracion" className="underline font-bold text-amber-900 hover:text-amber-950">Conexiones</Link> para enlazar tus redes.
-            </div>
-          ) : (
-            <div className="flex gap-3">
-              {hasFb && (
-                <button
-                  type="button"
-                  onClick={() => setNetworks({ ...networks, facebook: !networks.facebook })}
-                  className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all ${
-                    networks.facebook ? 'bg-[#1877F2] text-white scale-105 shadow-md shadow-blue-500/20' : 'bg-slate-200 text-slate-400 opacity-60 hover:opacity-100 hover:text-slate-650'
-                  }`}
-                >
-                  <FaFacebookF />
-                </button>
-              )}
-              {hasIg && (
-                <button
-                  type="button"
-                  onClick={() => setNetworks({ ...networks, instagram: !networks.instagram })}
-                  className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all ${
-                    networks.instagram ? 'text-white scale-105 shadow-md shadow-pink-500/20' : 'bg-slate-200 text-slate-400 opacity-60 hover:opacity-100 hover:text-slate-650'
-                  }`}
-                  style={networks.instagram ? { background: 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)' } : {}}
-                >
-                  <FaInstagram className="text-2xl" />
-                </button>
-              )}
-              {/* LinkedIn */}
-              {hasLi && (
-                (() => {
-                  const allowed = isAdmin || isPlatformAllowed(userPlan, 'linkedin');
-                  return (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!allowed) {
-                          window.open(
-                            `https://wa.me/56934428848?text=${encodeURIComponent(
-                              "Hola Santisoft! Quiero activar LinkedIn en mis publicaciones. ¿Cómo puedo subir al Plan Crecimiento?"
-                            )}`,
-                            "_blank"
-                          );
-                          return;
-                        }
-                        setNetworks({ ...networks, linkedin: !networks.linkedin });
-                      }}
-                      className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all relative ${
-                        !allowed
-                          ? 'bg-slate-100 text-slate-400 border border-dashed border-slate-300 opacity-60 cursor-pointer'
-                          : networks.linkedin
-                          ? 'bg-[#0077b5] text-white scale-105 shadow-md shadow-[#0077b5]/20'
-                          : 'bg-slate-200 text-slate-400 opacity-60 hover:opacity-100 hover:text-slate-650'
-                      }`}
-                      title={!allowed ? "LinkedIn: Disponible en Plan PyME Crecimiento (Click para activar)" : "LinkedIn"}
-                    >
-                      <FaLinkedinIn />
-                      {!allowed && (
-                        <span className="absolute -top-1.5 -right-1.5 bg-amber-500 text-slate-900 text-[8px] font-black px-1 rounded-full shadow-sm">
-                          🔒
-                        </span>
-                      )}
-                    </button>
-                  );
-                })()
-              )}
+        {!hideNetworksAndType && (
+          <div>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Redes de Destino</label>
+            {needsConnection ? (
+              <div className="p-4 bg-amber-50 border border-amber-250/60 rounded-2xl text-xs text-amber-800 font-semibold leading-relaxed">
+                ⚠️ No tienes cuentas vinculadas. Ve a la sección de <Link href="/automatizacion-rrss/panel/configuracion" className="underline font-bold text-amber-900 hover:text-amber-950">Conexiones</Link> para enlazar tus redes.
+              </div>
+            ) : (
+              <div className="flex gap-3">
+                {hasFb && (
+                  <button
+                    type="button"
+                    onClick={() => setNetworks({ ...networks, facebook: !networks.facebook })}
+                    className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all ${
+                      networks.facebook ? 'bg-[#1877F2] text-white scale-105 shadow-md shadow-blue-500/20' : 'bg-slate-200 text-slate-400 opacity-60 hover:opacity-100 hover:text-slate-650'
+                    }`}
+                  >
+                    <FaFacebookF />
+                  </button>
+                )}
+                {hasIg && (
+                  <button
+                    type="button"
+                    onClick={() => setNetworks({ ...networks, instagram: !networks.instagram })}
+                    className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all ${
+                      networks.instagram ? 'text-white scale-105 shadow-md shadow-pink-500/20' : 'bg-slate-200 text-slate-400 opacity-60 hover:opacity-100 hover:text-slate-650'
+                    }`}
+                    style={networks.instagram ? { background: 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)' } : {}}
+                  >
+                    <FaInstagram className="text-2xl" />
+                  </button>
+                )}
+                {/* LinkedIn */}
+                {hasLi && (
+                  (() => {
+                    const allowed = isAdmin || isPlatformAllowed(userPlan, 'linkedin');
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!allowed) {
+                            window.open(
+                              `https://wa.me/56934428848?text=${encodeURIComponent(
+                                "Hola Santisoft! Quiero activar LinkedIn en mis publicaciones. ¿Cómo puedo subir al Plan Crecimiento?"
+                              )}`,
+                              "_blank"
+                            );
+                            return;
+                          }
+                          setNetworks({ ...networks, linkedin: !networks.linkedin });
+                        }}
+                        className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all relative ${
+                          !allowed
+                            ? 'bg-slate-100 text-slate-400 border border-dashed border-slate-300 opacity-60 cursor-pointer'
+                            : networks.linkedin
+                            ? 'bg-[#0077b5] text-white scale-105 shadow-md shadow-[#0077b5]/20'
+                            : 'bg-slate-200 text-slate-400 opacity-60 hover:opacity-100 hover:text-slate-650'
+                        }`}
+                        title={!allowed ? "LinkedIn: Disponible en Plan PyME Crecimiento (Click para activar)" : "LinkedIn"}
+                      >
+                        <FaLinkedinIn />
+                        {!allowed && (
+                          <span className="absolute -top-1.5 -right-1.5 bg-amber-500 text-slate-900 text-[8px] font-black px-1 rounded-full shadow-sm">
+                            🔒
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })()
+                )}
 
-              {/* TikTok */}
-              {hasTt && (
-                (() => {
-                  const allowed = isAdmin || isPlatformAllowed(userPlan, 'tiktok');
-                  return (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!allowed) {
-                          window.open(
-                            `https://wa.me/56934428848?text=${encodeURIComponent(
-                              "Hola Santisoft! Quiero activar TikTok en mis publicaciones. ¿Cómo puedo subir al Plan Crecimiento?"
-                            )}`,
-                            "_blank"
-                          );
-                          return;
-                        }
-                        setNetworks({ ...networks, tiktok: !networks.tiktok });
-                      }}
-                      className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all relative ${
-                        !allowed
-                          ? 'bg-slate-100 text-slate-400 border border-dashed border-slate-300 opacity-60 cursor-pointer'
-                          : networks.tiktok
-                          ? 'bg-black text-white scale-105 shadow-md shadow-black/20'
-                          : 'bg-slate-200 text-slate-400 opacity-60 hover:opacity-100 hover:text-slate-650'
-                      }`}
-                      title={!allowed ? "TikTok: Disponible en Plan PyME Crecimiento (Click para activar)" : "TikTok"}
-                    >
-                      <FaTiktok />
-                      {!allowed && (
-                        <span className="absolute -top-1.5 -right-1.5 bg-amber-500 text-slate-900 text-[8px] font-black px-1 rounded-full shadow-sm">
-                          🔒
-                        </span>
-                      )}
-                    </button>
-                  );
-                })()
-              )}
-              {hasGbp && (
-                <button
-                  type="button"
-                  onClick={() => setNetworks({ ...networks, googleBusiness: !networks.googleBusiness })}
-                  className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all ${
-                    networks.googleBusiness ? 'bg-[#EA4335] text-white scale-105 shadow-md shadow-[#EA4335]/20' : 'bg-slate-200 text-slate-400 opacity-60 hover:opacity-100 hover:text-slate-650'
-                  }`}
-                  title="Google Business Profile"
-                >
-                  <FaGoogle />
-                </button>
-              )}
-              {hasYt && (
-                <button
-                  type="button"
-                  onClick={() => setNetworks({ ...networks, youtube: !networks.youtube })}
-                  className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all ${
-                    networks.youtube ? 'bg-[#FF0000] text-white scale-105 shadow-md shadow-red-500/20' : 'bg-slate-200 text-slate-400 opacity-60 hover:opacity-100 hover:text-slate-650'
-                  }`}
-                  title="YouTube Shorts"
-                >
-                  <FaYoutube />
-                </button>
-              )}
-              {hasX && (
-                <button
-                  type="button"
-                  onClick={() => setNetworks({ ...networks, x: !networks.x })}
-                  className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all ${
-                    networks.x ? 'bg-black text-white scale-105 shadow-md shadow-black/20' : 'bg-slate-200 text-slate-400 opacity-60 hover:opacity-100 hover:text-slate-650'
-                  }`}
-                  title="X (Twitter)"
-                >
-                  <FaTwitter />
-                </button>
-              )}
-            </div>
-          )}
-        </div>
+                {/* TikTok */}
+                {hasTt && (
+                  (() => {
+                    const allowed = isAdmin || isPlatformAllowed(userPlan, 'tiktok');
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!allowed) {
+                            window.open(
+                              `https://wa.me/56934428848?text=${encodeURIComponent(
+                                "Hola Santisoft! Quiero activar TikTok en mis publicaciones. ¿Cómo puedo subir al Plan Crecimiento?"
+                              )}`,
+                              "_blank"
+                            );
+                            return;
+                          }
+                          setNetworks({ ...networks, tiktok: !networks.tiktok });
+                        }}
+                        className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all relative ${
+                          !allowed
+                            ? 'bg-slate-100 text-slate-400 border border-dashed border-slate-300 opacity-60 cursor-pointer'
+                            : networks.tiktok
+                            ? 'bg-black text-white scale-105 shadow-md shadow-black/20'
+                            : 'bg-slate-200 text-slate-400 opacity-60 hover:opacity-100 hover:text-slate-650'
+                        }`}
+                        title={!allowed ? "TikTok: Disponible en Plan PyME Crecimiento (Click para activar)" : "TikTok"}
+                      >
+                        <FaTiktok />
+                        {!allowed && (
+                          <span className="absolute -top-1.5 -right-1.5 bg-amber-500 text-slate-900 text-[8px] font-black px-1 rounded-full shadow-sm">
+                            🔒
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })()
+                )}
+                {hasGbp && (
+                  <button
+                    type="button"
+                    onClick={() => setNetworks({ ...networks, googleBusiness: !networks.googleBusiness })}
+                    className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all ${
+                      networks.googleBusiness ? 'bg-[#EA4335] text-white scale-105 shadow-md shadow-[#EA4335]/20' : 'bg-slate-200 text-slate-400 opacity-60 hover:opacity-100 hover:text-slate-650'
+                    }`}
+                    title="Google Business Profile"
+                  >
+                    <FaGoogle />
+                  </button>
+                )}
+                {hasYt && (
+                  <button
+                    type="button"
+                    onClick={() => setNetworks({ ...networks, youtube: !networks.youtube })}
+                    className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all ${
+                      networks.youtube ? 'bg-[#FF0000] text-white scale-105 shadow-md shadow-red-500/20' : 'bg-slate-200 text-slate-400 opacity-60 hover:opacity-100 hover:text-slate-650'
+                    }`}
+                    title="YouTube Shorts"
+                  >
+                    <FaYoutube />
+                  </button>
+                )}
+                {hasX && (
+                  <button
+                    type="button"
+                    onClick={() => setNetworks({ ...networks, x: !networks.x })}
+                    className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl transition-all ${
+                      networks.x ? 'bg-black text-white scale-105 shadow-md shadow-black/20' : 'bg-slate-200 text-slate-400 opacity-60 hover:opacity-100 hover:text-slate-650'
+                    }`}
+                    title="X (Twitter)"
+                  >
+                    <FaTwitter />
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* TU RUBRO O TIPO DE NEGOCIO */}
         <div>
@@ -505,52 +509,56 @@ export default function PostConfigForm({
         </div>
 
         {/* TIPO DE PUBLICACIÓN */}
-        <div>
-          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Tipo de Publicación</label>
-          <div className="grid grid-cols-4 gap-2">
-            {['Post', 'Historia', 'Carrusel', 'Reel'].map(type => {
-              const isReelDisabledByPlan = type === 'Reel' && !allowVideo;
-              const disabled = (networks.tiktok && type !== 'Reel') || isReelDisabledByPlan;
-              return (
-                <button 
-                  key={type}
-                  type="button"
-                  disabled={disabled}
-                  title={isReelDisabledByPlan ? "Tu plan actual no incluye cuota de Reels/Video. Mejora tu plan para desbloquearlo." : ""}
-                  onClick={() => setPostType(type)}
-                  className={`py-3 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all relative ${
-                    disabled ? 'opacity-40 bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed' :
-                    postType === type 
-                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
-                      : 'border-slate-200 bg-slate-50 text-slate-500 hover:border-slate-300'
-                  }`}
-                >
-                  <span className="text-xl">{type === 'Post' ? '🖼️' : type === 'Historia' ? '📱' : type === 'Carrusel' ? '📑' : '🎬'}</span>
-                  <span className="text-[9px] font-bold uppercase flex items-center gap-1">
-                    {type}
-                    {isReelDisabledByPlan && <span className="text-[10px]">🔒</span>}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        {!hideNetworksAndType && (
+          <>
+            <div>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Tipo de Publicación</label>
+              <div className="grid grid-cols-4 gap-2">
+                {['Post', 'Historia', 'Carrusel', 'Reel'].map(type => {
+                  const isReelDisabledByPlan = type === 'Reel' && !allowVideo;
+                  const disabled = (networks.tiktok && type !== 'Reel') || isReelDisabledByPlan;
+                  return (
+                    <button 
+                      key={type}
+                      type="button"
+                      disabled={disabled}
+                      title={isReelDisabledByPlan ? "Tu plan actual no incluye cuota de Reels/Video. Mejora tu plan para desbloquearlo." : ""}
+                      onClick={() => setPostType(type)}
+                      className={`py-3 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all relative ${
+                        disabled ? 'opacity-40 bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed' :
+                        postType === type 
+                          ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                          : 'border-slate-200 bg-slate-50 text-slate-500 hover:border-slate-300'
+                      }`}
+                    >
+                      <span className="text-xl">{type === 'Post' ? '🖼️' : type === 'Historia' ? '📱' : type === 'Carrusel' ? '📑' : '🎬'}</span>
+                      <span className="text-[9px] font-bold uppercase flex items-center gap-1">
+                        {type}
+                        {isReelDisabledByPlan && <span className="text-[10px]">🔒</span>}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
-        {/* CAROUSEL COUNT */}
-        {postType === 'Carrusel' && (
-          <div className="animate-in slide-in-from-top-3 pt-2">
-             <label className="block text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em] mb-2">📑 Cantidad de imágenes</label>
-             <div className="flex items-center gap-3 bg-indigo-50/50 p-3 border border-indigo-150 rounded-xl w-fit">
-                <input 
-                   type="range" 
-                   min="2" max="5" 
-                   value={carouselCount} 
-                   onChange={(e) => setCarouselCount(parseInt(e.target.value))}
-                   className="w-24 accent-indigo-600"
-                />
-                <span className="text-xs font-black text-indigo-700">{carouselCount}</span>
-             </div>
-          </div>
+            {/* CAROUSEL COUNT */}
+            {postType === 'Carrusel' && (
+              <div className="animate-in slide-in-from-top-3 pt-2">
+                 <label className="block text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em] mb-2">📑 Cantidad de imágenes</label>
+                 <div className="flex items-center gap-3 bg-indigo-50/50 p-3 border border-indigo-150 rounded-xl w-fit">
+                    <input 
+                       type="range" 
+                       min="2" max="5" 
+                       value={carouselCount} 
+                       onChange={(e) => setCarouselCount(parseInt(e.target.value))}
+                       className="w-24 accent-indigo-600"
+                    />
+                    <span className="text-xs font-black text-indigo-700">{carouselCount}</span>
+                 </div>
+              </div>
+            )}
+          </>
         )}
 
         {/* ENLACE A LA WEB */}

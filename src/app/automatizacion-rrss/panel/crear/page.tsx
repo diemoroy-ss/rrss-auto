@@ -22,6 +22,7 @@ import GeneratingModal, { type GeneratingStep } from "../../../../components/cre
 import { FaFacebookF, FaInstagram, FaLinkedinIn, FaTiktok, FaGoogle, FaYoutube, FaTwitter } from "react-icons/fa";
 import TikTokPostSettings, { TikTokSettingsState, DEFAULT_TIKTOK_SETTINGS } from "../../../../components/crear/TikTokPostSettings";
 import { PromptTemplate, HARDCODED_STYLES } from "../../../../lib/prompt-templates";
+import { isPlatformAllowed } from "../../../../lib/plans";
 
 export interface UserTemplate { id: string; url: string; type?: 'image' | 'video'; createdAt: Date; }
 
@@ -1511,7 +1512,277 @@ export default function RrssCreatePost() {
         </div>
       </div>
 
-      {/* 2. SECCIÓN MEDIA: SEGÚN FLUJO ACTIVO (ESTÁNDAR O AFICHE) */}
+      {/* 2. CARD UNIFICADA: REDES SOCIALES Y TIPO DE PUBLICACIÓN (A LO LARGO DE LAS 2 CARDS) */}
+      <div className="bg-white border-2 border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-xs mb-8 space-y-6">
+        <div className="grid lg:grid-cols-12 gap-6 items-start">
+          {/* Lado Izquierdo: Redes Sociales a Publicar */}
+          <div className="lg:col-span-6 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                <span>🌐</span> Redes de Destino
+              </label>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                {Object.values(networks).filter(Boolean).length} activas
+              </span>
+            </div>
+
+            {needsConnection ? (
+              <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-800 font-semibold leading-relaxed">
+                ⚠️ No tienes cuentas vinculadas. Ve a la sección de{" "}
+                <Link href="/automatizacion-rrss/panel/configuracion" className="underline font-bold text-amber-900">
+                  Conexiones
+                </Link>{" "}
+                para enlazar tus redes.
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2.5">
+                {/* Facebook */}
+                {hasFb && (
+                  <button
+                    type="button"
+                    onClick={() => setNetworks((prev: any) => ({ ...prev, facebook: !prev.facebook }))}
+                    className={`w-11 h-11 rounded-2xl flex items-center justify-center text-lg transition-all cursor-pointer ${
+                      networks.facebook
+                        ? "bg-[#1877F2] text-white scale-105 shadow-md shadow-blue-500/20"
+                        : "bg-slate-100 text-slate-400 opacity-60 hover:opacity-100 border border-slate-200"
+                    }`}
+                    title="Facebook"
+                  >
+                    <FaFacebookF />
+                  </button>
+                )}
+
+                {/* Instagram */}
+                {hasIg && (
+                  <button
+                    type="button"
+                    onClick={() => setNetworks((prev: any) => ({ ...prev, instagram: !prev.instagram }))}
+                    className={`w-11 h-11 rounded-2xl flex items-center justify-center text-lg transition-all cursor-pointer ${
+                      networks.instagram
+                        ? "text-white scale-105 shadow-md shadow-pink-500/20"
+                        : "bg-slate-100 text-slate-400 opacity-60 hover:opacity-100 border border-slate-200"
+                    }`}
+                    style={
+                      networks.instagram
+                        ? {
+                            background:
+                              "linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)",
+                          }
+                        : {}
+                    }
+                    title="Instagram"
+                  >
+                    <FaInstagram className="text-xl" />
+                  </button>
+                )}
+
+                {/* LinkedIn */}
+                {hasLi && (
+                  (() => {
+                    const allowed = isAdmin || isPlatformAllowed(userPlan, "linkedin");
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!allowed) {
+                            window.open(
+                              `https://wa.me/56934428848?text=${encodeURIComponent(
+                                "Hola Santisoft! Quiero activar LinkedIn en mis publicaciones. ¿Cómo puedo subir al Plan Crecimiento?"
+                              )}`,
+                              "_blank"
+                            );
+                            return;
+                          }
+                          setNetworks((prev: any) => ({ ...prev, linkedin: !prev.linkedin }));
+                        }}
+                        className={`w-11 h-11 rounded-2xl flex items-center justify-center text-lg transition-all relative cursor-pointer ${
+                          !allowed
+                            ? "bg-slate-100 text-slate-400 border border-dashed border-slate-300 opacity-60"
+                            : networks.linkedin
+                            ? "bg-[#0077b5] text-white scale-105 shadow-md shadow-[#0077b5]/20"
+                            : "bg-slate-100 text-slate-400 opacity-60 hover:opacity-100 border border-slate-200"
+                        }`}
+                        title={!allowed ? "LinkedIn: Disponible en Plan PyME Crecimiento (Click para activar)" : "LinkedIn"}
+                      >
+                        <FaLinkedinIn />
+                        {!allowed && (
+                          <span className="absolute -top-1 -right-1 bg-amber-500 text-slate-900 text-[8px] font-black px-1 rounded-full shadow-xs">
+                            🔒
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })()
+                )}
+
+                {/* TikTok */}
+                {hasTt && (
+                  (() => {
+                    const allowed = isAdmin || isPlatformAllowed(userPlan, "tiktok");
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!allowed) {
+                            window.open(
+                              `https://wa.me/56934428848?text=${encodeURIComponent(
+                                "Hola Santisoft! Quiero activar TikTok en mis publicaciones. ¿Cómo puedo subir al Plan Crecimiento?"
+                              )}`,
+                              "_blank"
+                            );
+                            return;
+                          }
+                          setNetworks((prev: any) => ({ ...prev, tiktok: !prev.tiktok }));
+                        }}
+                        className={`w-11 h-11 rounded-2xl flex items-center justify-center text-lg transition-all relative cursor-pointer ${
+                          !allowed
+                            ? "bg-slate-100 text-slate-400 border border-dashed border-slate-300 opacity-60"
+                            : networks.tiktok
+                            ? "bg-black text-white scale-105 shadow-md shadow-black/20"
+                            : "bg-slate-100 text-slate-400 opacity-60 hover:opacity-100 border border-slate-200"
+                        }`}
+                        title={!allowed ? "TikTok: Disponible en Plan PyME Crecimiento (Click para activar)" : "TikTok"}
+                      >
+                        <FaTiktok />
+                        {!allowed && (
+                          <span className="absolute -top-1 -right-1 bg-amber-500 text-slate-900 text-[8px] font-black px-1 rounded-full shadow-xs">
+                            🔒
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })()
+                )}
+
+                {/* Google Business */}
+                {hasGbp && (
+                  <button
+                    type="button"
+                    onClick={() => setNetworks((prev: any) => ({ ...prev, googleBusiness: !prev.googleBusiness }))}
+                    className={`w-11 h-11 rounded-2xl flex items-center justify-center text-lg transition-all cursor-pointer ${
+                      networks.googleBusiness
+                        ? "bg-[#EA4335] text-white scale-105 shadow-md shadow-[#EA4335]/20"
+                        : "bg-slate-100 text-slate-400 opacity-60 hover:opacity-100 border border-slate-200"
+                    }`}
+                    title="Google Business Profile"
+                  >
+                    <FaGoogle />
+                  </button>
+                )}
+
+                {/* YouTube */}
+                {hasYt && (
+                  <button
+                    type="button"
+                    onClick={() => setNetworks((prev: any) => ({ ...prev, youtube: !prev.youtube }))}
+                    className={`w-11 h-11 rounded-2xl flex items-center justify-center text-lg transition-all cursor-pointer ${
+                      networks.youtube
+                        ? "bg-[#FF0000] text-white scale-105 shadow-md shadow-red-500/20"
+                        : "bg-slate-100 text-slate-400 opacity-60 hover:opacity-100 border border-slate-200"
+                    }`}
+                    title="YouTube Shorts"
+                  >
+                    <FaYoutube />
+                  </button>
+                )}
+
+                {/* X / Twitter */}
+                {hasX && (
+                  <button
+                    type="button"
+                    onClick={() => setNetworks((prev: any) => ({ ...prev, x: !prev.x }))}
+                    className={`w-11 h-11 rounded-2xl flex items-center justify-center text-lg transition-all cursor-pointer ${
+                      networks.x
+                        ? "bg-black text-white scale-105 shadow-md shadow-black/20"
+                        : "bg-slate-100 text-slate-400 opacity-60 hover:opacity-100 border border-slate-200"
+                    }`}
+                    title="X (Twitter)"
+                  >
+                    <FaTwitter />
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Lado Derecho: Tipo y Formato de Publicación */}
+          <div className="lg:col-span-6 space-y-3 pt-4 lg:pt-0 border-t lg:border-t-0 lg:border-l lg:border-slate-100 lg:pl-6">
+            <div className="flex items-center justify-between">
+              <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                <span>📐</span> Formato de Publicación
+              </label>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                {postType}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-4 gap-2">
+              {(["Post", "Historia", "Carrusel", "Reel"] as const).map((type) => {
+                const isReelDisabledByPlan = type === "Reel" && !(videoLimit > 0 || isAdmin);
+                const disabled = (networks.tiktok && type !== "Reel") || isReelDisabledByPlan;
+                const isSelected = postType === type;
+                return (
+                  <button
+                    key={type}
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => {
+                      setPostType(type);
+                      if (type === "Historia") {
+                        setPosterConfig((prev) => ({ ...prev, orientation: "vertical", aspectRatio: "9:16" }));
+                      } else if (type === "Post") {
+                        setPosterConfig((prev) => ({ ...prev, orientation: "square", aspectRatio: "1:1" }));
+                      }
+                    }}
+                    className={`py-2.5 px-1.5 rounded-2xl border-2 flex flex-col items-center justify-center gap-1 transition-all cursor-pointer ${
+                      disabled
+                        ? "opacity-40 bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed"
+                        : isSelected
+                        ? "border-indigo-600 bg-indigo-50/90 text-indigo-950 shadow-sm ring-2 ring-indigo-500/20"
+                        : "border-slate-200 bg-slate-50/70 text-slate-600 hover:border-slate-300 hover:bg-white"
+                    }`}
+                  >
+                    <span className="text-xl">
+                      {type === "Post" ? "🖼️" : type === "Historia" ? "📱" : type === "Carrusel" ? "📑" : "🎬"}
+                    </span>
+                    <span className="text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                      {type}
+                      {isReelDisabledByPlan && <span className="text-[9px]">🔒</span>}
+                    </span>
+                    <span className="text-[8px] font-bold text-slate-400 leading-none">
+                      {type === "Post" ? "1:1 / 4:5" : type === "Historia" ? "9:16 vertical" : type === "Carrusel" ? "Múltiple" : "Video"}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Selector de diapositivas si es Carrusel */}
+            {postType === "Carrusel" && (
+              <div className="flex items-center justify-between p-2.5 bg-indigo-50/50 border border-indigo-150 rounded-xl animate-in fade-in duration-200">
+                <span className="text-xs font-black text-indigo-900 flex items-center gap-1.5">
+                  <span>📑</span> Diapositivas:
+                </span>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="range"
+                    min="2"
+                    max="5"
+                    value={carouselCount}
+                    onChange={(e) => setCarouselCount(parseInt(e.target.value))}
+                    className="w-24 accent-indigo-600 cursor-pointer"
+                  />
+                  <span className="text-xs font-black px-2 py-0.5 rounded-md bg-indigo-600 text-white">
+                    {carouselCount}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 3. SECCIÓN MEDIA: SEGÚN FLUJO ACTIVO (ESTÁNDAR O AFICHE) */}
       {!openEditorParam && (
         activeCreationFlow === 'afiche' ? (
           <div className="mb-10">
@@ -1664,6 +1935,7 @@ export default function RrssCreatePost() {
               posterConfig={posterConfig}
               renderSection="parameters"
               hideAI={hideAIParam}
+              hideNetworksAndType={true}
             />
           </div>
 
@@ -1719,6 +1991,7 @@ export default function RrssCreatePost() {
             renderSection="content"
             posterConfig={posterConfig}
             hideAI={hideAIParam}
+            hideNetworksAndType={true}
           />
         </div>
       </div>
