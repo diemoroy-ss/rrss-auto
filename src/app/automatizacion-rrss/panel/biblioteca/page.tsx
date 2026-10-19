@@ -21,6 +21,8 @@ import {
   UtensilsCrossed,
   Tag,
   Sparkles,
+  Trash2,
+  Loader2,
 } from "lucide-react";
 
 type DateFilterType = "all" | "today" | "7days" | "30days" | "this_month" | "custom";
@@ -188,6 +190,8 @@ export default function BibliotecaPage() {
   const [selectedImage, setSelectedImage] = useState<GeneratedImage | null>(null);
   const [carouselPreviewIndex, setCarouselPreviewIndex] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isDeletingBatch, setIsDeletingBatch] = useState<boolean>(false);
   const ITEMS_PER_PAGE = 12;
   const [error, setError] = useState("");
   const { activeProfile } = useProfile();
@@ -380,7 +384,13 @@ export default function BibliotecaPage() {
     try {
       const collectionName = source === "upload" ? "user_templates" : "generated_images";
       await deleteDoc(doc(db, collectionName, id));
+      await deleteDoc(doc(db, "social_posts", id)).catch(() => {});
       setImages((prev) => prev.filter((img) => img.id !== id));
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
     } catch (e) {
       console.error("Error deleting image:", e);
       alert("No se pudo eliminar el elemento.");
@@ -510,6 +520,77 @@ export default function BibliotecaPage() {
 
   const limit = planLimits[userPlan] || 15;
   const isOverLimit = images.length > limit;
+
+  const toggleSelectImage = (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAllInPage = () => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      const allPageSelected = paginatedImages.length > 0 && paginatedImages.every((img) => next.has(img.id));
+      if (allPageSelected) {
+        paginatedImages.forEach((img) => next.delete(img.id));
+      } else {
+        paginatedImages.forEach((img) => next.add(img.id));
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAllFiltered = () => {
+    setSelectedIds((prev) => {
+      const allFilteredSelected = filteredImages.length > 0 && filteredImages.every((img) => prev.has(img.id));
+      if (allFilteredSelected) {
+        return new Set();
+      } else {
+        return new Set(filteredImages.map((img) => img.id));
+      }
+    });
+  };
+
+  const handleClearSelection = () => {
+    setSelectedIds(new Set());
+  };
+
+  const handleBatchDelete = async () => {
+    if (selectedIds.size === 0) return;
+    const count = selectedIds.size;
+    const ok = window.confirm(
+      `¿Estás seguro de que deseas eliminar permanentemente ${count === 1 ? "este elemento" : `los ${count} elementos`} seleccionados de tu biblioteca? Esta acción no se puede deshacer.`
+    );
+    if (!ok) return;
+
+    setIsDeletingBatch(true);
+    try {
+      const toDelete = images.filter((img) => selectedIds.has(img.id));
+
+      await Promise.allSettled(
+        toDelete.map(async (img) => {
+          const collectionName = img.source === "upload" ? "user_templates" : "generated_images";
+          await deleteDoc(doc(db, collectionName, img.id)).catch(() => {});
+          await deleteDoc(doc(db, "social_posts", img.id)).catch(() => {});
+        })
+      );
+
+      setImages((prev) => prev.filter((img) => !selectedIds.has(img.id)));
+      setSelectedIds(new Set());
+    } catch (e) {
+      console.error("Error en eliminación masiva:", e);
+      alert("Ocurrió un error al intentar eliminar algunos elementos.");
+    } finally {
+      setIsDeletingBatch(false);
+    }
+  };
 
   return (
     <div className="w-full max-w-7xl mx-auto space-y-8">
@@ -746,6 +827,91 @@ export default function BibliotecaPage() {
         </div>
       </div>
 
+      {/* Barra de Acciones Masivas y Selección Rápida */}
+      {!loading && filteredImages.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={handleSelectAllInPage}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-2 cursor-pointer ${
+                paginatedImages.length > 0 && paginatedImages.every((img) => selectedIds.has(img.id))
+                  ? "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100"
+                  : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
+              }`}
+            >
+              <span className="text-xs">
+                {paginatedImages.length > 0 && paginatedImages.every((img) => selectedIds.has(img.id)) ? "☑️" : "⬜"}
+              </span>
+              <span>
+                {paginatedImages.length > 0 && paginatedImages.every((img) => selectedIds.has(img.id))
+                  ? "Deseleccionar página"
+                  : `Seleccionar página (${paginatedImages.length})`}
+              </span>
+            </button>
+
+            {filteredImages.length > paginatedImages.length && (
+              <button
+                type="button"
+                onClick={handleSelectAllFiltered}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                  selectedIds.size === filteredImages.length
+                    ? "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100"
+                    : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
+                }`}
+              >
+                {selectedIds.size === filteredImages.length
+                  ? "Deseleccionar todos"
+                  : `Seleccionar los ${filteredImages.length} resultados`}
+              </button>
+            )}
+
+            {selectedIds.size > 0 && (
+              <button
+                type="button"
+                onClick={handleClearSelection}
+                className="text-xs font-bold text-slate-400 hover:text-slate-700 px-2 underline cursor-pointer"
+              >
+                Limpiar selección
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3 ml-auto">
+            {selectedIds.size > 0 ? (
+              <div className="flex items-center gap-2.5">
+                <span className="text-xs font-bold text-slate-600">
+                  <span className="font-black text-rose-600">{selectedIds.size}</span> seleccionado{selectedIds.size === 1 ? "" : "s"}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={handleBatchDelete}
+                  disabled={isDeletingBatch}
+                  className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs flex items-center gap-2 shadow-sm shadow-rose-600/20 transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  {isDeletingBatch ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Eliminando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Eliminar seleccionados ({selectedIds.size})</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            ) : (
+              <span className="text-[11px] font-bold text-slate-400">
+                💡 Haz clic en la casilla de cada imagen para seleccionar y eliminar masivamente
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* 3. Grid de Imágenes */}
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -775,43 +941,68 @@ export default function BibliotecaPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {paginatedImages.map((img) => (
-            <div
-              key={img.id}
-              className="bg-white rounded-3xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all overflow-hidden group flex flex-col"
-            >
-              <div className="relative aspect-square bg-slate-100 overflow-hidden cursor-pointer" onClick={() => setSelectedImage(img)}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={img.url}
-                  alt={img.prompt || "Diseño"}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  onError={(e) => {
-                    if (img.baseImageUrl && e.currentTarget.src !== img.baseImageUrl) {
-                      e.currentTarget.src = img.baseImageUrl;
-                    }
-                  }}
-                />
+          {paginatedImages.map((img) => {
+            const isSelected = selectedIds.has(img.id);
+            return (
+              <div
+                key={img.id}
+                className={`bg-white rounded-3xl border transition-all overflow-hidden group flex flex-col relative ${
+                  isSelected
+                    ? "border-rose-400 ring-2 ring-rose-400/40 shadow-md bg-rose-50/10"
+                    : "border-slate-200/80 shadow-sm hover:shadow-md"
+                }`}
+              >
+                <div className="relative aspect-square bg-slate-100 overflow-hidden cursor-pointer" onClick={() => setSelectedImage(img)}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={img.url}
+                    alt={img.prompt || "Diseño"}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    onError={(e) => {
+                      if (img.baseImageUrl && e.currentTarget.src !== img.baseImageUrl) {
+                        e.currentTarget.src = img.baseImageUrl;
+                      }
+                    }}
+                  />
 
-                <div className="absolute inset-0 bg-slate-900/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <span className="px-3 py-1.5 bg-white/90 backdrop-blur-md rounded-xl text-[10px] font-black text-slate-900 uppercase tracking-widest shadow-lg">
-                    👁️ Ver Detalle
-                  </span>
-                </div>
+                  {/* Checkbox de Selección Masiva */}
+                  <button
+                    type="button"
+                    onClick={(e) => toggleSelectImage(img.id, e)}
+                    className={`absolute top-3 right-3 z-10 w-7 h-7 rounded-lg flex items-center justify-center transition-all shadow-md cursor-pointer ${
+                      isSelected
+                        ? "bg-rose-600 text-white ring-2 ring-white scale-105"
+                        : "bg-black/50 hover:bg-black/75 text-white/80 hover:text-white backdrop-blur-xs border border-white/20 opacity-80 group-hover:opacity-100"
+                    }`}
+                    title={isSelected ? "Deseleccionar" : "Seleccionar para eliminar"}
+                    aria-label={isSelected ? "Deseleccionar imagen" : "Seleccionar imagen"}
+                  >
+                    {isSelected ? (
+                      <Check className="w-4 h-4 stroke-[3]" />
+                    ) : (
+                      <div className="w-3.5 h-3.5 rounded-xs border-2 border-white/80" />
+                    )}
+                  </button>
 
-                <div className="absolute top-3 left-3 flex gap-1.5">
-                  <span className={`text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg backdrop-blur-md shadow-sm border ${
-                    img.source === "ia" ? "bg-indigo-900/80 text-indigo-100 border-indigo-500/30" : img.source === "upload" ? "bg-amber-900/80 text-amber-100 border-amber-500/30" : "bg-emerald-900/80 text-emerald-100 border-emerald-500/30"
-                  }`}>
-                    {img.source === "ia" ? "✨ Agentes" : img.source === "upload" ? "📥 Subido" : "🎨 Editor"}
-                  </span>
-                  <span className="text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg bg-black/60 text-white backdrop-blur-md border border-white/10 flex items-center gap-1">
-                    {img.type === "Carrusel"
-                      ? `📚 Carrusel (${img.carouselImages?.length || "Lote"})`
-                      : img.type}
-                  </span>
+                  <div className="absolute inset-0 bg-slate-900/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                    <span className="px-3 py-1.5 bg-white/90 backdrop-blur-md rounded-xl text-[10px] font-black text-slate-900 uppercase tracking-widest shadow-lg">
+                      👁️ Ver Detalle
+                    </span>
+                  </div>
+
+                  <div className="absolute top-3 left-3 flex gap-1.5 pointer-events-none">
+                    <span className={`text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg backdrop-blur-md shadow-sm border ${
+                      img.source === "ia" ? "bg-indigo-900/80 text-indigo-100 border-indigo-500/30" : img.source === "upload" ? "bg-amber-900/80 text-amber-100 border-amber-500/30" : "bg-emerald-900/80 text-emerald-100 border-emerald-500/30"
+                    }`}>
+                      {img.source === "ia" ? "✨ Agentes" : img.source === "upload" ? "📥 Subido" : "🎨 Editor"}
+                    </span>
+                    <span className="text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg bg-black/60 text-white backdrop-blur-md border border-white/10 flex items-center gap-1">
+                      {img.type === "Carrusel"
+                        ? `📚 Carrusel (${img.carouselImages?.length || "Lote"})`
+                        : img.type}
+                    </span>
+                  </div>
                 </div>
-              </div>
 
               <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
                 <div className="space-y-1">
@@ -855,8 +1046,9 @@ export default function BibliotecaPage() {
                 </div>
               </div>
             </div>
-          ))}
-        </div>
+          );
+        })}
+      </div>
       )}
 
       {/* 4. Controles de Paginación */}
@@ -1270,6 +1462,53 @@ export default function BibliotecaPage() {
                 <span>Ver {filteredImages.length} {filteredImages.length === 1 ? "elemento" : "elementos"}</span>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5. Barra Flotante Sticky de Acciones Masivas */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 backdrop-blur-md text-white px-5 py-3.5 rounded-2xl shadow-2xl border border-slate-700 flex flex-wrap items-center justify-between gap-4 animate-in slide-in-from-bottom-5 duration-200 max-w-xl w-[92%] sm:w-auto">
+          <div className="flex items-center gap-2.5">
+            <span className="w-6 h-6 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center text-xs font-black">
+              {selectedIds.size}
+            </span>
+            <span className="text-xs sm:text-sm font-bold text-slate-100">
+              {selectedIds.size === 1 ? "1 elemento seleccionado" : `${selectedIds.size} elementos seleccionados`}
+            </span>
+          </div>
+
+          <div className="h-4 w-px bg-slate-700 hidden sm:block" />
+
+          <div className="flex items-center gap-3 ml-auto sm:ml-0">
+            <button
+              type="button"
+              onClick={handleSelectAllFiltered}
+              className="text-xs text-slate-300 hover:text-white underline font-semibold cursor-pointer"
+            >
+              {selectedIds.size === filteredImages.length
+                ? "Deseleccionar todos"
+                : `Seleccionar todos (${filteredImages.length})`}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleBatchDelete}
+              disabled={isDeletingBatch}
+              className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs flex items-center gap-2 shadow-lg shadow-rose-600/30 transition-all disabled:opacity-50 cursor-pointer"
+            >
+              {isDeletingBatch ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Eliminando...</span>
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Eliminar ({selectedIds.size})</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
       )}
