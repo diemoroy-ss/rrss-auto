@@ -9,7 +9,7 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc, collection, getDocs } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { HARDCODED_STYLES, promptCategories, PromptTemplate, getPromptCategories } from "../../lib/prompt-templates";
-import { DEFAULT_TEXT_TEMPLATES, TEXT_TEMPLATE_CATEGORIES } from "../../lib/text-templates";
+import { DEFAULT_TEXT_TEMPLATES, TEXT_TEMPLATE_CATEGORIES, TextTemplate } from "../../lib/text-templates";
 import { createButterflyRender, compositeImageClient, BadgeStyle } from "../../lib/image-compositor";
 import { removeLogoBackground } from "../../lib/logo-bg-remover";
 import LogoMark from "../../components/LogoMark";
@@ -346,6 +346,8 @@ export default function VendedoresPwaPage() {
     DEFAULT_TEXT_TEMPLATES[0]?.id || ""
   );
   const [textTemplateCategory, setTextTemplateCategory] = useState<string>("Todas");
+  const [textTemplateViewMode, setTextTemplateViewMode] = useState<"grid" | "list">("grid");
+  const [previewModalTemplate, setPreviewModalTemplate] = useState<TextTemplate | null>(null);
 
   // Sincronizar la plantilla seleccionada cuando el vendedor cambia de muestra (#1, #2, #3)
   useEffect(() => {
@@ -2681,15 +2683,38 @@ export default function VendedoresPwaPage() {
                         )}
                       </button>
 
-                      {/* SELECTOR DE PLANTILLAS DE TEXTO (LISTADO SELECCIONABLE) */}
+                      {/* SELECTOR DE PLANTILLAS DE TEXTO (CON PREVIEWS VISUALES) */}
                       <div className="rounded-2xl border border-emerald-200 bg-emerald-50/40 p-3 space-y-2.5">
                         <div className="flex items-center justify-between gap-2">
                           <label className="text-[11px] font-black uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
                             <span>📐</span> Elige la Plantilla de Texto:
                           </label>
-                          <span className="text-[10px] font-bold text-emerald-700 bg-white px-2 py-0.5 rounded-full border border-emerald-200">
-                            {DEFAULT_TEXT_TEMPLATES.length} diseños
-                          </span>
+                          <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-emerald-200">
+                            <button
+                              type="button"
+                              onClick={() => setTextTemplateViewMode("grid")}
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                                textTemplateViewMode === "grid"
+                                  ? "bg-emerald-600 text-white shadow-2xs"
+                                  : "text-slate-600 hover:text-emerald-700"
+                              }`}
+                              title="Ver como tarjetas con vista previa visual"
+                            >
+                              🎴 Previews
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setTextTemplateViewMode("list")}
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                                textTemplateViewMode === "list"
+                                  ? "bg-emerald-600 text-white shadow-2xs"
+                                  : "text-slate-600 hover:text-emerald-700"
+                              }`}
+                              title="Ver como lista compacta"
+                            >
+                              ☰ Lista
+                            </button>
+                          </div>
                         </div>
 
                         {/* Filtro de categorías de plantillas de texto */}
@@ -2713,85 +2738,241 @@ export default function VendedoresPwaPage() {
                           })}
                         </div>
 
-                        {/* Listado de plantillas seleccionables */}
-                        <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1">
-                          {DEFAULT_TEXT_TEMPLATES.filter(
-                            (tpl) =>
-                              textTemplateCategory === "Todas" ||
-                              tpl.category === textTemplateCategory
-                          ).map((tpl) => {
-                            const isSelected = selectedTextTemplateId === tpl.id;
-                            const isCurrentlyApplied = activePub?.textTemplateId === tpl.id;
-                            const layoutTag =
-                              tpl.layoutPosition === "split_left" || tpl.category === "Split Lateral"
-                                ? "Split Izquierdo"
-                                : tpl.headlineFont === "elegant_serif" || tpl.category === "Gourmet & Menú"
-                                ? "Portada Editorial"
-                                : tpl.category === "Ofertas Flash" || tpl.category === "Delivery"
-                                ? "Impacto Inferior"
-                                : "Cabecera Limpia";
+                        {/* VISTA 1: GRID DE TARJETAS CON PREVIEWS VISUALES */}
+                        {textTemplateViewMode === "grid" ? (
+                          <div className="grid grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1">
+                            {DEFAULT_TEXT_TEMPLATES.filter(
+                              (tpl) =>
+                                textTemplateCategory === "Todas" ||
+                                tpl.category === textTemplateCategory
+                            ).map((tpl) => {
+                              const isSelected = selectedTextTemplateId === tpl.id;
+                              const isCurrentlyApplied = activePub?.textTemplateId === tpl.id;
+                              const layoutTag =
+                                tpl.layoutPosition === "split_left" || tpl.category === "Split Lateral"
+                                  ? "Split Lateral"
+                                  : tpl.headlineFont === "elegant_serif" || tpl.category === "Gourmet & Menú"
+                                  ? "Editorial"
+                                  : tpl.category === "Ofertas Flash" || tpl.category === "Delivery"
+                                  ? "Impacto"
+                                  : "Cabecera";
 
-                            return (
-                              <div
-                                key={tpl.id}
-                                onClick={() => setSelectedTextTemplateId(tpl.id)}
-                                className={`p-2 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2 ${
-                                  isSelected
-                                    ? "bg-white border-emerald-500 ring-2 ring-emerald-500/20 shadow-xs"
-                                    : "bg-white/80 border-slate-200 hover:border-emerald-300 hover:bg-white"
-                                }`}
-                              >
-                                <div className="flex items-center gap-2.5 min-w-0">
-                                  {/* Muestra de color de la plantilla */}
-                                  <div className="flex flex-col gap-0.5 shrink-0">
-                                    <span
-                                      className="w-3.5 h-3.5 rounded-full border border-slate-300 shadow-2xs"
-                                      style={{ backgroundColor: tpl.priceBgColor || tpl.ctaBgColor || "#fbbf24" }}
-                                      title="Color de acento / precio"
+                              return (
+                                <div
+                                  key={tpl.id}
+                                  onClick={() => setSelectedTextTemplateId(tpl.id)}
+                                  className={`group relative rounded-xl overflow-hidden border cursor-pointer transition-all flex flex-col justify-between bg-slate-900 shadow-2xs ${
+                                    isSelected
+                                      ? "border-emerald-500 ring-2 ring-emerald-500/40 shadow-md scale-[1.01]"
+                                      : "border-slate-200 hover:border-emerald-300"
+                                  }`}
+                                >
+                                  {/* Imagen de muestra con overlay */}
+                                  <div className="aspect-[4/3] w-full relative overflow-hidden bg-slate-950">
+                                    <img
+                                      src={tpl.previewSampleImage || "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=400&q=80"}
+                                      alt={tpl.name}
+                                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 opacity-90"
                                     />
-                                    <span
-                                      className="w-3.5 h-2 rounded-sm border border-slate-300"
-                                      style={{ backgroundColor: tpl.badgeBgColor || "#0f172a" }}
-                                      title="Color de etiqueta"
-                                    />
-                                  </div>
-                                  <div className="min-w-0">
-                                    <div className="flex items-center gap-1.5">
-                                      <p className="text-xs font-black text-slate-800 truncate">
-                                        {tpl.name}
-                                      </p>
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/45 to-black/25 pointer-events-none" />
+
+                                    {/* Badge superior simulado con sus colores reales */}
+                                    <div className="absolute top-1.5 left-1.5 right-1.5 flex items-center justify-between gap-1 z-10 pointer-events-none">
+                                      <span
+                                        className="text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded shadow-sm truncate max-w-[75%]"
+                                        style={{
+                                          backgroundColor: tpl.badgeBgColor || "#0f172a",
+                                          color: tpl.badgeTextColor || "#ffffff",
+                                        }}
+                                      >
+                                        {tpl.badgeText || layoutTag}
+                                      </span>
+
                                       {isCurrentlyApplied && (
-                                        <span className="px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 text-[9px] font-black shrink-0">
-                                          Aplicada
+                                        <span className="px-1.5 py-0.5 rounded-full bg-emerald-500 text-white text-[8px] font-black shadow-sm shrink-0">
+                                          ✓ Activa
                                         </span>
                                       )}
                                     </div>
-                                    <p className="text-[10px] text-slate-500 truncate">
-                                      <span className="font-bold text-slate-600">{layoutTag}</span> · {tpl.category} · CTA: {tpl.ctaText}
-                                    </p>
+
+                                    {/* Botón lupa para ver preview en grande */}
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setPreviewModalTemplate(tpl);
+                                      }}
+                                      className="absolute bottom-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center text-[10px] z-10 transition-colors cursor-pointer shadow-md"
+                                      title="Ver diseño completo ampliado"
+                                    >
+                                      👁️
+                                    </button>
+
+                                    {/* Contenido inferior de la tarjeta */}
+                                    <div className="absolute bottom-1.5 left-1.5 right-8 text-left pointer-events-none space-y-0.5">
+                                      <p className="text-[10px] font-black text-white leading-tight drop-shadow truncate">
+                                        {tpl.name}
+                                      </p>
+                                      <div className="flex items-center gap-1">
+                                        {tpl.priceBadgePattern && (
+                                          <span
+                                            className="text-[8px] font-black px-1 py-0.2 rounded"
+                                            style={{
+                                              backgroundColor: tpl.priceBgColor || "#fbbf24",
+                                              color: tpl.priceTextColor || "#0f172a",
+                                            }}
+                                          >
+                                            {tpl.priceBadgePattern}
+                                          </span>
+                                        )}
+                                        <span
+                                          className="text-[7.5px] font-black uppercase px-1 py-0.2 rounded truncate max-w-[65px]"
+                                          style={{
+                                            backgroundColor: tpl.ctaBgColor || "#fbbf24",
+                                            color: tpl.ctaTextColor || "#0f172a",
+                                          }}
+                                        >
+                                          {tpl.ctaText}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Barra de acción rápida inferior */}
+                                  <div className="p-1.5 bg-white flex items-center justify-between gap-1 border-t border-slate-100">
+                                    <span className="text-[9px] font-bold text-slate-500 truncate">
+                                      {layoutTag}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      disabled={isRenderingPoster || isGeneratingSingleImg}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedTextTemplateId(tpl.id);
+                                        handleRenderAndSavePoster(selectedPreviewPubIndex, tpl.id);
+                                      }}
+                                      className={`px-2 py-0.5 rounded text-[9px] font-black transition-all cursor-pointer ${
+                                        isSelected
+                                          ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs"
+                                          : "bg-slate-100 hover:bg-emerald-600 hover:text-white text-slate-700"
+                                      }`}
+                                    >
+                                      {isRenderingPoster && isSelected ? "..." : "Aplicar"}
+                                    </button>
                                   </div>
                                 </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          /* VISTA 2: LISTADO CON MINIATURA DE FOTO */
+                          <div className="max-h-72 overflow-y-auto space-y-1.5 pr-1">
+                            {DEFAULT_TEXT_TEMPLATES.filter(
+                              (tpl) =>
+                                textTemplateCategory === "Todas" ||
+                                tpl.category === textTemplateCategory
+                            ).map((tpl) => {
+                              const isSelected = selectedTextTemplateId === tpl.id;
+                              const isCurrentlyApplied = activePub?.textTemplateId === tpl.id;
+                              const layoutTag =
+                                tpl.layoutPosition === "split_left" || tpl.category === "Split Lateral"
+                                  ? "Split Izquierdo"
+                                  : tpl.headlineFont === "elegant_serif" || tpl.category === "Gourmet & Menú"
+                                  ? "Portada Editorial"
+                                  : tpl.category === "Ofertas Flash" || tpl.category === "Delivery"
+                                  ? "Impacto Inferior"
+                                  : "Cabecera Limpia";
 
-                                <button
-                                  type="button"
-                                  disabled={isRenderingPoster || isGeneratingSingleImg}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedTextTemplateId(tpl.id);
-                                    handleRenderAndSavePoster(selectedPreviewPubIndex, tpl.id);
-                                  }}
-                                  className={`px-2.5 py-1 rounded-lg text-[10px] font-black shrink-0 transition-all cursor-pointer ${
+                              return (
+                                <div
+                                  key={tpl.id}
+                                  onClick={() => setSelectedTextTemplateId(tpl.id)}
+                                  className={`p-2 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2.5 ${
                                     isSelected
-                                      ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs"
-                                      : "bg-slate-100 hover:bg-emerald-600 hover:text-white text-slate-700"
+                                      ? "bg-white border-emerald-500 ring-2 ring-emerald-500/20 shadow-xs"
+                                      : "bg-white/80 border-slate-200 hover:border-emerald-300 hover:bg-white"
                                   }`}
                                 >
-                                  {isRenderingPoster && isSelected ? "..." : "Aplicar"}
-                                </button>
-                              </div>
-                            );
-                          })}
-                        </div>
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    {/* Thumbnail Preview de la Plantilla */}
+                                    <div className="relative w-12 h-12 rounded-lg overflow-hidden shrink-0 border border-slate-200 bg-slate-900 shadow-2xs">
+                                      <img
+                                        src={tpl.previewSampleImage || "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=200&q=80"}
+                                        alt={tpl.name}
+                                        className="w-full h-full object-cover"
+                                      />
+                                      <span
+                                        className="absolute bottom-0 inset-x-0 text-[7px] font-black text-center truncate px-0.5 py-0.2"
+                                        style={{
+                                          backgroundColor: tpl.badgeBgColor || "#0f172a",
+                                          color: tpl.badgeTextColor || "#ffffff",
+                                        }}
+                                      >
+                                        {layoutTag}
+                                      </span>
+                                    </div>
+
+                                    <div className="min-w-0">
+                                      <div className="flex items-center gap-1.5">
+                                        <p className="text-xs font-black text-slate-800 truncate">
+                                          {tpl.name}
+                                        </p>
+                                        {isCurrentlyApplied && (
+                                          <span className="px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 text-[9px] font-black shrink-0">
+                                            Aplicada
+                                          </span>
+                                        )}
+                                      </div>
+                                      <p className="text-[10px] text-slate-500 truncate">
+                                        <span className="font-bold text-slate-600">{layoutTag}</span> · {tpl.category}
+                                      </p>
+                                      <div className="flex items-center gap-1 pt-0.5">
+                                        <span
+                                          className="w-2.5 h-2.5 rounded-full border border-slate-300"
+                                          style={{ backgroundColor: tpl.priceBgColor || tpl.ctaBgColor || "#fbbf24" }}
+                                          title="Color de acento"
+                                        />
+                                        <span className="text-[9px] font-bold text-slate-600 truncate">
+                                          CTA: {tpl.ctaText}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setPreviewModalTemplate(tpl);
+                                      }}
+                                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer text-xs"
+                                      title="Ver preview completo"
+                                    >
+                                      👁️
+                                    </button>
+                                    <button
+                                      type="button"
+                                      disabled={isRenderingPoster || isGeneratingSingleImg}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedTextTemplateId(tpl.id);
+                                        handleRenderAndSavePoster(selectedPreviewPubIndex, tpl.id);
+                                      }}
+                                      className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                                        isSelected
+                                          ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs"
+                                          : "bg-slate-100 hover:bg-emerald-600 hover:text-white text-slate-700"
+                                      }`}
+                                    >
+                                      {isRenderingPoster && isSelected ? "..." : "Aplicar"}
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
 
                         {/* BOTÓN RENDERIZAR Y GUARDAR CARTEL CON LA PLANTILLA SELECCIONADA */}
                         <button
@@ -2821,6 +3002,116 @@ export default function VendedoresPwaPage() {
                           )}
                         </button>
                       </div>
+
+                      {/* MODAL DE PREVIEW AMPLIADO DE LA PLANTILLA */}
+                      {previewModalTemplate && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in">
+                          <div className="bg-white rounded-3xl max-w-sm w-full overflow-hidden shadow-2xl border border-slate-200 p-5 space-y-4 relative">
+                            <div className="flex items-center justify-between">
+                              <div className="min-w-0 pr-2">
+                                <h4 className="text-sm font-black text-slate-900 truncate">
+                                  {previewModalTemplate.name}
+                                </h4>
+                                <p className="text-[11px] text-slate-500">
+                                  {previewModalTemplate.category}
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setPreviewModalTemplate(null)}
+                                className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-xs font-black cursor-pointer"
+                              >
+                                ✕
+                              </button>
+                            </div>
+
+                            {/* Mockup visual grande del flyer */}
+                            <div className="aspect-square relative rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 shadow-md">
+                              <img
+                                src={previewModalTemplate.previewSampleImage || "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=600&q=80"}
+                                alt={previewModalTemplate.name}
+                                className="w-full h-full object-cover opacity-90"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-black/30 pointer-events-none" />
+
+                              {/* Badge superior */}
+                              <div className="absolute top-3 inset-x-3 flex justify-center pointer-events-none">
+                                <span
+                                  className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-lg"
+                                  style={{
+                                    backgroundColor: previewModalTemplate.badgeBgColor,
+                                    color: previewModalTemplate.badgeTextColor,
+                                  }}
+                                >
+                                  {previewModalTemplate.badgeText}
+                                </span>
+                              </div>
+
+                              {/* Textos y titular simulado */}
+                              <div className="absolute inset-x-4 bottom-4 text-center pointer-events-none space-y-2">
+                                <h3 className="font-serif italic text-xl font-black text-white leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
+                                  {previewModalTemplate.headlinePattern.replace(/\{PRODUCTO\}|\{PLATO\}/gi, dishOrProductName.trim() || prospectBusiness.trim() || "HAMBURGUESA ESPECIAL")}
+                                </h3>
+                                {previewModalTemplate.subheadlinePattern && (
+                                  <p className="text-xs text-white/90 font-medium drop-shadow line-clamp-2">
+                                    {previewModalTemplate.subheadlinePattern}
+                                  </p>
+                                )}
+
+                                <div className="flex items-center justify-center gap-2 pt-1">
+                                  {previewModalTemplate.priceBadgePattern && (
+                                    <span
+                                      className="px-2.5 py-1 rounded-md text-xs font-black shadow"
+                                      style={{
+                                        backgroundColor: previewModalTemplate.priceBgColor || "#fbbf24",
+                                        color: previewModalTemplate.priceTextColor || "#0f172a",
+                                      }}
+                                    >
+                                      {productPrice.trim() || previewModalTemplate.priceBadgePattern.replace("{PRECIO}", "$12.900")}
+                                    </span>
+                                  )}
+                                  <span
+                                    className="px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider shadow-md"
+                                    style={{
+                                      backgroundColor: previewModalTemplate.ctaBgColor,
+                                      color: previewModalTemplate.ctaTextColor,
+                                    }}
+                                  >
+                                    {previewModalTemplate.ctaText}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-200">
+                              {previewModalTemplate.description}
+                            </p>
+
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedTextTemplateId(previewModalTemplate.id);
+                                  handleRenderAndSavePoster(selectedPreviewPubIndex, previewModalTemplate.id);
+                                  setPreviewModalTemplate(null);
+                                }}
+                                disabled={isRenderingPoster || isGeneratingSingleImg}
+                                className="flex-1 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 cursor-pointer transition-all"
+                              >
+                                <FaCheck className="text-xs" />
+                                <span>Aplicar esta Plantilla</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setPreviewModalTemplate(null)}
+                                className="py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer transition-colors"
+                              >
+                                Cerrar
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                       <div className="flex gap-2">
                         {createdDemoId && (
