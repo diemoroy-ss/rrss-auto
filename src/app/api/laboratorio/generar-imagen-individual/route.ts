@@ -1,34 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminAuth, adminDb } from "../../../../lib/firebase-admin";
+import { HARDCODED_STYLES } from "../../../../lib/prompt-templates";
+import { DEFAULT_TEXT_TEMPLATES } from "../../../../lib/text-templates";
+import { generateFreeText } from "../../../../lib/gemini-free";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-// Invoca el webhook de n8n para UNA SOLA IMAGEN de forma individual
+// Invoca el webhook de n8n para UNA SOLA IMAGEN de forma individual respetando el estilo visual y foto base
 async function generateSingleImageWebhook(
   promptEnglish: string,
   rubro: string,
   productName: string,
-  aspectRatio: "1:1" | "9:16" = "1:1"
+  aspectRatio: "1:1" | "9:16" = "1:1",
+  baseImageUrl?: string
 ): Promise<string> {
   const width = aspectRatio === "9:16" ? 720 : 1080;
   const height = aspectRatio === "9:16" ? 1280 : 1080;
   const seed = Math.floor(Math.random() * 1000000);
 
+  const hasValidBase = Boolean(
+    baseImageUrl && typeof baseImageUrl === "string" && baseImageUrl.startsWith("http")
+  );
+
   try {
     const n8nWebhookUrl = "https://n8n.santisoft.cl/webhook/img-rrss-auto";
+    const promptWithRef = hasValidBase ? `${baseImageUrl} ${promptEnglish}` : promptEnglish;
     const n8nRes = await fetch(n8nWebhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        prompt: promptEnglish,
+        prompt: promptWithRef,
         promptEnglish,
+        baseImageUrl: hasValidBase ? baseImageUrl : undefined,
         businessType: rubro,
         rubro,
         dishOrProduct: productName,
         type: aspectRatio === "9:16" ? "story" : "rrss",
       }),
-      signal: AbortSignal.timeout(20000), // Hasta 20s para una sola imagen individual
+      signal: AbortSignal.timeout(25000), // Hasta 25s para una sola imagen individual
     });
 
     if (n8nRes.ok) {
@@ -50,8 +60,14 @@ async function generateSingleImageWebhook(
     console.warn("[Generar Imagen Individual] Webhook de n8n demoró o falló, usando Flux:", err);
   }
 
-  // Fallback a Flux (Pollinations)
-  return `https://image.pollinations.ai/prompt/${encodeURIComponent(promptEnglish)}?width=${width}&height=${height}&model=flux&nologo=true&enhance=true&seed=${seed}`;
+  // Fallback a Flux (Pollinations) limpiando cualquier URL para evitar errores HTTP
+  const cleanFluxPrompt = promptEnglish
+    .replace(/https?:\/\/\S+/gi, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 380);
+
+  return `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanFluxPrompt)}?width=${width}&height=${height}&model=flux&nologo=true&enhance=true&seed=${seed}`;
 }
 
 export async function POST(req: NextRequest) {
@@ -83,6 +99,12 @@ export async function POST(req: NextRequest) {
       idea,
       logoUrl,
       customBadgeText,
+      styleId = "",
+      styleTitle = "",
+      stylePrompt = "",
+      styleKeywords = "",
+      baseImageUrl = "",
+      templateId = "",
     } = body;
 
     if (!promptEnglish && !productName) {
@@ -92,19 +114,70 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log(`[Generar Imagen Individual] Solicitando imagen 1-a-1 para pub #${pubIndex + 1} ("${productName}" en ${rubro})...`);
+    // Buscar definición del estilo visual en HARDCODED_STYLES
+    const matchedStyle = HARDCODED_STYLES.find(
+      (h) =>
+        (styleId && h.id === styleId) ||
+        (styleTitle && h.title.toLowerCase() === String(styleTitle).toLowerCase())
+    );
+
+    const effectiveStyleTitle = styleTitle || matchedStyle?.title || "";
+    const effectiveStyleFormula = stylePrompt || matchedStyle?.prompt || "";
+    const effectiveStyleKeywords = styleKeywords || matchedStyle?.styleKeywords || "";
+
+    let styleCraftedPrompt = "";
+    if (effectiveStyleFormula) {
+      const populatedFormula = effectiveStyleFormula.includes("[")
+        ? effectiveStyleFormula.replace(/\[[^\]]+\]/g, productName)
+        : `${effectiveStyleFormula}, featuring ${productName}`;
+      styleCraftedPrompt = `MANDATORY VISUAL STYLE "${effectiveStyleTitle}": ${populatedFormula}. ${effectiveStyleKeywords ? `Keywords: ${effectiveStyleKeywords}.` : ""}`;
+    }
+
+    let combinedPrompt = styleCraftedPrompt
+      ? `${styleCraftedPrompt} ${promptEnglish.replace(/https?:\/\/\S+/gi, "")}`.trim()
+      : promptEnglish || `Commercial advertising photography of ${productName}, premium studio lighting, 8k resolution`;
+
+    // Si hay una foto base de referencia subida por el vendedor, analizarla con Gemini Vision para anclar la anatomía exacta del producto dentro del estilo
+    if (baseImageUrl && typeof baseImageUrl === "string" && baseImageUrl.startsWith("http")) {
+      try {
+        const visionPrompt = await generateFreeText(
+          `Analyze the product in the attached image ("${productName}"). Write a concise 60-word English photography prompt that recreates THIS EXACT product transformed into the visual style "${effectiveStyleTitle || 'Commercial High-End'}" (${effectiveStyleFormula || combinedPrompt}). Include clean negative space at top and bottom margins. Output ONLY the English prompt without quotes.`,
+          "You are an expert commercial photography director.",
+          false,
+          baseImageUrl,
+          "generate_post"
+        );
+        if (visionPrompt && visionPrompt.trim().length > 20) {
+          combinedPrompt = `${styleCraftedPrompt} ${visionPrompt.trim()}`.trim();
+        }
+      } catch (visionErr) {
+        console.warn("[Generar Imagen Individual] No se pudo anclar con visión, continuando con prompt de estilo:", visionErr);
+      }
+    }
+
+    // Asegurar que la imagen generada no tenga letras incrustadas del modelo de difusión
+    combinedPrompt = `${combinedPrompt}, clean background with breathing room at top and bottom margins, 8k resolution, STRICT NEGATIVE: no text, no typography, no letters, no words, no numbers, no watermarks`;
+
+    console.log(`[Generar Imagen Individual] Solicitando imagen 1-a-1 para pub #${pubIndex + 1} ("${productName}" en estilo "${effectiveStyleTitle || 'Comercial'}")...`);
 
     // Llamar al webhook para ESTA SOLA IMAGEN
-    const effectivePrompt = promptEnglish || `Commercial advertising photography of ${productName}, premium studio lighting, 8k resolution`;
     const baseRawImageUrl = await generateSingleImageWebhook(
-      effectivePrompt,
+      combinedPrompt,
       rubro,
       productName,
-      aspectRatio === "9:16" ? "9:16" : "1:1"
+      aspectRatio === "9:16" ? "9:16" : "1:1",
+      baseImageUrl || undefined
     );
 
     let finalComposedUrl = baseRawImageUrl;
     let commercialEditId: string | undefined;
+    let appliedTemplateId = templateId;
+    let appliedTemplateName = "";
+
+    // Elegir plantilla de texto al azar de DEFAULT_TEXT_TEMPLATES si no viene forzada
+    const randomTpl =
+      DEFAULT_TEXT_TEMPLATES.find((t) => t.id === templateId) ||
+      DEFAULT_TEXT_TEMPLATES[Math.floor(Math.random() * DEFAULT_TEXT_TEMPLATES.length)];
 
     // Si se envió demoId, consultar datos y actualizar en Firestore
     if (demoId && adminDb) {
@@ -122,21 +195,26 @@ export async function POST(req: NextRequest) {
               const { composeCommercialSlideWithEditor } = await import("../../../../lib/real-product-compositor");
               const composed = await composeCommercialSlideWithEditor({
                 baseImageUrl: baseRawImageUrl,
+                fallbackImageUrl: baseImageUrl || demoData?.baseImageUrl || matchedStyle?.previewUrl,
                 productName: productName || targetPub.dishOrProductName || "Producto",
-                productDescription: productDescription || targetPub.description || targetPub.title || "",
+                productDescription: productDescription || targetPub.description || demoData?.offerText || targetPub.title || "",
                 price: price || targetPub.productPrice || "",
                 idea: idea || targetPub.hook || targetPub.title || "",
                 rubro: rubro || demoData?.rubro || "Comercio",
-                businessName: businessName || demoData?.businessName || "Negocio",
+                businessName: businessName || demoData?.prospectBusiness || demoData?.businessName || "Negocio",
                 aspectRatio: aspectRatio === "9:16" ? "9:16" : "1:1",
                 logoUrl: logoUrl || demoData?.logoUrl || undefined,
                 userId: uid,
                 includeLogo: Boolean(logoUrl || demoData?.logoUrl),
                 saveEditableInLibrary: true,
                 customBadgeText: customBadgeText || targetPub.badgeCustomText || "",
+                skipAgentCopy: true,
+                templateId: randomTpl?.id,
               });
               finalComposedUrl = composed.finalImageUrl;
               commercialEditId = composed.editDocId;
+              appliedTemplateId = composed.templateId || randomTpl?.id || "";
+              appliedTemplateName = composed.templateName || randomTpl?.name || "";
             } catch (cErr) {
               console.warn("[Generar Imagen Individual] Error componiendo texto comercial con editor:", cErr);
             }
@@ -152,6 +230,8 @@ export async function POST(req: NextRequest) {
               ...targetPub,
               imageUrl: finalComposedUrl,
               baseImageUrl: baseRawImageUrl,
+              textTemplateId: appliedTemplateId || targetPub.textTemplateId,
+              textTemplateName: appliedTemplateName || targetPub.textTemplateName,
               ...(isCarousel ? { carouselImages: updatedCarouselImages } : {}),
               ...(commercialEditId ? { commercialEditId } : {}),
             };
@@ -170,6 +250,7 @@ export async function POST(req: NextRequest) {
         const { composeCommercialSlideWithEditor } = await import("../../../../lib/real-product-compositor");
         const composed = await composeCommercialSlideWithEditor({
           baseImageUrl: baseRawImageUrl,
+          fallbackImageUrl: baseImageUrl || matchedStyle?.previewUrl,
           productName,
           productDescription: productDescription || "",
           price: price || "",
@@ -182,8 +263,12 @@ export async function POST(req: NextRequest) {
           includeLogo: Boolean(logoUrl),
           saveEditableInLibrary: true,
           customBadgeText: customBadgeText || "",
+          skipAgentCopy: true,
+          templateId: randomTpl?.id,
         });
         finalComposedUrl = composed.finalImageUrl;
+        appliedTemplateId = composed.templateId || randomTpl?.id || "";
+        appliedTemplateName = composed.templateName || randomTpl?.name || "";
       } catch (cErr) {
         console.warn("[Generar Imagen Individual] Error componiendo texto comercial:", cErr);
       }
@@ -193,6 +278,8 @@ export async function POST(req: NextRequest) {
       success: true,
       imageUrl: finalComposedUrl,
       baseImageUrl: baseRawImageUrl,
+      templateId: appliedTemplateId,
+      templateName: appliedTemplateName,
       pubIndex,
     });
   } catch (error: any) {

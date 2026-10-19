@@ -1,10 +1,11 @@
 import { adminDb, adminStorage } from "./firebase-admin";
 import { generateBannerCopyWithAgent, BannerCopyResult } from "./agents/agent-banner-copy";
-import { composeBannerOnImage } from "./banner-compositor";
+import { composeBannerOnImage, resolveTextTemplate } from "./banner-compositor";
 import { LayoutPosition, IngredientItem } from "./text-templates";
 
 export interface RealProductBannerParams {
   baseImageUrl: string;
+  fallbackImageUrl?: string;
   productName: string;
   productDescription?: string;
   price?: string;
@@ -22,6 +23,7 @@ export interface RealProductBannerParams {
   saveEditableInLibrary?: boolean;
   customBadgeText?: string;
   skipAgentCopy?: boolean;
+  templateId?: string;
 }
 
 export interface ComposedCommercialSlideResult {
@@ -29,6 +31,8 @@ export interface ComposedCommercialSlideResult {
   editDocId?: string;
   renderId?: string;
   textLayers?: any[];
+  templateId?: string;
+  templateName?: string;
 }
 
 /**
@@ -67,14 +71,15 @@ export async function composeCommercialSlideWithEditor(
 ): Promise<ComposedCommercialSlideResult> {
   const {
     baseImageUrl,
+    fallbackImageUrl,
     productName,
     productDescription = "",
     price = "",
     idea = "",
     rubro = "Gastronomía",
     businessName = "Mi Negocio",
-    fontStyle = "bold_modern",
-    layoutPosition = "top_banner",
+    fontStyle,
+    layoutPosition,
     secondaryScript,
     ingredients,
     aspectRatio = "1:1",
@@ -84,31 +89,37 @@ export async function composeCommercialSlideWithEditor(
     saveEditableInLibrary = false,
     customBadgeText = "",
     skipAgentCopy = false,
+    templateId,
   } = params;
 
   const isVertical = aspectRatio === "9:16";
+  const resolvedTpl = resolveTextTemplate(templateId);
+  const effectiveFontStyle = fontStyle || resolvedTpl.headlineFont || "bold_modern";
+  const effectiveLayoutPosition = layoutPosition || resolvedTpl.layoutPosition || "top_banner";
 
-  console.log(`[RealProductCompositor] Procesando foto real de "${productName}" para ${businessName} (Layout: ${layoutPosition}, Font: ${fontStyle})...`);
+  console.log(`[RealProductCompositor] Procesando "${productName}" para ${businessName} | Plantilla: "${resolvedTpl.name}" (${resolvedTpl.id})...`);
 
-  // 1. Textos Publicitarios (Ultra-rápido: si ya se proporcionaron o skipAgentCopy=true, no invocar Gemini secundario)
+  // 1. Textos Publicitarios alimentados por la plantilla seleccionada y los datos del producto
   let bannerCopy: BannerCopyResult;
   if (skipAgentCopy || productName || customBadgeText || price) {
     bannerCopy = {
       badgeText: (customBadgeText && customBadgeText.trim())
         ? customBadgeText.trim().toUpperCase()
-        : (price && price.trim() ? `🔥 OFERTA ${price.trim()}` : "⭐ DESTACADO"),
+        : (resolvedTpl.badgeText || "⭐ ESPECIALIDAD"),
       mainHeadline: productName && productName.trim() ? productName.trim().toUpperCase() : "OFERTA EXCLUSIVA",
       benefitText: (productDescription && productDescription.trim())
         ? productDescription.trim()
-        : "Elaboración propia con ingredientes seleccionados",
-      ctaText: businessName && businessName.trim() ? `📍 ${businessName.trim()}` : "¡ORDENA HOY!",
+        : (resolvedTpl.subheadlinePattern || "Elaboración propia con ingredientes seleccionados"),
+      ctaText: businessName && businessName.trim()
+        ? `${resolvedTpl.ctaText || "¡ORDENA HOY!"} · ${businessName.trim()}`
+        : (resolvedTpl.ctaText || "¡ORDENA HOY!"),
       visualTheme: "food_bold",
-      badgeBgColor: "#fbbf24",
-      badgeTextColor: "#0f172a",
-      headlineColor: "#ffffff",
+      badgeBgColor: resolvedTpl.badgeBgColor || "#fbbf24",
+      badgeTextColor: resolvedTpl.badgeTextColor || "#0f172a",
+      headlineColor: resolvedTpl.headlineColor || "#ffffff",
       benefitBgColor: "rgba(15, 23, 42, 0.85)",
       benefitTextColor: "#ffffff",
-      accentColor: "#fbbf24",
+      accentColor: resolvedTpl.ctaBgColor || "#fbbf24",
     };
   } else {
     try {
@@ -123,25 +134,23 @@ export async function composeCommercialSlideWithEditor(
     } catch (err: any) {
       console.warn("[RealProductCompositor] Warning generando micro-copy con agente, usando defaults:", err);
       bannerCopy = {
-        badgeText: price ? `🔥 ${price}` : "⭐ DESTACADO",
+        badgeText: resolvedTpl.badgeText || "⭐ DESTACADO",
         mainHeadline: productName.toUpperCase(),
-        benefitText: productDescription.slice(0, 45) || "Elaboración propia con ingredientes frescos",
-        ctaText: `📍 ${businessName}`,
+        benefitText: productDescription.slice(0, 45) || resolvedTpl.subheadlinePattern || "Calidad garantizada",
+        ctaText: resolvedTpl.ctaText || `📍 ${businessName}`,
         visualTheme: "food_bold",
-        badgeBgColor: "#fbbf24",
-        badgeTextColor: "#0f172a",
-        headlineColor: "#ffffff",
+        badgeBgColor: resolvedTpl.badgeBgColor || "#fbbf24",
+        badgeTextColor: resolvedTpl.badgeTextColor || "#0f172a",
+        headlineColor: resolvedTpl.headlineColor || "#ffffff",
         benefitBgColor: "rgba(15, 23, 42, 0.85)",
         benefitTextColor: "#ffffff",
-        accentColor: "#fbbf24",
+        accentColor: resolvedTpl.ctaBgColor || "#fbbf24",
       };
     }
   }
 
   if (customBadgeText && customBadgeText.trim()) {
     bannerCopy.badgeText = customBadgeText.trim().toUpperCase();
-  } else if (price && price.trim()) {
-    bannerCopy.badgeText = `🔥 OFERTA ${price.trim()}`;
   }
 
   if (productName && productName.trim()) {
@@ -158,10 +167,10 @@ export async function composeCommercialSlideWithEditor(
   let builtTextLayers: any[] = [];
 
   try {
-    const selectedFont = mapFontFamily(fontStyle);
-    const isScript = fontStyle === "script_handwritten";
-    const isSplit = layoutPosition === "split_left";
-    const isRecipe = layoutPosition === "recipe_ingredients";
+    const selectedFont = mapFontFamily(effectiveFontStyle);
+    const isScript = effectiveFontStyle === "script_handwritten";
+    const isSplit = effectiveLayoutPosition === "split_left";
+    const isRecipe = effectiveLayoutPosition === "recipe_ingredients";
 
     let textLayers: any[];
 
@@ -344,16 +353,18 @@ export async function composeCommercialSlideWithEditor(
     console.warn("[RealProductCompositor] Error registrando capas, continuando:", err?.message || err);
   }
 
-  // Composición inmediata con motor Sharp de alta velocidad (80ms)
-  console.log(`[RealProductCompositor] Ejecutando compositor Sharp de alta velocidad...`);
+  // Composición inmediata con motor Sharp de alta velocidad y plantilla limpia
+  console.log(`[RealProductCompositor] Ejecutando compositor Sharp con plantilla "${resolvedTpl.name}"...`);
   const sharpUrl = await composeBannerOnImage({
     baseImageUrl,
+    fallbackImageUrl,
     bannerCopy,
     price,
     logoUrl,
     userId,
     aspectRatio,
     includeLogo,
+    templateId: resolvedTpl.id,
   });
 
   if (saveEditableInLibrary && adminDb) {
@@ -400,6 +411,8 @@ export async function composeCommercialSlideWithEditor(
     editDocId: savedEditDocId,
     renderId: savedRenderId,
     textLayers: builtTextLayers,
+    templateId: resolvedTpl.id,
+    templateName: resolvedTpl.name,
   };
 }
 

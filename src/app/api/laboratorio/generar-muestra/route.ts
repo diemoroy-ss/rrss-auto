@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { adminAuth, adminDb } from "../../../../lib/firebase-admin";
 import { generateFreeText } from "../../../../lib/gemini-free";
 import { HARDCODED_STYLES } from "../../../../lib/prompt-templates";
+import { DEFAULT_TEXT_TEMPLATES } from "../../../../lib/text-templates";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120; // Hasta 2 minutos para orquestar los agentes
@@ -38,34 +39,110 @@ interface GenerateMuestraPayload {
   baseImageUrl?: string;
 }
 
-// Genera una imagen vía n8n con timeout ultra-ágil o entrega instantánea
+/**
+ * Resuelve la definición completa de un estilo visual buscando en HARDCODED_STYLES
+ * para contar siempre con su fórmula maestra (`prompt`), `styleKeywords` e `imageGenBehavior`.
+ */
+function enrichSelectedStyle(rawStyle: any) {
+  if (!rawStyle) return null;
+  const matched = HARDCODED_STYLES.find(
+    (h) =>
+      (rawStyle.id && h.id === rawStyle.id) ||
+      (rawStyle.title && h.title.toLowerCase() === String(rawStyle.title).toLowerCase())
+  );
+  if (!matched) return rawStyle;
+  return {
+    ...matched,
+    ...rawStyle,
+    prompt: rawStyle.prompt || matched.prompt,
+    styleKeywords: rawStyle.styleKeywords || matched.styleKeywords,
+    description: rawStyle.description || matched.description,
+    previewUrl: rawStyle.previewUrl || matched.previewUrl,
+    imageGenBehavior: rawStyle.imageGenBehavior || matched.imageGenBehavior || "product",
+  };
+}
+
+/**
+ * Construye el prompt en inglés inyectando el producto dentro de la fórmula maestra del estilo visual.
+ */
+function buildStyledImagePrompt(
+  styleObj: any,
+  productSubject: string,
+  extraSceneDetail: string
+): string {
+  const cleanSubject = productSubject.trim() || "featured commercial product";
+  if (!styleObj) {
+    return `${extraSceneDetail || `Professional commercial studio photography of ${cleanSubject}`}, clean composition with breathing room for overlays, 8k resolution, photorealistic, STRICT NEGATIVE: no text, no typography, no letters, no words, no watermarks`;
+  }
+
+  let masterFormula = String(styleObj.prompt || "");
+  if (masterFormula.includes("[")) {
+    masterFormula = masterFormula.replace(/\[[^\]]+\]/g, cleanSubject);
+  } else if (masterFormula) {
+    masterFormula = `${masterFormula}, featuring ${cleanSubject}`;
+  } else {
+    masterFormula = `Commercial photography of ${cleanSubject} in "${styleObj.title}" style (${styleObj.description || ""})`;
+  }
+
+  const keywords = styleObj.styleKeywords ? `Style keywords: ${styleObj.styleKeywords}.` : "";
+  const detail = extraSceneDetail ? `Scene details: ${extraSceneDetail}.` : "";
+
+  return `MANDATORY VISUAL STYLE "${styleObj.title}": ${masterFormula}. ${keywords} ${detail} Centered/balanced hero subject with clean negative space at top and bottom margins, 8k resolution, ultra-detailed commercial photography, STRICT NEGATIVE: no text, no typography, no letters, no words, no numbers, no price tags, no watermarks`.trim();
+}
+
+/**
+ * Selecciona N plantillas de texto distintas al azar de DEFAULT_TEXT_TEMPLATES,
+ * procurando variedad de disposiciones (superior, split lateral, editorial, inferior).
+ */
+function pickDistinctRandomTextTemplates(count: number) {
+  const shuffled = [...DEFAULT_TEXT_TEMPLATES].sort(() => Math.random() - 0.5);
+  const picked: typeof DEFAULT_TEXT_TEMPLATES = [];
+  for (const tpl of shuffled) {
+    if (picked.length < count) {
+      picked.push(tpl);
+    }
+  }
+  while (picked.length < count && DEFAULT_TEXT_TEMPLATES.length > 0) {
+    picked.push(DEFAULT_TEXT_TEMPLATES[picked.length % DEFAULT_TEXT_TEMPLATES.length]);
+  }
+  return picked;
+}
+
+/**
+ * Genera una imagen transformada según el estilo visual vía n8n o Flux (Pollinations).
+ * NUNCA devuelve la imagen estática de preview del estilo como resultado principal.
+ */
 async function generateSingleImage(
   promptEnglish: string,
   rubro: string,
   productName: string,
   aspectRatio: "1:1" | "9:16" = "1:1",
-  timeoutMs = 0,
-  fallbackUrl?: string
+  timeoutMs = 14000,
+  baseImageUrl?: string
 ): Promise<string> {
   const width = aspectRatio === "9:16" ? 720 : 1080;
   const height = aspectRatio === "9:16" ? 1280 : 1080;
   const seed = Math.floor(Math.random() * 1000000);
 
-  // Si hay fallbackUrl de estilo visual verificado (previewUrl de la plantilla seleccionada), usarlo de inmediato
-  if (fallbackUrl && typeof fallbackUrl === "string" && fallbackUrl.startsWith("http")) {
-    return fallbackUrl;
-  }
+  const hasValidBaseImage = Boolean(
+    baseImageUrl && typeof baseImageUrl === "string" && baseImageUrl.startsWith("http")
+  );
 
-  // Si timeoutMs > 0, intentar n8n con timeout muy breve (máx 2.5s)
+  // 1. Intentar webhook de n8n (soporta imagen base de referencia + prompt del estilo)
   if (timeoutMs > 0) {
     try {
       const n8nWebhookUrl = "https://n8n.santisoft.cl/webhook/img-rrss-auto";
+      const promptWithRef = hasValidBaseImage
+        ? `${baseImageUrl} ${promptEnglish}`
+        : promptEnglish;
+
       const n8nRes = await fetch(n8nWebhookUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          prompt: promptEnglish,
+          prompt: promptWithRef,
           promptEnglish,
+          baseImageUrl: hasValidBaseImage ? baseImageUrl : undefined,
           businessType: rubro,
           rubro,
           dishOrProduct: productName,
@@ -90,12 +167,18 @@ async function generateSingleImage(
         }
       }
     } catch {
-      // Si n8n demora o falla, continuar al fallback inmediato
+      // Si n8n demora o falla, continuar al generador Flux con el prompt del estilo
     }
   }
 
-  // Fallback rápido a Flux (Pollinations)
-  return `https://image.pollinations.ai/prompt/${encodeURIComponent(promptEnglish)}?width=${width}&height=${height}&model=flux&nologo=true&enhance=true&seed=${seed}`;
+  // 2. Fallback a Flux (Pollinations) limpiando URLs y acotando longitud para evitar errores HTTP
+  const cleanFluxPrompt = promptEnglish
+    .replace(/https?:\/\/\S+/gi, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 380);
+
+  return `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanFluxPrompt)}?width=${width}&height=${height}&model=flux&nologo=true&enhance=true&seed=${seed}`;
 }
 
 export async function POST(req: NextRequest) {
@@ -121,7 +204,6 @@ export async function POST(req: NextRequest) {
       phone = "",
       website = "",
       catalogItems = [],
-      catalogUsage = "mixed",
       selectedStyles = [],
       visualStyleSource = "preset_styles",
       commercialIdea = "",
@@ -139,6 +221,12 @@ export async function POST(req: NextRequest) {
 
     const isCommercialImageEngine = visualStyleSource === "commercial_image";
 
+    // Enriquecer los estilos seleccionados con HARDCODED_STYLES para tener siempre su fórmula `.prompt`
+    const enrichedStyles = (Array.isArray(selectedStyles) && selectedStyles.length > 0
+      ? selectedStyles.map(enrichSelectedStyle).filter(Boolean)
+      : HARDCODED_STYLES.slice(0, 3)
+    );
+
     // Normalizar modo visual: "con_texto", "sin_texto" o "mixto"
     const finalImageTextMode: "con_texto" | "sin_texto" | "mixto" = isCommercialImageEngine
       ? (commercialIncludeText === false ? "sin_texto" : "con_texto")
@@ -151,13 +239,13 @@ export async function POST(req: NextRequest) {
     // Validar cantidad: mínimo 1 y máximo 3
     const clampedCount = Math.max(1, Math.min(3, Number(postsCount) || 3));
 
-    // Validar tipos de publicaciones: solo "post" y "carrusel" (sin reels)
+    // Validar tipos de publicaciones de muestra: solo "post" y "carrusel"
     const validAllowedTypes = (Array.isArray(allowedTypes) && allowedTypes.length > 0)
       ? allowedTypes.filter((t) => ["post", "carrusel"].includes(t))
       : ["post", "carrusel"];
     const finalAllowedTypes = validAllowedTypes.length > 0 ? validAllowedTypes : ["post", "carrusel"];
 
-    console.log(`[Lab Generar Muestra] Solicitando ${clampedCount} publicaciones de muestra y plan de 5 posts de nicho para ${businessName} (${rubro}). Motor: ${visualStyleSource}. Modo imagen: ${finalImageTextMode}. Formatos:`, finalAllowedTypes);
+    console.log(`[Lab Generar Muestra] Solicitando ${clampedCount} publicaciones de muestra y plan de 5 posts de nicho para ${businessName} (${rubro}). Motor: ${visualStyleSource}. Modo imagen: ${finalImageTextMode}. Estilos:`, enrichedStyles.map((s: any) => s.title));
 
     // Preparar contexto del catálogo
     const catalogFormatted = catalogItems.length > 0
@@ -167,13 +255,20 @@ export async function POST(req: NextRequest) {
         }).join("\n")
       : "No se proporcionó catálogo explícito.";
 
-    // Preparar estilos visuales seleccionados (hasta 3)
+    // Preparar estilos visuales seleccionados (hasta 3) con su fórmula maestra
     const stylesContext = isCommercialImageEngine
       ? `Motor de Imagen Comercial Activo (Fondo comercial limpio + Capas vectoriales de nuestro editor). Idea visual solicitada: "${commercialIdea || body.offerText || body.dishOrProductName || `Destacar lo mejor de ${businessName} en ${rubro}`}". ${commercialCustomText ? `Texto comercial solicitado en capas: "${commercialCustomText}".` : ""}`
-      : selectedStyles.length > 0
-      ? `Estilos visuales seleccionados para las muestras:\n` +
-        selectedStyles.slice(0, 3).map((s, i) => `- Muestra #${i + 1} -> Estilo: "${s.title}" (${s.description}) [Keywords: ${s.styleKeywords || s.description}]`).join("\n")
-      : HARDCODED_STYLES.slice(0, 3).map((s, i) => `- Muestra #${i + 1} -> Estilo: "${s.title}" (${s.description})`).join("\n");
+      : enrichedStyles.slice(0, 3).map((s: any, i: number) =>
+          `- Muestra #${i + 1} -> Estilo OBLIGATORIO: "${s.title}" | Descripción: ${s.description} | Fórmula Fotográfica en Inglés: "${s.prompt}" | Keywords: ${s.styleKeywords || s.description}`
+        ).join("\n");
+
+    // Imagen de referencia subida por el vendedor (o del primer producto del catálogo)
+    const referenceImgUrl =
+      (body.baseImageUrl && typeof body.baseImageUrl === "string" && body.baseImageUrl.startsWith("http"))
+        ? body.baseImageUrl
+        : (catalogItems[0]?.imageUrl && typeof catalogItems[0]?.imageUrl === "string" && catalogItems[0].imageUrl.startsWith("http"))
+        ? catalogItems[0].imageUrl
+        : undefined;
 
     // Tono de voz de los agentes
     const toneMap: Record<string, string> = {
@@ -188,7 +283,7 @@ export async function POST(req: NextRequest) {
     const systemPrompt = `Eres el Director Creativo y Estratega Senior de nuestro equipo de agentes especializados.
 Tu misión es estructurar:
 1. Una PLANIFICACIÓN SEMANAL ESTRATÉGICA acotada a EXACTAMENTE 5 PUBLICACIONES en 'strategy.schedulePlan' basadas en el Radar de Nicho para "${businessName}" en el rubro "${rubro}".
-2. EXACTAMENTE ${clampedCount} publicaciones de muestra completas ('publications') diseñadas según los estilos visuales seleccionados.
+2. EXACTAMENTE ${clampedCount} publicaciones de muestra completas ('publications') diseñadas estrictamente según los estilos visuales seleccionados.
 
 REGLAS ABSOLUTAS:
 1. FORMATOS PERMITIDOS:
@@ -206,21 +301,20 @@ REGLAS ABSOLUTAS:
    - CERO frases robóticas ("en el vertiginoso mundo", "descubre", "sumérgete", "en conclusión").
    - NUNCA menciones "IA" o "Inteligencia Artificial". Refiérete siempre a "nuestros agentes" o "nuestro equipo de agentes especializados".
 
-3. ASIGNACIÓN ESTRICTA DE ESTILOS VISUALES EN LAS MUESTRAS:
-   - Para la publicación 1 ('pub_1'): Asigna OBLIGATORIAMENTE el Estilo #1: "${selectedStyles[0]?.title || 'Estilo Comercial'}".
-   - Para la publicación 2 ('pub_2'): Asigna OBLIGATORIAMENTE el Estilo #2: "${selectedStyles[1]?.title || selectedStyles[0]?.title || 'Estilo Comercial'}".
-   - Para la publicación 3 ('pub_3'): Asigna OBLIGATORIAMENTE el Estilo #3: "${selectedStyles[2]?.title || selectedStyles[0]?.title || 'Estilo Comercial'}".
-   Cada publicación DEBE tener un estilo visual diferente e indicar en 'visualStyleTitle' el nombre exacto del estilo asignado. En 'imagePromptEnglish', incluye de forma predominante la dirección de arte, paleta de color e iluminación de dicho estilo.
+3. ASIGNACIÓN ESTRICTA DE ESTILOS VISUALES Y USO DE IMAGEN BASE EN LAS MUESTRAS:
+   - Para la publicación 1 ('pub_1'): Asigna OBLIGATORIAMENTE el Estilo #1: "${enrichedStyles[0]?.title || 'Estilo Comercial'}".
+   - Para la publicación 2 ('pub_2'): Asigna OBLIGATORIAMENTE el Estilo #2: "${enrichedStyles[1]?.title || enrichedStyles[0]?.title || 'Estilo Comercial'}".
+   - Para la publicación 3 ('pub_3'): Asigna OBLIGATORIAMENTE el Estilo #3: "${enrichedStyles[2]?.title || enrichedStyles[0]?.title || 'Estilo Comercial'}".
+   - ${referenceImgUrl ? "SE ADJUNTÓ UNA FOTO REAL DEL PRODUCTO COMO IMAGEN BASE: Analiza visualmente el producto exacto de la foto adjunta (sus ingredientes, forma, colores, pan, queso, envase o textura) y descríbelo con precisión en inglés dentro de 'imagePromptEnglish', TRANSFORMÁNDOLO completamente al estilo visual asignado de cada muestra (ej. si el estilo es 'Explosión Controlada', los ingredientes de esa hamburguesa o producto flotan en el aire con iluminación dramática; si es 'Magazine Cover', aparece con estética editorial de revista de alta gama)." : "Si no hay foto adjunta, toma el producto o servicio indicado ('" + (body.dishOrProductName || businessName) + "') como sujeto protagonista para transformarlo en cada uno de los estilos seleccionados."}
+   - IMPORTANTE SOBRE TEXTO EN LA IMAGEN: En 'imagePromptEnglish' y 'carouselPrompts', NUNCA pidas que el generador de imágenes dibuje letras ni tipografías dentro de la foto. Describe únicamente la fotografía escénica en el estilo visual seleccionado con espacio limpio arriba y abajo ('STRICT NEGATIVE: no text, no typography, no letters, no watermarks'), ya que nuestro motor de plantillas vectoriales estampará los textos comerciales limpios encima.
 
-4. CARTEL COMERCIAL & TEXTOS EN IMAGEN (MOTOR: ${isCommercialImageEngine ? "IMAGEN COMERCIAL CON CAPAS" : finalImageTextMode.toUpperCase()}):
+4. MODO DE CARTEL COMERCIAL (${finalImageTextMode.toUpperCase()}):
    ${
-     isCommercialImageEngine
-       ? "ESTÁS USANDO EL MOTOR DE IMAGEN COMERCIAL CON CAPAS DE NUESTRO EDITOR: En 'imagePromptEnglish' y 'carouselPrompts', describe una escena fotográfica o estudio comercial de altísima estética con el sujeto/producto en el 60% inferior y un área limpia de espacio negativo (copyspace) en el 35%-40% superior, e indica ESTRICTAMENTE: 'clean background photography, negative space in upper third, STRICT NEGATIVE: no text, no typography, no letters, no words, no watermarks'. Nuestro motor de capas estampará los textos comerciales limpios encima."
-       : finalImageTextMode === "con_texto"
-       ? "TODAS las publicaciones deben ser diseñadas como CARTEL COMERCIAL con tipografía publicitaria integrada ('isCommercialPoster': true). En 'imagePromptEnglish', incluye instrucciones explícitas de layout publicitario con titular en mayúsculas, subtítulo, badge de precio destacado (ej: '$24.900') y botón o sticker con llamado a la acción ('¡ORDENA AHORA!')."
+     finalImageTextMode === "con_texto"
+       ? "Marca 'isCommercialPoster': true en todas las muestras para que nuestro motor de plantillas vectoriales estampe el titular, precio y llamado a la acción."
        : finalImageTextMode === "sin_texto"
-       ? "TODAS las publicaciones deben ser diseñadas como FOTOGRAFÍA LIMPIA sin textos superpuestos ('isCommercialPoster': false). En 'imagePromptEnglish', describe una fotografía comercial, editorial o de autor de alta estética centrada en el producto o servicio, indicando explícitamente: clean photography without text, no typography, no words, no overlays."
-       : "Esta planificación es MIXTA: debes combinar publicaciones tipo CARTEL COMERCIAL ('isCommercialPoster': true) con tipografía visible de oferta y precio, y publicaciones de FOTOGRAFÍA LIMPIA ('isCommercialPoster': false) con alta estética y sin ningún texto superpuesto sobre la imagen. Alterna los formatos entre las publicaciones."
+       ? "Marca 'isCommercialPoster': false en todas las muestras para entregar fotografía pura sin textos."
+       : "Modo MIXTO: alterna 'isCommercialPoster': true y false entre las muestras."
    }
 
 5. CONTACTO Y LLAMADO A LA ACCIÓN:
@@ -256,11 +350,10 @@ Devuelve ÚNICAMENTE un objeto JSON válido con las claves "strategy" y "publica
       }
     ],
     "schedulePlan": [
-      // EXACTAMENTE 5 PUBLICACIONES ESTRATÉGICAS DEL RADAR DE NICHO:
       {
         "day": "Día sugerido (ej. Martes)",
         "time": "Horario óptimo (ej. 20:00 hrs)",
-        "format": "post" | "carrusel",
+        "format": "post" | "carrusel" | "reel" | "historia",
         "objective": "Objetivo comercial de esta publicación",
         "hook": "Gancho magnético usado para capturar la atención"
       }
@@ -272,7 +365,6 @@ Devuelve ÚNICAMENTE un objeto JSON válido con las claves "strategy" y "publica
     ]
   },
   "publications": [
-    // EXACTAMENTE ${clampedCount} PUBLICACIONES DE MUESTRA COMPLETAS:
     {
       "id": "pub_1",
       "type": "post" | "carrusel",
@@ -282,10 +374,10 @@ Devuelve ÚNICAMENTE un objeto JSON válido con las claves "strategy" y "publica
       "hook": "Gancho magnético para detener el scroll",
       "copy": "Texto completo y humanizado listo para publicar en redes",
       "cta": "Llamado a la acción con canal de contacto",
-      "visualStyleTitle": "Nombre del estilo visual aplicado",
+      "visualStyleTitle": "Nombre exacto del estilo visual aplicado",
       "isCommercialPoster": true,
-      "imagePromptEnglish": "Prompt descriptivo en inglés (60 a 90 palabras) para fotografía profesional o cartel publicitario",
-      "carouselPrompts": ["Prompt slide 1 en inglés", "Prompt slide 2 en inglés", "Prompt slide 3 en inglés"]
+      "imagePromptEnglish": "Prompt fotográfico en inglés (60 a 90 palabras) fusionando la fórmula del estilo visual asignado con la descripción física del producto, SIN texto incrustado",
+      "carouselPrompts": ["Prompt slide 1 en inglés en el estilo asignado", "Prompt slide 2 macro detalle en inglés en el estilo asignado", "Prompt slide 3 presentación completa en inglés en el estilo asignado"]
     }
   ]
 }`;
@@ -293,20 +385,23 @@ Devuelve ÚNICAMENTE un objeto JSON válido con las claves "strategy" y "publica
     const userPromptContent = `Genera la estrategia y planificación de EXACTAMENTE ${clampedCount} publicaciones para:
 - Marca: ${businessName}
 - Rubro: ${rubro}
-- Formatos a utilizar: ${finalAllowedTypes.join(", ")}
+- Producto / Servicio principal: ${body.dishOrProductName || businessName}
+${productPrice ? `- Precio destacado: ${productPrice}` : ""}
+${commercialCustomText || body.offerText ? `- Texto de oferta / detalle: ${commercialCustomText || body.offerText}` : ""}
+- Formatos a utilizar en muestras: ${finalAllowedTypes.join(", ")}
 ${customAgentInstruction ? `- Directriz personalizada del cliente: ${customAgentInstruction}` : ""}
 ${nicheContext ? `- Contexto del Radar de Nicho: ${nicheContext.substring(0, 400)}` : ""}
 
 Catálogo disponible:
 ${catalogFormatted}
 
-Estilos visuales:
+Estilos visuales obligatorios por muestra:
 ${stylesContext}`;
 
     let generatedPlanText = "";
     try {
-      // jsonMode = true y taskKey = 'generate_post' (flash-lite/flash) para respuesta ultra-rápida (2-4s) sin retardo de thinking
-      generatedPlanText = await generateFreeText(userPromptContent, systemPrompt, true, undefined, "generate_post");
+      // Pasamos referenceImgUrl para que Gemini analice la foto base en la misma llamada (0ms extra)
+      generatedPlanText = await generateFreeText(userPromptContent, systemPrompt, true, referenceImgUrl, "generate_post");
     } catch (llmErr: any) {
       console.warn("[Lab Generar Muestra] Reintentando estructuración en modo estándar:", llmErr);
       try {
@@ -338,74 +433,65 @@ ${stylesContext}`;
       }
     }
 
-    // Fallback si la IA devolvió menos publicaciones de las requeridas
-    if (!Array.isArray(parsedPublications) || parsedPublications.length === 0) {
+    if (!Array.isArray(parsedPublications)) {
       parsedPublications = [];
     }
 
-    // Si faltan publicaciones para completar clampedCount, sintetizar las restantes usando el catálogo o rubro
-    const defaultDays = ["Martes", "Jueves", "Viernes", "Sábado", "Domingo"];
-    const defaultTimes = ["13:00 hrs", "19:30 hrs", "20:00 hrs", "21:00 hrs", "12:30 hrs"];
-
+    // Si faltan publicaciones para completar clampedCount, sintetizar las restantes usando el estilo correspondiente
     while (parsedPublications.length < clampedCount) {
       const nextIdx = parsedPublications.length;
       const assignedType = finalAllowedTypes[nextIdx % finalAllowedTypes.length];
       const catalogItem = catalogItems[nextIdx % Math.max(1, catalogItems.length)] || null;
-      const prodName = catalogItem?.name || `${businessName} Especial #${nextIdx + 1}`;
-      const prodPrice = catalogItem?.offerPrice || catalogItem?.price || null;
-      const fallbackStyle = (selectedStyles && selectedStyles.length > 0)
-        ? selectedStyles[nextIdx % selectedStyles.length]
-        : null;
+      const prodName = body.dishOrProductName || catalogItem?.name || `${businessName} Especial`;
+      const prodPrice = productPrice || catalogItem?.offerPrice || catalogItem?.price || null;
+      const fallbackStyle = enrichedStyles[nextIdx % enrichedStyles.length] || HARDCODED_STYLES[nextIdx % HARDCODED_STYLES.length];
 
       parsedPublications.push({
         id: `pub_${nextIdx + 1}`,
         type: assignedType,
-        title: `${prodName} - Propuesta #${nextIdx + 1}`,
+        title: `${prodName}`,
         dishOrProductName: prodName,
         productPrice: prodPrice,
-        hook: `¿Buscabas la mejor opción de ${rubro.toLowerCase()} para compartir hoy?`,
-        copy: `Te presentamos una de las opciones favoritas de ${businessName}. Preparada con los mejores ingredientes y el toque característico que nos distingue. Pídela hoy mismo y compruébalo.`,
+        hook: `¿Buscabas la mejor opción de ${rubro.toLowerCase()} para disfrutar hoy?`,
+        copy: `Te presentamos ${prodName} de ${businessName}. Preparado con los mejores ingredientes y el sello único que nos distingue. Haz tu pedido hoy mismo y compruébalo.`,
         cta: phone ? `Escríbenos directamente al WhatsApp ${phone}` : "Contáctanos y haz tu pedido hoy",
-        visualStyleTitle: fallbackStyle?.title || (isCommercialPoster ? "Cartel Comercial de Alto Impacto" : "Fotografía Gastronómica & Publicitaria"),
-        imagePromptEnglish: isCommercialPoster
-          ? `Commercial advertising poster layout for ${prodName}, strict two-tier composition: mouth-watering hero product or dish positioned cleanly in LOWER 55%-60% of frame resting on a high-end presentation surface, UPPER 40%-45% features clean dark atmospheric negative space (copyspace) with bold crisp on-image typography text overlay reading "${prodName.toUpperCase()}", highlighted yellow price badge "${prodPrice || '$24.900'}" in upper corner, compact yellow CTA button "¡ORDENA AHORA!", STRICT RULE: all typography and text overlays must stay strictly in the upper negative space and NEVER overlap, touch or obscure the product or dish, warm commercial lighting, 8k resolution`
-          : `Professional commercial advertising photography of ${prodName}, appetizing lighting, premium commercial atmosphere, high-end presentation, ultra-detailed 8k.`,
-        carouselPrompts: assignedType === "carrusel" ? (isCommercialPoster ? [
-          `Commercial poster cover for ${prodName}, two-tier composition, clean dark upper copyspace with bold on-image typography headline "${prodName.toUpperCase()}", product hero clean and unobstructed in lower 60%, advertising layout`,
-          `Detailed macro close-up of fresh textures and details of ${prodName}, promotional badge "CALIDAD GARANTIZADA" in upper corner`,
-          `Complete presentation pack for ${prodName} with accompaniment on clean presentation surface, vibrant yellow price badge "${prodPrice || '$24.900'}" in top margin and compact CTA button "¡ORDENA AHORA!" at bottom edge clear of product`
-        ] : [
-          `Appetizing hero shot of ${prodName}, commercial table setting`,
-          `Detailed macro close-up of fresh textures and details of ${prodName}`,
-          `Complete presentation pack with accessories and beverage, commercial poster`
-        ]) : undefined,
+        visualStyleTitle: fallbackStyle?.title || "Estilo Publicitario",
+        imagePromptEnglish: buildStyledImagePrompt(fallbackStyle, prodName, ""),
       });
     }
 
-    // Asegurar que no exceda clampedCount, que cada formato sea válido y asignar estilo seleccionado
+    // Asegurar que no exceda clampedCount y que cada muestra tenga asignado su estilo correspondiente
     parsedPublications = parsedPublications.slice(0, clampedCount).map((pub, idx) => {
       const assignedType = finalAllowedTypes.includes(pub.type) ? pub.type : finalAllowedTypes[idx % finalAllowedTypes.length];
-      const matchedStyle = (selectedStyles && selectedStyles.length > 0)
-        ? selectedStyles[idx % selectedStyles.length]
-        : null;
+      const matchedStyle = enrichedStyles[idx % enrichedStyles.length] || null;
 
       return {
         ...pub,
         id: pub.id || `pub_${idx + 1}`,
         type: assignedType,
-        visualStyleTitle: matchedStyle?.title || pub.visualStyleTitle || (isCommercialPoster ? "Cartel Comercial de Alto Impacto" : "Estilo Publicitario"),
+        visualStyleId: matchedStyle?.id || "",
+        visualStyleTitle: matchedStyle?.title || pub.visualStyleTitle || "Estilo Publicitario",
+        visualStylePrompt: matchedStyle?.prompt || "",
+        visualStyleKeywords: matchedStyle?.styleKeywords || "",
       };
     });
 
-    // Asegurar estrategia estructurada válida con EXACTAMENTE 5 publicaciones en el Radar de Nicho
-    const planDefaultDays = ["Martes", "Jueves", "Viernes", "Sábado", "Domingo"];
+    // Asegurar estrategia estructurada válida con EXACTAMENTE 5 publicaciones variadas en el Radar de Nicho
+    const planDefaultDays = ["Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
     const planDefaultTimes = ["13:00 hrs", "19:30 hrs", "20:00 hrs", "21:00 hrs", "12:30 hrs"];
+    const planDefaultFormats: ("post" | "carrusel" | "reel" | "historia")[] = [
+      "post",
+      "carrusel",
+      "reel",
+      "historia",
+      "post",
+    ];
     const planDefaultObjectives = [
       `Lanzamiento de oferta irresistible y antojable de la semana en ${rubro.toLowerCase()}.`,
-      `Demostración de calidad y valor diferencial frente a competidores locales.`,
-      `Combo o especial pensado para compartir y consumo grupal o familiar.`,
-      `Activación de fin de semana con llamado directo a reservas y pedidos por WhatsApp.`,
-      `Fidelización y recordación de marca para cerrar la semana con alta demanda.`
+      `Carrusel educativo y demostrativo de calidad frente a competidores locales.`,
+      `Reel vertical dinámico (9:16) mostrando la preparación y detrás de cámaras para máximo alcance orgánico.`,
+      `Historia interactiva con sticker de encuesta y botón directo a pedidos por WhatsApp.`,
+      `Activación de fin de semana con cartel de promoción para cerrar ventas.`
     ];
 
     if (!parsedStrategy || typeof parsedStrategy !== "object") {
@@ -436,48 +522,68 @@ ${stylesContext}`;
         schedulePlan: [],
         nicheOpportunities: [
           `Los usuarios de ${rubro.toLowerCase()} responden un 50% más rápido cuando la publicación muestra precio y canal directo de WhatsApp.`,
-          "Las publicaciones tipo carrusel y carteles con contraste generan hasta 3x más retención y compartidos en redes.",
+          "Combinar Reels dinámicos, Carruseles e Historias interactivas multiplica por 3x el alcance orgánico semanal.",
           "Publicar en horarios cercanos a la toma de decisión incrementa las consultas directas."
         ]
       };
     }
 
-    // Normalizar y forzar EXACTAMENTE 5 publicaciones en el plan del Radar de Nicho
+    // Normalizar y forzar variedad real (post, carrusel, reel, historia) en las 5 publicaciones del Radar de Nicho
     let completeSchedulePlan: any[] = Array.isArray(parsedStrategy.schedulePlan) ? parsedStrategy.schedulePlan : [];
-    completeSchedulePlan = completeSchedulePlan.map((item: any, idx: number) => ({
-      ...item,
-      day: item.day || planDefaultDays[idx % planDefaultDays.length],
-      time: item.time || planDefaultTimes[idx % planDefaultTimes.length],
-      format: ["post", "carrusel"].includes(item.format) ? item.format : (idx % 2 === 0 ? "post" : "carrusel"),
-      objective: item.objective || planDefaultObjectives[idx % planDefaultObjectives.length],
-      hook: item.hook || `Propuesta estratégica #${idx + 1} para ${businessName}`,
-      linkedPublicationId: parsedPublications[idx]?.id || undefined,
-    }));
+    completeSchedulePlan = completeSchedulePlan.map((item: any, idx: number) => {
+      const rawFmt = String(item.format || "").toLowerCase();
+      const validFmt = ["post", "carrusel", "reel", "historia"].includes(rawFmt)
+        ? rawFmt
+        : planDefaultFormats[idx % planDefaultFormats.length];
+      return {
+        ...item,
+        day: item.day || planDefaultDays[idx % planDefaultDays.length],
+        time: item.time || planDefaultTimes[idx % planDefaultTimes.length],
+        format: validFmt,
+        objective: item.objective || planDefaultObjectives[idx % planDefaultObjectives.length],
+        hook: item.hook || `Propuesta estratégica #${idx + 1} para ${businessName}`,
+        linkedPublicationId: parsedPublications[idx]?.id || undefined,
+      };
+    });
 
     while (completeSchedulePlan.length < 5) {
       const pIdx = completeSchedulePlan.length;
       completeSchedulePlan.push({
         day: planDefaultDays[pIdx % planDefaultDays.length],
         time: planDefaultTimes[pIdx % planDefaultTimes.length],
-        format: pIdx % 2 === 0 ? "post" : "carrusel",
+        format: planDefaultFormats[pIdx % planDefaultFormats.length],
         objective: planDefaultObjectives[pIdx % planDefaultObjectives.length],
         hook: `Especial de ${businessName} para clientes de ${rubro.toLowerCase()}`,
         linkedPublicationId: parsedPublications[pIdx]?.id || undefined,
       });
     }
 
+    // Garantizar que si el LLM mandó puros "post", se inyecte variedad real (carrusel, reel, historia)
+    const uniqueFormats = new Set(completeSchedulePlan.slice(0, 5).map((i: any) => i.format));
+    if (uniqueFormats.size < 3) {
+      completeSchedulePlan = completeSchedulePlan.slice(0, 5).map((item: any, idx: number) => ({
+        ...item,
+        format: planDefaultFormats[idx % planDefaultFormats.length],
+      }));
+    }
+
     parsedStrategy.schedulePlan = completeSchedulePlan.slice(0, 5);
 
-    // Generar imágenes reales concurrentemente para cada publicación con protección individual
-    console.log(`[Lab Generar Muestra] Generando imágenes para las ${parsedPublications.length} publicaciones...`);
+    // Pre-seleccionar plantillas de texto distintas al azar de DEFAULT_TEXT_TEMPLATES para organizar los textos sin caos
+    const randomTextTemplates = pickDistinctRandomTextTemplates(parsedPublications.length);
+
+    // Generar imágenes reales concurrentemente para cada publicación aplicando el estilo visual seleccionado
+    console.log(`[Lab Generar Muestra] Generando imágenes estilizadas para las ${parsedPublications.length} publicaciones...`);
     const finalPublications = await Promise.all(
       parsedPublications.map(async (pub, idx) => {
-        const matchedStyle = (selectedStyles && selectedStyles.length > 0)
-          ? selectedStyles[idx % selectedStyles.length]
-          : null;
-        const styleFallbackUrl = matchedStyle?.previewUrl || "";
-        const prodName = pub.dishOrProductName || body.dishOrProductName || businessName;
-        const catalogMatch = catalogItems.find((it) => it.name?.toLowerCase() === prodName.toLowerCase() || it.id === pub.productId);
+        const assignedStyle = enrichedStyles[idx % enrichedStyles.length] || null;
+        const assignedTextTemplate = randomTextTemplates[idx % randomTextTemplates.length];
+        const styleFallbackUrl = assignedStyle?.previewUrl || "";
+
+        const prodName = body.dishOrProductName || pub.dishOrProductName || businessName;
+        const catalogMatch = catalogItems.find(
+          (it) => it.name?.toLowerCase() === prodName.toLowerCase() || it.id === pub.productId
+        );
         const hasCatalogRealPhoto = Boolean(catalogMatch?.imageUrl && catalogMatch.imageUrl.startsWith("http"));
         const effectiveRealPhotoUrl = hasCatalogRealPhoto
           ? catalogMatch.imageUrl
@@ -485,18 +591,17 @@ ${stylesContext}`;
           ? body.baseImageUrl
           : "";
 
-        // Determinar si esta publicación específica llevará texto comercial o foto limpia
+        // Determinar si esta publicación específica llevará plantilla de texto comercial o foto limpia
         let postIsCommercial = true;
         if (finalImageTextMode === "con_texto") {
           postIsCommercial = true;
         } else if (finalImageTextMode === "sin_texto") {
           postIsCommercial = false;
         } else {
-          // Modo mixto: si el agente definió boolean en pub.isCommercialPoster respetarlo, si no alternar
           postIsCommercial = typeof pub.isCommercialPoster === "boolean" ? pub.isCommercialPoster : (idx % 2 === 0);
         }
 
-        const effectivePrice = pub.productPrice || productPrice || catalogMatch?.offerPrice || catalogMatch?.price || "";
+        const effectivePrice = productPrice || pub.productPrice || catalogMatch?.offerPrice || catalogMatch?.price || "";
         const effectiveDescription =
           commercialCustomText ||
           body.offerText ||
@@ -505,67 +610,43 @@ ${stylesContext}`;
           "";
         const effectiveIdea = commercialIdea || pub.hook || pub.title || prodName;
 
-        const assignedStyle = (selectedStyles && selectedStyles.length > 0)
-          ? selectedStyles[idx % selectedStyles.length]
-          : null;
-
-        // Directriz de arte e iluminación según el estilo seleccionado para esta publicación
-        let visualStyleDirective = "";
-        if (assignedStyle) {
-          visualStyleDirective = `VISUAL STYLE "${assignedStyle.title.toUpperCase()}": ${assignedStyle.description}. Aesthetic keywords: ${assignedStyle.styleKeywords || assignedStyle.description}.`;
-        }
-
-        let promptEnglish = pub.imagePromptEnglish || "";
-        if (visualStyleDirective && !promptEnglish.toLowerCase().includes(assignedStyle!.title.toLowerCase())) {
-          promptEnglish = `${visualStyleDirective} ${promptEnglish}`.trim();
-        }
-
-        if (isCommercialImageEngine) {
-          // En modo Imagen Comercial, el fondo base SIEMPRE es limpio sin letras incrustadas para que Nuestro Editor estampe las capas vectoriales
-          if (!promptEnglish) {
-            promptEnglish = `Professional commercial advertising studio photography for ${prodName} (${rubro}), subject positioned cleanly in lower 60% of frame, clean dark atmospheric negative space in upper 40% for overlays, dramatic studio lighting, 8k resolution, photorealistic, STRICT NEGATIVE: no text, no typography, no letters, no words, no watermark`;
-          } else {
-            promptEnglish = `${promptEnglish}, clean background with upper negative space, STRICT NEGATIVE: no text, no typography, no letters, no words, no watermark`;
-          }
-        } else if (!promptEnglish) {
-          promptEnglish = postIsCommercial
-            ? `Commercial food advertising poster layout for ${prodName}, two-tier composition: mouth-watering hero food dish positioned cleanly in LOWER 55%-60% of frame, UPPER 40%-45% features clean dark atmospheric negative space (copyspace) with bold crisp typography text overlay reading "${prodName.toUpperCase()}", highlighted yellow price badge "${effectivePrice || '$24.900'}" in upper corner, rounded yellow CTA button "¡ORDENA AHORA!", STRICT RULE: all rendered text overlays must stay strictly in the upper negative space and NEVER overlap, touch or obscure the food dish, warm restaurant lighting, 8k resolution`
-            : `Professional commercial advertising food photography of ${prodName}, gourmet restaurant plating, dramatic warm lighting, 8k resolution, photorealistic, clean shot, STRICT NEGATIVE: no text, no typography, no letters, no words, no watermark, no overlays`;
-        } else if (postIsCommercial && !promptEnglish.toLowerCase().includes("typography") && !promptEnglish.toLowerCase().includes("text overlay")) {
-          promptEnglish = `Commercial advertising poster graphic design, two-tier composition with dark upper copyspace, bold crisp typography text overlay reading "${prodName.toUpperCase()}", price badge "${effectivePrice || '$24.900'}" in upper margin, compact CTA button "¡ORDENA AHORA!", STRICT RULE: typography must never overlap or cover the food hero in lower half, ${promptEnglish}`;
-        } else if (!postIsCommercial) {
-          promptEnglish = `${promptEnglish}, clean commercial photography, STRICT NEGATIVE: no text, no typography, no letters, no words, no watermark, no overlays`;
-        }
+        // Construir el prompt fotográfico en inglés fusionando SIEMPRE la fórmula maestra del estilo seleccionado
+        const promptEnglish = buildStyledImagePrompt(
+          assignedStyle,
+          prodName,
+          pub.imagePromptEnglish || ""
+        );
 
         try {
           if (pub.type === "carrusel") {
-            // Generar 3 slides para carrusel
             let coverUrl = "";
             let commercialEditId: string | undefined;
 
-            const slidePrompts: string[] = Array.isArray(pub.carouselPrompts) && pub.carouselPrompts.length >= 3
-              ? pub.carouselPrompts.map((p: string) => {
-                  let sp = visualStyleDirective && !p.toLowerCase().includes(assignedStyle!.title.toLowerCase())
-                    ? `${visualStyleDirective} ${p}`.trim()
-                    : p;
-                  return isCommercialImageEngine
-                    ? `${sp}, clean background with upper negative space, STRICT NEGATIVE: no text, no typography, no letters`
-                    : sp;
-                })
+            const rawCarouselPrompts = Array.isArray(pub.carouselPrompts) && pub.carouselPrompts.length >= 3
+              ? pub.carouselPrompts
               : [
-                  `${promptEnglish}, wide appetizing cover view`,
-                  `${visualStyleDirective} Detailed macro close-up texture of ${prodName}, fresh ingredients in focus`.trim(),
-                  `${visualStyleDirective} Complete commercial showcase and dining atmosphere for ${prodName}`.trim(),
+                  `${prodName}, hero presentation`,
+                  `Detailed macro close-up of ${prodName} showing fresh textures and ingredients`,
+                  `Complete presentation pack of ${prodName} in commercial setting`,
                 ];
 
-            const imgTimeout = 0;
-            const baseCoverUrl = effectiveRealPhotoUrl || (await generateSingleImage(slidePrompts[0], rubro, prodName, "1:1", imgTimeout, styleFallbackUrl));
+            const slidePrompts = rawCarouselPrompts.map((sp: string) =>
+              buildStyledImagePrompt(assignedStyle, prodName, sp)
+            );
+
+            // SIEMPRE transformar la imagen con el estilo seleccionado (pasando effectiveRealPhotoUrl como referencia a n8n)
+            const [baseCoverUrl, slide2, slide3] = await Promise.all([
+              generateSingleImage(slidePrompts[0], rubro, prodName, "1:1", 14000, effectiveRealPhotoUrl),
+              generateSingleImage(slidePrompts[1], rubro, prodName, "1:1", 14000, effectiveRealPhotoUrl),
+              generateSingleImage(slidePrompts[2], rubro, prodName, "1:1", 14000, effectiveRealPhotoUrl),
+            ]);
 
             if (postIsCommercial) {
               try {
                 const { composeCommercialSlideWithEditor } = await import("../../../../lib/real-product-compositor");
                 const composed = await composeCommercialSlideWithEditor({
                   baseImageUrl: baseCoverUrl,
+                  fallbackImageUrl: effectiveRealPhotoUrl || styleFallbackUrl,
                   productName: prodName,
                   productDescription: effectiveDescription,
                   price: effectivePrice,
@@ -579,6 +660,7 @@ ${stylesContext}`;
                   saveEditableInLibrary: true,
                   customBadgeText: badgeCustomText,
                   skipAgentCopy: true,
+                  templateId: assignedTextTemplate?.id,
                 });
                 coverUrl = composed.finalImageUrl;
                 commercialEditId = composed.editDocId;
@@ -590,82 +672,48 @@ ${stylesContext}`;
               coverUrl = baseCoverUrl;
             }
 
-            const [slide2, slide3] = await Promise.all([
-              generateSingleImage(slidePrompts[1], rubro, prodName, "1:1", 0, styleFallbackUrl),
-              generateSingleImage(slidePrompts[2], rubro, prodName, "1:1", 0, styleFallbackUrl),
-            ]);
-
             const slideUrls = [coverUrl, slide2, slide3];
 
             return {
               ...pub,
+              dishOrProductName: prodName,
+              productPrice: effectivePrice || pub.productPrice,
+              imagePromptEnglish: promptEnglish,
               imageUrl: slideUrls[0],
               baseImageUrl: baseCoverUrl,
+              origBaseImageUrl: effectiveRealPhotoUrl || undefined,
               carouselImages: slideUrls,
               isCommercialPoster: postIsCommercial,
               visualStyleSource,
+              visualStyleId: assignedStyle?.id || "",
               visualStyleTitle: assignedStyle ? assignedStyle.title : pub.visualStyleTitle || "Estilo Comercial",
-              commercialEditId,
-            };
-          } else if (pub.type === "reel") {
-            // Generar visual vertical 9:16 para reel
-            let reelImageUrl = "";
-            let commercialEditId: string | undefined;
-            const imgTimeout = 0;
-            const reelPrompt = `${promptEnglish}, cinematic vertical framing, 9:16 aspect ratio, dramatic studio lighting`;
-            const baseReelUrl = effectiveRealPhotoUrl || (await generateSingleImage(reelPrompt, rubro, prodName, "9:16", imgTimeout, styleFallbackUrl));
-
-            if (postIsCommercial) {
-              try {
-                const { composeCommercialSlideWithEditor } = await import("../../../../lib/real-product-compositor");
-                const composed = await composeCommercialSlideWithEditor({
-                  baseImageUrl: baseReelUrl,
-                  productName: prodName,
-                  productDescription: effectiveDescription,
-                  price: effectivePrice,
-                  idea: effectiveIdea,
-                  rubro,
-                  businessName,
-                  aspectRatio: "9:16",
-                  logoUrl: body.logoUrl || undefined,
-                  userId,
-                  includeLogo: Boolean(body.logoUrl),
-                  saveEditableInLibrary: true,
-                  customBadgeText: badgeCustomText,
-                  skipAgentCopy: true,
-                });
-                reelImageUrl = composed.finalImageUrl;
-                commercialEditId = composed.editDocId;
-              } catch (bErr) {
-                console.warn("[Lab Generar Muestra] Error componiendo portada vertical Reel, usando base:", bErr);
-                reelImageUrl = baseReelUrl;
-              }
-            } else {
-              reelImageUrl = baseReelUrl;
-            }
-
-            return {
-              ...pub,
-              imageUrl: reelImageUrl,
-              baseImageUrl: baseReelUrl,
-              aspectRatio: "9:16",
-              isCommercialPoster: postIsCommercial,
-              visualStyleSource,
-              visualStyleTitle: assignedStyle ? assignedStyle.title : pub.visualStyleTitle || "Estilo Comercial",
+              visualStylePrompt: assignedStyle?.prompt || "",
+              visualStyleKeywords: assignedStyle?.styleKeywords || "",
+              textTemplateId: assignedTextTemplate?.id || "",
+              textTemplateName: assignedTextTemplate?.name || "",
               commercialEditId,
             };
           } else {
             // Post estándar 1:1
             let finalImgUrl = "";
             let commercialEditId: string | undefined;
-            const imgTimeout = 0;
-            const basePostUrl = effectiveRealPhotoUrl || (await generateSingleImage(promptEnglish, rubro, prodName, "1:1", imgTimeout, styleFallbackUrl));
+
+            // SIEMPRE generar imagen estilizada según el estilo seleccionado (nunca devolver cruda effectiveRealPhotoUrl sin estilizar)
+            const basePostUrl = await generateSingleImage(
+              promptEnglish,
+              rubro,
+              prodName,
+              "1:1",
+              14000,
+              effectiveRealPhotoUrl
+            );
 
             if (postIsCommercial) {
               try {
                 const { composeCommercialSlideWithEditor } = await import("../../../../lib/real-product-compositor");
                 const composed = await composeCommercialSlideWithEditor({
                   baseImageUrl: basePostUrl,
+                  fallbackImageUrl: effectiveRealPhotoUrl || styleFallbackUrl,
                   productName: prodName,
                   productDescription: effectiveDescription,
                   price: effectivePrice,
@@ -679,11 +727,12 @@ ${stylesContext}`;
                   saveEditableInLibrary: true,
                   customBadgeText: badgeCustomText,
                   skipAgentCopy: true,
+                  templateId: assignedTextTemplate?.id,
                 });
                 finalImgUrl = composed.finalImageUrl;
                 commercialEditId = composed.editDocId;
               } catch (bErr) {
-                console.warn("[Lab Generar Muestra] Error componiendo post 1:1 con capas, usando base:", bErr);
+                console.warn("[Lab Generar Muestra] Error componiendo post 1:1 con plantilla de texto, usando base:", bErr);
                 finalImgUrl = basePostUrl;
               }
             } else {
@@ -692,24 +741,38 @@ ${stylesContext}`;
 
             return {
               ...pub,
+              dishOrProductName: prodName,
+              productPrice: effectivePrice || pub.productPrice,
+              imagePromptEnglish: promptEnglish,
               imageUrl: finalImgUrl,
               baseImageUrl: basePostUrl,
+              origBaseImageUrl: effectiveRealPhotoUrl || undefined,
               isCommercialPoster: postIsCommercial,
               visualStyleSource,
+              visualStyleId: assignedStyle?.id || "",
               visualStyleTitle: assignedStyle ? assignedStyle.title : pub.visualStyleTitle || "Estilo Comercial",
+              visualStylePrompt: assignedStyle?.prompt || "",
+              visualStyleKeywords: assignedStyle?.styleKeywords || "",
+              textTemplateId: assignedTextTemplate?.id || "",
+              textTemplateName: assignedTextTemplate?.name || "",
               commercialEditId,
             };
           }
         } catch (itemErr) {
           console.warn(`[Lab Generar Muestra] Error procesando imagen de muestra #${idx + 1}, usando respaldo:`, itemErr);
-          const safeUrl = effectiveRealPhotoUrl || styleFallbackUrl || `https://image.pollinations.ai/prompt/${encodeURIComponent(promptEnglish || prodName)}?width=1080&height=1080&model=flux&nologo=true&enhance=true`;
+          const safeUrl = effectiveRealPhotoUrl || styleFallbackUrl || `https://image.pollinations.ai/prompt/${encodeURIComponent(prodName)}?width=1080&height=1080&model=flux&nologo=true&enhance=true`;
           return {
             ...pub,
+            dishOrProductName: prodName,
+            imagePromptEnglish: promptEnglish,
             imageUrl: safeUrl,
             baseImageUrl: safeUrl,
             carouselImages: pub.type === "carrusel" ? [safeUrl, safeUrl, safeUrl] : undefined,
             isCommercialPoster: postIsCommercial,
             visualStyleSource,
+            visualStyleTitle: assignedStyle ? assignedStyle.title : pub.visualStyleTitle || "Estilo Comercial",
+            textTemplateId: assignedTextTemplate?.id || "",
+            textTemplateName: assignedTextTemplate?.name || "",
           };
         }
       })
@@ -724,7 +787,7 @@ ${stylesContext}`;
       prospectName: body.prospectName || businessName,
       prospectPhone: phone || "",
       rubro,
-      offerText: body.offerText || "",
+      offerText: body.offerText || commercialCustomText || "",
       dishOrProductName: body.dishOrProductName || finalPublications[0]?.dishOrProductName || businessName,
       status: "generada",
       createdBy: userId,
@@ -760,7 +823,13 @@ ${stylesContext}`;
     // Construir mensaje de WhatsApp profesional y humanizado con landing, plan de 5 posts de nicho y muestras
     const scheduleItemsText = (parsedStrategy?.schedulePlan || []).slice(0, 5).map((item: any, i: number) => {
       const numEmoji = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣"][i] || `•`;
-      const fmtLabel = item.format === "carrusel" ? "Carrusel (3 slides)" : "Post (1:1)";
+      const fmtMap: Record<string, string> = {
+        carrusel: "Carrusel (3 slides)",
+        reel: "Reel Vertical (9:16)",
+        historia: "Historia Interactiva",
+        post: "Post (1:1 Feed)",
+      };
+      const fmtLabel = fmtMap[item.format] || "Post (1:1)";
       return `${numEmoji} ${item.day || `Día ${i + 1}`} · ${fmtLabel}\n   🎯 ${item.objective || item.hook || "Publicación estratégica"}`;
     }).join("\n\n");
 

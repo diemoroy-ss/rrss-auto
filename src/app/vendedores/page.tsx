@@ -703,7 +703,7 @@ export default function VendedoresPwaPage() {
           ]
         : [];
 
-      // 4. Preparar estilos seleccionados sanitizados (hasta 3)
+      // 4. Preparar estilos seleccionados sanitizados (hasta 3) incluyendo su fórmula maestra (prompt)
       const stylesToSend = (
         selectedStyles.length > 0
           ? selectedStyles.slice(0, 3)
@@ -716,7 +716,9 @@ export default function VendedoresPwaPage() {
         description: s.description,
         category: s.category,
         previewUrl: s.previewUrl,
+        prompt: s.prompt || "",
         styleKeywords: s.styleKeywords || "",
+        imageGenBehavior: s.imageGenBehavior || "product",
       }));
 
       // 5. Teléfono formateado
@@ -851,10 +853,13 @@ export default function VendedoresPwaPage() {
     }
   };
 
-  // 8b. Generar imagen individualmente (1 por 1) vía webhook de nuestros agentes
+  // 8b. Generar imagen individualmente (1 por 1) vía webhook de nuestros agentes respetando el estilo asignado
   const handleGenerateSingleImage = async (pubIndex: number) => {
     const pub = generatedPublications[pubIndex];
     if (!pub) return;
+
+    const assignedStyleObj =
+      selectedStyles[pubIndex % Math.max(1, selectedStyles.length)] || selectedTemplate || null;
 
     setIsGeneratingSingleImg(true);
     try {
@@ -879,6 +884,11 @@ export default function VendedoresPwaPage() {
           idea: commercialIdea || pub.hook || pub.title || "",
           logoUrl: cleanedLogoUrl || logoPreview || "",
           customBadgeText: badgeCustomText || "",
+          styleId: pub.visualStyleId || assignedStyleObj?.id || "",
+          styleTitle: pub.visualStyleTitle || assignedStyleObj?.title || "",
+          stylePrompt: pub.visualStylePrompt || assignedStyleObj?.prompt || "",
+          styleKeywords: pub.visualStyleKeywords || assignedStyleObj?.styleKeywords || "",
+          baseImageUrl: pub.origBaseImageUrl || baseImagePreview || "",
         }),
       });
 
@@ -895,7 +905,9 @@ export default function VendedoresPwaPage() {
             copy[pubIndex] = {
               ...copy[pubIndex],
               imageUrl: data.imageUrl,
-              baseImageUrl: data.imageUrl,
+              baseImageUrl: data.baseImageUrl || data.imageUrl,
+              textTemplateId: data.templateId || copy[pubIndex].textTemplateId,
+              textTemplateName: data.templateName || copy[pubIndex].textTemplateName,
             };
           }
           return copy;
@@ -914,12 +926,13 @@ export default function VendedoresPwaPage() {
     }
   };
 
-  // 8c. Renderizar y Guardar Cartel Publicitario con Texto (para Landing pública)
+  // 8c. Renderizar y Guardar Cartel Publicitario con Plantilla de Texto Aleatoria (para Landing pública)
   const handleRenderAndSavePoster = async (pubIndex: number) => {
     const pub = generatedPublications[pubIndex];
     if (!pub) return;
 
-    const baseImg = uploadedBaseImageUrl || pub.baseImageUrl || pub.imageUrl || baseImagePreview;
+    // Priorizar siempre pub.baseImageUrl (la imagen limpia estilizada sin textos superpuestos)
+    const baseImg = pub.baseImageUrl || pub.origBaseImageUrl || pub.imageUrl || baseImagePreview;
     if (!baseImg) {
       alert("No se encontró una imagen base para estampar los textos. Sube una foto o genera una imagen primero.");
       return;
@@ -945,7 +958,8 @@ export default function VendedoresPwaPage() {
           businessName: prospectBusiness.trim() || prospectName.trim(),
           rubro,
           aspectRatio: pub.type === "reel" ? "9:16" : "1:1",
-          logoUrl: cleanedLogoUrl || logoPreview || uploadedLogoUrl || "",
+          logoUrl: cleanedLogoUrl || logoPreview || "",
+          currentTemplateId: pub.textTemplateId || "",
         }),
       });
 
@@ -969,6 +983,8 @@ export default function VendedoresPwaPage() {
               imageUrl: data.imageUrl,
               baseImageUrl: baseImg,
               isCommercialPoster: true,
+              textTemplateId: data.templateId || copy[pubIndex].textTemplateId,
+              textTemplateName: data.templateName || copy[pubIndex].textTemplateName,
               carouselImages: updatedCarousel,
               ...(data.editDocId ? { commercialEditId: data.editDocId } : {}),
             };
@@ -981,7 +997,9 @@ export default function VendedoresPwaPage() {
           setCanvasImageUrl(data.imageUrl);
         }
 
-        alert("¡Cartel publicitario renderizado y guardado con éxito! Ya se visualiza en la landing pública.");
+        alert(
+          `¡Cartel renderizado y guardado con la plantilla "${data.templateName || "Comercial"}"! Ya está activo en la landing pública.`
+        );
       }
     } catch (err: any) {
       console.error("Error renderizando cartel con agentes:", err);
@@ -2564,6 +2582,31 @@ export default function VendedoresPwaPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
                     {/* IMAGEN / VISUAL GENERADO */}
                     <div className="space-y-3">
+                      {/* Barra informativa superior (fuera de la imagen para no tapar los textos del cartel) */}
+                      <div className="flex flex-wrap items-center justify-between gap-1.5 px-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {activePub?.type === "carrusel" ? (
+                            <span className="px-2.5 py-1 rounded-full bg-purple-100 text-purple-800 text-[10px] font-black flex items-center gap-1 border border-purple-200">
+                              <span>🎠</span> Carrusel (3 Slides)
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-800 text-[10px] font-black flex items-center gap-1 border border-indigo-200">
+                              <span>📸</span> Post (1:1 Feed)
+                            </span>
+                          )}
+                          {activePub?.visualStyleTitle && (
+                            <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-[10px] font-black flex items-center gap-1 border border-amber-200">
+                              🎨 {activePub.visualStyleTitle}
+                            </span>
+                          )}
+                        </div>
+                        {activePub?.textTemplateName && (
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200">
+                            📐 Plantilla: {activePub.textTemplateName}
+                          </span>
+                        )}
+                      </div>
+
                       <div className="aspect-square relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 shadow-sm">
                         <img
                           src={activeImg}
@@ -2578,20 +2621,6 @@ export default function VendedoresPwaPage() {
                             }
                           }}
                         />
-                        {activePub?.type === "carrusel" ? (
-                          <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-purple-900/80 backdrop-blur-md text-[10px] font-black text-white flex items-center gap-1.5 border border-purple-400/30">
-                            <span>🎠</span> Carrusel (3 Slides)
-                          </div>
-                        ) : (
-                          <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-indigo-900/80 backdrop-blur-md text-[10px] font-black text-white flex items-center gap-1.5 border border-indigo-400/30">
-                            <span>📸</span> Post (1:1 Feed)
-                          </div>
-                        )}
-                        {activePub?.visualStyleTitle && (
-                          <div className="absolute bottom-3 left-3 right-3 px-2.5 py-1 rounded-xl bg-black/70 backdrop-blur-md text-[10px] font-bold text-white border border-white/10 truncate">
-                            🎨 {activePub.visualStyleTitle}
-                          </div>
-                        )}
                       </div>
 
                       {/* Miniaturas de Carrusel si existen */}
@@ -2622,19 +2651,19 @@ export default function VendedoresPwaPage() {
                         {isGeneratingSingleImg ? (
                           <>
                             <FaSyncAlt className="animate-spin text-xs" />
-                            <span>Nuestros agentes están diseñando esta imagen...</span>
+                            <span>Nuestros agentes están diseñando esta imagen en su estilo...</span>
                           </>
                         ) : (
                           <>
                             <FaMagic className="text-xs" />
                             <span>
-                              {activePub?.imageUrl ? "🎨 Regenerar imagen con nuestros agentes (1 a 1)" : "🎨 Generar imagen con nuestros agentes"}
+                              {activePub?.imageUrl ? "🎨 Regenerar imagen del estilo (1 a 1)" : "🎨 Generar imagen con nuestros agentes"}
                             </span>
                           </>
                         )}
                       </button>
 
-                      {/* BOTÓN RENDERIZAR Y GUARDAR CARTEL CON TEXTO (PARA LANDING) */}
+                      {/* BOTÓN RENDERIZAR Y GUARDAR CARTEL CON PLANTILLA DE TEXTO (PARA LANDING) */}
                       <button
                         type="button"
                         disabled={isRenderingPoster || isGeneratingSingleImg}
@@ -2648,12 +2677,12 @@ export default function VendedoresPwaPage() {
                         {isRenderingPoster ? (
                           <>
                             <FaSyncAlt className="animate-spin text-xs" />
-                            <span>Renderizando y guardando cartel con marcas de agua...</span>
+                            <span>Aplicando plantilla de texto y guardando en Landing...</span>
                           </>
                         ) : (
                           <>
                             <FaImage className="text-xs" />
-                            <span>✨ Renderizar y Guardar Cartel con Texto (para Landing)</span>
+                            <span>✨ Probar otra Plantilla de Texto y Guardar (para Landing)</span>
                           </>
                         )}
                       </button>
