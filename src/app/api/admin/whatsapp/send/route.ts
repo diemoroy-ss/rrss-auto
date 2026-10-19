@@ -43,7 +43,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "phone y text son requeridos" }, { status: 400 });
     }
 
-    const cleanPhone = phone.replace(/[\s\-\(\)\+]/g, "").replace(/^0+/, "");
+    let cleanPhone = phone.replace(/[\s\-\(\)\+]/g, "").replace(/^0+/, "");
+    if (cleanPhone.length === 9 && cleanPhone.startsWith("9")) {
+      cleanPhone = "56" + cleanPhone;
+    }
     const n8nWebhookUrl = process.env.N8N_EVOAPI_WEBHOOK_URL || N8N_EVOAPI_WEBHOOK_URL;
 
     // Si ya se entregó directamente por el navegador (CORS), solo registramos y salimos
@@ -60,7 +63,7 @@ export async function POST(req: Request) {
             deliveredMode: "direct_browser",
             timestamp: new Date().toISOString(),
           }),
-          signal: AbortSignal.timeout(3000),
+          signal: AbortSignal.timeout(5000),
         }).catch(() => {});
       }
       return NextResponse.json({ ok: true, mode: "direct_browser_logged" });
@@ -112,7 +115,7 @@ export async function POST(req: Request) {
             caption: text,
             media: validMedia,
           }),
-          signal: AbortSignal.timeout(6000), // Timeout corto de 6s
+          signal: AbortSignal.timeout(30000), // Timeout holgado de 30s para Baileys
         });
 
         if (mediaRes.ok) {
@@ -146,7 +149,7 @@ export async function POST(req: Request) {
             number: cleanPhone,
             text: text,
           }),
-          signal: AbortSignal.timeout(8000),
+          signal: AbortSignal.timeout(30000), // Timeout holgado de 30s para Baileys
         });
 
         if (textRes.ok) {

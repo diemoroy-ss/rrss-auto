@@ -121,7 +121,7 @@ const ADMIN_EMAILS = [
 const PUBLIC_APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://rrss.santisoft.cl";
 const EVOLUTION_URL = process.env.NEXT_PUBLIC_EVOLUTION_URL || "https://evoapi.grupofugas.cl";
 const EVOLUTION_INSTANCE = process.env.NEXT_PUBLIC_EVOLUTION_INSTANCE || "Santisoft";
-const EVOLUTION_API_KEY = process.env.NEXT_PUBLIC_EVOLUTION_API_KEY || "";
+const EVOLUTION_API_KEY = process.env.NEXT_PUBLIC_EVOLUTION_API_KEY || "6833CC358FA4-42E4-8F45-E74D35CC85A7";
 const N8N_EVOAPI_WEBHOOK_URL = "https://n8n.santisoft.cl/webhook/evoapi";
 
 function buildWhatsAppCopy(
@@ -1028,7 +1028,10 @@ export default function VendedoresPwaPage() {
   const handleSendWhatsApp = async (overrideDemoId?: string, overridePhone?: string, overrideMsg?: string) => {
     const targetId = overrideDemoId || createdDemoId;
     const rawTargetPhone = overridePhone || (prospectPhone.trim() ? `${countryCode}${prospectPhone.trim().replace(/^0+/, "")}` : "");
-    const cleanPhone = rawTargetPhone.replace(/[\s\-\(\)\+]/g, "").replace(/^0+/, "");
+    let cleanPhone = rawTargetPhone.replace(/[\s\-\(\)\+]/g, "").replace(/^0+/, "");
+    if (cleanPhone.length === 9 && cleanPhone.startsWith("9")) {
+      cleanPhone = "56" + cleanPhone;
+    }
 
     if (!cleanPhone) {
       alert("Por favor ingresa el número de WhatsApp del prospecto para enviar la muestra.");
@@ -1105,7 +1108,7 @@ export default function VendedoresPwaPage() {
             apikey: EVOLUTION_API_KEY,
           },
           body: JSON.stringify(payload),
-          signal: AbortSignal.timeout(8000),
+          signal: AbortSignal.timeout(30000), // Timeout holgado de 30s para Baileys
         });
 
         if (evoRes.ok) {
@@ -2949,13 +2952,30 @@ export default function VendedoresPwaPage() {
                         )}
 
                         {whatsAppErrorMsg && (
-                          <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 space-y-1.5 animate-in fade-in">
+                          <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 space-y-2 animate-in fade-in">
                             <div className="font-bold flex items-center gap-1.5">
                               <span>⚠️ {whatsAppErrorMsg}</span>
                             </div>
                             <p className="text-[11px] text-slate-600">
-                              Puedes abrir WhatsApp Web o tu aplicación móvil directamente para enviarlo.
+                              Puedes enviar la propuesta directamente usando tu aplicación de WhatsApp o WhatsApp Web:
                             </p>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const rawP = prospectPhone.trim() ? `${countryCode}${prospectPhone.trim().replace(/^0+/, "")}` : "";
+                                let cleanP = rawP.replace(/[\s\-\(\)\+]/g, "").replace(/^0+/, "");
+                                if (cleanP.length === 9 && cleanP.startsWith("9")) cleanP = "56" + cleanP;
+                                if (cleanP) {
+                                  window.open(`https://wa.me/${cleanP}?text=${encodeURIComponent(customWhatsappCopy)}`, "_blank");
+                                } else {
+                                  window.open(`https://wa.me/?text=${encodeURIComponent(customWhatsappCopy)}`, "_blank");
+                                }
+                              }}
+                              className="w-full py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-2xs transition-colors"
+                            >
+                              <FaWhatsapp className="text-sm" />
+                              <span>Abrir y Enviar en WhatsApp ahora ↗</span>
+                            </button>
                           </div>
                         )}
                       </div>
