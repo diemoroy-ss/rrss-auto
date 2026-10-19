@@ -481,7 +481,7 @@ ${stylesContext}`;
         const hasCatalogRealPhoto = Boolean(catalogMatch?.imageUrl && catalogMatch.imageUrl.startsWith("http"));
         const effectiveRealPhotoUrl = hasCatalogRealPhoto
           ? catalogMatch.imageUrl
-          : (idx === 0 && body.baseImageUrl && body.baseImageUrl.startsWith("http"))
+          : (body.baseImageUrl && typeof body.baseImageUrl === "string" && body.baseImageUrl.startsWith("http"))
           ? body.baseImageUrl
           : "";
 

@@ -338,6 +338,9 @@ export default function VendedoresPwaPage() {
   const [generatedStrategy, setGeneratedStrategy] = useState<any>(null);
   const [selectedPreviewPubIndex, setSelectedPreviewPubIndex] = useState<number>(0);
   const [isGeneratingSingleImg, setIsGeneratingSingleImg] = useState<boolean>(false);
+  const [isRenderingPoster, setIsRenderingPoster] = useState<boolean>(false);
+  const [uploadedBaseImageUrl, setUploadedBaseImageUrl] = useState<string>("");
+  const [uploadedLogoUrl, setUploadedLogoUrl] = useState<string>("");
 
   const handleToggleType = (type: "post" | "carrusel") => {
     setAllowedTypes((prev) => {
@@ -588,7 +591,9 @@ export default function VendedoresPwaPage() {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setBaseImageFile(file);
-      setBaseImagePreview(URL.createObjectURL(file));
+      const url = URL.createObjectURL(file);
+      setBaseImagePreview(url);
+      setUploadedBaseImageUrl(url);
     }
   };
 
@@ -681,6 +686,9 @@ export default function VendedoresPwaPage() {
           uploadedLogoUrl = await getDownloadURL(snap.ref);
         }
       }
+
+      setUploadedBaseImageUrl(uploadedBaseImageUrl);
+      setUploadedLogoUrl(uploadedLogoUrl);
 
       // 3. Preparar ítems de catálogo con foto real si se subió
       const catalogItems = uploadedBaseImageUrl
@@ -903,6 +911,83 @@ export default function VendedoresPwaPage() {
       alert(`No se pudo generar la imagen individual: ${err.message}`);
     } finally {
       setIsGeneratingSingleImg(false);
+    }
+  };
+
+  // 8c. Renderizar y Guardar Cartel Publicitario con Texto (para Landing pública)
+  const handleRenderAndSavePoster = async (pubIndex: number) => {
+    const pub = generatedPublications[pubIndex];
+    if (!pub) return;
+
+    const baseImg = uploadedBaseImageUrl || pub.baseImageUrl || pub.imageUrl || baseImagePreview;
+    if (!baseImg) {
+      alert("No se encontró una imagen base para estampar los textos. Sube una foto o genera una imagen primero.");
+      return;
+    }
+
+    setIsRenderingPoster(true);
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch("/api/laboratorio/renderizar-cartel", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          demoId: createdDemoId,
+          pubIndex,
+          baseImageUrl: baseImg,
+          productName: pub.dishOrProductName || dishOrProductName.trim() || prospectBusiness.trim(),
+          productDescription: commercialCustomText.trim() || offerText.trim() || pub.hook || pub.title || "",
+          price: pub.productPrice || productPrice.trim() || "",
+          customBadgeText: badgeCustomText.trim() || "",
+          businessName: prospectBusiness.trim() || prospectName.trim(),
+          rubro,
+          aspectRatio: pub.type === "reel" ? "9:16" : "1:1",
+          logoUrl: cleanedLogoUrl || logoPreview || uploadedLogoUrl || "",
+        }),
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || "No se pudo renderizar el cartel publicitario.");
+      }
+
+      const data = await res.json();
+      if (data.imageUrl) {
+        setGeneratedPublications((prev) => {
+          const copy = [...prev];
+          if (copy[pubIndex]) {
+            const isCarousel = copy[pubIndex].type === "carrusel";
+            const updatedCarousel = isCarousel && Array.isArray(copy[pubIndex].carouselImages)
+              ? [data.imageUrl, ...copy[pubIndex].carouselImages.slice(1)]
+              : copy[pubIndex].carouselImages;
+
+            copy[pubIndex] = {
+              ...copy[pubIndex],
+              imageUrl: data.imageUrl,
+              baseImageUrl: baseImg,
+              isCommercialPoster: true,
+              carouselImages: updatedCarousel,
+              ...(data.editDocId ? { commercialEditId: data.editDocId } : {}),
+            };
+          }
+          return copy;
+        });
+
+        if (pubIndex === 0) {
+          setGeneratedImageUrl(data.imageUrl);
+          setCanvasImageUrl(data.imageUrl);
+        }
+
+        alert("¡Cartel publicitario renderizado y guardado con éxito! Ya se visualiza en la landing pública.");
+      }
+    } catch (err: any) {
+      console.error("Error renderizando cartel con agentes:", err);
+      alert(`No se pudo renderizar el cartel: ${err.message}`);
+    } finally {
+      setIsRenderingPoster(false);
     }
   };
 
@@ -1279,6 +1364,22 @@ export default function VendedoresPwaPage() {
           demo.id
         )
       );
+    }
+
+    if (demo.baseImageUrl) {
+      setUploadedBaseImageUrl(demo.baseImageUrl);
+      setBaseImagePreview(demo.baseImageUrl);
+    }
+    if (demo.logoUrl) {
+      setUploadedLogoUrl(demo.logoUrl);
+      setLogoPreview(demo.logoUrl);
+    }
+    if (demo.publications && Array.isArray(demo.publications) && demo.publications.length > 0) {
+      setGeneratedPublications(demo.publications);
+      setSelectedPreviewPubIndex(0);
+    }
+    if (demo.strategy) {
+      setGeneratedStrategy(demo.strategy);
     }
 
     setActiveTab("crear");
@@ -2510,7 +2611,7 @@ export default function VendedoresPwaPage() {
                       {/* BOTÓN GENERAR IMAGEN INDIVIDUAL CON NUESTROS AGENTES (1 A 1) */}
                       <button
                         type="button"
-                        disabled={isGeneratingSingleImg}
+                        disabled={isGeneratingSingleImg || isRenderingPoster}
                         onClick={() => handleGenerateSingleImage(selectedPreviewPubIndex)}
                         className={`w-full py-2.5 px-3 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-2 border shadow-xs ${
                           isGeneratingSingleImg
@@ -2529,6 +2630,30 @@ export default function VendedoresPwaPage() {
                             <span>
                               {activePub?.imageUrl ? "🎨 Regenerar imagen con nuestros agentes (1 a 1)" : "🎨 Generar imagen con nuestros agentes"}
                             </span>
+                          </>
+                        )}
+                      </button>
+
+                      {/* BOTÓN RENDERIZAR Y GUARDAR CARTEL CON TEXTO (PARA LANDING) */}
+                      <button
+                        type="button"
+                        disabled={isRenderingPoster || isGeneratingSingleImg}
+                        onClick={() => handleRenderAndSavePoster(selectedPreviewPubIndex)}
+                        className={`w-full py-2.5 px-3 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-2 border shadow-xs ${
+                          isRenderingPoster
+                            ? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed"
+                            : "bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600 shadow-emerald-600/20 active:scale-98 cursor-pointer"
+                        }`}
+                      >
+                        {isRenderingPoster ? (
+                          <>
+                            <FaSyncAlt className="animate-spin text-xs" />
+                            <span>Renderizando y guardando cartel con marcas de agua...</span>
+                          </>
+                        ) : (
+                          <>
+                            <FaImage className="text-xs" />
+                            <span>✨ Renderizar y Guardar Cartel con Texto (para Landing)</span>
                           </>
                         )}
                       </button>

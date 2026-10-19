@@ -240,6 +240,24 @@ export async function composeBannerOnImage(options: BannerCompositorOptions): Pr
             ${ctaTextEscaped}
           </text>
         </g>
+
+        <!-- 6. Marca de Agua Oficial Santisoft.cl -->
+        <g filter="url(#soft-shadow)">
+          <rect x="${width - 180}" y="${height - 40}" width="150" height="28" rx="14" fill="rgba(15, 23, 42, 0.82)" stroke="rgba(255, 255, 255, 0.22)" stroke-width="1" />
+          <circle cx="${width - 164}" cy="${height - 26}" r="3.5" fill="#818cf8" />
+          <text 
+            x="${width - 100}" 
+            y="${height - 21}" 
+            fill="#ffffff" 
+            font-family="system-ui, -apple-system, Montserrat, Arial, sans-serif" 
+            font-size="11" 
+            font-weight="700" 
+            letter-spacing="0.4"
+            text-anchor="middle"
+          >
+            santisoft.cl
+          </text>
+        </g>
       </svg>
     `;
 
