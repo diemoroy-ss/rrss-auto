@@ -8,6 +8,7 @@ import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db, googleProvider } from "../../lib/firebase";
 import BrandHeader from "../../components/BrandHeader";
 import BrandFooter from "../../components/BrandFooter";
+import DotCanvas from "../../components/DotCanvas";
 import { FaCheck, FaShieldAlt, FaLock, FaCreditCard, FaArrowLeft, FaArrowRight } from "react-icons/fa";
 
 type PlanDetail = {
@@ -452,7 +453,9 @@ function ConfirmarPlanContent() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 selection:bg-orange-500 selection:text-white relative overflow-hidden">
+    <div className="landing-page-root relative overflow-x-hidden min-h-screen flex flex-col justify-between selection:bg-orange-500 selection:text-white">
+      <DotCanvas />
+
       {/* Resplandores de fondo sutiles con la paleta de Santisoft */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[360px] bg-orange-500/10 blur-[140px] pointer-events-none rounded-full" />
       <div className="absolute top-1/3 right-0 w-[500px] h-[500px] bg-amber-500/5 blur-[120px] pointer-events-none rounded-full" />
@@ -793,7 +796,7 @@ export default function ConfirmarPlanPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white">
+        <div className="min-h-screen flex items-center justify-center bg-[#0B0F19] text-white">
           <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
         </div>
       }
