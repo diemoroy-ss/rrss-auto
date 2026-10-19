@@ -30,7 +30,7 @@ export interface StrategyPillar {
 export interface StrategyScheduleItem {
   day: string;
   time: string;
-  format: "post" | "carrusel" | "reel";
+  format: "post" | "carrusel" | "reel" | "historia";
   objective: string;
   hook: string;
   linkedPublicationId?: string;
@@ -110,110 +110,94 @@ interface PlanConfig {
 const DEFAULT_PLANS: Record<string, PlanConfig> = {
   free: {
     id: "free",
-    name: "Prueba Gratis",
+    name: "Prueba Gratuita",
     tagline: "POR 10 DÍAS",
     price: 0,
     annualPrice: 0,
     postsLimit: 5,
     videosLimit: 0,
-    aiImagesLimit: 8,
+    aiImagesLimit: 5,
     aiVideosLimit: 0,
     seoBlogsLimit: 0,
     isPopular: false,
-    ctaText: "Probar 5 Posts Gratis",
+    ctaText: "Probar 10 Días Gratis",
     features: [
-      "5 publicaciones automáticas por 10 días",
-      "8 imágenes con nuestros agentes",
-      "Todas las redes sociales (IG, FB, TT, YT, X)",
+      "5 publicaciones automáticas en redes",
+      "5 imágenes con nuestros agentes",
+      "Instagram y Facebook integrados",
       "1 perfil de marca",
       "Sin tarjeta de crédito"
     ]
   },
-  starter: {
-    id: "starter",
-    name: "Starter",
-    tagline: "EMPIEZA A AUTOMATIZAR",
-    price: 24990,
-    annualPrice: 249900,
-    postsLimit: 20,
-    videosLimit: 2,
-    aiImagesLimit: 20,
-    aiVideosLimit: 2,
+  esencial: {
+    id: "esencial",
+    name: "Plan PyME Esencial",
+    tagline: "PRESENCIA ACTIVA",
+    price: 59990,
+    annualPrice: 599900,
+    postsLimit: 15,
+    videosLimit: 8,
+    aiImagesLimit: 15,
+    aiVideosLimit: 8,
     seoBlogsLimit: 0,
     isPopular: false,
-    ctaText: "Comenzar Starter",
+    ctaText: "Comenzar Esencial",
     features: [
-      "20 publicaciones en redes al mes",
-      "2 videos para Reels / TikTok / Shorts al mes",
-      "20 imágenes con nuestros agentes al mes",
-      "Todas las redes sociales",
-      "1 perfil de marca"
+      "15 publicaciones en redes al mes",
+      "8 guiones para Reels / TikTok al mes",
+      "15 imágenes con nuestros agentes al mes",
+      "Instagram y Facebook",
+      "WhatsApp Bot: consulta de posts y estado",
+      "1 perfil de marca",
+      "Precio normal $89.990/mes"
     ]
   },
-  growth: {
-    id: "growth",
-    name: "Growth",
-    tagline: "ACELERA TU PRESENCIA",
-    price: 44990,
-    annualPrice: 449900,
-    postsLimit: 40,
-    videosLimit: 6,
-    aiImagesLimit: 40,
-    aiVideosLimit: 6,
-    seoBlogsLimit: 2,
-    isPopular: true,
-    ctaText: "Elegir Growth",
-    features: [
-      "40 publicaciones en redes al mes",
-      "6 videos con locución y guión al mes",
-      "40 imágenes con nuestros agentes al mes",
-      "2 artículos de Blog SEO/GEO al mes",
-      "WhatsApp Bot: revisión y aprobación de posts",
-      "Todas las redes sociales"
-    ]
-  },
-  pro: {
-    id: "pro",
-    name: "Pro",
-    tagline: "EL MÁS ELEGIDO",
-    price: 89990,
-    annualPrice: 899900,
-    postsLimit: 80,
-    videosLimit: 12,
-    aiImagesLimit: 80,
-    aiVideosLimit: 12,
-    seoBlogsLimit: 8,
-    isPopular: false,
-    ctaText: "Elegir Pro",
-    features: [
-      "80 publicaciones en redes al mes",
-      "12 videos con locución y guión al mes",
-      "80 imágenes con nuestros agentes al mes",
-      "8 artículos de Blog SEO/GEO al mes",
-      "WhatsApp Bot completo + Radar de Nicho",
-      "Meta Ads integrado"
-    ]
-  },
-  business: {
-    id: "business",
-    name: "Business",
-    tagline: "HASTA 3 CUENTAS",
-    price: 169990,
-    annualPrice: 1699900,
-    postsLimit: 200,
+  crecimiento: {
+    id: "crecimiento",
+    name: "Plan PyME Crecimiento",
+    tagline: "MÁS ELEGIDO",
+    price: 99990,
+    annualPrice: 999900,
+    postsLimit: 30,
     videosLimit: 30,
-    aiImagesLimit: 200,
+    aiImagesLimit: 40,
     aiVideosLimit: 30,
-    seoBlogsLimit: 20,
-    isPopular: false,
-    ctaText: "Elegir Business",
+    seoBlogsLimit: 4,
+    isPopular: true,
+    ctaText: "Elegir Crecimiento",
     features: [
-      "200 publicaciones en redes al mes",
-      "30 videos con locución y guión al mes",
-      "200 imágenes con nuestros agentes al mes",
-      "20 artículos de Blog SEO/GEO al mes",
-      "WhatsApp Bot multi-marca",
-      "Hasta 3 marcas o cuentas independientes"
+      "30 publicaciones en redes al mes",
+      "30 guiones para Reels / TikTok al mes",
+      "40 imágenes con nuestros agentes al mes",
+      "Blog SEO & Artículos con posicionamiento",
+      "Espía de Competencia & Generador de Ads",
+      "Instagram, Facebook, LinkedIn y TikTok",
+      "WhatsApp Bot: revisión y aprobación de posts",
+      "Precio normal $149.990/mes"
+    ]
+  },
+  piloto_automatico: {
+    id: "piloto_automatico",
+    name: "Plan Piloto Automático",
+    tagline: "DONE-WITH-YOU VIP",
+    price: 249990,
+    annualPrice: 2499900,
+    postsLimit: 60,
+    videosLimit: 60,
+    aiImagesLimit: 120,
+    aiVideosLimit: 60,
+    seoBlogsLimit: 12,
+    isPopular: false,
+    ctaText: "Elegir Piloto Automático",
+    features: [
+      "60 publicaciones en redes al mes",
+      "60 guiones para Reels / TikTok al mes",
+      "120 imágenes con nuestros agentes al mes",
+      "Blog SEO completo + Radar de Nicho",
+      "Espía de Competencia & Ads Multiplataforma",
+      "Instagram, Facebook, LinkedIn y TikTok",
+      "Acompañamiento VIP integral con soporte 1-a-1 por WhatsApp",
+      "Precio normal $390.000/mes"
     ]
   }
 };
@@ -234,13 +218,13 @@ const sanitizeFeature = (text: string) => {
     .replace(/Inteligencia Artificial/gi, "agentes especializados");
 };
 
-const PLAN_DISPLAY_KEYS = ["free", "starter", "growth", "pro"] as const;
+const PLAN_DISPLAY_KEYS = ["free", "esencial", "crecimiento", "piloto_automatico"] as const;
 
 const PLAN_META: Record<string, { defaultBadge: string; emoji: string; subtitle: string }> = {
   free: { defaultBadge: "10 Días", emoji: "🎁", subtitle: "Comprueba la calidad en tus redes" },
-  starter: { defaultBadge: "Básico", emoji: "⚡", subtitle: "Constancia esencial mes a mes" },
-  growth: { defaultBadge: "Crecimiento", emoji: "🚀", subtitle: "El equilibrio perfecto de video y contenido" },
-  pro: { defaultBadge: "Avanzado", emoji: "👑", subtitle: "Máximo impacto con Meta Ads" },
+  esencial: { defaultBadge: "Presencia Activa", emoji: "⚡", subtitle: "Constancia esencial mes a mes" },
+  crecimiento: { defaultBadge: "Máquina de Ventas", emoji: "🚀", subtitle: "El más elegido por PyMEs para crecer" },
+  piloto_automatico: { defaultBadge: "VIP 1-a-1", emoji: "👑", subtitle: "Acompañamiento integral llave en mano" },
 };
 
 function WatermarkOverlay({
@@ -1170,8 +1154,24 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
                             <span className="text-[10px] text-slate-500 font-normal">{item.time}</span>
                           </td>
                           <td className="p-3 whitespace-nowrap">
-                            <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase bg-slate-100 text-slate-700 border border-slate-200">
-                              {item.format === "carrusel" ? "🎠 Carrusel" : item.format === "reel" ? "🎬 Reel" : "📸 Post Feed"}
+                            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border flex items-center gap-1 w-fit ${
+                              item.format === "carrusel"
+                                ? "bg-amber-50 text-amber-800 border-amber-200"
+                                : item.format === "reel"
+                                ? "bg-purple-50 text-purple-800 border-purple-200"
+                                : item.format === "historia"
+                                ? "bg-pink-50 text-pink-800 border-pink-200"
+                                : "bg-blue-50 text-blue-800 border-blue-200"
+                            }`}>
+                              <span>
+                                {item.format === "carrusel"
+                                  ? "🎠 Carrusel"
+                                  : item.format === "reel"
+                                  ? "🎬 Reel (9:16)"
+                                  : item.format === "historia"
+                                  ? "📱 Historia"
+                                  : "📸 Post Feed"}
+                              </span>
                             </span>
                           </td>
                           <td className="p-3 font-medium text-slate-800">
@@ -1508,7 +1508,7 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
               </div>
               <h4 className="text-sm font-bold text-slate-900">Sin Costos de Agencia</h4>
               <p className="text-xs text-slate-600 leading-relaxed">
-                Planes transparentes en pesos chilenos desde {formatPrice(plans["starter"]?.price || 24990)}/mes. Sin contratos de permanencia ni cobros sorpresa.
+                Planes transparentes en pesos chilenos desde {formatPrice(plans["esencial"]?.price || 59990)}/mes. Sin contratos de permanencia ni cobros sorpresa.
               </p>
             </div>
           </div>

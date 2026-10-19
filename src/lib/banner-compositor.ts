@@ -122,7 +122,7 @@ export async function composeBannerOnImage(options: BannerCompositorOptions): Pr
     const benefitX = (width - benefitWidth) / 2;
 
     const svgOverlay = `
-      <svg width="${width}" height="${height}" viewBox="0 0 ${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <!-- Filtro de sombra profunda para legibilidad sobre cualquier foto -->
           <filter id="heavy-shadow" x="-30%" y="-30%" width="160%" height="160%">
@@ -292,7 +292,8 @@ export async function composeBannerOnImage(options: BannerCompositorOptions): Pr
       return baseImageUrl;
     }
 
-    const bucket = adminStorage.bucket();
+    const bucketName = process.env.FIREBASE_STORAGE_BUCKET || "rrss-santisoft.firebasestorage.app";
+    const bucket = adminStorage.bucket(bucketName);
     const timestamp = Date.now();
     const destination = `users/${userId}/commercial_banners/${timestamp}.jpg`;
     const downloadToken = `${timestamp}_${Math.random().toString(36).substring(2, 10)}`;

@@ -191,10 +191,14 @@ Tu misión es estructurar:
 2. EXACTAMENTE ${clampedCount} publicaciones de muestra completas ('publications') diseñadas según los estilos visuales seleccionados.
 
 REGLAS ABSOLUTAS:
-1. FORMATOS PERMITIDOS: Solo puedes asignar formatos de esta lista: ${JSON.stringify(finalAllowedTypes)}.
-   - "post": Publicación estándar de feed (1:1), fotografía o cartel publicitario de impacto.
-   - "carrusel": Publicación de 3 diapositivas secuenciales (Slide 1: Gancho, Slide 2: Detalle/Beneficio, Slide 3: Oferta y llamado).
-   (No incluir videos ni reels).
+1. FORMATOS PERMITIDOS:
+   - Para las MUESTRAS DISEÑADAS ('publications'): Solo puedes asignar formatos de esta lista: ${JSON.stringify(finalAllowedTypes)} (máximo 3 muestras, post o carrusel según configuración).
+   - Para la PLANIFICACIÓN SEMANAL ('strategy.schedulePlan'): DEBE SER UN MIX ESTRATÉGICO Y VARIADO de 5 publicaciones que demuestre todo el potencial de las redes sociales para ${businessName}. Distribuye obligatoriamente:
+     * 2 publicaciones de formato "post" (feed 1:1, cartel o foto de producto).
+     * 1 publicación de formato "carrusel" (educativo, comparativa o secuencia deslizable).
+     * 1 publicación de formato "reel" (video corto vertical 9:16 para viralidad y alcance).
+     * 1 publicación de formato "historia" (stori interactiva con stickers, encuesta o llamado a DM).
+     (Valores válidos para 'format' en schedulePlan: "post", "carrusel", "reel", "historia").
 
 2. HUMANIZACIÓN Y TONO:
    - Tono: ${toneInstruction}
@@ -202,7 +206,7 @@ REGLAS ABSOLUTAS:
    - CERO frases robóticas ("en el vertiginoso mundo", "descubre", "sumérgete", "en conclusión").
    - NUNCA menciones "IA" o "Inteligencia Artificial". Refiérete siempre a "nuestros agentes" o "nuestro equipo de agentes especializados".
 
-3. ASIGNACIÓN ESTRICTA DE ESTILOS VISUALES:
+3. ASIGNACIÓN ESTRICTA DE ESTILOS VISUALES EN LAS MUESTRAS:
    - Para la publicación 1 ('pub_1'): Asigna OBLIGATORIAMENTE el Estilo #1: "${selectedStyles[0]?.title || 'Estilo Comercial'}".
    - Para la publicación 2 ('pub_2'): Asigna OBLIGATORIAMENTE el Estilo #2: "${selectedStyles[1]?.title || selectedStyles[0]?.title || 'Estilo Comercial'}".
    - Para la publicación 3 ('pub_3'): Asigna OBLIGATORIAMENTE el Estilo #3: "${selectedStyles[2]?.title || selectedStyles[0]?.title || 'Estilo Comercial'}".
@@ -477,7 +481,7 @@ ${stylesContext}`;
         const hasCatalogRealPhoto = Boolean(catalogMatch?.imageUrl && catalogMatch.imageUrl.startsWith("http"));
         const effectiveRealPhotoUrl = hasCatalogRealPhoto
           ? catalogMatch.imageUrl
-          : body.baseImageUrl && body.baseImageUrl.startsWith("http")
+          : (idx === 0 && body.baseImageUrl && body.baseImageUrl.startsWith("http"))
           ? body.baseImageUrl
           : "";
 
