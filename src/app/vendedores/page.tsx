@@ -9,6 +9,7 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc, collection, getDocs } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { HARDCODED_STYLES, promptCategories, PromptTemplate, getPromptCategories } from "../../lib/prompt-templates";
+import { DEFAULT_TEXT_TEMPLATES, TEXT_TEMPLATE_CATEGORIES } from "../../lib/text-templates";
 import { createButterflyRender, compositeImageClient, BadgeStyle } from "../../lib/image-compositor";
 import { removeLogoBackground } from "../../lib/logo-bg-remover";
 import LogoMark from "../../components/LogoMark";
@@ -341,6 +342,18 @@ export default function VendedoresPwaPage() {
   const [isRenderingPoster, setIsRenderingPoster] = useState<boolean>(false);
   const [uploadedBaseImageUrl, setUploadedBaseImageUrl] = useState<string>("");
   const [uploadedLogoUrl, setUploadedLogoUrl] = useState<string>("");
+  const [selectedTextTemplateId, setSelectedTextTemplateId] = useState<string>(
+    DEFAULT_TEXT_TEMPLATES[0]?.id || ""
+  );
+  const [textTemplateCategory, setTextTemplateCategory] = useState<string>("Todas");
+
+  // Sincronizar la plantilla seleccionada cuando el vendedor cambia de muestra (#1, #2, #3)
+  useEffect(() => {
+    const activeTplId = generatedPublications[selectedPreviewPubIndex]?.textTemplateId;
+    if (activeTplId) {
+      setSelectedTextTemplateId(activeTplId);
+    }
+  }, [selectedPreviewPubIndex, generatedPublications]);
 
   const handleToggleType = (type: "post" | "carrusel") => {
     setAllowedTypes((prev) => {
@@ -926,8 +939,8 @@ export default function VendedoresPwaPage() {
     }
   };
 
-  // 8c. Renderizar y Guardar Cartel Publicitario con Plantilla de Texto Aleatoria (para Landing pública)
-  const handleRenderAndSavePoster = async (pubIndex: number) => {
+  // 8c. Renderizar y Guardar Cartel Publicitario con la Plantilla de Texto Seleccionada (para Landing pública)
+  const handleRenderAndSavePoster = async (pubIndex: number, explicitTemplateId?: string) => {
     const pub = generatedPublications[pubIndex];
     if (!pub) return;
 
@@ -937,6 +950,8 @@ export default function VendedoresPwaPage() {
       alert("No se encontró una imagen base para estampar los textos. Sube una foto o genera una imagen primero.");
       return;
     }
+
+    const targetTemplateId = explicitTemplateId || selectedTextTemplateId || pub.textTemplateId || "";
 
     setIsRenderingPoster(true);
     try {
@@ -959,6 +974,7 @@ export default function VendedoresPwaPage() {
           rubro,
           aspectRatio: pub.type === "reel" ? "9:16" : "1:1",
           logoUrl: cleanedLogoUrl || logoPreview || "",
+          templateId: targetTemplateId,
           currentTemplateId: pub.textTemplateId || "",
         }),
       });
@@ -970,6 +986,9 @@ export default function VendedoresPwaPage() {
 
       const data = await res.json();
       if (data.imageUrl) {
+        if (data.templateId) {
+          setSelectedTextTemplateId(data.templateId);
+        }
         setGeneratedPublications((prev) => {
           const copy = [...prev];
           if (copy[pubIndex]) {
@@ -983,7 +1002,7 @@ export default function VendedoresPwaPage() {
               imageUrl: data.imageUrl,
               baseImageUrl: baseImg,
               isCommercialPoster: true,
-              textTemplateId: data.templateId || copy[pubIndex].textTemplateId,
+              textTemplateId: data.templateId || targetTemplateId || copy[pubIndex].textTemplateId,
               textTemplateName: data.templateName || copy[pubIndex].textTemplateName,
               carouselImages: updatedCarousel,
               ...(data.editDocId ? { commercialEditId: data.editDocId } : {}),
@@ -996,10 +1015,6 @@ export default function VendedoresPwaPage() {
           setGeneratedImageUrl(data.imageUrl);
           setCanvasImageUrl(data.imageUrl);
         }
-
-        alert(
-          `¡Cartel renderizado y guardado con la plantilla "${data.templateName || "Comercial"}"! Ya está activo en la landing pública.`
-        );
       }
     } catch (err: any) {
       console.error("Error renderizando cartel con agentes:", err);
@@ -2663,29 +2678,146 @@ export default function VendedoresPwaPage() {
                         )}
                       </button>
 
-                      {/* BOTÓN RENDERIZAR Y GUARDAR CARTEL CON PLANTILLA DE TEXTO (PARA LANDING) */}
-                      <button
-                        type="button"
-                        disabled={isRenderingPoster || isGeneratingSingleImg}
-                        onClick={() => handleRenderAndSavePoster(selectedPreviewPubIndex)}
-                        className={`w-full py-2.5 px-3 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-2 border shadow-xs ${
-                          isRenderingPoster
-                            ? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed"
-                            : "bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600 shadow-emerald-600/20 active:scale-98 cursor-pointer"
-                        }`}
-                      >
-                        {isRenderingPoster ? (
-                          <>
-                            <FaSyncAlt className="animate-spin text-xs" />
-                            <span>Aplicando plantilla de texto y guardando en Landing...</span>
-                          </>
-                        ) : (
-                          <>
-                            <FaImage className="text-xs" />
-                            <span>✨ Probar otra Plantilla de Texto y Guardar (para Landing)</span>
-                          </>
-                        )}
-                      </button>
+                      {/* SELECTOR DE PLANTILLAS DE TEXTO (LISTADO SELECCIONABLE) */}
+                      <div className="rounded-2xl border border-emerald-200 bg-emerald-50/40 p-3 space-y-2.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <label className="text-[11px] font-black uppercase tracking-wider text-emerald-900 flex items-center gap-1.5">
+                            <span>📐</span> Elige la Plantilla de Texto:
+                          </label>
+                          <span className="text-[10px] font-bold text-emerald-700 bg-white px-2 py-0.5 rounded-full border border-emerald-200">
+                            {DEFAULT_TEXT_TEMPLATES.length} diseños
+                          </span>
+                        </div>
+
+                        {/* Filtro de categorías de plantillas de texto */}
+                        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                          {TEXT_TEMPLATE_CATEGORIES.map((cat) => {
+                            const isCatActive = textTemplateCategory === cat;
+                            return (
+                              <button
+                                key={cat}
+                                type="button"
+                                onClick={() => setTextTemplateCategory(cat)}
+                                className={`px-2.5 py-1 rounded-full text-[10px] font-black whitespace-nowrap transition-all cursor-pointer border ${
+                                  isCatActive
+                                    ? "bg-emerald-600 text-white border-emerald-600 shadow-2xs"
+                                    : "bg-white text-slate-600 border-slate-200 hover:bg-emerald-50"
+                                }`}
+                              >
+                                {cat}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Listado de plantillas seleccionables */}
+                        <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1">
+                          {DEFAULT_TEXT_TEMPLATES.filter(
+                            (tpl) =>
+                              textTemplateCategory === "Todas" ||
+                              tpl.category === textTemplateCategory
+                          ).map((tpl) => {
+                            const isSelected = selectedTextTemplateId === tpl.id;
+                            const isCurrentlyApplied = activePub?.textTemplateId === tpl.id;
+                            const layoutTag =
+                              tpl.layoutPosition === "split_left" || tpl.category === "Split Lateral"
+                                ? "Split Izquierdo"
+                                : tpl.headlineFont === "elegant_serif" || tpl.category === "Gourmet & Menú"
+                                ? "Portada Editorial"
+                                : tpl.category === "Ofertas Flash" || tpl.category === "Delivery"
+                                ? "Impacto Inferior"
+                                : "Cabecera Limpia";
+
+                            return (
+                              <div
+                                key={tpl.id}
+                                onClick={() => setSelectedTextTemplateId(tpl.id)}
+                                className={`p-2 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2 ${
+                                  isSelected
+                                    ? "bg-white border-emerald-500 ring-2 ring-emerald-500/20 shadow-xs"
+                                    : "bg-white/80 border-slate-200 hover:border-emerald-300 hover:bg-white"
+                                }`}
+                              >
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  {/* Muestra de color de la plantilla */}
+                                  <div className="flex flex-col gap-0.5 shrink-0">
+                                    <span
+                                      className="w-3.5 h-3.5 rounded-full border border-slate-300 shadow-2xs"
+                                      style={{ backgroundColor: tpl.priceBgColor || tpl.ctaBgColor || "#fbbf24" }}
+                                      title="Color de acento / precio"
+                                    />
+                                    <span
+                                      className="w-3.5 h-2 rounded-sm border border-slate-300"
+                                      style={{ backgroundColor: tpl.badgeBgColor || "#0f172a" }}
+                                      title="Color de etiqueta"
+                                    />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-1.5">
+                                      <p className="text-xs font-black text-slate-800 truncate">
+                                        {tpl.name}
+                                      </p>
+                                      {isCurrentlyApplied && (
+                                        <span className="px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 text-[9px] font-black shrink-0">
+                                          Aplicada
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-[10px] text-slate-500 truncate">
+                                      <span className="font-bold text-slate-600">{layoutTag}</span> · {tpl.category} · CTA: {tpl.ctaText}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  disabled={isRenderingPoster || isGeneratingSingleImg}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedTextTemplateId(tpl.id);
+                                    handleRenderAndSavePoster(selectedPreviewPubIndex, tpl.id);
+                                  }}
+                                  className={`px-2.5 py-1 rounded-lg text-[10px] font-black shrink-0 transition-all cursor-pointer ${
+                                    isSelected
+                                      ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs"
+                                      : "bg-slate-100 hover:bg-emerald-600 hover:text-white text-slate-700"
+                                  }`}
+                                >
+                                  {isRenderingPoster && isSelected ? "..." : "Aplicar"}
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* BOTÓN RENDERIZAR Y GUARDAR CARTEL CON LA PLANTILLA SELECCIONADA */}
+                        <button
+                          type="button"
+                          disabled={isRenderingPoster || isGeneratingSingleImg}
+                          onClick={() => handleRenderAndSavePoster(selectedPreviewPubIndex, selectedTextTemplateId)}
+                          className={`w-full py-2.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 border shadow-xs ${
+                            isRenderingPoster
+                              ? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed"
+                              : "bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600 shadow-emerald-600/20 active:scale-98 cursor-pointer"
+                          }`}
+                        >
+                          {isRenderingPoster ? (
+                            <>
+                              <FaSyncAlt className="animate-spin text-xs" />
+                              <span>Estampando plantilla y guardando en Landing...</span>
+                            </>
+                          ) : (
+                            <>
+                              <FaImage className="text-xs" />
+                              <span>
+                                ✨ Renderizar y Guardar con «
+                                {DEFAULT_TEXT_TEMPLATES.find((t) => t.id === selectedTextTemplateId)?.name || "Plantilla Seleccionada"}
+                                »
+                              </span>
+                            </>
+                          )}
+                        </button>
+                      </div>
 
                       <div className="flex gap-2">
                         {createdDemoId && (
