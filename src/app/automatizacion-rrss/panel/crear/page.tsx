@@ -564,7 +564,7 @@ export default function RrssCreatePost() {
     // Definir los pasos del modal
     const isCarousel = postType === 'Carrusel';
     const initialSteps: GeneratingStep[] = [
-      { id: 'generate',  label: 'Diseñando propuesta visual con IA',   icon: '🎨', status: 'pending' },
+      { id: 'generate',  label: 'Nuestros agentes diseñan la propuesta visual',   icon: '🎨', status: 'pending' },
       { id: 'review1',   label: 'Revisando calidad del prompt',         icon: '🔍', status: 'pending', sublabel: 'Iteración 1/3' },
       { id: 'review2',   label: 'Optimizando prompt',                   icon: '⚡', status: 'pending', sublabel: 'Iteración 2/3' },
       { id: 'review3',   label: 'Refinamiento final',                   icon: '✨', status: 'pending', sublabel: 'Iteración 3/3' },
@@ -688,7 +688,7 @@ export default function RrssCreatePost() {
 
     } catch (err: any) {
       setGeneratingOpen(false);
-      setError(err.message || "Error al diseñar la propuesta visual con IA.");
+      setError(err.message || "Error al diseñar la propuesta visual.");
     } finally {
       setPromptLoading(false);
     }
@@ -707,7 +707,7 @@ export default function RrssCreatePost() {
     const confirmSteps: GeneratingStep[] = [
       { id: 'prep',     label: 'Preparando prompt enriquecido',          icon: '🧪', status: 'pending' },
       { id: 'send',     label: 'Enviando flujo a n8n',                   icon: '📡', status: 'pending' },
-      { id: 'generate', label: 'Generando imagen con IA',                icon: '🖼️', status: 'pending', sublabel: 'Gemini Imagen procesando...' },
+      { id: 'generate', label: 'Nuestros agentes generan la imagen comercial', icon: '🖼️', status: 'pending', sublabel: 'Renderizando escena en alta resolución...' },
       { id: 'done',     label: 'Imagen lista',                           icon: '✅', status: 'pending' },
     ];
     setGeneratingSteps(confirmSteps);
@@ -820,7 +820,7 @@ export default function RrssCreatePost() {
       updateStep('send', 'done');
 
       // ── GENERATE: Esperando respuesta de n8n con la imagen ──
-      updateStep('generate', 'running', 'Procesando en el servidor de IA...');
+      updateStep('generate', 'running', 'Nuestros agentes componen la escena publicitaria...');
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
@@ -830,10 +830,31 @@ export default function RrssCreatePost() {
       const data = await res.json();
       console.log(`✅ [N8N RESPONSE]`, data);
 
-      // Soportar tanto { imageUrl } como { status: ok, img_url: "..." }
-      const resolvedImageUrl: string = data.img_url || data.imageUrl || "";
-      const resolvedImageUrls: string[] = data.img_urls || data.imageUrls || (resolvedImageUrl ? [resolvedImageUrl] : []);
-      const resolvedCopyRaw: string = data.suggestedCopy || data.copy || "";
+      // Soportar respuestas en array, objetos directos o anidados
+      const dataItem = Array.isArray(data) ? (data[0] || {}) : data;
+      const resolvedImageUrl: string =
+        dataItem?.img_url ||
+        dataItem?.imageUrl ||
+        dataItem?.url ||
+        dataItem?.image ||
+        dataItem?.outputUrl ||
+        dataItem?.output ||
+        dataItem?.data?.imageUrl ||
+        dataItem?.data?.url ||
+        (typeof data === "string" && data.startsWith("http") ? data : "") ||
+        "";
+
+      const rawUrls: string[] =
+        dataItem?.img_urls ||
+        dataItem?.imageUrls ||
+        dataItem?.images ||
+        (Array.isArray(data)
+          ? data.map((d: any) => d?.imageUrl || d?.url || d?.img_url || d?.outputUrl || (typeof d === "string" ? d : null)).filter(Boolean)
+          : []);
+
+      const resolvedImageUrls: string[] =
+        rawUrls.length > 0 ? rawUrls : (resolvedImageUrl ? [resolvedImageUrl] : []);
+      const resolvedCopyRaw: string = dataItem?.suggestedCopy || dataItem?.copy || dataItem?.text || "";
       const resolvedCopy = appendContactInfo(resolvedCopyRaw);
 
       updateStep('generate', 'done');
@@ -889,15 +910,79 @@ export default function RrssCreatePost() {
         console.error("Error al persistir imagen en biblioteca:", persistErr);
       }
 
-      // Adaptar respuesta al estado de slides
-      if (postType === 'Carrusel' && resolvedImageUrls.length > 0) {
+      // Adaptar respuesta al estado de slides y sincronizar con posterConfig
+      if (isSingleSlideGen && singleSlideTargetIdx !== null) {
+        setPreviewSlides((prev) => {
+          const next = prev.length > 0 ? [...prev] : Array.from({ length: carouselCount || 5 }, () => ({ url: "", copy: "" }));
+          while (next.length <= singleSlideTargetIdx) {
+            next.push({ url: "", copy: resolvedCopy });
+          }
+          next[singleSlideTargetIdx] = { url: resolvedImageUrl, copy: resolvedCopy || next[singleSlideTargetIdx]?.copy || "" };
+          return next;
+        });
+
+        setPosterConfig((prev) => {
+          const existingSlides = prev.slides && prev.slides.length > 0 ? [...prev.slides] : [...DEFAULT_POSTER_SLIDES];
+          while (existingSlides.length <= singleSlideTargetIdx) {
+            existingSlides.push({
+              slideNumber: existingSlides.length + 1,
+              role: CAROUSEL_DEFAULT_SLIDES[existingSlides.length]?.role || `Slide ${existingSlides.length + 1}`,
+              mainText: "",
+              priceText: "",
+              sloganText: "",
+              ctaText: "",
+            });
+          }
+          existingSlides[singleSlideTargetIdx] = {
+            ...existingSlides[singleSlideTargetIdx],
+            imageUrl: resolvedImageUrl,
+            baseImageUrl: resolvedImageUrl,
+          };
+          return {
+            ...prev,
+            imageUrl: singleSlideTargetIdx === (prev.activeSlideIndex ?? 0) ? resolvedImageUrl : (prev.imageUrl || resolvedImageUrl),
+            slides: existingSlides,
+          };
+        });
+      } else if (postType === 'Carrusel' && resolvedImageUrls.length > 0) {
         const slides: CarouselSlide[] = resolvedImageUrls.map((url: string) => ({
           url,
           copy: resolvedCopy
         }));
         setPreviewSlides(slides);
+
+        setPosterConfig((prev) => {
+          const existingSlides = prev.slides && prev.slides.length > 0 ? [...prev.slides] : [...DEFAULT_POSTER_SLIDES];
+          resolvedImageUrls.forEach((url, i) => {
+            while (existingSlides.length <= i) {
+              existingSlides.push({
+                slideNumber: existingSlides.length + 1,
+                role: CAROUSEL_DEFAULT_SLIDES[existingSlides.length]?.role || `Slide ${existingSlides.length + 1}`,
+                mainText: "",
+                priceText: "",
+                sloganText: "",
+                ctaText: "",
+              });
+            }
+            existingSlides[i] = {
+              ...existingSlides[i],
+              imageUrl: url,
+              baseImageUrl: url,
+            };
+          });
+          return {
+            ...prev,
+            imageUrl: resolvedImageUrls[0],
+            slides: existingSlides,
+          };
+        });
       } else {
         setPreviewSlides([{ url: resolvedImageUrl, copy: resolvedCopy }]);
+        setPosterConfig((prev) => ({
+          ...prev,
+          imageUrl: resolvedImageUrl,
+          baseImageUrl: resolvedImageUrl,
+        }));
       }
 
       // Mostrar modal informando estado real de persistencia (PF-10)
@@ -942,7 +1027,7 @@ export default function RrssCreatePost() {
 
   const handleRetouchImage = async (index: number | null, instruction: string) => {
     if (!pendingPrompts) {
-      setError("No se puede retocar esta imagen porque no proviene de una generación con IA o no se encontró su prompt original.");
+      setError("No se puede retocar esta imagen porque no proviene de nuestros agentes o no se encontró su prompt original.");
       return;
     }
     setPreviewLoading(true);
@@ -1962,6 +2047,9 @@ export default function RrssCreatePost() {
               carouselCount={carouselCount}
               activeSlideIndex={activeSlideIndex}
               setActiveSlideIndex={setActiveSlideIndex}
+              previewSlides={previewSlides}
+              onOpenPostModal={() => setShowFinalPostModal(true)}
+              isReadyToPost={Boolean(isReady)}
             />
           </div>
         ) : (
@@ -2141,7 +2229,8 @@ export default function RrssCreatePost() {
         )
       )}
 
-      {/* 3. SECCIÓN INFERIOR: ÁREA DE VISUALIZACIÓN A PANTALLA COMPLETA ABAJO */}
+      {/* 3. SECCIÓN INFERIOR: ÁREA DE VISUALIZACIÓN (Solo si no es afiche, donde ya se ve en la card de Composición) */}
+      {!openEditorParam && activeCreationFlow === 'afiche' ? null : (
       <div className="w-full border-t border-slate-200/80 pt-8 mt-10">
         <h3 className="text-lg font-black text-slate-800 mb-6 uppercase tracking-wider">
           Previsualización y Edición
@@ -2154,7 +2243,7 @@ export default function RrssCreatePost() {
                         <div className="p-8 bg-slate-50 border border-slate-200 rounded-[32px] text-center flex flex-col items-center justify-center min-h-[300px] text-indigo-750 shadow-md animate-pulse w-full">
                            <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4 mx-auto"></div>
                            <h4 className="font-black text-md mb-1 uppercase tracking-widest">Procesando Diseño...</h4>
-                           <p className="font-medium text-xs max-w-xs mx-auto leading-relaxed text-indigo-500">Aplicando cambios a tu imagen con IA. Esto puede tomar unos segundos.</p>
+                           <p className="font-medium text-xs max-w-xs mx-auto leading-relaxed text-indigo-500">Nuestros agentes aplican cambios a tu imagen. Esto puede tomar unos segundos.</p>
                         </div>
                     ) : selectedTemplate.type === 'video' || selectedTemplate.url.match(/\.(mp4|mov|webm|quicktime)/i) || selectedTemplate.url.includes("video") ? (
                         <div className="p-8 bg-slate-50 rounded-[32px] border-2 border-slate-100 animate-in zoom-in duration-500 space-y-6 shadow-xl shadow-slate-200/50 max-w-4xl mx-auto">
@@ -2232,7 +2321,7 @@ export default function RrssCreatePost() {
                  </div>
                </div>
             ) : (
-                 <div className="w-full">
+                 <div className="w-full max-w-xl mx-auto space-y-6">
                   <CarouselWizard 
                      slides={previewSlides}
                      onUpdateSlide={updateSlideFinalUrl}
@@ -2267,6 +2356,7 @@ export default function RrssCreatePost() {
             </div>
         )}
       </div>
+      )}
 
       <AIOptionsModal 
         isOpen={showOptionsModal}

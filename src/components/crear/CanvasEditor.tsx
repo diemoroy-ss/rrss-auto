@@ -323,15 +323,15 @@ export default function CanvasEditor({
          </button>
        )}
 
-       {/* Retoque de Imagen con IA */}
+       {/* Retoque de Imagen */}
        {!finalImageUrl && onRetouch && (
          <div className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col gap-2">
            <div className="flex items-center gap-2 mb-1">
              <span className="text-sm">🪄</span>
-             <p className="text-slate-700 text-xs font-black uppercase tracking-wider">¿Retocar imagen con IA?</p>
+             <p className="text-slate-700 text-xs font-black uppercase tracking-wider">¿Retocar imagen con nuestros agentes?</p>
            </div>
            <p className="text-slate-500 text-[10px] font-medium leading-relaxed">
-             Si la imagen tiene un error o texto extraño, pídele a la IA que lo corrija.
+             Si la imagen tiene un detalle o texto no deseado, indícalo aquí para que nuestros agentes lo corrijan.
            </p>
            <div className="flex items-stretch gap-2 mt-1">
              <input
@@ -370,7 +370,14 @@ export default function CanvasEditor({
           className={`aspect-square rounded-[24px] overflow-hidden bg-slate-200 border-4 border-white shadow-xl relative group ${showEditor && !isOverlaying && !finalImageUrl ? 'cursor-crosshair' : ''}`}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={finalImageUrl || baseImageUrl} alt="AI Output" className="w-full h-full object-cover" />
+          {(finalImageUrl || baseImageUrl) ? (
+            <img src={finalImageUrl || baseImageUrl} alt="Diseño Publicitario" className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center text-slate-400 bg-slate-100">
+              <span className="text-4xl mb-2">📸</span>
+              <span className="text-xs font-bold text-slate-600">Cargando previsualización del diseño...</span>
+            </div>
+          )}
           
        {/* Overlays before render */}
        {showEditor && !finalImageUrl && !isOverlaying && textLayers.map((layer, idx) => (

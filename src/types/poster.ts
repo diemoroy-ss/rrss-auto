@@ -60,6 +60,7 @@ export interface PosterConfig {
   ctaText: string;            // "¡Compra Ahora!", "Reserva Hoy", etc.
   allowImageRetouch?: boolean;
   baseImageUrl?: string;
+  imageUrl?: string;
   additionalNotes?: string;
 }
 

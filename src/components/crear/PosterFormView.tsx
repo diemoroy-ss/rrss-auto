@@ -82,6 +82,10 @@ interface PosterFormViewProps {
   carouselCount?: number;
   activeSlideIndex?: number;
   setActiveSlideIndex?: (idx: number) => void;
+  previewSlides?: { url: string; copy?: string }[];
+  onOpenEditor?: (slideIdx?: number) => void;
+  onOpenPostModal?: () => void;
+  isReadyToPost?: boolean;
 }
 
 export default function PosterFormView({
@@ -122,6 +126,10 @@ export default function PosterFormView({
   carouselCount = 5,
   activeSlideIndex = 0,
   setActiveSlideIndex,
+  previewSlides = [],
+  onOpenEditor,
+  onOpenPostModal,
+  isReadyToPost = false,
 }: PosterFormViewProps) {
   const [showCustomCta, setShowCustomCta] = useState(false);
   const [customCta, setCustomCta] = useState("");
@@ -464,7 +472,7 @@ export default function PosterFormView({
             </div>
             </div>
 
-            {/* Previsualización en Vivo de la Plantilla de Texto */}
+            {/* Previsualización en Vivo de la Plantilla de Texto o Imagen Generada */}
             <div className="mt-4">
               <PosterTemplatePreview
                 layout={posterConfig.layout || "auto"}
@@ -479,6 +487,22 @@ export default function PosterFormView({
                 includeBusinessName={posterConfig.includeBusinessName}
                 includeLogo={posterConfig.includeLogo}
                 aspectRatio="4:5"
+                generatedImageUrl={
+                  postType === "Carrusel"
+                    ? (posterConfig.slides?.[currentSlideIdx]?.imageUrl ||
+                       posterConfig.slides?.[currentSlideIdx]?.baseImageUrl ||
+                       previewSlides?.[currentSlideIdx]?.url ||
+                       "")
+                    : (posterConfig.imageUrl ||
+                       posterConfig.baseImageUrl ||
+                       previewSlides?.[0]?.url ||
+                       baseImageUrl ||
+                       "")
+                }
+                slideNumber={postType === "Carrusel" ? currentSlideIdx + 1 : undefined}
+                totalSlides={postType === "Carrusel" ? (carouselCount || 5) : 1}
+                onRegenerate={() => handleGeneratePreview(false, { singleSlideOnly: postType === "Carrusel", slideIndex: currentSlideIdx })}
+                onOpenEditor={onOpenEditor ? () => onOpenEditor(currentSlideIdx) : undefined}
               />
             </div>
           </div>
@@ -1107,54 +1131,70 @@ export default function PosterFormView({
 
             {/* Banner resumen de avance */}
             {posterConfig.slides?.some((s) => Boolean(s.imageUrl)) && (
-              <div className="flex items-center justify-between p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl">
-                <div className="flex items-center gap-2">
-                  <span className="text-base">📑</span>
-                  <span className="text-xs font-bold text-emerald-950">
-                    {posterConfig.slides.filter((s) => Boolean(s.imageUrl)).length} de {carouselCount || 5} diapositivas con imagen diseñada
-                  </span>
+              <div className="flex flex-col sm:flex-row items-center justify-between p-4 bg-emerald-50 border border-emerald-200 rounded-2xl gap-3 shadow-xs">
+                <div className="flex items-center gap-2.5">
+                  <span className="text-2xl">🎉</span>
+                  <div>
+                    <span className="text-xs font-black text-emerald-950 block">
+                      {posterConfig.slides.filter((s) => Boolean(s.imageUrl)).length} de {carouselCount || 5} diapositivas listas
+                    </span>
+                    <span className="text-[10px] text-emerald-700 font-medium">
+                      Revisa cada slide arriba en la card de Composición
+                    </span>
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const el = document.getElementById("preview-section");
-                    if (el) el.scrollIntoView({ behavior: "smooth" });
-                  }}
-                  className="text-xs font-black text-emerald-800 hover:text-emerald-950 underline cursor-pointer"
-                >
-                  Revisar en Editor y Publicar →
-                </button>
+                {onOpenPostModal && (
+                  <button
+                    type="button"
+                    onClick={onOpenPostModal}
+                    className="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black py-2.5 px-5 rounded-xl text-xs uppercase tracking-wider transition-all shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 cursor-pointer shrink-0"
+                  >
+                    <span>🚀</span> Continuar a Publicar
+                  </button>
+                )}
               </div>
             )}
           </div>
         ) : (
-          <button
-            type="button"
-            onClick={() => handleGeneratePreview()}
-            disabled={
-              previewLoading ||
-              (!idea.trim() &&
-                !posterConfig.mainText?.trim() &&
-                !imageExpectation.trim() &&
-                !postText.trim())
-            }
-            className="w-full bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-black py-4 px-6 rounded-2xl text-sm uppercase tracking-wider transition-all shadow-lg shadow-amber-500/25 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-          >
-            {previewLoading ? (
-              <>
-                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span>Diseñando Afiche Publicitario...</span>
-              </>
-            ) : (
-              <>
-                <span className="text-lg">🎯</span>
-                <span>Diseñar Afiche Publicitario</span>
-              </>
+          <div className="space-y-3">
+            <button
+              type="button"
+              onClick={() => handleGeneratePreview()}
+              disabled={
+                previewLoading ||
+                (!idea.trim() &&
+                  !posterConfig.mainText?.trim() &&
+                  !imageExpectation.trim() &&
+                  !postText.trim())
+              }
+              className="w-full bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-black py-4 px-6 rounded-2xl text-sm uppercase tracking-wider transition-all shadow-lg shadow-amber-500/25 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            >
+              {previewLoading ? (
+                <>
+                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>Nuestros agentes están diseñando el afiche...</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-lg">🎯</span>
+                  <span>{posterConfig.imageUrl || previewSlides?.[0]?.url ? "Rediseñar Afiche Publicitario" : "Diseñar Afiche Publicitario"}</span>
+                </>
+              )}
+            </button>
+
+            {onOpenPostModal && (posterConfig.imageUrl || previewSlides?.[0]?.url) && (
+              <button
+                type="button"
+                onClick={onOpenPostModal}
+                className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black py-3.5 px-6 rounded-2xl text-xs uppercase tracking-wider transition-all shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>🚀</span> Publicar / Programar este Afiche
+              </button>
             )}
-          </button>
+          </div>
         )}
       </div>
     </div>

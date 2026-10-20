@@ -16,6 +16,12 @@ interface PosterTemplatePreviewProps {
   includeBusinessName?: boolean;
   includeLogo?: boolean;
   aspectRatio?: "1:1" | "4:5";
+  generatedImageUrl?: string;
+  isGenerating?: boolean;
+  slideNumber?: number;
+  totalSlides?: number;
+  onRegenerate?: () => void;
+  onOpenEditor?: () => void;
 }
 
 export default function PosterTemplatePreview({
@@ -31,7 +37,17 @@ export default function PosterTemplatePreview({
   includeBusinessName = true,
   includeLogo = true,
   aspectRatio = "4:5",
+  generatedImageUrl,
+  isGenerating = false,
+  slideNumber,
+  totalSlides,
+  onRegenerate,
+  onOpenEditor,
 }: PosterTemplatePreviewProps) {
+  const [viewMode, setViewMode] = React.useState<"image" | "blueprint">("image");
+  const hasImage = Boolean(generatedImageUrl && generatedImageUrl.trim().length > 0);
+  const showImage = hasImage && viewMode === "image";
+
   const displayTitle = mainText?.trim() || "TITULAR PRINCIPAL DEL AFICHE";
   const displaySlogan = sloganText?.trim() || "Frase gancho o propuesta de valor que complementa la oferta";
   const displayPrice = includePrice && priceText?.trim() ? priceText : (includePrice ? "$9.990 · 2x1" : "");
@@ -39,21 +55,131 @@ export default function PosterTemplatePreview({
   const displayBrand = includeBusinessName ? (businessName?.trim() || "Tu Negocio") : null;
 
   return (
-    <div className="w-full bg-slate-900/90 p-4 rounded-2xl border border-slate-800 text-white shadow-inner flex flex-col items-center">
-      <div className="w-full flex items-center justify-between mb-3 px-1 text-[11px] text-slate-400 font-bold">
-        <span className="flex items-center gap-1.5 uppercase tracking-wider text-amber-400">
-          <span>👁️</span> Vista Previa del Esquema de Plantilla
-        </span>
-        <span className="bg-slate-800 px-2.5 py-0.5 rounded-full text-slate-300 font-mono text-[10px]">
-          {layout === "split_left" ? "Split Lateral" :
-           layout === "top_banner" ? "Cabecera Superior" :
-           layout === "recipe_ingredients" ? "Ficha Informativa" : "Automático"} · {aspectRatio}
-        </span>
+    <div className="w-full bg-slate-900/95 p-4 rounded-2xl border border-slate-800 text-white shadow-inner flex flex-col items-center">
+      {/* Header del Preview */}
+      <div className="w-full flex items-center justify-between mb-3 px-1 text-[11px] font-bold">
+        {hasImage ? (
+          <span className="flex items-center gap-1.5 uppercase tracking-wider text-emerald-400">
+            <span>✨</span> {slideNumber ? `Slide ${slideNumber} Generado` : "Imagen Generada"}
+          </span>
+        ) : (
+          <span className="flex items-center gap-1.5 uppercase tracking-wider text-amber-400">
+            <span>👁️</span> Vista Previa del Esquema
+          </span>
+        )}
+
+        <div className="flex items-center gap-1.5">
+          {hasImage && (
+            <div className="flex items-center gap-1 bg-slate-800 p-0.5 rounded-xl border border-slate-700">
+              <button
+                type="button"
+                onClick={() => setViewMode("image")}
+                className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                  showImage ? "bg-amber-500 text-slate-950 shadow-xs" : "text-slate-400 hover:text-white"
+                }`}
+              >
+                🖼️ Imagen
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("blueprint")}
+                className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                  !showImage ? "bg-amber-500 text-slate-950 shadow-xs" : "text-slate-400 hover:text-white"
+                }`}
+              >
+                📐 Esquema
+              </button>
+            </div>
+          )}
+          <span className="bg-slate-800 px-2 py-0.5 rounded-lg text-slate-300 font-mono text-[10px]">
+            {aspectRatio}
+          </span>
+        </div>
       </div>
 
-      {/* Cartel Mockup Container */}
-      <div
-        className="w-full max-w-[280px] bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 rounded-2xl overflow-hidden border-2 border-slate-700/60 shadow-2xl relative flex flex-col justify-between p-3.5 select-none transition-all duration-300"
+      {/* CASO 1: Renderizar la Imagen Generada Real */}
+      {showImage ? (
+        <div className="flex flex-col items-center w-full animate-in fade-in zoom-in-95 duration-200">
+          <div
+            className="w-full max-w-[280px] bg-slate-950 rounded-2xl overflow-hidden border-2 border-emerald-500/60 shadow-2xl relative select-none transition-all duration-300 group"
+            style={{
+              aspectRatio: aspectRatio === "4:5" ? "4/5" : "1/1",
+              boxShadow: `0 12px 35px -10px ${primaryColor}40`
+            }}
+          >
+            <img
+              src={generatedImageUrl}
+              alt={displayTitle}
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-102"
+            />
+
+            {/* Badges superiores */}
+            <div className="absolute top-2.5 left-2.5 right-2.5 flex justify-between items-center pointer-events-none">
+              <span className="bg-slate-950/80 backdrop-blur-md text-emerald-400 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border border-emerald-400/30 shadow-md">
+                {slideNumber ? `Slide ${slideNumber}` : "Afiche"} · Listo
+              </span>
+              <span className="bg-slate-950/80 backdrop-blur-md text-white text-[10px] font-mono px-2 py-0.5 rounded-full border border-white/20">
+                {aspectRatio}
+              </span>
+            </div>
+
+            {/* Barra hover/touch interactiva */}
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950 via-slate-950/85 to-transparent p-3 flex items-center justify-between gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
+              <a
+                href={generatedImageUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-white/20 hover:bg-white/30 backdrop-blur-md text-white text-[10px] font-black px-2.5 py-1.5 rounded-xl border border-white/20 transition-all flex items-center gap-1 shadow-xs cursor-pointer"
+              >
+                <span>🔍</span> Ver grande
+              </a>
+              {onOpenEditor && (
+                <button
+                  type="button"
+                  onClick={onOpenEditor}
+                  className="bg-white hover:bg-slate-100 text-slate-950 text-[10px] font-black px-3 py-1.5 rounded-xl transition-all shadow-md flex items-center gap-1 cursor-pointer"
+                >
+                  <span>✏️</span> Editor
+                </button>
+              )}
+              {onRegenerate && (
+                <button
+                  type="button"
+                  onClick={onRegenerate}
+                  title="Regenerar solo esta imagen"
+                  className="bg-slate-800/90 hover:bg-slate-700 text-white text-[10px] font-black px-2.5 py-1.5 rounded-xl border border-slate-600 transition-all cursor-pointer"
+                >
+                  🔄
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-2 mt-3 w-full max-w-[280px]">
+            <a
+              href={generatedImageUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[11px] font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1 py-1 px-2.5 rounded-xl bg-amber-400/10 border border-amber-400/20"
+            >
+              <span>🔍</span> Abrir en pestaña nueva
+            </a>
+            {onOpenEditor && (
+              <button
+                type="button"
+                onClick={onOpenEditor}
+                className="text-[11px] font-bold text-white bg-slate-800 hover:bg-slate-700 px-3 py-1 rounded-xl border border-slate-700 transition-colors cursor-pointer flex items-center gap-1"
+              >
+                <span>✏️</span> Editor de capas
+              </button>
+            )}
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* CASO 2: Cartel Mockup Container / Esquema de Plantilla */}
+          <div
+            className="w-full max-w-[280px] bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 rounded-2xl overflow-hidden border-2 border-slate-700/60 shadow-2xl relative flex flex-col justify-between p-3.5 select-none transition-all duration-300"
         style={{
           aspectRatio: aspectRatio === "4:5" ? "4/5" : "1/1",
           boxShadow: `0 10px 30px -10px ${primaryColor}25`
@@ -259,8 +385,12 @@ export default function PosterTemplatePreview({
       </div>
 
       <p className="text-[10px] text-slate-400 font-medium text-center mt-3 max-w-xs leading-tight">
-        💡 Los textos y elementos se integran respetando el contraste y estilo ({visualStyle}) sin tapar los detalles fotográficos.
+        {hasImage
+          ? "💡 Visualizando el diseño generado. Puedes alternar entre la imagen y el esquema con los botones superiores."
+          : `💡 Al pulsar "Diseñar", nuestros agentes generarán tu imagen respetando el estilo (${visualStyle}) y la verás aquí mismo.`}
       </p>
+        </>
+      )}
     </div>
   );
 }

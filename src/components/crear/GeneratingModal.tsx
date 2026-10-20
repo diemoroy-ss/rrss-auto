@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import LogoMark from "../LogoMark";
 
 // ─────────────────────────────────────────────────────────────
 // Tipos
@@ -154,12 +155,12 @@ export default function GeneratingModal({
 
           <div className="relative z-10">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-white/15 backdrop-blur rounded-2xl flex items-center justify-center border border-white/20">
-                <span className="text-lg">🤖</span>
+              <div className="w-10 h-10 bg-white/15 backdrop-blur rounded-2xl flex items-center justify-center border border-white/20 p-2 shadow-inner">
+                <LogoMark size={22} color="#FFFFFF" />
               </div>
               <div>
-                <p className="text-white/60 text-[10px] font-black uppercase tracking-[0.2em]">Santisoft IA</p>
-                <h3 className="text-white text-lg font-black tracking-tight leading-none mt-0.5">Generando tu diseño</h3>
+                <p className="text-white/70 text-[10px] font-black uppercase tracking-[0.2em]">Santisoft</p>
+                <h3 className="text-white text-lg font-black tracking-tight leading-none mt-0.5">Nuestros agentes están diseñando</h3>
               </div>
             </div>
 
@@ -238,7 +239,7 @@ export default function GeneratingModal({
               <Spinner size={16} />
             </div>
             <p className="text-[11px] text-slate-500 font-medium leading-snug">
-              La IA está trabajando en tu diseño. Esto puede tomar entre 30 y 60 segundos.
+              Nuestros agentes están trabajando en tu diseño. Esto puede tomar entre 30 y 60 segundos.
             </p>
           </div>
           {onCancel && (
