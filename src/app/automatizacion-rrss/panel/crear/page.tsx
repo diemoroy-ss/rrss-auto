@@ -109,6 +109,7 @@ export default function RrssCreatePost() {
   const [improveLoading, setImproveLoading] = useState(false);
 
   // Status Modals
+  const [singleSlideTargetIdx, setSingleSlideTargetIdx] = useState<number | null>(null);
   const [statusModal, setStatusModal] = useState<{
     isOpen: boolean;
     type: "success" | "error" | "info";
@@ -516,10 +517,24 @@ export default function RrssCreatePost() {
   // ──────────────────────────────────────────────────────────────
   // FLUJO PRINCIPAL DE GENERACIÓN CON REVISIÓN INTERNA DE PROMPTS
   // ──────────────────────────────────────────────────────────────
-  const handleGeneratePreview = async (forceReplan = false) => {
-    const targetIdea = idea.trim() || posterConfig.mainText?.trim() || postText.trim() || imageExpectation.trim();
-    let targetExpectation = imageExpectation.trim();
-    if (posterConfig.enabled && posterConfig.mainText) {
+  const handleGeneratePreview = async (
+    forceReplan = false,
+    options?: { singleSlideOnly?: boolean; slideIndex?: number }
+  ) => {
+    const isSingleSlide = Boolean(options?.singleSlideOnly);
+    const targetSlideIdx = options?.slideIndex ?? activeSlideIndex ?? 0;
+    setSingleSlideTargetIdx(isSingleSlide ? targetSlideIdx : null);
+
+    const activeSlide = posterConfig.slides?.[targetSlideIdx];
+    const targetIdea = isSingleSlide
+      ? (activeSlide?.mainText?.trim() || activeSlide?.imageExpectation?.trim() || idea.trim() || `Diapositiva ${targetSlideIdx + 1}`)
+      : (idea.trim() || posterConfig.mainText?.trim() || postText.trim() || imageExpectation.trim());
+
+    let targetExpectation = isSingleSlide
+      ? (activeSlide?.imageExpectation?.trim() || imageExpectation.trim() || targetIdea)
+      : imageExpectation.trim();
+
+    if (posterConfig.enabled && posterConfig.mainText && !isSingleSlide) {
       targetExpectation = targetExpectation ? `${targetExpectation}. Poster headline: ${posterConfig.mainText}` : `Commercial poster layout for ${posterConfig.mainText}`;
     }
     if (imageStyle) {
@@ -534,11 +549,14 @@ export default function RrssCreatePost() {
       setError(`Has alcanzado el límite de generación de videos (${videosUsed}/${videoLimit}) de tu plan este mes. Mejora tu plan para continuar.`);
       return;
     }
-    const reqImages = postType === 'Carrusel' ? carouselCount : 1;
+    const reqImages = isSingleSlide ? 1 : (postType === 'Carrusel' ? carouselCount : 1);
     if (!isVideoType && (imagesUsed + reqImages > imageLimit) && !isAdmin) {
       setError(`Has alcanzado el límite de generación de imágenes de tu plan (${imagesUsed}/${imageLimit}). No puedes generar ${reqImages} imagen(es) más.`);
       return;
     }
+
+    const effectivePostType = isSingleSlide ? 'Post' : postType;
+    const effectiveCarouselCount = isSingleSlide ? 1 : carouselCount;
 
     const webhookUrl = process.env.NEXT_PUBLIC_N8N_PREVIEW_URL || 'https://n8n.santisoft.cl/webhook/img-rrss-auto';
     console.log(`🚀 [PREVISUALIZAR] Iniciando flujo hacia webhook n8n: ${webhookUrl}`);

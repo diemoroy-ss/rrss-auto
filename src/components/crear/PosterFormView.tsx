@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import type { PosterConfig, VisualStyle, ContactType, PosterLayout, PosterSlideConfig } from "../../types/poster";
 import { DEFAULT_POSTER_SLIDES } from "../../types/poster";
+import PosterTemplatePreview from "./PosterTemplatePreview";
 import VoiceMic from "../VoiceMic";
 import Link from "next/link";
 import { FaFacebookF, FaInstagram, FaLinkedinIn, FaTiktok, FaGoogle, FaYoutube, FaTwitter } from "react-icons/fa";
@@ -70,7 +71,7 @@ interface PosterFormViewProps {
   userLogo?: string;
   previewLoading: boolean;
   improveLoading: boolean;
-  handleGeneratePreview: () => void;
+  handleGeneratePreview: (forceReplan?: boolean, options?: { singleSlideOnly?: boolean; slideIndex?: number }) => void;
   handleImproveWithAI: () => void;
   isAdmin?: boolean;
   catalogoItems?: any[];
@@ -135,7 +136,7 @@ export default function PosterFormView({
     setPosterConfig((prev) => ({ ...prev, [key]: value, enabled: true }));
   };
 
-  const updateSlideField = (field: 'mainText' | 'priceText' | 'sloganText' | 'ctaText', value: string) => {
+  const updateSlideField = (field: 'mainText' | 'priceText' | 'sloganText' | 'ctaText' | 'imageExpectation', value: string) => {
     setPosterConfig((prev) => {
       const existingSlides = prev.slides && prev.slides.length > 0 ? [...prev.slides] : [...DEFAULT_POSTER_SLIDES];
       while (existingSlides.length <= currentSlideIdx) {
@@ -173,6 +174,9 @@ export default function PosterFormView({
         sloganText: targetSlide.sloganText ?? "",
         ctaText: targetSlide.ctaText || prev.ctaText,
       }));
+      if (targetSlide.imageExpectation) {
+        setImageExpectation(targetSlide.imageExpectation);
+      }
     }
   };
 
@@ -262,81 +266,126 @@ export default function PosterFormView({
                           </div>
               
                           {/* Layouts disponibles */}
-                          <div className="grid grid-cols-2 gap-2.5">
-                            <button
-                              type="button"
-                              onClick={() => update("layout", "auto")}
-                              className={`p-3 rounded-2xl border text-left transition-all ${
-                                !posterConfig.layout || posterConfig.layout === "auto"
-                                  ? "border-amber-500 bg-amber-50/70 text-amber-950 shadow-xs ring-1 ring-amber-500/20"
-                                  : "border-slate-200 bg-slate-50/50 text-slate-600 hover:border-slate-300"
-                              }`}
-                            >
-                              <div className="flex items-center gap-1.5 mb-1">
-                                <span className="text-base">🧠</span>
-                                <span className="text-xs font-black">Automático</span>
-                              </div>
-                              <p className="text-[10px] text-slate-500 font-medium leading-tight">
-                                Nuestros agentes eligen el mejor encuadre según tu producto.
-                              </p>
-                            </button>
-              
-                            <button
-                              type="button"
-                              onClick={() => update("layout", "split_left")}
-                              className={`p-3 rounded-2xl border text-left transition-all ${
-                                posterConfig.layout === "split_left"
-                                  ? "border-amber-500 bg-amber-50/70 text-amber-950 shadow-xs ring-1 ring-amber-500/20"
-                                  : "border-slate-200 bg-slate-50/50 text-slate-600 hover:border-slate-300"
-                              }`}
-                            >
-                              <div className="flex items-center gap-1.5 mb-1">
-                                <span className="text-base">📐</span>
-                                <span className="text-xs font-black">Split Lateral</span>
-                              </div>
-                              <p className="text-[10px] text-slate-500 font-medium leading-tight">
-                                Texto nítido a la izquierda y producto despejado a la derecha.
-                              </p>
-                            </button>
-              
-                            <button
-                              type="button"
-                              onClick={() => update("layout", "top_banner")}
-                              className={`p-3 rounded-2xl border text-left transition-all ${
-                                posterConfig.layout === "top_banner"
-                                  ? "border-amber-500 bg-amber-50/70 text-amber-950 shadow-xs ring-1 ring-amber-500/20"
-                                  : "border-slate-200 bg-slate-50/50 text-slate-600 hover:border-slate-300"
-                              }`}
-                            >
-                              <div className="flex items-center gap-1.5 mb-1">
-                                <span className="text-base">📌</span>
-                                <span className="text-xs font-black">Cabecera Superior</span>
-                              </div>
-                              <p className="text-[10px] text-slate-500 font-medium leading-tight">
-                                Titular llamativo arriba y escena fotográfica en el centro.
-                              </p>
-                            </button>
-              
-                            <button
-                              type="button"
-                              onClick={() => update("layout", "recipe_ingredients")}
-                              className={`p-3 rounded-2xl border text-left transition-all ${
-                                posterConfig.layout === "recipe_ingredients"
-                                  ? "border-amber-500 bg-amber-50/70 text-amber-950 shadow-xs ring-1 ring-amber-500/20"
-                                  : "border-slate-200 bg-slate-50/50 text-slate-600 hover:border-slate-300"
-                              }`}
-                            >
-                              <div className="flex items-center gap-1.5 mb-1">
-                                <span className="text-base">🥗</span>
-                                <span className="text-xs font-black">Ficha Informativa</span>
-                              </div>
-                              <p className="text-[10px] text-slate-500 font-medium leading-tight">
-                                Encuadre cenital con espacio para puntos y características.
-                              </p>
-                            </button>
-                          </div>
-              
-                          {/* Estilo Visual */}
+            <div className="grid grid-cols-2 gap-2.5">
+              <button
+                type="button"
+                onClick={() => update("layout", "auto")}
+                className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                  !posterConfig.layout || posterConfig.layout === "auto"
+                    ? "border-amber-500 bg-amber-50/70 text-amber-950 shadow-xs ring-1 ring-amber-500/20"
+                    : "border-slate-200 bg-slate-50/50 text-slate-600 hover:border-slate-300"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-base">🧠</span>
+                    <span className="text-xs font-black">Automático</span>
+                  </div>
+                  {/* Mini Diagrama Esquemático */}
+                  <div className="w-6 h-6 rounded bg-slate-200/80 p-0.5 flex flex-col justify-between border border-slate-300">
+                    <div className="h-1 bg-amber-500 rounded-xs w-3/4" />
+                    <div className="h-2.5 bg-slate-400 rounded-xs w-full opacity-60" />
+                    <div className="h-1 bg-slate-900 rounded-xs w-1/2" />
+                  </div>
+                </div>
+                <p className="text-[10px] text-slate-500 font-medium leading-tight">
+                  Nuestros agentes eligen el mejor encuadre según tu producto.
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => update("layout", "split_left")}
+                className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                  posterConfig.layout === "split_left"
+                    ? "border-amber-500 bg-amber-50/70 text-amber-950 shadow-xs ring-1 ring-amber-500/20"
+                    : "border-slate-200 bg-slate-50/50 text-slate-600 hover:border-slate-300"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-base">📐</span>
+                    <span className="text-xs font-black">Split Lateral</span>
+                  </div>
+                  {/* Mini Diagrama Esquemático */}
+                  <div className="w-6 h-6 rounded bg-slate-200/80 p-0.5 grid grid-cols-2 gap-0.5 border border-slate-300">
+                    <div className="bg-amber-500/80 rounded-xs flex flex-col justify-center gap-0.5 p-0.5">
+                      <div className="h-0.5 bg-white rounded-full" />
+                      <div className="h-0.5 bg-white/70 rounded-full" />
+                    </div>
+                    <div className="bg-slate-400 rounded-xs flex items-center justify-center opacity-70">
+                      <span className="text-[6px]">📷</span>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-[10px] text-slate-500 font-medium leading-tight">
+                  Texto nítido a la izquierda y producto despejado a la derecha.
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => update("layout", "top_banner")}
+                className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                  posterConfig.layout === "top_banner"
+                    ? "border-amber-500 bg-amber-50/70 text-amber-950 shadow-xs ring-1 ring-amber-500/20"
+                    : "border-slate-200 bg-slate-50/50 text-slate-600 hover:border-slate-300"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-base">📌</span>
+                    <span className="text-xs font-black">Cabecera Superior</span>
+                  </div>
+                  {/* Mini Diagrama Esquemático */}
+                  <div className="w-6 h-6 rounded bg-slate-200/80 p-0.5 flex flex-col gap-0.5 border border-slate-300">
+                    <div className="h-2 bg-amber-500/90 rounded-xs flex items-center justify-center">
+                      <div className="h-0.5 w-3/4 bg-white rounded-full" />
+                    </div>
+                    <div className="flex-1 bg-slate-400 rounded-xs flex items-center justify-center opacity-70">
+                      <span className="text-[6px]">📷</span>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-[10px] text-slate-500 font-medium leading-tight">
+                  Titular llamativo arriba y escena fotográfica en el centro.
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => update("layout", "recipe_ingredients")}
+                className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                  posterConfig.layout === "recipe_ingredients"
+                    ? "border-amber-500 bg-amber-50/70 text-amber-950 shadow-xs ring-1 ring-amber-500/20"
+                    : "border-slate-200 bg-slate-50/50 text-slate-600 hover:border-slate-300"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-base">🥗</span>
+                    <span className="text-xs font-black">Ficha Informativa</span>
+                  </div>
+                  {/* Mini Diagrama Esquemático */}
+                  <div className="w-6 h-6 rounded bg-slate-200/80 p-0.5 flex flex-col justify-between border border-slate-300">
+                    <div className="h-1 bg-slate-800 rounded-xs w-full" />
+                    <div className="h-2 bg-slate-400 rounded-xs flex items-center justify-center opacity-70">
+                      <span className="text-[6px]">📦</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-0.5">
+                      <div className="h-1 bg-amber-500 rounded-xs" />
+                      <div className="h-1 bg-amber-500 rounded-xs" />
+                      <div className="h-1 bg-amber-500 rounded-xs" />
+                    </div>
+                  </div>
+                </div>
+                <p className="text-[10px] text-slate-500 font-medium leading-tight">
+                  Encuadre cenital con espacio para puntos y características.
+                </p>
+              </button>
+            </div>
+
+            {/* Estilo Visual */}
                           <div className="pt-2">
                             <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2.5">
                               Estilo Visual del Cartel
@@ -364,15 +413,22 @@ export default function PosterFormView({
                           </div>
             </div>
 
-            {/* Banner al pie para equilibrar la altura con la columna derecha */}
-            <div className="p-3.5 bg-amber-50/70 border border-amber-200/60 rounded-2xl flex items-start gap-3 mt-4">
-              <span className="text-lg shrink-0">🎨</span>
-              <div className="space-y-0.5">
-                <p className="text-[11px] font-black text-amber-950">Dirección de Arte Asistida</p>
-                <p className="text-[10px] text-amber-900 leading-relaxed font-medium">
-                  Nuestros agentes aplican jerarquía tipográfica, proporciones áureas y contraste cromático para que tu afiche capte la atención en el feed en menos de 2 segundos.
-                </p>
-              </div>
+            {/* Previsualización en Vivo de la Plantilla de Texto */}
+            <div className="mt-4">
+              <PosterTemplatePreview
+                layout={posterConfig.layout || "auto"}
+                visualStyle={posterConfig.visualStyle || "Moderno"}
+                primaryColor={posterConfig.primaryColor || "#f59e0b"}
+                mainText={posterConfig.mainText}
+                sloganText={posterConfig.sloganText}
+                priceText={posterConfig.priceText}
+                includePrice={posterConfig.includePrice}
+                ctaText={posterConfig.ctaText}
+                businessName={posterConfig.businessName || activeProfile?.name}
+                includeBusinessName={posterConfig.includeBusinessName}
+                includeLogo={posterConfig.includeLogo}
+                aspectRatio="4:5"
+              />
             </div>
           </div>
         </div>
@@ -441,32 +497,83 @@ export default function PosterFormView({
                       )}
           
                       {/* Campo: Idea o Escena Visual del Afiche */}
-                      <div className="pt-2">
-                        <div className="flex justify-between items-center mb-1.5">
-                          <label className="block text-xs font-black text-slate-800">
-                            💡 ¿Cómo imaginas la escena o ambiente publicitario?
-                          </label>
-                          <VoiceMic
-                            onResult={(text) => {
-                              const nextVal = idea ? `${idea} ${text}` : text;
-                              setIdea(nextVal);
-                              setImageExpectation(nextVal);
+                      <div className="pt-2 space-y-3">
+                        {/* Si el slide actual de carrusel ya tiene imagen generada, mostrarla */}
+                        {postType === "Carrusel" && posterConfig.slides?.[currentSlideIdx]?.imageUrl && (
+                          <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between gap-3 shadow-xs">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <img
+                                src={posterConfig.slides[currentSlideIdx].imageUrl}
+                                alt="Slide preview"
+                                className="w-14 h-14 rounded-xl object-cover border-2 border-emerald-500 shadow-xs shrink-0"
+                              />
+                              <div className="min-w-0">
+                                <span className="text-[9px] font-black uppercase text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full inline-block mb-0.5">
+                                  ✓ Imagen Lista
+                                </span>
+                                <p className="text-xs font-black text-slate-800 truncate">
+                                  Slide {currentSlideIdx + 1}: {CAROUSEL_DEFAULT_SLIDES[currentSlideIdx]?.role}
+                                </p>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleGeneratePreview(false, { singleSlideOnly: true, slideIndex: currentSlideIdx })}
+                              disabled={previewLoading}
+                              className="text-[10px] font-black uppercase tracking-wider text-emerald-800 hover:text-emerald-950 bg-white border border-emerald-300 px-2.5 py-1.5 rounded-xl transition-all shadow-xs shrink-0 cursor-pointer"
+                            >
+                              🔄 Regenerar
+                            </button>
+                          </div>
+                        )}
+
+                        <div>
+                          <div className="flex justify-between items-center mb-1.5">
+                            <label className="block text-xs font-black text-slate-800">
+                              💡 {postType === "Carrusel" 
+                                    ? `¿Cómo imaginas la escena del Slide ${currentSlideIdx + 1} (${CAROUSEL_DEFAULT_SLIDES[currentSlideIdx]?.role})?`
+                                    : "¿Cómo imaginas la escena o ambiente publicitario?"}
+                            </label>
+                            <VoiceMic
+                              onResult={(text) => {
+                                const currentVal = postType === "Carrusel"
+                                  ? (posterConfig.slides?.[currentSlideIdx]?.imageExpectation || idea || "")
+                                  : (idea || "");
+                                const nextVal = currentVal ? `${currentVal} ${text}` : text;
+                                if (postType === "Carrusel") {
+                                  updateSlideField("imageExpectation", nextVal);
+                                }
+                                setIdea(nextVal);
+                                setImageExpectation(nextVal);
+                              }}
+                              className="scale-85"
+                            />
+                          </div>
+                          <textarea
+                            value={
+                              postType === "Carrusel"
+                                ? (posterConfig.slides?.[currentSlideIdx]?.imageExpectation ?? (imageExpectation || idea || ""))
+                                : (idea || imageExpectation || "")
+                            }
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (postType === "Carrusel") {
+                                updateSlideField("imageExpectation", val);
+                              }
+                              setIdea(val);
+                              setImageExpectation(val);
                             }}
-                            className="scale-85"
+                            placeholder={
+                              postType === "Carrusel"
+                                ? `Ej: ${CAROUSEL_DEFAULT_SLIDES[currentSlideIdx]?.desc || "Describe la escena fotográfica de este slide"}...`
+                                : "Ej: Hamburguesa gourmet con queso cheddar derretido sobre tabla de madera oscura, iluminación cálida de estudio y fondo elegante..."
+                            }
+                            className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-2xl outline-none text-xs font-semibold text-slate-800 resize-none min-h-[90px] focus:border-amber-500 focus:bg-white transition-all shadow-inner"
                           />
                         </div>
-                        <textarea
-                          value={idea || imageExpectation || ""}
-                          onChange={(e) => {
-                            setIdea(e.target.value);
-                            setImageExpectation(e.target.value);
-                          }}
-                          placeholder="Ej: Hamburguesa gourmet con queso cheddar derretido sobre tabla de madera oscura, iluminación cálida de estudio y fondo elegante..."
-                          className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-2xl outline-none text-xs font-semibold text-slate-800 resize-none min-h-[90px] focus:border-amber-500 focus:bg-white transition-all shadow-inner"
-                        />
                       </div>
                     </div>
-          
+
                     {/* Card 3: Copy Persuasivo para Redes y Botón de Generación */}
                     <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
                       <div className="flex justify-between items-center border-b border-slate-100 pb-3">
@@ -822,35 +929,97 @@ export default function PosterFormView({
         </div>
       </div>
 
-      {/* Botón Principal de Generación del Cartel (A todo el ancho para mantener ambas columnas cuadradas) */}
+      {/* Botones de Generación del Cartel / Carrusel */}
       <div className="pt-2">
-        <button
-          type="button"
-          onClick={() => handleGeneratePreview()}
-          disabled={
-            previewLoading ||
-            (!idea.trim() &&
-              !posterConfig.mainText?.trim() &&
-              !imageExpectation.trim() &&
-              !postText.trim())
-          }
-          className="w-full bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-black py-4 px-6 rounded-2xl text-sm uppercase tracking-wider transition-all shadow-lg shadow-amber-500/25 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-        >
-          {previewLoading ? (
-            <>
-              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              <span>Diseñando {postType === "Carrusel" ? `Carrusel de ${carouselCount || 5} Afiches` : "Afiche Publicitario"}...</span>
-            </>
-          ) : (
-            <>
-              <span className="text-lg">🎯</span>
-              <span>{postType === "Carrusel" ? `Diseñar Carrusel de ${carouselCount || 5} Afiches` : "Diseñar Afiche Publicitario"}</span>
-            </>
-          )}
-        </button>
+        {postType === "Carrusel" ? (
+          <div className="space-y-3">
+            <div className="grid sm:grid-cols-2 gap-3">
+              {/* Botón 1: Diseñar solo la imagen de la diapositiva seleccionada */}
+              <button
+                type="button"
+                onClick={() => handleGeneratePreview(false, { singleSlideOnly: true, slideIndex: currentSlideIdx })}
+                disabled={previewLoading}
+                className="w-full bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-black py-4 px-5 rounded-2xl text-xs uppercase tracking-wider transition-all shadow-lg shadow-amber-500/25 flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              >
+                {previewLoading ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Diseñando Slide ${currentSlideIdx + 1}...</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-base">🎨</span>
+                    <span>Diseñar solo Slide ${currentSlideIdx + 1} (${CAROUSEL_DEFAULT_SLIDES[currentSlideIdx]?.role})</span>
+                  </>
+                )}
+              </button>
+
+              {/* Botón 2: Diseñar las 5 imágenes con una sola idea */}
+              <button
+                type="button"
+                onClick={() => handleGeneratePreview(false, { singleSlideOnly: false })}
+                disabled={previewLoading}
+                className="w-full bg-slate-900 hover:bg-slate-800 text-white font-black py-4 px-5 rounded-2xl text-xs uppercase tracking-wider transition-all border border-slate-700 shadow-md flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              >
+                <span className="text-base">⚡</span>
+                <span>Diseñar las 5 Imágenes con una sola Idea</span>
+              </button>
+            </div>
+
+            {/* Banner resumen de avance */}
+            {posterConfig.slides?.some((s) => Boolean(s.imageUrl)) && (
+              <div className="flex items-center justify-between p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl">
+                <div className="flex items-center gap-2">
+                  <span className="text-base">📑</span>
+                  <span className="text-xs font-bold text-emerald-950">
+                    {posterConfig.slides.filter((s) => Boolean(s.imageUrl)).length} de {carouselCount || 5} diapositivas con imagen diseñada
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const el = document.getElementById("preview-section");
+                    if (el) el.scrollIntoView({ behavior: "smooth" });
+                  }}
+                  className="text-xs font-black text-emerald-800 hover:text-emerald-950 underline cursor-pointer"
+                >
+                  Revisar en Editor y Publicar →
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => handleGeneratePreview()}
+            disabled={
+              previewLoading ||
+              (!idea.trim() &&
+                !posterConfig.mainText?.trim() &&
+                !imageExpectation.trim() &&
+                !postText.trim())
+            }
+            className="w-full bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-black py-4 px-6 rounded-2xl text-sm uppercase tracking-wider transition-all shadow-lg shadow-amber-500/25 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          >
+            {previewLoading ? (
+              <>
+                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Diseñando Afiche Publicitario...</span>
+              </>
+            ) : (
+              <>
+                <span className="text-lg">🎯</span>
+                <span>Diseñar Afiche Publicitario</span>
+              </>
+            )}
+          </button>
+        )}
       </div>
     </div>
   );

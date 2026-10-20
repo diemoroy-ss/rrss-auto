@@ -17,10 +17,15 @@ export type PosterLayout = 'auto' | 'top_banner' | 'split_left' | 'split_right' 
 export interface PosterSlideConfig {
   slideNumber: number;
   role?: string;
+  imageExpectation?: string;
+  imageUrl?: string;
+  baseImageUrl?: string;
   mainText?: string;
   priceText?: string;
   sloganText?: string;
   ctaText?: string;
+  layout?: PosterLayout;
+  visualStyle?: VisualStyle;
 }
 
 export interface PosterConfig {
