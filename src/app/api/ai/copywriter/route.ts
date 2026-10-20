@@ -30,19 +30,46 @@ export async function POST(req: NextRequest) {
       maxWords?: number;
     } = body;
 
-    // Construir el contexto del cartel publicitario si está habilitado
+    // Construir el contexto del cartel publicitario o carrusel si está habilitado
     let posterContext = "";
+    const isCarousel = postType === "Carrusel" || Boolean(posterConfig?.enabled && posterConfig?.slides && posterConfig.slides.length > 1);
+
     if (posterConfig && posterConfig.enabled) {
-      posterContext = `
-[Cartel Publicitario Habilitado]
-- Estilo Visual: ${posterConfig.visualStyle || "Moderno"}
+      if (isCarousel && posterConfig.slides && posterConfig.slides.length > 0) {
+        const slidesDetails = posterConfig.slides
+          .map((s, idx) => {
+            const parts: string[] = [];
+            if (s.role) parts.push(`Rol: ${s.role}`);
+            if (s.mainText?.trim()) parts.push(`Titular: "${s.mainText.trim()}"`);
+            if (s.sloganText?.trim()) parts.push(`Subtítulo: "${s.sloganText.trim()}"`);
+            if (s.priceText?.trim()) parts.push(`Precio/Oferta: "${s.priceText.trim()}"`);
+            if (s.ctaText?.trim()) parts.push(`CTA: "${s.ctaText.trim()}"`);
+            if (s.imageExpectation?.trim()) parts.push(`Escena visual: ${s.imageExpectation.trim()}`);
+            return `  • Slide ${s.slideNumber || idx + 1}: ${parts.length > 0 ? parts.join(" | ") : "(En blanco)"}`;
+          })
+          .join("\n");
+
+        posterContext = `
+[Carrusel Publicitario de Múltiples Láminas]
+${slidesDetails}
+- Estilo Visual General: ${posterConfig.visualStyle || "Moderno"}
 - Nombre del Negocio: ${posterConfig.includeBusinessName ? (posterConfig.businessName || "") : "No incluido"}
-- Precio/Promoción: ${posterConfig.includePrice ? (posterConfig.priceText || "") : "No incluido"}
-- Slogan/Llamado Gancho: ${posterConfig.includeSlogan ? (posterConfig.sloganText || "") : "No incluido"}
-- Llamado a la Acción (CTA): ${posterConfig.ctaText || "No incluido"}
+- Llamado a la Acción Global (CTA): ${posterConfig.ctaText || "Desliza para ver más"}
 - Contacto: ${posterConfig.includeContact ? `${posterConfig.contactValue || ""} (${posterConfig.contactType || ""})` : "No incluido"}
 - Notas Adicionales: ${posterConfig.additionalNotes || "Ninguna"}
-      `.trim();
+        `.trim();
+      } else {
+        posterContext = `
+[Cartel Publicitario Habilitado]
+- Titular: ${posterConfig.mainText || idea || "No definido"}
+- Slogan/Llamado Gancho: ${posterConfig.includeSlogan ? (posterConfig.sloganText || "") : "No incluido"}
+- Precio/Promoción: ${posterConfig.includePrice ? (posterConfig.priceText || "") : "No incluido"}
+- Llamado a la Acción (CTA): ${posterConfig.ctaText || "No incluido"}
+- Nombre del Negocio: ${posterConfig.includeBusinessName ? (posterConfig.businessName || "") : "No incluido"}
+- Contacto: ${posterConfig.includeContact ? `${posterConfig.contactValue || ""} (${posterConfig.contactType || ""})` : "No incluido"}
+- Notas Adicionales: ${posterConfig.additionalNotes || "Ninguna"}
+        `.trim();
+      }
     }
 
     // Construir contexto de datos de contacto de la empresa
@@ -77,6 +104,15 @@ REGLAS DE HUMANIZER (CRÍTICAS):
 - Usa oraciones variadas (algunas cortas, otras un poco más largas), ritmo dinámico y saltos de línea estratégicos.
 - REGLA DE CONTACTO: Siempre que se proporcionen datos de contacto de la empresa (WhatsApp, sitio web o teléfono), deben estar integrados de forma natural en el llamado a la acción al final del texto.`;
 
+    const carouselDirective = isCarousel
+      ? `\n[ENFOQUE OBLIGATORIO DE CARRUSEL COMPLETO]:
+Este post es un CARRUSEL de varias láminas. El copy NO debe enfocarse en una sola imagen o producto aislado, sino abarcar TODO EL CONJUNTO y la historia completa del carrusel:
+1. Abrir con el gancho o pregunta intrigante de la Portada (Slide 1).
+2. Tocar el problema, solución y beneficios que revelan las siguientes láminas.
+3. Incluir una invitación explícita y persuasiva a deslizar ("Desliza para ver el paso a paso 👉", "Revisa cada lámina...", etc.).
+4. Cerrar con la oferta, el llamado a la acción final y los datos de contacto.`
+      : "";
+
     const userPrompt = `
 Genera 3 opciones profesionales de copy para una publicación en redes sociales, aplicando distintos frameworks de copywriting en cada una.
 
@@ -90,7 +126,8 @@ Genera 3 opciones profesionales de copy para una publicación en redes sociales,
 - Tipo de Publicación: ${postType || "Post"}
 - Idea / Concepto: ${idea || ""}
 - Texto base del usuario (si escribió algo): "${prompt || ""}"
-${posterContext ? `\n[Detalles a integrar sobre el Cartel Publicitario]:\n${posterContext}` : ""}
+${posterContext ? `\n[Detalles a integrar sobre el Cartel o Carrusel Publicitario]:\n${posterContext}` : ""}
+${carouselDirective}
 ${contactContext}
 
 [Restricciones]

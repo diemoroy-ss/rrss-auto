@@ -474,7 +474,29 @@ export default function RrssCreatePost() {
   // AI copywriting generator
   const handleImproveWithAI = async () => {
     const textToImprove = creationMode === 'ai' ? postText : manualCaption;
-    const baseIdea = creationMode === 'ai' ? idea : manualCaption;
+    let baseIdea = creationMode === 'ai' ? idea : manualCaption;
+
+    // Si es un carrusel o afiche con slides, consolidar la narrativa de todas las láminas
+    if (posterConfig.enabled && posterConfig.slides && posterConfig.slides.length > 0) {
+      const slidesSummaries = posterConfig.slides
+        .map((s, idx) => {
+          const parts: string[] = [];
+          if (s.mainText?.trim()) parts.push(`Titular: "${s.mainText.trim()}"`);
+          if (s.sloganText?.trim()) parts.push(`Slogan: "${s.sloganText.trim()}"`);
+          if (s.priceText?.trim()) parts.push(`Precio: "${s.priceText.trim()}"`);
+          if (s.ctaText?.trim()) parts.push(`CTA: "${s.ctaText.trim()}"`);
+          if (s.imageExpectation?.trim()) parts.push(`Visual: ${s.imageExpectation.trim()}`);
+          return parts.length > 0 ? `Slide ${s.slideNumber || idx + 1} (${s.role || "Lámina"}): ${parts.join(" - ")}` : "";
+        })
+        .filter(Boolean);
+
+      if (slidesSummaries.length > 0) {
+        baseIdea = baseIdea
+          ? `${baseIdea}. Narrativa completa del carrusel: ${slidesSummaries.join(" | ")}`
+          : `Carrusel completo: ${slidesSummaries.join(" | ")}`;
+      }
+    }
+
     setImproveLoading(true);
     try {
       const idToken = await auth.currentUser?.getIdToken();
@@ -1017,8 +1039,12 @@ export default function RrssCreatePost() {
         setAudioUrl(data.audioUrl || data.audio_url || "");
         setShowReelWorkspace(true);
       } else {
-        if (resolvedCopy && !postText.trim()) {
-          setPostText(resolvedCopy);
+        // En carrusel o afiche NO sobreescribimos postText con el copy de una sola lámina;
+        // el copy abarca todo el conjunto y se genera al final con el equipo de agentes
+        if (postType !== 'Carrusel' && !posterConfig.enabled) {
+          if (resolvedCopy && !postText.trim()) {
+            setPostText(resolvedCopy);
+          }
         }
       }
 
@@ -2892,7 +2918,7 @@ export default function RrssCreatePost() {
                         disabled={improveLoading}
                         className="text-[10px] font-black text-violet-600 hover:text-violet-700 bg-violet-50 hover:bg-violet-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 uppercase tracking-wider shadow-sm"
                     >
-                        {improveLoading ? <div className="w-3 h-3 border-2 border-violet-600 border-t-transparent rounded-full animate-spin" /> : '✨ Mejorar con IA'}
+                        {improveLoading ? <div className="w-3 h-3 border-2 border-violet-600 border-t-transparent rounded-full animate-spin" /> : '✨ Redactar con Agentes'}
                     </button>
                  </div>
 

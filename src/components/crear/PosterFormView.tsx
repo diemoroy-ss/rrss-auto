@@ -777,19 +777,21 @@ export default function PosterFormView({
                       <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                         <div>
                           <h4 className="text-sm font-black text-slate-900 uppercase tracking-wider">
-                            Copy para el Post en Redes
+                            Copy para el Post en Redes {postType === "Carrusel" ? "(Todo el Carrusel)" : ""}
                           </h4>
                           <p className="text-[11px] font-medium text-slate-500">
-                            El texto persuasivo que acompañará al afiche en Facebook e Instagram
+                            {postType === "Carrusel" 
+                              ? "Texto comercial que conecta la narrativa de todas las láminas al publicar"
+                              : "El texto persuasivo que acompañará al afiche en Facebook e Instagram"}
                           </p>
                         </div>
                         <button
                           type="button"
                           onClick={handleImproveWithAI}
                           disabled={improveLoading}
-                          className="bg-amber-100 hover:bg-amber-200 border border-amber-300 text-amber-900 text-[10px] font-black px-3.5 py-1.5 rounded-xl uppercase tracking-wider disabled:opacity-50 transition-all shadow-xs shrink-0"
+                          className="bg-amber-100 hover:bg-amber-200 border border-amber-300 text-amber-900 text-[10px] font-black px-3.5 py-1.5 rounded-xl uppercase tracking-wider disabled:opacity-50 transition-all shadow-xs shrink-0 cursor-pointer"
                         >
-                          {improveLoading ? "Redactando..." : "✨ Redactar con Agentes"}
+                          {improveLoading ? "Redactando..." : (postType === "Carrusel" ? "✨ Redactar Copy con Agentes" : "✨ Redactar con Agentes")}
                         </button>
                       </div>
           
@@ -801,7 +803,11 @@ export default function PosterFormView({
                         <textarea
                           value={postText}
                           onChange={(e) => setPostText(e.target.value)}
-                          placeholder="Escribe el copy o pulsa 'Redactar con Agentes' para que nuestro equipo redacte el mensaje comercial con hashtags y llamado a la acción..."
+                          placeholder={
+                            postType === "Carrusel"
+                              ? "El copy abarcará todo el carrusel en conjunto. Una vez definidas tus diapositivas, pulsa 'Redactar Copy con Agentes' o escribe tu texto aquí..."
+                              : "Escribe el copy o pulsa 'Redactar con Agentes' para que nuestro equipo redacte el mensaje comercial con hashtags y llamado a la acción..."
+                          }
                           className={`w-full bg-transparent px-4 py-3 text-xs outline-none resize-none min-h-[110px] font-semibold leading-relaxed ${
                             isOverLimit ? "text-rose-600" : "text-slate-800"
                           }`}
@@ -1147,15 +1153,28 @@ export default function PosterFormView({
                     </span>
                   </div>
                 </div>
-                {onOpenPostModal && (
-                  <button
-                    type="button"
-                    onClick={onOpenPostModal}
-                    className="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black py-2.5 px-5 rounded-xl text-xs uppercase tracking-wider transition-all shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 cursor-pointer shrink-0"
-                  >
-                    <span>🚀</span> Continuar a Publicar
-                  </button>
-                )}
+                <div className="flex flex-wrap items-center gap-2">
+                  {!postText.trim() && (
+                    <button
+                      type="button"
+                      onClick={handleImproveWithAI}
+                      disabled={improveLoading}
+                      className="bg-amber-400 hover:bg-amber-500 text-slate-950 font-black py-2.5 px-4 rounded-xl text-xs uppercase tracking-wider transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <span>✨</span>
+                      <span>{improveLoading ? "Redactando..." : "Redactar Copy con Agentes"}</span>
+                    </button>
+                  )}
+                  {onOpenPostModal && (
+                    <button
+                      type="button"
+                      onClick={onOpenPostModal}
+                      className="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black py-2.5 px-5 rounded-xl text-xs uppercase tracking-wider transition-all shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 cursor-pointer shrink-0"
+                    >
+                      <span>🚀</span> Continuar a Publicar
+                    </button>
+                  )}
+                </div>
               </div>
             )}
           </div>
