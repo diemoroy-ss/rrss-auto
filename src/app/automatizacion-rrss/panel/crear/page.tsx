@@ -577,7 +577,7 @@ export default function RrssCreatePost() {
     try {
       const idToken = await auth.currentUser?.getIdToken();
 
-      // ── PASO 1: Generar prompt base con el Director de Arte IA ──
+      // ── PASO 1: Generar prompt base con el Director de Arte ──
       updateStep('generate', 'running');
       const promptRes = await fetch("/api/ai/generate-prompt", {
         method: "POST",
@@ -586,8 +586,8 @@ export default function RrssCreatePost() {
           idea: targetIdea,
           imageExpectation: targetExpectation,
           businessType,
-          type: postType,
-          carouselCount,
+          type: effectivePostType,
+          carouselCount: effectiveCarouselCount,
           regenerate: forceReplan,
           selectedPromptTemplate: selectedPromptTemplate ? {
             id: selectedPromptTemplate.id,
@@ -608,7 +608,7 @@ export default function RrssCreatePost() {
         })
       });
 
-      if (!promptRes.ok) throw new Error("El Director de Arte IA no pudo generar una propuesta visual.");
+      if (!promptRes.ok) throw new Error("Nuestros agentes no pudieron generar una propuesta visual.");
 
       const promptData = await promptRes.json();
       const promptPayload = promptData.data || promptData;
@@ -758,7 +758,7 @@ export default function RrssCreatePost() {
         setError(`Has alcanzado el límite de generación de videos (${videosUsed}/${videoLimit}) de tu plan este mes. Mejora tu plan para continuar.`);
         return;
       }
-      const reqImages = postType === 'Carrusel' ? (promptsEnglish.length || carouselCount || 1) : 1;
+      const reqImages = (postType === 'Carrusel' && !isSingleSlideGen) ? (promptsEnglish.length || carouselCount || 1) : 1;
       if (!isVideoType && (imagesUsed + reqImages > imageLimit) && !isAdmin) {
         setGeneratingOpen(false);
         setGeneratingSteps([]);
@@ -774,7 +774,7 @@ export default function RrssCreatePost() {
         imageExpectation: imageExpectation.trim(),
         postText: postText.trim(),
         businessType,
-        postType,
+        postType: isSingleSlideGen ? 'Post' : postType,
         posterConfig: posterConfig.enabled ? posterConfig : null,
       });
       updateStep('prep', 'done');
@@ -786,15 +786,21 @@ export default function RrssCreatePost() {
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` },
         body: JSON.stringify({
           userId: user?.uid,
-          idea: idea.trim(),
-          imageExpectation: imageExpectation.trim(),
-          promptEnglish,
-          promptsEnglish,
+          idea: isSingleSlideGen
+            ? (posterConfig.slides?.[singleSlideTargetIdx]?.mainText || posterConfig.slides?.[singleSlideTargetIdx]?.imageExpectation || idea.trim())
+            : idea.trim(),
+          imageExpectation: isSingleSlideGen
+            ? (posterConfig.slides?.[singleSlideTargetIdx]?.imageExpectation || "")
+            : imageExpectation.trim(),
+          promptEnglish: isSingleSlideGen
+            ? (promptEnglish || pendingPrompts.prompt_english || pendingPrompts.prompts_english?.[singleSlideTargetIdx] || "")
+            : promptEnglish,
+          promptsEnglish: isSingleSlideGen ? undefined : promptsEnglish,
           videoPrompt: pendingPrompts.video_prompt || "",
           voiceoverScript: pendingPrompts.voiceover_script || "",
           businessType,
-          type: postType,
-          carouselCount,
+          type: isSingleSlideGen ? 'Post' : postType,
+          carouselCount: isSingleSlideGen ? 1 : carouselCount,
           email: activeProfile?.email || "",
           phone: activeProfile?.phone || "",
           profileId: activeProfile?.id || "",
@@ -1942,15 +1948,22 @@ export default function RrssCreatePost() {
                     key={idx}
                     onClick={() => {
                       setActiveSlideIndex(idx);
-                      if (posterConfig.slides?.[idx]) {
+                      const targetSlide = posterConfig.slides?.[idx];
+                      if (targetSlide) {
                         setPosterConfig((prev) => ({
                           ...prev,
                           activeSlideIndex: idx,
-                          mainText: prev.slides?.[idx]?.mainText ?? "",
-                          priceText: prev.slides?.[idx]?.priceText ?? "",
-                          sloganText: prev.slides?.[idx]?.sloganText ?? "",
-                          ctaText: prev.slides?.[idx]?.ctaText || prev.ctaText,
+                          mainText: targetSlide?.mainText ?? "",
+                          priceText: targetSlide?.priceText ?? "",
+                          sloganText: targetSlide?.sloganText ?? "",
+                          ctaText: targetSlide?.ctaText || prev.ctaText,
                         }));
+                        setImageExpectation(targetSlide?.imageExpectation ?? "");
+                        if (targetSlide?.baseImageUrl !== undefined) {
+                          setBaseImageUrl(targetSlide.baseImageUrl);
+                        }
+                      } else {
+                        setImageExpectation("");
                       }
                     }}
                     className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between text-left relative overflow-hidden group ${

@@ -458,7 +458,7 @@ export async function POST(req: NextRequest) {
 
                 const slideData = await slideRes.json();
                 const item = Array.isArray(slideData) ? slideData[0] : slideData;
-                const imgUrl = item?.imageUrl || item?.url || item?.image || item?.outputUrl || (typeof slideData === 'string' ? slideData : '');
+                const imgUrl = item?.img_url || item?.imageUrl || item?.url || item?.image || item?.outputUrl || item?.output || item?.data?.imageUrl || item?.data?.url || (typeof slideData === 'string' && slideData.startsWith('http') ? slideData : '');
                 return { slideIndex: slideIdx, imageUrl: imgUrl };
             });
 

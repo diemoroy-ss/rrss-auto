@@ -257,11 +257,14 @@ export default function PosterFormView({
         sloganText: targetSlide.sloganText ?? "",
         ctaText: targetSlide.ctaText || prev.ctaText,
       }));
-      if (targetSlide.imageExpectation) {
-        setImageExpectation(targetSlide.imageExpectation);
+      setImageExpectation(targetSlide.imageExpectation ?? "");
+      if (setBaseImageUrl) {
+        setBaseImageUrl(targetSlide.baseImageUrl || "");
       }
-      if (targetSlide.baseImageUrl !== undefined && setBaseImageUrl) {
-        setBaseImageUrl(targetSlide.baseImageUrl);
+    } else {
+      setImageExpectation("");
+      if (setBaseImageUrl) {
+        setBaseImageUrl("");
       }
     }
   };
@@ -713,7 +716,7 @@ export default function PosterFormView({
                             <VoiceMic
                               onResult={(text) => {
                                 const currentVal = postType === "Carrusel"
-                                  ? (posterConfig.slides?.[currentSlideIdx]?.imageExpectation || idea || "")
+                                  ? (posterConfig.slides?.[currentSlideIdx]?.imageExpectation || "")
                                   : (idea || "");
                                 const nextVal = currentVal ? `${currentVal} ${text}` : text;
                                 if (postType === "Carrusel") {
@@ -729,15 +732,16 @@ export default function PosterFormView({
                           <textarea
                             value={
                               postType === "Carrusel"
-                                ? (posterConfig.slides?.[currentSlideIdx]?.imageExpectation ?? (imageExpectation || idea || ""))
-                                : (idea || imageExpectation || "")
+                                ? (posterConfig.slides?.[currentSlideIdx]?.imageExpectation ?? "")
+                                : (imageExpectation || idea || "")
                             }
                             onChange={(e) => {
                               const val = e.target.value;
                               if (postType === "Carrusel") {
                                 updateSlideField("imageExpectation", val);
+                              } else {
+                                setIdea(val);
                               }
-                              setIdea(val);
                               setImageExpectation(val);
                               handleApplyExtractedTypography(val);
                             }}

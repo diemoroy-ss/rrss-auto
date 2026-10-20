@@ -33,7 +33,7 @@ export default function AIOptionsModal({
               <div className="flex items-center gap-3">
                   <span className="text-2xl">✨</span>
                   <div>
-                      <h3 className="text-xl font-black text-slate-900 tracking-tight">Opciones de IA</h3>
+                      <h3 className="text-xl font-black text-slate-900 tracking-tight">Propuestas de Nuestros Agentes</h3>
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Selecciona la que más te guste</p>
                   </div>
               </div>

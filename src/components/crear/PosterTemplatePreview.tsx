@@ -46,6 +46,14 @@ export default function PosterTemplatePreview({
 }: PosterTemplatePreviewProps) {
   const [viewMode, setViewMode] = React.useState<"image" | "blueprint">("image");
   const hasImage = Boolean(generatedImageUrl && generatedImageUrl.trim().length > 0);
+
+  // Asegurar que al recibir una nueva imagen generada se active inmediatamente la vista de imagen
+  React.useEffect(() => {
+    if (generatedImageUrl && generatedImageUrl.trim().length > 0) {
+      setViewMode("image");
+    }
+  }, [generatedImageUrl]);
+
   const showImage = hasImage && viewMode === "image";
 
   const displayTitle = mainText?.trim() || "TITULAR PRINCIPAL DEL AFICHE";
