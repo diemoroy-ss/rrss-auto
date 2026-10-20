@@ -236,6 +236,7 @@ export async function POST(req: NextRequest) {
             posterConfig,
             catalogoItem,
             baseImageUrl,
+            allowImageRetouch,
         }: {
             idea?: string;
             imageExpectation?: string;
@@ -254,6 +255,7 @@ export async function POST(req: NextRequest) {
             posterConfig?: PosterConfig | null;
             catalogoItem?: { name: string; description: string; imageUrl: string | null } | null;
             baseImageUrl?: string | null;
+            allowImageRetouch?: boolean;
             userId?: string;
         } = body;
 
@@ -411,6 +413,7 @@ export async function POST(req: NextRequest) {
             prompt: enrichedPrompts[0] || "",
             promptEnglish: enrichedPrompts[0] || "",
             baseImageUrl: baseImageUrl || "",
+            allowImageRetouch: allowImageRetouch ?? posterConfig?.allowImageRetouch ?? true,
             productAnalysis: productAnalysis || null,
             idea: enrichedIdea,
             imageExpectation: imageExpectation || "",

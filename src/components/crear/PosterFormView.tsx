@@ -136,7 +136,7 @@ export default function PosterFormView({
     setPosterConfig((prev) => ({ ...prev, [key]: value, enabled: true }));
   };
 
-  const updateSlideField = (field: 'mainText' | 'priceText' | 'sloganText' | 'ctaText' | 'imageExpectation', value: string) => {
+  const updateSlideField = (field: keyof PosterSlideConfig, value: any) => {
     setPosterConfig((prev) => {
       const existingSlides = prev.slides && prev.slides.length > 0 ? [...prev.slides] : [...DEFAULT_POSTER_SLIDES];
       while (existingSlides.length <= currentSlideIdx) {
@@ -176,6 +176,9 @@ export default function PosterFormView({
       }));
       if (targetSlide.imageExpectation) {
         setImageExpectation(targetSlide.imageExpectation);
+      }
+      if (targetSlide.baseImageUrl !== undefined && setBaseImageUrl) {
+        setBaseImageUrl(targetSlide.baseImageUrl);
       }
     }
   };
@@ -384,33 +387,6 @@ export default function PosterFormView({
                 </p>
               </button>
             </div>
-
-            {/* Estilo Visual */}
-                          <div className="pt-2">
-                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2.5">
-                              Estilo Visual del Cartel
-                            </label>
-                            <div className="grid grid-cols-3 gap-2">
-                              {VISUAL_STYLES.map((style) => {
-                                const isSelected = posterConfig.visualStyle === style.id;
-                                return (
-                                  <button
-                                    key={style.id}
-                                    type="button"
-                                    onClick={() => update("visualStyle", style.id)}
-                                    className={`p-2.5 rounded-xl border text-center transition-all ${
-                                      isSelected
-                                        ? "border-amber-500 bg-amber-50/80 text-amber-950 font-black shadow-xs ring-1 ring-amber-400/30"
-                                        : "border-slate-200 bg-slate-50/50 text-slate-600 hover:border-slate-300 font-bold"
-                                    }`}
-                                  >
-                                    <span className="text-base block mb-0.5">{style.emoji}</span>
-                                    <span className="text-xs block leading-tight">{style.id}</span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
             </div>
 
             {/* Previsualización en Vivo de la Plantilla de Texto */}
@@ -435,66 +411,167 @@ export default function PosterFormView({
 
         {/* COLUMNA DERECHA: Foto Real de tu Producto + Copy para el Post en Redes */}
         <div className="lg:col-span-6 space-y-6 w-full flex flex-col justify-between">
-          {/* Card 2: Foto Real del Producto o Escena Publicitaria */}
-                    <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
-                      <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                        <div className="flex items-center gap-2.5">
-                          <span className="text-xl">📸</span>
-                          <div>
-                            <h4 className="text-sm font-black text-slate-900 uppercase tracking-wider">
-                              Foto Real de tu Producto (Opcional)
-                            </h4>
-                            <p className="text-[11px] font-medium text-slate-500">
-                              Sube tu producto o deja que nuestros agentes diseñen la escena fotográfica
-                            </p>
-                          </div>
-                        </div>
-                        {baseImageUrl && setBaseImageUrl && (
-                          <button
-                            type="button"
-                            onClick={() => setBaseImageUrl("")}
-                            className="text-[11px] text-rose-600 font-bold hover:underline"
-                          >
-                            Quitar foto
-                          </button>
-                        )}
+          {/* Card 2: Imagen del Producto o Escena Publicitaria */}
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <span className="text-xl">📦</span>
+                <div>
+                  <h4 className="text-sm font-black text-slate-900 uppercase tracking-wider">
+                    Imagen del Producto (Opcional)
+                  </h4>
+                  <p className="text-[11px] font-medium text-slate-500">
+                    Sube una imagen de tu producto o describe la escena para que la generen nuestros agentes
+                  </p>
+                </div>
+              </div>
+              {((postType === "Carrusel" ? posterConfig.slides?.[currentSlideIdx]?.baseImageUrl : baseImageUrl) || baseImageUrl) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (postType === "Carrusel") {
+                      updateSlideField("baseImageUrl", "");
+                      updateSlideField("useSlide1Image", false);
+                    }
+                    if (setBaseImageUrl) setBaseImageUrl("");
+                  }}
+                  className="text-[11px] text-rose-600 font-bold hover:underline cursor-pointer"
+                >
+                  Quitar foto
+                </button>
+              )}
+            </div>
+
+            {/* Selector para Diapositivas > 1 en Carrusel: ¿Usar imagen del Slide 1 o una nueva? */}
+            {postType === "Carrusel" && currentSlideIdx > 0 && (posterConfig.slides?.[0]?.baseImageUrl || baseImageUrl) && (
+              <div className="p-3 bg-amber-50/70 border border-amber-200/80 rounded-2xl space-y-2">
+                <span className="text-[11px] font-black text-amber-950 flex items-center gap-1.5">
+                  <span>📸</span> Imagen para el Slide {currentSlideIdx + 1} ({CAROUSEL_DEFAULT_SLIDES[currentSlideIdx]?.role}):
+                </span>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const img1 = posterConfig.slides?.[0]?.baseImageUrl || baseImageUrl || "";
+                      updateSlideField("baseImageUrl", img1);
+                      updateSlideField("useSlide1Image", true);
+                      if (setBaseImageUrl) setBaseImageUrl(img1);
+                    }}
+                    className={`p-2 rounded-xl border text-left transition-all cursor-pointer ${
+                      posterConfig.slides?.[currentSlideIdx]?.useSlide1Image ||
+                      posterConfig.slides?.[currentSlideIdx]?.baseImageUrl === (posterConfig.slides?.[0]?.baseImageUrl || baseImageUrl)
+                        ? "border-amber-500 bg-white text-amber-950 shadow-xs ring-1 ring-amber-400/40"
+                        : "border-slate-200 bg-white/70 text-slate-600 hover:border-slate-300"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <img
+                        src={posterConfig.slides?.[0]?.baseImageUrl || baseImageUrl}
+                        alt="Slide 1"
+                        className="w-7 h-7 rounded-lg object-cover shrink-0 border border-amber-300"
+                      />
+                      <div className="min-w-0">
+                        <span className="text-[10px] font-black block truncate">Usar imagen del Slide 1</span>
+                        <span className="text-[9px] text-slate-500 block">Mismo producto</span>
                       </div>
-          
-                      {baseImageUrl ? (
-                        <div className="flex items-center gap-3.5 p-3.5 bg-amber-50/60 border border-amber-200 rounded-2xl">
-                          <img
-                            src={baseImageUrl}
-                            alt="Producto base"
-                            className="w-16 h-16 rounded-xl object-cover border border-amber-200 shrink-0 shadow-xs"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-black text-amber-950 truncate">Foto del producto activa</p>
-                            <p className="text-[11px] text-amber-800 font-medium leading-relaxed">
-                              Nuestros agentes montarán el afiche y la composición alrededor de esta imagen.
-                            </p>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="space-y-2.5">
-                          <label className="cursor-pointer flex items-center justify-center gap-2 px-4 py-3 bg-slate-50 hover:bg-amber-50 border-2 border-dashed border-slate-300 hover:border-amber-400 rounded-2xl text-xs font-bold text-slate-700 hover:text-amber-800 transition-all w-full shadow-inner">
-                            <span>{uploadingBaseImage ? "⏳ Subiendo imagen..." : "📤 Subir foto de tu producto"}</span>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              disabled={uploadingBaseImage}
-                              className="hidden"
-                              onChange={async (e) => {
-                                const file = e.target.files?.[0];
-                                if (!file) return;
-                                if (onUploadBaseImage) await onUploadBaseImage(file);
-                              }}
-                            />
-                          </label>
-                          <div className="p-3 bg-slate-50 border border-slate-200/70 rounded-xl text-[11px] text-slate-500 font-medium leading-relaxed">
-                            💡 <b>¿No tienes una foto a mano?</b> No te preocupes. Nuestros agentes generarán una escena fotográfica de alta resolución basada en la descripción que indiques abajo.
-                          </div>
-                        </div>
-                      )}
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      updateSlideField("baseImageUrl", "");
+                      updateSlideField("useSlide1Image", false);
+                    }}
+                    className={`p-2 rounded-xl border text-left transition-all cursor-pointer ${
+                      !posterConfig.slides?.[currentSlideIdx]?.useSlide1Image &&
+                      !posterConfig.slides?.[currentSlideIdx]?.baseImageUrl
+                        ? "border-amber-500 bg-white text-amber-950 shadow-xs ring-1 ring-amber-400/40"
+                        : "border-slate-200 bg-white/70 text-slate-600 hover:border-slate-300"
+                    }`}
+                  >
+                    <span className="text-base block mb-0.5">📤</span>
+                    <span className="text-[10px] font-black block leading-tight">Subir o describir otra</span>
+                    <span className="text-[9px] text-slate-500 block">Imagen diferente</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Vista previa de imagen activa o botón de subida */}
+            {(postType === "Carrusel" ? (posterConfig.slides?.[currentSlideIdx]?.baseImageUrl || (currentSlideIdx === 0 ? baseImageUrl : "")) : baseImageUrl) ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3.5 p-3.5 bg-amber-50/60 border border-amber-200 rounded-2xl">
+                  <img
+                    src={(postType === "Carrusel" ? (posterConfig.slides?.[currentSlideIdx]?.baseImageUrl || baseImageUrl) : baseImageUrl) || ""}
+                    alt="Producto base"
+                    className="w-16 h-16 rounded-xl object-cover border border-amber-200 shrink-0 shadow-xs"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-black text-amber-950 truncate">Imagen activa para este Slide</p>
+                    <p className="text-[11px] text-amber-800 font-medium leading-relaxed">
+                      Nuestros agentes tomarán esta imagen como referencia para componer el afiche.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Checkbox de Retoque por Nuestros Agentes */}
+                <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl">
+                  <label className="flex items-start gap-2.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={
+                        postType === "Carrusel"
+                          ? (posterConfig.slides?.[currentSlideIdx]?.allowImageRetouch ?? posterConfig.allowImageRetouch ?? true)
+                          : (posterConfig.allowImageRetouch ?? true)
+                      }
+                      onChange={(e) => {
+                        const val = e.target.checked;
+                        if (postType === "Carrusel") {
+                          updateSlideField("allowImageRetouch", val);
+                        }
+                        update("allowImageRetouch", val);
+                      }}
+                      className="w-4 h-4 mt-0.5 accent-amber-600 rounded shrink-0 cursor-pointer"
+                    />
+                    <div className="flex-1 text-xs">
+                      <span className="font-black text-slate-900 block">
+                        🎨 Retoque y ambientación comercial por nuestros agentes
+                      </span>
+                      <span className="text-[11px] text-slate-500 font-medium block leading-relaxed mt-0.5">
+                        {(postType === "Carrusel"
+                          ? (posterConfig.slides?.[currentSlideIdx]?.allowImageRetouch ?? posterConfig.allowImageRetouch ?? true)
+                          : (posterConfig.allowImageRetouch ?? true))
+                          ? "Nuestros agentes adaptarán la iluminación, sombras y fondo según lo que indiques en la descripción de abajo."
+                          : "Usar tu imagen original tal cual (sin modificaciones visuales ni cambios de fondo en el producto)."}
+                      </span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                <label className="cursor-pointer flex items-center justify-center gap-2 px-4 py-3 bg-slate-50 hover:bg-amber-50 border-2 border-dashed border-slate-300 hover:border-amber-400 rounded-2xl text-xs font-bold text-slate-700 hover:text-amber-800 transition-all w-full shadow-inner">
+                  <span>{uploadingBaseImage ? "⏳ Subiendo imagen..." : "📤 Subir imagen de tu producto"}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    disabled={uploadingBaseImage}
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      if (onUploadBaseImage) {
+                        await onUploadBaseImage(file);
+                      }
+                    }}
+                  />
+                </label>
+                <div className="p-3 bg-slate-50 border border-slate-200/70 rounded-xl text-[11px] text-slate-500 font-medium leading-relaxed">
+                  💡 <b>¿No tienes una imagen a mano?</b> No te preocupes. Nuestros agentes diseñarán una escena publicitaria fotográfica basada en la descripción que indiques abajo.
+                </div>
+              </div>
+            )}
           
                       {/* Campo: Idea o Escena Visual del Afiche */}
                       <div className="pt-2 space-y-3">
@@ -630,11 +707,11 @@ export default function PosterFormView({
                         <span className="text-xl">✍️</span>
                         <div>
                           <h4 className="text-sm font-black text-slate-900 uppercase tracking-wider">
-                            Textos del Cartel {postType === "Carrusel" ? `(Slide ${currentSlideIdx + 1} de ${carouselCount || 5})` : "(en la imagen)"}
+                            Textos del Cartel {postType === "Carrusel" ? `(Slide ${currentSlideIdx + 1} de ${carouselCount || 5} · ${CAROUSEL_DEFAULT_SLIDES[currentSlideIdx]?.role})` : "(en la imagen)"}
                           </h4>
                           <p className="text-[11px] font-medium text-slate-500">
                             {postType === "Carrusel" 
-                              ? "Define los textos específicos para cada diapositiva de tu carrusel"
+                              ? `Define los textos para el Slide ${currentSlideIdx + 1} (${CAROUSEL_DEFAULT_SLIDES[currentSlideIdx]?.desc})`
                               : "Elementos que irán impresos en el afiche publicitario"}
                           </p>
                         </div>
@@ -645,47 +722,6 @@ export default function PosterFormView({
                         </span>
                       )}
                     </div>
-
-        {/* Selector de Diapositiva 1 por 1 para Carrusel */}
-                    {postType === "Carrusel" && (
-                      <div className="p-3.5 bg-amber-50/70 border border-amber-200/80 rounded-2xl space-y-2.5">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-black uppercase text-amber-900 tracking-wider flex items-center gap-1.5">
-                            <span>📑</span> Selecciona la diapositiva a editar:
-                          </span>
-                          <span className="text-[10px] font-bold text-amber-800 bg-amber-200/60 px-2 py-0.5 rounded-full">
-                            {CAROUSEL_DEFAULT_SLIDES[currentSlideIdx]?.role || `Slide ${currentSlideIdx + 1}`}
-                          </span>
-                        </div>
-        
-                        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
-                          {Array.from({ length: carouselCount || 5 }).map((_, idx) => {
-                            const isCurrent = currentSlideIdx === idx;
-                            const roleInfo = CAROUSEL_DEFAULT_SLIDES[idx] || { emoji: "📑", label: `Slide ${idx + 1}` };
-                            const hasCustomText = Boolean(posterConfig.slides?.[idx]?.mainText);
-                            return (
-                              <button
-                                key={idx}
-                                type="button"
-                                onClick={() => handleSelectSlide(idx)}
-                                className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
-                                  isCurrent
-                                    ? "bg-amber-600 text-white shadow-sm scale-102"
-                                    : "bg-white text-slate-700 border border-slate-200 hover:border-amber-300"
-                                }`}
-                              >
-                                <span>{roleInfo.emoji}</span>
-                                <span>Slide {idx + 1}</span>
-                                {hasCustomText && <span className={isCurrent ? "text-amber-200" : "text-emerald-500"}>●</span>}
-                              </button>
-                            );
-                          })}
-                        </div>
-                        <p className="text-[10px] text-amber-800 font-medium">
-                          💡 <b>{CAROUSEL_DEFAULT_SLIDES[currentSlideIdx]?.label}:</b> {CAROUSEL_DEFAULT_SLIDES[currentSlideIdx]?.desc}
-                        </p>
-                      </div>
-                    )}
 
         {/* Subgrid de 2 Columnas para los Campos de Texto a Todo el Ancho */}
         <div className="grid md:grid-cols-2 gap-6 items-start">
@@ -947,12 +983,12 @@ export default function PosterFormView({
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    <span>Diseñando Slide ${currentSlideIdx + 1}...</span>
+                    <span>Diseñando Slide {currentSlideIdx + 1}...</span>
                   </>
                 ) : (
                   <>
                     <span className="text-base">🎨</span>
-                    <span>Diseñar solo Slide ${currentSlideIdx + 1} (${CAROUSEL_DEFAULT_SLIDES[currentSlideIdx]?.role})</span>
+                    <span>Diseñar solo Slide {currentSlideIdx + 1} ({CAROUSEL_DEFAULT_SLIDES[currentSlideIdx]?.role})</span>
                   </>
                 )}
               </button>

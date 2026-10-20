@@ -26,6 +26,8 @@ export interface PosterSlideConfig {
   ctaText?: string;
   layout?: PosterLayout;
   visualStyle?: VisualStyle;
+  allowImageRetouch?: boolean;
+  useSlide1Image?: boolean;
 }
 
 export interface PosterConfig {
@@ -56,6 +58,8 @@ export interface PosterConfig {
   // Estilo y CTA
   visualStyle: VisualStyle;
   ctaText: string;            // "¡Compra Ahora!", "Reserva Hoy", etc.
+  allowImageRetouch?: boolean;
+  baseImageUrl?: string;
   additionalNotes?: string;
 }
 

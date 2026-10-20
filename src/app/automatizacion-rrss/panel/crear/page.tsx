@@ -10,7 +10,7 @@ import Link from "next/link";
 import { useProfile } from "../../../../contexts/ProfileContext";
 import { getQuotaUsage, getPlanLimit, getVideoPlanLimit, getAiGenerationUsage, getAiPlanLimit, fetchUserQuotas } from "../../../../lib/quota";
 import { fetchSocialRules, getCombinedConstraints, SocialRules, DEFAULT_SOCIAL_RULES } from "../../../../lib/socialRules";
-import { type PosterConfig, DEFAULT_POSTER_CONFIG, buildPosterPromptSuffix } from "../../../../types/poster";
+import { type PosterConfig, DEFAULT_POSTER_CONFIG, DEFAULT_POSTER_SLIDES, buildPosterPromptSuffix } from "../../../../types/poster";
 
 import PostConfigForm from "../../../../components/crear/PostConfigForm";
 import CarouselWizard, { CarouselSlide } from "../../../../components/crear/CarouselWizard";
@@ -699,6 +699,7 @@ export default function RrssCreatePost() {
   // ─────────────────────────────────────────────────────────────────────────
   const handleConfirmPreview = async () => {
     if (!pendingPrompts) return;
+    const isSingleSlideGen = singleSlideTargetIdx !== null;
     setShowPromptModal(false);
     setError("");
 
@@ -799,7 +800,12 @@ export default function RrssCreatePost() {
           profileId: activeProfile?.id || "",
           userProvidedCopy: postText,
           posterConfig,
-          baseImageUrl: baseImageUrl || selectedCatalogoItem?.imageUrl || null,
+          baseImageUrl: (isSingleSlideGen
+            ? (posterConfig.slides?.[singleSlideTargetIdx]?.baseImageUrl || (posterConfig.slides?.[singleSlideTargetIdx]?.useSlide1Image ? (posterConfig.slides?.[0]?.baseImageUrl || baseImageUrl) : null) || baseImageUrl)
+            : baseImageUrl) || selectedCatalogoItem?.imageUrl || null,
+          allowImageRetouch: isSingleSlideGen
+            ? (posterConfig.slides?.[singleSlideTargetIdx]?.allowImageRetouch ?? posterConfig.allowImageRetouch ?? true)
+            : (posterConfig.allowImageRetouch ?? true),
           catalogoItem: selectedCatalogoItem ? {
             name: selectedCatalogoItem.name,
             description: selectedCatalogoItem.description || "",
@@ -1065,6 +1071,19 @@ export default function RrssCreatePost() {
       await uploadBytes(storageRef, file);
       const downloadUrl = await getDownloadURL(storageRef);
       setBaseImageUrl(downloadUrl);
+      if (postType === 'Carrusel') {
+        setPosterConfig((prev) => {
+          const slides = [...(prev.slides || DEFAULT_POSTER_SLIDES)];
+          if (slides[activeSlideIndex]) {
+            slides[activeSlideIndex] = {
+              ...slides[activeSlideIndex],
+              baseImageUrl: downloadUrl,
+              useSlide1Image: false,
+            };
+          }
+          return { ...prev, slides };
+        });
+      }
     } catch (err) {
       console.error("Error al subir imagen base:", err);
       setError("No pudimos subir la foto del producto.");
