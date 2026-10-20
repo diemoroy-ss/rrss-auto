@@ -2075,6 +2075,7 @@ export default function RrssCreatePost() {
               setShowScheduler={setShowScheduler}
               constraints={constraints}
               posterConfig={posterConfig}
+              setPosterConfig={setPosterConfig}
               renderSection="parameters"
               hideAI={hideAIParam}
               hideNetworksAndType={true}

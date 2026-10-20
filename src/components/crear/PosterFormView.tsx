@@ -8,6 +8,7 @@ import VoiceMic from "../VoiceMic";
 import Link from "next/link";
 import { FaFacebookF, FaInstagram, FaLinkedinIn, FaTiktok, FaGoogle, FaYoutube, FaTwitter } from "react-icons/fa";
 import { isPlatformAllowed } from "../../lib/plans";
+import { parsePromptTypographyAndDesign } from "../../lib/poster-prompt-parser";
 
 const VISUAL_STYLES: { id: VisualStyle; emoji: string; desc: string }[] = [
   { id: "Moderno",     emoji: "🔷", desc: "Líneas limpias, tipografía fuerte" },
@@ -125,6 +126,7 @@ export default function PosterFormView({
   const [showCustomCta, setShowCustomCta] = useState(false);
   const [customCta, setCustomCta] = useState("");
   const [internalSlideIdx, setInternalSlideIdx] = useState(0);
+  const [extractedNotice, setExtractedNotice] = useState<string | null>(null);
 
   const currentSlideIdx = setActiveSlideIndex ? activeSlideIndex : internalSlideIdx;
   const setCurrentSlideIdx = (idx: number) => {
@@ -160,6 +162,79 @@ export default function PosterFormView({
         enabled: true,
       };
     });
+  };
+
+  const handleApplyExtractedTypography = (text: string) => {
+    const parsed = parsePromptTypographyAndDesign(text);
+    if (!parsed) return;
+
+    const detectedParts: string[] = [];
+    if (parsed.mainText) detectedParts.push(`Titular ("${parsed.mainText.length > 30 ? parsed.mainText.slice(0, 27) + '...' : parsed.mainText}")`);
+    if (parsed.sloganText) detectedParts.push(`Slogan ("${parsed.sloganText.length > 25 ? parsed.sloganText.slice(0, 22) + '...' : parsed.sloganText}")`);
+    if (parsed.priceText) detectedParts.push(`Precio ("${parsed.priceText}")`);
+    if (parsed.ctaText) detectedParts.push(`CTA ("${parsed.ctaText}")`);
+    if (parsed.primaryColor) detectedParts.push(`Color (${parsed.primaryColor})`);
+
+    if (detectedParts.length === 0) return;
+
+    if (parsed.ctaText) {
+      if (!CTA_OPTIONS.includes(parsed.ctaText)) {
+        setShowCustomCta(true);
+        setCustomCta(parsed.ctaText);
+      } else {
+        setShowCustomCta(false);
+      }
+    }
+
+    if (postType === "Carrusel") {
+      setPosterConfig((prev) => {
+        const existingSlides = prev.slides && prev.slides.length > 0 ? [...prev.slides] : [...DEFAULT_POSTER_SLIDES];
+        while (existingSlides.length <= currentSlideIdx) {
+          existingSlides.push({
+            slideNumber: existingSlides.length + 1,
+            role: CAROUSEL_DEFAULT_SLIDES[existingSlides.length]?.role || `Slide ${existingSlides.length + 1}`,
+            mainText: "",
+            priceText: "",
+            sloganText: "",
+            ctaText: "",
+          });
+        }
+        const updatedSlide = { ...existingSlides[currentSlideIdx] };
+        if (parsed.mainText) updatedSlide.mainText = parsed.mainText;
+        if (parsed.sloganText) updatedSlide.sloganText = parsed.sloganText;
+        if (parsed.priceText) updatedSlide.priceText = parsed.priceText;
+        if (parsed.ctaText) updatedSlide.ctaText = parsed.ctaText;
+
+        existingSlides[currentSlideIdx] = updatedSlide;
+
+        return {
+          ...prev,
+          mainText: parsed.mainText ?? prev.mainText,
+          sloganText: parsed.sloganText ?? prev.sloganText,
+          includeSlogan: parsed.includeSlogan ?? (parsed.sloganText ? true : prev.includeSlogan),
+          priceText: parsed.priceText ?? prev.priceText,
+          includePrice: parsed.includePrice ?? (parsed.priceText ? true : prev.includePrice),
+          ctaText: parsed.ctaText ?? prev.ctaText,
+          primaryColor: parsed.primaryColor ?? prev.primaryColor,
+          slides: existingSlides,
+          enabled: true,
+        };
+      });
+    } else {
+      setPosterConfig((prev) => ({
+        ...prev,
+        mainText: parsed.mainText ?? prev.mainText,
+        sloganText: parsed.sloganText ?? prev.sloganText,
+        includeSlogan: parsed.includeSlogan ?? (parsed.sloganText ? true : prev.includeSlogan),
+        priceText: parsed.priceText ?? prev.priceText,
+        includePrice: parsed.includePrice ?? (parsed.priceText ? true : prev.includePrice),
+        ctaText: parsed.ctaText ?? prev.ctaText,
+        primaryColor: parsed.primaryColor ?? prev.primaryColor,
+        enabled: true,
+      }));
+    }
+
+    setExtractedNotice(`Textos y estilo detectados en el prompt: ${detectedParts.join(" · ")}`);
   };
 
   const handleSelectSlide = (idx: number) => {
@@ -622,6 +697,7 @@ export default function PosterFormView({
                                 }
                                 setIdea(nextVal);
                                 setImageExpectation(nextVal);
+                                handleApplyExtractedTypography(nextVal);
                               }}
                               className="scale-85"
                             />
@@ -639,6 +715,7 @@ export default function PosterFormView({
                               }
                               setIdea(val);
                               setImageExpectation(val);
+                              handleApplyExtractedTypography(val);
                             }}
                             placeholder={
                               postType === "Carrusel"
@@ -647,6 +724,22 @@ export default function PosterFormView({
                             }
                             className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-2xl outline-none text-xs font-semibold text-slate-800 resize-none min-h-[90px] focus:border-amber-500 focus:bg-white transition-all shadow-inner"
                           />
+
+                          {extractedNotice && (
+                            <div className="mt-2.5 p-3 bg-emerald-50 border border-emerald-200/90 rounded-2xl text-emerald-900 text-xs font-medium flex items-center justify-between gap-3 shadow-xs animate-in fade-in">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="text-base shrink-0">🎯</span>
+                                <span className="truncate">{extractedNotice}</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setExtractedNotice(null)}
+                                className="text-emerald-700 hover:text-emerald-950 text-xs font-black px-1.5 py-0.5 rounded cursor-pointer shrink-0"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -716,11 +809,18 @@ export default function PosterFormView({
                           </p>
                         </div>
                       </div>
-                      {postType === "Carrusel" && (
-                        <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full">
-                          Diapositiva {currentSlideIdx + 1}/{carouselCount || 5}
-                        </span>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {extractedNotice && (
+                          <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-850 px-3 py-1 rounded-full border border-emerald-300 flex items-center gap-1.5 shadow-xs animate-in fade-in">
+                            <span>✨</span> Textos sincronizados del prompt
+                          </span>
+                        )}
+                        {postType === "Carrusel" && (
+                          <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full">
+                            Diapositiva {currentSlideIdx + 1}/{carouselCount || 5}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
         {/* Subgrid de 2 Columnas para los Campos de Texto a Todo el Ancho */}

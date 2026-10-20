@@ -7,6 +7,7 @@ import { useProfile } from "../../contexts/ProfileContext";
 import VoiceMic from "../VoiceMic";
 import Link from "next/link";
 import { type PosterConfig } from "../../types/poster";
+import { parsePromptTypographyAndDesign } from "../../lib/poster-prompt-parser";
 import { UserTemplate } from "../../app/automatizacion-rrss/panel/crear/page";
 import { FaFacebookF, FaInstagram, FaLinkedinIn, FaTiktok, FaGoogle, FaYoutube, FaTwitter } from "react-icons/fa";
 import TikTokPostSettings, { TikTokSettingsState } from "./TikTokPostSettings";
@@ -169,6 +170,7 @@ export default function PostConfigForm({
   uploadingBaseImage = false,
   hasFb, hasIg, hasLi, hasTt, hasGbp, hasYt, hasX,
   posterConfig,
+  setPosterConfig,
   needsConnection,
   handleImproveWithAI,
   handleGeneratePreview,
@@ -640,13 +642,51 @@ export default function PostConfigForm({
                   💡 ¿Qué imagen quieres generar?
                 </label>
                 <VoiceMic
-                  onResult={(text) => setImageExpectation(imageExpectation + (imageExpectation ? " " : "") + text)}
+                  onResult={(text) => {
+                    const nextVal = imageExpectation + (imageExpectation ? " " : "") + text;
+                    setImageExpectation(nextVal);
+                    if (setPosterConfig) {
+                      const parsed = parsePromptTypographyAndDesign(nextVal);
+                      if (parsed) {
+                        setPosterConfig((prev) => ({
+                          ...prev,
+                          mainText: parsed.mainText ?? prev.mainText,
+                          sloganText: parsed.sloganText ?? prev.sloganText,
+                          includeSlogan: parsed.includeSlogan ?? (parsed.sloganText ? true : prev.includeSlogan),
+                          priceText: parsed.priceText ?? prev.priceText,
+                          includePrice: parsed.includePrice ?? (parsed.priceText ? true : prev.includePrice),
+                          ctaText: parsed.ctaText ?? prev.ctaText,
+                          primaryColor: parsed.primaryColor ?? prev.primaryColor,
+                          enabled: true,
+                        }));
+                      }
+                    }
+                  }}
                   className="scale-90"
                 />
               </div>
               <textarea
                 value={imageExpectation}
-                onChange={e => setImageExpectation(e.target.value)}
+                onChange={e => {
+                  const val = e.target.value;
+                  setImageExpectation(val);
+                  if (setPosterConfig) {
+                    const parsed = parsePromptTypographyAndDesign(val);
+                    if (parsed) {
+                      setPosterConfig((prev) => ({
+                        ...prev,
+                        mainText: parsed.mainText ?? prev.mainText,
+                        sloganText: parsed.sloganText ?? prev.sloganText,
+                        includeSlogan: parsed.includeSlogan ?? (parsed.sloganText ? true : prev.includeSlogan),
+                        priceText: parsed.priceText ?? prev.priceText,
+                        includePrice: parsed.includePrice ?? (parsed.priceText ? true : prev.includePrice),
+                        ctaText: parsed.ctaText ?? prev.ctaText,
+                        primaryColor: parsed.primaryColor ?? prev.primaryColor,
+                        enabled: true,
+                      }));
+                    }
+                  }
+                }}
                 placeholder="Describe el estilo y elementos de la imagen que necesitas..."
                 className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl outline-none text-xs font-semibold text-slate-700 resize-none min-h-[90px] focus:border-indigo-400"
               />
