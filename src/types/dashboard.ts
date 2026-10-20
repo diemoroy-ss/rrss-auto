@@ -11,6 +11,7 @@ export interface SocialPost {
   postText?: string;
   title?: string;
   type?: string;
+  postType?: string;
   format?: string;
   scheduledFor: any; // Firestore Timestamp
   networks: string[]; // ['facebook', 'instagram', ...]
@@ -110,13 +111,13 @@ export function isBlogPost(post: SocialPost): boolean {
 
 /** Devuelve la etiqueta de tipo de post (para la badge de formato) */
 export function getPostTypeLabel(post: SocialPost): string {
-  const type = post.type?.toLowerCase() ?? '';
+  const type = (post.type || post.postType || '').toLowerCase();
   const fmt = post.format?.toLowerCase() ?? '';
 
   if (type.includes('reel') || type.includes('video') || fmt.includes('reel') || fmt.includes('short')) {
     return '🎬 Reel / Short';
   }
-  if (type.includes('carrusel') || type.includes('carousel')) {
+  if (type.includes('carrusel') || type.includes('carousel') || (post.imageUrls && post.imageUrls.length > 1)) {
     return '📑 Carrusel';
   }
   if (type.includes('stor') || type.includes('historia')) {

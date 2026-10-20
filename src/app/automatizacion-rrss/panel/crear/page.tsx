@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { auth, db, storage } from "../../../../lib/firebase";
 import { collection, addDoc, getDoc, doc, query, where, getDocs, orderBy, deleteDoc, limit } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
@@ -90,6 +90,30 @@ export default function RrssCreatePost() {
   const [pendingPrompts, setPendingPrompts] = useState<any>(null);
   const [editablePromptSpanish, setEditablePromptSpanish] = useState("");
   const [showFinalPostModal, setShowFinalPostModal] = useState(false);
+  const [finalPreviewIndex, setFinalPreviewIndex] = useState(0);
+
+  // URLs consolidadas para la previsualización final y publicación (soporta carrusel de 5 láminas)
+  const finalModalUrls: string[] = useMemo(() => {
+    if (creationMode === 'manual' && selectedTemplate?.url) {
+      return [selectedTemplate.url];
+    }
+    const posterUrls = (posterConfig.enabled && posterConfig.slides)
+      ? (posterConfig.slides.map(s => s.imageUrl).filter(Boolean) as string[])
+      : [];
+    if (posterUrls.length > 0) return posterUrls;
+    const pUrls = previewSlides.map(s => s.url).filter(Boolean);
+    if (pUrls.length > 0) return pUrls;
+    if (posterConfig.imageUrl) return [posterConfig.imageUrl];
+    return [];
+  }, [creationMode, selectedTemplate, posterConfig, previewSlides]);
+
+  const openFinalPostModal = () => {
+    if (finalModalUrls.length > 1 && postType !== 'Reel') {
+      setPostType('Carrusel');
+    }
+    setFinalPreviewIndex(0);
+    setShowFinalPostModal(true);
+  };
 
   // ── GeneratingModal state ──────────────────────────────────────
   const [generatingOpen, setGeneratingOpen] = useState(false);
@@ -1420,9 +1444,24 @@ export default function RrssCreatePost() {
           finalMediaUrls = [selectedTemplate.url];
           finalCaption = manualCaption;
       } else {
-          finalMediaUrls = previewSlides.map(s => s.url);
+          const posterSlideUrls = (posterConfig.enabled && posterConfig.slides)
+            ? (posterConfig.slides.map(s => s.imageUrl).filter(Boolean) as string[])
+            : [];
+          const previewUrls = previewSlides.map(s => s.url).filter(Boolean);
+
+          if (posterSlideUrls.length > 1) {
+            finalMediaUrls = posterSlideUrls;
+          } else if (previewUrls.length > 0) {
+            finalMediaUrls = previewUrls;
+          } else if (posterConfig.imageUrl) {
+            finalMediaUrls = [posterConfig.imageUrl];
+          }
           finalCaption = postText;
       }
+
+      const isMultiSlide = finalMediaUrls.length > 1 || (posterConfig.enabled && (posterConfig.slides?.length ?? 0) > 1);
+      const effectivePostType = (isMultiSlide && postType !== 'Reel') ? 'Carrusel' : postType;
+      const effectiveCarouselCount = effectivePostType === 'Carrusel' ? (finalMediaUrls.length || carouselCount || 5) : 1;
 
       const scheduledDate = showScheduler && date && time ? new Date(`${date}T${time}`) : new Date();
 
@@ -1438,8 +1477,9 @@ export default function RrssCreatePost() {
         isCopyFinalized: true, // Prevents publish-now from overwriting with generic AI copy
         attachWebsiteLink,
         websiteUrl: attachWebsiteLink ? (websiteUrl.trim() || activeProfile?.website || "") : "",
-        postType,
-        carouselCount: postType === 'Carrusel' ? carouselCount : 1,
+        postType: effectivePostType,
+        type: effectivePostType,
+        carouselCount: effectiveCarouselCount,
         networks: Object.entries(networks).filter(([_, isActive]) => isActive).map(([net]) => net),
         imageUrls: finalMediaUrls,
         imageUrl: finalMediaUrls[0] || "",
@@ -2117,7 +2157,7 @@ export default function RrssCreatePost() {
               activeSlideIndex={activeSlideIndex}
               setActiveSlideIndex={setActiveSlideIndex}
               previewSlides={previewSlides}
-              onOpenPostModal={() => setShowFinalPostModal(true)}
+              onOpenPostModal={openFinalPostModal}
               isReadyToPost={Boolean(isReady)}
             />
           </div>
@@ -2349,7 +2389,7 @@ export default function RrssCreatePost() {
                     <div className="max-w-md mx-auto mt-6">
                        <button 
                          type="button" 
-                         onClick={() => setShowFinalPostModal(true)} 
+                         onClick={openFinalPostModal}
                          disabled={loading || !isReady} 
                          title={!isReady ? "Falta agregar el copy de la publicación" : ""}
                          className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 disabled:from-slate-300 disabled:to-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-black text-[16px] py-4 rounded-[20px] transition-all shadow-xl shadow-indigo-500/30 flex items-center justify-center gap-2 hover:-translate-y-1"
@@ -2401,7 +2441,7 @@ export default function RrssCreatePost() {
                   <div className="max-w-md mx-auto mt-6">
                      <button 
                        type="button" 
-                       onClick={() => setShowFinalPostModal(true)} 
+                       onClick={openFinalPostModal}
                        disabled={loading || !isReady} 
                        title={!isReady ? "Falta agregar el copy de la publicación" : ""}
                        className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 disabled:from-slate-300 disabled:to-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-black text-[16px] py-4 rounded-[20px] transition-all shadow-xl shadow-indigo-500/30 flex items-center justify-center gap-2 hover:-translate-y-1"
@@ -2794,8 +2834,19 @@ export default function RrssCreatePost() {
               <div className="flex items-center gap-3">
                 <span className="text-2xl">📱</span>
                 <div>
-                  <h3 className="text-lg font-black text-slate-900 tracking-tight leading-none">Previsualización Final</h3>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Así se verá tu post en redes</p>
+                  <h3 className="text-lg font-black text-slate-900 tracking-tight leading-none flex items-center gap-2">
+                    <span>Previsualización Final</span>
+                    {finalModalUrls.length > 1 && (
+                      <span className="bg-purple-100 text-purple-700 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-purple-200">
+                        📑 Carrusel ({finalModalUrls.length})
+                      </span>
+                    )}
+                  </h3>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+                    {finalModalUrls.length > 1 
+                      ? `Revisa las ${finalModalUrls.length} láminas de tu carrusel` 
+                      : 'Así se verá tu post en redes'}
+                  </p>
                 </div>
               </div>
               <button 
@@ -2809,18 +2860,87 @@ export default function RrssCreatePost() {
             {/* Content (Scrollable) */}
             <div className="p-6 overflow-y-auto flex-1 space-y-6 custom-scrollbar">
               
-              {/* Imagen/Video */}
-              <div className="w-full aspect-square bg-slate-100 rounded-2xl overflow-hidden border-4 border-white shadow-md">
-                 {(creationMode === 'manual' ? selectedTemplate?.url : previewSlides[0]?.url) ? (
-                    (creationMode === 'manual' && (selectedTemplate?.type === 'video' || selectedTemplate?.url.match(/\.(mp4|mov|webm|quicktime)/i))) ? (
-                       <video src={selectedTemplate?.url} autoPlay loop muted playsInline className="w-full h-full object-cover" />
-                    ) : (
-                       // eslint-disable-next-line @next/next/no-img-element
-                       <img src={creationMode === 'manual' ? selectedTemplate?.url : previewSlides[0]?.url} alt="Final Post" className="w-full h-full object-cover" />
-                    )
-                 ) : (
-                    <div className="w-full h-full flex items-center justify-center text-slate-300 text-4xl">📸</div>
-                 )}
+              {/* Imagen/Video / Carrusel */}
+              <div className="space-y-3">
+                <div className="w-full aspect-square bg-slate-900 rounded-2xl overflow-hidden border-4 border-white shadow-md relative group flex items-center justify-center">
+                   {finalModalUrls.length > 0 ? (
+                      (creationMode === 'manual' && (selectedTemplate?.type === 'video' || selectedTemplate?.url.match(/\.(mp4|mov|webm|quicktime)/i))) ? (
+                         <video src={selectedTemplate?.url} autoPlay loop muted playsInline className="w-full h-full object-cover" />
+                      ) : (
+                         <>
+                           {/* eslint-disable-next-line @next/next/no-img-element */}
+                           <img 
+                             src={finalModalUrls[finalPreviewIndex] || finalModalUrls[0]} 
+                             alt={`Final Post Slide ${finalPreviewIndex + 1}`} 
+                             className="w-full h-full object-cover transition-all duration-200" 
+                           />
+
+                           {/* Badge Lámina X de N */}
+                           {finalModalUrls.length > 1 && (
+                             <div className="absolute top-3 right-3 bg-slate-900/85 backdrop-blur-md text-white text-[11px] font-black uppercase tracking-wider px-3 py-1.5 rounded-xl shadow-lg border border-white/20 flex items-center gap-1.5 z-10">
+                               <span>📑</span> Lámina {finalPreviewIndex + 1} de {finalModalUrls.length}
+                             </div>
+                           )}
+
+                           {/* Flechas de navegación prev/next */}
+                           {finalModalUrls.length > 1 && (
+                             <>
+                               <button
+                                 type="button"
+                                 onClick={(e) => {
+                                   e.stopPropagation();
+                                   setFinalPreviewIndex((prev) => Math.max(0, prev - 1));
+                                 }}
+                                 disabled={finalPreviewIndex === 0}
+                                 className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/95 text-slate-800 disabled:opacity-20 disabled:pointer-events-none hover:bg-white shadow-xl flex items-center justify-center font-black text-xl transition-all hover:scale-110 z-10 cursor-pointer"
+                                 aria-label="Lámina anterior"
+                               >
+                                 ‹
+                               </button>
+                               <button
+                                 type="button"
+                                 onClick={(e) => {
+                                   e.stopPropagation();
+                                   setFinalPreviewIndex((prev) => Math.min(finalModalUrls.length - 1, prev + 1));
+                                 }}
+                                 disabled={finalPreviewIndex === finalModalUrls.length - 1}
+                                 className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/95 text-slate-800 disabled:opacity-20 disabled:pointer-events-none hover:bg-white shadow-xl flex items-center justify-center font-black text-xl transition-all hover:scale-110 z-10 cursor-pointer"
+                                 aria-label="Lámina siguiente"
+                               >
+                                 ›
+                               </button>
+                             </>
+                           )}
+                         </>
+                      )
+                   ) : (
+                      <div className="w-full h-full flex items-center justify-center text-slate-300 text-4xl">📸</div>
+                   )}
+                </div>
+
+                {/* Miniaturas de todas las láminas si es carrusel */}
+                {finalModalUrls.length > 1 && (
+                  <div className="flex items-center gap-2 overflow-x-auto py-1 px-0.5 custom-scrollbar">
+                    {finalModalUrls.map((url, sIdx) => (
+                      <button
+                        key={sIdx}
+                        type="button"
+                        onClick={() => setFinalPreviewIndex(sIdx)}
+                        className={`relative rounded-xl overflow-hidden border-2 transition-all shrink-0 w-16 h-16 cursor-pointer ${
+                          finalPreviewIndex === sIdx
+                            ? 'border-indigo-600 ring-2 ring-indigo-500/30 scale-105 shadow-md'
+                            : 'border-slate-200 opacity-60 hover:opacity-100 hover:border-slate-400'
+                        }`}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={url} alt={`Miniatura ${sIdx + 1}`} className="w-full h-full object-cover" />
+                        <span className="absolute bottom-0 inset-x-0 bg-slate-900/85 text-[9px] font-black text-white text-center py-0.5 tracking-wider">
+                          {sIdx + 1}/{finalModalUrls.length}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Redes Sociales */}

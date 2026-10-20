@@ -165,7 +165,10 @@ export default function PostDetailModal({
               <span className="text-[10px] font-black uppercase tracking-widest px-4 py-2 bg-slate-100 text-slate-500 rounded-xl border border-slate-200">Formato</span>
               <div className="flex gap-2">
                 {["Post", "Historia", "Carrusel", "Reel"].map((type) => {
-                  const isActive = post.type === type || (!post.type && type === "Post");
+                  const effectiveType = (post.imageUrls && post.imageUrls.length > 1 && post.type !== 'Reel')
+                    ? 'Carrusel'
+                    : (post.type || (post as any).postType || 'Post');
+                  const isActive = effectiveType === type;
                   return (
                     <button
                       key={type}
@@ -206,7 +209,7 @@ export default function PostDetailModal({
             </div>
 
             {/* Carrusel count */}
-            {post.type === "Carrusel" && (
+            {(post.type === "Carrusel" || (post as any).postType === "Carrusel" || (post.imageUrls && post.imageUrls.length > 1 && post.type !== "Reel")) && (
               <div className="bg-purple-50/50 p-4 rounded-[20px] border border-purple-100 shadow-inner mt-4 animate-in slide-in-from-top-2 fade-in">
                 <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-purple-600 mb-3 flex items-center gap-2">
                   <span>🖼️</span> ¿Cuántas imágenes tendrá el Carrusel?
@@ -215,13 +218,13 @@ export default function PostDetailModal({
                   <input
                     type="range"
                     min="2"
-                    max="3"
-                    value={post.carouselCount || 3}
+                    max={Math.max(10, post.carouselCount || 5, post.imageUrls?.length || 5)}
+                    value={post.imageUrls?.length || post.carouselCount || 3}
                     onChange={(e) => onChangeCarouselCount(post, parseInt(e.target.value))}
                     className="w-full h-1.5 bg-purple-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
                   />
                   <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-purple-200 shadow-sm shrink-0">
-                    <span className="text-sm font-black text-purple-600">{post.carouselCount || 3}</span>
+                    <span className="text-sm font-black text-purple-600">{post.imageUrls?.length || post.carouselCount || 3}</span>
                     <span className="text-[9px] font-black text-purple-400 uppercase tracking-widest">imgs</span>
                   </div>
                 </div>

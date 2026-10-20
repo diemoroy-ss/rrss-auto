@@ -459,11 +459,17 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
         }
     }
 
-    const isStory = Boolean(post.type?.toLowerCase().includes('stor') || post.type?.toLowerCase().includes('historia'));
+    const rawType = (post.type || post.postType || '').toLowerCase();
+    const isStory = Boolean(rawType.includes('stor') || rawType.includes('historia'));
     const isReel = !isStory && Boolean(
-        post.type === 'video_reel' || post.type === 'reel' || post.type === 'Reel' || 
+        rawType === 'video_reel' || rawType === 'reel' || 
         (post.format && (post.format.toLowerCase().includes('reel') || post.format.toLowerCase().includes('short'))) ||
-        (post.type && (post.type.toLowerCase().includes('reel') || post.type.toLowerCase().includes('short')))
+        rawType.includes('reel') || rawType.includes('short')
+    );
+    const isCarousel = !isStory && !isReel && Boolean(
+        rawType.includes('carrusel') || 
+        rawType.includes('carousel') || 
+        (Array.isArray(post.imageUrls) && post.imageUrls.length > 1)
     );
 
     let imageUrl = post.imageUrl;
@@ -763,7 +769,7 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
             const plainToken = creds.plainFbToken;
             const pageId = creds.pageId;
             try {
-                if (post.type === 'Carrusel' && post.imageUrls && post.imageUrls.length > 1) {
+                if ((isCarousel || post.type === 'Carrusel' || post.postType === 'Carrusel') && post.imageUrls && post.imageUrls.length > 1) {
                     const attachedMedia = [];
                     for (const url of post.imageUrls) {
                         const photoData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${pageId}/photos`, {
@@ -875,7 +881,7 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
             const plainToken = creds.plainIgToken;
             const igAccountId = creds.igAccountId;
             try {
-                if (post.type === 'Carrusel' && post.imageUrls && post.imageUrls.length > 1) {
+                if ((isCarousel || post.type === 'Carrusel' || post.postType === 'Carrusel') && post.imageUrls && post.imageUrls.length > 1) {
                     const childrenIds = [];
                     for (const url of post.imageUrls) {
                         const itemData = await fetchWithRetry(`https://graph.facebook.com/v19.0/${igAccountId}/media`, {
@@ -1800,7 +1806,7 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
                 action: 'publish_post',
                 postId: postId,
                 userId: creds.uid,
-                postType: post.type || 'Desconocido',
+                postType: isCarousel ? 'Carrusel' : (post.type || post.postType || 'Desconocido'),
                 clientEmail: clientEmail,
                 status: errorLog ? 'error' : 'success',
                 message: errorLog ? `Falló: ${errorLog}` : `Publicado exitosamente en: ${successNetworks.join(', ')}`,
