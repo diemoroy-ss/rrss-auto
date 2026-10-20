@@ -493,13 +493,15 @@ export default function PosterFormView({
                 generatedImageUrl={
                   postType === "Carrusel"
                     ? (posterConfig.slides?.[currentSlideIdx]?.imageUrl ||
-                       posterConfig.slides?.[currentSlideIdx]?.baseImageUrl ||
+                       (posterConfig.slides?.[currentSlideIdx]?.useSlide1Image
+                         ? (posterConfig.slides?.[0]?.imageUrl || previewSlides?.[0]?.url)
+                         : "") ||
                        previewSlides?.[currentSlideIdx]?.url ||
+                       posterConfig.slides?.[currentSlideIdx]?.baseImageUrl ||
                        "")
                     : (posterConfig.imageUrl ||
-                       posterConfig.baseImageUrl ||
                        previewSlides?.[0]?.url ||
-                       baseImageUrl ||
+                       posterConfig.baseImageUrl ||
                        "")
                 }
                 slideNumber={postType === "Carrusel" ? currentSlideIdx + 1 : undefined}
@@ -545,7 +547,7 @@ export default function PosterFormView({
             </div>
 
             {/* Selector para Diapositivas > 1 en Carrusel: ¿Usar imagen del Slide 1 o una nueva? */}
-            {postType === "Carrusel" && currentSlideIdx > 0 && (posterConfig.slides?.[0]?.baseImageUrl || baseImageUrl) && (
+            {postType === "Carrusel" && currentSlideIdx > 0 && (
               <div className="p-3 bg-amber-50/70 border border-amber-200/80 rounded-2xl space-y-2">
                 <span className="text-[11px] font-black text-amber-950 flex items-center gap-1.5">
                   <span>📸</span> Imagen para el Slide {currentSlideIdx + 1} ({CAROUSEL_DEFAULT_SLIDES[currentSlideIdx]?.role}):
@@ -554,27 +556,38 @@ export default function PosterFormView({
                   <button
                     type="button"
                     onClick={() => {
-                      const img1 = posterConfig.slides?.[0]?.baseImageUrl || baseImageUrl || "";
-                      updateSlideField("baseImageUrl", img1);
+                      const slide1Img =
+                        posterConfig.slides?.[0]?.imageUrl ||
+                        previewSlides?.[0]?.url ||
+                        posterConfig.slides?.[0]?.baseImageUrl ||
+                        baseImageUrl ||
+                        "";
                       updateSlideField("useSlide1Image", true);
-                      if (setBaseImageUrl) setBaseImageUrl(img1);
+                      updateSlideField("baseImageUrl", "");
+                      if (slide1Img) {
+                        updateSlideField("imageUrl", slide1Img);
+                      }
+                      if (setBaseImageUrl) setBaseImageUrl("");
                     }}
-                    className={`p-2 rounded-xl border text-left transition-all cursor-pointer ${
-                      posterConfig.slides?.[currentSlideIdx]?.useSlide1Image ||
-                      posterConfig.slides?.[currentSlideIdx]?.baseImageUrl === (posterConfig.slides?.[0]?.baseImageUrl || baseImageUrl)
+                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                      Boolean(posterConfig.slides?.[currentSlideIdx]?.useSlide1Image)
                         ? "border-amber-500 bg-white text-amber-950 shadow-xs ring-1 ring-amber-400/40"
                         : "border-slate-200 bg-white/70 text-slate-600 hover:border-slate-300"
                     }`}
                   >
                     <div className="flex items-center gap-2">
-                      <img
-                        src={posterConfig.slides?.[0]?.baseImageUrl || baseImageUrl}
-                        alt="Slide 1"
-                        className="w-7 h-7 rounded-lg object-cover shrink-0 border border-amber-300"
-                      />
+                      {(posterConfig.slides?.[0]?.imageUrl || previewSlides?.[0]?.url || posterConfig.slides?.[0]?.baseImageUrl || baseImageUrl) ? (
+                        <img
+                          src={posterConfig.slides?.[0]?.imageUrl || previewSlides?.[0]?.url || posterConfig.slides?.[0]?.baseImageUrl || baseImageUrl}
+                          alt="Slide 1"
+                          className="w-8 h-8 rounded-lg object-cover shrink-0 border border-amber-300 shadow-2xs"
+                        />
+                      ) : (
+                        <span className="text-xl shrink-0">🖼️</span>
+                      )}
                       <div className="min-w-0">
                         <span className="text-[10px] font-black block truncate">Usar imagen del Slide 1</span>
-                        <span className="text-[9px] text-slate-500 block">Mismo producto</span>
+                        <span className="text-[9px] text-slate-500 block">Misma imagen (No genera nueva)</span>
                       </div>
                     </div>
                   </button>
@@ -583,25 +596,47 @@ export default function PosterFormView({
                     type="button"
                     onClick={() => {
                       updateSlideField("baseImageUrl", "");
+                      updateSlideField("imageUrl", "");
                       updateSlideField("useSlide1Image", false);
+                      if (setBaseImageUrl) setBaseImageUrl("");
                     }}
-                    className={`p-2 rounded-xl border text-left transition-all cursor-pointer ${
-                      !posterConfig.slides?.[currentSlideIdx]?.useSlide1Image &&
-                      !posterConfig.slides?.[currentSlideIdx]?.baseImageUrl
+                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                      !Boolean(posterConfig.slides?.[currentSlideIdx]?.useSlide1Image)
                         ? "border-amber-500 bg-white text-amber-950 shadow-xs ring-1 ring-amber-400/40"
                         : "border-slate-200 bg-white/70 text-slate-600 hover:border-slate-300"
                     }`}
                   >
-                    <span className="text-base block mb-0.5">📤</span>
-                    <span className="text-[10px] font-black block leading-tight">Subir o describir otra</span>
-                    <span className="text-[9px] text-slate-500 block">Imagen diferente</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl shrink-0">✨</span>
+                      <div className="min-w-0">
+                        <span className="text-[10px] font-black block leading-tight">Subir o describir otra</span>
+                        <span className="text-[9px] text-slate-500 block">Parte de cero (Nueva imagen)</span>
+                      </div>
+                    </div>
                   </button>
                 </div>
               </div>
             )}
 
-            {/* Vista previa de imagen activa o botón de subida */}
-            {(postType === "Carrusel" ? (posterConfig.slides?.[currentSlideIdx]?.baseImageUrl || (currentSlideIdx === 0 ? baseImageUrl : "")) : baseImageUrl) ? (
+            {/* Si está usando la imagen del Slide 1, mostrar confirmación */}
+            {postType === "Carrusel" && currentSlideIdx > 0 && Boolean(posterConfig.slides?.[currentSlideIdx]?.useSlide1Image) ? (
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between gap-3 animate-in fade-in">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="text-2xl shrink-0">✅</span>
+                  <div className="min-w-0">
+                    <p className="text-xs font-black text-emerald-950 truncate">Reutilizando imagen del Slide 1</p>
+                    <p className="text-[11px] text-emerald-800 font-medium leading-tight mt-0.5">
+                      Este slide usa la imagen del Slide 1. Está listo para publicación y no requiere generar otra imagen.
+                    </p>
+                  </div>
+                </div>
+                <span className="bg-emerald-200/70 text-emerald-900 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full shrink-0">
+                  Listo
+                </span>
+              </div>
+            ) : (
+            /* Vista previa de imagen activa o botón de subida */
+            (postType === "Carrusel" ? (posterConfig.slides?.[currentSlideIdx]?.baseImageUrl || (currentSlideIdx === 0 ? baseImageUrl : "")) : baseImageUrl) ? (
               <div className="space-y-3">
                 <div className="flex items-center gap-3.5 p-3.5 bg-amber-50/60 border border-amber-200 rounded-2xl">
                   <img
@@ -673,7 +708,7 @@ export default function PosterFormView({
                   💡 <b>¿No tienes una imagen a mano?</b> No te preocupes. Nuestros agentes diseñarán una escena publicitaria fotográfica basada en la descripción que indiques abajo.
                 </div>
               </div>
-            )}
+            ))}
           
                       {/* Campo: Idea o Escena Visual del Afiche */}
                       <div className="pt-2 space-y-3">
@@ -1105,27 +1140,51 @@ export default function PosterFormView({
           <div className="space-y-3">
             <div className="grid sm:grid-cols-2 gap-3">
               {/* Botón 1: Diseñar solo la imagen de la diapositiva seleccionada */}
-              <button
-                type="button"
-                onClick={() => handleGeneratePreview(false, { singleSlideOnly: true, slideIndex: currentSlideIdx })}
-                disabled={previewLoading}
-                className="w-full bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-black py-4 px-5 rounded-2xl text-xs uppercase tracking-wider transition-all shadow-lg shadow-amber-500/25 flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-              >
-                {previewLoading ? (
-                  <>
-                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span>Diseñando Slide {currentSlideIdx + 1}...</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="text-base">🎨</span>
-                    <span>Diseñar solo Slide {currentSlideIdx + 1} ({CAROUSEL_DEFAULT_SLIDES[currentSlideIdx]?.role})</span>
-                  </>
-                )}
-              </button>
+              {Boolean(posterConfig.slides?.[currentSlideIdx]?.useSlide1Image) ? (
+                <div className="w-full bg-emerald-50 border-2 border-emerald-300 text-emerald-950 p-4 rounded-2xl flex items-center justify-between gap-3 shadow-xs">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="text-xl shrink-0">✅</span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-black truncate">Slide {currentSlideIdx + 1} listo</p>
+                      <p className="text-[10px] text-emerald-800 font-semibold truncate">
+                        Reutiliza la imagen del Slide 1 (No requiere generar)
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      updateSlideField("useSlide1Image", false);
+                      updateSlideField("imageUrl", "");
+                    }}
+                    className="text-emerald-700 hover:text-emerald-950 text-[10px] font-black uppercase underline shrink-0 cursor-pointer"
+                  >
+                    Cambiar
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => handleGeneratePreview(false, { singleSlideOnly: true, slideIndex: currentSlideIdx })}
+                  disabled={previewLoading}
+                  className="w-full bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-black py-4 px-5 rounded-2xl text-xs uppercase tracking-wider transition-all shadow-lg shadow-amber-500/25 flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  {previewLoading ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>Diseñando Slide {currentSlideIdx + 1}...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-base">🎨</span>
+                      <span>Diseñar solo Slide {currentSlideIdx + 1} ({CAROUSEL_DEFAULT_SLIDES[currentSlideIdx]?.role})</span>
+                    </>
+                  )}
+                </button>
+              )}
 
               {/* Botón 2: Diseñar las 5 imágenes con una sola idea */}
               <button

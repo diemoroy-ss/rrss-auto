@@ -547,6 +547,37 @@ export default function RrssCreatePost() {
     const targetSlideIdx = options?.slideIndex ?? activeSlideIndex ?? 0;
     setSingleSlideTargetIdx(isSingleSlide ? targetSlideIdx : null);
 
+    // Si el slide está configurado para reutilizar la imagen del Slide 1, simplemente asignamos la imagen del Slide 1 sin generar
+    if (isSingleSlide && targetSlideIdx > 0 && posterConfig.slides?.[targetSlideIdx]?.useSlide1Image) {
+      const slide1Url = posterConfig.slides?.[0]?.imageUrl || previewSlides?.[0]?.url || "";
+      if (slide1Url) {
+        setPosterConfig((prev) => {
+          const nextSlides = prev.slides ? [...prev.slides] : [...DEFAULT_POSTER_SLIDES];
+          if (nextSlides[targetSlideIdx]) {
+            nextSlides[targetSlideIdx] = {
+              ...nextSlides[targetSlideIdx],
+              imageUrl: slide1Url,
+            };
+          }
+          return { ...prev, slides: nextSlides };
+        });
+        setPreviewSlides((prev) => {
+          const next = [...prev];
+          while (next.length <= targetSlideIdx) next.push({ url: "", copy: "" });
+          next[targetSlideIdx] = { url: slide1Url, copy: next[targetSlideIdx]?.copy || "" };
+          return next;
+        });
+        setStatusModal({
+          isOpen: true,
+          type: "info",
+          title: `Slide ${targetSlideIdx + 1} listo`,
+          message: `Este slide está utilizando la imagen del Slide 1. No fue necesario generar una nueva imagen.`,
+          onConfirm: () => setStatusModal((prev) => ({ ...prev, isOpen: false })),
+        });
+        return;
+      }
+    }
+
     const activeSlide = posterConfig.slides?.[targetSlideIdx];
     const targetIdea = isSingleSlide
       ? (activeSlide?.mainText?.trim() || activeSlide?.imageExpectation?.trim() || idea.trim() || `Diapositiva ${targetSlideIdx + 1}`)
@@ -828,9 +859,11 @@ export default function RrssCreatePost() {
           profileId: activeProfile?.id || "",
           userProvidedCopy: postText,
           posterConfig,
-          baseImageUrl: (isSingleSlideGen
-            ? (posterConfig.slides?.[singleSlideTargetIdx]?.baseImageUrl || (posterConfig.slides?.[singleSlideTargetIdx]?.useSlide1Image ? (posterConfig.slides?.[0]?.baseImageUrl || baseImageUrl) : null) || baseImageUrl)
-            : baseImageUrl) || selectedCatalogoItem?.imageUrl || null,
+          baseImageUrl: isSingleSlideGen
+            ? (singleSlideTargetIdx === 0
+                ? (posterConfig.slides?.[0]?.baseImageUrl || baseImageUrl || selectedCatalogoItem?.imageUrl || null)
+                : (posterConfig.slides?.[singleSlideTargetIdx]?.baseImageUrl || null))
+            : (baseImageUrl || selectedCatalogoItem?.imageUrl || null),
           allowImageRetouch: isSingleSlideGen
             ? (posterConfig.slides?.[singleSlideTargetIdx]?.allowImageRetouch ?? posterConfig.allowImageRetouch ?? true)
             : (posterConfig.allowImageRetouch ?? true),
@@ -964,7 +997,6 @@ export default function RrssCreatePost() {
           existingSlides[singleSlideTargetIdx] = {
             ...existingSlides[singleSlideTargetIdx],
             imageUrl: resolvedImageUrl,
-            baseImageUrl: resolvedImageUrl,
           };
           return {
             ...prev,
@@ -995,7 +1027,6 @@ export default function RrssCreatePost() {
             existingSlides[i] = {
               ...existingSlides[i],
               imageUrl: url,
-              baseImageUrl: url,
             };
           });
           return {
@@ -1009,7 +1040,6 @@ export default function RrssCreatePost() {
         setPosterConfig((prev) => ({
           ...prev,
           imageUrl: resolvedImageUrl,
-          baseImageUrl: resolvedImageUrl,
         }));
       }
 
