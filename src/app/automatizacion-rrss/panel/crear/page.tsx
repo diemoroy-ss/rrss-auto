@@ -19,6 +19,7 @@ import StatusModal from "../../../../components/StatusModal";
 import AIOptionsModal from "../../../../components/crear/AIOptionsModal";
 import PosterFormView, { CAROUSEL_DEFAULT_SLIDES } from "../../../../components/crear/PosterFormView";
 import GeneratingModal, { type GeneratingStep } from "../../../../components/crear/GeneratingModal";
+import CreationFlowGuideModal, { FlowType } from "../../../../components/crear/CreationFlowGuideModal";
 import { FaFacebookF, FaInstagram, FaLinkedinIn, FaTiktok, FaGoogle, FaYoutube, FaTwitter } from "react-icons/fa";
 import TikTokPostSettings, { TikTokSettingsState, DEFAULT_TIKTOK_SETTINGS } from "../../../../components/crear/TikTokPostSettings";
 import { PromptTemplate, HARDCODED_STYLES } from "../../../../lib/prompt-templates";
@@ -62,6 +63,8 @@ export default function RrssCreatePost() {
   const [uploadingBaseImage, setUploadingBaseImage] = useState<boolean>(false);
   /** Flujo de creación activo: 'estandar' (post sin texto en imagen), 'afiche' (cartel publicitario con tipografías y datos) o 'laboratorio' (entorno avanzado Mixboard con fusión multi-imagen y blueprints) */
   const [activeCreationFlow, setActiveCreationFlow] = useState<'estandar' | 'afiche' | 'laboratorio'>('estandar');
+  /** Estado del modal interactivo de "¿Cómo funciona?" */
+  const [guideModalFlow, setGuideModalFlow] = useState<FlowType | null>(null);
   /** Configuración del cartel publicitario (opcional) */
   const [posterConfig, setPosterConfig] = useState<PosterConfig>(DEFAULT_POSTER_CONFIG);
   /** Incluir logo recreado con IA en la imagen generada */
@@ -145,6 +148,34 @@ export default function RrssCreatePost() {
   // Active business profile
   const { activeProfile } = useProfile();
   const [userLogo, setUserLogo] = useState("");
+
+  const handleSelectFlowFromGuide = (flow: FlowType) => {
+    setActiveCreationFlow(flow);
+    if (flow === 'estandar') {
+      setPosterConfig((prev) => ({ ...prev, enabled: false, isLabMode: false }));
+    } else if (flow === 'afiche') {
+      setPosterConfig((prev) => ({
+        ...prev,
+        enabled: true,
+        isLabMode: false,
+        includeBusinessName: prev.includeBusinessName || true,
+        businessName: prev.businessName || activeProfile?.name || "",
+        includeMainText: prev.includeMainText || true,
+        mainText: prev.mainText || idea || "",
+      }));
+    } else if (flow === 'laboratorio') {
+      setPosterConfig((prev) => ({
+        ...prev,
+        enabled: true,
+        isLabMode: true,
+        includeBusinessName: prev.includeBusinessName || true,
+        businessName: prev.businessName || activeProfile?.name || "",
+        includeMainText: prev.includeMainText || true,
+        mainText: prev.mainText || idea || "",
+      }));
+    }
+    setGuideModalFlow(null);
+  };
 
   // Plan limits & rules
   const [socialRules, setSocialRules] = useState<SocialRules>(DEFAULT_SOCIAL_RULES);
@@ -1686,9 +1717,19 @@ export default function RrssCreatePost() {
 
       {/* 1. SECCIÓN SUPERIOR: SELECTOR DE FLUJO VISUAL (VIÑETAS UNIFICADAS) */}
       <div className="mb-8">
-        <label className="block text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">
-          ¿Qué tipo de publicación deseas crear hoy?
-        </label>
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <label className="block text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">
+            ¿Qué tipo de publicación deseas crear hoy?
+          </label>
+          <button
+            type="button"
+            onClick={() => setGuideModalFlow(activeCreationFlow)}
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-indigo-600 transition-colors cursor-pointer bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 px-3 py-1 rounded-full shadow-2xs"
+          >
+            <span>💡</span>
+            <span>¿Cómo funciona cada modo?</span>
+          </button>
+        </div>
         <div className="grid md:grid-cols-3 gap-4">
           {/* Viñeta 1: Publicación Estándar */}
           <button
@@ -1727,6 +1768,21 @@ export default function RrssCreatePost() {
               <p className="text-xs text-slate-600 font-medium leading-relaxed">
                 Diseños fotográficos, conceptuales o animados sin textos montados sobre la imagen. El mensaje persuasivo y hashtags van redactados directamente en el copy de tu publicación.
               </p>
+            </div>
+            <div className="mt-4 pt-3 border-t border-slate-100/90 flex items-center justify-between">
+              <span className="text-[11px] font-bold text-slate-400">Paso a paso y ejemplos</span>
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setGuideModalFlow('estandar');
+                }}
+                className="inline-flex items-center gap-1 text-[11px] font-black text-indigo-700 bg-white hover:bg-indigo-50 border border-indigo-200 px-3 py-1.5 rounded-xl shadow-2xs transition-all hover:scale-102 cursor-pointer"
+              >
+                <span>💡</span>
+                <span>¿Cómo funciona?</span>
+              </span>
             </div>
           </button>
 
@@ -1776,6 +1832,21 @@ export default function RrssCreatePost() {
                 Diseños publicitarios con textos tipográficos sobre la imagen, titulares de oferta, precios y llamadas a la acción directamente sobre el diseño visual.
               </p>
             </div>
+            <div className="mt-4 pt-3 border-t border-amber-100/70 flex items-center justify-between">
+              <span className="text-[11px] font-bold text-slate-400">Paso a paso y ejemplos</span>
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setGuideModalFlow('afiche');
+                }}
+                className="inline-flex items-center gap-1 text-[11px] font-black text-amber-800 bg-white hover:bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl shadow-2xs transition-all hover:scale-102 cursor-pointer"
+              >
+                <span>💡</span>
+                <span>¿Cómo funciona?</span>
+              </span>
+            </div>
           </button>
 
           {/* Viñeta 3: Laboratorio (Mixboard) */}
@@ -1823,6 +1894,21 @@ export default function RrssCreatePost() {
               <p className="text-xs text-slate-600 font-medium leading-relaxed">
                 Diseño comercial avanzado con arquitectura Mixboard: blueprints con grillas y tipografía exacta, fusión de producto real con referencias de estilo y retoque en vivo.
               </p>
+            </div>
+            <div className="mt-4 pt-3 border-t border-purple-100/70 flex items-center justify-between">
+              <span className="text-[11px] font-bold text-slate-400">Paso a paso y ejemplos</span>
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setGuideModalFlow('laboratorio');
+                }}
+                className="inline-flex items-center gap-1 text-[11px] font-black text-purple-800 bg-white hover:bg-purple-50 border border-purple-200 px-3 py-1.5 rounded-xl shadow-2xs transition-all hover:scale-102 cursor-pointer"
+              >
+                <span>💡</span>
+                <span>¿Cómo funciona?</span>
+              </span>
             </div>
           </button>
         </div>
@@ -2672,6 +2758,14 @@ export default function RrssCreatePost() {
                 setStatusModal(prev => ({ ...prev, isOpen: false, type: "success", title: "", message: "", onConfirm: null }));
             }
         }}
+      />
+
+      {/* GUÍA INTERACTIVA DE CÓMO FUNCIONA CADA MODO */}
+      <CreationFlowGuideModal
+        isOpen={Boolean(guideModalFlow)}
+        initialFlow={guideModalFlow}
+        onClose={() => setGuideModalFlow(null)}
+        onSelectFlow={handleSelectFlowFromGuide}
       />
 
       {showReelWorkspace && (
