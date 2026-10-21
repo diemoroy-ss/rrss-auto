@@ -15,6 +15,11 @@ interface PosterTemplatePreviewProps {
   businessName?: string;
   includeBusinessName?: boolean;
   includeLogo?: boolean;
+  includeSlogan?: boolean;
+  includeMainText?: boolean;
+  includeContact?: boolean;
+  contactType?: string;
+  contactValue?: string;
   aspectRatio?: "1:1" | "4:5";
   generatedImageUrl?: string;
   isGenerating?: boolean;
@@ -36,6 +41,11 @@ export default function PosterTemplatePreview({
   businessName = "Tu Marca",
   includeBusinessName = true,
   includeLogo = true,
+  includeSlogan = true,
+  includeMainText = true,
+  includeContact = false,
+  contactType = "whatsapp",
+  contactValue = "",
   aspectRatio = "4:5",
   generatedImageUrl,
   isGenerating = false,
@@ -44,31 +54,315 @@ export default function PosterTemplatePreview({
   onRegenerate,
   onOpenEditor,
 }: PosterTemplatePreviewProps) {
-  const [viewMode, setViewMode] = React.useState<"image" | "blueprint">("image");
   const hasImage = Boolean(generatedImageUrl && generatedImageUrl.trim().length > 0);
 
-  // Asegurar que al recibir una nueva imagen generada se active inmediatamente la vista de imagen
+  // Modos de visualización:
+  // "afiche" -> Muestra la imagen generada con las capas de texto tipográficas en tiempo real encima
+  // "image" -> Muestra solo la imagen limpia generada sin capas de texto
+  // "blueprint" -> Muestra el esquema técnico wireframe sin foto
+  const [viewMode, setViewMode] = React.useState<"afiche" | "image" | "blueprint">("afiche");
+
+  // Al recibir una nueva imagen generada, asegurar que se active el modo afiche en vivo
   React.useEffect(() => {
-    if (generatedImageUrl && generatedImageUrl.trim().length > 0) {
-      setViewMode("image");
+    if (hasImage && viewMode === "blueprint") {
+      setViewMode("afiche");
     }
-  }, [generatedImageUrl]);
+  }, [hasImage]);
 
-  const showImage = hasImage && viewMode === "image";
+  // Si no hay imagen, forzamos blueprint
+  const activeViewMode = hasImage ? viewMode : "blueprint";
 
-  const displayTitle = mainText?.trim() || "TITULAR PRINCIPAL DEL AFICHE";
-  const displaySlogan = sloganText?.trim() || "Frase gancho o propuesta de valor que complementa la oferta";
-  const displayPrice = includePrice && priceText?.trim() ? priceText : (includePrice ? "$9.990 · 2x1" : "");
-  const displayCta = ctaText?.trim() || "¡Pide el tuyo ahora!";
-  const displayBrand = includeBusinessName ? (businessName?.trim() || "Tu Negocio") : null;
+  // Solo se muestra si el usuario NO lo ha borrado (no es string vacío) y está habilitado por su toggle
+  const hasTitle = (includeMainText !== false) && Boolean(mainText && mainText.trim().length > 0);
+  const displayTitle = hasTitle ? mainText!.trim() : null;
+
+  const hasSlogan = Boolean(includeSlogan) && Boolean(sloganText && sloganText.trim().length > 0);
+  const displaySlogan = hasSlogan ? sloganText!.trim() : null;
+
+  const hasPrice = Boolean(includePrice) && Boolean(priceText && priceText.trim().length > 0);
+  const displayPrice = hasPrice ? priceText!.trim() : null;
+
+  const hasCta = Boolean(ctaText && ctaText.trim().length > 0);
+  const displayCta = hasCta ? ctaText!.trim() : null;
+
+  const hasBrand = Boolean(includeBusinessName) && Boolean(businessName && businessName.trim().length > 0);
+  const displayBrand = hasBrand ? businessName!.trim() : null;
+
+  const hasContact = Boolean(includeContact) && Boolean(contactValue && contactValue.trim().length > 0);
+  const displayContact = hasContact
+    ? `${contactType === "whatsapp" ? "WhatsApp" : contactType === "email" ? "Email" : "Tel"}: ${contactValue!.trim()}`
+    : null;
+
+  const renderLayoutBody = (hasBackgroundPhoto: boolean) => {
+    return (
+      <>
+        {/* ── LAYOUT 1: SPLIT LATERAL ── */}
+        {layout === "split_left" && (
+          <div className="relative z-10 h-full grid grid-cols-12 gap-2.5">
+            {/* Columna Izquierda: Textos y CTA */}
+            <div className={`col-span-7 flex flex-col justify-between py-1 pr-1 ${hasBackgroundPhoto ? "border-r border-white/20" : "border-r border-white/10"}`}>
+              <div className="space-y-2">
+                {displayBrand && (
+                  <div className="flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-slate-200 bg-black/60 px-2 py-0.5 rounded-full backdrop-blur-xs w-fit border border-white/10 shadow-xs">
+                    {includeLogo && (
+                      <span className="w-2.5 h-2.5 rounded-full inline-block shrink-0" style={{ backgroundColor: primaryColor }} />
+                    )}
+                    <span className="truncate">{displayBrand}</span>
+                  </div>
+                )}
+                <div>
+                  {displayTitle && (
+                    <h5 className="text-[12px] font-black leading-tight tracking-tight uppercase line-clamp-3 text-white drop-shadow-lg">
+                      {displayTitle}
+                    </h5>
+                  )}
+                  {displaySlogan && (
+                    <p className="text-[9px] text-slate-200 font-medium leading-tight mt-1 line-clamp-2 drop-shadow-md">
+                      {displaySlogan}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2 pt-2">
+                {displayPrice && (
+                  <div
+                    className="inline-block text-[10px] font-black px-2.5 py-0.5 rounded-lg shadow-md"
+                    style={{ backgroundColor: primaryColor, color: "#111827" }}
+                  >
+                    {displayPrice}
+                  </div>
+                )}
+                {displayContact && (
+                  <div className="text-[8px] font-bold text-slate-200 bg-black/60 px-2 py-0.5 rounded-lg backdrop-blur-xs truncate border border-white/10">
+                    {displayContact}
+                  </div>
+                )}
+                {displayCta && (
+                  <div className="w-full bg-white text-slate-950 text-[9px] font-black py-1.5 px-2 rounded-lg text-center uppercase tracking-wider shadow-md truncate">
+                    {displayCta}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Columna Derecha: Foto o Producto */}
+            {!hasBackgroundPhoto ? (
+              <div className="col-span-5 flex flex-col items-center justify-center bg-white/5 border border-dashed border-white/20 rounded-xl p-2 text-center">
+                <span className="text-xl mb-1">📸</span>
+                <span className="text-[8px] font-black uppercase tracking-wider text-slate-400 leading-tight">
+                  Zona de Producto Despejada
+                </span>
+              </div>
+            ) : (
+              <div className="col-span-5 flex items-center justify-center pointer-events-none" />
+            )}
+          </div>
+        )}
+
+        {/* ── LAYOUT 2: CABECERA SUPERIOR ── */}
+        {layout === "top_banner" && (
+          <div className="relative z-10 h-full flex flex-col justify-between">
+            {/* Bloque Superior: Titular y Marca */}
+            {(displayBrand || displayTitle || displaySlogan || displayPrice) && (
+              <div className="bg-slate-950/85 backdrop-blur-xs p-2 rounded-xl border border-white/15 space-y-1 shadow-md">
+                {(displayBrand || displayPrice) && (
+                  <div className="flex items-center justify-between text-[8px] font-black uppercase tracking-wider text-slate-300">
+                    <span className="truncate">{displayBrand || ""}</span>
+                    {displayPrice && (
+                      <span
+                        className="px-2 py-0.5 rounded-md font-bold ml-auto shadow-xs"
+                        style={{ backgroundColor: primaryColor, color: "#111827" }}
+                      >
+                        {displayPrice}
+                      </span>
+                    )}
+                  </div>
+                )}
+                {displayTitle && (
+                  <h5 className="text-[12px] font-black leading-tight tracking-tight uppercase text-white drop-shadow-md text-center">
+                    {displayTitle}
+                  </h5>
+                )}
+                {displaySlogan && (
+                  <p className="text-[8px] text-slate-200 font-medium text-center line-clamp-1">
+                    {displaySlogan}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Centro: Foto libre */}
+            {!hasBackgroundPhoto ? (
+              <div className="flex-1 my-2 flex flex-col items-center justify-center bg-white/5 border border-dashed border-white/20 rounded-xl text-center p-2">
+                <span className="text-2xl mb-1">📸</span>
+                <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400">
+                  Escena Fotográfica Central
+                </span>
+              </div>
+            ) : (
+              <div className="flex-1 my-2 pointer-events-none" />
+            )}
+
+            {/* Pie: Contacto y CTA */}
+            {(displayContact || displayCta) && (
+              <div className="space-y-1.5 pt-1">
+                {displayContact && (
+                  <div className="text-center text-[8px] font-bold text-slate-200 bg-black/60 py-0.5 px-2 rounded-md backdrop-blur-xs border border-white/10">
+                    {displayContact}
+                  </div>
+                )}
+                {displayCta && (
+                  <div
+                    className="w-full text-[9px] font-black py-1.5 px-3 rounded-lg text-center uppercase tracking-wider shadow-md truncate"
+                    style={{ backgroundColor: primaryColor, color: "#111827" }}
+                  >
+                    {displayCta}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── LAYOUT 3: FICHA INFORMATIVA ── */}
+        {layout === "recipe_ingredients" && (
+          <div className="relative z-10 h-full flex flex-col justify-between">
+            {/* Cabecera */}
+            {(displayBrand || displayTitle) && (
+              <div className="text-center space-y-0.5 bg-slate-950/70 backdrop-blur-xs p-1.5 rounded-xl border border-white/10">
+                {displayBrand && (
+                  <span className="text-[8px] font-black uppercase tracking-widest text-slate-300 block">
+                    {displayBrand}
+                  </span>
+                )}
+                {displayTitle && (
+                  <h5 className="text-[11px] font-black uppercase text-white tracking-tight leading-tight drop-shadow-md">
+                    {displayTitle}
+                  </h5>
+                )}
+              </div>
+            )}
+
+            {/* Centro Foto */}
+            {!hasBackgroundPhoto ? (
+              <div className="h-20 my-1 flex flex-col items-center justify-center bg-white/5 border border-dashed border-white/20 rounded-xl">
+                <span className="text-lg">🍽️ / 📦</span>
+                <span className="text-[7px] font-black uppercase text-slate-400">Encuadre Cenital</span>
+              </div>
+            ) : (
+              <div className="flex-1 my-1 pointer-events-none" />
+            )}
+
+            {/* Puntos de Información / Ficha */}
+            <div className="grid grid-cols-3 gap-1 my-1">
+              <div className="bg-black/65 backdrop-blur-xs rounded-md p-1 text-center border border-white/10 shadow-xs">
+                <span className="text-[7px] block font-bold" style={{ color: primaryColor }}>Punto 1</span>
+                <span className="text-[7px] block text-slate-200 truncate">Calidad</span>
+              </div>
+              <div className="bg-black/65 backdrop-blur-xs rounded-md p-1 text-center border border-white/10 shadow-xs">
+                <span className="text-[7px] block font-bold" style={{ color: primaryColor }}>Punto 2</span>
+                <span className="text-[7px] block text-slate-200 truncate">Rapidez</span>
+              </div>
+              <div className="bg-black/65 backdrop-blur-xs rounded-md p-1 text-center border border-white/10 shadow-xs">
+                <span className="text-[7px] block font-bold" style={{ color: primaryColor }}>Punto 3</span>
+                <span className="text-[7px] block text-slate-200 truncate">Garantía</span>
+              </div>
+            </div>
+
+            {/* Pie CTA */}
+            {(displayPrice || displayCta) && (
+              <div className="flex items-center justify-between gap-1 pt-1">
+                {displayPrice && (
+                  <span
+                    className="text-[9px] font-black px-2 py-1 rounded-md shadow-md"
+                    style={{ backgroundColor: primaryColor, color: "#111827" }}
+                  >
+                    {displayPrice}
+                  </span>
+                )}
+                {displayCta && (
+                  <div className="flex-1 bg-white text-slate-900 text-[8px] font-black py-1 px-2 rounded-md text-center uppercase tracking-wider truncate shadow-sm">
+                    {displayCta}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── LAYOUT 4: AUTOMÁTICO (EQUILIBRADO) ── */}
+        {(layout === "auto" || !layout) && (
+          <div className="relative z-10 h-full flex flex-col justify-between">
+            {/* Fila Superior: Marca y Precio */}
+            {(displayBrand || displayPrice) && (
+              <div className="flex items-center justify-between gap-2">
+                {displayBrand && (
+                  <span className="text-[8px] font-black uppercase tracking-wider text-slate-200 bg-black/60 px-2 py-0.5 rounded-full backdrop-blur-xs border border-white/10 shadow-xs flex items-center gap-1">
+                    {includeLogo && (
+                      <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: primaryColor }} />
+                    )}
+                    <span className="truncate">{displayBrand}</span>
+                  </span>
+                )}
+                {displayPrice && (
+                  <span
+                    className="text-[9px] font-black px-2.5 py-0.5 rounded-full shadow-md ml-auto"
+                    style={{ backgroundColor: primaryColor, color: "#111827" }}
+                  >
+                    {displayPrice}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Bloque Central: Titular y Slogan */}
+            {(displayTitle || displaySlogan) && (
+              <div className="my-auto py-2 text-center space-y-1.5">
+                {displayTitle && (
+                  <h5 className="text-[13px] font-black uppercase leading-tight tracking-tight text-white drop-shadow-xl px-2">
+                    {displayTitle}
+                  </h5>
+                )}
+                {displaySlogan && (
+                  <p className="text-[9px] text-slate-200 font-medium px-2 line-clamp-2 drop-shadow-md">
+                    {displaySlogan}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Pie: Contacto y CTA */}
+            {(displayContact || displayCta) && (
+              <div className="space-y-1.5 pt-1">
+                {displayContact && (
+                  <div className="text-center text-[7.5px] font-bold text-slate-200 bg-black/60 py-0.5 px-2 rounded-full backdrop-blur-xs border border-white/10">
+                    {displayContact}
+                  </div>
+                )}
+                {displayCta && (
+                  <div
+                    className="w-full text-[9px] font-black py-1.5 px-3 rounded-xl text-center uppercase tracking-wider shadow-lg truncate"
+                    style={{ backgroundColor: primaryColor, color: "#111827" }}
+                  >
+                    {displayCta}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </>
+    );
+  };
 
   return (
     <div className="w-full bg-slate-900/95 p-4 rounded-2xl border border-slate-800 text-white shadow-inner flex flex-col items-center">
-      {/* Header del Preview */}
+      {/* Header del Preview con Selector de Vistas */}
       <div className="w-full flex items-center justify-between mb-3 px-1 text-[11px] font-bold">
         {hasImage ? (
           <span className="flex items-center gap-1.5 uppercase tracking-wider text-emerald-400">
-            <span>✨</span> {slideNumber ? `Slide ${slideNumber} Generado` : "Imagen Generada"}
+            <span>✨</span> {slideNumber ? `Slide ${slideNumber} Listo` : "Afiche Listo"}
           </span>
         ) : (
           <span className="flex items-center gap-1.5 uppercase tracking-wider text-amber-400">
@@ -81,19 +375,31 @@ export default function PosterTemplatePreview({
             <div className="flex items-center gap-1 bg-slate-800 p-0.5 rounded-xl border border-slate-700">
               <button
                 type="button"
+                onClick={() => setViewMode("afiche")}
+                className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                  activeViewMode === "afiche" ? "bg-amber-500 text-slate-950 shadow-xs" : "text-slate-400 hover:text-white"
+                }`}
+                title="Ver el afiche completo con textos y precios en tiempo real"
+              >
+                ✨ Afiche en Vivo
+              </button>
+              <button
+                type="button"
                 onClick={() => setViewMode("image")}
                 className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
-                  showImage ? "bg-amber-500 text-slate-950 shadow-xs" : "text-slate-400 hover:text-white"
+                  activeViewMode === "image" ? "bg-amber-500 text-slate-950 shadow-xs" : "text-slate-400 hover:text-white"
                 }`}
+                title="Ver solo la imagen fotográfica sin textos montados"
               >
-                🖼️ Imagen
+                📷 Solo Foto
               </button>
               <button
                 type="button"
                 onClick={() => setViewMode("blueprint")}
                 className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
-                  !showImage ? "bg-amber-500 text-slate-950 shadow-xs" : "text-slate-400 hover:text-white"
+                  activeViewMode === "blueprint" ? "bg-amber-500 text-slate-950 shadow-xs" : "text-slate-400 hover:text-white"
                 }`}
+                title="Ver esquema técnico wireframe"
               >
                 📐 Esquema
               </button>
@@ -105,61 +411,99 @@ export default function PosterTemplatePreview({
         </div>
       </div>
 
-      {/* CASO 1: Renderizar la Imagen Generada Real */}
-      {showImage ? (
+      {/* CASO 1: MODO AFICHE EN VIVO (IMAGEN DE FONDO + CAPAS DE TEXTO TIPOGRÁFICAS EN TIEMPO REAL) */}
+      {activeViewMode === "afiche" && hasImage && (
         <div className="flex flex-col items-center w-full animate-in fade-in zoom-in-95 duration-200">
           <div
-            className="w-full max-w-[280px] bg-slate-950 rounded-2xl overflow-hidden border-2 border-emerald-500/60 shadow-2xl relative select-none transition-all duration-300 group"
+            className="w-full max-w-[280px] bg-slate-950 rounded-2xl overflow-hidden border-2 border-emerald-500/60 shadow-2xl relative select-none transition-all duration-300 group flex flex-col justify-between p-3.5"
             style={{
               aspectRatio: aspectRatio === "4:5" ? "4/5" : "1/1",
-              boxShadow: `0 12px 35px -10px ${primaryColor}40`
+              boxShadow: `0 12px 35px -10px ${primaryColor}40`,
             }}
           >
+            {/* Imagen fotográfica de fondo */}
             <img
               src={generatedImageUrl}
-              alt={displayTitle}
-              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-102"
+              alt={displayTitle || "Fondo afiche"}
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-102"
             />
 
-            {/* Badges superiores */}
-            <div className="absolute top-2.5 left-2.5 right-2.5 flex justify-between items-center pointer-events-none">
+            {/* Overlay sutil para asegurar contraste óptimo de textos */}
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/40 to-slate-950/65 pointer-events-none" />
+
+            {/* Badges superiores informativos */}
+            <div className="absolute top-2.5 left-2.5 right-2.5 flex justify-between items-center pointer-events-none z-20">
               <span className="bg-slate-950/80 backdrop-blur-md text-emerald-400 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border border-emerald-400/30 shadow-md">
-                {slideNumber ? `Slide ${slideNumber}` : "Afiche"} · Listo
+                {slideNumber ? `Slide ${slideNumber}` : "Afiche"} · En Vivo
               </span>
               <span className="bg-slate-950/80 backdrop-blur-md text-white text-[10px] font-mono px-2 py-0.5 rounded-full border border-white/20">
                 {aspectRatio}
               </span>
             </div>
 
-            {/* Barra hover/touch interactiva */}
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950 via-slate-950/85 to-transparent p-3 flex items-center justify-between gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
-              <a
-                href={generatedImageUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-white/20 hover:bg-white/30 backdrop-blur-md text-white text-[10px] font-black px-2.5 py-1.5 rounded-xl border border-white/20 transition-all flex items-center gap-1 shadow-xs cursor-pointer"
+            {/* Renderizado de textos en vivo sobre la imagen */}
+            <div className="relative z-10 h-full flex flex-col justify-between pt-6">
+              {renderLayoutBody(true)}
+            </div>
+          </div>
+
+          {/* Acciones debajo del Afiche */}
+          <div className="flex flex-wrap items-center justify-center gap-2 mt-3 w-full max-w-[280px]">
+            <a
+              href={generatedImageUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[11px] font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1 py-1 px-2.5 rounded-xl bg-amber-400/10 border border-amber-400/20"
+            >
+              <span>🔍</span> Abrir imagen en pestaña nueva
+            </a>
+            {onOpenEditor && (
+              <button
+                type="button"
+                onClick={onOpenEditor}
+                className="text-[11px] font-bold text-white bg-slate-800 hover:bg-slate-700 px-3 py-1 rounded-xl border border-slate-700 transition-colors cursor-pointer flex items-center gap-1"
               >
-                <span>🔍</span> Ver grande
-              </a>
-              {onOpenEditor && (
-                <button
-                  type="button"
-                  onClick={onOpenEditor}
-                  className="bg-white hover:bg-slate-100 text-slate-950 text-[10px] font-black px-3 py-1.5 rounded-xl transition-all shadow-md flex items-center gap-1 cursor-pointer"
-                >
-                  <span>✏️</span> Editor
-                </button>
-              )}
-              {onRegenerate && (
-                <button
-                  type="button"
-                  onClick={onRegenerate}
-                  title="Regenerar solo esta imagen"
-                  className="bg-slate-800/90 hover:bg-slate-700 text-white text-[10px] font-black px-2.5 py-1.5 rounded-xl border border-slate-600 transition-all cursor-pointer"
-                >
-                  🔄
-                </button>
-              )}
+                <span>✏️</span> Editor de capas
+              </button>
+            )}
+            {onRegenerate && (
+              <button
+                type="button"
+                onClick={onRegenerate}
+                title="Regenerar escena fotográfica con nuestros agentes"
+                className="text-[11px] font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-xl border border-slate-700 transition-colors cursor-pointer"
+              >
+                🔄
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* CASO 2: MODO SOLO FOTO (VER FOTO PURA SIN CAPAS DE TEXTO) */}
+      {activeViewMode === "image" && hasImage && (
+        <div className="flex flex-col items-center w-full animate-in fade-in zoom-in-95 duration-200">
+          <div
+            className="w-full max-w-[280px] bg-slate-950 rounded-2xl overflow-hidden border-2 border-emerald-500/60 shadow-2xl relative select-none transition-all duration-300 group"
+            style={{
+              aspectRatio: aspectRatio === "4:5" ? "4/5" : "1/1",
+              boxShadow: `0 12px 35px -10px ${primaryColor}40`,
+            }}
+          >
+            <img
+              src={generatedImageUrl}
+              alt={displayTitle || "Fotografía generada"}
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-102"
+            />
+
+            {/* Badges superiores */}
+            <div className="absolute top-2.5 left-2.5 right-2.5 flex justify-between items-center pointer-events-none">
+              <span className="bg-slate-950/80 backdrop-blur-md text-emerald-400 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border border-emerald-400/30 shadow-md">
+                {slideNumber ? `Slide ${slideNumber}` : "Afiche"} · Solo Foto
+              </span>
+              <span className="bg-slate-950/80 backdrop-blur-md text-white text-[10px] font-mono px-2 py-0.5 rounded-full border border-white/20">
+                {aspectRatio}
+              </span>
             </div>
           </div>
 
@@ -181,223 +525,54 @@ export default function PosterTemplatePreview({
                 <span>✏️</span> Editor de capas
               </button>
             )}
+            {onRegenerate && (
+              <button
+                type="button"
+                onClick={onRegenerate}
+                title="Regenerar imagen"
+                className="text-[11px] font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-xl border border-slate-700 transition-colors cursor-pointer"
+              >
+                🔄
+              </button>
+            )}
           </div>
         </div>
-      ) : (
-        <>
-          {/* CASO 2: Cartel Mockup Container / Esquema de Plantilla */}
+      )}
+
+      {/* CASO 3: MODO ESQUEMA WIREFRAME (SIN FOTO O ANTES DE GENERAR) */}
+      {(activeViewMode === "blueprint" || !hasImage) && (
+        <div className="flex flex-col items-center w-full animate-in fade-in duration-200">
           <div
             className="w-full max-w-[280px] bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 rounded-2xl overflow-hidden border-2 border-slate-700/60 shadow-2xl relative flex flex-col justify-between p-3.5 select-none transition-all duration-300"
-        style={{
-          aspectRatio: aspectRatio === "4:5" ? "4/5" : "1/1",
-          boxShadow: `0 10px 30px -10px ${primaryColor}25`
-        }}
-      >
-        {/* Marca de agua de fondo simulando fotografía */}
-        <div className="absolute inset-0 opacity-15 pointer-events-none bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:12px_12px]" />
+            style={{
+              aspectRatio: aspectRatio === "4:5" ? "4/5" : "1/1",
+              boxShadow: `0 10px 30px -10px ${primaryColor}25`,
+            }}
+          >
+            {/* Marca de agua de fondo simulando fotografía */}
+            <div className="absolute inset-0 opacity-15 pointer-events-none bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:12px_12px]" />
 
-        {/* ── LAYOUT 1: SPLIT LATERAL ── */}
-        {layout === "split_left" && (
-          <div className="relative z-10 h-full grid grid-cols-12 gap-2.5">
-            {/* Columna Izquierda: Textos y CTA */}
-            <div className="col-span-7 flex flex-col justify-between py-1 pr-1 border-r border-white/10">
-              <div className="space-y-2">
-                {displayBrand && (
-                  <div className="flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-slate-300">
-                    {includeLogo && <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: primaryColor }} />}
-                    <span className="truncate">{displayBrand}</span>
-                  </div>
-                )}
-                <div>
-                  <h5 className="text-[12px] font-black leading-tight tracking-tight uppercase line-clamp-3 text-white drop-shadow-md">
-                    {displayTitle}
-                  </h5>
-                  {displaySlogan && (
-                    <p className="text-[9px] text-slate-300 font-medium leading-tight mt-1 line-clamp-2">
-                      {displaySlogan}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-2 pt-2">
-                {displayPrice && (
-                  <div
-                    className="inline-block text-[10px] font-black px-2 py-0.5 rounded-lg shadow-sm"
-                    style={{ backgroundColor: primaryColor, color: "#111827" }}
-                  >
-                    {displayPrice}
-                  </div>
-                )}
-                <div className="w-full bg-white text-slate-950 text-[9px] font-black py-1 px-2 rounded-lg text-center uppercase tracking-wider shadow-sm truncate">
-                  {displayCta}
-                </div>
-              </div>
-            </div>
-
-            {/* Columna Derecha: Foto o Producto */}
-            <div className="col-span-5 flex flex-col items-center justify-center bg-white/5 border border-dashed border-white/20 rounded-xl p-2 text-center">
-              <span className="text-xl mb-1">📸</span>
-              <span className="text-[8px] font-black uppercase tracking-wider text-slate-400 leading-tight">
-                Zona de Producto Despejada
+            {/* Badges superiores informativos */}
+            <div className="absolute top-2.5 left-2.5 right-2.5 flex justify-between items-center pointer-events-none z-20">
+              <span className="bg-slate-950/80 backdrop-blur-md text-amber-400 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border border-amber-400/30 shadow-md">
+                {slideNumber ? `Slide ${slideNumber}` : "Afiche"} · Esquema
               </span>
-            </div>
-          </div>
-        )}
-
-        {/* ── LAYOUT 2: CABECERA SUPERIOR ── */}
-        {layout === "top_banner" && (
-          <div className="relative z-10 h-full flex flex-col justify-between">
-            {/* Bloque Superior: Titular y Marca */}
-            <div className="bg-slate-950/80 backdrop-blur-xs p-2 rounded-xl border border-white/10 space-y-1">
-              {displayBrand && (
-                <div className="flex items-center justify-between text-[8px] font-black uppercase tracking-wider text-slate-300">
-                  <span className="truncate">{displayBrand}</span>
-                  {displayPrice && (
-                    <span
-                      className="px-1.5 py-0.5 rounded-sm font-bold"
-                      style={{ backgroundColor: primaryColor, color: "#111827" }}
-                    >
-                      {displayPrice}
-                    </span>
-                  )}
-                </div>
-              )}
-              <h5 className="text-[12px] font-black leading-tight tracking-tight uppercase text-white drop-shadow-md text-center">
-                {displayTitle}
-              </h5>
-              {displaySlogan && (
-                <p className="text-[8px] text-slate-300 font-medium text-center line-clamp-1">
-                  {displaySlogan}
-                </p>
-              )}
-            </div>
-
-            {/* Centro: Foto libre */}
-            <div className="flex-1 my-2 flex flex-col items-center justify-center bg-white/5 border border-dashed border-white/20 rounded-xl text-center p-2">
-              <span className="text-2xl mb-1">📸</span>
-              <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400">
-                Escena Fotográfica Central
+              <span className="bg-slate-950/80 backdrop-blur-md text-white text-[10px] font-mono px-2 py-0.5 rounded-full border border-white/20">
+                {aspectRatio}
               </span>
             </div>
 
-            {/* Pie: CTA */}
-            <div className="flex items-center justify-between gap-2 pt-1">
-              <div
-                className="w-full text-[9px] font-black py-1.5 px-3 rounded-lg text-center uppercase tracking-wider shadow-sm truncate"
-                style={{ backgroundColor: primaryColor, color: "#111827" }}
-              >
-                {displayCta}
-              </div>
+            <div className="relative z-10 h-full flex flex-col justify-between pt-6">
+              {renderLayoutBody(false)}
             </div>
           </div>
-        )}
 
-        {/* ── LAYOUT 3: FICHA INFORMATIVA ── */}
-        {layout === "recipe_ingredients" && (
-          <div className="relative z-10 h-full flex flex-col justify-between">
-            {/* Cabecera */}
-            <div className="text-center space-y-0.5">
-              {displayBrand && (
-                <span className="text-[8px] font-black uppercase tracking-widest text-slate-400 block">
-                  {displayBrand}
-                </span>
-              )}
-              <h5 className="text-[11px] font-black uppercase text-white tracking-tight leading-tight">
-                {displayTitle}
-              </h5>
-            </div>
-
-            {/* Centro Foto */}
-            <div className="h-20 my-1 flex flex-col items-center justify-center bg-white/5 border border-dashed border-white/20 rounded-xl">
-              <span className="text-lg">🍽️ / 📦</span>
-              <span className="text-[7px] font-black uppercase text-slate-400">Encuadre Cenital</span>
-            </div>
-
-            {/* Puntos de Información / Ficha */}
-            <div className="grid grid-cols-3 gap-1 my-1">
-              <div className="bg-white/10 rounded-md p-1 text-center">
-                <span className="text-[7px] block font-bold text-amber-400">Punto 1</span>
-                <span className="text-[7px] block text-slate-300 truncate">Calidad</span>
-              </div>
-              <div className="bg-white/10 rounded-md p-1 text-center">
-                <span className="text-[7px] block font-bold text-amber-400">Punto 2</span>
-                <span className="text-[7px] block text-slate-300 truncate">Rapidez</span>
-              </div>
-              <div className="bg-white/10 rounded-md p-1 text-center">
-                <span className="text-[7px] block font-bold text-amber-400">Punto 3</span>
-                <span className="text-[7px] block text-slate-300 truncate">Garantía</span>
-              </div>
-            </div>
-
-            {/* Pie CTA */}
-            <div className="flex items-center justify-between gap-1 pt-1">
-              {displayPrice && (
-                <span
-                  className="text-[9px] font-black px-2 py-1 rounded-md"
-                  style={{ backgroundColor: primaryColor, color: "#111827" }}
-                >
-                  {displayPrice}
-                </span>
-              )}
-              <div className="flex-1 bg-white text-slate-900 text-[8px] font-black py-1 px-2 rounded-md text-center uppercase tracking-wider truncate">
-                {displayCta}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── LAYOUT 4: AUTOMÁTICO (EQUILIBRADO) ── */}
-        {(layout === "auto" || !layout) && (
-          <div className="relative z-10 h-full flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              {displayBrand && (
-                <span className="text-[8px] font-black uppercase tracking-wider text-slate-300 bg-black/40 px-2 py-0.5 rounded-full backdrop-blur-xs">
-                  {displayBrand}
-                </span>
-              )}
-              {displayPrice && (
-                <span
-                  className="text-[9px] font-black px-2 py-0.5 rounded-full shadow-md"
-                  style={{ backgroundColor: primaryColor, color: "#111827" }}
-                >
-                  {displayPrice}
-                </span>
-              )}
-            </div>
-
-            <div className="my-auto py-2 text-center space-y-1.5">
-              <span className="inline-block text-[8px] font-black uppercase tracking-widest text-amber-400 bg-amber-950/60 border border-amber-500/30 px-2 py-0.5 rounded-md">
-                Composición Dinámica
-              </span>
-              <h5 className="text-[13px] font-black uppercase leading-tight tracking-tight text-white drop-shadow-lg px-2">
-                {displayTitle}
-              </h5>
-              {displaySlogan && (
-                <p className="text-[9px] text-slate-200 font-medium px-2 line-clamp-2 drop-shadow-md">
-                  {displaySlogan}
-                </p>
-              )}
-            </div>
-
-            <div className="pt-1">
-              <div
-                className="w-full text-[9px] font-black py-1.5 px-3 rounded-xl text-center uppercase tracking-wider shadow-lg truncate"
-                style={{ backgroundColor: primaryColor, color: "#111827" }}
-              >
-                {displayCta}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <p className="text-[10px] text-slate-400 font-medium text-center mt-3 max-w-xs leading-tight">
-        {hasImage
-          ? "💡 Visualizando el diseño generado. Puedes alternar entre la imagen y el esquema con los botones superiores."
-          : `💡 Al pulsar "Diseñar", nuestros agentes generarán tu imagen respetando el estilo (${visualStyle}) y la verás aquí mismo.`}
-      </p>
-        </>
+          <p className="text-[10px] text-slate-400 font-medium text-center mt-3 max-w-xs leading-tight">
+            {hasImage
+              ? "💡 Modo esquema: viendo la cuadrícula y estructura tipográfica sin la fotografía de fondo."
+              : `💡 Vista previa en vivo: al escribir o modificar textos abajo, los verás cambiar aquí al instante. Al pulsar "Diseñar", nuestros agentes generarán la escena fotográfica de fondo.`}
+          </p>
+        </div>
       )}
     </div>
   );

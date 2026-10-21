@@ -176,7 +176,7 @@ export default function PosterFormView({
       };
       return {
         ...prev,
-        [field]: value,
+        ...(currentSlideIdx === 0 ? { [field]: value } : {}),
         slides: existingSlides,
         enabled: true,
       };
@@ -300,6 +300,22 @@ export default function PosterFormView({
 
   const maxChars = networks.x ? 280 : 2200;
   const isOverLimit = postText.length > maxChars;
+
+  const currentSlideMainText = postType === "Carrusel"
+    ? (posterConfig.slides?.[currentSlideIdx]?.mainText ?? (currentSlideIdx === 0 ? (posterConfig.mainText || "") : ""))
+    : (posterConfig.mainText || "");
+
+  const currentSlideSloganText = postType === "Carrusel"
+    ? (posterConfig.slides?.[currentSlideIdx]?.sloganText ?? (currentSlideIdx === 0 ? (posterConfig.sloganText || "") : ""))
+    : (posterConfig.sloganText || "");
+
+  const currentSlidePriceText = postType === "Carrusel"
+    ? (posterConfig.slides?.[currentSlideIdx]?.priceText ?? (currentSlideIdx === 0 ? (posterConfig.priceText || "") : ""))
+    : (posterConfig.priceText || "");
+
+  const currentSlideCtaText = postType === "Carrusel"
+    ? (posterConfig.slides?.[currentSlideIdx]?.ctaText ?? (currentSlideIdx === 0 ? (posterConfig.ctaText || "") : ""))
+    : (posterConfig.ctaText || "");
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
@@ -523,14 +539,35 @@ export default function PosterFormView({
                 layout={posterConfig.layout || "auto"}
                 visualStyle={posterConfig.visualStyle || "Moderno"}
                 primaryColor={posterConfig.primaryColor || "#f59e0b"}
-                mainText={posterConfig.mainText}
-                sloganText={posterConfig.sloganText}
-                priceText={posterConfig.priceText}
+                mainText={
+                  postType === "Carrusel"
+                    ? (posterConfig.slides?.[currentSlideIdx]?.mainText ?? (currentSlideIdx === 0 ? (posterConfig.mainText || "") : ""))
+                    : (posterConfig.mainText || "")
+                }
+                sloganText={
+                  postType === "Carrusel"
+                    ? (posterConfig.slides?.[currentSlideIdx]?.sloganText ?? (currentSlideIdx === 0 ? (posterConfig.sloganText || "") : ""))
+                    : (posterConfig.sloganText || "")
+                }
+                priceText={
+                  postType === "Carrusel"
+                    ? (posterConfig.slides?.[currentSlideIdx]?.priceText ?? (currentSlideIdx === 0 ? (posterConfig.priceText || "") : ""))
+                    : (posterConfig.priceText || "")
+                }
                 includePrice={posterConfig.includePrice}
-                ctaText={posterConfig.ctaText}
+                ctaText={
+                  postType === "Carrusel"
+                    ? (posterConfig.slides?.[currentSlideIdx]?.ctaText ?? (currentSlideIdx === 0 ? (posterConfig.ctaText || "") : ""))
+                    : (posterConfig.ctaText || "")
+                }
+                includeMainText={posterConfig.includeMainText !== false}
+                includeSlogan={posterConfig.includeSlogan}
                 businessName={posterConfig.businessName || activeProfile?.name}
                 includeBusinessName={posterConfig.includeBusinessName}
                 includeLogo={posterConfig.includeLogo}
+                includeContact={posterConfig.includeContact}
+                contactType={posterConfig.contactType}
+                contactValue={posterConfig.contactValue}
                 aspectRatio="4:5"
                 generatedImageUrl={
                   postType === "Carrusel"
@@ -985,7 +1022,7 @@ export default function PosterFormView({
                           </label>
                           <input
                             type="text"
-                            value={posterConfig.mainText || ""}
+                            value={currentSlideMainText}
                             onChange={(e) => {
                               if (postType === "Carrusel") {
                                 updateSlideField("mainText", e.target.value);
@@ -1016,7 +1053,7 @@ export default function PosterFormView({
                           {posterConfig.includeSlogan && (
                             <input
                               type="text"
-                              value={posterConfig.sloganText || ""}
+                              value={currentSlideSloganText}
                               onChange={(e) => {
                                 if (postType === "Carrusel") {
                                   updateSlideField("sloganText", e.target.value);
@@ -1085,7 +1122,7 @@ export default function PosterFormView({
                           {posterConfig.includePrice && (
                             <input
                               type="text"
-                              value={posterConfig.priceText || ""}
+                              value={currentSlidePriceText}
                               onChange={(e) => {
                                 if (postType === "Carrusel") {
                                   updateSlideField("priceText", e.target.value);
@@ -1106,7 +1143,7 @@ export default function PosterFormView({
                           </label>
                           <div className="grid grid-cols-2 gap-2">
                             {CTA_OPTIONS.map((opt) => {
-                              const isSelected = !showCustomCta && posterConfig.ctaText === opt;
+                              const isSelected = !showCustomCta && currentSlideCtaText === opt;
                               return (
                                 <button
                                   key={opt}
