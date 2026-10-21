@@ -4,6 +4,11 @@ import React, { useState } from "react";
 import type { PosterConfig, VisualStyle, ContactType, PosterLayout, PosterSlideConfig } from "../../types/poster";
 import { DEFAULT_POSTER_SLIDES } from "../../types/poster";
 import PosterTemplatePreview from "./PosterTemplatePreview";
+import {
+  MixboardBlueprintBar,
+  MixboardStyleReferenceSlot,
+  MixboardLiveRetouchBar,
+} from "./MixboardLabTools";
 import VoiceMic from "../VoiceMic";
 import Link from "next/link";
 import { FaFacebookF, FaInstagram, FaLinkedinIn, FaTiktok, FaGoogle, FaYoutube, FaTwitter } from "react-icons/fa";
@@ -86,6 +91,9 @@ interface PosterFormViewProps {
   onOpenEditor?: (slideIdx?: number) => void;
   onOpenPostModal?: () => void;
   isReadyToPost?: boolean;
+  isLabMode?: boolean;
+  onApplyLiveRetouch?: (slideIdx: number, instruction: string) => void;
+  onUploadStyleReference?: (file: File) => Promise<string | void>;
 }
 
 export default function PosterFormView({
@@ -130,6 +138,9 @@ export default function PosterFormView({
   onOpenEditor,
   onOpenPostModal,
   isReadyToPost = false,
+  isLabMode = false,
+  onApplyLiveRetouch,
+  onUploadStyleReference,
 }: PosterFormViewProps) {
   const [showCustomCta, setShowCustomCta] = useState(false);
   const [customCta, setCustomCta] = useState("");
@@ -292,6 +303,37 @@ export default function PosterFormView({
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
+      {/* 🧪 Módulo 1 Mixboard: Arquitecto de Blueprint (Solo en modo Laboratorio) */}
+      {isLabMode && (
+        <MixboardBlueprintBar
+          idea={idea}
+          setIdea={setIdea}
+          posterConfig={posterConfig}
+          setPosterConfig={setPosterConfig}
+          businessType={activeProfile?.businessType}
+          activeProfile={activeProfile}
+          activeSlideIndex={currentSlideIdx}
+          onApplyBlueprint={(blueprint) => {
+            if (postType === "Carrusel") {
+              updateSlideField("imageExpectation", blueprint.prompt);
+              if (blueprint.fields.mainText) updateSlideField("mainText", blueprint.fields.mainText);
+              if (blueprint.fields.sloganText) updateSlideField("sloganText", blueprint.fields.sloganText);
+              if (blueprint.fields.priceText) updateSlideField("priceText", blueprint.fields.priceText);
+              if (blueprint.fields.ctaText) updateSlideField("ctaText", blueprint.fields.ctaText);
+            } else {
+              setImageExpectation(blueprint.prompt);
+              if (blueprint.fields.mainText) update("mainText", blueprint.fields.mainText);
+              if (blueprint.fields.sloganText) update("sloganText", blueprint.fields.sloganText);
+              if (blueprint.fields.priceText) update("priceText", blueprint.fields.priceText);
+              if (blueprint.fields.ctaText) update("ctaText", blueprint.fields.ctaText);
+            }
+            if (blueprint.fields.primaryColor) {
+              update("primaryColor", blueprint.fields.primaryColor);
+            }
+            setExtractedNotice("✨ Blueprint estructurado por nuestros agentes y aplicado al cartel.");
+          }}
+        />
+      )}
       {/* Selector de Producto del Catálogo (si tiene) */}
       {catalogoItems.length > 0 && setSelectedCatalogoItem && (
         <div className="bg-white border-2 border-amber-200/80 rounded-2xl p-5 shadow-xs">
@@ -509,6 +551,19 @@ export default function PosterFormView({
                 onRegenerate={() => handleGeneratePreview(false, { singleSlideOnly: postType === "Carrusel", slideIndex: currentSlideIdx })}
                 onOpenEditor={onOpenEditor ? () => onOpenEditor(currentSlideIdx) : undefined}
               />
+              {/* ⚡ Módulo 3 Mixboard: Barra de Retoque en Vivo debajo del Preview */}
+              {isLabMode && onApplyLiveRetouch && (
+                <MixboardLiveRetouchBar
+                  activeSlideIndex={currentSlideIdx}
+                  currentImageUrl={
+                    postType === "Carrusel"
+                      ? (posterConfig.slides?.[currentSlideIdx]?.imageUrl || previewSlides?.[currentSlideIdx]?.url)
+                      : (posterConfig.imageUrl || previewSlides?.[0]?.url)
+                  }
+                  isRetouching={previewLoading}
+                  onApplyRetouch={(instruction) => onApplyLiveRetouch(currentSlideIdx, instruction)}
+                />
+              )}
             </div>
           </div>
         </div>
@@ -709,6 +764,32 @@ export default function PosterFormView({
                 </div>
               </div>
             ))}
+
+            {/* 🎨 Módulo 2 Mixboard: Ranura de Referencia de Estilo & Anclaje de Slide 1 (Solo en modo Laboratorio) */}
+            {isLabMode && (
+              <MixboardStyleReferenceSlot
+                activeSlideIndex={currentSlideIdx}
+                slideConfig={posterConfig.slides?.[currentSlideIdx]}
+                slide1ImageUrl={posterConfig.slides?.[0]?.imageUrl || previewSlides?.[0]?.url}
+                onUpdateStyleReference={(url) => {
+                  if (postType === "Carrusel") {
+                    updateSlideField("styleReferenceUrl", url);
+                  }
+                  update("styleReferenceUrl", url);
+                }}
+                onToggleLockStyleFromSlide1={(lock) => {
+                  if (postType === "Carrusel") {
+                    updateSlideField("lockStyleFromSlide1", lock);
+                    if (lock) {
+                      const s1Url = posterConfig.slides?.[0]?.imageUrl || previewSlides?.[0]?.url || "";
+                      updateSlideField("styleReferenceUrl", s1Url);
+                    }
+                  }
+                }}
+                onUploadImage={onUploadStyleReference}
+                uploading={uploadingBaseImage}
+              />
+            )}
           
                       {/* Campo: Idea o Escena Visual del Afiche */}
                       <div className="pt-2 space-y-3">

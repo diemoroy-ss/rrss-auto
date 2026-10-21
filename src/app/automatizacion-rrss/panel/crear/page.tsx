@@ -60,8 +60,8 @@ export default function RrssCreatePost() {
   /** Imagen base opcional para anclar producto a estilos visuales */
   const [baseImageUrl, setBaseImageUrl] = useState<string>("");
   const [uploadingBaseImage, setUploadingBaseImage] = useState<boolean>(false);
-  /** Flujo de creación activo: 'estandar' (post sin texto en imagen) o 'afiche' (cartel publicitario con tipografías y datos) */
-  const [activeCreationFlow, setActiveCreationFlow] = useState<'estandar' | 'afiche'>('estandar');
+  /** Flujo de creación activo: 'estandar' (post sin texto en imagen), 'afiche' (cartel publicitario con tipografías y datos) o 'laboratorio' (entorno avanzado Mixboard con fusión multi-imagen y blueprints) */
+  const [activeCreationFlow, setActiveCreationFlow] = useState<'estandar' | 'afiche' | 'laboratorio'>('estandar');
   /** Configuración del cartel publicitario (opcional) */
   const [posterConfig, setPosterConfig] = useState<PosterConfig>(DEFAULT_POSTER_CONFIG);
   /** Incluir logo recreado con IA en la imagen generada */
@@ -1112,19 +1112,21 @@ export default function RrssCreatePost() {
   };
 
   const handleRetouchImage = async (index: number | null, instruction: string) => {
-    if (!pendingPrompts) {
-      setError("No se puede retocar esta imagen porque no proviene de nuestros agentes o no se encontró su prompt original.");
-      return;
-    }
     setPreviewLoading(true);
     
     try {
       const idToken = await auth.currentUser?.getIdToken();
       let currentPrompt = "";
-      if (index !== null && pendingPrompts.prompts_english && pendingPrompts.prompts_english.length > index) {
-         currentPrompt = pendingPrompts.prompts_english[index];
+      if (index !== null && posterConfig.slides?.[index]?.imageExpectation) {
+        currentPrompt = posterConfig.slides[index].imageExpectation!;
+      } else if (index !== null && pendingPrompts?.prompts_english && pendingPrompts.prompts_english.length > index) {
+        currentPrompt = pendingPrompts.prompts_english[index];
       } else {
-         currentPrompt = pendingPrompts.prompt_english || (pendingPrompts.prompts_english?.[0] || "");
+        currentPrompt = imageExpectation || pendingPrompts?.prompt_english || (pendingPrompts?.prompts_english?.[0] || idea || "");
+      }
+
+      if (!currentPrompt) {
+        currentPrompt = `A commercial advertising poster for ${activeProfile?.businessType || businessType || "business"}: ${idea}`;
       }
 
       // 1. Obtener prompt corregido
@@ -1133,7 +1135,7 @@ export default function RrssCreatePost() {
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` },
         body: JSON.stringify({ prompt: currentPrompt, instruction })
       });
-      if (!retouchRes.ok) throw new Error("Error al ajustar el prompt con la IA");
+      if (!retouchRes.ok) throw new Error("Error al ajustar el prompt con nuestros agentes.");
       const retouchData = await retouchRes.json();
       const newPrompt = retouchData.prompt_english;
 
@@ -1141,7 +1143,9 @@ export default function RrssCreatePost() {
       const posterPromptSuffix = posterConfig.enabled ? buildPosterPromptSuffix(posterConfig) : "";
       const finalPrompt = `${newPrompt}. ${posterPromptSuffix}`.trim();
 
-      const webhookUrl = process.env.NEXT_PUBLIC_N8N_PREVIEW_URL || 'https://n8n.santisoft.cl/webhook/img-rrss-auto';
+      const targetSlideImage = index !== null ? (posterConfig.slides?.[index]?.imageUrl || previewSlides?.[index]?.url) : (posterConfig.imageUrl || previewSlides?.[0]?.url);
+      const slideStyleRef = index !== null ? posterConfig.slides?.[index]?.styleReferenceUrl : posterConfig.styleReferenceUrl;
+
       const payload: any = {
         idea: idea.trim(),
         imageExpectation: imageExpectation.trim(),
@@ -1153,6 +1157,10 @@ export default function RrssCreatePost() {
         phone: activeProfile?.phone || "",
         profileId: activeProfile?.id || "",
         posterConfig,
+        styleReferenceUrl: slideStyleRef || "",
+        retouchTargetImageUrl: targetSlideImage || "",
+        retouchInstruction: instruction,
+        isMixboardLab: activeCreationFlow === 'laboratorio',
         catalogoItem: selectedCatalogoItem ? {
             name: selectedCatalogoItem.name,
             description: selectedCatalogoItem.description || "",
@@ -1166,7 +1174,8 @@ export default function RrssCreatePost() {
 
       if (index !== null && postType === 'Carrusel') {
          // Re-generamos solo esa slide pasando los prompts pero modificando el de ese index
-         const newPrompts = [...(pendingPrompts.prompts_english || [])];
+         const newPrompts = [...(pendingPrompts?.prompts_english || [])];
+         while (newPrompts.length <= index) newPrompts.push(finalPrompt);
          newPrompts[index] = newPrompt;
          payload.promptsEnglish = newPrompts.map(p => `${p}. ${posterPromptSuffix}`.trim());
       } else {
@@ -1258,6 +1267,39 @@ export default function RrssCreatePost() {
     } catch (err) {
       console.error("Error al subir imagen base:", err);
       setError("No pudimos subir la foto del producto.");
+    } finally {
+      setUploadingBaseImage(false);
+    }
+  };
+
+  // Upload style reference for Mixboard Lab
+  const handleUploadStyleReference = async (file: File): Promise<string | void> => {
+    if (!user?.uid) return;
+    setUploadingBaseImage(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const filename = `style_ref_${Date.now()}.${ext}`;
+      const storageRef = ref(storage, `social_media_uploads/${user.uid}/${filename}`);
+      await uploadBytes(storageRef, file);
+      const downloadUrl = await getDownloadURL(storageRef);
+      if (postType === 'Carrusel') {
+        setPosterConfig((prev) => {
+          const slides = [...(prev.slides || DEFAULT_POSTER_SLIDES)];
+          if (slides[activeSlideIndex]) {
+            slides[activeSlideIndex] = {
+              ...slides[activeSlideIndex],
+              styleReferenceUrl: downloadUrl,
+            };
+          }
+          return { ...prev, slides };
+        });
+      } else {
+        setPosterConfig((prev) => ({ ...prev, styleReferenceUrl: downloadUrl }));
+      }
+      return downloadUrl;
+    } catch (err) {
+      console.error("Error al subir referencia de estilo:", err);
+      setError("No pudimos subir la imagen de referencia.");
     } finally {
       setUploadingBaseImage(false);
     }
@@ -1647,13 +1689,13 @@ export default function RrssCreatePost() {
         <label className="block text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">
           ¿Qué tipo de publicación deseas crear hoy?
         </label>
-        <div className="grid md:grid-cols-2 gap-4">
+        <div className="grid md:grid-cols-3 gap-4">
           {/* Viñeta 1: Publicación Estándar */}
           <button
             type="button"
             onClick={() => {
               setActiveCreationFlow('estandar');
-              setPosterConfig((prev) => ({ ...prev, enabled: false }));
+              setPosterConfig((prev) => ({ ...prev, enabled: false, isLabMode: false }));
             }}
             className={`p-5 rounded-2xl border-2 text-left transition-all relative overflow-hidden flex flex-col justify-between cursor-pointer ${
               activeCreationFlow === 'estandar'
@@ -1696,6 +1738,7 @@ export default function RrssCreatePost() {
               setPosterConfig((prev) => ({
                 ...prev,
                 enabled: true,
+                isLabMode: false,
                 includeBusinessName: prev.includeBusinessName || true,
                 businessName: prev.businessName || activeProfile?.name || "",
                 includeMainText: prev.includeMainText || true,
@@ -1731,6 +1774,54 @@ export default function RrssCreatePost() {
               </div>
               <p className="text-xs text-slate-600 font-medium leading-relaxed">
                 Diseños publicitarios con textos tipográficos sobre la imagen, titulares de oferta, precios y llamadas a la acción directamente sobre el diseño visual.
+              </p>
+            </div>
+          </button>
+
+          {/* Viñeta 3: Laboratorio (Mixboard) */}
+          <button
+            type="button"
+            onClick={() => {
+              setActiveCreationFlow('laboratorio');
+              setPosterConfig((prev) => ({
+                ...prev,
+                enabled: true,
+                isLabMode: true,
+                includeBusinessName: prev.includeBusinessName || true,
+                businessName: prev.businessName || activeProfile?.name || "",
+                includeMainText: prev.includeMainText || true,
+                mainText: prev.mainText || idea || "",
+              }));
+            }}
+            className={`p-5 rounded-2xl border-2 text-left transition-all relative overflow-hidden flex flex-col justify-between cursor-pointer ${
+              activeCreationFlow === 'laboratorio'
+                ? "border-purple-500 bg-gradient-to-br from-purple-50/80 via-white to-indigo-50/30 shadow-md ring-2 ring-purple-500/20"
+                : "border-slate-200 bg-white hover:border-purple-300 hover:shadow-sm"
+            }`}
+          >
+            <div>
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <div className="flex items-center gap-2.5">
+                  <span className="text-2xl">🧪</span>
+                  <div>
+                    <h3 className="text-base font-black text-slate-900 leading-tight">Laboratorio (Mixboard)</h3>
+                    <p className={`text-[11px] font-bold ${activeCreationFlow === 'laboratorio' ? "text-purple-800" : "text-slate-500"}`}>
+                      Fusión multi-imagen, blueprints y retoque
+                    </p>
+                  </div>
+                </div>
+                {activeCreationFlow === 'laboratorio' ? (
+                  <span className="text-[9px] font-black uppercase tracking-wider bg-purple-600 text-white px-2.5 py-1 rounded-full shadow-xs shrink-0">
+                    Flujo Activo
+                  </span>
+                ) : (
+                  <span className="text-[9px] font-black uppercase tracking-wider bg-purple-100 text-purple-800 border border-purple-200 px-2 py-0.5 rounded-full shrink-0">
+                    Mixboard Lab
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                Diseño comercial avanzado con arquitectura Mixboard: blueprints con grillas y tipografía exacta, fusión de producto real con referencias de estilo y retoque en vivo.
               </p>
             </div>
           </button>
@@ -2114,9 +2205,9 @@ export default function RrssCreatePost() {
         )}
       </div>
 
-      {/* 3. SECCIÓN MEDIA: SEGÚN FLUJO ACTIVO (ESTÁNDAR O AFICHE) */}
+      {/* 3. SECCIÓN MEDIA: SEGÚN FLUJO ACTIVO (ESTÁNDAR, AFICHE O LABORATORIO) */}
       {!openEditorParam && (
-        activeCreationFlow === 'afiche' ? (
+        (activeCreationFlow === 'afiche' || activeCreationFlow === 'laboratorio') ? (
           <div className="mb-10">
             <PosterFormView
               userPlan={userPlan}
@@ -2159,6 +2250,9 @@ export default function RrssCreatePost() {
               previewSlides={previewSlides}
               onOpenPostModal={openFinalPostModal}
               isReadyToPost={Boolean(isReady)}
+              isLabMode={activeCreationFlow === 'laboratorio'}
+              onApplyLiveRetouch={(sIdx, inst) => handleRetouchImage(sIdx, inst)}
+              onUploadStyleReference={handleUploadStyleReference}
             />
           </div>
         ) : (
@@ -2338,8 +2432,8 @@ export default function RrssCreatePost() {
         )
       )}
 
-      {/* 3. SECCIÓN INFERIOR: ÁREA DE VISUALIZACIÓN (Solo si no es afiche, donde ya se ve en la card de Composición) */}
-      {!openEditorParam && activeCreationFlow === 'afiche' ? null : (
+      {/* 3. SECCIÓN INFERIOR: ÁREA DE VISUALIZACIÓN (Solo si no es afiche/laboratorio, donde ya se ve en la card de Composición) */}
+      {!openEditorParam && (activeCreationFlow === 'afiche' || activeCreationFlow === 'laboratorio') ? null : (
       <div className="w-full border-t border-slate-200/80 pt-8 mt-10">
         <h3 className="text-lg font-black text-slate-800 mb-6 uppercase tracking-wider">
           Previsualización y Edición

@@ -237,6 +237,10 @@ export async function POST(req: NextRequest) {
             catalogoItem,
             baseImageUrl,
             allowImageRetouch,
+            styleReferenceUrl,
+            retouchTargetImageUrl,
+            retouchInstruction,
+            isMixboardLab,
         }: {
             idea?: string;
             imageExpectation?: string;
@@ -257,6 +261,10 @@ export async function POST(req: NextRequest) {
             baseImageUrl?: string | null;
             allowImageRetouch?: boolean;
             userId?: string;
+            styleReferenceUrl?: string | null;
+            retouchTargetImageUrl?: string | null;
+            retouchInstruction?: string | null;
+            isMixboardLab?: boolean;
         } = body;
 
         // ═══════════════════════════════════════════════════════
@@ -409,10 +417,21 @@ export async function POST(req: NextRequest) {
             enrichedIdea += `\n\nCONTEXTO DE PRODUCTO/SERVICIO (Basa el copy del post específicamente en esto): "${catalogoItem.name}" - ${catalogoItem.description}`;
         }
 
+        const effectiveStyleRef =
+            styleReferenceUrl ||
+            posterConfig?.slides?.[0]?.styleReferenceUrl ||
+            posterConfig?.styleReferenceUrl ||
+            "";
+
         const n8nPayload: any = {
             prompt: enrichedPrompts[0] || "",
             promptEnglish: enrichedPrompts[0] || "",
             baseImageUrl: baseImageUrl || "",
+            styleReferenceUrl: effectiveStyleRef,
+            styleReferenceTraits: posterConfig?.slides?.[0]?.styleReferenceTraits || posterConfig?.styleReferenceTraits || [],
+            retouchTargetImageUrl: retouchTargetImageUrl || "",
+            retouchInstruction: retouchInstruction || "",
+            isMixboardLab: Boolean(isMixboardLab || posterConfig?.isLabMode),
             allowImageRetouch: allowImageRetouch ?? posterConfig?.allowImageRetouch ?? true,
             productAnalysis: productAnalysis || null,
             idea: enrichedIdea,
@@ -435,12 +454,19 @@ export async function POST(req: NextRequest) {
             console.log(`[GENERATE-PREVIEW-PROXY] Procesando Carrusel de ${enrichedPrompts.length} láminas en lotes de 3 N8N...`);
 
             const batchResults = await runInBatches(enrichedPrompts, 3, async (slidePrompt, slideIdx) => {
+                const targetSlide = posterConfig?.slides?.[slideIdx];
+                const slideStyleRef =
+                    targetSlide?.styleReferenceUrl ||
+                    (targetSlide?.lockStyleFromSlide1 ? (posterConfig?.slides?.[0]?.imageUrl || "") : effectiveStyleRef);
+
                 const slidePayload = {
                     ...n8nPayload,
                     prompt: slidePrompt,
                     promptEnglish: slidePrompt,
                     slideIndex: slideIdx,
                     totalSlides: enrichedPrompts.length,
+                    baseImageUrl: targetSlide?.baseImageUrl || n8nPayload.baseImageUrl,
+                    styleReferenceUrl: slideStyleRef || "",
                 };
 
                 console.log(`[GENERATE-PREVIEW-PROXY] Enviando lámina ${slideIdx + 1}/${enrichedPrompts.length} a N8N...`);
