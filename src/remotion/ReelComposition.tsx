@@ -9,7 +9,8 @@ export const ReelComposition: React.FC<ReelProps> = ({
   showWatermark = false,
   logoUrl = '',
   businessName = '',
-  wordTimestamps = []
+  wordTimestamps = [],
+  showSubtitles = true
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -231,6 +232,7 @@ export const ReelComposition: React.FC<ReelProps> = ({
       </div>
 
       {/* Subtítulo dinámico con palabras destacadas (Posicionado en Safe Zone Inferior TikTok/Reels) */}
+      {showSubtitles && (
       <div style={{
         position: 'absolute',
         bottom: 420,
@@ -327,6 +329,7 @@ export const ReelComposition: React.FC<ReelProps> = ({
           </div>
         )}
       </div>
+      )}
 
       {/* Barra de Progreso (Ubicada justo debajo del subtítulo en Safe Zone) */}
       <div style={{

@@ -8,16 +8,18 @@ import { adminStorage } from './firebase-admin';
 export async function renderAndUploadReel(post: any, userId: string, postId: string): Promise<string> {
     console.log(`[VideoRenderer] Iniciando proceso de renderizado JIT para post ${postId}`);
     
-    // 1. Generar Audio (si tiene guión)
+    // 1. Generar Audio (si tiene guión y no se deshabilitó la locución)
     let audioUrl = '';
     let wordTimestamps: WordTimestamp[] = [];
-    if (post.audioScript) {
+    if (post.audioScript && post.includeVoiceover !== false) {
         console.log(`[VideoRenderer] Generando locución de voz para el Reel...`);
         try {
              const result = await generateElevenLabsAudioWithTimestamps(post.audioScript, userId);
              if (result.audioUrl) {
                  audioUrl = result.audioUrl;
-                 wordTimestamps = result.wordTimestamps;
+                 if (post.includeSubtitles !== false) {
+                     wordTimestamps = result.wordTimestamps;
+                 }
                  console.log(`[VideoRenderer] Pista de audio adjuntada a Remotion: ${audioUrl}`);
              }
         } catch (e) {
@@ -60,6 +62,7 @@ export async function renderAndUploadReel(post: any, userId: string, postId: str
         businessName: post.businessName || '',
         showWatermark: post.showWatermark ?? false,
         totalDurationInFrames: totalDurationInFrames,
+        showSubtitles: post.includeSubtitles !== false,
     };
 
     console.log(`[VideoRenderer] Seleccionando composición...`);

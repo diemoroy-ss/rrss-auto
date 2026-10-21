@@ -95,6 +95,11 @@ export default function RrssCreatePost() {
   const [showFinalPostModal, setShowFinalPostModal] = useState(false);
   const [finalPreviewIndex, setFinalPreviewIndex] = useState(0);
 
+  // Configuración de video: subtítulos y locución con nuestros agentes
+  const [enhanceVideoWithAi, setEnhanceVideoWithAi] = useState(false);
+  const [includeVideoSubtitles, setIncludeVideoSubtitles] = useState(false);
+  const [includeVideoVoiceover, setIncludeVideoVoiceover] = useState(false);
+
   // URLs consolidadas para la previsualización final y publicación (soporta carrusel de 5 láminas)
   const finalModalUrls: string[] = useMemo(() => {
     if (creationMode === 'manual' && selectedTemplate?.url) {
@@ -109,6 +114,13 @@ export default function RrssCreatePost() {
     if (posterConfig.imageUrl) return [posterConfig.imageUrl];
     return [];
   }, [creationMode, selectedTemplate, posterConfig, previewSlides]);
+
+  const isVideoMedia = useMemo(() => {
+    if (postType === 'Reel') return true;
+    if (selectedTemplate && (selectedTemplate.type === 'video' || selectedTemplate.url?.match(/\.(mp4|mov|webm|quicktime)/i) || selectedTemplate.url?.includes('video'))) return true;
+    if (previewSlides[0]?.url && (previewSlides[0].url.match(/\.(mp4|mov|webm|quicktime)/i) || previewSlides[0].url.includes('video'))) return true;
+    return false;
+  }, [postType, selectedTemplate, previewSlides]);
 
   const openFinalPostModal = () => {
     if (finalModalUrls.length > 1 && postType !== 'Reel') {
@@ -1556,6 +1568,11 @@ export default function RrssCreatePost() {
         networks: Object.entries(networks).filter(([_, isActive]) => isActive).map(([net]) => net),
         imageUrls: finalMediaUrls,
         imageUrl: finalMediaUrls[0] || "",
+        videoUrl: isVideoMedia ? (finalMediaUrls[0] || "") : null,
+        // Configuración de video y subtítulos
+        enhanceWithVoiceAndSubtitles: isVideoMedia ? enhanceVideoWithAi : false,
+        includeSubtitles: isVideoMedia ? (enhanceVideoWithAi && includeVideoSubtitles) : false,
+        includeVoiceover: isVideoMedia ? (enhanceVideoWithAi && includeVideoVoiceover) : false,
         status: publishNow ? "publishing" : "confirmed",
         scheduledFor: scheduledDate,
         createdAt: new Date(),
@@ -1670,6 +1687,85 @@ export default function RrssCreatePost() {
     : true;
   const hasMedia = (creationMode === 'manual' && !!selectedTemplate) || (creationMode === 'ai' && previewSlides.length > 0 && hasReelVideo);
   const isReady = hasText && hasMedia;
+
+  const renderVideoAudioSettings = () => {
+    if (!isVideoMedia) return null;
+    return (
+      <div className="bg-slate-50/90 border border-slate-200 rounded-2xl p-4 space-y-3 transition-all">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-base">🎙️</span>
+            <span className="text-xs font-black text-slate-800 uppercase tracking-wider">
+              Audio y subtítulos del video
+            </span>
+          </div>
+          <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+            enhanceVideoWithAi 
+              ? 'bg-amber-100 text-amber-800 border border-amber-300' 
+              : 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+          }`}>
+            {enhanceVideoWithAi ? 'Personalizado' : 'Audio original intacto'}
+          </span>
+        </div>
+
+        <label className="flex items-start gap-3 p-3 rounded-xl border border-slate-200 bg-white hover:border-indigo-300 cursor-pointer transition-all">
+          <input
+            type="checkbox"
+            checked={enhanceVideoWithAi}
+            onChange={(e) => {
+              const checked = e.target.checked;
+              setEnhanceVideoWithAi(checked);
+              if (checked) {
+                setIncludeVideoSubtitles(true);
+                setIncludeVideoVoiceover(true);
+              } else {
+                setIncludeVideoSubtitles(false);
+                setIncludeVideoVoiceover(false);
+              }
+            }}
+            className="mt-0.5 w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+          />
+          <div className="space-y-0.5">
+            <p className="text-xs font-bold text-slate-900 leading-snug">
+              Superponer subtítulos y voz con nuestros agentes
+            </p>
+            <p className="text-[11px] text-slate-500 leading-tight">
+              {enhanceVideoWithAi 
+                ? "Nuestros agentes superpondrán subtítulos y/o locución al publicar el video."
+                : "Desmarcado: Tu video se publicará con su audio y subtítulos originales intactos, sin recortarlo ni alterarlo."}
+            </p>
+          </div>
+        </label>
+
+        {enhanceVideoWithAi && (
+          <div className="pl-6 pt-2 space-y-2 border-t border-slate-200/80 animate-in fade-in duration-200">
+            <label className="flex items-center gap-2.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={includeVideoSubtitles}
+                onChange={(e) => setIncludeVideoSubtitles(e.target.checked)}
+                className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+              />
+              <span className="text-xs font-semibold text-slate-700">
+                Subtítulos animados en pantalla (estilo Alex Hormozi)
+              </span>
+            </label>
+            <label className="flex items-center gap-2.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={includeVideoVoiceover}
+                onChange={(e) => setIncludeVideoVoiceover(e.target.checked)}
+                className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+              />
+              <span className="text-xs font-semibold text-slate-700">
+                Locución y voz en off con nuestros agentes
+              </span>
+            </label>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   if (loadingInitial) return <div className="animate-pulse space-y-4 max-w-2xl"><div className="h-10 bg-slate-200 rounded w-1/3"></div><div className="h-64 bg-slate-200 rounded"></div></div>;
   const needsConnection = !hasFb && !hasIg && !hasLi && !hasTt && !hasGbp && !hasYt && !hasX;
@@ -2160,6 +2256,13 @@ export default function RrssCreatePost() {
                 );
               })}
             </div>
+
+            {/* Control de Audio y Subtítulos cuando es Video / Reel */}
+            {isVideoMedia && (
+              <div className="pt-2 animate-in fade-in duration-300">
+                {renderVideoAudioSettings()}
+              </div>
+            )}
           </div>
         </div>
 
@@ -2551,6 +2654,7 @@ export default function RrssCreatePost() {
                                    "{manualCaption || 'Escribe el texto que acompañará tu video...'}"
                                 </div>
                             </div>
+                            {renderVideoAudioSettings()}
                         </div>
                     ) : (
                         <div className="w-full">
@@ -3272,6 +3376,9 @@ export default function RrssCreatePost() {
 
             {/* Footer Buttons */}
             <div className="p-6 bg-white border-t border-slate-100 flex flex-col gap-3">
+
+               {/* Control de Audio y Subtítulos cuando es Video / Reel */}
+               {renderVideoAudioSettings()}
 
                {/* Toggle: Incluir Logo */}
                {activeProfile?.logoUrl && (

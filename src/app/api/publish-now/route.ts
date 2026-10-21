@@ -473,7 +473,12 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
     );
 
     let imageUrl = post.imageUrl;
-    let videoUrl = post.videoUrl || post.mediaUrl || (isReel ? null : imageUrl);
+    const isDirectVideoMedia = Boolean(
+        post.videoUrl || 
+        post.mediaUrl || 
+        (post.imageUrl && (post.imageUrl.includes('.mp4') || post.imageUrl.includes('.mov') || post.imageUrl.includes('.webm') || post.imageUrl.includes('video')))
+    );
+    let videoUrl = post.videoUrl || post.mediaUrl || (isDirectVideoMedia ? post.imageUrl : (isReel ? null : imageUrl));
 
     try {
         if (isReel) {
@@ -484,41 +489,54 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
             );
 
             if (!isAlreadyFullyRendered) {
-                infoLog += `Componiendo Reel 9:16 con subtítulos Alex Hormozi y locución en Remotion... `;
                 try {
                     let finalReelUrl = '';
+                    let processedWithRemotion = false;
 
                     if (Array.isArray(post.scenes) && post.scenes.length > 0) {
                         // Caso A: Post con escenas configuradas en Remotion
+                        infoLog += `Componiendo Reel 9:16 en Remotion... `;
                         const { renderAndUploadReel } = await import('../../../lib/video-renderer');
                         finalReelUrl = await renderAndUploadReel({
                             ...post,
                             logoUrl: targetProfile?.logoUrl || post.logoUrl || '',
                             businessName: targetProfile?.name || ''
                         }, creds.uid, postId);
+                        processedWithRemotion = true;
                     } else {
                         // Caso B: Generar Video Premium con n8n y superponer subtítulos y voz con Remotion
-                        const rawExistingVideo = post.videoUrl || (post.imageUrl && (post.imageUrl.includes('.mp4') || post.imageUrl.includes('video')) ? post.imageUrl : null);
+                        const rawExistingVideo = post.videoUrl || (post.imageUrl && (post.imageUrl.includes('.mp4') || post.imageUrl.includes('.mov') || post.imageUrl.includes('.webm') || post.imageUrl.includes('video')) ? post.imageUrl : null);
                         
                         if (rawExistingVideo) {
-                            // Tenemos un video de fondo crudo, le estampamos Remotion (9:16 + subtítulos + voz)
-                            const { generateVideoPoCComposition } = await import('../../../lib/video-poc-service');
-                            const comp = await generateVideoPoCComposition({
-                                topic: post.idea || post.text || post.copy || 'Reel Destacado',
-                                rubro: targetProfile?.rubro || targetProfile?.businessType || 'General',
-                                style: 'vibrante',
-                                skipImages: true
-                            });
-                            const { renderAndUploadReel } = await import('../../../lib/video-renderer');
-                            finalReelUrl = await renderAndUploadReel({
-                                id: postId,
-                                bgVideoUrl: rawExistingVideo,
-                                scenes: comp.scenes,
-                                audioScript: comp.audioScript,
-                                showWatermark: post.showWatermark ?? false,
-                                logoUrl: targetProfile?.logoUrl || post.logoUrl || '',
-                                businessName: targetProfile?.name || ''
-                            }, creds.uid, postId);
+                            const shouldOverlayRemotion = Boolean(post.includeSubtitles || post.includeVoiceover || post.enhanceWithVoiceAndSubtitles);
+
+                            if (!shouldOverlayRemotion) {
+                                console.log(`[publishInBackground] Post ${postId}: Video existente detectado. Conservando audio y subtítulos originales sin alterar.`);
+                                infoLog += `Publicando video original directo (sin alterar audio ni subtítulos). `;
+                                finalReelUrl = rawExistingVideo;
+                            } else {
+                                infoLog += `Componiendo subtítulos Alex Hormozi y locución en Remotion... `;
+                                const { generateVideoPoCComposition } = await import('../../../lib/video-poc-service');
+                                const comp = await generateVideoPoCComposition({
+                                    topic: post.idea || post.text || post.copy || 'Reel Destacado',
+                                    rubro: targetProfile?.rubro || targetProfile?.businessType || 'General',
+                                    style: 'vibrante',
+                                    skipImages: true
+                                });
+                                const { renderAndUploadReel } = await import('../../../lib/video-renderer');
+                                finalReelUrl = await renderAndUploadReel({
+                                    id: postId,
+                                    bgVideoUrl: rawExistingVideo,
+                                    scenes: comp.scenes,
+                                    audioScript: post.includeVoiceover !== false ? comp.audioScript : '',
+                                    showWatermark: post.showWatermark ?? false,
+                                    logoUrl: targetProfile?.logoUrl || post.logoUrl || '',
+                                    businessName: targetProfile?.name || '',
+                                    includeSubtitles: post.includeSubtitles ?? true,
+                                    includeVoiceover: post.includeVoiceover ?? true
+                                }, creds.uid, postId);
+                                processedWithRemotion = true;
+                            }
                         } else {
                             // Generar con agente de Video Premium con plantilla y resolución de imagen previa
                             let resolvedReelBaseImage: string | undefined = undefined;
@@ -594,11 +612,15 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
                         videoUrl: finalReelUrl,
                         imageUrl: finalReelUrl,
                         imageUrls: [finalReelUrl],
-                        autoGenerated: true,
-                        autoGeneratedReel: true,
-                        autoGeneratedAt: new Date().toISOString()
+                        ...(processedWithRemotion ? {
+                            autoGenerated: true,
+                            autoGeneratedReel: true,
+                            autoGeneratedAt: new Date().toISOString()
+                        } : {})
                     });
-                    infoLog += `Reel 9:16 con subtítulos Alex Hormozi y audio completado con éxito. `;
+                    if (processedWithRemotion) {
+                        infoLog += `Reel 9:16 completado con éxito. `;
+                    }
                 } catch (reelErr: any) {
                     console.error('[publishInBackground] Error componiendo Reel en Remotion:', reelErr);
                     // Fallback de emergencia: Solo si realmente hay un video crudo (MP4/WebM/MOV)

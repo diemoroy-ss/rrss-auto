@@ -26,6 +26,7 @@ export interface ReelProps {
   showWatermark?: boolean;
   logoUrl?: string;
   businessName?: string;
+  showSubtitles?: boolean;
 }
 
 export const RemotionRoot: React.FC = () => {
