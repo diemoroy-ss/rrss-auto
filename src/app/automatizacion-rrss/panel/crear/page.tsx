@@ -8,7 +8,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useProfile } from "../../../../contexts/ProfileContext";
-import { getQuotaUsage, getPlanLimit, getVideoPlanLimit, getAiGenerationUsage, getAiPlanLimit, fetchUserQuotas } from "../../../../lib/quota";
+import { getQuotaUsage, getPlanLimit, getVideoPlanLimit, getAiGenerationUsage, getAiPlanLimit, fetchUserQuotas, checkUserTrialStatus } from "../../../../lib/quota";
 import { fetchSocialRules, getCombinedConstraints, SocialRules, DEFAULT_SOCIAL_RULES } from "../../../../lib/socialRules";
 import { type PosterConfig, DEFAULT_POSTER_CONFIG, DEFAULT_POSTER_SLIDES, buildPosterPromptSuffix } from "../../../../types/poster";
 
@@ -105,6 +105,13 @@ export default function RrssCreatePost() {
     if (creationMode === 'manual' && selectedTemplate?.url) {
       return [selectedTemplate.url];
     }
+    // Si el formato NO es Carrusel (ej: Historia, Post individual o Reel), tomar estrictamente 1 sola imagen
+    if (postType !== 'Carrusel') {
+      if (posterConfig.imageUrl) return [posterConfig.imageUrl];
+      const p1 = previewSlides[0]?.url;
+      if (p1) return [p1];
+      return [];
+    }
     const posterUrls = (posterConfig.enabled && posterConfig.slides)
       ? (posterConfig.slides.map(s => s.imageUrl).filter(Boolean) as string[])
       : [];
@@ -113,7 +120,7 @@ export default function RrssCreatePost() {
     if (pUrls.length > 0) return pUrls;
     if (posterConfig.imageUrl) return [posterConfig.imageUrl];
     return [];
-  }, [creationMode, selectedTemplate, posterConfig, previewSlides]);
+  }, [creationMode, selectedTemplate, posterConfig, previewSlides, postType]);
 
   const isVideoMedia = useMemo(() => {
     if (postType === 'Reel') return true;
@@ -123,7 +130,10 @@ export default function RrssCreatePost() {
   }, [postType, selectedTemplate, previewSlides]);
 
   const openFinalPostModal = () => {
-    if (finalModalUrls.length > 1 && postType !== 'Reel') {
+    // NUNCA sobreescribir el tipo si el usuario seleccionó Historia o Reel
+    if (postType === 'Historia' || postType === 'Reel') {
+      // Conservar el formato exacto del usuario
+    } else if (postType === 'Carrusel' || finalModalUrls.length > 1) {
       setPostType('Carrusel');
     }
     setFinalPreviewIndex(0);
@@ -199,6 +209,8 @@ export default function RrssCreatePost() {
   const [videosUsed, setVideosUsed] = useState(0);
   const [showScheduler, setShowScheduler] = useState(false);
   const [quotaExceeded, setQuotaExceeded] = useState(false);
+  const [isTrialExpired, setIsTrialExpired] = useState(false);
+  const [trialDaysLeft, setTrialDaysLeft] = useState<number | null>(null);
   const [userPlan, setUserPlan] = useState("free");
 
   const [constraints, setConstraints] = useState<any>({
@@ -265,11 +277,30 @@ export default function RrssCreatePost() {
             const plan = data.plan || "free";
             setUserPlan(plan);
 
+            // Verificación del período de prueba de 7 días
+            const trialStatus = checkUserTrialStatus(data, u.email);
+            if (trialStatus.isTrial) {
+              if (trialStatus.isExpired) {
+                setIsTrialExpired(true);
+                setQuotaExceeded(true);
+                setPostLimit(0);
+              } else {
+                setTrialDaysLeft(trialStatus.daysRemaining);
+              }
+            }
+
             const serverQuotas = await fetchUserQuotas(activeProfile?.id || 'default');
             if (serverQuotas) {
+              if (serverQuotas.isTrialExpired) {
+                setIsTrialExpired(true);
+                setQuotaExceeded(true);
+                setPostLimit(0);
+              }
               setPostsThisMonth(serverQuotas.postsUsed);
-              setPostLimit(serverQuotas.postsLimit);
-              if (serverQuotas.postsUsed >= serverQuotas.postsLimit) {
+              if (!serverQuotas.isTrialExpired) {
+                setPostLimit(serverQuotas.postsLimit);
+              }
+              if (serverQuotas.postsUsed >= serverQuotas.postsLimit || serverQuotas.isTrialExpired) {
                 setQuotaExceeded(true);
               }
               setVideoLimit(serverQuotas.videoLimit);
@@ -279,16 +310,16 @@ export default function RrssCreatePost() {
             } else {
               const [used, planLimit, vLimit, imgUsed, imgLimit, vidUsed] = await Promise.all([
                 getQuotaUsage(u.uid, activeProfile?.id || 'default'),
-                getPlanLimit(plan, u.email),
-                getVideoPlanLimit(plan, u.email),
+                getPlanLimit(plan, u.email, data),
+                getVideoPlanLimit(plan, u.email, data),
                 getAiGenerationUsage(u.uid, "image"),
                 getAiPlanLimit(plan, "image", u.email),
                 getAiGenerationUsage(u.uid, "video")
               ]);
 
               setPostsThisMonth(used);
-              setPostLimit(planLimit);
-              if (used >= planLimit) {
+              setPostLimit(trialStatus.isExpired ? 0 : planLimit);
+              if (used >= planLimit || trialStatus.isExpired) {
                   setQuotaExceeded(true);
               }
               setVideoLimit(vLimit);
@@ -540,6 +571,20 @@ export default function RrssCreatePost() {
 
   // AI copywriting generator
   const handleImproveWithAI = async () => {
+    if (!isAdmin && isTrialExpired) {
+      setStatusModal({
+        isOpen: true,
+        type: "error",
+        title: "Período de prueba finalizado",
+        message: "Tu prueba gratuita de 7 días ha concluido. Tus redes sociales conectadas y datos se mantienen guardados. Para generar textos con nuestros agentes, activa uno de nuestros planes.",
+        onConfirm: () => {
+          setStatusModal(prev => ({ ...prev, isOpen: false }));
+          router.push("/automatizacion-rrss/panel/planes");
+        }
+      });
+      return;
+    }
+
     const textToImprove = creationMode === 'ai' ? postText : manualCaption;
     let baseIdea = creationMode === 'ai' ? idea : manualCaption;
 
@@ -663,7 +708,22 @@ export default function RrssCreatePost() {
     targetExpectation = targetExpectation || postText.trim() || idea.trim();
     if (!targetIdea) return;
 
-    // Validación de cuota mensual antes de generar
+    // Validación de prueba de 7 días y cuota mensual antes de generar
+    if (!isAdmin && isTrialExpired) {
+      setError("Tu período de prueba de 7 días ha finalizado. Actualiza a un plan para generar nuevas imágenes o videos.");
+      setStatusModal({
+        isOpen: true,
+        type: "error",
+        title: "Período de prueba finalizado",
+        message: "Tu prueba de 7 días ha finalizado. Tus datos y redes sociales conectadas siguen guardados. Activa un plan para generar más imágenes o videos.",
+        onConfirm: () => {
+          setStatusModal(prev => ({ ...prev, isOpen: false }));
+          router.push("/automatizacion-rrss/panel/planes");
+        }
+      });
+      return;
+    }
+
     const isVideoType = postType === 'Reel' || postType === 'Video';
     if (isVideoType && videoLimit > 0 && videosUsed >= videoLimit && !isAdmin) {
       setError(`Has alcanzado el límite de generación de videos (${videosUsed}/${videoLimit}) de tu plan este mes. Mejora tu plan para continuar.`);
@@ -1454,6 +1514,21 @@ export default function RrssCreatePost() {
     if (e) e.preventDefault();
     setError("");
 
+    // Validación de prueba de 7 días
+    if (!isAdmin && isTrialExpired) {
+      setStatusModal({
+        isOpen: true,
+        type: "error",
+        title: "Período de prueba de 7 días finalizado",
+        message: "Tu prueba gratuita de 7 días ha concluido. Tus redes sociales conectadas y perfiles se mantienen intactos. Para publicar nuevo contenido, activa un plan.",
+        onConfirm: () => {
+          setStatusModal(prev => ({ ...prev, isOpen: false }));
+          router.push("/automatizacion-rrss/panel/planes");
+        }
+      });
+      return;
+    }
+
     // Validación de cuota mensual según el plan activo
     if (!isAdmin && postsThisMonth >= postLimit) {
       setStatusModal({
@@ -1505,7 +1580,8 @@ export default function RrssCreatePost() {
     }
 
     const currentLength = creationMode === 'ai' ? postText.length : manualCaption.length;
-    const isOverLimit = currentLength > constraints.safeCharLimit;
+    // Si es Historia, el texto es un sticker/pie opcional o contexto visual en la imagen, por lo que no debe bloquearse por límite corto de feed
+    const isOverLimit = postType !== 'Historia' && currentLength > constraints.safeCharLimit;
 
     // Warnings block
     if (isOverLimit) {
@@ -1513,7 +1589,7 @@ export default function RrssCreatePost() {
         isOpen: true,
         type: "error",
         title: "Límite excedido",
-        message: `Tu publicación supera el límite de caracteres sugerido para las redes seleccionadas.`,
+        message: `Tu publicación tiene ${currentLength} caracteres y supera el límite de ${constraints.safeCharLimit} caracteres sugerido para las redes seleccionadas.`,
         onConfirm: () => setStatusModal(prev => ({ ...prev, isOpen: false }))
       });
       return;
@@ -1529,23 +1605,28 @@ export default function RrssCreatePost() {
           finalMediaUrls = [selectedTemplate.url];
           finalCaption = manualCaption;
       } else {
-          const posterSlideUrls = (posterConfig.enabled && posterConfig.slides)
+          const isCarouselFormat = postType === 'Carrusel';
+          const posterSlideUrls = (posterConfig.enabled && posterConfig.slides && isCarouselFormat)
             ? (posterConfig.slides.map(s => s.imageUrl).filter(Boolean) as string[])
             : [];
           const previewUrls = previewSlides.map(s => s.url).filter(Boolean);
 
-          if (posterSlideUrls.length > 1) {
+          if (isCarouselFormat && posterSlideUrls.length > 1) {
             finalMediaUrls = posterSlideUrls;
-          } else if (previewUrls.length > 0) {
+          } else if (isCarouselFormat && previewUrls.length > 1) {
             finalMediaUrls = previewUrls;
           } else if (posterConfig.imageUrl) {
             finalMediaUrls = [posterConfig.imageUrl];
+          } else if (previewUrls.length > 0) {
+            finalMediaUrls = [previewUrls[0]];
           }
           finalCaption = postText;
       }
 
-      const isMultiSlide = finalMediaUrls.length > 1 || (posterConfig.enabled && (posterConfig.slides?.length ?? 0) > 1);
-      const effectivePostType = (isMultiSlide && postType !== 'Reel') ? 'Carrusel' : postType;
+      const isMultiSlide = postType === 'Carrusel' && finalMediaUrls.length > 1;
+      const effectivePostType = (postType === 'Historia' || postType === 'Reel')
+        ? postType
+        : (isMultiSlide ? 'Carrusel' : postType);
       const effectiveCarouselCount = effectivePostType === 'Carrusel' ? (finalMediaUrls.length || carouselCount || 5) : 1;
 
       const scheduledDate = showScheduler && date && time ? new Date(`${date}T${time}`) : new Date();
@@ -1801,7 +1882,22 @@ export default function RrssCreatePost() {
         )}
       </div>
 
-      {quotaExceeded && (
+      {isTrialExpired ? (
+        <div className="mb-8 p-6 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-orange-300 rounded-[28px] animate-in slide-in-from-top-4 shadow-sm flex items-start gap-4">
+           <div className="text-3xl">🔒</div>
+           <div className="flex-1">
+              <h3 className="text-orange-950 font-black tracking-tight text-base">Prueba de 7 días finalizada</h3>
+              <p className="text-orange-900/80 font-medium text-sm mt-1">
+                Tu período de prueba gratuita de 7 días ha concluido. Tus redes sociales conectadas y configuraciones siguen guardadas intactas, pero necesitas activar un plan para generar o publicar nuevo contenido.
+              </p>
+              <div className="mt-3">
+                <Link href="/automatizacion-rrss/panel/planes" className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white rounded-xl font-bold text-xs shadow hover:opacity-95 transition">
+                  Ver Planes Disponibles →
+                </Link>
+              </div>
+           </div>
+        </div>
+      ) : quotaExceeded ? (
         <div className="mb-8 p-6 bg-rose-50 border-2 border-rose-200 rounded-[28px] animate-in slide-in-from-top-4 shadow-sm flex items-start gap-4">
            <div className="text-3xl">⚠️</div>
            <div>
@@ -1809,7 +1905,7 @@ export default function RrssCreatePost() {
               <p className="text-rose-700/80 font-medium text-sm mt-1">Has consumido todas tus publicaciones automáticas del mes. Podrás guardar esta nueva idea como <b>Borrador</b>, pero el bot no la publicará hasta tu próximo ciclo mensual o hasta que <Link href="/automatizacion-rrss/panel/planes" className="underline font-bold text-rose-600 hover:text-rose-800">mejores tu plan actual</Link>.</p>
            </div>
         </div>
-      )}
+      ) : null}
 
       {/* 1. SECCIÓN SUPERIOR: SELECTOR DE FLUJO VISUAL (VIÑETAS UNIFICADAS) */}
       <div className="mb-8">
@@ -2445,13 +2541,13 @@ export default function RrssCreatePost() {
             />
           </div>
         ) : (
-        <div className="grid lg:grid-cols-12 gap-8 items-start mb-10">
-          {/* Columna Izquierda: Parámetros del post */}
-          <div className="lg:col-span-6 space-y-6 w-full">
+                <div className="grid lg:grid-cols-12 gap-8 items-start mb-10">
+          {/* Columna Izquierda: Formulario creativo (Catálogo, Prompt, Estilos, Copy y Parámetros) */}
+          <div className="lg:col-span-7 space-y-6 w-full">
 
             {/* ── Selector de Producto/Servicio del Catálogo ── */}
             {catalogoItems.length > 0 && (
-              <div className="bg-white border-2 border-slate-100 rounded-2xl p-5 shadow-sm">
+              <div className="bg-white border-2 border-slate-100 rounded-3xl p-5 shadow-xs">
                 <label className="block text-xs font-black text-slate-600 uppercase tracking-wider mb-3">
                   🛍️ Sobre un producto / servicio (opcional)
                 </label>
@@ -2507,6 +2603,61 @@ export default function RrssCreatePost() {
               </div>
             )}
 
+            {/* Formulario de Contenido / Prompt / Estilos / Copy / Botón Previsualizar */}
+            <PostConfigForm 
+              userPlan={userPlan}
+              idea={idea} setIdea={setIdea}
+              imageExpectation={imageExpectation} setImageExpectation={setImageExpectation}
+              imageStyle={imageStyle} setImageStyle={setImageStyle}
+              selectedPromptTemplate={selectedPromptTemplate}
+              setSelectedPromptTemplate={setSelectedPromptTemplate}
+              postText={postText} setPostText={setPostText}
+              postType={postType} setPostType={setPostType}
+              hideSubmit={true}
+              carouselCount={carouselCount} setCarouselCount={setCarouselCount}
+              businessType={businessType} setBusinessType={setBusinessType}
+              date={date} setDate={setDate}
+              time={time} setTime={setTime}
+              networks={networks} setNetworks={setNetworks}
+              tiktokSettings={tiktokSettings} setTiktokSettings={setTiktokSettings}
+              attachWebsiteLink={attachWebsiteLink} setAttachWebsiteLink={setAttachWebsiteLink}
+              websiteUrl={websiteUrl} setWebsiteUrl={setWebsiteUrl}
+              baseImageUrl={baseImageUrl} setBaseImageUrl={setBaseImageUrl}
+              onUploadBaseImage={handleUploadBaseImage}
+              uploadingBaseImage={uploadingBaseImage}
+              hasFb={hasFb} hasIg={hasIg} hasLi={hasLi} hasTt={hasTt} hasGbp={hasGbp} hasYt={hasYt} hasX={hasX}
+              needsConnection={needsConnection}
+              handleImproveWithAI={handleImproveWithAI}
+              handleGeneratePreview={handleGeneratePreview}
+              handleSubmit={handleSubmit}
+              improveLoading={improveLoading}
+              previewLoading={previewLoading || promptLoading}
+              loading={loading}
+              error={error}
+              isAdmin={isAdmin}
+              allowVideo={videoLimit > 0 || isAdmin}
+              creationMode={creationMode}
+              setCreationMode={setCreationMode}
+              manualFiles={manualFiles}
+              setManualFiles={setManualFiles}
+              manualCaption={manualCaption}
+              setManualCaption={setManualCaption}
+              manualTemplates={manualTemplates}
+              selectedTemplate={selectedTemplate}
+              setSelectedTemplate={setSelectedTemplate}
+              loadingTemplates={loadingTemplates}
+              onUploadNewTemplate={handleUploadNewTemplate}
+              onDeleteTemplate={handleDeleteTemplate}
+              showScheduler={showScheduler}
+              setShowScheduler={setShowScheduler}
+              constraints={constraints}
+              renderSection="content"
+              posterConfig={posterConfig}
+              hideAI={hideAIParam}
+              hideNetworksAndType={true}
+            />
+
+            {/* Parámetros Adicionales: Enlace Web y Rubro del Negocio */}
             <PostConfigForm 
               userPlan={userPlan}
               idea={idea} setIdea={setIdea}
@@ -2559,70 +2710,188 @@ export default function RrssCreatePost() {
               renderSection="parameters"
               hideAI={hideAIParam}
               hideNetworksAndType={true}
+              hideCreationMode={true}
             />
           </div>
 
-          {/* Columna Derecha: Texto y contenido */}
-          <div className="lg:col-span-6 space-y-6 w-full">
-            <PostConfigForm 
-              userPlan={userPlan}
-              idea={idea} setIdea={setIdea}
-              imageExpectation={imageExpectation} setImageExpectation={setImageExpectation}
-              imageStyle={imageStyle} setImageStyle={setImageStyle}
-              selectedPromptTemplate={selectedPromptTemplate}
-              setSelectedPromptTemplate={setSelectedPromptTemplate}
-              postText={postText} setPostText={setPostText}
-              postType={postType} setPostType={setPostType}
-              hideSubmit={true}
-              carouselCount={carouselCount} setCarouselCount={setCarouselCount}
-              businessType={businessType} setBusinessType={setBusinessType}
-              date={date} setDate={setDate}
-              time={time} setTime={setTime}
-              networks={networks} setNetworks={setNetworks}
-              tiktokSettings={tiktokSettings} setTiktokSettings={setTiktokSettings}
-              attachWebsiteLink={attachWebsiteLink} setAttachWebsiteLink={setAttachWebsiteLink}
-              websiteUrl={websiteUrl} setWebsiteUrl={setWebsiteUrl}
-              baseImageUrl={baseImageUrl} setBaseImageUrl={setBaseImageUrl}
-              onUploadBaseImage={handleUploadBaseImage}
-              uploadingBaseImage={uploadingBaseImage}
-              hasFb={hasFb} hasIg={hasIg} hasLi={hasLi} hasTt={hasTt} hasGbp={hasGbp} hasYt={hasYt} hasX={hasX}
-              needsConnection={needsConnection}
-              handleImproveWithAI={handleImproveWithAI}
-              handleGeneratePreview={handleGeneratePreview}
-              handleSubmit={handleSubmit}
-              improveLoading={improveLoading}
-              previewLoading={previewLoading || promptLoading}
-              loading={loading}
-              error={error}
-              isAdmin={isAdmin}
-              allowVideo={videoLimit > 0 || isAdmin}
-              creationMode={creationMode}
-              setCreationMode={setCreationMode}
-            manualFiles={manualFiles}
-            setManualFiles={setManualFiles}
-            manualCaption={manualCaption}
-            setManualCaption={setManualCaption}
-            manualTemplates={manualTemplates}
-            selectedTemplate={selectedTemplate}
-            setSelectedTemplate={setSelectedTemplate}
-            loadingTemplates={loadingTemplates}
-            onUploadNewTemplate={handleUploadNewTemplate}
-            onDeleteTemplate={handleDeleteTemplate}
-            showScheduler={showScheduler}
-            setShowScheduler={setShowScheduler}
-            constraints={constraints}
-            renderSection="content"
-            posterConfig={posterConfig}
-            hideAI={hideAIParam}
-            hideNetworksAndType={true}
-          />
+          {/* Columna Derecha: Card Modo de Creación compacta + Previsualización de Imagen + Botón Postear */}
+          <div className="lg:col-span-5 space-y-5 w-full sticky top-6">
+            {/* Card Modo de Creación (Ajustada Compacta) */}
+            <div className="bg-white border-2 border-slate-200/90 rounded-3xl p-4 shadow-xs">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <span className="text-[11px] font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                    <span>🛠️</span> Modo de Creación
+                  </span>
+                  <p className="text-[10px] text-slate-400 font-medium">
+                    {creationMode === 'ai' ? 'Diseño automatizado por agentes' : 'Sube o elige tu propio diseño'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl border border-slate-200 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setCreationMode('ai')}
+                    className={`py-1.5 px-3 rounded-xl font-black text-xs transition-all flex items-center gap-1.5 cursor-pointer ${
+                      creationMode === 'ai'
+                        ? 'bg-white text-indigo-700 shadow-xs border border-slate-200/70'
+                        : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    <span>🤖</span> Agentes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCreationMode('manual')}
+                    className={`py-1.5 px-3 rounded-xl font-black text-xs transition-all flex items-center gap-1.5 cursor-pointer ${
+                      creationMode === 'manual'
+                        ? 'bg-white text-indigo-700 shadow-xs border border-slate-200/70'
+                        : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    <span>📥</span> Manual
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* PREVISUALIZACIÓN DE LA IMAGEN EN VIVO DIRECTAMENTE AL COSTADO DERECHO */}
+            <div className="bg-white border-2 border-slate-200/90 rounded-3xl p-5 shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">👁️</span>
+                  <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                    Previsualización en Vivo
+                  </h4>
+                </div>
+                {previewSlides.length > 0 && (
+                  <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                    {previewSlides.length > 1 ? `${previewSlides.length} Láminas` : 'Diseño Listo'}
+                  </span>
+                )}
+              </div>
+
+              {creationMode === 'manual' ? (
+                selectedTemplate ? (
+                  <div className="space-y-4 animate-in fade-in duration-300 w-full">
+                    {previewLoading ? (
+                      <div className="p-8 bg-slate-50 border border-slate-200 rounded-[28px] text-center flex flex-col items-center justify-center min-h-[260px] text-indigo-750 shadow-xs animate-pulse w-full">
+                        <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-3 mx-auto"></div>
+                        <h4 className="font-black text-sm mb-1 uppercase tracking-widest">Procesando Diseño...</h4>
+                        <p className="font-medium text-xs max-w-xs mx-auto leading-relaxed text-indigo-500">Nuestros agentes aplican cambios a tu imagen.</p>
+                      </div>
+                    ) : selectedTemplate.type === 'video' || selectedTemplate.url.match(/\.(mp4|mov|webm|quicktime)/i) || selectedTemplate.url.includes("video") ? (
+                      <div className="p-4 bg-slate-50 rounded-[24px] border-2 border-slate-100 space-y-4 shadow-sm w-full">
+                        <div className="aspect-[9/16] max-h-[48vh] rounded-[20px] overflow-hidden bg-black border-2 border-white shadow-md relative group mx-auto flex items-center justify-center">
+                          <video src={selectedTemplate.url} autoPlay loop muted playsInline controls className="w-full h-full object-cover" />
+                        </div>
+                        <div>
+                          <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Copy para Redes</label>
+                          <div className="p-3 bg-white rounded-xl border border-slate-200 text-slate-600 text-xs font-medium leading-relaxed italic">
+                            "{manualCaption || 'Escribe el texto que acompañará tu video...'}"
+                          </div>
+                        </div>
+                        {renderVideoAudioSettings()}
+                      </div>
+                    ) : (
+                      <div className="w-full">
+                        <CanvasEditor 
+                          baseImageUrl={selectedTemplate.url}
+                          suggestedCopy={manualCaption || "Previsualización manual"}
+                          initialLogoUrl={userLogo}
+                          userId={user?.uid}
+                          onSave={handleSaveEditedTemplate}
+                          forceOpenEditor={openEditorParam}
+                          onRetouch={(inst) => handleRetouchImage(null, inst)}
+                          isRetouching={previewLoading}
+                        />
+                      </div>
+                    )}
+                    <button 
+                      type="button" 
+                      onClick={openFinalPostModal}
+                      disabled={loading || !isReady} 
+                      title={!isReady ? "Falta agregar el copy de la publicación" : ""}
+                      className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 disabled:from-slate-300 disabled:to-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-black text-sm py-3.5 rounded-2xl transition-all shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 hover:-translate-y-0.5 cursor-pointer"
+                    >
+                      {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : (!isReady ? '⚠️ POSTEAR (Falta Copy)' : '🚀 POSTEAR')}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="p-8 border-2 border-dashed border-indigo-200 rounded-[28px] text-center flex flex-col items-center justify-center min-h-[260px] text-indigo-400 bg-indigo-50/20 transition-all w-full">
+                    <div className="text-4xl mb-2 opacity-80">📸</div>
+                    <h4 className="font-black text-sm mb-1 text-indigo-700">Galería Manual Activa</h4>
+                    <p className="font-medium text-xs max-w-xs leading-relaxed text-slate-500">
+                      Selecciona un diseño de la galería manual a la izquierda o sube uno nuevo para previsualizarlo aquí.
+                    </p>
+                  </div>
+                )
+              ) : previewSlides.length > 0 ? (
+                postType === 'Reel' ? (
+                  <div className="space-y-4 animate-in fade-in duration-300 w-full">
+                    <div className="p-6 text-center flex flex-col items-center justify-center min-h-[280px] bg-slate-50/60 border border-slate-200 rounded-[28px] shadow-xs w-full">
+                      {previewSlides[0]?.url && !previewSlides[0].url.match(/\.(mp4|mov|webm|quicktime)/i) ? (
+                        <div className="aspect-[9/16] w-full max-w-[150px] rounded-2xl overflow-hidden bg-slate-100 border-2 border-white shadow-md relative mb-4">
+                          <img src={previewSlides[0].url} alt="Cover Reference" className="w-full h-full object-cover" />
+                        </div>
+                      ) : (
+                        <div className="text-5xl mb-4 opacity-80">🎬</div>
+                      )}
+                      <h4 className="font-black text-base mb-1 text-slate-800 tracking-tight">Reel en Producción</h4>
+                      <p className="font-medium text-slate-500 text-xs max-w-xs leading-relaxed mb-4">
+                        Hemos generado tu portada, prompt de animación y locución de audio.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setShowReelWorkspace(true)}
+                        className="w-full max-w-xs bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs py-3 px-5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        🎬 Abrir Espacio de Producción
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-full space-y-4">
+                    <CarouselWizard 
+                      slides={previewSlides}
+                      onUpdateSlide={updateSlideFinalUrl}
+                      userLogo={userLogo}
+                      userId={user?.uid}
+                      forceOpenEditor={openEditorParam}
+                    />
+                    <button 
+                      type="button" 
+                      onClick={openFinalPostModal}
+                      disabled={loading || !isReady} 
+                      title={!isReady ? "Falta agregar el copy de la publicación" : ""}
+                      className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 disabled:from-slate-300 disabled:to-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-black text-sm py-3.5 rounded-2xl transition-all shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 hover:-translate-y-0.5 cursor-pointer"
+                    >
+                      {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : (!isReady ? '⚠️ POSTEAR (Falta Copy)' : '🚀 POSTEAR')}
+                    </button>
+                  </div>
+                )
+              ) : previewLoading ? (
+                <div className="p-8 bg-slate-50 border border-slate-200 rounded-[28px] text-center flex flex-col items-center justify-center min-h-[260px] text-indigo-750 shadow-xs animate-pulse w-full">
+                  <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-3"></div>
+                  <h4 className="font-black text-sm mb-1 uppercase tracking-widest">Generando Diseño...</h4>
+                  <p className="font-medium text-xs max-w-xs leading-relaxed text-indigo-500">Nuestros agentes componen tus imágenes y copys en alta resolución.</p>
+                </div>
+              ) : (
+                <div className="p-8 border-2 border-dashed border-slate-200 rounded-[28px] text-center flex flex-col items-center justify-center min-h-[280px] text-slate-400 bg-slate-50/40 w-full">
+                  <div className="text-4xl mb-3 opacity-60">🖼️</div>
+                  <h4 className="font-black text-sm mb-1 text-slate-700">Previsualización del Diseño</h4>
+                  <p className="font-medium text-xs max-w-xs leading-relaxed text-slate-500">
+                    Describe tu idea a la izquierda y pulsa <b>Previsualizar</b> para ver tu diseño aquí al costado en tiempo real.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-      </div>
         )
       )}
 
       {/* 3. SECCIÓN INFERIOR: ÁREA DE VISUALIZACIÓN (Solo si no es afiche/laboratorio, donde ya se ve en la card de Composición) */}
-      {!openEditorParam && (activeCreationFlow === 'afiche' || activeCreationFlow === 'laboratorio') ? null : (
+      {!openEditorParam && (activeCreationFlow === 'afiche' || activeCreationFlow === 'laboratorio' || activeCreationFlow === 'estandar') ? null : (
       <div className="w-full border-t border-slate-200/80 pt-8 mt-10">
         <h3 className="text-lg font-black text-slate-800 mb-6 uppercase tracking-wider">
           Previsualización y Edición

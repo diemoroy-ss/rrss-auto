@@ -1015,28 +1015,49 @@ export default function PosterFormView({
           {/* Subcolumna 1: Mensaje Principal y Marca */}
           <div className="space-y-4">
             {/* Titular Principal */}
-                        <div>
-                          <label className="block text-xs font-black text-slate-800 mb-1.5 flex items-center justify-between">
-                            <span>📝 Titular {postType === "Carrusel" ? `del Slide ${currentSlideIdx + 1}` : "Principal del Cartel"} *</span>
+                        <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-2">
+                          <label className="text-xs font-black text-slate-800 flex items-center justify-between cursor-pointer">
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked={posterConfig.includeMainText !== false}
+                                onChange={(e) => {
+                                  update("includeMainText", e.target.checked);
+                                  if (postType === "Carrusel") {
+                                    updateSlideField("includeMainText" as any, e.target.checked);
+                                  }
+                                }}
+                                className="w-4 h-4 accent-amber-600 rounded"
+                              />
+                              <span>📝 Titular {postType === "Carrusel" ? `del Slide ${currentSlideIdx + 1}` : "Principal del Cartel"}</span>
+                            </div>
                             <span className="text-[10px] text-amber-700 font-bold">Impreso en el diseño</span>
                           </label>
-                          <input
-                            type="text"
-                            value={currentSlideMainText}
-                            onChange={(e) => {
-                              if (postType === "Carrusel") {
-                                updateSlideField("mainText", e.target.value);
-                              } else {
-                                update("mainText", e.target.value);
+                          {posterConfig.includeMainText !== false && (
+                            <input
+                              type="text"
+                              value={currentSlideMainText}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                update("mainText", val);
+                                if (postType === "Carrusel") {
+                                  updateSlideField("mainText", val);
+                                } else {
+                                  setPosterConfig((prev) => {
+                                    const nextSlides = prev.slides ? [...prev.slides] : [];
+                                    if (nextSlides[0]) nextSlides[0] = { ...nextSlides[0], mainText: val };
+                                    return { ...prev, mainText: val, slides: nextSlides, enabled: true };
+                                  });
+                                }
+                              }}
+                              placeholder={
+                                postType === "Carrusel"
+                                  ? CAROUSEL_DEFAULT_SLIDES[currentSlideIdx]?.placeholder || "Titular de esta diapositiva..."
+                                  : "Ej: GRAN INAUGURACIÓN, 50% OFF, MENÚ EJECUTIVO..."
                               }
-                            }}
-                            placeholder={
-                              postType === "Carrusel"
-                                ? CAROUSEL_DEFAULT_SLIDES[currentSlideIdx]?.placeholder || "Titular de esta diapositiva..."
-                                : "Ej: GRAN INAUGURACIÓN, 50% OFF, MENÚ EJECUTIVO..."
-                            }
-                            className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl outline-none text-xs font-black text-slate-800 focus:border-amber-500 focus:bg-white transition-all shadow-inner"
-                          />
+                              className="w-full bg-white border border-slate-200 px-4 py-2.5 rounded-xl outline-none text-xs font-black text-slate-800 focus:border-amber-500 transition-all shadow-inner"
+                            />
+                          )}
                         </div>
 
             {/* Slogan */}

@@ -123,6 +123,7 @@ interface PostConfigFormProps {
   renderSection?: 'parameters' | 'content';
   hideAI?: boolean;
   hideNetworksAndType?: boolean;
+  hideCreationMode?: boolean;
 }
 
 const DEFAULT_PREFERRED_STYLE_IDS = [
@@ -187,7 +188,8 @@ export default function PostConfigForm({
   hideSubmit = false,
   renderSection,
   hideAI = false,
-  hideNetworksAndType = false
+  hideNetworksAndType = false,
+  hideCreationMode = false
 }: PostConfigFormProps) {
 
   const maxChars = constraints.safeCharLimit;
@@ -311,6 +313,7 @@ export default function PostConfigForm({
   if (renderSection === 'parameters') {
     return (
       <div className="premium-card space-y-6">
+        {!hideCreationMode && (
         <div>
           <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Modo de Creación</label>
           <div className="grid grid-cols-2 gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
@@ -338,6 +341,7 @@ export default function PostConfigForm({
               </button>
             </div>
           </div>
+        )}
 
         {/* REDES DE DESTINO */}
         {!hideNetworksAndType && (
