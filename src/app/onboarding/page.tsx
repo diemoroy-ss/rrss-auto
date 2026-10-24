@@ -55,8 +55,8 @@ const TONES = [
 ];
 
 const LOADING_STEPS = [
-  "Creando el perfil de tu marca",
-  "Sincronizando agentes de redacción y diseño",
+  "Extrayendo el ADN de tu marca (colores y estilo)",
+  "Configurando agentes de redacción y diseño on-brand",
   "Preparando los pilares de tu estrategia",
 ];
 
@@ -658,6 +658,31 @@ function OnboardingContent() {
           idx = profiles.length - 1;
         }
 
+        // Extraer automáticamente el ADN de la marca si ingresó sitio web o descripción
+        let extractedVisualIdentity = null;
+        if (data.website && !data.noWebsite || data.businessDescription) {
+          try {
+            const extractRes = await fetch("/api/brand/extract-identity", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                websiteUrl: data.website && !data.noWebsite ? data.website.trim() : "",
+                businessName: userData.company || userData.name || "Mi Marca",
+                rubro: effectiveRubro,
+                businessDescription: data.businessDescription.trim(),
+              }),
+            });
+            if (extractRes.ok) {
+              const extData = await extractRes.json();
+              if (extData.identity) {
+                extractedVisualIdentity = extData.identity;
+              }
+            }
+          } catch (e) {
+            console.warn("[Onboarding] Error extrayendo ADN visual inicial:", e);
+          }
+        }
+
         // Patch with onboarding data (visible in Configuración → Marca y Contacto)
         profiles[idx] = {
           ...profiles[idx],
@@ -667,6 +692,7 @@ function OnboardingContent() {
           ...(data.website && !data.noWebsite ? { website: data.website.trim() } : {}),
           ...(userData.phone && !profiles[idx].phone ? { phone: userData.phone } : {}),
           ...(userData.email && !profiles[idx].email ? { email: userData.email } : {}),
+          ...(extractedVisualIdentity ? { visualIdentity: extractedVisualIdentity } : {}),
         };
 
         await updateDoc(userDocRef, {
@@ -738,7 +764,7 @@ function OnboardingContent() {
           markSize={28}
           textColor="#0F172A"
           showSubText={true}
-          subText="REDES & CONTENIDO"
+          subText="SOCIALPILOT"
         />
         {step > 0 && step < TOTAL_STEPS && (
           <div className="text-xs font-bold text-slate-700 bg-white border border-slate-200 px-3 py-1 rounded-full shadow-xs">

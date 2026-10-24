@@ -33,10 +33,10 @@ const PYME_PLANS: PyMEPlan[] = [
     description: "Ideal para negocios locales y profesionales que necesitan redes activas, confiables y con contenido profesional sin perder tiempo.",
     isFeatured: false,
     ctaText: "Elegir Plan Esencial ($59.990)",
-    ctaHref: `https://wa.me/${WA_NUMBER}?text=%C2%A1Hola%20Santisoft!%20Quiero%20activar%20el%20Plan%20PyME%20Esencial%20(%2459.990%20CLP%20%2B%20IVA%2Fmes)%20para%20mi%20negocio.%20Mi%20empresa%20es%3A%20`,
+    ctaHref: `https://wa.me/${WA_NUMBER}?text=%C2%A1Hola!%20Quiero%20activar%20el%20Plan%20PyME%20Esencial%20de%20SocialPilot%20by%20Santisoft%20(%2459.990%20CLP%20%2B%20IVA%2Fmes)%20para%20mi%20negocio.%20Mi%20empresa%20es%3A%20`,
     features: [
       "1 Marca configurada (Instagram + Facebook)",
-      "Clonación de Voz de Marca + Humanizador IA: Textos con el tono real de tu negocio, cero robóticos",
+      "Clonación de Voz de Marca + Humanizador: Textos con el tono real de tu negocio, cero robóticos",
       "Calendario Hiper-Orgánico Mensual: 15 publicaciones estratégicas al mes (valor, autoridad y venta)",
       "Generador de Gráficas y Carruseles: Hasta 15 diseños mensuales listos con tu logo y colores corporativos",
       "8 Guiones de Reels + Secuencias de Stories listos para leer en 30 segundos frente al celular",
@@ -57,7 +57,7 @@ const PYME_PLANS: PyMEPlan[] = [
     isFeatured: true,
     bonusText: "🎁 BONO EXCLUSIVO (Solo 15 cupos): Setup 'Llave en Mano' GRATIS (Valor real $150.000 CLP) — Nosotros configuramos tu marca, extraemos tu voz desde tu web y dejamos tu primera quincena andando en una videollamada de 25 minutos.",
     ctaText: "Asegurar Cupo Crecimiento con Setup Gratis ($99.990)",
-    ctaHref: `https://wa.me/${WA_NUMBER}?text=%C2%A1Hola%20Santisoft!%20Quiero%20asegurar%20uno%20de%20los%2015%20cupos%20del%20Plan%20PyME%20Crecimiento%20(%2499.990%20CLP%20%2B%20IVA)%20con%20Setup%20Llave%20en%20Mano%20Gratis.%20Mi%20negocio%20es%3A%20`,
+    ctaHref: `https://wa.me/${WA_NUMBER}?text=%C2%A1Hola!%20Quiero%20asegurar%20uno%20de%20los%2015%20cupos%20del%20Plan%20PyME%20Crecimiento%20de%20SocialPilot%20by%20Santisoft%20(%2499.990%20CLP%20%2B%20IVA)%20con%20Setup%20Llave%20en%20Mano%20Gratis.%20Mi%20negocio%20es%3A%20`,
     features: [
       "Todo lo incluido en el Plan Esencial",
       "Multicanal Ilimitado (30 días): Instagram, Facebook, TikTok",
@@ -81,7 +81,7 @@ const PYME_PLANS: PyMEPlan[] = [
     isFeatured: false,
     bonusText: "🤝 SERVICIO DONE-WITH-YOU: 2 sesiones ejecutivas al mes (20 min por Zoom) para generar las campañas, revisar métricas y dejar todo programado en vivo.",
     ctaText: "Postular a Piloto Automático ($249.990)",
-    ctaHref: `https://wa.me/${WA_NUMBER}?text=%C2%A1Hola%20Santisoft!%20Me%20interesa%20el%20Plan%20PyME%20Piloto%20Autom%C3%A1tico%20VIP%20(%24249.990%20CLP%20%2B%20IVA)%20con%20acompa%C3%B1amiento%20Done-With-You.%20Mi%20empresa%20es%3A%20`,
+    ctaHref: `https://wa.me/${WA_NUMBER}?text=%C2%A1Hola!%20Me%20interesa%20el%20Plan%20PyME%20Piloto%20Autom%C3%A1tico%20VIP%20de%20SocialPilot%20by%20Santisoft%20(%24249.990%20CLP%20%2B%20IVA)%20con%20acompa%C3%B1amiento%20Done-With-You.%20Mi%20empresa%20es%3A%20`,
     features: [
       "Todo el Plan Crecimiento Ilimitado incluido",
       "2 Sesiones Ejecutivas al Mes (20 min por Zoom): Ejecutamos el espía de competencia, generamos campañas y programamos todo el mes en vivo",
@@ -255,7 +255,7 @@ export default function PricingPlans() {
           </p>
         </div>
         <a
-          href={`https://wa.me/${WA_NUMBER}?text=%C2%A1Hola!%20Quiero%20hacer%20una%20consulta%20antes%20de%20contratar%20un%20plan%20de%20Santisoft.`}
+          href={`https://wa.me/${WA_NUMBER}?text=%C2%A1Hola!%20Quiero%20hacer%20una%20consulta%20antes%20de%20contratar%20un%20plan%20de%20SocialPilot%20by%20Santisoft.`}
           target="_blank"
           rel="noopener noreferrer"
           className="px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shrink-0 transition-all shadow"
@@ -281,7 +281,7 @@ export default function PricingPlans() {
           </p>
         </div>
         <a
-          href={`https://wa.me/${WA_NUMBER}?text=%C2%A1Hola!%20Represento%20a%20una%20agencia%2Ffranquicia%20y%20necesito%20un%20plan%20a%20la%20medida%20de%20Santisoft.`}
+          href={`https://wa.me/${WA_NUMBER}?text=%C2%A1Hola!%20Represento%20a%20una%20agencia%2Ffranquicia%20y%20necesito%20un%20plan%20a%20la%20medida%20de%20SocialPilot%20by%20Santisoft.`}
           target="_blank"
           rel="noopener noreferrer"
           className="px-6 py-3.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold border border-slate-700 shrink-0 transition-all"

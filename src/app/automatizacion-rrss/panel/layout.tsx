@@ -11,6 +11,8 @@ import ProfileMenu from "../../../components/gastronomico/ProfileMenu";
 import NetworkSwitcher from "../../../components/NetworkSwitcher";
 import { ProfileProvider, useProfile } from "../../../contexts/ProfileContext";
 import LogoMark from "../../../components/LogoMark";
+import SocialPilotLogo from "../../../components/SocialPilotLogo";
+import { checkUserTrialStatus } from "../../../lib/quota";
 
 export default function RrssPanelLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -161,6 +163,7 @@ function PanelLayoutContent({
   const isAdminRoute = pathname.includes("/automatizacion-rrss/panel/admin");
   const activeLinks = isAdminRoute ? adminLinks : allLinks;
   const currentLink = activeLinks.find(l => isLinkActive(l));
+  const trialStatus = checkUserTrialStatus(userDoc, user?.email);
 
   return (
     <div className="min-h-screen panel-grid-bg flex flex-col md:flex-row print:bg-white">
@@ -173,7 +176,7 @@ function PanelLayoutContent({
                 <h2 className="text-base font-black tracking-tight text-white flex items-center gap-2.5">
                   <LogoMark size={32} />
                   <div className="flex flex-col">
-                    <span className="text-indigo-300 font-extrabold text-sm leading-none">Santisoft AI</span>
+                    <span className="text-indigo-300 font-extrabold text-sm leading-none">SocialPilot Admin</span>
                     <span className="text-[10px] font-black uppercase text-amber-400 tracking-wider mt-1 flex items-center gap-1">
                       👑 Panel Admin
                     </span>
@@ -202,15 +205,11 @@ function PanelLayoutContent({
             </div>
           </aside>
         ) : (
-          <aside className="w-56 bg-slate-900 text-white hidden md:flex flex-col border-r border-slate-800 shadow-xl shadow-slate-900/30 print:hidden">
-            <div className="px-5 py-5 border-b border-slate-800 bg-slate-950/30">
-              <Link href="/automatizacion-rrss/panel">
-                <h2 className="text-base font-black tracking-tight text-white flex items-center gap-2.5 hover:text-indigo-400 transition-all">
-                  <LogoMark size={32} />
-                  <span>Santisoft AI</span>
-                </h2>
+          <aside className="w-60 bg-slate-900 text-white hidden md:flex flex-col border-r border-slate-800 shadow-xl shadow-slate-900/30 print:hidden">
+            <div className="px-5 py-5 border-b border-slate-800 bg-slate-950/40">
+              <Link href="/automatizacion-rrss/panel" className="block hover:opacity-95 transition-opacity">
+                <SocialPilotLogo height={36} width={158} priority />
               </Link>
-              <p className="text-slate-600 text-[9px] mt-1.5 font-black uppercase tracking-[0.2em]">Equipo de Agentes</p>
             </div>
             <nav className="flex-1 py-4 px-3 space-y-4 overflow-y-auto">
               {navSections.map(section => (
@@ -279,6 +278,39 @@ function PanelLayoutContent({
         {/* ========== MAIN CONTENT ========== */}
         <main className="flex-1 overflow-y-auto w-full relative print:overflow-visible print:w-full print:border-none">
 
+          {/* Banner de Estado de Prueba Gratuita (7 días) */}
+          {trialStatus.isTrial && trialStatus.isExpired && (
+            <div className="bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 text-white px-4 py-3 text-xs sm:text-sm font-bold flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg z-[80] relative border-b border-red-700">
+              <div className="flex items-center gap-2.5 text-center sm:text-left">
+                <span className="text-xl">🔒</span>
+                <div>
+                  <span className="font-black text-sm block sm:inline">Tu período de prueba de 7 días ha finalizado.</span>{" "}
+                  <span className="text-rose-100 font-normal">Tus redes sociales y configuración siguen registradas intactas. Pasa a un plan pagado para continuar creando y publicando contenido.</span>
+                </div>
+              </div>
+              <Link
+                href="/#planes"
+                className="bg-white text-rose-700 hover:bg-rose-50 px-4 py-1.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all shrink-0 shadow-md hover:scale-105"
+              >
+                Activar Plan ➔
+              </Link>
+            </div>
+          )}
+
+          {trialStatus.isTrial && !trialStatus.isExpired && (
+            <div className="bg-slate-900 border-b border-orange-500/30 text-slate-200 px-4 py-2 text-xs font-medium flex flex-col sm:flex-row items-center justify-between gap-2 z-[70] relative">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span>
+                  <strong>Prueba Gratuita SocialPilot:</strong> Te quedan <strong>{trialStatus.daysRemaining} {trialStatus.daysRemaining === 1 ? 'día' : 'días'}</strong> de acceso. Tus redes sociales están conectadas.
+                </span>
+              </div>
+              <Link href="/#planes" className="text-orange-400 font-bold hover:underline text-xs flex items-center gap-1">
+                Asegurar Plan con Setup Gratis ➔
+              </Link>
+            </div>
+          )}
+
           {/* Desktop header */}
           <div className="hidden md:flex items-center justify-end p-8 absolute top-0 right-0 z-50 w-full pointer-events-none print:hidden">
             <div className="pointer-events-auto flex items-center">
@@ -298,13 +330,10 @@ function PanelLayoutContent({
                 href={isAdminRoute ? "/automatizacion-rrss/panel/admin" : "/automatizacion-rrss/panel"}
                 className="flex items-center gap-2 flex-1 min-w-0 overflow-hidden mr-2"
               >
-                <LogoMark size={28} />
-                <div className="flex flex-col leading-none overflow-hidden">
-                  <span className={`text-xs font-black ${isAdminRoute ? 'text-indigo-300' : 'text-indigo-400'}`}>Santisoft</span>
-                  {currentLink && (
-                    <span className="text-[10px] text-slate-400 font-medium mt-0.5 truncate">{currentLink.icon} {currentLink.label}</span>
-                  )}
-                </div>
+                <SocialPilotLogo height={28} width={122} />
+                {currentLink && (
+                  <span className="text-[10px] text-slate-400 font-medium ml-2 truncate hidden sm:inline">{currentLink.icon} {currentLink.label}</span>
+                )}
               </Link>
 
               {/* Right side: network switcher + profile + hamburger */}

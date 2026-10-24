@@ -434,7 +434,7 @@ export default function ComoFuncionaPage() {
       {/* ── BANNER SUPERIOR ── */}
       <div className="promo">
         <span className="on-air"></span>
-        PRUEBA GRATUITA — <strong>10 DÍAS Y 5 PUBLICACIONES DE MUESTRA</strong> · SIN TARJETA DE CRÉDITO
+        PRUEBA GRATUITA — <strong>7 DÍAS Y 5 PUBLICACIONES DE MUESTRA</strong> · SIN TARJETA DE CRÉDITO
       </div>
 
       {/* ── NAVEGACIÓN PRINCIPAL ── */}
@@ -2186,7 +2186,7 @@ export default function ComoFuncionaPage() {
                       📅
                     </div>
                     <h4 className="text-sm font-bold mb-1.5" style={{ color: "var(--ink)" }}>
-                      Calendario de Prueba por 10 Días
+                      Calendario de Prueba por 7 Días
                     </h4>
                     <p className="text-xs leading-relaxed" style={{ color: "var(--ink-dim)" }}>
                       Planificación de tus próximas publicaciones con días, horarios sugeridos para tu zona y copys

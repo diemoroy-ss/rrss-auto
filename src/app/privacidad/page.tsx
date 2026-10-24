@@ -5,8 +5,8 @@ import DotCanvas from '../../components/DotCanvas';
 import LogoMark from '../../components/LogoMark';
 
 export const metadata: Metadata = {
-  title: "Santisoft AI | Política de Privacidad",
-  description: "Política de privacidad y cumplimiento regulatorio de datos de Santisoft AI. Conforme a la Ley N° 21.719 (modernización de la Ley N° 19.628 en Chile).",
+  title: "SocialPilot by Santisoft | Política de Privacidad",
+  description: "Política de privacidad y cumplimiento regulatorio de datos de SocialPilot by Santisoft. Conforme a la Ley N° 21.719 (modernización de la Ley N° 19.628 en Chile).",
   icons: {
     icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
     apple: "/favicon.svg",
@@ -29,7 +29,7 @@ export default function Privacidad() {
         <div className="wrap">
           <Link href="/" className="logo">
             <LogoMark size={24} />
-            SANTISOFT AI
+            SOCIALPILOT BY SANTISOFT
           </Link>
           <div className="nav-links">
             <Link href="/" className="btn btn-ghost btn-sm">← Volver al Inicio</Link>
@@ -44,7 +44,7 @@ export default function Privacidad() {
             <span className="eyebrow">Transparencia y Seguridad</span>
             <h2>Política de <em>Privacidad.</em></h2>
             <p className="sub" style={{ margin: '12px 0 0 0' }}>
-              En Santisoft AI nos tomamos muy en serio tu privacidad. Esta política detalla el tratamiento de tus datos bajo la normativa legal vigente y en adecuación anticipada a los estándares de la <strong>Ley N° 21.719</strong> (que moderniza la Ley N° 19.628 de Chile).
+              En SocialPilot by Santisoft nos tomamos muy en serio tu privacidad. Esta política detalla el tratamiento de tus datos bajo la normativa legal vigente y en adecuación anticipada a los estándares de la <strong>Ley N° 21.719</strong> (que moderniza la Ley N° 19.628 de Chile).
             </p>
           </div>
 

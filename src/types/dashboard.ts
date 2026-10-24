@@ -68,7 +68,7 @@ export const STATUS_CONFIG: Record<string, StatusConfig> = {
   },
   confirmed: {
     color: 'text-indigo-600 bg-indigo-50 border-indigo-200',
-    text: '⏳ Agendado por Santisoft',
+    text: '⏳ Agendado por SocialPilot',
   },
   publishing: {
     color: 'text-blue-600 bg-blue-50 border-blue-200 shadow-sm animate-pulse',

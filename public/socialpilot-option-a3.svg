@@ -1,0 +1,44 @@
+<svg width="300" height="74" viewBox="0 0 300 74" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- A3: Cubo Isométrico Interconectado (Estilo Redes Sociales & Flujos de Agentes) -->
+  <g transform="translate(10, 10)">
+    <!-- Marco cuadrado suave oscuro con borde degradado -->
+    <rect x="0" y="0" width="54" height="54" rx="14" fill="#030712" stroke="url(#borderA3)" stroke-width="1.5"/>
+    <!-- Estructura del cubo dividida en nodos -->
+    <path d="M27 12L43 21.5L27 31L11 21.5L27 12Z" fill="url(#topA3)"/>
+    <path d="M27 31L43 21.5V40.5L27 50V31Z" fill="url(#rightA3)"/>
+    <path d="M27 31L11 21.5V40.5L27 50V31Z" fill="url(#leftA3)"/>
+    <!-- Anillo orbital exterior / señal de conexión en redes -->
+    <circle cx="27" cy="31" r="16" stroke="#FF6B00" stroke-width="1.2" stroke-dasharray="3 3" opacity="0.6"/>
+    <!-- Nodo de emisión central -->
+    <circle cx="27" cy="31" r="4" fill="#FFFFFF"/>
+    <circle cx="27" cy="31" r="2" fill="#FF8A00"/>
+  </g>
+  <!-- Tipografía A3: Moderna Tech con acento de ecosistema 'by Santisoft' en color cian institucional -->
+  <text x="78" y="36" font-family="system-ui, -apple-system, sans-serif" font-size="26" font-weight="900" fill="#FFFFFF" letter-spacing="-0.5">
+    Social<tspan fill="#FF6B00">Pilot</tspan>
+  </text>
+  <g transform="translate(79, 44)">
+    <text x="0" y="10" font-family="system-ui, -apple-system, sans-serif" font-size="9" font-weight="800" fill="#0EA5E9" letter-spacing="2">
+      BY SANTISOFT
+    </text>
+    <circle cx="95" cy="7" r="2" fill="#22C55E"/>
+  </g>
+  <defs>
+    <linearGradient id="borderA3" x1="0" y1="0" x2="54" y2="54" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF6B00"/>
+      <stop offset="1" stop-color="#1E293B"/>
+    </linearGradient>
+    <linearGradient id="topA3" x1="11" y1="12" x2="43" y2="31" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF922B"/>
+      <stop offset="1" stop-color="#FFA94D"/>
+    </linearGradient>
+    <linearGradient id="rightA3" x1="27" y1="21" x2="43" y2="50" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D9480F"/>
+      <stop offset="1" stop-color="#862E9C" stop-opacity="0.8"/>
+    </linearGradient>
+    <linearGradient id="leftA3" x1="11" y1="21" x2="27" y2="50" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F76707"/>
+      <stop offset="1" stop-color="#D9480F"/>
+    </linearGradient>
+  </defs>
+</svg>

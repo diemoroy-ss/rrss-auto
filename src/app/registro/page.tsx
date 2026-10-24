@@ -78,7 +78,7 @@ function RegistroContent() {
         userEmail = creds.user.email || email;
       }
 
-      // Guardar en DB
+      // Guardar en DB con prueba gratuita de exactamente 7 días
       await setDoc(doc(db, "users", uid), {
         email: userEmail,
         name: name,
@@ -88,6 +88,9 @@ function RegistroContent() {
         plan: "free", // MP webhook will upgrade this later if paid
         categoriesAllowed: ["all"],
         createdAt: serverTimestamp(),
+        trialStartedAt: serverTimestamp(),
+        trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        trialDays: 7,
         registeredApps: ["automatizacion"]
       }, { merge: true });
 

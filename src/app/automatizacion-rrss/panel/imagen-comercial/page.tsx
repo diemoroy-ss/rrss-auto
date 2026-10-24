@@ -166,7 +166,10 @@ function createInitialSlide(id: string, aspectRatio: "4:5" | "1:1" | "9:16" = "4
 }
 
 // Extraer capas de texto comerciales desde la sintaxis de un prompt
-function extractTypographyLayersFromPrompt(promptText: string): TextLayer[] {
+function extractTypographyLayersFromPrompt(
+  promptText: string,
+  aspectRatio: "4:5" | "1:1" | "9:16" = "4:5"
+): TextLayer[] {
   if (!promptText || !promptText.trim()) return [];
 
   const lines = promptText.split("\n");
@@ -204,6 +207,8 @@ function extractTypographyLayersFromPrompt(promptText: string): TextLayer[] {
   if (extracted.length === 0) return [];
 
   const total = extracted.length;
+  const is45 = aspectRatio === "4:5";
+  const is916 = aspectRatio === "9:16";
 
   return extracted.map((item, idx) => {
     const p = item.prefix;
@@ -216,8 +221,8 @@ function extractTypographyLayersFromPrompt(promptText: string): TextLayer[] {
     let shadowLevel: "none" | "soft" | "hard" = "hard";
     let textAlign: "left" | "center" | "right" = "center";
     let x = 50;
-    let y = 15;
-    let boxWidth = 88;
+    let y = is45 ? 18 : 15;
+    let boxWidth = is45 ? 80 : 88;
 
     // Detectar colores en el prefijo
     if (p.includes("red") || p.includes("orange") || p.includes("rojo") || p.includes("naranja")) {
@@ -234,7 +239,7 @@ function extractTypographyLayersFromPrompt(promptText: string): TextLayer[] {
     if (p.includes("pill") || p.includes("badge") || p.includes("sub-badge")) {
       isPill = true;
       size = 18;
-      boxWidth = 0;
+      boxWidth = item.text.length > 26 ? (is45 ? 80 : 86) : 0;
       if (color === "#FFFFFF") {
         backgroundColor = "#FFFFFF";
         color = "#0B1120";
@@ -243,37 +248,37 @@ function extractTypographyLayersFromPrompt(promptText: string): TextLayer[] {
       }
     }
 
-    // Jerarquía según etiqueta o índice
+    // Jerarquía según etiqueta o índice calibrada para zona segura de perfil (1:1)
     if (p.includes("top") || p.includes("header") || p.includes("headline") || idx === 0) {
-      size = total > 4 ? 30 : 42;
+      size = total > 4 ? 26 : (is45 ? 34 : 42);
       isBold = true;
       textAlign = "center";
       x = 50;
-      y = isPill ? 8 : 14;
+      y = is45 ? (isPill ? 16 : 18) : is916 ? (isPill ? 16 : 20) : (isPill ? 10 : 14);
     } else if (p.includes("body") || p.includes("desc") || p.includes("cuerpo")) {
-      size = total > 4 ? 16 : 19;
+      size = total > 4 ? 15 : 18;
       isBold = false;
       color = color === "#FFFFFF" ? "#E2E8F0" : color;
       textAlign = "left";
       x = 50;
-      boxWidth = 86;
-      y = Math.min(88, Math.round(18 + idx * (70 / total)));
+      boxWidth = is45 ? 80 : 86;
+      y = is45 ? Math.min(76, Math.round(24 + idx * (48 / total))) : Math.min(88, Math.round(18 + idx * (70 / total)));
     } else if (p.includes("title") || p.includes("titular") || p.includes("card") || p.includes("item")) {
-      size = total > 4 ? 22 : 26;
+      size = total > 4 ? 20 : 24;
       isBold = true;
       textAlign = "left";
       x = 50;
-      boxWidth = 86;
-      y = Math.min(85, Math.round(14 + idx * (70 / total)));
+      boxWidth = is45 ? 80 : 86;
+      y = is45 ? Math.min(74, Math.round(20 + idx * (48 / total))) : Math.min(85, Math.round(14 + idx * (70 / total)));
     } else if (p.includes("bottom") || idx === total - 1) {
       size = 18;
       isPill = true;
-      boxWidth = 0;
-      y = 92;
+      boxWidth = item.text.length > 26 ? (is45 ? 80 : 86) : 0;
+      y = is45 ? 82 : is916 ? 86 : 90;
       x = 50;
     } else {
-      // Distribución uniforme
-      y = Math.min(88, Math.round(15 + idx * (70 / Math.max(1, total - 1))));
+      // Distribución uniforme dentro de zona segura
+      y = is45 ? Math.min(76, Math.round(20 + idx * (54 / Math.max(1, total - 1)))) : Math.min(88, Math.round(15 + idx * (70 / Math.max(1, total - 1))));
     }
 
     return {
@@ -297,9 +302,12 @@ function extractTypographyLayersFromPrompt(promptText: string): TextLayer[] {
 }
 
 // Construir capas de texto limpias cuando el usuario ingresa texto libre manual por slide
-function buildLayersFromManualText(rawText: string): TextLayer[] {
+function buildLayersFromManualText(
+  rawText: string,
+  aspectRatio: "4:5" | "1:1" | "9:16" = "4:5"
+): TextLayer[] {
   if (!rawText || !rawText.trim()) return [];
-  const extracted = extractTypographyLayersFromPrompt(rawText);
+  const extracted = extractTypographyLayersFromPrompt(rawText, aspectRatio);
   if (extracted && extracted.length > 0) return extracted;
 
   const lines = rawText
@@ -308,6 +316,7 @@ function buildLayersFromManualText(rawText: string): TextLayer[] {
     .filter(Boolean);
 
   if (lines.length === 0) return [];
+  const is45 = aspectRatio === "4:5";
 
   if (lines.length === 1) {
     return [
@@ -315,7 +324,7 @@ function buildLayersFromManualText(rawText: string): TextLayer[] {
         id: `layer-manual-1-${Date.now()}`,
         text: lines[0],
         fontFamily: "'Montserrat', sans-serif",
-        size: 38,
+        size: is45 ? 32 : 38,
         color: "#FFFFFF",
         backgroundColor: "transparent",
         isPill: false,
@@ -323,10 +332,10 @@ function buildLayersFromManualText(rawText: string): TextLayer[] {
         isBold: true,
         isItalic: false,
         letterSpacing: "normal",
-        boxWidth: 86,
+        boxWidth: is45 ? 80 : 86,
         textAlign: "center",
         x: 50,
-        y: 18,
+        y: is45 ? 24 : 18,
       },
     ];
   }
@@ -337,7 +346,7 @@ function buildLayersFromManualText(rawText: string): TextLayer[] {
         id: `layer-manual-1-${Date.now()}`,
         text: lines[0],
         fontFamily: "'Montserrat', sans-serif",
-        size: 38,
+        size: is45 ? 32 : 38,
         color: "#FFFFFF",
         backgroundColor: "transparent",
         isPill: false,
@@ -345,16 +354,16 @@ function buildLayersFromManualText(rawText: string): TextLayer[] {
         isBold: true,
         isItalic: false,
         letterSpacing: "normal",
-        boxWidth: 86,
+        boxWidth: is45 ? 80 : 86,
         textAlign: "center",
         x: 50,
-        y: 16,
+        y: is45 ? 22 : 16,
       },
       {
         id: `layer-manual-2-${Date.now()}`,
         text: lines[1],
         fontFamily: "'Montserrat', sans-serif",
-        size: 20,
+        size: 19,
         color: "#E2E8F0",
         backgroundColor: "transparent",
         isPill: false,
@@ -362,10 +371,10 @@ function buildLayersFromManualText(rawText: string): TextLayer[] {
         isBold: false,
         isItalic: false,
         letterSpacing: "normal",
-        boxWidth: 84,
+        boxWidth: is45 ? 80 : 84,
         textAlign: "center",
         x: 50,
-        y: 32,
+        y: is45 ? 38 : 32,
       },
     ];
   }
@@ -374,22 +383,29 @@ function buildLayersFromManualText(rawText: string): TextLayer[] {
     const isFirst = idx === 0;
     const isSecond = idx === 1;
     const isLast = idx === lines.length - 1 && lines.length >= 3;
+    const isPill = isFirst || isLast;
     return {
       id: `layer-manual-${idx + 1}-${Date.now()}`,
       text: line,
       fontFamily: "'Montserrat', sans-serif",
-      size: isFirst ? 16 : isSecond ? 36 : isLast ? 17 : 19,
+      size: isFirst ? 15 : isSecond ? (is45 ? 30 : 36) : isLast ? 16 : 18,
       color: isFirst ? "#FFFFFF" : isSecond ? "#FFFFFF" : isLast ? "#0B1120" : "#E2E8F0",
       backgroundColor: isFirst ? "#FF5500" : isLast ? "#FFFFFF" : "transparent",
-      isPill: isFirst || isLast,
+      isPill,
       shadowLevel: isSecond ? "hard" : "soft",
       isBold: isFirst || isSecond || isLast,
       isItalic: false,
-      letterSpacing: isFirst || isLast ? "wide" : "normal",
-      boxWidth: isFirst || isLast ? 0 : 86,
+      letterSpacing: isPill ? "wide" : "normal",
+      boxWidth: isPill ? (line.length > 26 ? (is45 ? 80 : 86) : 0) : (is45 ? 80 : 86),
       textAlign: "center",
       x: 50,
-      y: isFirst ? 8 : isSecond ? 20 : isLast ? 90 : Math.min(78, 34 + (idx - 2) * 14),
+      y: isFirst
+        ? (is45 ? 16 : 8)
+        : isSecond
+        ? (is45 ? 26 : 20)
+        : isLast
+        ? (is45 ? 82 : 90)
+        : Math.min(76, is45 ? 38 + (idx - 2) * 12 : 34 + (idx - 2) * 14),
     };
   });
 }
@@ -420,6 +436,7 @@ export default function ImagenComercialPage() {
 
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [isDraggingLogo, setIsDraggingLogo] = useState<boolean>(false);
+  const [showSafeZoneGuide, setShowSafeZoneGuide] = useState<boolean>(true);
   const [customFonts, setCustomFonts] = useState<CustomFont[]>([]);
 
   // Estados de generación y carga
@@ -602,8 +619,8 @@ export default function ImagenComercialPage() {
 
   // Detección inteligente de capas de texto en el prompt del slide activo
   const detectedTypographyLayers = useMemo(
-    () => extractTypographyLayersFromPrompt(activeSlide.prompt),
-    [activeSlide.prompt]
+    () => extractTypographyLayersFromPrompt(activeSlide.prompt, activeSlide.aspectRatio),
+    [activeSlide.prompt, activeSlide.aspectRatio]
   );
 
   const handleApplyDetectedTypography = (layers: TextLayer[]) => {
@@ -623,7 +640,7 @@ export default function ImagenComercialPage() {
       // Si las capas actuales están completamente vacías y el nuevo prompt contiene capas detectables, auto-poblarlas
       const isCurrentlyEmpty = s.textLayers.every((l) => !l.text.trim());
       if (isCurrentlyEmpty) {
-        const extracted = extractTypographyLayersFromPrompt(val);
+        const extracted = extractTypographyLayersFromPrompt(val, s.aspectRatio);
         if (extracted && extracted.length > 0) {
           updated.textLayers = extracted;
         }
@@ -1187,13 +1204,15 @@ export default function ImagenComercialPage() {
     setIsRenderingFinal(true);
     setStatusMessage("Procesando imagen completa en alta resolución con textos y logo...");
 
-    // Deseleccionar temporalmente capa de texto o logo activo para que no aparezca el marco/anillo de selección en la descarga
+    // Deseleccionar temporalmente capa de texto o logo activo y guías para que no aparezcan en la descarga
     const previousSelectedLayerId = selectedLayerId;
     const previousDraggingLogo = isDraggingLogo;
+    const previousShowSafeZoneGuide = showSafeZoneGuide;
     setSelectedLayerId(null);
     setIsDraggingLogo(false);
+    setShowSafeZoneGuide(false);
 
-    // Esperar un frame de React para que el DOM se dibuje sin bordes de selección
+    // Esperar un frame de React para que el DOM se dibuje sin bordes de selección ni guías
     await new Promise((r) => setTimeout(r, 80));
 
     const container = canvasContainerRef.current;
@@ -1201,6 +1220,7 @@ export default function ImagenComercialPage() {
       setIsRenderingFinal(false);
       setSelectedLayerId(previousSelectedLayerId);
       setIsDraggingLogo(previousDraggingLogo);
+      setShowSafeZoneGuide(previousShowSafeZoneGuide);
       return;
     }
 
@@ -1273,6 +1293,7 @@ export default function ImagenComercialPage() {
     } finally {
       setSelectedLayerId(previousSelectedLayerId);
       setIsDraggingLogo(previousDraggingLogo);
+      setShowSafeZoneGuide(previousShowSafeZoneGuide);
       setIsRenderingFinal(false);
     }
   };
@@ -1420,9 +1441,9 @@ export default function ImagenComercialPage() {
       let layers: TextLayer[] = [];
       if (wizardIncludeText) {
         if (rawManualText) {
-          layers = buildLayersFromManualText(rawManualText);
+          layers = buildLayersFromManualText(rawManualText, effectiveRatio);
         } else if (rawPrompt) {
-          layers = extractTypographyLayersFromPrompt(rawPrompt);
+          layers = extractTypographyLayersFromPrompt(rawPrompt, effectiveRatio);
         }
       }
 
@@ -2103,7 +2124,8 @@ export default function ImagenComercialPage() {
                     length: wizardContentType === "carrusel" ? wizardSlideCount : 1,
                   }).map((_, idx) => {
                     const currentPromptVal = wizardManualPrompts[idx] || "";
-                    const autoDetected = extractTypographyLayersFromPrompt(currentPromptVal);
+                    const currentRatio = wizardContentType === "historia" ? "9:16" : wizardAspectRatio;
+                    const autoDetected = extractTypographyLayersFromPrompt(currentPromptVal, currentRatio);
                     return (
                       <div
                         key={idx}
@@ -2726,16 +2748,32 @@ export default function ImagenComercialPage() {
         {/* COLUMNA DERECHA: Lienzo Drag & Drop Interactivo */}
         <div className="lg:col-span-7 space-y-6">
           <div className="bg-slate-950 p-6 rounded-3xl border border-slate-800 shadow-xl flex flex-col items-center justify-center">
-            <div className="w-full flex items-center justify-between pb-4 border-b border-white/10 mb-4">
+            <div className="w-full flex items-center justify-between pb-4 border-b border-white/10 mb-4 flex-wrap gap-2">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
                 <span className="text-xs font-black uppercase tracking-wider text-slate-300">
                   Lienzo Drag & Drop ({activeSlide.aspectRatio})
                 </span>
               </div>
-              <span className="text-[11px] text-slate-400 font-semibold">
-                Arrastra los textos o el logo para moverlos libremente
-              </span>
+              <div className="flex items-center gap-2">
+                {activeSlide.aspectRatio === "4:5" && (
+                  <button
+                    type="button"
+                    onClick={() => setShowSafeZoneGuide((prev) => !prev)}
+                    className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-all flex items-center gap-1.5 ${
+                      showSafeZoneGuide
+                        ? "bg-orange-500/20 text-orange-300 border-orange-500/40"
+                        : "bg-white/5 text-slate-400 border-white/10 hover:text-white"
+                    }`}
+                    title="Muestra el área 1:1 visible en la cuadrícula del perfil de Instagram para evitar textos cortados"
+                  >
+                    <span>{showSafeZoneGuide ? "👁️ Guía Perfil (1:1) Activa" : "👁️ Ver Guía Perfil (1:1)"}</span>
+                  </button>
+                )}
+                <span className="text-[11px] text-slate-400 font-semibold hidden sm:inline">
+                  Arrastra los textos o el logo libremente
+                </span>
+              </div>
             </div>
 
             {/* CONTENEDOR DEL LIENZO */}
@@ -2766,17 +2804,56 @@ export default function ImagenComercialPage() {
               <div className="absolute top-0 left-0 w-full h-[45%] bg-gradient-to-b from-black/75 via-black/30 to-transparent pointer-events-none z-0" />
               <div className="absolute bottom-0 left-0 w-full h-[35%] bg-gradient-to-t from-black/80 via-black/35 to-transparent pointer-events-none z-0" />
 
+              {/* GUÍA DE ZONA SEGURA 1:1 PARA PERFIL DE INSTAGRAM (cuando aspectRatio === "4:5") */}
+              {activeSlide.aspectRatio === "4:5" && showSafeZoneGuide && (
+                <div className="absolute inset-0 pointer-events-none z-30 flex flex-col justify-between">
+                  {/* Franja superior recortada (10% de alto = 135px en 4:5) */}
+                  <div className="w-full h-[10%] bg-black/60 backdrop-blur-[1px] border-b border-dashed border-orange-400/80 flex items-center justify-center">
+                    <span className="text-[9px] font-bold text-orange-200 bg-black/70 px-2 py-0.5 rounded-full border border-orange-400/30">
+                      ✂️ Se corta en cuadrícula de perfil (10% superior)
+                    </span>
+                  </div>
+
+                  {/* Ventana Central 1:1 - Zona Segura */}
+                  <div className="w-full h-[80%] border-2 border-dashed border-orange-400/60 relative flex flex-col justify-between p-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[8px] font-black uppercase tracking-wider text-orange-300 bg-black/80 px-1.5 py-0.5 rounded border border-orange-400/20">
+                        Zona Segura 1:1 (Visible en Perfil)
+                      </span>
+                      <span className="text-[8px] font-bold text-slate-300 bg-black/80 px-1.5 py-0.5 rounded border border-white/10">
+                        Margen Lateral Seguro
+                      </span>
+                    </div>
+                    <div className="flex justify-center">
+                      <span className="text-[8px] font-bold text-orange-200/90 bg-black/80 px-2 py-0.5 rounded border border-orange-400/20">
+                        Ubica textos y botones dentro de este recuadro para que nunca se corten
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Franja inferior recortada (10% de alto = 135px en 4:5) */}
+                  <div className="w-full h-[10%] bg-black/60 backdrop-blur-[1px] border-t border-dashed border-orange-400/80 flex items-center justify-center">
+                    <span className="text-[9px] font-bold text-orange-200 bg-black/70 px-2 py-0.5 rounded-full border border-orange-400/30">
+                      ✂️ Se corta en cuadrícula de perfil (10% inferior)
+                    </span>
+                  </div>
+                </div>
+              )}
+
               {/* CAPAS DE TEXTO ARRASTRABLES */}
               {activeSlide.textLayers.map((layer) => {
                 const isSelected = layer.id === selectedLayerId;
                 const isPill = Boolean(layer.isPill);
+                const isLongPill = isPill && (layer.text?.length || 0) > 26;
+                const is45 = activeSlide.aspectRatio === "4:5";
+                const defaultSafeWidth = is45 ? 80 : 88;
                 const layerWidth = layer.boxWidth !== undefined && layer.boxWidth !== null
-                  ? (layer.boxWidth === 0 ? "max-content" : `${layer.boxWidth}%`)
+                  ? (layer.boxWidth === 0 ? (isLongPill ? `${defaultSafeWidth}%` : "max-content") : `${layer.boxWidth}%`)
                   : isPill
-                  ? "max-content"
+                  ? (isLongPill ? `${defaultSafeWidth}%` : "max-content")
                   : layer.maxWidth
                   ? `${Math.round((layer.maxWidth / 1080) * 100)}%`
-                  : "88%";
+                  : `${defaultSafeWidth}%`;
 
                 const whiteSpace = layerWidth === "max-content" ? "nowrap" : "pre-line";
 
@@ -2789,7 +2866,8 @@ export default function ImagenComercialPage() {
                       top: `${layer.y}%`,
                       transform: "translate(-50%, -50%)",
                       width: layerWidth,
-                      maxWidth: "96%",
+                      maxWidth: is45 ? "82%" : "92%",
+                      boxSizing: "border-box",
                       whiteSpace,
                       textAlign: layer.textAlign || "center",
                       wordBreak: "break-word",

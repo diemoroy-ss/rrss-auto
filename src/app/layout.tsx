@@ -35,7 +35,7 @@ const spaceMono = Space_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Santisoft | Redes & Contenido - Automatización Inteligente',
+  title: 'SocialPilot by Santisoft — Redes Sociales en Piloto Automático',
   description: 'Automatización y generación estratégica de contenido para redes sociales (Meta, TikTok) y posicionamiento en motores de IA (GEO/SEO) por Santisoft.',
   metadataBase: new URL('https://rrss.santisoft.cl'),
   icons: {
@@ -51,16 +51,16 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Santisoft RRSS',
+    title: 'SocialPilot',
   },
   other: {
     'mobile-web-app-capable': 'yes',
   },
   openGraph: {
-    title: 'Santisoft | Redes & Contenido - Automatización Inteligente',
+    title: 'SocialPilot by Santisoft — Redes Sociales en Piloto Automático',
     description: 'Generación automática de contenido persuasivo, calendarios estratégicos y posicionamiento GEO en IA.',
     url: 'https://rrss.santisoft.cl',
-    siteName: 'Santisoft Redes & Contenido',
+    siteName: 'SocialPilot by Santisoft',
     images: [{ url: '/favicon.svg?v=4' }],
     locale: 'es_CL',
     type: 'website',

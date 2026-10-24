@@ -28,14 +28,14 @@ const OFFICIAL_PYME_PLANS: PyMEPlanItem[] = [
   {
     id: "free",
     name: "Free",
-    tagline: "PRUEBA DE 10 DÍAS",
+    tagline: "PRUEBA DE 7 DÍAS",
     priceMonthly: 0,
     priceAnnualMonthly: 0,
     annualSinglePrice: 0,
-    description: "Prueba la plataforma durante 10 días y experimenta el poder de nuestros agentes especializados.",
+    description: "Prueba la plataforma durante 7 días y experimenta el poder de nuestros agentes especializados.",
     ctaText: "Prueba Gratuita",
     features: [
-      "5 publicaciones automáticas de prueba por 10 días",
+      "5 publicaciones automáticas de prueba por 7 días",
       "5 imágenes con nuestros agentes",
       "1 Marca configurada (Instagram + Facebook)",
       "Calendario básico y planificación",

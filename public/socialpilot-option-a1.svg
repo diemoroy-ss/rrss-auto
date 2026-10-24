@@ -1,0 +1,47 @@
+<svg width="300" height="74" viewBox="0 0 300 74" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- A1: Contenedor con sutil resplandor y cubo 3D nítido -->
+  <g transform="translate(10, 10)">
+    <rect x="0" y="0" width="54" height="54" rx="14" fill="#0A0F1D" stroke="#1E293B" stroke-width="1.5"/>
+    <rect x="0" y="0" width="54" height="54" rx="14" fill="url(#glowA1)" opacity="0.12"/>
+    <!-- Cubo 3D Isométrico con caras contrastadas -->
+    <path d="M27 13L43 22V39L27 48L11 39V22L27 13Z" fill="#030712" opacity="0.6"/>
+    <!-- Cara Superior -->
+    <path d="M27 13L43 22L27 31L11 22L27 13Z" fill="url(#topA1)"/>
+    <!-- Cara Derecha -->
+    <path d="M27 31L43 22V39L27 48V31Z" fill="url(#rightA1)"/>
+    <!-- Cara Izquierda -->
+    <path d="M27 31L11 22V39L27 48V31Z" fill="url(#leftA1)"/>
+    <!-- Nodo Central de Automatización -->
+    <circle cx="27" cy="31" r="3.5" fill="#FFFFFF"/>
+    <circle cx="27" cy="31" r="1.5" fill="#FF6B00"/>
+  </g>
+  <!-- Tipografía A1: Bold Moderna + Píldora de Marca Matriz -->
+  <text x="78" y="36" font-family="system-ui, -apple-system, sans-serif" font-size="26" font-weight="900" fill="#FFFFFF" letter-spacing="-0.6">
+    Social<tspan fill="#FF6B00">Pilot</tspan>
+  </text>
+  <!-- Píldora 'BY SANTISOFT' integrada -->
+  <g transform="translate(78, 44)">
+    <rect x="0" y="0" width="102" height="15" rx="4" fill="#1E293B" opacity="0.8"/>
+    <text x="7" y="11" font-family="system-ui, -apple-system, sans-serif" font-size="8" font-weight="800" fill="#CBD5E1" letter-spacing="1.5">
+      BY SANTISOFT
+    </text>
+  </g>
+  <defs>
+    <radialGradient id="glowA1" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FF6B00"/>
+      <stop offset="100%" stop-color="#0A0F1D" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="topA1" x1="11" y1="13" x2="43" y2="31" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF8A00"/>
+      <stop offset="1" stop-color="#FFAE42"/>
+    </linearGradient>
+    <linearGradient id="rightA1" x1="27" y1="22" x2="43" y2="48" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D9480F"/>
+      <stop offset="1" stop-color="#9A3412"/>
+    </linearGradient>
+    <linearGradient id="leftA1" x1="11" y1="22" x2="27" y2="48" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF6B00"/>
+      <stop offset="1" stop-color="#EA580C"/>
+    </linearGradient>
+  </defs>
+</svg>

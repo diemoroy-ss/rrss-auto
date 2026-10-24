@@ -1,8 +1,8 @@
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Política de Privacidad | Santisoft AI',
-  description: 'Política de Privacidad y uso de datos para Santisoft AI.',
+  title: 'Política de Privacidad | SocialPilot by Santisoft',
+  description: 'Política de Privacidad y uso de datos para SocialPilot by Santisoft.',
 };
 
 export default function PrivacidadPage() {
@@ -17,12 +17,12 @@ export default function PrivacidadPage() {
 
         <div className="prose prose-slate max-w-none">
           <p>
-            En <strong>Santisoft AI</strong> (en adelante, "nosotros", "nuestro" o "la Plataforma"), operada bajo el dominio santisoft.cl, respetamos tu privacidad y estamos comprometidos con la protección de tus datos personales, en cumplimiento con la normativa legal vigente y en adecuación anticipada a los estándares de la <strong>Ley N° 21.719</strong> sobre Protección de Datos Personales de Chile y directrices internacionales de privacidad.
+            En <strong>SocialPilot by Santisoft</strong> (en adelante, "nosotros", "nuestro" o "la Plataforma"), operada bajo el dominio santisoft.cl, respetamos tu privacidad y estamos comprometidos con la protección de tus datos personales, en cumplimiento con la normativa legal vigente y en adecuación anticipada a los estándares de la <strong>Ley N° 21.719</strong> sobre Protección de Datos Personales de Chile y directrices internacionales de privacidad.
           </p>
 
           <h2 className="text-2xl font-bold mt-10 mb-4">1. Uso de Servicios de API de Terceros (Google, YouTube, Meta, X, TikTok)</h2>
           <p>
-            Santisoft AI utiliza las APIs oficiales de diversas plataformas sociales para permitir la programación y publicación de contenido en tu nombre. 
+            SocialPilot by Santisoft utiliza las APIs oficiales de diversas plataformas sociales para permitir la programación y publicación de contenido en tu nombre. 
           </p>
           <ul className="list-disc pl-6 mb-6">
             <li className="mb-2">

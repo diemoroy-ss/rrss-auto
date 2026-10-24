@@ -1,8 +1,8 @@
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Términos de Servicio | Santisoft AI',
-  description: 'Términos y condiciones de uso de la plataforma Santisoft AI.',
+  title: 'Términos de Servicio | SocialPilot by Santisoft',
+  description: 'Términos y condiciones de uso de la plataforma SocialPilot by Santisoft.',
 };
 
 export default function TerminosPage() {
@@ -17,12 +17,12 @@ export default function TerminosPage() {
 
         <div className="prose prose-slate max-w-none">
           <p>
-            Bienvenido a <strong>Santisoft AI</strong> (en adelante, la "Plataforma"), accesible a través del dominio santisoft.cl y sus subdominios. Al acceder, registrarte o utilizar nuestros servicios de automatización de marketing y redes sociales, aceptas estar legalmente vinculado a las presentes Condiciones del Servicio (en adelante, los "Términos"). Si no estás de acuerdo con estos Términos, no debes utilizar nuestra Plataforma.
+            Bienvenido a <strong>SocialPilot by Santisoft</strong> (en adelante, la "Plataforma"), accesible a través del dominio santisoft.cl y sus subdominios. Al acceder, registrarte o utilizar nuestros servicios de automatización de marketing y redes sociales, aceptas estar legalmente vinculado a las presentes Condiciones del Servicio (en adelante, los "Términos"). Si no estás de acuerdo con estos Términos, no debes utilizar nuestra Plataforma.
           </p>
 
           <h2 className="text-2xl font-bold mt-10 mb-4">1. Descripción del Servicio</h2>
           <p>
-            Santisoft AI es una herramienta de software como servicio (SaaS) que permite a los usuarios conectar sus cuentas de redes sociales (Facebook, Instagram, X, TikTok, YouTube, Google Business, entre otras) para generar, programar y publicar contenido de forma automatizada mediante Inteligencia Artificial.
+            SocialPilot by Santisoft es una herramienta de software como servicio (SaaS) que permite a los usuarios conectar sus cuentas de redes sociales (Facebook, Instagram, X, TikTok, YouTube, Google Business, entre otras) para generar, programar y publicar contenido de forma automatizada mediante nuestros agentes especializados.
           </p>
 
           <h2 className="text-2xl font-bold mt-10 mb-4">2. Uso Aceptable e Integración con Terceros</h2>

@@ -20,7 +20,7 @@ export default function SantisoftLogo({
   markColor = "#FF6B00",
   textColor,
   showSubText = false,
-  subText = "REDES & CONTENIDO",
+  subText = "SOCIALPILOT",
   href,
   className = "",
   target,

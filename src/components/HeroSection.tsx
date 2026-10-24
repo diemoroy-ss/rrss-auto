@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { DemoFormSchema, DemoFormData } from '../lib/schemas';
 
 const HERO_VIDEOS = [
-  { src: '/rrss1.mp4', label: 'Intro · Santisoft AI' },
+  { src: '/rrss1.mp4', label: 'Intro · SocialPilot' },
   { src: '/rrss2.mp4', label: 'Generación de Contenido' },
   { src: '/rrss3.mp4', label: 'Estrategia de 14 días' },
   { src: '/rrss4.mp4', label: 'Publicación Automática' },
@@ -208,7 +208,7 @@ export default function HeroSection() {
         <div className="wrap mt-20 z-10 relative">
           <div className="panel dark-screen" data-reveal>
             <div className="panel-topbar">
-              <span>CONSOLA DE TRANSMISIÓN — SANTISOFT AGENTES</span>
+              <span>CONSOLA DE TRANSMISIÓN — SOCIALPILOT BY SANTISOFT</span>
               <div className="freqs"><span>RRSS 360°</span><span>SEO &amp; GEO</span><span>WHATSAPP</span></div>
             </div>
             <div className="gauges three-signals">

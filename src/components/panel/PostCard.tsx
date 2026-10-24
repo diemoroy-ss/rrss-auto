@@ -25,7 +25,7 @@ const STATUS_STYLES: Record<string, { color: string; text: string }> = {
   pending: { color: "text-amber-600 bg-amber-50 border-amber-200", text: "⏸️ Pausado / Borrador" },
   draft: { color: "text-amber-600 bg-amber-50 border-amber-200", text: "⏸️ Pausado / Borrador" },
   strategy_draft: { color: "text-amber-600 bg-amber-50 border-amber-200", text: "⏸️ Pausado / Borrador" },
-  confirmed: { color: "text-indigo-600 bg-indigo-50 border-indigo-200", text: "⏳ Agendado por Santisoft" },
+  confirmed: { color: "text-indigo-600 bg-indigo-50 border-indigo-200", text: "⏳ Agendado por SocialPilot" },
   publishing: { color: "text-blue-600 bg-blue-50 border-blue-200 shadow-sm animate-pulse", text: "⚡ Publicando..." },
   published: { color: "text-emerald-600 bg-emerald-50 border-emerald-200", text: "✅ Publicado" },
   error: { color: "text-rose-600 bg-rose-50 border-rose-200", text: "❌ Error" },

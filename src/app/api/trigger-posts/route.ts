@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { adminDb } from '../../../lib/firebase-admin';
 import { decrypt } from '../../../lib/encryption';
-import { getQuotaUsageAdmin, getPlanLimitAdmin } from '../../../lib/quota-admin';
+import { getQuotaUsageAdmin, getPlanLimitAdmin, checkUserTrialStatus } from '../../../lib/quota-admin';
 
 // This endpoint is meant to be called by N8N on a cron schedule (e.g. every 5 minutes)
 export async function GET(req: Request) {
@@ -88,13 +88,21 @@ export async function GET(req: Request) {
                 targetProfile = userData;
             }
 
-            // --- QUOTA CHECK ---
+            // --- TRIAL & QUOTA CHECK ---
+            const trialStatus = checkUserTrialStatus(userData, userData.email);
+            if (trialStatus.isExpired) {
+                 await adminDb.collection("social_posts").doc(postId).update({
+                     status: 'quota_exceeded'
+                 });
+                 continue;
+            }
+
             const cacheKey = `${uid}_${profileId || 'default'}`;
             if (userUsageCache[cacheKey] === undefined) {
                  userUsageCache[cacheKey] = await getQuotaUsageAdmin(uid, profileId || 'default');
             }
             
-            const limit = await getPlanLimitAdmin(userData.plan || 'free', userData.email);
+            const limit = await getPlanLimitAdmin(userData.plan || 'free', userData.email, userData);
             const postNetworkCount = postData.networks?.length || 1;
             
             if (userUsageCache[cacheKey] + postNetworkCount > limit) {

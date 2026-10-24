@@ -1,0 +1,34 @@
+<svg width="280" height="70" viewBox="0 0 280 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(10, 8)">
+    <rect x="0" y="0" width="54" height="54" rx="14" fill="#0F172A" stroke="#334155" stroke-width="1.5"/>
+    <path d="M27 12L42 20.5V37.5L27 46L12 37.5V20.5L27 12Z" fill="url(#gradA1)" opacity="0.15"/>
+    <path d="M27 12L42 20.5L27 29L12 20.5L27 12Z" fill="url(#gradA2)"/>
+    <path d="M27 29L42 20.5V37.5L27 46V29Z" fill="url(#gradA3)"/>
+    <path d="M27 29L12 20.5V37.5L27 46V29Z" fill="url(#gradA4)"/>
+    <circle cx="27" cy="29" r="3.5" fill="#FFFFFF"/>
+  </g>
+  <text x="80" y="36" font-family="system-ui, -apple-system, sans-serif" font-size="25" font-weight="900" fill="#FFFFFF" letter-spacing="-0.5">
+    Social<tspan fill="#FF6B00">Pilot</tspan>
+  </text>
+  <text x="81" y="52" font-family="system-ui, -apple-system, sans-serif" font-size="9" font-weight="800" fill="#94A3B8" letter-spacing="2.5">
+    BY SANTISOFT
+  </text>
+  <defs>
+    <linearGradient id="gradA1" x1="12" y1="12" x2="42" y2="46" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF6B00"/>
+      <stop offset="1" stop-color="#FF8A00"/>
+    </linearGradient>
+    <linearGradient id="gradA2" x1="12" y1="12" x2="42" y2="29" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF8A00"/>
+      <stop offset="1" stop-color="#FFA843"/>
+    </linearGradient>
+    <linearGradient id="gradA3" x1="27" y1="20" x2="42" y2="46" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E05600"/>
+      <stop offset="1" stop-color="#C2410C"/>
+    </linearGradient>
+    <linearGradient id="gradA4" x1="12" y1="20" x2="27" y2="46" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF6B00"/>
+      <stop offset="1" stop-color="#EA580C"/>
+    </linearGradient>
+  </defs>
+</svg>

@@ -115,12 +115,15 @@ ${
         const subheadlineText = (item.subheadline || "").trim();
         const ctaText = (item.cta || "").trim();
 
+        const is45 = aspectRatio === "4:5";
+        const is916 = aspectRatio === "9:16";
+
         if (badgeText) {
           layers.push({
             id: `layer-${baseTs}-1`,
             text: badgeText.toUpperCase(),
             x: 50,
-            y: aspectRatio === "9:16" ? 16 : 12,
+            y: is916 ? 16 : is45 ? 16 : 12,
             fontFamily: "'Montserrat', sans-serif",
             size: 13,
             color: "#FFFFFF",
@@ -130,7 +133,7 @@ ${
             isBold: true,
             isItalic: false,
             letterSpacing: "wide",
-            boxWidth: 0,
+            boxWidth: badgeText.length > 28 ? (is45 ? 80 : 86) : 0,
             textAlign: "center",
           });
         }
@@ -140,9 +143,9 @@ ${
             id: `layer-${baseTs}-2`,
             text: headlineText,
             x: 50,
-            y: aspectRatio === "9:16" ? 28 : 26,
+            y: is916 ? 28 : is45 ? 28 : 26,
             fontFamily: "'Montserrat', sans-serif",
-            size: headlineText.length > 45 ? 22 : 26,
+            size: headlineText.length > 45 ? 20 : is45 ? 23 : 26,
             color: "#FFFFFF",
             backgroundColor: "transparent",
             isPill: false,
@@ -150,7 +153,7 @@ ${
             isBold: true,
             isItalic: false,
             letterSpacing: "normal",
-            boxWidth: 88,
+            boxWidth: is45 ? 80 : 88,
             textAlign: "center",
           });
         }
@@ -160,7 +163,7 @@ ${
             id: `layer-${baseTs}-3`,
             text: subheadlineText,
             x: 50,
-            y: aspectRatio === "9:16" ? 42 : 43,
+            y: is916 ? 42 : is45 ? 44 : 43,
             fontFamily: "'Outfit', sans-serif",
             size: 15,
             color: "#F8FAFC",
@@ -170,7 +173,7 @@ ${
             isBold: false,
             isItalic: false,
             letterSpacing: "normal",
-            boxWidth: 84,
+            boxWidth: is45 ? 80 : 84,
             textAlign: "center",
           });
         }
@@ -180,7 +183,7 @@ ${
             id: `layer-${baseTs}-4`,
             text: ctaText,
             x: 50,
-            y: aspectRatio === "9:16" ? 86 : 88,
+            y: is916 ? 86 : is45 ? 82 : 88,
             fontFamily: "'Montserrat', sans-serif",
             size: 14,
             color: "#0F172A",
@@ -190,7 +193,7 @@ ${
             isBold: true,
             isItalic: false,
             letterSpacing: "normal",
-            boxWidth: 0,
+            boxWidth: ctaText.length > 28 ? (is45 ? 80 : 86) : 0,
             textAlign: "center",
           });
         }

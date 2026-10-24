@@ -6,6 +6,7 @@ import Link from "next/link";
 import { FaWhatsapp, FaArrowRight, FaTimes, FaBars } from "react-icons/fa";
 
 import LogoMark from "./LogoMark";
+import SocialPilotLogo from "./SocialPilotLogo";
 import ThemeToggle from "./ThemeToggle";
 
 const WA_URL =
@@ -57,28 +58,14 @@ export default function BrandHeader() {
   return (
     <nav className="brand-nav sticky top-0 z-50 bg-slate-950/95 backdrop-blur-md border-b border-slate-800/80">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        {/* Brand Lockup (Logo + Vertical) */}
+        {/* Brand Lockup (Logo Clean de SocialPilot by Santisoft) */}
         <div className="flex items-center gap-3">
           <Link
             href="/"
-            className="flex items-center gap-2.5 text-white hover:opacity-90 transition-opacity"
-            title="Santisoft - Inicio"
+            className="flex items-center hover:opacity-90 transition-opacity"
+            title="SocialPilot by Santisoft - Inicio"
           >
-            <LogoMark size={24} />
-            <span className="font-black text-lg sm:text-xl tracking-tight text-white font-sans">
-              SANTISOFT
-            </span>
-          </Link>
-
-          <span className="hidden sm:inline text-slate-600 font-light text-sm">/</span>
-
-          <Link
-            href="/"
-            className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 text-[11px] font-bold tracking-wider uppercase"
-            title="Redes & Contenido"
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></span>
-            Redes &amp; Contenido
+            <SocialPilotLogo height={38} width={166} priority />
           </Link>
 
           {/* Ecosystem Switcher Button (Desktop) */}
@@ -130,7 +117,7 @@ export default function BrandHeader() {
                 <div className="space-y-1">
                   <div className="p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/25">
                     <div className="flex items-center justify-between text-xs font-bold text-white">
-                      <span>Redes &amp; Contenido</span>
+                      <span>SocialPilot</span>
                       <span className="text-[9px] bg-orange-500 text-slate-950 font-black px-1.5 py-0.5 rounded">
                         Actual
                       </span>
@@ -364,7 +351,7 @@ export default function BrandHeader() {
             </div>
 
             <div className="pt-4 text-center text-xs text-slate-500">
-              Santisoft Redes &amp; Contenido © {new Date().getFullYear()}
+              SocialPilot by Santisoft © {new Date().getFullYear()}
             </div>
           </div>
         </div>,

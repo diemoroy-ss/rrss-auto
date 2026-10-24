@@ -41,10 +41,74 @@ export function isAdminAdmin(email?: string): boolean {
     return ADMIN_EMAILS.includes(email.toLowerCase().trim());
 }
 
-export async function getPlanLimitAdmin(plan: string, email?: string): Promise<number> {
+export interface TrialStatus {
+    isTrial: boolean;
+    isExpired: boolean;
+    daysRemaining: number;
+    hoursRemaining: number;
+    trialEndsAt: Date | null;
+}
+
+export function checkUserTrialStatus(userData?: any, userEmail?: string): TrialStatus {
+    if (!userData) {
+        return { isTrial: false, isExpired: false, daysRemaining: 0, hoursRemaining: 0, trialEndsAt: null };
+    }
+    
+    // Admins are never expired
+    if (isAdminAdmin(userEmail || userData.email)) {
+        return { isTrial: false, isExpired: false, daysRemaining: 999, hoursRemaining: 999, trialEndsAt: null };
+    }
+
+    const plan = (userData.plan || 'free').toLowerCase().trim();
+    const isFreePlan = plan === 'free' || plan === 'demo' || plan === 'prueba';
+    if (!isFreePlan) {
+        return { isTrial: false, isExpired: false, daysRemaining: 999, hoursRemaining: 999, trialEndsAt: null };
+    }
+
+    const TRIAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // Estrictamente 7 días
+    const now = Date.now();
+
+    let trialEnd: Date;
+
+    if (userData.trialEndsAt) {
+        trialEnd = userData.trialEndsAt.toDate ? userData.trialEndsAt.toDate() : new Date(userData.trialEndsAt);
+    } else if (userData.trialStartedAt) {
+        const start = userData.trialStartedAt.toDate ? userData.trialStartedAt.toDate() : new Date(userData.trialStartedAt);
+        trialEnd = new Date(start.getTime() + TRIAL_DURATION_MS);
+    } else if (userData.createdAt) {
+        const start = userData.createdAt.toDate ? userData.createdAt.toDate() : new Date(userData.createdAt);
+        trialEnd = new Date(start.getTime() + TRIAL_DURATION_MS);
+    } else {
+        // Usuario sin fecha de creación: prueba caducada
+        trialEnd = new Date(0);
+    }
+
+    const diffMs = trialEnd.getTime() - now;
+    const isExpired = diffMs <= 0;
+    const daysRemaining = isExpired ? 0 : Math.ceil(diffMs / (24 * 60 * 60 * 1000));
+    const hoursRemaining = isExpired ? 0 : Math.max(0, Math.ceil(diffMs / (60 * 60 * 1000)));
+
+    return {
+        isTrial: true,
+        isExpired,
+        daysRemaining,
+        hoursRemaining,
+        trialEndsAt: trialEnd
+    };
+}
+
+export async function getPlanLimitAdmin(plan: string, email?: string, userData?: any): Promise<number> {
     if (isAdminAdmin(email)) return 999999;
     const planId = (plan || 'free').toLowerCase();
     if (planId === 'unlimited') return 999999;
+
+    // Si es cuenta gratuita y la prueba de 7 días caducó, límite 0 (haya o no usado posts)
+    if (planId === 'free' && userData) {
+        const trialStatus = checkUserTrialStatus(userData, email);
+        if (trialStatus.isExpired) {
+            return 0;
+        }
+    }
     if (!adminDb) {
         return 3; // fallback
     }
@@ -60,7 +124,7 @@ export async function getPlanLimitAdmin(plan: string, email?: string): Promise<n
     
     // Fallback to hardcoded values if Firestore fails
     const fallbacks: Record<string, number> = {
-        free:                5,   // 5 posts totales (prueba de 10 días)
+        free:                5,   // 5 posts totales (prueba de 7 días)
         esencial:            15,  // 15 posts/mes (~3 a 4 por semana)
         starter:             15,  // alias legacy → esencial
         crecimiento:         30,  // 30 posts/mes (grilla mensual completa)
@@ -75,10 +139,18 @@ export async function getPlanLimitAdmin(plan: string, email?: string): Promise<n
     return fallbacks[planId] ?? 15;
 }
 
-export async function getAiPlanLimitAdmin(plan: string, type: 'image' | 'video' | 'blog', email?: string): Promise<number> {
+export async function getAiPlanLimitAdmin(plan: string, type: 'image' | 'video' | 'blog', email?: string, userData?: any): Promise<number> {
     if (isAdminAdmin(email)) return 999999;
     const planId = (plan || 'free').toLowerCase();
     if (planId === 'unlimited') return 999999;
+
+    // Si la prueba de 7 días caducó, se anulan límites para obligar al paso a plan pagado
+    if (planId === 'free' && userData) {
+        const trialStatus = checkUserTrialStatus(userData, email);
+        if (trialStatus.isExpired) {
+            return 0;
+        }
+    }
     if (!adminDb) return type === 'image' ? 15 : 0;
     try {
         const plansDoc = await adminDb.collection("system_config").doc("plans").get();

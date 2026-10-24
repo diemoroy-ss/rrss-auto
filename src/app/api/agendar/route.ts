@@ -33,20 +33,20 @@ export async function POST(req: NextRequest) {
 
       // Correo para el Cliente
       await transporter.sendMail({
-        from: `"Santisoft Automatización" <${process.env.SMTP_EMAIL}>`,
+        from: `"SocialPilot by Santisoft" <${process.env.SMTP_EMAIL}>`,
         to: email,
-        subject: `Confirmación de Demostración - Santisoft`,
+        subject: `Confirmación de Demostración - SocialPilot by Santisoft`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
             <h2 style="color: #DD4B19;">¡Hola ${name}! Tu demo está confirmada</h2>
-            <p>Hemos agendado con éxito tu demostración de la plataforma Santisoft.</p>
+            <p>Hemos agendado con éxito tu demostración de SocialPilot by Santisoft.</p>
             <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #eee;">
               <p style="margin: 5px 0;"><strong>Fecha:</strong> ${fechaFormateada}</p>
               <p style="margin: 5px 0;"><strong>Hora:</strong> ${time}</p>
             </div>
             <p>Pronto te enviaremos el enlace para la videollamada.</p>
             <p>¡Nos vemos pronto!</p>
-            <p style="margin-top: 30px; font-size: 12px; color: #999;">El equipo de Santisoft AI</p>
+            <p style="margin-top: 30px; font-size: 12px; color: #999;">El equipo de SocialPilot by Santisoft</p>
           </div>
         `
       });

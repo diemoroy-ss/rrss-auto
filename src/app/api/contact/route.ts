@@ -135,15 +135,15 @@ export async function POST(req: Request) {
       // B) Correo de confirmación automático al cliente (si entregó un email real)
       if (isRealEmail) {
         const clientMailOptions = {
-          from: `"Santisoft" <${SMTP_EMAIL}>`,
+          from: `"SocialPilot by Santisoft" <${SMTP_EMAIL}>`,
           to: email,
           subject: isSampleRequest
             ? `¡Recibimos tu solicitud de muestra para ${nombre}! 🚀`
-            : `Recibimos tu mensaje, ${nombre} - Santisoft`,
+            : `Recibimos tu mensaje, ${nombre} - SocialPilot by Santisoft`,
           html: `
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff; color: #1e293b;">
               <div style="text-align: center; margin-bottom: 24px;">
-                <h1 style="color: #4f46e5; margin: 0; font-size: 24px; font-weight: 800;">Santisoft</h1>
+                <h1 style="color: #4f46e5; margin: 0; font-size: 24px; font-weight: 800;">SocialPilot <span style="font-size: 14px; font-weight: normal; color: #ea580c;">by Santisoft</span></h1>
                 <p style="color: #64748b; font-size: 13px; margin: 4px 0 0 0;">Automatización de redes sociales con agentes especializados</p>
               </div>
 
@@ -201,7 +201,7 @@ export async function POST(req: Request) {
       if (cleanPhone.length >= 8) {
         const whatsappMessage = isSampleRequest
           ? `¡Hola! 👋 Confirmamos la recepción de tu solicitud para *${nombre}*${rubro ? ` (${rubro})` : ""}.\n\nNuestros agentes especializados ya están preparando tu muestra comercial gratuita (${visualModeLabel}), con estilos visuales adaptados a tu negocio y el calendario de prueba por 10 días.\n\nEn cuanto tengamos la propuesta lista te compartiremos el enlace interactivo por este mismo chat. Si quieres coordinar algún detalle adicional o enviarnos tu logo o foto de producto, respóndeme directamente aquí.`
-          : `¡Hola ${nombre}! 👋 Hemos recibido tu mensaje en Santisoft. Nuestro equipo de agentes se pondrá en contacto contigo a la brevedad. ¡Muchas gracias por escribirnos!`;
+          : `¡Hola ${nombre}! 👋 Hemos recibido tu mensaje en SocialPilot by Santisoft. Nuestro equipo de agentes se pondrá en contacto contigo a la brevedad. ¡Muchas gracias por escribirnos!`;
 
         try {
           const evoRes = await fetch(`${EVOLUTION_URL}/message/sendText/${EVOLUTION_INSTANCE}`, {

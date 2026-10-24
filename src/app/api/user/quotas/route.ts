@@ -7,7 +7,8 @@ import {
     getPlanLimitAdmin, 
     getAiPlanLimitAdmin, 
     getAiGenerationUsageAdmin, 
-    getVideoQuotaUsageAdmin 
+    getVideoQuotaUsageAdmin,
+    checkUserTrialStatus
 } from '../../../../lib/quota-admin';
 
 export async function GET(req: NextRequest) {
@@ -40,7 +41,10 @@ export async function GET(req: NextRequest) {
         const plan = userData?.plan || 'free';
         const userEmail = email || userData?.email || '';
 
-        // Consultar cuotas y límites concurrentemente
+        // Comprobar estado de la prueba gratuita de 7 días
+        const trialStatus = checkUserTrialStatus(userData, userEmail);
+
+        // Consultar cuotas y límites concurrentemente pasando userData
         const [
             postsLimit,
             videoLimit,
@@ -51,10 +55,10 @@ export async function GET(req: NextRequest) {
             imagesUsed,
             blogsUsed
         ] = await Promise.all([
-            getPlanLimitAdmin(plan, userEmail),
-            getAiPlanLimitAdmin(plan, 'video', userEmail),
-            getAiPlanLimitAdmin(plan, 'image', userEmail),
-            getAiPlanLimitAdmin(plan, 'blog', userEmail),
+            getPlanLimitAdmin(plan, userEmail, userData),
+            getAiPlanLimitAdmin(plan, 'video', userEmail, userData),
+            getAiPlanLimitAdmin(plan, 'image', userEmail, userData),
+            getAiPlanLimitAdmin(plan, 'blog', userEmail, userData),
             getQuotaUsageAdmin(userId, profileId),
             getVideoQuotaUsageAdmin(userId),
             getAiGenerationUsageAdmin(userId, 'image').catch(() => 0),
@@ -63,6 +67,10 @@ export async function GET(req: NextRequest) {
 
         return NextResponse.json({
             plan,
+            isTrial: trialStatus.isTrial,
+            isTrialExpired: trialStatus.isExpired,
+            trialDaysLeft: trialStatus.daysRemaining,
+            trialEndsAt: trialStatus.trialEndsAt ? trialStatus.trialEndsAt.toISOString() : null,
             postsLimit,
             videoLimit,
             imageLimit,

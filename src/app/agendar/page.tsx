@@ -98,7 +98,7 @@ function AgendarContent() {
         <div className="wrap">
           <Link href="/" className="logo">
             <LogoMark size={24} />
-            SANTISOFT AI
+            SOCIALPILOT BY SANTISOFT
           </Link>
           <div className="nav-links">
             <Link href="/#planes" className="ghost">Planes</Link>
@@ -115,13 +115,13 @@ function AgendarContent() {
             <div className="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center mb-2">
               <span className="text-2xl">📹</span>
             </div>
-            <h1 className="text-2xl font-bold text-slate-800 font-serif">Demostración Santisoft</h1>
+            <h1 className="text-2xl font-bold text-slate-800 font-serif">Demostración SocialPilot by Santisoft</h1>
             <div className="text-slate-500 text-sm flex flex-col gap-2">
               <p className="flex items-center gap-2"><span className="text-lg">⏱️</span> 30 min</p>
               <p className="flex items-center gap-2"><span className="text-lg">💻</span> Videollamada (Google Meet)</p>
             </div>
             <p className="text-slate-600 mt-4 text-sm leading-relaxed">
-              Descubre cómo nuestra plataforma puede automatizar tus redes sociales y blog utilizando IA. 
+              Descubre cómo nuestra plataforma puede automatizar tus redes sociales y blog con un equipo de agentes especializados. 
               En esta sesión de 30 minutos te mostraremos el panel por dentro y responderemos tus dudas.
             </p>
           </div>

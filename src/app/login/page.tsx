@@ -88,6 +88,9 @@ export default function LoginGastronomico() {
          plan: "free",
          categoriesAllowed: ["all"],
          createdAt: serverTimestamp(),
+         trialStartedAt: serverTimestamp(),
+         trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+         trialDays: 7,
          registeredApps: ["automatizacion"] // Marca el origen
       });
     } else {
@@ -237,7 +240,8 @@ export default function LoginGastronomico() {
         
         <div className="text-center mb-8">
            <LogoMark size={48} className="mx-auto mb-4" />
-           <h1 className="text-3xl font-black text-slate-900 tracking-tight">Santisoft AI</h1>
+           <h1 className="text-3xl font-black text-slate-900 tracking-tight">SocialPilot</h1>
+           <p className="text-orange-500 font-black text-xs uppercase tracking-wider mt-0.5">by Santisoft</p>
 
            <p className="text-slate-500 mt-2 text-sm">{isRegister ? "Crea una cuenta para empezar" : "Inicia sesión para gestionar tus redes sociales."}</p>
         </div>

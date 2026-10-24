@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import LogoMark from "./LogoMark";
+import SocialPilotLogo from "./SocialPilotLogo";
 
 export default function BrandFooter() {
   return (
@@ -9,18 +9,10 @@ export default function BrandFooter() {
       <div className="wrap brand-footer-wrap">
         {/* Brand Info */}
         <div className="footer-brand-col">
-          <div className="footer-logo-lockup">
-            <a
-              href="https://santisoft.cl"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="footer-parent-logo"
-            >
-              <LogoMark size={22} />
-              <span>SANTISOFT</span>
-            </a>
-            <span className="footer-slash">/</span>
-            <span className="footer-vertical-name rrss-text">REDES &amp; CONTENIDO</span>
+          <div className="footer-logo-lockup mb-4">
+            <Link href="/" className="inline-block hover:opacity-90 transition-opacity">
+              <SocialPilotLogo height={34} width={150} />
+            </Link>
           </div>
 
           <p className="footer-tagline">
@@ -98,7 +90,7 @@ export default function BrandFooter() {
               </li>
               <li>
                 <a href="#hero" className="footer-link active-vertical">
-                  Redes &amp; Contenido
+                  SocialPilot by Santisoft
                 </a>
               </li>
               <li>
@@ -202,7 +194,7 @@ export default function BrandFooter() {
             © {new Date().getFullYear()} SANTISOFT. TODOS LOS DERECHOS RESERVADOS.
           </span>
           <span className="footer-architecture-tag">
-            VERTICAL REDES &amp; CONTENIDO · SANTISOFT.CL
+            SOCIALPILOT BY SANTISOFT · SANTISOFT.CL
           </span>
         </div>
       </div>

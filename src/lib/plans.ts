@@ -41,7 +41,7 @@ export const PLAN_CONFIGS: Record<PlanId, PlanConfig> = {
       adsGenerator: false,
       vipSupport: false,
     },
-    description: 'Prueba de 10 días para conocer la plataforma.',
+    description: 'Prueba de 7 días para conocer la plataforma.',
   },
   esencial: {
     id: 'esencial',

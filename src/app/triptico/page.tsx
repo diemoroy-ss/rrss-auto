@@ -496,7 +496,7 @@ export default function TripticoPitchPage() {
               <p className="text-xs sm:text-sm print:text-xs font-semibold text-slate-300 print:text-slate-800 leading-relaxed">
                 <span className="text-red-400 print:text-red-700 font-bold">❌ Agencia tradicional:</span> $500.000+/mes (con amarras a 6 meses){" "}
                 <span className="text-slate-500 font-bold mx-2">vs.</span>{" "}
-                <span className="text-emerald-400 print:text-emerald-700 font-bold">✅ Santisoft:</span> Desde $59.990/mes (sin contratos forzados).
+                <span className="text-emerald-400 print:text-emerald-700 font-bold">✅ SocialPilot by Santisoft:</span> Desde $59.990/mes (sin contratos forzados).
               </p>
             </div>
 

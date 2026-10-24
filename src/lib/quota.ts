@@ -83,24 +83,95 @@ export function isUserAdmin(email?: string): boolean {
     return ADMIN_EMAILS.includes(email.toLowerCase().trim());
 }
 
-export async function getPlanLimit(plan: string, email?: string): Promise<number> {
+export interface TrialStatus {
+    isTrial: boolean;
+    isExpired: boolean;
+    daysRemaining: number;
+    hoursRemaining: number;
+    trialEndsAt: Date | null;
+}
+
+export function checkUserTrialStatus(userData?: any, userEmail?: string): TrialStatus {
+    if (!userData) {
+        return { isTrial: false, isExpired: false, daysRemaining: 0, hoursRemaining: 0, trialEndsAt: null };
+    }
+    
+    if (isUserAdmin(userEmail || userData.email)) {
+        return { isTrial: false, isExpired: false, daysRemaining: 999, hoursRemaining: 999, trialEndsAt: null };
+    }
+
+    const plan = (userData.plan || 'free').toLowerCase().trim();
+    const isFreePlan = plan === 'free' || plan === 'demo' || plan === 'prueba';
+    if (!isFreePlan) {
+        return { isTrial: false, isExpired: false, daysRemaining: 999, hoursRemaining: 999, trialEndsAt: null };
+    }
+
+    const TRIAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // Estrictamente 7 días
+    const now = Date.now();
+
+    let trialEnd: Date;
+
+    if (userData.trialEndsAt) {
+        trialEnd = userData.trialEndsAt.toDate ? userData.trialEndsAt.toDate() : new Date(userData.trialEndsAt);
+    } else if (userData.trialStartedAt) {
+        const start = userData.trialStartedAt.toDate ? userData.trialStartedAt.toDate() : new Date(userData.trialStartedAt);
+        trialEnd = new Date(start.getTime() + TRIAL_DURATION_MS);
+    } else if (userData.createdAt) {
+        const start = userData.createdAt.toDate ? userData.createdAt.toDate() : new Date(userData.createdAt);
+        trialEnd = new Date(start.getTime() + TRIAL_DURATION_MS);
+    } else {
+        trialEnd = new Date(0);
+    }
+
+    const diffMs = trialEnd.getTime() - now;
+    const isExpired = diffMs <= 0;
+    const daysRemaining = isExpired ? 0 : Math.ceil(diffMs / (24 * 60 * 60 * 1000));
+    const hoursRemaining = isExpired ? 0 : Math.max(0, Math.ceil(diffMs / (60 * 60 * 1000)));
+
+    return {
+        isTrial: true,
+        isExpired,
+        daysRemaining,
+        hoursRemaining,
+        trialEndsAt: trialEnd
+    };
+}
+
+export async function getPlanLimit(plan: string, email?: string, userData?: any): Promise<number> {
     if (isUserAdmin(email)) return 999999;
     const planId = (plan || 'free').toLowerCase();
     if (planId === 'unlimited') return 999999;
+
+    // Si la prueba de 7 días caducó, el límite es 0
+    if (planId === 'free' && userData) {
+        const trialStatus = checkUserTrialStatus(userData, email);
+        if (trialStatus.isExpired) return 0;
+    }
+
     const config = await getPlansConfig();
     return config[planId]?.postsLimit ?? (config['free']?.postsLimit || 3);
 }
 
-export async function getVideoPlanLimit(plan: string, email?: string): Promise<number> {
+export async function getVideoPlanLimit(plan: string, email?: string, userData?: any): Promise<number> {
     if (isUserAdmin(email)) return 999999;
     const planId = (plan || 'free').toLowerCase();
     if (planId === 'unlimited') return 999999;
+
+    if (planId === 'free' && userData) {
+        const trialStatus = checkUserTrialStatus(userData, email);
+        if (trialStatus.isExpired) return 0;
+    }
+
     const config = await getPlansConfig();
     return config[planId]?.videosLimit ?? (config['free']?.videosLimit || 0);
 }
 
 export interface UserQuotasResponse {
     plan: string;
+    isTrial?: boolean;
+    isTrialExpired?: boolean;
+    trialDaysLeft?: number;
+    trialEndsAt?: string | null;
     postsLimit: number;
     videoLimit: number;
     imageLimit: number;
@@ -154,10 +225,15 @@ export async function getAiGenerationUsage(userId: string, type: 'image' | 'vide
     }
 }
 
-export async function getAiPlanLimit(plan: string, type: 'image' | 'video' | 'blog', email?: string): Promise<number> {
+export async function getAiPlanLimit(plan: string, type: 'image' | 'video' | 'blog', email?: string, userData?: any): Promise<number> {
     if (isUserAdmin(email)) return 999999;
     const planId = (plan || 'free').toLowerCase();
     if (planId === 'unlimited') return 999999;
+
+    if (planId === 'free' && userData) {
+        const trialStatus = checkUserTrialStatus(userData, email);
+        if (trialStatus.isExpired) return 0;
+    }
 
     try {
         const config = await getPlansConfig();

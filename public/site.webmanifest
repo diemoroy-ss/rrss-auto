@@ -1,7 +1,7 @@
 {
   "id": "/app-principal",
-  "name": "Santisoft | Redes & Contenido",
-  "short_name": "Santisoft RRSS",
+  "name": "SocialPilot by Santisoft",
+  "short_name": "SocialPilot",
   "description": "Automatización y gestión estratégica de redes sociales con agentes especializados",
   "start_url": "/automatizacion-rrss/panel",
   "scope": "/",

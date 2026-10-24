@@ -234,13 +234,15 @@ export default async function RenderPreviewPage(props: {
         {/* Capas de Texto */}
         {data.textLayers && data.textLayers.map((layer: any, idx: number) => {
           const isPill = Boolean(layer.isPill);
+          const isLongPill = isPill && (layer.text?.length || 0) > 26;
+          const defaultSafeWidth = isPortrait45 ? 80 : 88;
           const layerWidth = layer.boxWidth !== undefined && layer.boxWidth !== null
-            ? (layer.boxWidth === 0 ? "max-content" : `${layer.boxWidth}%`)
+            ? (layer.boxWidth === 0 ? (isLongPill ? `${defaultSafeWidth}%` : "max-content") : `${layer.boxWidth}%`)
             : isPill
-            ? "max-content"
+            ? (isLongPill ? `${defaultSafeWidth}%` : "max-content")
             : layer.maxWidth
             ? `${layer.maxWidth}px`
-            : "88%";
+            : `${defaultSafeWidth}%`;
 
           const whiteSpace = layerWidth === "max-content" ? "nowrap" : "pre-line";
 
@@ -267,7 +269,8 @@ export default async function RenderPreviewPage(props: {
                 WebkitTextStroke: layer.textStroke ? `1px ${layer.color === "#ffffff" ? "#000000" : "#ffffff"}` : "none",
                 opacity: layer.opacity ?? 1,
                 width: layerWidth,
-                maxWidth: "96%",
+                maxWidth: isPortrait45 ? "82%" : "92%",
+                boxSizing: "border-box",
                 whiteSpace,
                 textAlign: layer.textAlign || "center",
                 wordBreak: "break-word",

@@ -59,7 +59,7 @@ export const DEFAULT_SOCIAL_RULES: SocialRules = {
           label: "Historia",
           allowed_media: ["image", "video"],
           aspect_ratio: ["9:16"],
-          max_chars: 125,
+          max_chars: 1000,
           max_hashtags: 0
         }
       }
@@ -86,7 +86,7 @@ export const DEFAULT_SOCIAL_RULES: SocialRules = {
           label: "Historia",
           allowed_media: ["image", "video"],
           aspect_ratio: ["9:16"],
-          max_chars: 500,
+          max_chars: 1000,
           max_hashtags: 0
         }
       }

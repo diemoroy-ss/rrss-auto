@@ -5,8 +5,8 @@ import DotCanvas from '../../components/DotCanvas';
 import LogoMark from '../../components/LogoMark';
 
 export const metadata: Metadata = {
-  title: "Santisoft AI | Términos de Servicio",
-  description: "Términos de servicio y condiciones legales de uso de la plataforma Santisoft AI.",
+  title: "SocialPilot by Santisoft | Términos de Servicio",
+  description: "Términos de servicio y condiciones legales de uso de la plataforma SocialPilot by Santisoft.",
   icons: {
     icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
     apple: "/favicon.svg",
@@ -29,7 +29,7 @@ export default function Terminos() {
         <div className="wrap">
           <Link href="/" className="logo">
             <LogoMark size={24} />
-            SANTISOFT AI
+            SOCIALPILOT BY SANTISOFT
           </Link>
           <div className="nav-links">
             <Link href="/" className="btn btn-ghost btn-sm">← Volver al Inicio</Link>
@@ -61,7 +61,7 @@ export default function Terminos() {
                   1. Aceptación de los Términos e Integración de Redes Sociales
                 </h3>
                 <p style={{ fontSize: '15px', color: 'var(--ink-dim)', lineHeight: '1.6', marginBottom: '10px' }}>
-                  Al crear una cuenta en <strong>Santisoft AI</strong> (la Aplicación), autorizas la gestión y publicación automática en tus redes sociales conectadas (Meta Facebook/Instagram, TikTok, Google Business Profile, YouTube Shorts y X/Twitter) y blogs oficiales. Las publicaciones se ejecutan bajo tu explícito control mediante la infraestructura técnica de automatización que conecta las APIs oficiales de cada plataforma.
+                  Al crear una cuenta en <strong>SocialPilot by Santisoft</strong> (la Aplicación), autorizas la gestión y publicación automática en tus redes sociales conectadas (Meta Facebook/Instagram, TikTok, Google Business Profile, YouTube Shorts y X/Twitter) y blogs oficiales. Las publicaciones se ejecutan bajo tu explícito control mediante la infraestructura técnica de automatización que conecta las APIs oficiales de cada plataforma.
                 </p>
                 <p style={{ fontSize: '15px', color: 'var(--ink-dim)', lineHeight: '1.6' }}>
                   • <strong>Términos de YouTube:</strong> Al utilizar las funciones de publicación en YouTube Shorts, el usuario acepta de manera expresa estar vinculado a los <a href="https://www.youtube.com/t/terms" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--signal)', textDecoration: 'underline' }}>Términos de Servicio de YouTube</a> y a las normativas comunitarias de Google.

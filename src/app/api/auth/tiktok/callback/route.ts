@@ -1,4 +1,4 @@
-﻿export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import { adminDb } from '../../../../../lib/firebase-admin';
@@ -30,7 +30,9 @@ export async function GET(req: Request) {
 
         const clientKey = process.env.TIKTOK_CLIENT_KEY;
         const clientSecret = process.env.TIKTOK_CLIENT_SECRET;
-        const redirectUri = `${origin}/api/auth/tiktok/callback`;
+        // La redirect_uri enviada al canjear el token debe ser idéntica a la autorizada en TikTok
+        const approvedBase = "https://rrss.santisoft.cl";
+        const redirectUri = `${approvedBase}/api/auth/tiktok/callback`;
 
         if (!clientKey || !clientSecret) {
             return NextResponse.json({ error: "TikTok App no configurada en entorno" }, { status: 500 });

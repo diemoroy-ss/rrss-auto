@@ -57,7 +57,7 @@ export async function POST(req: Request) {
       }
     }
 
-    const title = `Suscripción ${planConfig.name} ${titleSuffix} - Santisoft`;
+    const title = `Suscripción SocialPilot ${planConfig.name} ${titleSuffix} - Santisoft`;
 
     // Configurar SDK
     const client = new MercadoPagoConfig({ accessToken, options: { timeout: 5000 } });

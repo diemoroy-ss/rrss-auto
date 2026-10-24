@@ -26,10 +26,12 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: "TikTok App no configurada en el servidor (TIKTOK_CLIENT_KEY faltante)" }, { status: 500 });
         }
 
-        const redirectUri = `${origin}/api/auth/tiktok/callback`;
+        // TikTok sólo tiene aprobada la URI de rrss.santisoft.cl. Usamos Puente OAuth.
+        const approvedBase = "https://rrss.santisoft.cl";
+        const redirectUri = `${approvedBase}/api/auth/tiktok/callback`;
         const scopes = 'user.info.basic,video.publish,video.upload';
         
-        // State formatted similarly to Meta and LinkedIn
+        // El origin real (ej: https://socialpilot.cl) viaja dentro de state para devolver al usuario a su dominio final
         const state = encodeURIComponent(`${decodedToken.uid}|${profileId}|${origin}`);
 
         const url = `https://www.tiktok.com/v2/auth/authorize/?client_key=${clientKey}&scope=${scopes}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`;

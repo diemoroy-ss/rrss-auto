@@ -44,7 +44,7 @@ export default function Home() {
       {/* 1. PromoBanner */}
       <div className="promo">
         <span className="on-air"></span>
-        PRUEBA GRATIS — <strong>10 DÍAS Y 5 PUBLICACIONES GRATIS</strong> · SIN TARJETA DE CRÉDITO
+        PRUEBA GRATIS — <strong>7 DÍAS Y 5 PUBLICACIONES GRATIS</strong> · SIN TARJETA DE CRÉDITO
       </div>
 
       {/* 2. Brand Nav */}
@@ -216,7 +216,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Columna 3: RRSS-Auto by Santisoft (DESTACADA) */}
+            {/* Columna 3: SocialPilot by Santisoft (DESTACADA) */}
             <div className="relative p-7 rounded-3xl bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 border-2 border-orange-500 shadow-2xl shadow-orange-500/20 flex flex-col justify-between space-y-6">
               <div className="absolute -top-3.5 right-6 bg-gradient-to-r from-orange-500 to-amber-500 text-slate-950 text-[11px] font-black uppercase tracking-wider px-3.5 py-1 rounded-full shadow-lg">
                 🔥 Recomendado para PyMEs
@@ -227,7 +227,7 @@ export default function Home() {
                   <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Llave en Mano</span>
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">RRSS-Auto by Santisoft</h3>
+                  <h3 className="text-xl font-bold text-white">SocialPilot by Santisoft</h3>
                   <div className="mt-2 text-3xl font-black text-white">Desde $59.990 <span className="text-sm font-normal text-slate-400">CLP / mes</span></div>
                   <p className="text-xs text-emerald-400 font-semibold mt-1">90% más barato que una agencia y 100% bajo tu control</p>
                 </div>

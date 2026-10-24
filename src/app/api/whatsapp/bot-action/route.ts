@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { adminDb } from '../../../../lib/firebase-admin';
 import { generateNicheRadarAnalysis } from '../../../../lib/niche-radar';
-import { getQuotaUsageAdmin, getPlanLimitAdmin, getAiPlanLimitAdmin } from '../../../../lib/quota-admin';
+import { getQuotaUsageAdmin, getPlanLimitAdmin, getAiPlanLimitAdmin, checkUserTrialStatus } from '../../../../lib/quota-admin';
 import { enqueuePostTask } from '../../../../lib/gcp-tasks';
 import { getFreeModel, generateFreeText } from '../../../../lib/gemini-free';
 import { getNextScheduleSlotServer } from '../../../../lib/schedule-continuity-server';
@@ -221,7 +221,7 @@ export async function POST(req: Request) {
             `Para comenzar la prueba gratis de inmediato, indícanos el nombre de tu negocio o regístrate en https://rrss.santisoft.cl/auth/register en menos de 1 minuto.`;
         } else {
           specificPlanResponse =
-            `🚀 *Planes de Automatización de Redes Santisoft:*\n\n` +
+            `🚀 *Planes SocialPilot by Santisoft:*\n\n` +
             `🎁 *1. Prueba Gratuita ($0)*\n` +
             `• 5 publicaciones automáticas por 10 días\n` +
             `• Sin tarjeta ni compromisos\n\n` +
@@ -254,12 +254,12 @@ export async function POST(req: Request) {
 
       const notFoundMessage =
         `¡Hola ${pushName}! 👋\n\n` +
-        `No encontramos una cuenta de Santisoft asociada a este número de teléfono (*${phone}*).\n\n` +
+        `No encontramos una cuenta de SocialPilot asociada a este número de teléfono (*${phone}*).\n\n` +
         `Para vincular tu cuenta:\n` +
         `1. Ingresa a tu panel en https://rrss.santisoft.cl\n` +
         `2. Ve a *Configuración > Datos & Contacto*\n` +
         `3. Añade este número en tu teléfono de contacto y guarda los cambios.\n\n` +
-        `🛡️ _Recuerda guardar este número (+56 9 6590 9543) en tu agenda como *Santisoft Agentes* para que WhatsApp reconozca la cuenta como segura._\n\n` +
+        `🛡️ _Recuerda guardar este número (+56 9 6590 9543) en tu agenda como *SocialPilot Agentes* para que WhatsApp reconozca la cuenta como segura._\n\n` +
         `Una vez guardado, vuelve a escribirme para activar tu asistente. 🚀`;
 
       return NextResponse.json({
@@ -568,6 +568,20 @@ export async function POST(req: Request) {
       // OPCIÓN 4: Crear nuevo post puntual (Ahora vs Continuación)
       // ----------------------------------------------------
       case '4': {
+        const trialStatus = checkUserTrialStatus(currentAccount.userDoc, currentAccount.email);
+        if (trialStatus.isExpired) {
+          replyText =
+            `🔒 *Tu período de prueba de 7 días ha finalizado*\n\n` +
+            `Tus redes sociales y publicaciones creadas siguen *100% guardadas y seguras* en tu cuenta.\n\n` +
+            `Para continuar creando, programando y publicando contenido en piloto automático con nuestros agentes, activa uno de nuestros planes:\n\n` +
+            `• *Plan Esencial:* $59.990 CLP/mes (15 posts + historias)\n` +
+            `• *Plan Crecimiento:* $99.990 CLP/mes (30 posts + Reels + TikTok + Ads)\n\n` +
+            `👉 Elige tu plan en: https://rrss.santisoft.cl/#planes\n` +
+            `O si prefieres, responde *ASESOR* y te ayudamos a activarlo ahora mismo.` +
+            multiAccountFooter;
+          break;
+        }
+
         let userPrompt = text.replace(/^4\s*/i, '').trim();
 
         // Si el usuario eligió una idea del radar ("4 1", "4 2", "4 3", o solo "1", "2")
@@ -702,6 +716,20 @@ Aplica obligatoriamente el principio humanize:
       // OPCIÓN 5: Planificar Estrategia (1 o 2 Semanas) 🗓️
       // ----------------------------------------------------
       case '5': {
+        const trialStatus = checkUserTrialStatus(currentAccount.userDoc, currentAccount.email);
+        if (trialStatus.isExpired) {
+          replyText =
+            `🔒 *Tu período de prueba de 7 días ha finalizado*\n\n` +
+            `Tus redes sociales y publicaciones creadas siguen *100% guardadas y seguras* en tu cuenta.\n\n` +
+            `Para continuar planificando estrategias y programando contenido en piloto automático con nuestros agentes, activa uno de nuestros planes:\n\n` +
+            `• *Plan Esencial:* $59.990 CLP/mes (15 posts + historias)\n` +
+            `• *Plan Crecimiento:* $99.990 CLP/mes (30 posts + Reels + TikTok + Ads)\n\n` +
+            `👉 Elige tu plan en: https://rrss.santisoft.cl/#planes\n` +
+            `O si prefieres, responde *ASESOR* y te ayudamos a activarlo ahora mismo.` +
+            multiAccountFooter;
+          break;
+        }
+
         const userTopic = text.replace(/^5\s*/i, '').trim();
 
         // Determinar si la estrategia es de 1 semana o 2 semanas
@@ -1028,6 +1056,20 @@ Responde ÚNICAMENTE un objeto JSON válido con este formato:
       // OPCIÓN 6: Aprobar posts pendientes (Ahora vs Cola)
       // ----------------------------------------------------
       case '6': {
+        const trialStatus = checkUserTrialStatus(currentAccount.userDoc, currentAccount.email);
+        if (trialStatus.isExpired) {
+          replyText =
+            `🔒 *Tu período de prueba de 7 días ha finalizado*\n\n` +
+            `Tus redes sociales y publicaciones pendientes siguen *100% guardadas y seguras* en tu cuenta.\n\n` +
+            `Para aprobar y publicar contenido en piloto automático con nuestros agentes, activa uno de nuestros planes:\n\n` +
+            `• *Plan Esencial:* $59.990 CLP/mes (15 posts + historias)\n` +
+            `• *Plan Crecimiento:* $99.990 CLP/mes (30 posts + Reels + TikTok + Ads)\n\n` +
+            `👉 Elige tu plan en: https://rrss.santisoft.cl/#planes\n` +
+            `O si prefieres, responde *ASESOR* y te ayudamos a activarlo ahora mismo.` +
+            multiAccountFooter;
+          break;
+        }
+
         const wantsQueue = cleanInput.includes('cola') || cleanInput.includes('agendar') || cleanInput.includes('calendario');
         const wantsNow = cleanInput.includes('ahora') || cleanInput.includes('ya') || cleanInput.includes('inmediat') || cleanInput === '6 ahora';
 
@@ -1311,7 +1353,7 @@ Responde ÚNICAMENTE un objeto JSON válido con este formato:
         const switchOptionText = hasMultipleAccounts ? `8️⃣ *Cambiar de cuenta / negocio*\n` : '';
 
         replyText =
-          `👋 *¡Hola ${pushName}! Te damos la bienvenida a Santisoft.*\n` +
+          `👋 *¡Hola ${pushName}! Te damos la bienvenida a SocialPilot by Santisoft.*\n` +
           `Gestionando: *${businessName}* (${rubro})\n\n` +
           `¿Qué necesitas gestionar hoy? Responde con un número:\n\n` +
           `1️⃣ *Próximos posts agendados*\n` +
@@ -1323,7 +1365,7 @@ Responde ÚNICAMENTE un objeto JSON válido con este formato:
           `7️⃣ *Ver cuota y estadísticas*\n` +
           switchOptionText +
           `\n_Escribe el número de la opción que prefieras._\n\n` +
-          `🛡️ _Tip de seguridad: Guarda este número (+56 9 6590 9543) como *Santisoft Agentes* en tus contactos para asegurar tus alertas y evitar bloqueos._` +
+          `🛡️ _Tip de seguridad: Guarda este número (+56 9 6590 9543) como *SocialPilot Agentes* en tus contactos para asegurar tus alertas y evitar bloqueos._` +
           multiAccountFooter;
         break;
       }

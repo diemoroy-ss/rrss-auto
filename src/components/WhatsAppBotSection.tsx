@@ -115,7 +115,7 @@ const SCENARIOS: Scenario[] = [
         </p>
         <div className="bg-slate-100/80 dark:bg-slate-800/70 p-2 rounded-lg text-xs space-y-1 font-mono">
           <div className="text-emerald-600 dark:text-emerald-400 font-bold">
-            ▸ C1: Santisoft AI (Activa actualmente)
+            ▸ C1: SocialPilot Demo (Activa actualmente)
           </div>
           <div className="text-slate-600 dark:text-slate-300">
             • C2: Tienda Orgánica Sur
@@ -187,13 +187,13 @@ export default function WhatsAppBotSection() {
                   <div className="flex items-center gap-3">
                     <div className="relative">
                       <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white font-bold text-sm shadow-md">
-                        SS
+                        SP
                       </div>
                       <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-[#202c33] rounded-full"></span>
                     </div>
                     <div>
                       <h4 className="text-sm font-bold text-white leading-tight flex items-center gap-1.5">
-                        Santisoft Agentes
+                        SocialPilot Agentes
                         <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.2 rounded font-mono font-normal">BOT</span>
                       </h4>
                       <p className="text-[11px] text-emerald-400 font-medium">en línea</p>
@@ -211,7 +211,7 @@ export default function WhatsAppBotSection() {
                   {/* Banner de encriptación */}
                   <div className="text-center my-1">
                     <span className="inline-block bg-[#182229] text-amber-300/80 text-[10px] px-2.5 py-1 rounded-md shadow-sm border border-amber-500/10">
-                      🔒 Vinculado seguro a tu cuenta de Santisoft
+                      🔒 Vinculado seguro a tu cuenta de SocialPilot
                     </span>
                   </div>
 

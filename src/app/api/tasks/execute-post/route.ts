@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { adminDb } from '../../../../lib/firebase-admin';
-import { getQuotaUsageAdmin, getPlanLimitAdmin } from '../../../../lib/quota-admin';
+import { getQuotaUsageAdmin, getPlanLimitAdmin, checkUserTrialStatus } from '../../../../lib/quota-admin';
 
 /**
  * Este endpoint es llamado secretamente por Google Cloud Tasks
@@ -84,9 +84,16 @@ export async function POST(req: Request) {
             targetProfile = userData;
         }
 
-        // --- QUOTA CHECK ---
+        // --- TRIAL & QUOTA CHECK ---
+        const trialStatus = checkUserTrialStatus(userData, userData.email);
+        if (trialStatus.isExpired) {
+             await postRef.update({ status: 'quota_exceeded' });
+             console.log(`[GCP EXECUTE] User ${uid} trial expired. Marking post ${postId} as failed.`);
+             return NextResponse.json({ error: "Trial expired" }, { status: 403 });
+        }
+
         const usage = await getQuotaUsageAdmin(uid, profileId || 'default');
-        const limit = await getPlanLimitAdmin(userData.plan || 'free', userData.email);
+        const limit = await getPlanLimitAdmin(userData.plan || 'free', userData.email, userData);
         const postNetworkCount = postData.networks?.length || 1;
         
         if (usage + postNetworkCount > limit) {

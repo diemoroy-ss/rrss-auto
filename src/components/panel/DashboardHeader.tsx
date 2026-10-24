@@ -292,7 +292,7 @@ export default function DashboardHeader({
             <div>
               <h3 className="text-sm font-black text-slate-900 tracking-tight flex items-center gap-1.5">
                 <BarChart3 className="w-4 h-4 text-orange-500" />
-                Agendado por Santisoft
+                Agendado por SocialPilot
               </h3>
               <p className="text-[11px] text-slate-500 mt-0.5">Volumen mensual de contenidos</p>
             </div>
