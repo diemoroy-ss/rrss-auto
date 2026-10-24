@@ -1,3 +1,33 @@
 <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M 64 8 L 32 8 L 8 32 L 56 32 L 32 56 L 0 56" stroke="#FF6B00" stroke-width="16" fill="none" stroke-linecap="butt" stroke-linejoin="bevel" />
+  <!-- Cubo 3D Isométrico SocialPilot para Favicon -->
+  <g transform="translate(8, 8)">
+    <!-- Cara Superior -->
+    <path d="M24 2L44 13.5L24 25L4 13.5L24 2Z" fill="url(#favTop)"/>
+    <!-- Cara Derecha -->
+    <path d="M24 25L44 13.5V36.5L24 48V25Z" fill="url(#favRight)"/>
+    <!-- Cara Izquierda -->
+    <path d="M24 25L4 13.5V36.5L24 48V25Z" fill="url(#favLeft)"/>
+    <!-- Aristas de luz nítidas -->
+    <path d="M24 25V48" stroke="#FFFFFF" stroke-width="1.8" opacity="0.45"/>
+    <path d="M24 25L4 13.5" stroke="#FFFFFF" stroke-width="1.5" opacity="0.3"/>
+    <path d="M24 25L44 13.5" stroke="#FFFFFF" stroke-width="1.5" opacity="0.3"/>
+    <!-- Núcleo Central de Automatización -->
+    <circle cx="24" cy="25" r="4" fill="#FFFFFF"/>
+    <circle cx="24" cy="25" r="2" fill="#FF6B00"/>
+  </g>
+
+  <defs>
+    <linearGradient id="favTop" x1="4" y1="2" x2="44" y2="25" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFA843"/>
+      <stop offset="1" stop-color="#FF6B00"/>
+    </linearGradient>
+    <linearGradient id="favRight" x1="24" y1="13.5" x2="44" y2="48" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D9480F"/>
+      <stop offset="1" stop-color="#9A3412"/>
+    </linearGradient>
+    <linearGradient id="favLeft" x1="4" y1="13.5" x2="24" y2="48" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF6B00"/>
+      <stop offset="1" stop-color="#EA580C"/>
+    </linearGradient>
+  </defs>
 </svg>

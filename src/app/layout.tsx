@@ -37,17 +37,17 @@ const spaceMono = Space_Mono({
 export const metadata: Metadata = {
   title: 'SocialPilot by Santisoft — Redes Sociales en Piloto Automático',
   description: 'Automatización y generación estratégica de contenido para redes sociales (Meta, TikTok) y posicionamiento en motores de IA (GEO/SEO) por Santisoft.',
-  metadataBase: new URL('https://rrss.santisoft.cl'),
+  metadataBase: new URL('https://socialpilot.cl'),
   icons: {
     icon: [
-      { url: '/favicon.svg?v=5', type: 'image/svg+xml' },
-      { url: '/icon-192.png?v=5', sizes: '192x192', type: 'image/png' },
-      { url: '/icon-512.png?v=5', sizes: '512x512', type: 'image/png' },
+      { url: '/favicon.svg?v=7', type: 'image/svg+xml' },
+      { url: '/icon-192.png?v=7', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png?v=7', sizes: '512x512', type: 'image/png' },
     ],
-    shortcut: '/favicon.svg?v=5',
-    apple: '/apple-touch-icon.png?v=5',
+    shortcut: '/favicon.svg?v=7',
+    apple: '/apple-touch-icon.png?v=7',
   },
-  manifest: '/site.webmanifest?v=6',
+  manifest: '/site.webmanifest?v=7',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -59,7 +59,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'SocialPilot by Santisoft — Redes Sociales en Piloto Automático',
     description: 'Generación automática de contenido persuasivo, calendarios estratégicos y posicionamiento GEO en IA.',
-    url: 'https://rrss.santisoft.cl',
+    url: 'https://socialpilot.cl',
     siteName: 'SocialPilot by Santisoft',
     images: [{ url: '/favicon.svg?v=4' }],
     locale: 'es_CL',
@@ -84,3 +84,4 @@ export default function RootLayout({
     </html>
   )
 }
+
