@@ -205,10 +205,10 @@ function PanelLayoutContent({
             </div>
           </aside>
         ) : (
-          <aside className="w-60 bg-slate-900 text-white hidden md:flex flex-col border-r border-slate-800 shadow-xl shadow-slate-900/30 print:hidden">
+          <aside className="w-64 bg-slate-900 text-white hidden md:flex flex-col border-r border-slate-800 shadow-xl shadow-slate-900/30 print:hidden">
             <div className="px-5 py-5 border-b border-slate-800 bg-slate-950/40">
               <Link href="/automatizacion-rrss/panel" className="block hover:opacity-95 transition-opacity">
-                <SocialPilotLogo height={36} width={158} priority />
+                <SocialPilotLogo height={42} width={200} priority />
               </Link>
             </div>
             <nav className="flex-1 py-4 px-3 space-y-4 overflow-y-auto">

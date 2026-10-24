@@ -14,8 +14,8 @@ export interface SocialPilotLogoProps {
 }
 
 export default function SocialPilotLogo({
-  height = 36,
-  width = 160,
+  height = 44,
+  width = 210,
   variant = "dark",
   href,
   className = "",

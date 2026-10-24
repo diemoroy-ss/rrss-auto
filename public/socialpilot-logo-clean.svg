@@ -1,41 +1,41 @@
-<svg width="280" height="64" viewBox="0 0 280 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Cubo 3D Isométrico Limpio (Centrado verticalmente con la altura del texto) -->
-  <g transform="translate(6, 7)">
+<svg width="250" height="52" viewBox="0 0 250 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Cubo 3D Isométrico Limpio (Ajustado para ocupar el alto completo) -->
+  <g transform="translate(2, 2)">
     <!-- Cara Superior -->
-    <path d="M26 8L44 18.5L26 29L8 18.5L26 8Z" fill="url(#spCleanTop)"/>
+    <path d="M24 2L44 13.5L24 25L4 13.5L24 2Z" fill="url(#spCleanTop)"/>
     <!-- Cara Derecha -->
-    <path d="M26 29L44 18.5V40.5L26 51V29Z" fill="url(#spCleanRight)"/>
+    <path d="M24 25L44 13.5V36.5L24 48V25Z" fill="url(#spCleanRight)"/>
     <!-- Cara Izquierda -->
-    <path d="M26 29L8 18.5V40.5L26 51V29Z" fill="url(#spCleanLeft)"/>
+    <path d="M24 25L4 13.5V36.5L24 48V25Z" fill="url(#spCleanLeft)"/>
     <!-- Aristas de luz sutil -->
-    <path d="M26 29V51" stroke="#FFFFFF" stroke-width="1.2" opacity="0.35"/>
-    <path d="M26 29L8 18.5" stroke="#FFFFFF" stroke-width="1" opacity="0.2"/>
-    <path d="M26 29L44 18.5" stroke="#FFFFFF" stroke-width="1" opacity="0.2"/>
+    <path d="M24 25V48" stroke="#FFFFFF" stroke-width="1.2" opacity="0.4"/>
+    <path d="M24 25L4 13.5" stroke="#FFFFFF" stroke-width="1" opacity="0.25"/>
+    <path d="M24 25L44 13.5" stroke="#FFFFFF" stroke-width="1" opacity="0.25"/>
     <!-- Núcleo de Automatización Central -->
-    <circle cx="26" cy="29" r="3.5" fill="#FFFFFF"/>
-    <circle cx="26" cy="29" r="1.5" fill="#FF6B00"/>
+    <circle cx="24" cy="25" r="3.5" fill="#FFFFFF"/>
+    <circle cx="24" cy="25" r="1.5" fill="#FF6B00"/>
   </g>
 
-  <!-- Tipografía SocialPilot (Alineada y centrada verticalmente con el cubo) -->
-  <text x="68" y="36" font-family="system-ui, -apple-system, sans-serif" font-size="26" font-weight="900" fill="#FFFFFF" letter-spacing="-0.5">
+  <!-- Tipografía SocialPilot Grande y Nítida -->
+  <text x="56" y="30" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="900" fill="#FFFFFF" letter-spacing="-0.6">
     Social<tspan fill="#FF6B00">Pilot</tspan>
   </text>
 
-  <!-- BY SANTISOFT Centrado armoniosamente debajo -->
-  <text x="69" y="52" font-family="system-ui, -apple-system, sans-serif" font-size="9" font-weight="800" fill="#94A3B8" letter-spacing="2.8">
+  <!-- BY SANTISOFT con cuerpo y claridad -->
+  <text x="57" y="45" font-family="system-ui, -apple-system, sans-serif" font-size="10.5" font-weight="800" fill="#CBD5E1" letter-spacing="2.6">
     BY SANTISOFT
   </text>
 
   <defs>
-    <linearGradient id="spCleanTop" x1="8" y1="8" x2="44" y2="29" gradientUnits="userSpaceOnUse">
+    <linearGradient id="spCleanTop" x1="4" y1="2" x2="44" y2="25" gradientUnits="userSpaceOnUse">
       <stop stop-color="#FF922B"/>
       <stop offset="1" stop-color="#FFA94D"/>
     </linearGradient>
-    <linearGradient id="spCleanRight" x1="26" y1="18.5" x2="44" y2="51" gradientUnits="userSpaceOnUse">
+    <linearGradient id="spCleanRight" x1="24" y1="13.5" x2="44" y2="48" gradientUnits="userSpaceOnUse">
       <stop stop-color="#D9480F"/>
       <stop offset="1" stop-color="#9A3412"/>
     </linearGradient>
-    <linearGradient id="spCleanLeft" x1="8" y1="18.5" x2="26" y2="51" gradientUnits="userSpaceOnUse">
+    <linearGradient id="spCleanLeft" x1="4" y1="13.5" x2="24" y2="48" gradientUnits="userSpaceOnUse">
       <stop stop-color="#FF6B00"/>
       <stop offset="1" stop-color="#EA580C"/>
     </linearGradient>

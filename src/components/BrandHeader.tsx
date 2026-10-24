@@ -62,10 +62,10 @@ export default function BrandHeader() {
         <div className="flex items-center gap-3">
           <Link
             href="/"
-            className="flex items-center hover:opacity-90 transition-opacity"
+            className="flex items-center hover:opacity-90 transition-opacity py-1"
             title="SocialPilot by Santisoft - Inicio"
           >
-            <SocialPilotLogo height={38} width={166} priority />
+            <SocialPilotLogo height={44} width={210} priority />
           </Link>
 
           {/* Ecosystem Switcher Button (Desktop) */}
