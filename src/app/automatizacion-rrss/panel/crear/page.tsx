@@ -372,6 +372,8 @@ export default function RrssCreatePost() {
   const templateUrlParam = searchParams.get("templateUrl");
   const hideAIParam = searchParams.get("hideAI") === "true";
   const openEditorParam = searchParams.get("openEditor") === "true";
+  const carouselUrlsParam = searchParams.get("carouselUrls");
+  const postTypeParam = searchParams.get("postType");
   const catalogoIdParam = searchParams.get("catalogoId");
   const catalogoNameParam = searchParams.get("catalogoName");
   const promptIdParam = searchParams.get("promptId") || searchParams.get("templatePromptId") || searchParams.get("styleId");
@@ -428,6 +430,42 @@ export default function RrssCreatePost() {
     };
     load();
   }, [user, activeProfile?.id]);
+
+  useEffect(() => {
+    if (carouselUrlsParam) {
+      try {
+        let urls: string[] = [];
+        try {
+          urls = JSON.parse(decodeURIComponent(carouselUrlsParam));
+        } catch {
+          urls = decodeURIComponent(carouselUrlsParam).split(",").map((u) => u.trim()).filter(Boolean);
+        }
+        if (Array.isArray(urls) && urls.length > 0) {
+          setPostType("Carrusel");
+          setCarouselCount(urls.length);
+          setPreviewSlides(urls.map((url) => ({ url, copy: "" })));
+          setPosterConfig((prev) => ({
+            ...prev,
+            enabled: true,
+            slides: urls.map((u, i) => ({
+              slideNumber: i + 1,
+              imageUrl: u,
+              baseImageUrl: u,
+              mainText: prev.slides?.[i]?.mainText || "",
+              priceText: prev.slides?.[i]?.priceText || "",
+              sloganText: prev.slides?.[i]?.sloganText || "",
+              ctaText: prev.slides?.[i]?.ctaText || "",
+              role: CAROUSEL_DEFAULT_SLIDES[i]?.role || `Slide ${i + 1}`,
+            })),
+          }));
+        }
+      } catch (err) {
+        console.warn("Error parsing carouselUrls param:", err);
+      }
+    } else if (postTypeParam) {
+      setPostType(postTypeParam);
+    }
+  }, [carouselUrlsParam, postTypeParam]);
 
   useEffect(() => {
     if (templateUrlParam) {
@@ -1069,17 +1107,20 @@ export default function RrssCreatePost() {
       try {
         if (user?.uid && user.uid !== "anonymous") {
           if (postType === 'Carrusel' && resolvedImageUrls.length > 0) {
-            for (const url of resolvedImageUrls) {
-              await addDoc(collection(db, "generated_images"), {
-                userId: user.uid,
-                profileId: activeProfile?.id || "default",
-                url,
-                createdAt: new Date(),
-                source: "ia",
-                type: postType,
-                prompt: promptEnglish || (promptsEnglish.length > 0 ? promptsEnglish[0] : "")
-              });
-            }
+            await addDoc(collection(db, "generated_images"), {
+              userId: user.uid,
+              profileId: activeProfile?.id || "default",
+              url: resolvedImageUrls[0],
+              carouselImages: resolvedImageUrls,
+              carouselCount: resolvedImageUrls.length,
+              carouselPrompts: pendingPrompts?.prompts_spanish || promptsEnglish || [],
+              createdAt: new Date(),
+              source: "ia",
+              type: "Carrusel",
+              prompt: promptEnglish || pendingPrompts?.prompt_spanish || `Carrusel comercial (${resolvedImageUrls.length} diapositivas)`,
+              copy: resolvedCopy || postText,
+              posterConfig: posterConfig.enabled ? posterConfig : null,
+            });
             savedToLibrary = true;
           } else if (resolvedImageUrl) {
             await addDoc(collection(db, "generated_images"), {

@@ -171,7 +171,80 @@ interface GeneratedImage {
   hasRemotionScenes?: boolean;
   commercialDesignId?: string;
   carouselImages?: string[];
+  carouselPrompts?: string[];
+  carouselIds?: string[];
   commercialDesignData?: any;
+}
+
+
+function consolidateCarouselItems(rawList: GeneratedImage[]): GeneratedImage[] {
+  const consolidated: GeneratedImage[] = [];
+  const processedIds = new Set<string>();
+
+  for (let i = 0; i < rawList.length; i++) {
+    const item = rawList[i];
+    if (processedIds.has(item.id)) continue;
+
+    // Si ya tiene carouselImages explícito con más de 1 lámina, agregarlo directamente
+    if (item.type === 'Carrusel' && item.carouselImages && item.carouselImages.length > 1) {
+      processedIds.add(item.id);
+      consolidated.push(item);
+      continue;
+    }
+
+    // Si es tipo Carrusel y vino en lote suelto, agrupar con sus diapositivas hermanas
+    if (item.type === 'Carrusel') {
+      const relatedSlides: GeneratedImage[] = [item];
+      processedIds.add(item.id);
+
+      const itemTime = item.createdAt.getTime();
+
+      for (let j = 0; j < rawList.length; j++) {
+        if (i === j) continue;
+        const other = rawList[j];
+        if (processedIds.has(other.id)) continue;
+
+        if (other.type === 'Carrusel') {
+          const timeDiff = Math.abs(other.createdAt.getTime() - itemTime);
+          // Si fueron creadas en la misma sesión/lote (dentro de 5 minutos o mismo diseño comercial)
+          const isSameBatch =
+            (item.commercialDesignId && item.commercialDesignId === other.commercialDesignId) ||
+            timeDiff <= 5 * 60 * 1000;
+
+          if (isSameBatch && relatedSlides.length < 10) {
+            relatedSlides.push(other);
+            processedIds.add(other.id);
+          }
+        }
+      }
+
+      if (relatedSlides.length > 1) {
+        // Orden cronológico de las diapositivas
+        relatedSlides.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+
+        const allUrls = relatedSlides.map((s) => s.url).filter(Boolean);
+        const allPrompts = relatedSlides.map((s) => s.prompt || "");
+        const allIds = relatedSlides.map((s) => s.id);
+        const coverItem = relatedSlides[0];
+
+        consolidated.push({
+          ...coverItem,
+          carouselImages: allUrls,
+          carouselPrompts: allPrompts,
+          carouselIds: allIds,
+          prompt: coverItem.prompt || `Carrusel comercial (${allUrls.length} diapositivas)`,
+          copy: relatedSlides.find((s) => s.copy)?.copy || coverItem.copy || "",
+        });
+      } else {
+        consolidated.push(item);
+      }
+    } else {
+      processedIds.add(item.id);
+      consolidated.push(item);
+    }
+  }
+
+  return consolidated;
 }
 
 export default function BibliotecaPage() {
@@ -370,7 +443,8 @@ export default function BibliotecaPage() {
       
       list.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
       
-      setImages(list);
+      const consolidatedList = consolidateCarouselItems(list);
+      setImages(consolidatedList);
     } catch (e: any) {
       console.error("Error loading generated images:", e);
       setError("No pudimos cargar la biblioteca en este momento.");
@@ -380,17 +454,28 @@ export default function BibliotecaPage() {
   };
 
   const handleDelete = async (id: string, source: string) => {
-    if (!confirm("¿Estás seguro de que quieres eliminar esta imagen de tu biblioteca?")) return;
+    if (!confirm("¿Estás seguro de que quieres eliminar este elemento de tu biblioteca?")) return;
     try {
+      const targetImg = images.find(i => i.id === id);
       const collectionName = source === "upload" ? "user_templates" : "generated_images";
-      await deleteDoc(doc(db, collectionName, id));
-      await deleteDoc(doc(db, "social_posts", id)).catch(() => {});
-      setImages((prev) => prev.filter((img) => img.id !== id));
+      const idsToDelete = (targetImg?.carouselIds && targetImg.carouselIds.length > 0)
+        ? targetImg.carouselIds
+        : [id];
+
+      for (const docId of idsToDelete) {
+        await deleteDoc(doc(db, collectionName, docId)).catch(() => {});
+        await deleteDoc(doc(db, "social_posts", docId)).catch(() => {});
+      }
+
+      setImages((prev) => prev.filter((img) => img.id !== id && !idsToDelete.includes(img.id)));
       setSelectedIds((prev) => {
         const next = new Set(prev);
-        next.delete(id);
+        idsToDelete.forEach(dId => next.delete(dId));
         return next;
       });
+      if (selectedImage?.id === id) {
+        setSelectedImage(null);
+      }
     } catch (e) {
       console.error("Error deleting image:", e);
       alert("No se pudo eliminar el elemento.");
@@ -997,9 +1082,7 @@ export default function BibliotecaPage() {
                       {img.source === "ia" ? "✨ Agentes" : img.source === "upload" ? "📥 Subido" : "🎨 Editor"}
                     </span>
                     <span className="text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg bg-black/60 text-white backdrop-blur-md border border-white/10 flex items-center gap-1">
-                      {img.type === "Carrusel"
-                        ? `📚 Carrusel (${img.carouselImages?.length || "Lote"})`
-                        : img.type}
+                      {img.type === "Carrusel" ? `📚 Carrusel (${img.carouselImages?.length || 5} diapositivas)` : img.type}
                     </span>
                   </div>
                 </div>
@@ -1021,28 +1104,29 @@ export default function BibliotecaPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-slate-100/80">
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100/80">
+                  {img.type === 'Carrusel' && img.carouselImages && img.carouselImages.length > 1 ? (
+                    <Link
+                      href={`/automatizacion-rrss/panel/crear?postType=Carrusel&carouselUrls=${encodeURIComponent(JSON.stringify(img.carouselImages))}&hideAI=true`}
+                      className="py-2 px-2 text-center rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-black text-[9px] uppercase tracking-wider transition-all flex items-center justify-center gap-1"
+                    >
+                      <span>🚀</span> Postear
+                    </Link>
+                  ) : (
+                    <Link
+                      href={`/automatizacion-rrss/panel/crear?templateUrl=${encodeURIComponent(img.url)}&hideAI=true`}
+                      className="py-2 px-2 text-center rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-black text-[9px] uppercase tracking-wider transition-all flex items-center justify-center gap-1"
+                    >
+                      <span>🚀</span> Postear
+                    </Link>
+                  )}
+
                   <Link
-                    href={`/automatizacion-rrss/panel/crear?templateUrl=${encodeURIComponent(img.url)}&hideAI=true`}
-                    className="py-2 px-2 text-center rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-black text-[9px] uppercase tracking-wider transition-all"
+                    href={`/automatizacion-rrss/panel/crear?templateUrl=${encodeURIComponent(img.url)}&openEditor=true`}
+                    className="py-2 px-2 text-center rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-[9px] uppercase tracking-wider transition-all flex items-center justify-center gap-1"
                   >
-                    🚀 Postear
+                    <span>🎨</span> Editar
                   </Link>
-                  {img.hasRemotionScenes ? (
-                    <Link
-                      href={`/automatizacion-rrss/panel/poc-video?idea=${encodeURIComponent(img.prompt || '')}`}
-                      className="py-2 px-2 text-center rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-[9px] uppercase tracking-wider transition-all"
-                    >
-                      ✏️ Editar
-                    </Link>
-                  ) : img.commercialDesignId ? (
-                    <Link
-                      href={`/automatizacion-rrss/panel/imagen-comercial?editId=${encodeURIComponent(img.commercialDesignId)}`}
-                      className="py-2 px-2 text-center rounded-lg bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 font-black text-[9px] uppercase tracking-wider transition-all"
-                    >
-                      🎨 Editar Cartel
-                    </Link>
-                  ) : null}
                 </div>
               </div>
             </div>
@@ -1204,8 +1288,8 @@ export default function BibliotecaPage() {
                   )}
 
                   {/* Selector / Indicador de diapositivas del carrusel */}
-                  <div className="flex items-center gap-1.5 mt-3 bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-lg">
-                    {selectedImage.carouselImages.map((_, idx) => (
+                  <div className="flex flex-wrap items-center justify-center gap-2 mt-4 bg-slate-900/95 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/10 shadow-xl max-w-full overflow-x-auto">
+                    {selectedImage.carouselImages.map((imgUrl, idx) => (
                       <button
                         key={idx}
                         type="button"
@@ -1213,13 +1297,20 @@ export default function BibliotecaPage() {
                           e.stopPropagation();
                           setCarouselPreviewIndex(idx);
                         }}
-                        className={`text-[10px] font-black px-2 py-0.5 rounded-md transition-all ${
+                        className={`flex items-center gap-2 p-1.5 rounded-xl transition-all border cursor-pointer ${
                           carouselPreviewIndex === idx
-                            ? "bg-indigo-600 text-white shadow-sm"
-                            : "text-slate-400 hover:text-white hover:bg-white/10"
+                            ? "bg-indigo-600 text-white border-indigo-400 shadow-md ring-2 ring-indigo-400/40 scale-105"
+                            : "bg-white/5 border-white/10 text-slate-300 hover:bg-white/15 hover:border-white/20"
                         }`}
                       >
-                        Slide {idx + 1}
+                        <img
+                          src={imgUrl}
+                          alt={`Slide ${idx + 1}`}
+                          className="w-7 h-7 rounded-lg object-cover shrink-0"
+                        />
+                        <span className="text-[10px] font-black pr-1">
+                          Slide {idx + 1}
+                        </span>
                       </button>
                     ))}
                   </div>
@@ -1264,8 +1355,7 @@ export default function BibliotecaPage() {
               </div>
               
               <h4 className="font-black text-slate-900 text-base mb-4 flex items-center gap-2">
-                {selectedImage.type === 'Carrusel'
-                  ? `📚 Formato: Carrusel (${selectedImage.carouselImages?.length || 2} diapositivas)`
+                {selectedImage.type === 'Carrusel' ? `📚 Formato: Carrusel (${selectedImage.carouselImages?.length || 5} diapositivas)`
                   : selectedImage.type === 'Post'
                   ? '📱 Formato: Post'
                   : selectedImage.type === 'Historia'
@@ -1273,16 +1363,31 @@ export default function BibliotecaPage() {
                   : '🎬 Formato: Video/Reel'}
               </h4>
               
-              {selectedImage.prompt && (
-                <div className="bg-slate-50 rounded-2xl border border-slate-200 p-4 mb-4">
-                  <p className="font-black text-[10px] uppercase tracking-widest text-indigo-500 mb-2 flex items-center gap-1.5">
-                    <span>✨</span> CONCEPTO / PROMPT ORIGINAL:
-                  </p>
-                  <p className="text-xs font-semibold italic text-slate-700 leading-relaxed">
-                    "{selectedImage.prompt}"
-                  </p>
-                </div>
-              )}
+              {(() => {
+                const currentSlidePrompt = (selectedImage.carouselPrompts && selectedImage.carouselPrompts[carouselPreviewIndex]) || selectedImage.prompt;
+                if (!currentSlidePrompt && !selectedImage.prompt) return null;
+                const isMultiCarousel = Boolean(selectedImage.carouselImages && selectedImage.carouselImages.length > 1);
+
+                return (
+                  <div className="bg-slate-50 rounded-2xl border border-slate-200 p-4 mb-4">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <p className="font-black text-[10px] uppercase tracking-widest text-indigo-600 flex items-center gap-1.5">
+                        <span>✨</span> {isMultiCarousel
+                          ? `CONCEPTO DE DIAPOSITIVA ${carouselPreviewIndex + 1} DE ${selectedImage.carouselImages!.length}:`
+                          : "CONCEPTO / PROMPT ORIGINAL:"}
+                      </p>
+                      {isMultiCarousel && (
+                        <span className="text-[9px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-black">
+                          Slide {carouselPreviewIndex + 1}/{selectedImage.carouselImages!.length}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs font-semibold italic text-slate-700 leading-relaxed">
+                      "{currentSlidePrompt || selectedImage.prompt}"
+                    </p>
+                  </div>
+                );
+              })()}
 
               {selectedImage.copy && (
                 <div className="bg-indigo-50/50 rounded-2xl border border-indigo-100 p-4 mb-6">
@@ -1295,26 +1400,48 @@ export default function BibliotecaPage() {
                 </div>
               )}
               
-              <div className="flex flex-col gap-3 mt-auto pt-4 border-t border-slate-100">
+              <div className="flex flex-col gap-2.5 mt-auto pt-4 border-t border-slate-100">
+                {selectedImage.type === 'Carrusel' && selectedImage.carouselImages && selectedImage.carouselImages.length > 1 ? (
+                  <Link
+                    href={`/automatizacion-rrss/panel/crear?postType=Carrusel&carouselUrls=${encodeURIComponent(JSON.stringify(selectedImage.carouselImages))}&hideAI=true`}
+                    className="py-3.5 px-4 text-center rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-black text-[11px] uppercase tracking-wider transition-all shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2"
+                  >
+                    <span>🚀</span> POSTEAR CARRUSEL COMPLETO ({selectedImage.carouselImages.length} LÁMINAS)
+                  </Link>
+                ) : (
+                  <Link
+                    href={`/automatizacion-rrss/panel/crear?templateUrl=${encodeURIComponent(selectedImage.url)}&hideAI=true`}
+                    className="py-3.5 px-4 text-center rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[11px] uppercase tracking-wider transition-all shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2"
+                  >
+                    <span>🚀</span> POSTEAR
+                  </Link>
+                )}
+
+                {/* Botón Editar Lámina / Imagen */}
                 <Link
-                  href={`/automatizacion-rrss/panel/crear?templateUrl=${encodeURIComponent(selectedImage.url)}&hideAI=true`}
-                  className="py-3.5 px-4 text-center rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[11px] uppercase tracking-wider transition-all shadow-md shadow-indigo-600/20"
+                  href={`/automatizacion-rrss/panel/crear?templateUrl=${encodeURIComponent(
+                    (selectedImage.carouselImages && selectedImage.carouselImages[carouselPreviewIndex]) || selectedImage.url
+                  )}&openEditor=true`}
+                  className="py-3 px-4 text-center rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-black text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-2"
                 >
-                  🚀 POSTEAR
+                  <span>🎨</span> {selectedImage.carouselImages && selectedImage.carouselImages.length > 1
+                    ? `EDITAR ESTA LÁMINA (SLIDE ${carouselPreviewIndex + 1})`
+                    : "EDITAR EN EDITOR VISUAL"}
                 </Link>
+
                 {selectedImage.hasRemotionScenes ? (
                   <Link
                     href={`/automatizacion-rrss/panel/poc-video?idea=${encodeURIComponent(selectedImage.prompt || '')}`}
-                    className="py-3.5 px-4 text-center rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-[11px] uppercase tracking-wider transition-all"
+                    className="py-3 px-4 text-center rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-2"
                   >
-                    ✏️ EDITAR DISEÑO EN REMOTION
+                    <span>🎬</span> EDITAR DISEÑO EN REMOTION
                   </Link>
                 ) : selectedImage.commercialDesignId ? (
                   <Link
                     href={`/automatizacion-rrss/panel/imagen-comercial?editId=${encodeURIComponent(selectedImage.commercialDesignId)}`}
-                    className="py-3.5 px-4 text-center rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 font-black text-[11px] uppercase tracking-wider transition-all"
+                    className="py-3 px-4 text-center rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 font-black text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-2"
                   >
-                    🎨 EDITAR CARTEL EN IMAGEN COMERCIAL
+                    <span>📐</span> EDITAR CARTEL EN IMAGEN COMERCIAL
                   </Link>
                 ) : null}
               </div>
