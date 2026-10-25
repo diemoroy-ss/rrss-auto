@@ -1091,6 +1091,7 @@ export default function RrssCreatePost() {
       await new Promise(r => setTimeout(r, 800));
       setGeneratingOpen(false);
       setGeneratingSteps([]);
+      setWizardStep(3);
 
       // Refrescar contador de uso de imágenes y videos
       if (user?.uid) {
@@ -2642,9 +2643,26 @@ export default function RrssCreatePost() {
         </div>
       )}
 
-      {/* 3. SECCIÓN MEDIA: SEGÚN FLUJO ACTIVO (ESTÁNDAR, AFICHE O LABORATORIO) */}
-      {!openEditorParam && (
-        (activeCreationFlow === 'afiche' || activeCreationFlow === 'laboratorio') ? (
+      {/* 3. SECCIÓN MEDIA: SEGÚN FLUJO ACTIVO (SOLO PASO 2 O MODO EXPERTO, Y PASO 3 DISEÑO FINAL) */}
+      {!openEditorParam && !isExpertMode && wizardStep === 3 && !hasMedia && !previewLoading && (
+        <div className="mb-10 bg-white border-2 border-dashed border-slate-200 rounded-3xl p-10 text-center max-w-xl mx-auto space-y-4 shadow-xs">
+          <div className="text-5xl">🎨</div>
+          <h3 className="text-lg font-black text-slate-900">Aún no tienes un diseño listo para publicar</h3>
+          <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+            En este paso verás el diseño final de tu publicación listo para agendar o publicar. Primero genera tu imagen con nuestros agentes o elige un archivo en el Paso 2.
+          </p>
+          <button
+            type="button"
+            onClick={() => setWizardStep(2)}
+            className="px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-xs rounded-2xl shadow-md transition-all inline-flex items-center gap-2 cursor-pointer"
+          >
+            <span>← Ir al Paso 2: Diseño y Copy</span>
+          </button>
+        </div>
+      )}
+
+      {!openEditorParam && (isExpertMode || wizardStep === 2 || (wizardStep === 3 && (hasMedia || previewLoading))) && (
+        (activeCreationFlow === 'afiche' || activeCreationFlow === 'laboratorio') && (isExpertMode || wizardStep === 2) ? (
           <div className="mb-10">
             <PosterFormView
               userPlan={userPlan}
@@ -2694,7 +2712,8 @@ export default function RrssCreatePost() {
           </div>
         ) : (
                 <div className="grid lg:grid-cols-12 gap-8 items-start mb-10">
-          {/* Columna Izquierda: Formulario creativo (Catálogo, Prompt, Estilos, Copy y Parámetros) */}
+          {/* Columna Izquierda: Formulario creativo (SOLO visible en Paso 2 o Modo Experto) */}
+          {(isExpertMode || wizardStep === 2) && (
           <div className="lg:col-span-7 space-y-6 w-full">
 
             {/* ── Selector de Producto/Servicio del Catálogo ── */}
@@ -2875,35 +2894,39 @@ export default function RrssCreatePost() {
                 >
                   ← Volver al Paso 1
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setWizardStep(3)}
-                  className="px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
-                >
-                  <span>Paso 3: Revisar y Programar</span>
-                  <span>→</span>
-                </button>
+                {hasMedia && (
+                  <button
+                    type="button"
+                    onClick={() => setWizardStep(3)}
+                    className="px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span>Paso 3: Revisar y Programar</span>
+                    <span>→</span>
+                  </button>
+                )}
               </div>
             )}
           </div>
+          )}
 
-          {/* Columna Derecha: Card Modo de Creación compacta + Previsualización de Imagen + Botón Postear */}
-          <div className="lg:col-span-5 space-y-5 w-full sticky top-6">
+          {/* Columna Derecha: En Paso 2 ocupa 5 cols; en Paso 3 ocupa el centro completo con el Diseño Final y Copy */}
+          <div className={`${!isExpertMode && wizardStep === 3 ? "lg:col-span-8 lg:col-start-3" : "lg:col-span-5"} space-y-5 w-full sticky top-6`}>
             {!isExpertMode && wizardStep === 3 && (
-              <div className="flex items-center justify-between pb-1">
+              <div className="flex items-center justify-between bg-white border border-slate-200 rounded-2xl p-3.5 shadow-2xs">
                 <button
                   type="button"
                   onClick={() => setWizardStep(2)}
-                  className="text-xs font-bold text-slate-500 hover:text-slate-800 py-1 px-2.5 rounded-lg hover:bg-slate-100 transition-colors inline-flex items-center gap-1 cursor-pointer"
+                  className="text-xs font-bold text-slate-600 hover:text-slate-900 py-1.5 px-3 rounded-xl hover:bg-slate-100 transition-colors inline-flex items-center gap-1.5 cursor-pointer"
                 >
-                  ← Modificar Diseño o Copy
+                  ← Volver al Paso 2 (Modificar Diseño o Copy)
                 </button>
-                <span className="text-[10px] font-black uppercase tracking-wider text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-200">
-                  Paso 3 de 3
+                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+                  ✅ Paso 3: Diseño Final Listo
                 </span>
               </div>
             )}
-            {/* Card Modo de Creación (Ajustada Compacta) */}
+            {/* Card Modo de Creación (SOLO en Paso 2 o Modo Experto) */}
+            {(isExpertMode || wizardStep === 2) && (
             <div className="bg-white border-2 border-slate-200/90 rounded-3xl p-4 shadow-xs">
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -2940,6 +2963,7 @@ export default function RrssCreatePost() {
                 </div>
               </div>
             </div>
+            )}
 
             {/* PREVISUALIZACIÓN DE LA IMAGEN EN VIVO DIRECTAMENTE AL COSTADO DERECHO */}
             <div className="bg-white border-2 border-slate-200/90 rounded-3xl p-5 shadow-xs space-y-4">
@@ -3047,6 +3071,30 @@ export default function RrssCreatePost() {
                       forceOpenEditor={openEditorParam}
                       aspectRatio={postType === 'Historia' || postType === 'Reel' ? '9:16' : '1:1'}
                     />
+                    {!isExpertMode && wizardStep === 3 && (
+                      <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[11px] font-black text-slate-700 uppercase tracking-wider">
+                            ✍️ Texto Final de la Publicación (Copy)
+                          </label>
+                          <button
+                            type="button"
+                            onClick={handleImproveWithAI}
+                            disabled={improveLoading}
+                            className="text-[10px] font-black text-orange-600 hover:underline cursor-pointer"
+                          >
+                            {improveLoading ? "Mejorando..." : "✨ Mejorar texto con nuestros agentes"}
+                          </button>
+                        </div>
+                        <textarea
+                          value={postText}
+                          onChange={(e) => setPostText(e.target.value)}
+                          rows={4}
+                          placeholder="Escribe o edita el texto final que acompañará tu publicación..."
+                          className="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs font-medium text-slate-800 outline-none focus:border-orange-500"
+                        />
+                      </div>
+                    )}
                     <button 
                       type="button" 
                       onClick={openFinalPostModal}
