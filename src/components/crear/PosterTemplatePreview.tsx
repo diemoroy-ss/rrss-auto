@@ -360,7 +360,7 @@ export default function PosterTemplatePreview({
   return (
     <div className="w-full bg-slate-900/95 p-4 rounded-2xl border border-slate-800 text-white shadow-inner flex flex-col items-center">
       {/* Header del Preview con Selector de Vistas */}
-      <div className="w-full flex items-center justify-between mb-3 px-1 text-[11px] font-bold">
+      <div className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 px-1 text-[11px] font-bold">
         {hasImage ? (
           <span className="flex items-center gap-1.5 uppercase tracking-wider text-emerald-400">
             <span>✨</span> {slideNumber ? `Slide ${slideNumber} Listo` : "Afiche Listo"}
@@ -371,7 +371,7 @@ export default function PosterTemplatePreview({
           </span>
         )}
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           {hasImage && (
             <div className="flex items-center gap-1 bg-slate-800 p-0.5 rounded-xl border border-slate-700">
               <button

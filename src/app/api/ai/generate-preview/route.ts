@@ -1,3 +1,46 @@
+
+// ═══════════════════════════════════════════════════════════════
+// REGLA UNIVERSAL DE ZONA SEGURA DE INSTAGRAM (AUTO-INYECCIÓN)
+// ═══════════════════════════════════════════════════════════════
+function autoEnforceSafeZoneInPrompt(prompt: string): string {
+  if (!prompt || typeof prompt !== "string") return prompt;
+
+  const hasTypography = /typography\s*&\s*layout/i.test(prompt) || /upper center/i.test(prompt) || /top center/i.test(prompt);
+  if (!hasTypography) return prompt;
+
+  let result = prompt;
+
+  // 1. Inyectar o asegurar COMPOSITION SAFE ZONE (68% central)
+  const safeZoneDirective = "- COMPOSITION SAFE ZONE (MANDATORY): All typography and badges MUST stay strictly inside the central 68% safe box (minimum 16% empty margins on left/right borders, 15% breathing space from top, 15% breathing space from bottom). Never let text or letters touch or approach canvas borders.";
+
+  if (!/composition\s+safe\s+zone/i.test(result)) {
+    if (/typography\s*&\s*layout/i.test(result)) {
+      result = result.replace(new RegExp("(typography\\s*&\\s*layout[^\\r\\n]*)", "i"), "$1\n" + safeZoneDirective);
+    } else {
+      result += "\n\n" + safeZoneDirective;
+    }
+  }
+
+  // 2. Reubicar TOP CENTER para que no quede en el borde 0% sino al 14% de altura
+  result = result.replace(/-\s*TOP\s+CENTER\s*\(([^)]*)\)/gi, (_m, p1) => {
+    return `- UPPER CENTER (Pill badge positioned 14% down from top edge inside safe area, ${p1})`;
+  });
+
+  // 3. Forzar que el titular no supere el 68% de ancho
+  result = result.replace(/-\s*UPPER\s+CENTER\s*\(([^)]*)\)/gi, (m, p1) => {
+    if (/68%/i.test(p1) || /safe/i.test(p1)) return m;
+    return `- MID-UPPER CENTER (Centered compact headline, maximum 68% container width with at least 16% empty background space on left and right sides, ${p1})`;
+  });
+
+  // 4. Forzar que el botón inferior no toque el fondo
+  result = result.replace(/-\s*BOTTOM\s+RIGHT\s*\(([^)]*)\)/gi, (m, p1) => {
+    if (/85%/i.test(p1)) return m;
+    return `- LOWER RIGHT (Clean pill badge placed above 85% height mark, inside safe zone, ${p1})`;
+  });
+
+  return result;
+}
+
 import { NextRequest, NextResponse } from "next/server";
 import { generateElevenLabsAudio } from "../../../../lib/elevenlabs";
 import type { PosterConfig } from "../../../../types/poster";
@@ -423,9 +466,10 @@ export async function POST(req: NextRequest) {
             posterConfig?.styleReferenceUrl ||
             "";
 
+        const finalPromptForN8n = autoEnforceSafeZoneInPrompt(enrichedPrompts[0] || "");
         const n8nPayload: any = {
-            prompt: enrichedPrompts[0] || "",
-            promptEnglish: enrichedPrompts[0] || "",
+            prompt: finalPromptForN8n,
+            promptEnglish: finalPromptForN8n,
             baseImageUrl: baseImageUrl || "",
             styleReferenceUrl: effectiveStyleRef,
             styleReferenceTraits: posterConfig?.slides?.[0]?.styleReferenceTraits || posterConfig?.styleReferenceTraits || [],

@@ -318,7 +318,7 @@ export default function PosterFormView({
     : (posterConfig.ctaText || "");
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-300">
+    <div className="w-full max-w-full overflow-hidden min-w-0 space-y-6 sm:space-y-8 animate-in fade-in duration-300">
       {/* 🧪 Módulo 1 Mixboard: Arquitecto de Blueprint (Solo en modo Laboratorio) */}
       {isLabMode && (
         <MixboardBlueprintBar
@@ -393,9 +393,9 @@ export default function PosterFormView({
         {/* COLUMNA IZQUIERDA: Composición y Dirección de Arte (mismo alto total que derecha) */}
         <div className="lg:col-span-6 flex flex-col w-full">
           {/* Card 1: Dirección de Arte y Composición Espacial */}
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs flex-1 flex flex-col justify-between h-full space-y-6">
+          <div className="bg-white border border-slate-200 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xs flex-1 flex flex-col justify-between h-full space-y-6">
             <div className="space-y-5">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-slate-100 pb-3">
                             <div className="flex items-center gap-2.5">
                               <span className="text-xl">📐</span>
                               <div>
@@ -413,7 +413,7 @@ export default function PosterFormView({
                           </div>
               
                           {/* Layouts disponibles */}
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <button
                 type="button"
                 onClick={() => update("layout", "auto")}
@@ -608,7 +608,7 @@ export default function PosterFormView({
         {/* COLUMNA DERECHA: Foto Real de tu Producto + Copy para el Post en Redes */}
         <div className="lg:col-span-6 space-y-6 w-full flex flex-col justify-between">
           {/* Card 2: Imagen del Producto o Escena Publicitaria */}
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
+          <div className="bg-white border border-slate-200 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xs space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2.5">
                 <span className="text-xl">📦</span>
@@ -926,7 +926,7 @@ export default function PosterFormView({
                     </div>
 
                     {/* Card 3: Copy Persuasivo para Redes y Botón de Generación */}
-                    <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
+                    <div className="bg-white border border-slate-200 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xs space-y-4">
                       <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                         <div>
                           <h4 className="text-sm font-black text-slate-900 uppercase tracking-wider">
@@ -981,7 +981,7 @@ export default function PosterFormView({
       </div>
 
       {/* Fila Inferior: Card Textos del Cartel (A TODO EL ANCHO) */}
-      <div className="w-full bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-xs space-y-6">
+      <div className="w-full bg-white border border-slate-200 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 shadow-xs space-y-6">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                       <div className="flex items-center gap-2.5">
                         <span className="text-xl">✍️</span>
@@ -1089,7 +1089,7 @@ export default function PosterFormView({
                         </div>
 
             {/* Nombre del Negocio y Logo */}
-                        <div className="grid grid-cols-2 gap-3 pt-1">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
                           <label className="flex items-center gap-2.5 p-3 rounded-2xl border border-slate-200 bg-slate-50/60 cursor-pointer hover:bg-slate-50 transition-colors">
                             <input
                               type="checkbox"
