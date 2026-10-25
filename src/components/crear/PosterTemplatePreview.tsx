@@ -78,6 +78,7 @@ interface PosterTemplatePreviewProps {
   contactType?: string;
   contactValue?: string;
   aspectRatio?: "1:1" | "4:5" | "9:16";
+  postType?: string;
   generatedImageUrl?: string;
   isGenerating?: boolean;
   slideNumber?: number;
@@ -106,6 +107,7 @@ export default function PosterTemplatePreview({
   contactType = "whatsapp",
   contactValue = "",
   aspectRatio = "1:1",
+  postType,
   generatedImageUrl,
   isGenerating = false,
   slideNumber,
@@ -116,6 +118,7 @@ export default function PosterTemplatePreview({
   onChangeTransforms,
 }: PosterTemplatePreviewProps) {
   const hasImage = Boolean(generatedImageUrl && generatedImageUrl.trim().length > 0);
+  const isStoryOrReel = postType === "Historia" || postType === "Reel" || aspectRatio === "9:16";
 
   const [viewMode, setViewMode] = useState<"afiche" | "image" | "blueprint">("afiche");
   const [showSafeZone, setShowSafeZone] = useState<boolean>(false);
@@ -404,18 +407,20 @@ export default function PosterTemplatePreview({
             </div>
           )}
 
-          <button
-            type="button"
-            onClick={() => setShowSafeZone((prev) => !prev)}
-            className={`px-2 py-0.5 rounded-lg text-[10px] font-black transition-all cursor-pointer border flex items-center gap-1 ${
-              showSafeZone
-                ? "bg-emerald-600 text-white border-emerald-400 shadow-xs"
-                : "bg-slate-800 text-slate-300 border-slate-700 hover:text-white"
-            }`}
-            title="Ver guía de recorte de la cuadrícula de Instagram"
-          >
-            <span>📐</span> Zona Segura IG
-          </button>
+          {!isStoryOrReel && (
+            <button
+              type="button"
+              onClick={() => setShowSafeZone((prev) => !prev)}
+              className={`px-2 py-0.5 rounded-lg text-[10px] font-black transition-all cursor-pointer border flex items-center gap-1 ${
+                showSafeZone
+                  ? "bg-emerald-600 text-white border-emerald-400 shadow-xs"
+                  : "bg-slate-800 text-slate-300 border-slate-700 hover:text-white"
+              }`}
+              title="Ver guía de recorte de la cuadrícula de Instagram (Grid 1:1 vs Feed 4:5)"
+            >
+              <span>📐</span> Zona Segura IG
+            </button>
+          )}
 
           {elementTransforms && Object.keys(elementTransforms).length > 0 && (
             <button
@@ -585,8 +590,8 @@ export default function PosterTemplatePreview({
             {/* Capas Interactivas con Drag & Drop, Tamaño y Giro */}
             {renderInteractiveLayers()}
 
-            {/* Overlay Guía de Zona Segura Universal de Instagram */}
-            {showSafeZone && (
+            {/* Overlay Guía de Zona Segura Universal de Instagram (Solo para Post y Carrusel) */}
+            {showSafeZone && !isStoryOrReel && (
               <div className="absolute inset-0 pointer-events-none z-30">
                 {aspectRatio === "4:5" ? (
                   <div className="w-full h-full flex flex-col justify-between">
@@ -725,8 +730,8 @@ export default function PosterTemplatePreview({
             {/* Capas Interactivas con Drag & Drop, Tamaño y Giro */}
             {renderInteractiveLayers()}
 
-            {/* Overlay Guía de Zona Segura Universal de Instagram */}
-            {showSafeZone && (
+            {/* Overlay Guía de Zona Segura Universal de Instagram (Solo para Post y Carrusel) */}
+            {showSafeZone && !isStoryOrReel && (
               <div className="absolute inset-0 pointer-events-none z-30">
                 {aspectRatio === "4:5" ? (
                   <div className="w-full h-full flex flex-col justify-between">
