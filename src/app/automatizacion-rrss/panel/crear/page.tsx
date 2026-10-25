@@ -1257,8 +1257,8 @@ export default function RrssCreatePost() {
             setPostText(resolvedCopy);
           }
         }
-        // Avanzar automáticamente al paso 3 para revisar el diseño generado
-        setWizardStep(3);
+        // NOTA: NO auto-avanzar al paso 3 aquí. El usuario permanece en el Paso 2 para ver su slide/diseño,
+        // generar las siguientes diapositivas o retocar, y sólo avanza al presionar "Continuar al Paso 3".
       }
 
     } catch (err: any) {
@@ -2514,30 +2514,43 @@ export default function RrssCreatePost() {
               </p>
             </div>
 
-            {/* Selector de cantidad de slides con botones 2 a 5 */}
-            <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-200 shrink-0">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider pl-1.5">
-                Slides:
-              </span>
-              {[2, 3, 4, 5].map((cnt) => (
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Selector de cantidad de slides con botones 2 a 5 */}
+              <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-200 shrink-0">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider pl-1.5">
+                  Slides:
+                </span>
+                {[2, 3, 4, 5].map((cnt) => (
+                  <button
+                    key={cnt}
+                    type="button"
+                    onClick={() => {
+                      setCarouselCount(cnt);
+                      if (activeSlideIndex >= cnt) {
+                        setActiveSlideIndex(cnt - 1);
+                      }
+                    }}
+                    className={`px-3 py-1 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                      carouselCount === cnt
+                        ? "bg-orange-600 text-white shadow-sm scale-102"
+                        : "bg-white text-slate-600 border border-slate-200 hover:border-slate-300"
+                    }`}
+                  >
+                    {cnt} {cnt === 5 ? "★" : ""}
+                  </button>
+                ))}
+              </div>
+
+              {!isExpertMode && wizardStep === 2 && hasMedia && (
                 <button
-                  key={cnt}
                   type="button"
-                  onClick={() => {
-                    setCarouselCount(cnt);
-                    if (activeSlideIndex >= cnt) {
-                      setActiveSlideIndex(cnt - 1);
-                    }
-                  }}
-                  className={`px-3 py-1 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                    carouselCount === cnt
-                      ? "bg-orange-600 text-white shadow-sm scale-102"
-                      : "bg-white text-slate-600 border border-slate-200 hover:border-slate-300"
-                  }`}
+                  onClick={() => setWizardStep(3)}
+                  className="px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
                 >
-                  {cnt} {cnt === 5 ? "★" : ""}
+                  <span>Continuar al Paso 3</span>
+                  <span>→</span>
                 </button>
-              ))}
+              )}
             </div>
           </div>
 
