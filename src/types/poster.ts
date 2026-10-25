@@ -79,6 +79,22 @@ export type ContactType = 'phone' | 'email' | 'whatsapp';
 
 export type PosterLayout = 'auto' | 'top_banner' | 'split_left' | 'split_right' | 'recipe_ingredients';
 
+export interface TextElementTransform {
+  x: number; // Coordenada horizontal en porcentaje del ancho del lienzo (0-100%)
+  y: number; // Coordenada vertical en porcentaje de la altura del lienzo (0-100%)
+  fontSize?: number; // Tamaño de fuente en píxeles (ej: 14)
+  rotation?: number; // Ángulo de rotación en grados (-180 a 180)
+}
+
+export interface PosterElementTransforms {
+  brand?: TextElementTransform;
+  title?: TextElementTransform;
+  slogan?: TextElementTransform;
+  price?: TextElementTransform;
+  cta?: TextElementTransform;
+  contact?: TextElementTransform;
+}
+
 export interface PosterSlideConfig {
   slideNumber: number;
   role?: string;
@@ -98,6 +114,8 @@ export interface PosterSlideConfig {
   styleReferenceTraits?: ('palette' | 'lighting' | 'typography' | 'layout')[];
   lockStyleFromSlide1?: boolean;
   lastRetouchInstruction?: string;
+  // Transformaciones interactivas (Drag & Drop, tamaño y rotación)
+  elementTransforms?: PosterElementTransforms;
 }
 
 export interface PosterConfig {
@@ -138,6 +156,8 @@ export interface PosterConfig {
   baseImageUrl?: string;
   imageUrl?: string;
   additionalNotes?: string;
+  // Transformaciones interactivas (Drag & Drop, tamaño y rotación)
+  elementTransforms?: PosterElementTransforms;
 }
 
 /**

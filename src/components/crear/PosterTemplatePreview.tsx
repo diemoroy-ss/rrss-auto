@@ -1,7 +1,64 @@
 "use client";
 
-import React from "react";
-import type { PosterLayout, VisualStyle } from "../../types/poster";
+import React, { useState, useEffect, useRef } from "react";
+import type { PosterLayout, VisualStyle, PosterElementTransforms, TextElementTransform } from "../../types/poster";
+
+type ElementKey = "brand" | "title" | "slogan" | "price" | "cta" | "contact";
+
+const ELEMENT_LABELS: Record<ElementKey, { name: string; emoji: string }> = {
+  brand: { name: "Nombre / Marca", emoji: "🏢" },
+  title: { name: "Titular Principal", emoji: "📝" },
+  slogan: { name: "Slogan / Frase", emoji: "💬" },
+  price: { name: "Precio / Oferta", emoji: "💲" },
+  cta: { name: "Botón de Acción", emoji: "📣" },
+  contact: { name: "Datos de Contacto", emoji: "📱" },
+};
+
+const DEFAULT_POSITIONS: Record<
+  string,
+  Record<ElementKey, { x: number; y: number; fontSize: number; rotation: number }>
+> = {
+  auto: {
+    brand:   { x: 30, y: 11, fontSize: 8.5, rotation: 0 },
+    price:   { x: 75, y: 11, fontSize: 9.5, rotation: 0 },
+    title:   { x: 50, y: 38, fontSize: 13.5, rotation: 0 },
+    slogan:  { x: 50, y: 52, fontSize: 9.5, rotation: 0 },
+    contact: { x: 50, y: 81, fontSize: 8, rotation: 0 },
+    cta:     { x: 50, y: 89, fontSize: 9.5, rotation: 0 },
+  },
+  split_left: {
+    brand:   { x: 30, y: 12, fontSize: 8.5, rotation: 0 },
+    title:   { x: 30, y: 30, fontSize: 12.5, rotation: 0 },
+    slogan:  { x: 30, y: 46, fontSize: 9, rotation: 0 },
+    price:   { x: 25, y: 64, fontSize: 10, rotation: 0 },
+    contact: { x: 30, y: 76, fontSize: 8, rotation: 0 },
+    cta:     { x: 30, y: 88, fontSize: 9, rotation: 0 },
+  },
+  top_banner: {
+    brand:   { x: 25, y: 9, fontSize: 8, rotation: 0 },
+    price:   { x: 78, y: 9, fontSize: 9, rotation: 0 },
+    title:   { x: 50, y: 20, fontSize: 12.5, rotation: 0 },
+    slogan:  { x: 50, y: 31, fontSize: 8.5, rotation: 0 },
+    contact: { x: 50, y: 83, fontSize: 8, rotation: 0 },
+    cta:     { x: 50, y: 91, fontSize: 9, rotation: 0 },
+  },
+  recipe_ingredients: {
+    brand:   { x: 50, y: 8, fontSize: 8, rotation: 0 },
+    title:   { x: 50, y: 17, fontSize: 12, rotation: 0 },
+    slogan:  { x: 50, y: 27, fontSize: 8.5, rotation: 0 },
+    price:   { x: 25, y: 88, fontSize: 9.5, rotation: 0 },
+    contact: { x: 50, y: 79, fontSize: 7.5, rotation: 0 },
+    cta:     { x: 75, y: 88, fontSize: 9, rotation: 0 },
+  },
+  split_right: {
+    brand:   { x: 70, y: 12, fontSize: 8.5, rotation: 0 },
+    title:   { x: 70, y: 30, fontSize: 12.5, rotation: 0 },
+    slogan:  { x: 70, y: 46, fontSize: 9, rotation: 0 },
+    price:   { x: 75, y: 64, fontSize: 10, rotation: 0 },
+    contact: { x: 70, y: 76, fontSize: 8, rotation: 0 },
+    cta:     { x: 70, y: 88, fontSize: 9, rotation: 0 },
+  },
+};
 
 interface PosterTemplatePreviewProps {
   layout: PosterLayout;
@@ -27,6 +84,8 @@ interface PosterTemplatePreviewProps {
   totalSlides?: number;
   onRegenerate?: () => void;
   onOpenEditor?: () => void;
+  elementTransforms?: PosterElementTransforms;
+  onChangeTransforms?: (transforms: PosterElementTransforms) => void;
 }
 
 export default function PosterTemplatePreview({
@@ -53,27 +112,26 @@ export default function PosterTemplatePreview({
   totalSlides,
   onRegenerate,
   onOpenEditor,
+  elementTransforms,
+  onChangeTransforms,
 }: PosterTemplatePreviewProps) {
   const hasImage = Boolean(generatedImageUrl && generatedImageUrl.trim().length > 0);
 
-  // Modos de visualización:
-  // "afiche" -> Muestra la imagen generada con las capas de texto tipográficas en tiempo real encima
-  // "image" -> Muestra solo la imagen limpia generada sin capas de texto
-  // "blueprint" -> Muestra el esquema técnico wireframe sin foto
-  const [viewMode, setViewMode] = React.useState<"afiche" | "image" | "blueprint">("afiche");
-  const [showSafeZone, setShowSafeZone] = React.useState<boolean>(false);
+  const [viewMode, setViewMode] = useState<"afiche" | "image" | "blueprint">("afiche");
+  const [showSafeZone, setShowSafeZone] = useState<boolean>(false);
+  const [selectedKey, setSelectedKey] = useState<ElementKey | null>(null);
+  const [draggingKey, setDraggingKey] = useState<ElementKey | null>(null);
 
-  // Al recibir una nueva imagen generada, asegurar que se active el modo afiche en vivo
-  React.useEffect(() => {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
     if (hasImage && viewMode === "blueprint") {
       setViewMode("afiche");
     }
   }, [hasImage]);
 
-  // Si no hay imagen, forzamos blueprint
   const activeViewMode = hasImage ? viewMode : "blueprint";
 
-  // Solo se muestra si el usuario NO lo ha borrado (no es string vacío) y está habilitado por su toggle
   const hasTitle = (includeMainText !== false) && Boolean(mainText && mainText.trim().length > 0);
   const displayTitle = hasTitle ? mainText!.trim() : null;
 
@@ -94,271 +152,210 @@ export default function PosterTemplatePreview({
     ? `${contactType === "whatsapp" ? "WhatsApp" : contactType === "email" ? "Email" : "Tel"}: ${contactValue!.trim()}`
     : null;
 
-  const renderLayoutBody = (hasBackgroundPhoto: boolean) => {
+  // Obtener transformación (personalizada o por defecto del layout)
+  const getTransform = (key: ElementKey) => {
+    const custom = elementTransforms?.[key];
+    const layoutDefaults = DEFAULT_POSITIONS[layout] || DEFAULT_POSITIONS.auto;
+    const def = layoutDefaults[key] || DEFAULT_POSITIONS.auto[key];
+
+    return {
+      x: custom?.x ?? def.x,
+      y: custom?.y ?? def.y,
+      fontSize: custom?.fontSize ?? def.fontSize,
+      rotation: custom?.rotation ?? def.rotation,
+    };
+  };
+
+  const updateTransform = (key: ElementKey, partial: Partial<TextElementTransform>) => {
+    const current = getTransform(key);
+    const updated = {
+      ...(elementTransforms || {}),
+      [key]: {
+        ...current,
+        ...partial,
+      },
+    };
+    onChangeTransforms?.(updated);
+  };
+
+  const resetTransform = (key: ElementKey) => {
+    if (!elementTransforms) return;
+    const next = { ...elementTransforms };
+    delete next[key];
+    onChangeTransforms?.(next);
+  };
+
+  const resetAllTransforms = () => {
+    onChangeTransforms?.({});
+    setSelectedKey(null);
+  };
+
+  // Drag & Drop con Mouse / Touch
+  useEffect(() => {
+    if (!draggingKey) return;
+
+    const handlePointerMove = (e: MouseEvent | TouchEvent) => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+      const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+
+      const rawX = ((clientX - rect.left) / rect.width) * 100;
+      const rawY = ((clientY - rect.top) / rect.height) * 100;
+
+      const x = Math.max(6, Math.min(94, Math.round(rawX)));
+      const y = Math.max(6, Math.min(94, Math.round(rawY)));
+
+      updateTransform(draggingKey, { x, y });
+    };
+
+    const handlePointerUp = () => {
+      setDraggingKey(null);
+    };
+
+    window.addEventListener("mousemove", handlePointerMove);
+    window.addEventListener("mouseup", handlePointerUp);
+    window.addEventListener("touchmove", handlePointerMove, { passive: false });
+    window.addEventListener("touchend", handlePointerUp);
+
+    return () => {
+      window.removeEventListener("mousemove", handlePointerMove);
+      window.removeEventListener("mouseup", handlePointerUp);
+      window.removeEventListener("touchmove", handlePointerMove);
+      window.removeEventListener("touchend", handlePointerUp);
+    };
+  }, [draggingKey, elementTransforms]);
+
+  // Renderizar un elemento interactivo posicionable
+  const renderInteractiveElement = (
+    key: ElementKey,
+    content: React.ReactNode,
+    className: string = "",
+    styleOverride: React.CSSProperties = {}
+  ) => {
+    const t = getTransform(key);
+    const isSelected = selectedKey === key;
+    const isDragging = draggingKey === key;
+
     return (
-      <>
-        {/* ── LAYOUT 1: SPLIT LATERAL ── */}
-        {layout === "split_left" && (
-          <div className="relative z-10 h-full grid grid-cols-12 gap-2.5">
-            {/* Columna Izquierda: Textos y CTA */}
-            <div className={`col-span-7 flex flex-col justify-between py-1 pr-1 ${hasBackgroundPhoto ? "border-r border-white/20" : "border-r border-white/10"}`}>
-              <div className="space-y-2">
-                {displayBrand && (
-                  <div className="flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-slate-200 bg-black/60 px-2 py-0.5 rounded-full backdrop-blur-xs w-fit border border-white/10 shadow-xs">
-                    {includeLogo && (
-                      <span className="w-2.5 h-2.5 rounded-full inline-block shrink-0" style={{ backgroundColor: primaryColor }} />
-                    )}
-                    <span className="truncate">{displayBrand}</span>
-                  </div>
-                )}
-                <div>
-                  {displayTitle && (
-                    <h5 className="text-[12px] font-black leading-tight tracking-tight uppercase line-clamp-3 text-white drop-shadow-lg">
-                      {displayTitle}
-                    </h5>
-                  )}
-                  {displaySlogan && (
-                    <p className="text-[9px] text-slate-200 font-medium leading-tight mt-1 line-clamp-2 drop-shadow-md">
-                      {displaySlogan}
-                    </p>
-                  )}
-                </div>
-              </div>
+      <div
+        key={key}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          setSelectedKey(key);
+          setDraggingKey(key);
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          setSelectedKey(key);
+        }}
+        style={{
+          position: "absolute",
+          left: `${t.x}%`,
+          top: `${t.y}%`,
+          transform: `translate(-50%, -50%) rotate(${t.rotation}deg)`,
+          fontSize: `${t.fontSize}px`,
+          zIndex: isSelected ? 40 : 25,
+          cursor: isDragging ? "grabbing" : "grab",
+          userSelect: "none",
+          touchAction: "none",
+          ...styleOverride,
+        }}
+        className={`group transition-shadow inline-block max-w-[88%] ${
+          isSelected
+            ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-950 rounded-lg shadow-2xl"
+            : "hover:ring-1 hover:ring-amber-400/60 rounded-lg"
+        } ${className}`}
+        title={`Arrastra para mover (${ELEMENT_LABELS[key].name}) · Clic para cambiar tamaño o girar`}
+      >
+        {content}
 
-              <div className="space-y-2 pt-2">
-                {displayPrice && (
-                  <div
-                    className="inline-block text-[10px] font-black px-2.5 py-0.5 rounded-lg shadow-md"
-                    style={{ backgroundColor: primaryColor, color: "#111827" }}
-                  >
-                    {displayPrice}
-                  </div>
-                )}
-                {displayContact && (
-                  <div className="text-[8px] font-bold text-slate-200 bg-black/60 px-2 py-0.5 rounded-lg backdrop-blur-xs truncate border border-white/10">
-                    {displayContact}
-                  </div>
-                )}
-                {displayCta && (
-                  <div className="w-full bg-white text-slate-950 text-[9px] font-black py-1.5 px-2 rounded-lg text-center uppercase tracking-wider shadow-md truncate">
-                    {displayCta}
-                  </div>
-                )}
-              </div>
+        {/* Indicador de posición y ángulo cuando está seleccionado */}
+        {isSelected && (
+          <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-amber-500 text-slate-950 text-[7px] font-black uppercase px-1.5 py-0.2 rounded-full shadow-md whitespace-nowrap pointer-events-none">
+            <span>✋ {t.x}%, {t.y}%</span>
+            {t.rotation !== 0 && <span>· {t.rotation}°</span>}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Renderizador de todas las capas interactivas
+  const renderInteractiveLayers = () => {
+    return (
+      <div className="absolute inset-0 z-20 pointer-events-auto">
+        {/* Marca / Nombre comercial */}
+        {displayBrand &&
+          renderInteractiveElement(
+            "brand",
+            <div className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-wider text-slate-200 bg-black/75 px-2.5 py-1 rounded-full backdrop-blur-md border border-white/15 shadow-md">
+              {includeLogo && (
+                <span className="w-2.5 h-2.5 rounded-full inline-block shrink-0 shadow-xs" style={{ backgroundColor: primaryColor }} />
+              )}
+              <span className="truncate">{displayBrand}</span>
             </div>
+          )}
 
-            {/* Columna Derecha: Foto o Producto */}
-            {!hasBackgroundPhoto ? (
-              <div className="col-span-5 flex flex-col items-center justify-center bg-white/5 border border-dashed border-white/20 rounded-xl p-2 text-center">
-                <span className="text-xl mb-1">📸</span>
-                <span className="text-[8px] font-black uppercase tracking-wider text-slate-400 leading-tight">
-                  Zona de Producto Despejada
-                </span>
-              </div>
-            ) : (
-              <div className="col-span-5 flex items-center justify-center pointer-events-none" />
-            )}
-          </div>
-        )}
+        {/* Titular Principal */}
+        {displayTitle &&
+          renderInteractiveElement(
+            "title",
+            <h5 className="font-black leading-tight tracking-tight uppercase text-white drop-shadow-xl text-center px-2 py-0.5 break-words">
+              {displayTitle}
+            </h5>
+          )}
 
-        {/* ── LAYOUT 2: CABECERA SUPERIOR ── */}
-        {layout === "top_banner" && (
-          <div className="relative z-10 h-full flex flex-col justify-between">
-            {/* Bloque Superior: Titular y Marca */}
-            {(displayBrand || displayTitle || displaySlogan || displayPrice) && (
-              <div className="bg-slate-950/85 backdrop-blur-xs p-2 rounded-xl border border-white/15 space-y-1 shadow-md">
-                {(displayBrand || displayPrice) && (
-                  <div className="flex items-center justify-between text-[8px] font-black uppercase tracking-wider text-slate-300">
-                    <span className="truncate">{displayBrand || ""}</span>
-                    {displayPrice && (
-                      <span
-                        className="px-2 py-0.5 rounded-md font-bold ml-auto shadow-xs"
-                        style={{ backgroundColor: primaryColor, color: "#111827" }}
-                      >
-                        {displayPrice}
-                      </span>
-                    )}
-                  </div>
-                )}
-                {displayTitle && (
-                  <h5 className="text-[12px] font-black leading-tight tracking-tight uppercase text-white drop-shadow-md text-center">
-                    {displayTitle}
-                  </h5>
-                )}
-                {displaySlogan && (
-                  <p className="text-[8px] text-slate-200 font-medium text-center line-clamp-1">
-                    {displaySlogan}
-                  </p>
-                )}
-              </div>
-            )}
+        {/* Slogan */}
+        {displaySlogan &&
+          renderInteractiveElement(
+            "slogan",
+            <p className="font-semibold text-slate-200 leading-tight text-center drop-shadow-md bg-black/50 px-2 py-0.5 rounded-md backdrop-blur-xs max-w-xs">
+              {displaySlogan}
+            </p>
+          )}
 
-            {/* Centro: Foto libre */}
-            {!hasBackgroundPhoto ? (
-              <div className="flex-1 my-2 flex flex-col items-center justify-center bg-white/5 border border-dashed border-white/20 rounded-xl text-center p-2">
-                <span className="text-2xl mb-1">📸</span>
-                <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400">
-                  Escena Fotográfica Central
-                </span>
-              </div>
-            ) : (
-              <div className="flex-1 my-2 pointer-events-none" />
-            )}
-
-            {/* Pie: Contacto y CTA */}
-            {(displayContact || displayCta) && (
-              <div className="space-y-1.5 pt-1">
-                {displayContact && (
-                  <div className="text-center text-[8px] font-bold text-slate-200 bg-black/60 py-0.5 px-2 rounded-md backdrop-blur-xs border border-white/10">
-                    {displayContact}
-                  </div>
-                )}
-                {displayCta && (
-                  <div
-                    className="w-full text-[9px] font-black py-1.5 px-3 rounded-lg text-center uppercase tracking-wider shadow-md truncate"
-                    style={{ backgroundColor: primaryColor, color: "#111827" }}
-                  >
-                    {displayCta}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── LAYOUT 3: FICHA INFORMATIVA ── */}
-        {layout === "recipe_ingredients" && (
-          <div className="relative z-10 h-full flex flex-col justify-between">
-            {/* Cabecera */}
-            {(displayBrand || displayTitle) && (
-              <div className="text-center space-y-0.5 bg-slate-950/70 backdrop-blur-xs p-1.5 rounded-xl border border-white/10">
-                {displayBrand && (
-                  <span className="text-[8px] font-black uppercase tracking-widest text-slate-300 block">
-                    {displayBrand}
-                  </span>
-                )}
-                {displayTitle && (
-                  <h5 className="text-[11px] font-black uppercase text-white tracking-tight leading-tight drop-shadow-md">
-                    {displayTitle}
-                  </h5>
-                )}
-              </div>
-            )}
-
-            {/* Centro Foto */}
-            {!hasBackgroundPhoto ? (
-              <div className="h-20 my-1 flex flex-col items-center justify-center bg-white/5 border border-dashed border-white/20 rounded-xl">
-                <span className="text-lg">🍽️ / 📦</span>
-                <span className="text-[7px] font-black uppercase text-slate-400">Encuadre Cenital</span>
-              </div>
-            ) : (
-              <div className="flex-1 my-1 pointer-events-none" />
-            )}
-
-            {/* Puntos de Información / Ficha */}
-            <div className="grid grid-cols-3 gap-1 my-1">
-              <div className="bg-black/65 backdrop-blur-xs rounded-md p-1 text-center border border-white/10 shadow-xs">
-                <span className="text-[7px] block font-bold" style={{ color: primaryColor }}>Punto 1</span>
-                <span className="text-[7px] block text-slate-200 truncate">Calidad</span>
-              </div>
-              <div className="bg-black/65 backdrop-blur-xs rounded-md p-1 text-center border border-white/10 shadow-xs">
-                <span className="text-[7px] block font-bold" style={{ color: primaryColor }}>Punto 2</span>
-                <span className="text-[7px] block text-slate-200 truncate">Rapidez</span>
-              </div>
-              <div className="bg-black/65 backdrop-blur-xs rounded-md p-1 text-center border border-white/10 shadow-xs">
-                <span className="text-[7px] block font-bold" style={{ color: primaryColor }}>Punto 3</span>
-                <span className="text-[7px] block text-slate-200 truncate">Garantía</span>
-              </div>
+        {/* Precio / Oferta Destacada */}
+        {displayPrice &&
+          renderInteractiveElement(
+            "price",
+            <div
+              className="font-black px-3 py-1 rounded-xl shadow-lg border border-white/20 text-center whitespace-nowrap"
+              style={{ backgroundColor: primaryColor, color: "#111827" }}
+            >
+              {displayPrice}
             </div>
+          )}
 
-            {/* Pie CTA */}
-            {(displayPrice || displayCta) && (
-              <div className="flex items-center justify-between gap-1 pt-1">
-                {displayPrice && (
-                  <span
-                    className="text-[9px] font-black px-2 py-1 rounded-md shadow-md"
-                    style={{ backgroundColor: primaryColor, color: "#111827" }}
-                  >
-                    {displayPrice}
-                  </span>
-                )}
-                {displayCta && (
-                  <div className="flex-1 bg-white text-slate-900 text-[8px] font-black py-1 px-2 rounded-md text-center uppercase tracking-wider truncate shadow-sm">
-                    {displayCta}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
+        {/* Contacto */}
+        {displayContact &&
+          renderInteractiveElement(
+            "contact",
+            <div className="text-[7.5px] font-bold text-slate-200 bg-black/75 px-2 py-0.5 rounded-md backdrop-blur-md border border-white/15 shadow-sm text-center">
+              {displayContact}
+            </div>
+          )}
 
-        {/* ── LAYOUT 4: AUTOMÁTICO (EQUILIBRADO) ── */}
-        {(layout === "auto" || !layout) && (
-          <div className="relative z-10 h-full flex flex-col justify-between">
-            {/* Fila Superior: Marca y Precio */}
-            {(displayBrand || displayPrice) && (
-              <div className="flex items-center justify-between gap-2">
-                {displayBrand && (
-                  <span className="text-[8px] font-black uppercase tracking-wider text-slate-200 bg-black/60 px-2 py-0.5 rounded-full backdrop-blur-xs border border-white/10 shadow-xs flex items-center gap-1">
-                    {includeLogo && (
-                      <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: primaryColor }} />
-                    )}
-                    <span className="truncate">{displayBrand}</span>
-                  </span>
-                )}
-                {displayPrice && (
-                  <span
-                    className="text-[9px] font-black px-2.5 py-0.5 rounded-full shadow-md ml-auto"
-                    style={{ backgroundColor: primaryColor, color: "#111827" }}
-                  >
-                    {displayPrice}
-                  </span>
-                )}
-              </div>
-            )}
-
-            {/* Bloque Central: Titular y Slogan */}
-            {(displayTitle || displaySlogan) && (
-              <div className="my-auto py-2 text-center space-y-1.5">
-                {displayTitle && (
-                  <h5 className="text-[13px] font-black uppercase leading-tight tracking-tight text-white drop-shadow-xl px-2">
-                    {displayTitle}
-                  </h5>
-                )}
-                {displaySlogan && (
-                  <p className="text-[9px] text-slate-200 font-medium px-2 line-clamp-2 drop-shadow-md">
-                    {displaySlogan}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Pie: Contacto y CTA */}
-            {(displayContact || displayCta) && (
-              <div className="space-y-1.5 pt-1">
-                {displayContact && (
-                  <div className="text-center text-[7.5px] font-bold text-slate-200 bg-black/60 py-0.5 px-2 rounded-full backdrop-blur-xs border border-white/10">
-                    {displayContact}
-                  </div>
-                )}
-                {displayCta && (
-                  <div
-                    className="w-full text-[9px] font-black py-1.5 px-3 rounded-xl text-center uppercase tracking-wider shadow-lg truncate"
-                    style={{ backgroundColor: primaryColor, color: "#111827" }}
-                  >
-                    {displayCta}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-      </>
+        {/* CTA (Llamado a la acción) */}
+        {displayCta &&
+          renderInteractiveElement(
+            "cta",
+            <div
+              className="font-black py-1.5 px-3.5 rounded-xl uppercase tracking-wider shadow-xl text-center whitespace-nowrap border border-white/20"
+              style={{ backgroundColor: primaryColor, color: "#111827" }}
+            >
+              {displayCta}
+            </div>
+          )}
+      </div>
     );
   };
 
   return (
-    <div className="w-full bg-slate-900/95 p-4 rounded-2xl border border-slate-800 text-white shadow-inner flex flex-col items-center">
+    <div
+      onClick={() => setSelectedKey(null)}
+      className="w-full bg-slate-900/95 p-4 rounded-2xl border border-slate-800 text-white shadow-inner flex flex-col items-center"
+    >
       {/* Header del Preview con Selector de Vistas */}
       <div className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 px-1 text-[11px] font-bold">
         {hasImage ? (
@@ -380,7 +377,7 @@ export default function PosterTemplatePreview({
                 className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
                   activeViewMode === "afiche" ? "bg-amber-500 text-slate-950 shadow-xs" : "text-slate-400 hover:text-white"
                 }`}
-                title="Ver el afiche completo con textos y precios en tiempo real"
+                title="Ver el afiche completo con textos interactivos en tiempo real"
               >
                 ✨ Afiche en Vivo
               </button>
@@ -406,6 +403,7 @@ export default function PosterTemplatePreview({
               </button>
             </div>
           )}
+
           <button
             type="button"
             onClick={() => setShowSafeZone((prev) => !prev)}
@@ -414,21 +412,161 @@ export default function PosterTemplatePreview({
                 ? "bg-emerald-600 text-white border-emerald-400 shadow-xs"
                 : "bg-slate-800 text-slate-300 border-slate-700 hover:text-white"
             }`}
-            title="Ver guía de recorte de la cuadrícula de Instagram (Grid 1:1 vs Feed 4:5)"
+            title="Ver guía de recorte de la cuadrícula de Instagram"
           >
             <span>📐</span> Zona Segura IG
           </button>
+
+          {elementTransforms && Object.keys(elementTransforms).length > 0 && (
+            <button
+              type="button"
+              onClick={resetAllTransforms}
+              className="px-2 py-0.5 rounded-lg text-[10px] font-bold text-rose-300 hover:text-rose-100 bg-rose-950/60 border border-rose-800 transition-all cursor-pointer"
+              title="Restablecer todos los textos a su posición automática original"
+            >
+              ↩️ Restablecer
+            </button>
+          )}
+
           <span className="bg-slate-800 px-2 py-0.5 rounded-lg text-slate-300 font-mono text-[10px]">
             {aspectRatio}
           </span>
         </div>
       </div>
 
-      {/* CASO 1: MODO AFICHE EN VIVO (IMAGEN DE FONDO + CAPAS DE TEXTO TIPOGRÁFICAS EN TIEMPO REAL) */}
+      {/* Barra de Herramientas Flotante para el Elemento Seleccionado (Tamaño y Giro) */}
+      {selectedKey && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="w-full max-w-[320px] mb-3 p-2.5 bg-slate-950/90 border border-amber-500/50 rounded-2xl backdrop-blur-md shadow-2xl flex flex-col gap-2 animate-in fade-in zoom-in-95 duration-150"
+        >
+          <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
+            <span className="text-[11px] font-black text-amber-400 flex items-center gap-1.5 truncate">
+              <span>{ELEMENT_LABELS[selectedKey].emoji}</span>
+              <span>Editando: {ELEMENT_LABELS[selectedKey].name}</span>
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => updateTransform(selectedKey, { x: 50 })}
+                className="text-[9px] font-bold text-slate-300 hover:text-white bg-slate-800 px-2 py-0.5 rounded-md border border-slate-700 cursor-pointer"
+                title="Centrar horizontalmente"
+              >
+                🎯 Centrar X
+              </button>
+              <button
+                type="button"
+                onClick={() => resetTransform(selectedKey)}
+                className="text-[9px] font-bold text-slate-400 hover:text-rose-300 bg-slate-800 px-1.5 py-0.5 rounded-md border border-slate-700 cursor-pointer"
+                title="Volver a posición original de este texto"
+              >
+                ↩️
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedKey(null)}
+                className="text-[10px] font-bold text-slate-400 hover:text-white px-1.5 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 text-[10px]">
+            {/* Control de Tamaño */}
+            <div className="space-y-1 bg-slate-900 p-1.5 rounded-xl border border-slate-800">
+              <div className="flex items-center justify-between text-slate-400 font-bold">
+                <span>📏 Tamaño</span>
+                <span className="text-amber-300 font-mono font-black">{getTransform(selectedKey).fontSize}px</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateTransform(selectedKey, {
+                      fontSize: Math.max(7, Math.round(getTransform(selectedKey).fontSize - 1)),
+                    })
+                  }
+                  className="w-6 h-6 bg-slate-800 hover:bg-slate-700 rounded-lg font-black text-white flex items-center justify-center cursor-pointer"
+                >
+                  -
+                </button>
+                <input
+                  type="range"
+                  min="7"
+                  max="32"
+                  step="0.5"
+                  value={getTransform(selectedKey).fontSize}
+                  onChange={(e) => updateTransform(selectedKey, { fontSize: parseFloat(e.target.value) })}
+                  className="w-full accent-amber-500 cursor-pointer"
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateTransform(selectedKey, {
+                      fontSize: Math.min(36, Math.round(getTransform(selectedKey).fontSize + 1)),
+                    })
+                  }
+                  className="w-6 h-6 bg-slate-800 hover:bg-slate-700 rounded-lg font-black text-white flex items-center justify-center cursor-pointer"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            {/* Control de Giro / Rotación */}
+            <div className="space-y-1 bg-slate-900 p-1.5 rounded-xl border border-slate-800">
+              <div className="flex items-center justify-between text-slate-400 font-bold">
+                <span>🔄 Giro</span>
+                <span className="text-amber-300 font-mono font-black">{getTransform(selectedKey).rotation}°</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => updateTransform(selectedKey, { rotation: getTransform(selectedKey).rotation - 5 })}
+                  className="w-6 h-6 bg-slate-800 hover:bg-slate-700 rounded-lg font-bold text-white flex items-center justify-center cursor-pointer text-[9px]"
+                  title="Girar -5°"
+                >
+                  ↺
+                </button>
+                <input
+                  type="range"
+                  min="-90"
+                  max="90"
+                  step="1"
+                  value={getTransform(selectedKey).rotation}
+                  onChange={(e) => updateTransform(selectedKey, { rotation: parseInt(e.target.value, 10) })}
+                  className="w-full accent-amber-500 cursor-pointer"
+                />
+                <button
+                  type="button"
+                  onClick={() => updateTransform(selectedKey, { rotation: getTransform(selectedKey).rotation + 5 })}
+                  className="w-6 h-6 bg-slate-800 hover:bg-slate-700 rounded-lg font-bold text-white flex items-center justify-center cursor-pointer text-[9px]"
+                  title="Girar +5°"
+                >
+                  ↻
+                </button>
+              </div>
+              {getTransform(selectedKey).rotation !== 0 && (
+                <button
+                  type="button"
+                  onClick={() => updateTransform(selectedKey, { rotation: 0 })}
+                  className="text-[8px] text-amber-400 hover:underline block text-center w-full cursor-pointer"
+                >
+                  Restablecer a 0°
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CASO 1: MODO AFICHE EN VIVO (IMAGEN GENERADA + CAPAS DE TEXTO INTERACTIVAS) */}
       {activeViewMode === "afiche" && hasImage && (
         <div className="flex flex-col items-center w-full animate-in fade-in zoom-in-95 duration-200">
           <div
-            className={`w-full ${aspectRatio === "9:16" ? "max-w-[220px]" : "max-w-[280px]"} bg-slate-950 rounded-2xl overflow-hidden border-2 border-emerald-500/60 shadow-2xl relative select-none transition-all duration-300 group flex flex-col justify-between p-3.5`}
+            ref={containerRef}
+            className={`w-full ${aspectRatio === "9:16" ? "max-w-[220px]" : "max-w-[280px]"} bg-slate-950 rounded-2xl overflow-hidden border-2 border-emerald-500/60 shadow-2xl relative select-none transition-all duration-300 group flex flex-col justify-between`}
             style={{
               aspectRatio: aspectRatio === "9:16" ? "9/16" : aspectRatio === "4:5" ? "4/5" : "1/1",
               boxShadow: `0 12px 35px -10px ${primaryColor}40`,
@@ -438,26 +576,14 @@ export default function PosterTemplatePreview({
             <img
               src={generatedImageUrl}
               alt={displayTitle || "Fondo afiche"}
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-102"
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-102 pointer-events-none"
             />
 
-            {/* Overlay sutil para asegurar contraste óptimo de textos */}
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/40 to-slate-950/65 pointer-events-none" />
+            {/* Overlay sutil para contraste */}
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/30 to-slate-950/60 pointer-events-none" />
 
-            {/* Badges superiores informativos */}
-            <div className="absolute top-2.5 left-2.5 right-2.5 flex justify-between items-center pointer-events-none z-20">
-              <span className="bg-slate-950/80 backdrop-blur-md text-emerald-400 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border border-emerald-400/30 shadow-md">
-                {slideNumber ? `Slide ${slideNumber}` : "Afiche"} · En Vivo
-              </span>
-              <span className="bg-slate-950/80 backdrop-blur-md text-white text-[10px] font-mono px-2 py-0.5 rounded-full border border-white/20">
-                {aspectRatio}
-              </span>
-            </div>
-
-            {/* Renderizado de textos en vivo sobre la imagen */}
-            <div className="relative z-10 h-full flex flex-col justify-between pt-6">
-              {renderLayoutBody(true)}
-            </div>
+            {/* Capas Interactivas con Drag & Drop, Tamaño y Giro */}
+            {renderInteractiveLayers()}
 
             {/* Overlay Guía de Zona Segura Universal de Instagram */}
             {showSafeZone && (
@@ -485,13 +611,11 @@ export default function PosterTemplatePreview({
                   </div>
                 ) : (
                   <div className="w-full h-full flex justify-between">
-                    {/* En Grid Vertical de Instagram, una imagen 1:1 pierde 20% a la izquierda */}
                     <div className="w-[20%] h-full bg-rose-950/80 border-r border-rose-400/80 flex items-center justify-center backdrop-blur-[1px]">
                       <span className="text-[6px] font-black uppercase text-rose-200 tracking-tighter bg-rose-900/90 px-1 py-1 rounded border border-rose-400/60 -rotate-90 shadow whitespace-nowrap">
                         ⚠️ Recorte Lateral (20%)
                       </span>
                     </div>
-                    {/* Caja segura central 60% */}
                     <div className="flex-1 h-full border-2 border-dashed border-emerald-400/90 my-[10%] mx-1 rounded-lg flex flex-col justify-between p-1 relative">
                       <div className="text-[6.5px] font-black uppercase tracking-wider text-emerald-300 bg-emerald-950/90 px-1.5 py-0.5 rounded border border-emerald-500/40 w-fit mx-auto shadow">
                         ✓ Zona Segura (60% central)
@@ -500,7 +624,6 @@ export default function PosterTemplatePreview({
                         Visible en Perfil Vertical y Feed
                       </div>
                     </div>
-                    {/* En Grid Vertical de Instagram, una imagen 1:1 pierde 20% a la derecha */}
                     <div className="w-[20%] h-full bg-rose-950/80 border-l border-rose-400/80 flex items-center justify-center backdrop-blur-[1px]">
                       <span className="text-[6px] font-black uppercase text-rose-200 tracking-tighter bg-rose-900/90 px-1 py-1 rounded border border-rose-400/60 rotate-90 shadow whitespace-nowrap">
                         ⚠️ Recorte Lateral (20%)
@@ -512,7 +635,6 @@ export default function PosterTemplatePreview({
             )}
           </div>
 
-          {/* Acciones debajo del Afiche */}
           <div className="flex flex-wrap items-center justify-center gap-2 mt-3 w-full max-w-[280px]">
             <a
               href={generatedImageUrl}
@@ -520,17 +642,8 @@ export default function PosterTemplatePreview({
               rel="noopener noreferrer"
               className="text-[11px] font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1 py-1 px-2.5 rounded-xl bg-amber-400/10 border border-amber-400/20"
             >
-              <span>🔍</span> Abrir imagen en pestaña nueva
+              <span>🔍</span> Abrir imagen completa
             </a>
-            {onOpenEditor && (
-              <button
-                type="button"
-                onClick={onOpenEditor}
-                className="text-[11px] font-bold text-white bg-slate-800 hover:bg-slate-700 px-3 py-1 rounded-xl border border-slate-700 transition-colors cursor-pointer flex items-center gap-1"
-              >
-                <span>✏️</span> Editor de capas
-              </button>
-            )}
             {onRegenerate && (
               <button
                 type="button"
@@ -545,7 +658,7 @@ export default function PosterTemplatePreview({
         </div>
       )}
 
-      {/* CASO 2: MODO SOLO FOTO (VER FOTO PURA SIN CAPAS DE TEXTO) */}
+      {/* CASO 2: MODO SOLO FOTO */}
       {activeViewMode === "image" && hasImage && (
         <div className="flex flex-col items-center w-full animate-in fade-in zoom-in-95 duration-200">
           <div
@@ -558,70 +671,8 @@ export default function PosterTemplatePreview({
             <img
               src={generatedImageUrl}
               alt={displayTitle || "Fotografía generada"}
-              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-102"
+              className="w-full h-full object-cover"
             />
-
-            {/* Badges superiores */}
-            <div className="absolute top-2.5 left-2.5 right-2.5 flex justify-between items-center pointer-events-none">
-              <span className="bg-slate-950/80 backdrop-blur-md text-emerald-400 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border border-emerald-400/30 shadow-md">
-                {slideNumber ? `Slide ${slideNumber}` : "Afiche"} · Solo Foto
-              </span>
-              <span className="bg-slate-950/80 backdrop-blur-md text-white text-[10px] font-mono px-2 py-0.5 rounded-full border border-white/20">
-                {aspectRatio}
-              </span>
-            </div>
-
-            {/* Overlay Guía de Zona Segura Universal de Instagram */}
-            {showSafeZone && (
-              <div className="absolute inset-0 pointer-events-none z-30">
-                {aspectRatio === "4:5" ? (
-                  <div className="w-full h-full flex flex-col justify-between">
-                    <div className="h-[10%] bg-rose-950/80 border-b border-rose-400/80 flex items-center justify-center backdrop-blur-[1px]">
-                      <span className="text-[7px] font-black uppercase text-rose-200 tracking-wider bg-rose-900/90 px-1.5 py-0.5 rounded border border-rose-400/60 shadow">
-                        ⚠️ Se recorta en Grid Cuadrado (1:1)
-                      </span>
-                    </div>
-                    <div className="flex-1 border-2 border-dashed border-emerald-400/90 mx-[20%] my-1 rounded-lg flex flex-col justify-between p-1 relative">
-                      <div className="text-[7px] font-black uppercase tracking-wider text-emerald-300 bg-emerald-950/90 px-1.5 py-0.5 rounded border border-emerald-500/40 w-fit mx-auto shadow">
-                        ✓ Zona Segura (60% Central)
-                      </div>
-                      <div className="text-[6.5px] font-mono text-emerald-300/80 text-center">
-                        Visible en Feed y Cuadrícula
-                      </div>
-                    </div>
-                    <div className="h-[12%] bg-rose-950/80 border-t border-rose-400/80 flex items-center justify-center backdrop-blur-[1px]">
-                      <span className="text-[7px] font-black uppercase text-rose-200 tracking-wider bg-rose-900/90 px-1.5 py-0.5 rounded border border-rose-400/60 shadow">
-                        ⚠️ Se recorta en Grid Cuadrado (1:1)
-                      </span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="w-full h-full flex justify-between">
-                    {/* En Grid Vertical de Instagram, una imagen 1:1 pierde 20% a la izquierda */}
-                    <div className="w-[20%] h-full bg-rose-950/80 border-r border-rose-400/80 flex items-center justify-center backdrop-blur-[1px]">
-                      <span className="text-[6px] font-black uppercase text-rose-200 tracking-tighter bg-rose-900/90 px-1 py-1 rounded border border-rose-400/60 -rotate-90 shadow whitespace-nowrap">
-                        ⚠️ Recorte Lateral (20%)
-                      </span>
-                    </div>
-                    {/* Caja segura central 60% */}
-                    <div className="flex-1 h-full border-2 border-dashed border-emerald-400/90 my-[10%] mx-1 rounded-lg flex flex-col justify-between p-1 relative">
-                      <div className="text-[6.5px] font-black uppercase tracking-wider text-emerald-300 bg-emerald-950/90 px-1.5 py-0.5 rounded border border-emerald-500/40 w-fit mx-auto shadow">
-                        ✓ Zona Segura (60% central)
-                      </div>
-                      <div className="text-[6px] font-mono text-emerald-300/80 text-center">
-                        Visible en Perfil Vertical y Feed
-                      </div>
-                    </div>
-                    {/* En Grid Vertical de Instagram, una imagen 1:1 pierde 20% a la derecha */}
-                    <div className="w-[20%] h-full bg-rose-950/80 border-l border-rose-400/80 flex items-center justify-center backdrop-blur-[1px]">
-                      <span className="text-[6px] font-black uppercase text-rose-200 tracking-tighter bg-rose-900/90 px-1 py-1 rounded border border-rose-400/60 rotate-90 shadow whitespace-nowrap">
-                        ⚠️ Recorte Lateral (20%)
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-2 mt-3 w-full max-w-[280px]">
@@ -633,15 +684,6 @@ export default function PosterTemplatePreview({
             >
               <span>🔍</span> Abrir en pestaña nueva
             </a>
-            {onOpenEditor && (
-              <button
-                type="button"
-                onClick={onOpenEditor}
-                className="text-[11px] font-bold text-white bg-slate-800 hover:bg-slate-700 px-3 py-1 rounded-xl border border-slate-700 transition-colors cursor-pointer flex items-center gap-1"
-              >
-                <span>✏️</span> Editor de capas
-              </button>
-            )}
             {onRegenerate && (
               <button
                 type="button"
@@ -656,21 +698,22 @@ export default function PosterTemplatePreview({
         </div>
       )}
 
-      {/* CASO 3: MODO ESQUEMA WIREFRAME (SIN FOTO O ANTES DE GENERAR) */}
+      {/* CASO 3: MODO ESQUEMA WIREFRAME */}
       {(activeViewMode === "blueprint" || !hasImage) && (
         <div className="flex flex-col items-center w-full animate-in fade-in duration-200">
           <div
-            className={`w-full ${aspectRatio === "9:16" ? "max-w-[220px]" : "max-w-[280px]"} bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 rounded-2xl overflow-hidden border-2 border-slate-700/60 shadow-2xl relative flex flex-col justify-between p-3.5 select-none transition-all duration-300`}
+            ref={containerRef}
+            className={`w-full ${aspectRatio === "9:16" ? "max-w-[220px]" : "max-w-[280px]"} bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 rounded-2xl overflow-hidden border-2 border-slate-700/60 shadow-2xl relative select-none transition-all duration-300`}
             style={{
               aspectRatio: aspectRatio === "9:16" ? "9/16" : aspectRatio === "4:5" ? "4/5" : "1/1",
               boxShadow: `0 10px 30px -10px ${primaryColor}25`,
             }}
           >
-            {/* Marca de agua de fondo simulando fotografía */}
+            {/* Fondo simulando textura */}
             <div className="absolute inset-0 opacity-15 pointer-events-none bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:12px_12px]" />
 
             {/* Badges superiores informativos */}
-            <div className="absolute top-2.5 left-2.5 right-2.5 flex justify-between items-center pointer-events-none z-20">
+            <div className="absolute top-2.5 left-2.5 right-2.5 flex justify-between items-center pointer-events-none z-10">
               <span className="bg-slate-950/80 backdrop-blur-md text-amber-400 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border border-amber-400/30 shadow-md">
                 {slideNumber ? `Slide ${slideNumber}` : "Afiche"} · Esquema
               </span>
@@ -679,9 +722,8 @@ export default function PosterTemplatePreview({
               </span>
             </div>
 
-            <div className="relative z-10 h-full flex flex-col justify-between pt-6">
-              {renderLayoutBody(false)}
-            </div>
+            {/* Capas Interactivas con Drag & Drop, Tamaño y Giro */}
+            {renderInteractiveLayers()}
 
             {/* Overlay Guía de Zona Segura Universal de Instagram */}
             {showSafeZone && (
@@ -709,13 +751,11 @@ export default function PosterTemplatePreview({
                   </div>
                 ) : (
                   <div className="w-full h-full flex justify-between">
-                    {/* En Grid Vertical de Instagram, una imagen 1:1 pierde 20% a la izquierda */}
                     <div className="w-[20%] h-full bg-rose-950/80 border-r border-rose-400/80 flex items-center justify-center backdrop-blur-[1px]">
                       <span className="text-[6px] font-black uppercase text-rose-200 tracking-tighter bg-rose-900/90 px-1 py-1 rounded border border-rose-400/60 -rotate-90 shadow whitespace-nowrap">
                         ⚠️ Recorte Lateral (20%)
                       </span>
                     </div>
-                    {/* Caja segura central 60% */}
                     <div className="flex-1 h-full border-2 border-dashed border-emerald-400/90 my-[10%] mx-1 rounded-lg flex flex-col justify-between p-1 relative">
                       <div className="text-[6.5px] font-black uppercase tracking-wider text-emerald-300 bg-emerald-950/90 px-1.5 py-0.5 rounded border border-emerald-500/40 w-fit mx-auto shadow">
                         ✓ Zona Segura (60% central)
@@ -724,7 +764,6 @@ export default function PosterTemplatePreview({
                         Visible en Perfil Vertical y Feed
                       </div>
                     </div>
-                    {/* En Grid Vertical de Instagram, una imagen 1:1 pierde 20% a la derecha */}
                     <div className="w-[20%] h-full bg-rose-950/80 border-l border-rose-400/80 flex items-center justify-center backdrop-blur-[1px]">
                       <span className="text-[6px] font-black uppercase text-rose-200 tracking-tighter bg-rose-900/90 px-1 py-1 rounded border border-rose-400/60 rotate-90 shadow whitespace-nowrap">
                         ⚠️ Recorte Lateral (20%)
@@ -737,9 +776,7 @@ export default function PosterTemplatePreview({
           </div>
 
           <p className="text-[10px] text-slate-400 font-medium text-center mt-3 max-w-xs leading-tight">
-            {hasImage
-              ? "💡 Modo esquema: viendo la cuadrícula y estructura tipográfica sin la fotografía de fondo."
-              : `💡 Vista previa en vivo: al escribir o modificar textos abajo, los verás cambiar aquí al instante. Al pulsar "Diseñar", nuestros agentes generarán la escena fotográfica de fondo.`}
+            💡 <b>Interactividad activada:</b> Haz clic en cualquier texto del afiche para cambiarle el tamaño o girarlo, o arrástralo para moverlo a tu posición ideal.
           </p>
         </div>
       )}

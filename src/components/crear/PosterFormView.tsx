@@ -183,6 +183,34 @@ export default function PosterFormView({
     });
   };
 
+  const currentTransforms = postType === "Carrusel"
+    ? (posterConfig.slides?.[currentSlideIdx]?.elementTransforms || posterConfig.elementTransforms)
+    : posterConfig.elementTransforms;
+
+  const handleUpdateTransforms = (transforms: any) => {
+    if (postType === "Carrusel") {
+      updateSlideField("elementTransforms", transforms);
+    }
+    update("elementTransforms", transforms);
+  };
+
+  const updateElementTransform = (
+    key: "title" | "slogan" | "price" | "cta" | "brand" | "contact",
+    partial: any
+  ) => {
+    const activeTransforms = currentTransforms || {};
+    const defaultSizes: Record<string, number> = { title: 14, slogan: 9.5, price: 11, cta: 10, brand: 8.5, contact: 8 };
+    const current = activeTransforms[key] || { x: 50, y: 50, fontSize: defaultSizes[key] || 12, rotation: 0 };
+    const updated = {
+      ...activeTransforms,
+      [key]: {
+        ...current,
+        ...partial,
+      },
+    };
+    handleUpdateTransforms(updated);
+  };
+
   const handleApplyExtractedTypography = (text: string) => {
     const parsed = parsePromptTypographyAndDesign(text);
     if (!parsed) return;
@@ -587,6 +615,8 @@ export default function PosterFormView({
                 totalSlides={postType === "Carrusel" ? (carouselCount || 5) : 1}
                 onRegenerate={() => handleGeneratePreview(false, { singleSlideOnly: postType === "Carrusel", slideIndex: currentSlideIdx })}
                 onOpenEditor={onOpenEditor ? () => onOpenEditor(currentSlideIdx) : undefined}
+                elementTransforms={currentTransforms}
+                onChangeTransforms={handleUpdateTransforms}
               />
               {/* ⚡ Módulo 3 Mixboard: Barra de Retoque en Vivo debajo del Preview */}
               {isLabMode && onApplyLiveRetouch && (
@@ -1058,6 +1088,78 @@ export default function PosterFormView({
                               className="w-full bg-white border border-slate-200 px-4 py-2.5 rounded-xl outline-none text-xs font-black text-slate-800 focus:border-amber-500 transition-all shadow-inner"
                             />
                           )}
+                          {posterConfig.includeMainText !== false && (
+                            <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px] text-slate-500 border-t border-slate-200/60 mt-1">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-bold text-slate-700">📏 Tamaño:</span>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    updateElementTransform("title", {
+                                      fontSize: Math.max(8, (currentTransforms?.title?.fontSize ?? 14) - 1),
+                                    })
+                                  }
+                                  className="w-6 h-6 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-700 font-black flex items-center justify-center cursor-pointer shadow-xs"
+                                >
+                                  -
+                                </button>
+                                <span className="font-mono font-black text-amber-700 text-xs px-1">
+                                  {currentTransforms?.title?.fontSize ?? 14}px
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    updateElementTransform("title", {
+                                      fontSize: Math.min(36, (currentTransforms?.title?.fontSize ?? 14) + 1),
+                                    })
+                                  }
+                                  className="w-6 h-6 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-700 font-black flex items-center justify-center cursor-pointer shadow-xs"
+                                >
+                                  +
+                                </button>
+                              </div>
+
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-bold text-slate-700">🔄 Giro:</span>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    updateElementTransform("title", {
+                                      rotation: (currentTransforms?.title?.rotation ?? 0) - 5,
+                                    })
+                                  }
+                                  className="px-2 py-0.5 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-700 font-bold cursor-pointer text-[10px] shadow-xs"
+                                  title="Girar 5° a la izquierda"
+                                >
+                                  ↺ -5°
+                                </button>
+                                <span className="font-mono font-black text-amber-700 text-xs px-1">
+                                  {currentTransforms?.title?.rotation ?? 0}°
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    updateElementTransform("title", {
+                                      rotation: (currentTransforms?.title?.rotation ?? 0) + 5,
+                                    })
+                                  }
+                                  className="px-2 py-0.5 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-700 font-bold cursor-pointer text-[10px] shadow-xs"
+                                  title="Girar 5° a la derecha"
+                                >
+                                  ↻ +5°
+                                </button>
+                                {(currentTransforms?.title?.rotation ?? 0) !== 0 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => updateElementTransform("title", { rotation: 0 })}
+                                    className="text-[10px] text-amber-700 font-bold underline cursor-pointer ml-1"
+                                  >
+                                    0°
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          )}
                         </div>
 
             {/* Slogan */}
@@ -1085,6 +1187,69 @@ export default function PosterFormView({
                               placeholder="Ej: Calidad garantizada en cada bocado"
                               className="w-full bg-white border border-slate-200 px-3.5 py-2.5 rounded-xl outline-none text-xs font-bold text-slate-800 focus:border-amber-500 shadow-xs"
                             />
+                          )}
+                          {posterConfig.includeSlogan && (
+                            <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px] text-slate-500 border-t border-slate-200/60 mt-1">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-bold text-slate-700">📏 Tamaño:</span>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    updateElementTransform("slogan", {
+                                      fontSize: Math.max(7, (currentTransforms?.slogan?.fontSize ?? 9.5) - 1),
+                                    })
+                                  }
+                                  className="w-6 h-6 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-700 font-black flex items-center justify-center cursor-pointer shadow-xs"
+                                >
+                                  -
+                                </button>
+                                <span className="font-mono font-black text-amber-700 text-xs px-1">
+                                  {currentTransforms?.slogan?.fontSize ?? 9.5}px
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    updateElementTransform("slogan", {
+                                      fontSize: Math.min(26, (currentTransforms?.slogan?.fontSize ?? 9.5) + 1),
+                                    })
+                                  }
+                                  className="w-6 h-6 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-700 font-black flex items-center justify-center cursor-pointer shadow-xs"
+                                >
+                                  +
+                                </button>
+                              </div>
+
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-bold text-slate-700">🔄 Giro:</span>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    updateElementTransform("slogan", {
+                                      rotation: (currentTransforms?.slogan?.rotation ?? 0) - 5,
+                                    })
+                                  }
+                                  className="px-2 py-0.5 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-700 font-bold cursor-pointer text-[10px] shadow-xs"
+                                  title="Girar 5° a la izquierda"
+                                >
+                                  ↺ -5°
+                                </button>
+                                <span className="font-mono font-black text-amber-700 text-xs px-1">
+                                  {currentTransforms?.slogan?.rotation ?? 0}°
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    updateElementTransform("slogan", {
+                                      rotation: (currentTransforms?.slogan?.rotation ?? 0) + 5,
+                                    })
+                                  }
+                                  className="px-2 py-0.5 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-700 font-bold cursor-pointer text-[10px] shadow-xs"
+                                  title="Girar 5° a la derecha"
+                                >
+                                  ↻ +5°
+                                </button>
+                              </div>
+                            </div>
                           )}
                         </div>
 
@@ -1155,6 +1320,69 @@ export default function PosterFormView({
                               className="w-full bg-white border border-amber-300 px-3.5 py-2.5 rounded-xl outline-none text-xs font-bold text-slate-800 focus:border-amber-500 shadow-xs"
                             />
                           )}
+                          {posterConfig.includePrice && (
+                            <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px] text-amber-900 border-t border-amber-200/60 mt-1">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-bold">📏 Tamaño:</span>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    updateElementTransform("price", {
+                                      fontSize: Math.max(8, (currentTransforms?.price?.fontSize ?? 11) - 1),
+                                    })
+                                  }
+                                  className="w-6 h-6 bg-white hover:bg-amber-100 border border-amber-300 rounded-lg text-amber-950 font-black flex items-center justify-center cursor-pointer shadow-xs"
+                                >
+                                  -
+                                </button>
+                                <span className="font-mono font-black text-amber-800 text-xs px-1">
+                                  {currentTransforms?.price?.fontSize ?? 11}px
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    updateElementTransform("price", {
+                                      fontSize: Math.min(30, (currentTransforms?.price?.fontSize ?? 11) + 1),
+                                    })
+                                  }
+                                  className="w-6 h-6 bg-white hover:bg-amber-100 border border-amber-300 rounded-lg text-amber-950 font-black flex items-center justify-center cursor-pointer shadow-xs"
+                                >
+                                  +
+                                </button>
+                              </div>
+
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-bold">🔄 Giro:</span>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    updateElementTransform("price", {
+                                      rotation: (currentTransforms?.price?.rotation ?? 0) - 5,
+                                    })
+                                  }
+                                  className="px-2 py-0.5 bg-white hover:bg-amber-100 border border-amber-300 rounded-lg text-amber-950 font-bold cursor-pointer text-[10px] shadow-xs"
+                                  title="Girar 5° a la izquierda"
+                                >
+                                  ↺ -5°
+                                </button>
+                                <span className="font-mono font-black text-amber-800 text-xs px-1">
+                                  {currentTransforms?.price?.rotation ?? 0}°
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    updateElementTransform("price", {
+                                      rotation: (currentTransforms?.price?.rotation ?? 0) + 5,
+                                    })
+                                  }
+                                  className="px-2 py-0.5 bg-white hover:bg-amber-100 border border-amber-300 rounded-lg text-amber-950 font-bold cursor-pointer text-[10px] shadow-xs"
+                                  title="Girar 5° a la derecha"
+                                >
+                                  ↻ +5°
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
 
             {/* Llamado a la Acción (CTA) */}
@@ -1204,6 +1432,68 @@ export default function PosterFormView({
                                 className="mt-2 w-full bg-white border border-amber-300 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-800 outline-none"
                               />
                             )}
+                          </div>
+
+                          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 text-[11px] text-slate-500">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-slate-700">📏 Tamaño:</span>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  updateElementTransform("cta", {
+                                    fontSize: Math.max(7, (currentTransforms?.cta?.fontSize ?? 10) - 1),
+                                  })
+                                }
+                                className="w-6 h-6 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-700 font-black flex items-center justify-center cursor-pointer shadow-xs"
+                              >
+                                -
+                              </button>
+                              <span className="font-mono font-black text-amber-700 text-xs px-1">
+                                {currentTransforms?.cta?.fontSize ?? 10}px
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  updateElementTransform("cta", {
+                                    fontSize: Math.min(28, (currentTransforms?.cta?.fontSize ?? 10) + 1),
+                                  })
+                                }
+                                className="w-6 h-6 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-700 font-black flex items-center justify-center cursor-pointer shadow-xs"
+                              >
+                                +
+                              </button>
+                            </div>
+
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-slate-700">🔄 Giro:</span>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  updateElementTransform("cta", {
+                                    rotation: (currentTransforms?.cta?.rotation ?? 0) - 5,
+                                  })
+                                }
+                                className="px-2 py-0.5 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-700 font-bold cursor-pointer text-[10px] shadow-xs"
+                                title="Girar 5° a la izquierda"
+                              >
+                                ↺ -5°
+                              </button>
+                              <span className="font-mono font-black text-amber-700 text-xs px-1">
+                                {currentTransforms?.cta?.rotation ?? 0}°
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  updateElementTransform("cta", {
+                                    rotation: (currentTransforms?.cta?.rotation ?? 0) + 5,
+                                  })
+                                }
+                                className="px-2 py-0.5 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-700 font-bold cursor-pointer text-[10px] shadow-xs"
+                                title="Girar 5° a la derecha"
+                              >
+                                ↻ +5°
+                              </button>
+                            </div>
                           </div>
                         </div>
 
