@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminDb } from "../../../../lib/firebase-admin";
-import { checkRateLimit, getClientIp } from "../../../../lib/rate-limit";
+import { adminDb } from "../../../../../lib/firebase-admin";
+import { checkRateLimit, getClientIp } from "../../../../../lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
