@@ -123,6 +123,7 @@ function PublicFidelizaClientContent() {
       setMember(data.member);
       if (typeof window !== "undefined") {
         localStorage.setItem(`sp_fideliza_phone_${loyaltyId}`, data.member.cleanPhone || phoneInput);
+        localStorage.setItem("sp_fideliza_phone", data.member.cleanPhone || phoneInput);
       }
       if (data.isNew && config?.welcomeBonus) {
         setFeedback({
@@ -355,6 +356,25 @@ function PublicFidelizaClientContent() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-white pb-16 selection:bg-orange-500 selection:text-white">
+      {/* Barra superior de navegación hacia la Billetera Multinegocio */}
+      <div className="bg-slate-900/95 border-b border-white/10 px-4 py-2.5 backdrop-blur-md sticky top-0 z-40">
+        <div className="max-w-md mx-auto flex items-center justify-between text-xs">
+          <Link
+            href={member?.cleanPhone ? `/fideliza?phone=${member.cleanPhone}` : "/fideliza"}
+            className="text-slate-300 hover:text-white font-bold flex items-center gap-1.5 transition-colors"
+          >
+            <span>←</span>
+            <span>Ver mis otras tarjetas (Billetera)</span>
+          </Link>
+          <Link
+            href="/fideliza"
+            className="text-[11px] font-black uppercase text-amber-400 hover:text-amber-300 transition-colors"
+          >
+            Fideliza
+          </Link>
+        </div>
+      </div>
+
       {/* Cabecera superior con halo de color de marca */}
       <div
         className="relative overflow-hidden pt-8 pb-14 px-5 border-b border-white/10"
