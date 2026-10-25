@@ -14,6 +14,7 @@ import { usePostActions } from "../../../hooks/usePostActions";
 
 // Componentes de UI
 import DashboardHeader from "../../../components/panel/DashboardHeader";
+import OnboardingChecklist from "../../../components/panel/OnboardingChecklist";
 import UpcomingTimeline from "../../../components/panel/UpcomingTimeline";
 import PublishedStatsHero from "../../../components/panel/PublishedStatsHero";
 import PostFilters from "../../../components/panel/PostFilters";
@@ -202,6 +203,16 @@ export default function RrssDashboard() {
         onOpenUpgradeModal={() => setUpgradeModalOpen(true)}
       />
 
+      {/* Checklist de Activación y Despegue para Nuevos Usuarios */}
+      <OnboardingChecklist
+        activeProfile={activeProfile}
+        posts={dashboard.posts}
+        onScrollToPosts={() => {
+          const el = document.getElementById("post-grid-container");
+          if (el) el.scrollIntoView({ behavior: "smooth" });
+        }}
+      />
+
       {/* Selector de Días/Semanas y Cards Destacadas Inmediatas (Estilo Flow / Santisoft) */}
       {dashboard.activeTab === "upcoming" && (
         <UpcomingTimeline
@@ -241,29 +252,31 @@ export default function RrssDashboard() {
       />
 
       {/* Grid de posts */}
-      <PostGrid
-        filteredPosts={dashboard.filteredPosts}
-        paginatedPosts={dashboard.paginatedPosts}
-        totalPages={dashboard.totalPages}
-        currentPage={dashboard.currentPage}
-        selectedPostIds={selectedPostIds}
-        activeTab={dashboard.activeTab}
-        selectedDateFilter={dashboard.selectedDateFilter}
-        userPlan={quota.userPlan}
-        onSelectPost={actions.toggleSelectPost}
-        onToggleSelectAll={actions.toggleSelectAll}
-        onClickPost={dashboard.setSelectedPost}
-        onUnconfirm={actions.handleUnconfirm}
-        onReschedule={(post) => {
-          const dateObj = post.scheduledFor?.toDate ? post.scheduledFor.toDate() : new Date();
-          setRescheduleData({ id: post.id, date: format(dateObj, "yyyy-MM-dd'T'HH:mm") });
-        }}
-        onDelete={actions.handleDelete}
-        onGenerateMedia={actions.handleGenerateMedia}
-        onResetGenerating={actions.handleResetGeneratingState}
-        onClearDateFilter={() => dashboard.setSelectedDateFilter(null)}
-        onPageChange={dashboard.setCurrentPage}
-      />
+      <div id="post-grid-container">
+        <PostGrid
+          filteredPosts={dashboard.filteredPosts}
+          paginatedPosts={dashboard.paginatedPosts}
+          totalPages={dashboard.totalPages}
+          currentPage={dashboard.currentPage}
+          selectedPostIds={selectedPostIds}
+          activeTab={dashboard.activeTab}
+          selectedDateFilter={dashboard.selectedDateFilter}
+          userPlan={quota.userPlan}
+          onSelectPost={actions.toggleSelectPost}
+          onToggleSelectAll={actions.toggleSelectAll}
+          onClickPost={dashboard.setSelectedPost}
+          onUnconfirm={actions.handleUnconfirm}
+          onReschedule={(post) => {
+            const dateObj = post.scheduledFor?.toDate ? post.scheduledFor.toDate() : new Date();
+            setRescheduleData({ id: post.id, date: format(dateObj, "yyyy-MM-dd'T'HH:mm") });
+          }}
+          onDelete={actions.handleDelete}
+          onGenerateMedia={actions.handleGenerateMedia}
+          onResetGenerating={actions.handleResetGeneratingState}
+          onClearDateFilter={() => dashboard.setSelectedDateFilter(null)}
+          onPageChange={dashboard.setCurrentPage}
+        />
+      </div>
 
       {/* Bulk action bar */}
       <BulkActionBar

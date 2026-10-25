@@ -1,8 +1,8 @@
-﻿export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import { adminDb } from '../../../../../lib/firebase-admin';
-import { encrypt } from '../../../../../lib/encryption';
+import { encrypt, verifySignedOAuthState, getSafeOrigin } from '../../../../../lib/encryption';
 
 export async function GET(req: Request) {
     try {
@@ -11,23 +11,20 @@ export async function GET(req: Request) {
         const state = searchParams.get('state');
         const error = searchParams.get('error');
 
+        const verifiedState = verifySignedOAuthState(state);
+        const safeOrigin = verifiedState?.origin || getSafeOrigin();
+
         if (error) {
             console.error("Meta OAuth Error:", error);
-            // Redirigir al panel con error
-            const [,, origin] = decodeURIComponent(state || "").split('|');
-            return NextResponse.redirect(`${origin || 'http://localhost:3003'}/automatizacion-rrss/panel/configuracion?meta=error`);
+            // Redirigir al panel con error a un origen seguro verificado
+            return NextResponse.redirect(`${safeOrigin}/automatizacion-rrss/panel/configuracion?meta=error`);
         }
 
-        if (!code || !state) {
-            return NextResponse.json({ error: "Missing code or state" }, { status: 400 });
+        if (!code || !verifiedState) {
+            return NextResponse.json({ error: "Missing or invalid OAuth state" }, { status: 400 });
         }
 
-        const decodedState = decodeURIComponent(state);
-        const [uid, profileId, origin] = decodedState.split('|');
-
-        if (!uid || !profileId) {
-            return NextResponse.json({ error: "Invalid state" }, { status: 400 });
-        }
+        const { uid, profileId, origin } = verifiedState;
 
         const clientId = process.env.META_CLIENT_ID;
         const clientSecret = process.env.META_CLIENT_SECRET;

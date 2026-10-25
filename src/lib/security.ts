@@ -135,3 +135,36 @@ export function maskError(error: unknown, defaultMessage: string = "Ha ocurrido 
         code: err.status || err.code || 500
     };
 }
+
+interface RateLimitEntry {
+    count: number;
+    resetAt: number;
+}
+
+const rateLimitStore = new Map<string, RateLimitEntry>();
+
+/**
+ * Limitador de tasa (Rate Limiting) en memoria para proteger endpoints públicos contra abusos.
+ */
+export function checkRateLimit(key: string, limit: number = 10, windowMs: number = 60_000): { allowed: boolean; remaining: number } {
+    const now = Date.now();
+    const entry = rateLimitStore.get(key);
+
+    if (!entry || now > entry.resetAt) {
+        rateLimitStore.set(key, { count: 1, resetAt: now + windowMs });
+        // Limpieza de memoria si hay más de 5000 llaves
+        if (rateLimitStore.size > 5000) {
+            for (const [k, v] of rateLimitStore.entries()) {
+                if (now > v.resetAt) rateLimitStore.delete(k);
+            }
+        }
+        return { allowed: true, remaining: limit - 1 };
+    }
+
+    if (entry.count >= limit) {
+        return { allowed: false, remaining: 0 };
+    }
+
+    entry.count += 1;
+    return { allowed: true, remaining: limit - entry.count };
+}

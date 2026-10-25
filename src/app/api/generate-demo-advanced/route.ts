@@ -1,16 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateFreeText } from "../../../lib/gemini-free";
 import { adminDb } from "../../../lib/firebase-admin";
+import { sanitizeInput, checkRateLimit } from "../../../lib/security";
 import nodemailer from "nodemailer";
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "anonymous";
+    const { allowed } = checkRateLimit(`demo_adv_${ip}`, 5, 60_000);
+    if (!allowed) {
+      return NextResponse.json({ error: "Has alcanzado el límite de demostraciones por minuto. Intenta nuevamente en un momento." }, { status: 429 });
+    }
+
     const { rubro, promo, demoType = 'rrss', nombre, email } = await req.json();
     if (!rubro || !promo) {
       return NextResponse.json({ error: "Faltan parámetros rubro o promo" }, { status: 400 });
     }
 
-    const { sanitizeInput } = await import("../../../lib/security");
     const rawRubro = rubro;
     const rawPromo = promo;
     const cleanRubro = sanitizeInput(rawRubro, 150);

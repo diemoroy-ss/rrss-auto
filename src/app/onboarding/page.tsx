@@ -707,6 +707,21 @@ function OnboardingContent() {
           onboardingCompleted: true,
           onboardingCompletedAt: serverTimestamp(),
         });
+
+        // ── Generar automáticamente los primeros 2 borradores de bienvenida con nuestros agentes
+        try {
+          const idToken = await user.getIdToken();
+          await fetch('/api/onboarding/generate-starter-posts', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${idToken}`,
+            },
+            body: JSON.stringify({ profileId: profiles[idx]?.id || 'default' }),
+          });
+        } catch (starterErr) {
+          console.warn('[Onboarding] Error generando starter posts:', starterErr);
+        }
       }
 
       // ── Final redirect

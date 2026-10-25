@@ -1,7 +1,8 @@
-﻿export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import { adminAuth } from '../../../../lib/firebase-admin';
+import { createSignedOAuthState, getSafeOrigin } from '../../../../lib/encryption';
 
 export async function GET(req: Request) {
     try {
@@ -15,7 +16,7 @@ export async function GET(req: Request) {
         
         const { searchParams } = new URL(req.url);
         const profileId = searchParams.get('profileId');
-        const origin = searchParams.get('origin') || 'http://localhost:3003';
+        const origin = getSafeOrigin(searchParams.get('origin'));
 
         if (!profileId) {
             return NextResponse.json({ error: "profileId is required" }, { status: 400 });
@@ -29,7 +30,11 @@ export async function GET(req: Request) {
         const redirectUri = `${origin}/api/auth/google-business/callback`;
         const scopes = 'https://www.googleapis.com/auth/business.manage https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email';
         
-        const state = encodeURIComponent(`${decodedToken.uid}|${profileId}|${origin}`);
+        const state = encodeURIComponent(createSignedOAuthState({
+            uid: decodedToken.uid,
+            profileId,
+            origin
+        }));
 
         const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}&response_type=code&scope=${encodeURIComponent(scopes)}&access_type=offline&prompt=consent`;
 

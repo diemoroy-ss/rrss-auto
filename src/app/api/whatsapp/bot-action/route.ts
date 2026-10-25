@@ -100,6 +100,22 @@ function isSafePhoneMatch(p1: string, p2: string): boolean {
   return false;
 }
 
+// Cache en memoria para reducir lecturas masivas de Firestore en WhatsApp
+let cachedUsersSnapshot: { docs: any[]; expiresAt: number } | null = null;
+
+async function getCachedUsersDocs(db: any) {
+  const now = Date.now();
+  if (cachedUsersSnapshot && now < cachedUsersSnapshot.expiresAt) {
+    return cachedUsersSnapshot.docs;
+  }
+  const snap = await db.collection('users').get();
+  cachedUsersSnapshot = {
+    docs: snap.docs,
+    expiresAt: now + 2 * 60 * 1000 // TTL de 2 minutos
+  };
+  return cachedUsersSnapshot.docs;
+}
+
 /**
  * Endpoint central para procesar acciones de WhatsApp provenientes de n8n / Evolution API.
  * Identifica si el teléfono pertenece a una o múltiples cuentas/perfiles.
@@ -134,10 +150,10 @@ export async function POST(req: Request) {
 
     // 1. Buscar TODAS las marcas/perfiles que tengan este teléfono en "Datos & Contacto" (p.phone)
     const matchedAccounts: AccountOption[] = [];
-    const usersSnap = await adminDb.collection('users').get();
+    const userDocs = await getCachedUsersDocs(adminDb);
 
     // Primer barrido: buscar coincidencias directas en los Datos de Contacto de la Marca (profile.phone)
-    for (const doc of usersSnap.docs) {
+    for (const doc of userDocs) {
       const uData = doc.data();
       const profiles = Array.isArray(uData.profiles) ? uData.profiles : [];
 
@@ -162,7 +178,7 @@ export async function POST(req: Request) {
 
     // Segundo barrido (Fallback): si ninguna marca tiene el teléfono en Datos & Contacto, buscar en el usuario
     if (matchedAccounts.length === 0) {
-      for (const doc of usersSnap.docs) {
+      for (const doc of userDocs) {
         const uData = doc.data();
         const userPhone = uData.phone || uData.whatsappPhone || '';
         const isUserPhoneMatch = isSafePhoneMatch(userPhone, cleanPhone);

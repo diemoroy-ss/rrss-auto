@@ -127,28 +127,27 @@ function PanelLayoutContent({
       ]
     },
     {
-      title: "CREACIÓN",
+      title: "CREAR CONTENIDO",
       items: [
         { href: "/automatizacion-rrss/panel/crear", label: "Nuevo Post", icon: "✍️", exact: false },
         { href: "/automatizacion-rrss/panel/poc-video", label: "Generar Video", icon: "🎬", exact: false },
-        // ...(isAdminUser ? [{ href: "/automatizacion-rrss/panel/ads", label: "Meta Ads", icon: "🎯", exact: true }] : []),
       ]
     },
     {
-      title: "ESTRATEGIA",
+      title: "MI MARCA & CATÁLOGO",
       items: [
-        { href: "/automatizacion-rrss/panel/radar", label: "Radar de Nicho", icon: "📡", exact: false },
-        { href: "/automatizacion-rrss/panel/estrategia", label: "Estrategia", icon: "🚀", exact: false },
-        { href: "/automatizacion-rrss/panel/blog", label: "SEO / GEO", icon: "🌐", exact: false },
-      ]
-    },
-    {
-      title: "RECURSOS Y MARCA",
-      items: [
-        { href: "/automatizacion-rrss/panel/prompts", label: "Estilos Visuales", icon: "✨", exact: false },
         { href: "/automatizacion-rrss/panel/catalogo", label: "Productos / Servicios", icon: "🛍️", exact: false },
+        { href: "/automatizacion-rrss/panel/biblioteca", label: "Biblioteca Multimedia", icon: "🖼️", exact: false },
         ...(isMenuDigitalEnabled ? [{ href: "/automatizacion-rrss/panel/menu-qr", label: "Carta Menú & QR", icon: "📱", exact: false }] : []),
-        { href: "/automatizacion-rrss/panel/biblioteca", label: "Biblioteca", icon: "🖼️", exact: false },
+      ]
+    },
+    {
+      title: "CRECIMIENTO & AGENTES",
+      items: [
+        { href: "/automatizacion-rrss/panel/estrategia", label: "Estrategia Mensual", icon: "🚀", exact: false },
+        { href: "/automatizacion-rrss/panel/radar", label: "Radar de Nicho", icon: "📡", exact: false },
+        { href: "/automatizacion-rrss/panel/blog", label: "Artículos SEO / GEO", icon: "🌐", exact: false },
+        { href: "/automatizacion-rrss/panel/prompts", label: "Estilos Visuales", icon: "✨", exact: false },
       ]
     }
   ];

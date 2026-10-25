@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import { adminAuth } from '../../../../lib/firebase-admin';
+import { createSignedOAuthState, getSafeOrigin } from '../../../../lib/encryption';
 
 export async function GET(req: Request) {
     try {
@@ -15,7 +16,7 @@ export async function GET(req: Request) {
         
         const { searchParams } = new URL(req.url);
         const profileId = searchParams.get('profileId');
-        const origin = searchParams.get('origin') || 'http://localhost:3003';
+        const origin = getSafeOrigin(searchParams.get('origin'));
 
         if (!profileId) {
             return NextResponse.json({ error: "profileId is required" }, { status: 400 });
@@ -31,8 +32,12 @@ export async function GET(req: Request) {
         const redirectUri = `${approvedBase}/api/auth/tiktok/callback`;
         const scopes = 'user.info.basic,video.publish,video.upload';
         
-        // El origin real (ej: https://socialpilot.cl) viaja dentro de state para devolver al usuario a su dominio final
-        const state = encodeURIComponent(`${decodedToken.uid}|${profileId}|${origin}`);
+        // El origin real (ej: https://socialpilot.cl) viaja dentro de un state firmado criptográficamente
+        const state = encodeURIComponent(createSignedOAuthState({
+            uid: decodedToken.uid,
+            profileId,
+            origin
+        }));
 
         const url = `https://www.tiktok.com/v2/auth/authorize/?client_key=${clientKey}&scope=${scopes}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`;
 

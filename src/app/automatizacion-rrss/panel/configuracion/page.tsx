@@ -460,6 +460,11 @@ function ConfigContent() {
 
   // Separate effect for one-time URL parameter handling
   useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['marca', 'identidad-visual', 'contacto', 'conexiones'].includes(tabParam)) {
+      setActiveTab(tabParam as any);
+    }
+
     if (!activeProfile) return;
 
     const metaParam = searchParams.get('meta');
