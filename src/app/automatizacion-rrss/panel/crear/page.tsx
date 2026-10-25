@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { auth, db, storage } from "../../../../lib/firebase";
 import { collection, addDoc, getDoc, doc, query, where, getDocs, orderBy, deleteDoc, limit } from "firebase/firestore";
+import { sanitizeFirestorePayload } from "../../../../lib/firestore-sanitize";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { onAuthStateChanged } from "firebase/auth";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -782,8 +783,7 @@ export default function RrssCreatePost() {
     const effectiveCarouselCount = isSingleSlide ? 1 : carouselCount;
 
     const webhookUrl = process.env.NEXT_PUBLIC_N8N_PREVIEW_URL || 'https://n8n.santisoft.cl/webhook/img-rrss-auto';
-    console.log(`🚀 [PREVISUALIZAR] Iniciando flujo hacia webhook n8n: ${webhookUrl}`);
-
+    
     // Definir los pasos del modal
     const isCarousel = postType === 'Carrusel';
     const initialSteps: GeneratingStep[] = [
@@ -838,8 +838,7 @@ export default function RrssCreatePost() {
       const promptPayload = promptData.data || promptData;
       updateStep('generate', 'done');
 
-      console.log(`📝 [PROMPT BASE GENERADO]`, promptPayload);
-
+      
       // ── PASOS 2-4: Agente Revisor de Prompts (hasta 3 iteraciones) ──
       const reviewStepIds = ['review1', 'review2', 'review3'];
       let currentPrompt: string =
@@ -873,8 +872,7 @@ export default function RrssCreatePost() {
           });
 
           const reviewData = await reviewRes.json();
-          console.log(`🔍 [REVISIÓN ${i + 1}] Score: ${reviewData.score}/10 | Mejora: ${reviewData.needsImprovement}`, reviewData.feedback);
-
+          
           if (reviewData.needsImprovement && reviewData.improvedPrompt) {
             currentPrompt = reviewData.improvedPrompt;
             // Actualizar el payload con el prompt mejorado
@@ -991,17 +989,7 @@ export default function RrssCreatePost() {
       }
 
       const webhookUrl = process.env.NEXT_PUBLIC_N8N_PREVIEW_URL || 'https://n8n.santisoft.cl/webhook/img-rrss-auto';
-      console.log(`🚀 [GENERAR IMAGEN] Gatillando webhook de n8n en: ${webhookUrl}`);
-      console.log(`📝 [PROMPT FINAL ENVIADO A N8N]`, {
-        promptEnglish: promptEnglish || promptsEnglish,
-        idea: idea.trim(),
-        imageExpectation: imageExpectation.trim(),
-        postText: postText.trim(),
-        businessType,
-        postType: isSingleSlideGen ? 'Post' : postType,
-        posterConfig: posterConfig.enabled ? posterConfig : null,
-      });
-      updateStep('prep', 'done');
+                  updateStep('prep', 'done');
 
       // ── SEND: Llamar al proxy → webhook n8n ──
       updateStep('send', 'running', `Webhook: ${webhookUrl}`);
@@ -1064,8 +1052,7 @@ export default function RrssCreatePost() {
       }
 
       const data = await res.json();
-      console.log(`✅ [N8N RESPONSE]`, data);
-
+      
       // Soportar respuestas en array, objetos directos o anidados
       const dataItem = Array.isArray(data) ? (data[0] || {}) : data;
       const resolvedImageUrl: string =
@@ -1117,7 +1104,7 @@ export default function RrssCreatePost() {
       try {
         if (user?.uid && user.uid !== "anonymous") {
           if (postType === 'Carrusel' && resolvedImageUrls.length > 0) {
-            await addDoc(collection(db, "generated_images"), {
+            await addDoc(collection(db, "generated_images"), sanitizeFirestorePayload({
               userId: user.uid,
               profileId: activeProfile?.id || "default",
               url: resolvedImageUrls[0],
@@ -1132,8 +1119,17 @@ export default function RrssCreatePost() {
                 ? `Carrusel comercial (${resolvedImageUrls.length} diapositivas)`
                 : `Carrusel comercial (1 de ${carouselCount || 5} láminas)`),
               copy: resolvedCopy || postText,
-              posterConfig: posterConfig.enabled ? posterConfig : null,
-            });
+              posterConfig: posterConfig.enabled
+                ? {
+                    ...posterConfig,
+                    priceText: posterConfig.priceText || "",
+                    sloganText: posterConfig.sloganText || "",
+                    mainText: posterConfig.mainText || "",
+                    ctaText: posterConfig.ctaText || "",
+                    businessName: posterConfig.businessName || "",
+                  }
+                : null,
+            }));
             savedToLibrary = true;
           } else if (resolvedImageUrl) {
             await addDoc(collection(db, "generated_images"), {
@@ -1556,8 +1552,7 @@ export default function RrssCreatePost() {
               const fileRef = ref(storage, tmpl.url);
               await deleteObject(fileRef);
           } catch(storageErr) {
-              console.log("No storage clean needed or file not found in path", storageErr);
-          }
+                        }
       } catch(err) {
           console.error("Error deleting template:", err);
       }
@@ -1712,7 +1707,26 @@ export default function RrssCreatePost() {
         scheduledFor: scheduledDate,
         createdAt: new Date(),
         // Si hay cartel
-        posterConfig: posterConfig.enabled ? posterConfig : null,
+        posterConfig: posterConfig.enabled
+          ? {
+              ...posterConfig,
+              priceText: posterConfig.priceText || "",
+              sloganText: posterConfig.sloganText || "",
+              mainText: posterConfig.mainText || "",
+              ctaText: posterConfig.ctaText || "",
+              businessName: posterConfig.businessName || "",
+              slides: (posterConfig.slides || []).map((s) => ({
+                ...s,
+                priceText: s?.priceText || "",
+                sloganText: s?.sloganText || "",
+                mainText: s?.mainText || "",
+                ctaText: s?.ctaText || "",
+                imageUrl: s?.imageUrl || "",
+                baseImageUrl: s?.baseImageUrl || "",
+                role: s?.role || "",
+              })),
+            }
+          : null,
         includeLogo: includeLogo,
         // Estilo Maestro de Prompts IA
         visualStyle: selectedPromptTemplate?.title || null,
@@ -1738,7 +1752,8 @@ export default function RrssCreatePost() {
         tiktokIsAigc: tiktokSettings.isAigc,
       };
 
-      const newPostRef = await addDoc(collection(db, "social_posts"), postPayload);
+      const cleanPayload = sanitizeFirestorePayload(postPayload);
+      const newPostRef = await addDoc(collection(db, "social_posts"), cleanPayload);
 
       // Si es publicacion inmediata
       if (publishNow) {

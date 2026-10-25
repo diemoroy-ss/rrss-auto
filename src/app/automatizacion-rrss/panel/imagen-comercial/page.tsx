@@ -1,3 +1,4 @@
+import { sanitizeFirestorePayload } from "../../../../lib/firestore-sanitize";
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
@@ -1629,10 +1630,10 @@ export default function ImagenComercialPage() {
       };
 
       // 1. Crear documento en social_posts
-      const newPostRef = await addDoc(collection(db, "social_posts"), {
+      const newPostRef = await addDoc(collection(db, "social_posts"), sanitizeFirestorePayload({
         ...payload,
         createdAt: serverTimestamp(),
-      });
+      }));
 
       if (!isSchedule) {
         // 2. Publicar ahora vía /api/publish-now enviando postId
