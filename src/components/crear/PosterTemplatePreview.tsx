@@ -469,9 +469,9 @@ export default function PosterTemplatePreview({
                         ⚠️ Se recorta en Grid Cuadrado (1:1)
                       </span>
                     </div>
-                    <div className="flex-1 border-2 border-dashed border-emerald-400/90 mx-[14%] my-1 rounded-lg flex flex-col justify-between p-1 relative">
+                    <div className="flex-1 border-2 border-dashed border-emerald-400/90 mx-[20%] my-1 rounded-lg flex flex-col justify-between p-1 relative">
                       <div className="text-[7px] font-black uppercase tracking-wider text-emerald-300 bg-emerald-950/90 px-1.5 py-0.5 rounded border border-emerald-500/40 w-fit mx-auto shadow">
-                        ✓ Zona Segura Universal
+                        ✓ Zona Segura (60% Central)
                       </div>
                       <div className="text-[6.5px] font-mono text-emerald-300/80 text-center">
                         Visible en Feed y Cuadrícula
@@ -485,25 +485,25 @@ export default function PosterTemplatePreview({
                   </div>
                 ) : (
                   <div className="w-full h-full flex justify-between">
-                    {/* En Grid Vertical 4:5 de Instagram, una imagen 1:1 pierde 15% a la izquierda */}
-                    <div className="w-[15%] h-full bg-rose-950/80 border-r border-rose-400/80 flex items-center justify-center backdrop-blur-[1px]">
+                    {/* En Grid Vertical de Instagram, una imagen 1:1 pierde 20% a la izquierda */}
+                    <div className="w-[20%] h-full bg-rose-950/80 border-r border-rose-400/80 flex items-center justify-center backdrop-blur-[1px]">
                       <span className="text-[6px] font-black uppercase text-rose-200 tracking-tighter bg-rose-900/90 px-1 py-1 rounded border border-rose-400/60 -rotate-90 shadow whitespace-nowrap">
-                        ⚠️ Recorte Lateral
+                        ⚠️ Recorte Lateral (20%)
                       </span>
                     </div>
-                    {/* Caja segura central 70% */}
+                    {/* Caja segura central 60% */}
                     <div className="flex-1 h-full border-2 border-dashed border-emerald-400/90 my-[10%] mx-1 rounded-lg flex flex-col justify-between p-1 relative">
                       <div className="text-[6.5px] font-black uppercase tracking-wider text-emerald-300 bg-emerald-950/90 px-1.5 py-0.5 rounded border border-emerald-500/40 w-fit mx-auto shadow">
-                        ✓ Zona Segura (70% central)
+                        ✓ Zona Segura (60% central)
                       </div>
                       <div className="text-[6px] font-mono text-emerald-300/80 text-center">
-                        Visible en Grid Vertical y Feed
+                        Visible en Perfil Vertical y Feed
                       </div>
                     </div>
-                    {/* En Grid Vertical 4:5 de Instagram, una imagen 1:1 pierde 15% a la derecha */}
-                    <div className="w-[15%] h-full bg-rose-950/80 border-l border-rose-400/80 flex items-center justify-center backdrop-blur-[1px]">
+                    {/* En Grid Vertical de Instagram, una imagen 1:1 pierde 20% a la derecha */}
+                    <div className="w-[20%] h-full bg-rose-950/80 border-l border-rose-400/80 flex items-center justify-center backdrop-blur-[1px]">
                       <span className="text-[6px] font-black uppercase text-rose-200 tracking-tighter bg-rose-900/90 px-1 py-1 rounded border border-rose-400/60 rotate-90 shadow whitespace-nowrap">
-                        ⚠️ Recorte Lateral
+                        ⚠️ Recorte Lateral (20%)
                       </span>
                     </div>
                   </div>
@@ -581,9 +581,9 @@ export default function PosterTemplatePreview({
                         ⚠️ Se recorta en Grid Cuadrado (1:1)
                       </span>
                     </div>
-                    <div className="flex-1 border-2 border-dashed border-emerald-400/90 mx-[14%] my-1 rounded-lg flex flex-col justify-between p-1 relative">
+                    <div className="flex-1 border-2 border-dashed border-emerald-400/90 mx-[20%] my-1 rounded-lg flex flex-col justify-between p-1 relative">
                       <div className="text-[7px] font-black uppercase tracking-wider text-emerald-300 bg-emerald-950/90 px-1.5 py-0.5 rounded border border-emerald-500/40 w-fit mx-auto shadow">
-                        ✓ Zona Segura Universal
+                        ✓ Zona Segura (60% Central)
                       </div>
                       <div className="text-[6.5px] font-mono text-emerald-300/80 text-center">
                         Visible en Feed y Cuadrícula
@@ -597,25 +597,25 @@ export default function PosterTemplatePreview({
                   </div>
                 ) : (
                   <div className="w-full h-full flex justify-between">
-                    {/* En Grid Vertical 4:5 de Instagram, una imagen 1:1 pierde 15% a la izquierda */}
-                    <div className="w-[15%] h-full bg-rose-950/80 border-r border-rose-400/80 flex items-center justify-center backdrop-blur-[1px]">
+                    {/* En Grid Vertical de Instagram, una imagen 1:1 pierde 20% a la izquierda */}
+                    <div className="w-[20%] h-full bg-rose-950/80 border-r border-rose-400/80 flex items-center justify-center backdrop-blur-[1px]">
                       <span className="text-[6px] font-black uppercase text-rose-200 tracking-tighter bg-rose-900/90 px-1 py-1 rounded border border-rose-400/60 -rotate-90 shadow whitespace-nowrap">
-                        ⚠️ Recorte Lateral
+                        ⚠️ Recorte Lateral (20%)
                       </span>
                     </div>
-                    {/* Caja segura central 70% */}
+                    {/* Caja segura central 60% */}
                     <div className="flex-1 h-full border-2 border-dashed border-emerald-400/90 my-[10%] mx-1 rounded-lg flex flex-col justify-between p-1 relative">
                       <div className="text-[6.5px] font-black uppercase tracking-wider text-emerald-300 bg-emerald-950/90 px-1.5 py-0.5 rounded border border-emerald-500/40 w-fit mx-auto shadow">
-                        ✓ Zona Segura (70% central)
+                        ✓ Zona Segura (60% central)
                       </div>
                       <div className="text-[6px] font-mono text-emerald-300/80 text-center">
-                        Visible en Grid Vertical y Feed
+                        Visible en Perfil Vertical y Feed
                       </div>
                     </div>
-                    {/* En Grid Vertical 4:5 de Instagram, una imagen 1:1 pierde 15% a la derecha */}
-                    <div className="w-[15%] h-full bg-rose-950/80 border-l border-rose-400/80 flex items-center justify-center backdrop-blur-[1px]">
+                    {/* En Grid Vertical de Instagram, una imagen 1:1 pierde 20% a la derecha */}
+                    <div className="w-[20%] h-full bg-rose-950/80 border-l border-rose-400/80 flex items-center justify-center backdrop-blur-[1px]">
                       <span className="text-[6px] font-black uppercase text-rose-200 tracking-tighter bg-rose-900/90 px-1 py-1 rounded border border-rose-400/60 rotate-90 shadow whitespace-nowrap">
-                        ⚠️ Recorte Lateral
+                        ⚠️ Recorte Lateral (20%)
                       </span>
                     </div>
                   </div>
@@ -693,9 +693,9 @@ export default function PosterTemplatePreview({
                         ⚠️ Se recorta en Grid Cuadrado (1:1)
                       </span>
                     </div>
-                    <div className="flex-1 border-2 border-dashed border-emerald-400/90 mx-[14%] my-1 rounded-lg flex flex-col justify-between p-1 relative">
+                    <div className="flex-1 border-2 border-dashed border-emerald-400/90 mx-[20%] my-1 rounded-lg flex flex-col justify-between p-1 relative">
                       <div className="text-[7px] font-black uppercase tracking-wider text-emerald-300 bg-emerald-950/90 px-1.5 py-0.5 rounded border border-emerald-500/40 w-fit mx-auto shadow">
-                        ✓ Zona Segura Universal
+                        ✓ Zona Segura (60% Central)
                       </div>
                       <div className="text-[6.5px] font-mono text-emerald-300/80 text-center">
                         Visible en Feed y Cuadrícula
@@ -709,25 +709,25 @@ export default function PosterTemplatePreview({
                   </div>
                 ) : (
                   <div className="w-full h-full flex justify-between">
-                    {/* En Grid Vertical 4:5 de Instagram, una imagen 1:1 pierde 15% a la izquierda */}
-                    <div className="w-[15%] h-full bg-rose-950/80 border-r border-rose-400/80 flex items-center justify-center backdrop-blur-[1px]">
+                    {/* En Grid Vertical de Instagram, una imagen 1:1 pierde 20% a la izquierda */}
+                    <div className="w-[20%] h-full bg-rose-950/80 border-r border-rose-400/80 flex items-center justify-center backdrop-blur-[1px]">
                       <span className="text-[6px] font-black uppercase text-rose-200 tracking-tighter bg-rose-900/90 px-1 py-1 rounded border border-rose-400/60 -rotate-90 shadow whitespace-nowrap">
-                        ⚠️ Recorte Lateral
+                        ⚠️ Recorte Lateral (20%)
                       </span>
                     </div>
-                    {/* Caja segura central 70% */}
+                    {/* Caja segura central 60% */}
                     <div className="flex-1 h-full border-2 border-dashed border-emerald-400/90 my-[10%] mx-1 rounded-lg flex flex-col justify-between p-1 relative">
                       <div className="text-[6.5px] font-black uppercase tracking-wider text-emerald-300 bg-emerald-950/90 px-1.5 py-0.5 rounded border border-emerald-500/40 w-fit mx-auto shadow">
-                        ✓ Zona Segura (70% central)
+                        ✓ Zona Segura (60% central)
                       </div>
                       <div className="text-[6px] font-mono text-emerald-300/80 text-center">
-                        Visible en Grid Vertical y Feed
+                        Visible en Perfil Vertical y Feed
                       </div>
                     </div>
-                    {/* En Grid Vertical 4:5 de Instagram, una imagen 1:1 pierde 15% a la derecha */}
-                    <div className="w-[15%] h-full bg-rose-950/80 border-l border-rose-400/80 flex items-center justify-center backdrop-blur-[1px]">
+                    {/* En Grid Vertical de Instagram, una imagen 1:1 pierde 20% a la derecha */}
+                    <div className="w-[20%] h-full bg-rose-950/80 border-l border-rose-400/80 flex items-center justify-center backdrop-blur-[1px]">
                       <span className="text-[6px] font-black uppercase text-rose-200 tracking-tighter bg-rose-900/90 px-1 py-1 rounded border border-rose-400/60 rotate-90 shadow whitespace-nowrap">
-                        ⚠️ Recorte Lateral
+                        ⚠️ Recorte Lateral (20%)
                       </span>
                     </div>
                   </div>

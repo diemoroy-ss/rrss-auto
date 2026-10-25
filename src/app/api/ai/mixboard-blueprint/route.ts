@@ -51,21 +51,22 @@ Tu especialidad es la metodología Google Mixboard: estructurar especificaciones
 REGLAS ESTRICTAS DE COMPOSICIÓN Y REDACCIÓN:
 1. IDIOMA DE LOS TEXTOS DEL CARTEL: Todos los textos visibles en el cartel (titulares, badges, precios, CTA) DEBEN ESTAR EN ESPAÑOL LATAM y ser 100% naturales, persuasivos y comerciales.
 2. REGLA CRÍTICA DE ZONA SEGURA UNIVERSAL DE INSTAGRAM (FEED 4:5 & PERFIL VERTICAL/CUADRADO):
-   - CRÍTICO: La cuadrícula del perfil de Instagram ahora es VERTICAL (4:5 o 3:4). Si se sube una imagen 1:1 cuadrada, Instagram recorta los laterales (15% a izquierda y 15% a derecha). En feeds cuadrados clásicos, recorta arriba y abajo de imágenes 4:5.
-   - REGLA DE ORO UNIVERSAL: Toda la tipografía (titulares, badges y botones) DEBE estar compactada dentro de la "Caja Segura Central del 68%":
-     * Margen lateral libre: Mínimo 16% vacío a la izquierda y 16% vacío a la derecha (ancho máx del bloque de texto: 68% del lienzo).
-     * Margen vertical libre: Mínimo 15% vacío arriba y 15% vacío abajo.
-   - El titular DEBE ser conciso (máximo 45 caracteres, 2-3 líneas cortas) para que el generador de imagen nunca estire las letras hacia los bordes.
+   - CRÍTICO: La cuadrícula del perfil de Instagram ahora es VERTICAL (4:5 o 3:4). Si se sube una imagen 1:1 cuadrada, Instagram recorta los laterales (20% a izquierda y 20% a derecha). En feeds cuadrados clásicos, recorta arriba y abajo de imágenes 4:5.
+   - REGLA DE ORO UNIVERSAL: Toda la tipografía (titulares, badges y botones) DEBE estar compactada dentro de la "Caja Segura Central del 60%":
+     * Margen lateral libre: Mínimo 20% vacío a la izquierda y 20% vacío a la derecha (ancho máx del bloque de texto: 60% del lienzo).
+     * Margen vertical libre: Mínimo 15% vacío arriba y 16% vacío abajo.
+   - El titular DEBE ser conciso (máximo 45 caracteres, dividido en 2 a 4 líneas cortas) para que el generador de imagen nunca estire las letras hacia los bordes laterales.
+   - BOTÓN CTA / BADGE INFERIOR: Debe ir SIEMPRE en LOWER CENTER (centrado horizontalmente en la parte inferior, con al menos 20% de margen vacío a ambos lados), NUNCA pegado a las esquinas inferiores (BOTTOM RIGHT o LEFT) para evitar que el recorte vertical de Instagram mutile emojis o texto.
 3. ESTRUCTURA DEL PROMPT DE IMAGEN:
    - Descripción de la escena, encuadre (${aspectRatio || "4:5"} o 1:1 o 9:16), fondo con atmósfera y paleta hexadecimal (${preset.backgroundPalette}).
    - Elementos visuales principales, iluminación de estudio, profundidad de campo y sombras de contacto.
    - Bloque final obligatorio con el encabezado exacto:
      "TYPOGRAPHY & LAYOUT (Exact Spanish text):"
-     - COMPOSITION SAFE ZONE (MANDATORY): All typography and badges MUST stay strictly inside the central 68% safe box (minimum 16% empty margins on left/right borders, 15% breathing space from top, 15% breathing space from bottom). No text should ever touch or approach canvas edges.
-     - UPPER CENTER (Pill badge positioned 15% down from top edge inside safe area): Pill badge o kicker pequeño en mayúsculas (slogan/categoría/diagnóstico).
-     - MID-UPPER CENTER (Centered compact headline, maximum 68% container width, at least 16% empty background space on left and right sides): Titular principal en mayúsculas (conciso, 2 a 3 líneas compactas).
+     - COMPOSITION SAFE ZONE (MANDATORY): All typography and badges MUST stay strictly inside the central 60% safe box (minimum 20% empty margins on left/right borders, 15% breathing space from top, 16% breathing space from bottom). No text should ever touch or approach canvas edges.
+     - UPPER CENTER (Pill badge positioned 14% down from top edge inside 60% safe area with 20% side margins): Pill badge o kicker pequeño en mayúsculas (slogan/categoría/diagnóstico).
+     - MID-UPPER CENTER (Centered compact headline broken into 2 to 4 short lines, strictly maximum 60% container width, at least 20% empty background space on left and right sides): Titular principal en mayúsculas (conciso, 2 a 4 líneas compactas).
      - HIGHLIGHT / BADGE (opcional): Sticker de oferta o precio destacado si aplica.
-     - LOWER RIGHT (o LOWER CENTER) (Clean pill button placed above the 85% height mark, inside safe zone): Botón CTA o badge con llamada a la acción con flecha.
+     - LOWER CENTER (Clean pill button placed horizontally in the center above the 84% height mark, inside 60% safe zone with 20% side margins): Botón CTA centrado con llamada a la acción y flecha/emoji.
      - Cierre técnico: "Ultra-sharp vector typography, commercial graphic design, compact centered safe composition, professional studio advertising layout, 8k."
 
 3. FORMATO DE RESPUESTA:
@@ -110,7 +111,7 @@ Genera el JSON con el blueprintPrompt y extractedFields.`;
       parsed = JSON.parse(cleanJson);
     } catch (parseErr) {
       console.warn("[mixboard-blueprint] Error parseando JSON de Gemini, aplicando fallback:", parseErr, rawResponse);
-      const fallbackPrompt = `Vertical ${aspectRatio} commercial advertising poster, ${preset.backgroundPalette}. Center composition featuring ${idea || "commercial product"}.\n\nTYPOGRAPHY & LAYOUT (Exact Spanish text):\n- TOP CENTER: "${businessName?.toUpperCase() || "OFERTA EXCLUSIVA"}"\n- UPPER CENTER: "${existingTexts.mainText || idea || "TRANSFORMA TU NEGOCIO HOY"}"\n- BOTTOM RIGHT: "${existingTexts.ctaText || "Conoce más 👉"}"\nUltra-sharp vector typography, commercial graphic design, 8k.`;
+      const fallbackPrompt = `Vertical ${aspectRatio} commercial advertising poster, ${preset.backgroundPalette}. Center composition featuring ${idea || "commercial product"}.\n\nTYPOGRAPHY & LAYOUT (Exact Spanish text):\n- COMPOSITION SAFE ZONE (MANDATORY): All typography must stay strictly inside central 60% safe box (minimum 20% empty margins on left/right borders).\n- UPPER CENTER: "${businessName?.toUpperCase() || "OFERTA EXCLUSIVA"}"\n- MID-UPPER CENTER: "${existingTexts.mainText || idea || "TRANSFORMA TU NEGOCIO HOY"}"\n- LOWER CENTER: "${existingTexts.ctaText || "Conoce más 👉"}"\nUltra-sharp vector typography, commercial graphic design, 8k.`;
       parsed = {
         blueprintPrompt: fallbackPrompt,
         extractedFields: {

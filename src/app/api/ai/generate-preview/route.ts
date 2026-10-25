@@ -5,37 +5,37 @@
 function autoEnforceSafeZoneInPrompt(prompt: string): string {
   if (!prompt || typeof prompt !== "string") return prompt;
 
-  const hasTypography = /typography\s*&\s*layout/i.test(prompt) || /upper center/i.test(prompt) || /top center/i.test(prompt);
+  const hasTypography = /typography\s*&\s*layout/i.test(prompt) || /upper center/i.test(prompt) || /top center/i.test(prompt) || /safe box/i.test(prompt);
   if (!hasTypography) return prompt;
 
   let result = prompt;
 
-  // 1. Inyectar o asegurar COMPOSITION SAFE ZONE (68% central)
-  const safeZoneDirective = "- COMPOSITION SAFE ZONE (MANDATORY): All typography and badges MUST stay strictly inside the central 68% safe box (minimum 16% empty margins on left/right borders, 15% breathing space from top, 15% breathing space from bottom). Never let text or letters touch or approach canvas borders.";
+  // 1. Inyectar o asegurar COMPOSITION SAFE ZONE (60% central con 20% de margen lateral libre)
+  const safeZoneDirective = "- COMPOSITION SAFE ZONE (MANDATORY): All typography, headlines, badges, prices and CTA buttons MUST stay strictly inside the central 60% safe box (minimum 20% empty background margins on the left border and 20% on the right border, 15% breathing space from top, 16% breathing space from bottom). Never let any letter, punctuation mark, or emoji touch or approach the canvas edges.";
 
-  if (!/composition\s+safe\s+zone/i.test(result)) {
-    if (/typography\s*&\s*layout/i.test(result)) {
-      result = result.replace(new RegExp("(typography\\s*&\\s*layout[^\\r\\n]*)", "i"), "$1\n" + safeZoneDirective);
-    } else {
-      result += "\n\n" + safeZoneDirective;
-    }
+  if (/composition\s+safe\s+zone/i.test(result)) {
+    result = result.replace(/-\s*COMPOSITION\s+SAFE\s+ZONE[^\r\n]*/gi, safeZoneDirective);
+  } else if (/typography\s*&\s*layout/i.test(result)) {
+    result = result.replace(new RegExp("(typography\\s*&\\s*layout[^\\r\\n]*)", "i"), "$1\n" + safeZoneDirective);
+  } else {
+    result += "\n\n" + safeZoneDirective;
   }
 
-  // 2. Reubicar TOP CENTER para que no quede en el borde 0% sino al 14% de altura
+  // 2. Reubicar TOP CENTER para que no quede en el borde 0% sino al 14% de altura con 20% de margen lateral
   result = result.replace(/-\s*TOP\s+CENTER\s*\(([^)]*)\)/gi, (_m, p1) => {
-    return `- UPPER CENTER (Pill badge positioned 14% down from top edge inside safe area, ${p1})`;
+    return `- UPPER CENTER (Pill badge positioned 14% down from top edge inside 60% safe area with 20% side margins, ${p1})`;
   });
 
-  // 3. Forzar que el titular no supere el 68% de ancho
-  result = result.replace(/-\s*UPPER\s+CENTER\s*\(([^)]*)\)/gi, (m, p1) => {
-    if (/68%/i.test(p1) || /safe/i.test(p1)) return m;
-    return `- MID-UPPER CENTER (Centered compact headline, maximum 68% container width with at least 16% empty background space on left and right sides, ${p1})`;
+  // 3. Forzar que el titular no supere el 60% de ancho y tenga 20% de margen a cada lado
+  result = result.replace(/-\s*(UPPER\s+CENTER|MID-UPPER\s+CENTER)\s*\(([^)]*)\)/gi, (_m, _prefix, p1) => {
+    if (/60%/i.test(p1) && /20%/i.test(p1)) return `- MID-UPPER CENTER (${p1})`;
+    const cleaned = p1.replace(/maximum\s+\d+%\s+container\s+width/gi, "").replace(/at\s+least\s+\d+%\s+empty[^\,]*,?/gi, "").trim();
+    return `- MID-UPPER CENTER (Centered compact headline broken into 2 to 4 short lines, strictly maximum 60% container width with at least 20% empty background space on left and right sides, ${cleaned})`;
   });
 
-  // 4. Forzar que el botón inferior no toque el fondo
-  result = result.replace(/-\s*BOTTOM\s+RIGHT\s*\(([^)]*)\)/gi, (m, p1) => {
-    if (/85%/i.test(p1)) return m;
-    return `- LOWER RIGHT (Clean pill badge placed above 85% height mark, inside safe zone, ${p1})`;
+  // 4. Forzar que el botón CTA inferior esté centrado horizontalmente (LOWER CENTER) para que no se recorte en esquinas
+  result = result.replace(/-\s*(BOTTOM\s+RIGHT|LOWER\s+RIGHT|BOTTOM\s+LEFT|LOWER\s+LEFT|BOTTOM\s+CENTER)\s*\(([^)]*)\)/gi, (_m, _pos, p1) => {
+    return `- LOWER CENTER (Centered pill badge positioned horizontally in the center above 84% height mark, inside 60% safe zone with at least 20% margins on left and right sides, ${p1})`;
   });
 
   return result;
@@ -503,10 +503,11 @@ export async function POST(req: NextRequest) {
                     targetSlide?.styleReferenceUrl ||
                     (targetSlide?.lockStyleFromSlide1 ? (posterConfig?.slides?.[0]?.imageUrl || "") : effectiveStyleRef);
 
+                const finalSlidePrompt = autoEnforceSafeZoneInPrompt(slidePrompt);
                 const slidePayload = {
                     ...n8nPayload,
-                    prompt: slidePrompt,
-                    promptEnglish: slidePrompt,
+                    prompt: finalSlidePrompt,
+                    promptEnglish: finalSlidePrompt,
                     slideIndex: slideIdx,
                     totalSlides: enrichedPrompts.length,
                     baseImageUrl: targetSlide?.baseImageUrl || n8nPayload.baseImageUrl,
