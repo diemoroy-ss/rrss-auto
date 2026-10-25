@@ -464,6 +464,11 @@ export default function RrssCreatePost() {
       }
     } else if (postTypeParam) {
       setPostType(postTypeParam);
+      if (postTypeParam === "Post" || postTypeParam === "Carrusel") {
+        setPosterConfig((prev) => ({ ...prev, orientation: "square", aspectRatio: "1:1" }));
+      } else if (postTypeParam === "Historia" || postTypeParam === "Reel") {
+        setPosterConfig((prev) => ({ ...prev, orientation: "vertical", aspectRatio: "9:16" }));
+      }
     }
   }, [carouselUrlsParam, postTypeParam]);
 
@@ -805,6 +810,7 @@ export default function RrssCreatePost() {
           imageExpectation: targetExpectation,
           businessType,
           type: effectivePostType,
+          aspectRatio: (effectivePostType === "Historia" || effectivePostType === "Reel") ? "9:16" : "1:1",
           carouselCount: effectiveCarouselCount,
           regenerate: forceReplan,
           selectedPromptTemplate: selectedPromptTemplate ? {
@@ -1017,13 +1023,17 @@ export default function RrssCreatePost() {
           videoPrompt: pendingPrompts.video_prompt || "",
           voiceoverScript: pendingPrompts.voiceover_script || "",
           businessType,
-          type: isSingleSlideGen ? 'Post' : postType,
+          type: isSingleSlideGen ? (postType === 'Historia' || postType === 'Reel' ? 'Historia' : 'Post') : postType,
           carouselCount: isSingleSlideGen ? 1 : carouselCount,
           email: activeProfile?.email || "",
           phone: activeProfile?.phone || "",
           profileId: activeProfile?.id || "",
           userProvidedCopy: postText,
-          posterConfig,
+          posterConfig: {
+            ...posterConfig,
+            aspectRatio: (postType === 'Historia' || postType === 'Reel') ? '9:16' : '1:1',
+            orientation: (postType === 'Historia' || postType === 'Reel') ? 'vertical' : 'square',
+          },
           baseImageUrl: isSingleSlideGen
             ? (singleSlideTargetIdx === 0
                 ? (posterConfig.slides?.[0]?.baseImageUrl || baseImageUrl || selectedCatalogoItem?.imageUrl || null)
@@ -2368,10 +2378,13 @@ export default function RrssCreatePost() {
                       setPostType(type);
                       if (type === "Carrusel") {
                         if (carouselCount < 2) setCarouselCount(5);
+                        setPosterConfig((prev) => ({ ...prev, orientation: "square", aspectRatio: "1:1" }));
                       } else if (type === "Historia") {
                         setPosterConfig((prev) => ({ ...prev, orientation: "vertical", aspectRatio: "9:16" }));
                       } else if (type === "Post") {
                         setPosterConfig((prev) => ({ ...prev, orientation: "square", aspectRatio: "1:1" }));
+                      } else if (type === "Reel") {
+                        setPosterConfig((prev) => ({ ...prev, orientation: "vertical", aspectRatio: "9:16" }));
                       }
                     }}
                     className={`py-2.5 px-1.5 rounded-2xl border-2 flex flex-col items-center justify-center gap-1 transition-all cursor-pointer ${
@@ -2390,7 +2403,7 @@ export default function RrssCreatePost() {
                       {isReelDisabledByPlan && <span className="text-[9px]">🔒</span>}
                     </span>
                     <span className="text-[8px] font-bold text-slate-400 leading-none">
-                      {type === "Post" ? "1:1 / 4:5" : type === "Historia" ? "9:16 vertical" : type === "Carrusel" ? "Múltiple" : "Video"}
+                      {type === "Post" ? "1:1 cuadrado" : type === "Historia" ? "9:16 vertical" : type === "Carrusel" ? "1:1 cuadrado" : "9:16 vertical"}
                     </span>
                   </button>
                 );
@@ -2847,6 +2860,7 @@ export default function RrssCreatePost() {
                           forceOpenEditor={openEditorParam}
                           onRetouch={(inst) => handleRetouchImage(null, inst)}
                           isRetouching={previewLoading}
+                          aspectRatio={postType === 'Historia' || postType === 'Reel' ? '9:16' : '1:1'}
                         />
                       </div>
                     )}
@@ -2901,6 +2915,7 @@ export default function RrssCreatePost() {
                       userLogo={userLogo}
                       userId={user?.uid}
                       forceOpenEditor={openEditorParam}
+                      aspectRatio={postType === 'Historia' || postType === 'Reel' ? '9:16' : '1:1'}
                     />
                     <button 
                       type="button" 

@@ -73,7 +73,7 @@ export function MixboardBlueprintBar({
           businessType: businessType || activeProfile?.businessType || "Negocio",
           businessName: activeProfile?.name || posterConfig.businessName || "Marca",
           presetId: selectedPresetId,
-          aspectRatio: posterConfig.aspectRatio === "9:16" ? "9:16" : "4:5",
+          aspectRatio: posterConfig.aspectRatio === "9:16" ? "9:16" : "1:1",
           slideNumber: activeSlideIndex + 1,
           slideRole: activeSlide?.role || `Slide ${activeSlideIndex + 1}`,
           existingTexts: {

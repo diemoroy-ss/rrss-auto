@@ -14,6 +14,7 @@ interface CanvasEditorProps {
   forceOpenEditor?: boolean;
   onRetouch?: (instruction: string) => void;
   isRetouching?: boolean;
+  aspectRatio?: "1:1" | "9:16";
 }
 
 interface TextLayer {
@@ -43,7 +44,8 @@ export default function CanvasEditor({
   onSave,
   forceOpenEditor = false,
   onRetouch,
-  isRetouching = false
+  isRetouching = false,
+  aspectRatio = "1:1"
 }: CanvasEditorProps) {
   const [showEditor, setShowEditor] = useState(forceOpenEditor);
   const [activeLayerIndex, setActiveLayerIndex] = useState(0);
@@ -246,6 +248,7 @@ export default function CanvasEditor({
           logoX,
           logoY,
           logoWidth, // Guardamos el ancho personalizado
+          aspectRatio: aspectRatio || "1:1",
           createdAt: new Date()
        });
 
@@ -367,7 +370,7 @@ export default function CanvasEditor({
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
-          className={`aspect-square rounded-[24px] overflow-hidden bg-slate-200 border-4 border-white shadow-xl relative group ${showEditor && !isOverlaying && !finalImageUrl ? 'cursor-crosshair' : ''}`}
+          className={`${aspectRatio === '9:16' ? 'aspect-[9/16] max-h-[72vh] mx-auto' : 'aspect-square'} rounded-[24px] overflow-hidden bg-slate-200 border-4 border-white shadow-xl relative group ${showEditor && !isOverlaying && !finalImageUrl ? 'cursor-crosshair' : ''}`}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           {(finalImageUrl || baseImageUrl) ? (

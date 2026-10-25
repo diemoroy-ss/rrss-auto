@@ -51,6 +51,7 @@ REGLAS DE RESPUESTA:
 - Si el score promedio es < 7.5, MEJORA el prompt. Retorna needsImprovement: true y el prompt mejorado.
 - El prompt mejorado debe ser en INGLÉS, más detallado, específico y con mayor impacto visual.
 - NUNCA incluyas texto, letras, palabras o tipografía que aparezca DENTRO de la imagen generada.
+- Formato de aspecto OBLIGATORIO: ${postType === 'Historia' || postType === 'Reel' ? 'Encuadre vertical 9:16' : 'Encuadre cuadrado 1:1'}.
 - Retorna SOLO el JSON puro, sin markdown, sin comentarios.
 
 FORMATO DE RESPUESTA JSON:
@@ -68,7 +69,7 @@ CONTEXTO ADICIONAL DEL POST:
 - Idea original del usuario: ${idea || "No especificada"}
 - Expectativa visual del usuario: ${imageExpectation || "No especificada"}
 - Rubro del negocio: ${businessType || "General"}
-- Tipo de publicación: ${postType || "Post"}
+- Tipo de publicación: ${postType || "Post"} (${postType === "Historia" || postType === "Reel" ? "Formato vertical 9:16" : "Formato cuadrado 1:1"})
 
 Por favor, evalúa el prompt y retorna tu análisis en el formato JSON especificado.`;
 

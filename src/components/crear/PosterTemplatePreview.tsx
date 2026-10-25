@@ -20,7 +20,7 @@ interface PosterTemplatePreviewProps {
   includeContact?: boolean;
   contactType?: string;
   contactValue?: string;
-  aspectRatio?: "1:1" | "4:5";
+  aspectRatio?: "1:1" | "4:5" | "9:16";
   generatedImageUrl?: string;
   isGenerating?: boolean;
   slideNumber?: number;
@@ -46,7 +46,7 @@ export default function PosterTemplatePreview({
   includeContact = false,
   contactType = "whatsapp",
   contactValue = "",
-  aspectRatio = "4:5",
+  aspectRatio = "1:1",
   generatedImageUrl,
   isGenerating = false,
   slideNumber,
@@ -415,9 +415,9 @@ export default function PosterTemplatePreview({
       {activeViewMode === "afiche" && hasImage && (
         <div className="flex flex-col items-center w-full animate-in fade-in zoom-in-95 duration-200">
           <div
-            className="w-full max-w-[280px] bg-slate-950 rounded-2xl overflow-hidden border-2 border-emerald-500/60 shadow-2xl relative select-none transition-all duration-300 group flex flex-col justify-between p-3.5"
+            className={`w-full ${aspectRatio === "9:16" ? "max-w-[220px]" : "max-w-[280px]"} bg-slate-950 rounded-2xl overflow-hidden border-2 border-emerald-500/60 shadow-2xl relative select-none transition-all duration-300 group flex flex-col justify-between p-3.5`}
             style={{
-              aspectRatio: aspectRatio === "4:5" ? "4/5" : "1/1",
+              aspectRatio: aspectRatio === "9:16" ? "9/16" : aspectRatio === "4:5" ? "4/5" : "1/1",
               boxShadow: `0 12px 35px -10px ${primaryColor}40`,
             }}
           >
@@ -484,9 +484,9 @@ export default function PosterTemplatePreview({
       {activeViewMode === "image" && hasImage && (
         <div className="flex flex-col items-center w-full animate-in fade-in zoom-in-95 duration-200">
           <div
-            className="w-full max-w-[280px] bg-slate-950 rounded-2xl overflow-hidden border-2 border-emerald-500/60 shadow-2xl relative select-none transition-all duration-300 group"
+            className={`w-full ${aspectRatio === "9:16" ? "max-w-[220px]" : "max-w-[280px]"} bg-slate-950 rounded-2xl overflow-hidden border-2 border-emerald-500/60 shadow-2xl relative select-none transition-all duration-300 group`}
             style={{
-              aspectRatio: aspectRatio === "4:5" ? "4/5" : "1/1",
+              aspectRatio: aspectRatio === "9:16" ? "9/16" : aspectRatio === "4:5" ? "4/5" : "1/1",
               boxShadow: `0 12px 35px -10px ${primaryColor}40`,
             }}
           >
@@ -543,9 +543,9 @@ export default function PosterTemplatePreview({
       {(activeViewMode === "blueprint" || !hasImage) && (
         <div className="flex flex-col items-center w-full animate-in fade-in duration-200">
           <div
-            className="w-full max-w-[280px] bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 rounded-2xl overflow-hidden border-2 border-slate-700/60 shadow-2xl relative flex flex-col justify-between p-3.5 select-none transition-all duration-300"
+            className={`w-full ${aspectRatio === "9:16" ? "max-w-[220px]" : "max-w-[280px]"} bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 rounded-2xl overflow-hidden border-2 border-slate-700/60 shadow-2xl relative flex flex-col justify-between p-3.5 select-none transition-all duration-300`}
             style={{
-              aspectRatio: aspectRatio === "4:5" ? "4/5" : "1/1",
+              aspectRatio: aspectRatio === "9:16" ? "9/16" : aspectRatio === "4:5" ? "4/5" : "1/1",
               boxShadow: `0 10px 30px -10px ${primaryColor}25`,
             }}
           >

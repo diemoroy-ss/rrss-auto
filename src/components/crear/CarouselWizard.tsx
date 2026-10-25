@@ -16,6 +16,7 @@ interface CarouselWizardProps {
   userId: string;
   forceOpenEditor?: boolean;
   onRetouch?: (index: number, instruction: string) => void;
+  aspectRatio?: "1:1" | "9:16";
 }
 
 export default function CarouselWizard({
@@ -24,7 +25,8 @@ export default function CarouselWizard({
   userLogo,
   userId,
   forceOpenEditor = false,
-  onRetouch
+  onRetouch,
+  aspectRatio = "1:1"
 }: CarouselWizardProps) {
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -80,6 +82,7 @@ export default function CarouselWizard({
         onSave={(finalUrl) => onUpdateSlide(activeIndex, finalUrl)}
         forceOpenEditor={forceOpenEditor}
         onRetouch={(inst) => onRetouch?.(activeIndex, inst)}
+        aspectRatio={aspectRatio}
       />
       
       {isMulti && (

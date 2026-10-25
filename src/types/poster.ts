@@ -229,6 +229,8 @@ export const DEFAULT_POSTER_CONFIG: PosterConfig = {
   isLabMode: false,
   mixboardPreset: 'dark_saas',
   layout: 'auto',
+  orientation: 'square',
+  aspectRatio: '1:1',
   slides: DEFAULT_POSTER_SLIDES,
   activeSlideIndex: 0,
   includeLogo: false,

@@ -529,7 +529,16 @@ export default function PostConfigForm({
                       type="button"
                       disabled={disabled}
                       title={isReelDisabledByPlan ? "Tu plan actual no incluye cuota de Reels/Video. Mejora tu plan para desbloquearlo." : ""}
-                      onClick={() => setPostType(type)}
+                      onClick={() => {
+                        setPostType(type);
+                        if (setPosterConfig) {
+                          if (type === 'Post' || type === 'Carrusel') {
+                            setPosterConfig(prev => ({ ...prev, orientation: 'square', aspectRatio: '1:1' }));
+                          } else if (type === 'Historia' || type === 'Reel') {
+                            setPosterConfig(prev => ({ ...prev, orientation: 'vertical', aspectRatio: '9:16' }));
+                          }
+                        }
+                      }}
                       className={`py-3 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all relative ${
                         disabled ? 'opacity-40 bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed' :
                         postType === type 
@@ -541,6 +550,9 @@ export default function PostConfigForm({
                       <span className="text-[9px] font-bold uppercase flex items-center gap-1">
                         {type}
                         {isReelDisabledByPlan && <span className="text-[10px]">🔒</span>}
+                      </span>
+                      <span className="text-[8px] font-bold text-slate-400 leading-none">
+                        {type === 'Post' ? '1:1 cuadrado' : type === 'Historia' ? '9:16 vertical' : type === 'Carrusel' ? '1:1 cuadrado' : '9:16 vertical'}
                       </span>
                     </button>
                   );

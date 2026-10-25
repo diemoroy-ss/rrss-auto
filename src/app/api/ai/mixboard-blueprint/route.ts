@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
       businessType,
       businessName,
       presetId = "dark_saas",
-      aspectRatio = "4:5",
+      aspectRatio = "1:1",
       existingTexts = {},
       isCarouselSequence = false,
       carouselCount = 5,

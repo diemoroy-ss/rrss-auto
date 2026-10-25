@@ -40,18 +40,19 @@ PROHIBICIONES ESTRICTAS:
         let promptContent = "";
 
         if (type === 'Carrusel') {
-            systemInstruction = `Eres un experto Director de Arte. Tu misión es generar una lista estructurada en JSON puro que contenga EXACTAMENTE ${carouselCount || 3} escenas secuenciales coherentes.
+            systemInstruction = `Eres un experto Director de Arte. Tu misión es generar una lista estructurada en JSON puro que contenga EXACTAMENTE ${carouselCount || 3} escenas secuenciales coherentes en formato cuadrado 1:1.
 Debes retornar un objeto JSON con la siguiente estructura exacta:
 {
-  "prompts_english": ["Instrucción detallada de imagen 1 en INGLÉS para Midjourney/DALL-E 3 sin textos", "..."],
+  "prompts_english": ["Instrucción detallada de imagen 1 en INGLÉS para generador de imagen sin textos, formato cuadrado 1:1 (square 1:1 aspect ratio)", "..."],
   "prompts_spanish": ["Explicación sencilla y hermosa en ESPAÑOL de lo que se verá en la imagen 1", "..."]
 }
 
 ${bananaRules}
 
 REGLAS ADICIONALES PARA CARRUSEL:
-1. Asegura coherencia de Estilo Visual (Style) e Iluminación (Lighting) entre todas las imágenes de la secuencia.
-2. NO incluyas introducciones ni comillas invertidas markdown, solo el JSON puro.`;
+1. Formato OBLIGATORIO: Todas las imágenes del carrusel deben ser cuadradas 1:1 (square aspect ratio 1:1).
+2. Asegura coherencia de Estilo Visual (Style) e Iluminación (Lighting) entre todas las imágenes de la secuencia.
+3. NO incluyas introducciones ni comillas invertidas markdown, solo el JSON puro.`;
 
             promptContent = `Idea del Carrusel: ${idea}
 Rubro del Negocio: ${businessType || "General"}
@@ -61,7 +62,7 @@ Expectativa Visual del Cliente: ${imageExpectation || "Estilo libre, profesional
             systemInstruction = `Eres un experto Director de Arte y Guionista de Redes Sociales.
 Tu tarea es analizar la idea del post y retornar un objeto JSON con la estructura exacta indicada a continuación:
 {
-  "prompt_english": "Prompt altamente detallado en INGLÉS para la imagen inicial usando la REGLA DE LOS 7 COMPONENTES. Formato vertical (9:16).",
+  "prompt_english": "Prompt altamente detallado en INGLÉS para la imagen inicial usando la REGLA DE LOS 7 COMPONENTES. Formato vertical (9:16 aspect ratio).",
   "prompt_spanish": "Una descripción clara y concisa en ESPAÑOL de lo que se verá en la imagen de portada para que el cliente la entienda.",
   "video_prompt": "Un prompt de animación en INGLÉS para un generador de Image-to-Video (como Runway, Luma o Kling). Describe el movimiento de la cámara, luces, dinámica y efectos cinemáticos, heredando el mismo estilo visual maestro y atmósfera de la imagen inicial.",
   "voiceover_script": "Un guion de locución corto y persuasivo en ESPAÑOL de exactamente 15 a 20 palabras (ideal para un Reel de 8-10 segundos)."
@@ -70,7 +71,8 @@ Tu tarea es analizar la idea del post y retornar un objeto JSON con la estructur
 ${bananaRules}
 
 REGLAS IMPORTANTES:
-1. NO incluyas introducciones ni comillas invertidas markdown, solo el JSON puro.`;
+1. Formato OBLIGATORIO: Formato vertical 9:16 (vertical 9:16 aspect ratio).
+2. NO incluyas introducciones ni comillas invertidas markdown, solo el JSON puro.`;
 
             promptContent = `Idea del Reel: ${idea}
 Rubro del Negocio: ${businessType || "General"}
@@ -78,20 +80,22 @@ Expectativa Visual del Cliente: ${imageExpectation || "Estilo libre, profesional
 
         } else {
             // Post / Historia (Single Image)
+            const isStory = type === 'Historia';
             systemInstruction = `Eres un experto Director de Arte y Diseñador Gráfico.
 Tu tarea es generar un prompt de imagen y su explicación en base a la idea de post y las expectativas del cliente.
 Debes retornar un objeto JSON con la estructura exacta indicada a continuación:
 {
-  "prompt_english": "Un prompt de imagen narrativo y altamente detallado en INGLÉS que cumple estrictamente la REGLA DE LOS 7 COMPONENTES.",
+  "prompt_english": "Un prompt de imagen narrativo y altamente detallado en INGLÉS que cumple estrictamente la REGLA DE LOS 7 COMPONENTES. Formato ${isStory ? 'vertical para Historias/Stories (9:16 vertical ratio)' : 'cuadrado para Feed (1:1 square ratio)'}.",
   "prompt_spanish": "Una explicación sencilla, clara y atractiva en ESPAÑOL de lo que representará la imagen para que el cliente la entienda."
 }
 
 ${bananaRules}
 
 REGLAS IMPORTANTES:
-1. NO incluyas introducciones ni comillas invertidas markdown, solo el JSON puro.`;
+1. Formato OBLIGATORIO: ${isStory ? 'Vertical 9:16 (9:16 aspect ratio)' : 'Cuadrado 1:1 (1:1 aspect ratio)'}.
+2. NO incluyas introducciones ni comillas invertidas markdown, solo el JSON puro.`;
 
-            promptContent = `Idea del Post: ${idea}
+            promptContent = `Idea del ${isStory ? 'Historia' : 'Post'}: ${idea}
 Rubro del Negocio: ${businessType || "General"}
 Expectativa Visual del Cliente: ${imageExpectation || "Estilo libre, profesional y moderno"}${productContext}${styleTemplateContext}`;
         }

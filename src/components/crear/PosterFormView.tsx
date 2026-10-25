@@ -568,7 +568,7 @@ export default function PosterFormView({
                 includeContact={posterConfig.includeContact}
                 contactType={posterConfig.contactType}
                 contactValue={posterConfig.contactValue}
-                aspectRatio="4:5"
+                aspectRatio={postType === "Historia" || postType === "Reel" ? "9:16" : "1:1"}
                 generatedImageUrl={
                   postType === "Carrusel"
                     ? (posterConfig.slides?.[currentSlideIdx]?.imageUrl ||
