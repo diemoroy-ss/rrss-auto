@@ -187,12 +187,12 @@ export default function PostCard({
             </p>
           </div>
         ) : post.videoUrl || post.imageUrl || (post.scenes && post.scenes.length > 0) ? (
-          <div className="mt-2 mb-6 rounded-2xl overflow-hidden border border-slate-200/50 aspect-video bg-slate-950 flex items-center justify-center shadow-inner relative group-hover:border-indigo-200 transition-all cursor-pointer">
+          <div className="mt-2 mb-6 rounded-2xl overflow-hidden border border-slate-200/50 aspect-square max-h-[340px] bg-slate-950 flex items-center justify-center shadow-inner relative group-hover:border-indigo-200 transition-all cursor-pointer">
             {isVideo ? (
               <div className="w-full h-full relative bg-slate-950 flex items-center justify-center">
                 <video
                   src={post.videoUrl || post.imageUrl}
-                  className="w-full h-full object-cover opacity-85 group-hover:opacity-100 transition-opacity"
+                  className="w-full h-full object-contain opacity-95 group-hover:opacity-100 transition-opacity"
                   muted
                   playsInline
                   preload="metadata"
@@ -227,7 +227,7 @@ export default function PostCard({
                 <img
                   src={post.imageUrl}
                   alt="Ref"
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                 {post.imageUrls && post.imageUrls.length > 1 && (
