@@ -1036,6 +1036,10 @@ export default function FidelizacionPanelPage() {
                   </p>
                 )}
               </div>
+
+              <div className="pt-3 border-t border-slate-800/80 flex items-center justify-center gap-2">
+                <FidelizaLogo height={24} width={130} />
+              </div>
             </div>
           </div>
         </div>

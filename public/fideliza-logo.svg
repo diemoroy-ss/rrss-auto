@@ -1,66 +1,47 @@
-<svg width="255" height="54" viewBox="0 0 255 54" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Cubo 3D Isométrico Regalo / Club VIP (ADN SocialPilot) -->
-  <g transform="translate(2, 3)">
-    <!-- Cara Superior del Cubo -->
-    <path d="M24 2L44 13.5L24 25L4 13.5L24 2Z" fill="url(#fidTop)"/>
-    <!-- Cara Derecha del Cubo -->
-    <path d="M24 25L44 13.5V36.5L24 48V25Z" fill="url(#fidRight)"/>
-    <!-- Cara Izquierda del Cubo -->
-    <path d="M24 25L4 13.5V36.5L24 48V25Z" fill="url(#fidLeft)"/>
-
-    <!-- Cinta Dorada VIP Cruzada en Cara Superior -->
-    <path d="M14 7.75L34 19.25" stroke="url(#fidGold)" stroke-width="3.4" stroke-linecap="round"/>
-    <path d="M34 7.75L14 19.25" stroke="url(#fidGold)" stroke-width="3.4" stroke-linecap="round"/>
-
-    <!-- Cinta Dorada Vertical en Caras Laterales -->
-    <path d="M14 19.25V42.25" stroke="url(#fidGold)" stroke-width="3.2" stroke-linecap="round" opacity="0.9"/>
-    <path d="M34 19.25V42.25" stroke="url(#fidGold)" stroke-width="3.2" stroke-linecap="round" opacity="0.75"/>
-
-    <!-- Aristas de luz sutil -->
-    <path d="M24 25V48" stroke="#FFFFFF" stroke-width="1.2" opacity="0.45"/>
-    <path d="M24 25L4 13.5" stroke="#FFFFFF" stroke-width="1" opacity="0.25"/>
-    <path d="M24 25L44 13.5" stroke="#FFFFFF" stroke-width="1" opacity="0.25"/>
-
-    <!-- Moño / Estrella VIP Central sobre el Cubo -->
-    <circle cx="24" cy="13.5" r="4.2" fill="#FFFBEB" stroke="#F59E0B" stroke-width="1.5"/>
-    <!-- Estrella de Recompensa Central -->
-    <path d="M24 20.5L25.4 23.4L28.6 23.9L26.3 26.1L26.8 29.3L24 27.8L21.2 29.3L21.7 26.1L19.4 23.9L22.6 23.4L24 20.5Z" fill="#FFFBEB"/>
+<svg width="300" height="66" viewBox="0 0 300 66" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Isotipo Sello + Bucle F Infinita + Estrella -->
+  <g transform="translate(6, 6)">
+    <!-- Base del Sello con borde redondeado moderno -->
+    <rect x="1" y="1" width="52" height="52" rx="16" fill="#0F172A" stroke="url(#fA_border)" stroke-width="2"/>
+    <!-- Círculo interior de sello con pespunte -->
+    <circle cx="27" cy="27" r="21" fill="url(#fA_bg)" opacity="0.14"/>
+    <circle cx="27" cy="27" r="18" stroke="#F59E0B" stroke-width="1.2" stroke-dasharray="2.5 2" opacity="0.65"/>
+    
+    <!-- Bucle Infinito 'F' entrelazado -->
+    <path d="M17 35C13 35 10 32 10 28C10 24 13 21 17 21C22 21 27 32 33 32C37 32 40 29 40 25C40 21 37 18 33 18C28 18 23 29 17 29" stroke="url(#fA_loop)" stroke-width="4.5" stroke-linecap="round"/>
+    
+    <!-- Barra superior de la 'F' integrada en lazo -->
+    <path d="M19 16.5H35" stroke="url(#fA_loop)" stroke-width="3.5" stroke-linecap="round"/>
+    
+    <!-- Estrella dorada brillante en el centro del nodo -->
+    <circle cx="27" cy="25" r="5" fill="#0F172A"/>
+    <path d="M27 20.5L28.3 23.3L31.3 23.7L29.1 25.8L29.7 28.8L27 27.3L24.3 28.8L24.9 25.8L22.7 23.7L25.7 23.3L27 20.5Z" fill="#FBBF24"/>
   </g>
 
-  <!-- Tipografía Fideliza Grande y Nítida -->
-  <text x="56" y="31" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="900" fill="#FFFFFF" letter-spacing="-0.6">
-    Fide<tspan fill="url(#fidTextGrad)">liza</tspan>
+  <!-- Tipografía Fideliza by SocialPilot -->
+  <text x="70" y="36" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="900" fill="#FFFFFF" letter-spacing="-0.5">
+    Fide<tspan fill="url(#fA_text)">liza</tspan>
   </text>
-
-  <!-- Estrella / Destello VIP junto al título -->
-  <path d="M167 10L168.5 13.5L172 15L168.5 16.5L167 20L165.5 16.5L162 15L165.5 13.5L167 10Z" fill="#FBBF24"/>
-
-  <!-- Subtítulo BY SOCIALPILOT -->
-  <text x="57" y="46" font-family="system-ui, -apple-system, sans-serif" font-size="10" font-weight="800" fill="#CBD5E1" letter-spacing="2.4">
-    BY SOCIAL<tspan fill="#FF922B">PILOT</tspan>
+  
+  <!-- Destello estrella junto al nombre -->
+  <path d="M182 14L183.5 17.5L187 19L183.5 20.5L182 24L180.5 20.5L177 19L180.5 17.5L182 14Z" fill="#FBBF24"/>
+  
+  <text x="71" y="52" font-family="system-ui, -apple-system, sans-serif" font-size="9.5" font-weight="800" fill="#94A3B8" letter-spacing="2.6">
+    BY SOCIAL<tspan fill="#FF6B00">PILOT</tspan>
   </text>
 
   <defs>
-    <linearGradient id="fidTop" x1="4" y1="2" x2="44" y2="25" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#FF922B"/>
-      <stop offset="1" stop-color="#F59E0B"/>
+    <linearGradient id="fA_border" x1="1" y1="1" x2="53" y2="53" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF922B"/><stop offset="1" stop-color="#EA580C"/>
     </linearGradient>
-    <linearGradient id="fidRight" x1="24" y1="13.5" x2="44" y2="48" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#D9480F"/>
-      <stop offset="1" stop-color="#9A3412"/>
+    <linearGradient id="fA_bg" x1="6" y1="6" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F59E0B"/><stop offset="1" stop-color="#FF6B00"/>
     </linearGradient>
-    <linearGradient id="fidLeft" x1="4" y1="13.5" x2="24" y2="48" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#FF6B00"/>
-      <stop offset="1" stop-color="#EA580C"/>
+    <linearGradient id="fA_loop" x1="10" y1="16" x2="40" y2="35" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF6B00"/><stop offset="0.5" stop-color="#F59E0B"/><stop offset="1" stop-color="#FCD34D"/>
     </linearGradient>
-    <linearGradient id="fidGold" x1="10" y1="6" x2="38" y2="42" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#FEF08A"/>
-      <stop offset="0.5" stop-color="#FBBF24"/>
-      <stop offset="1" stop-color="#D97706"/>
-    </linearGradient>
-    <linearGradient id="fidTextGrad" x1="105" y1="10" x2="160" y2="34" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#FBBF24"/>
-      <stop offset="1" stop-color="#FF6B00"/>
+    <linearGradient id="fA_text" x1="116" y1="16" x2="168" y2="38" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FBBF24"/><stop offset="1" stop-color="#FF6B00"/>
     </linearGradient>
   </defs>
 </svg>

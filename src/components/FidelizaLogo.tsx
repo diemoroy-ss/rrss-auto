@@ -8,6 +8,7 @@ export interface FidelizaLogoProps {
   href?: string;
   className?: string;
   priority?: boolean;
+  variant?: "dark" | "light";
 }
 
 export default function FidelizaLogo({
@@ -16,11 +17,14 @@ export default function FidelizaLogo({
   href,
   className = "",
   priority = false,
+  variant = "dark",
 }: FidelizaLogoProps) {
+  const src = variant === "light" ? "/fideliza-logo-light.svg" : "/fideliza-logo.svg";
+
   const image = (
     <div className={`inline-flex items-center ${className}`.trim()}>
       <Image
-        src="/fideliza-logo.svg"
+        src={src}
         alt="Fideliza by SocialPilot"
         width={width}
         height={height}
