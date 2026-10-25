@@ -138,6 +138,7 @@ function PanelLayoutContent({
       items: [
         { href: "/automatizacion-rrss/panel/catalogo", label: "Productos / Servicios", icon: "🛍️", exact: false },
         { href: "/automatizacion-rrss/panel/biblioteca", label: "Biblioteca Multimedia", icon: "🖼️", exact: false },
+        { href: "/automatizacion-rrss/panel/fidelizacion", label: "Fidelización & Club VIP", icon: "🎁", exact: false },
         ...(isMenuDigitalEnabled ? [{ href: "/automatizacion-rrss/panel/menu-qr", label: "Carta Menú & QR", icon: "📱", exact: false }] : []),
       ]
     },

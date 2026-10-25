@@ -95,6 +95,9 @@ export type BusinessProfile = {
   // Carta Menú Digital & QR
   menuDigitalEnabled?: boolean;
   menuTheme?: 'dark_modern' | 'warm_cafe' | 'fresh_bistro' | 'vibrant_street' | 'minimal_clean';
+  // Programa de Fidelización & Club VIP
+  fidelizacionEnabled?: boolean;
+  fidelizacionConfig?: FidelizacionConfig;
   isTestProfile?: boolean;
   selectedPromptStyleIds?: string[];
   agentTone?: string;
@@ -127,6 +130,49 @@ export type CatalogoItem = {
   keepOriginalPhoto?: boolean;
   /** Estilo tipográfico preferido para la sobreposición publicitaria */
   fontStyle?: 'script_handwritten' | 'bold_modern' | 'elegant_serif' | 'clean_minimal';
+};
+
+export type FidelizacionConfig = {
+  enabled: boolean;
+  programName: string;
+  mode: 'visits' | 'amount';
+  targetGoal: number;
+  amountPerPoint?: number;
+  minPurchaseAmount?: number;
+  rewardTitle: string;
+  rewardDescription?: string;
+  rewardProductId?: string;
+  rewardCatalogItemId?: string;
+  rewardProductImage?: string;
+  welcomeBonus: boolean;
+  instagramBonus: boolean;
+  maxOnePerDay: boolean;
+  allowPinValidation: boolean;
+  cashierPin: string;
+  allowReceiptOcr: boolean;
+  allowWhatsappApproval: boolean;
+  primaryColor?: string;
+  stampIcon?: string;
+};
+
+export const DEFAULT_FIDELIZACION_CONFIG: FidelizacionConfig = {
+  enabled: false,
+  programName: "Club VIP",
+  mode: "visits",
+  targetGoal: 4,
+  amountPerPoint: 1000,
+  minPurchaseAmount: 0,
+  rewardTitle: "Producto o Descuento Gratis",
+  rewardDescription: "Presenta tu código al completar tus visitas en el local.",
+  welcomeBonus: true,
+  instagramBonus: true,
+  maxOnePerDay: true,
+  allowPinValidation: true,
+  cashierPin: "1234",
+  allowReceiptOcr: true,
+  allowWhatsappApproval: true,
+  primaryColor: "#FF6B00",
+  stampIcon: "star",
 };
 
 

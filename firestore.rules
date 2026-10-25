@@ -58,6 +58,17 @@ service cloud.firestore {
       allow read, update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
     }
 
+    // --- COLECCIONES DE FIDELIZACIÓN Y CLUB VIP ---
+    match /loyalty_members/{memberId} {
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /loyalty_transactions/{txId} {
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
     // --- COLECCIÓN DE ESTRATEGIAS DE IA ---
     // Acceso restringido al creador del plan de estrategia.
     match /user_strategies/{strategyId} {

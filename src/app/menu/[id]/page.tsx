@@ -42,6 +42,10 @@ interface BusinessInfo {
   website: string | null;
   address: string | null;
   promotions: string | null;
+  fidelizacionEnabled?: boolean;
+  fidelizacionProgramName?: string;
+  fidelizacionRewardTitle?: string;
+  fidelizacionTargetGoal?: number;
 }
 
 export default function PublicMenuPage() {
@@ -289,6 +293,29 @@ export default function PublicMenuPage() {
               </a>
             )}
           </div>
+
+          {/* Loyalty Club Banner when enabled */}
+          {business.fidelizacionEnabled && (
+            <Link
+              href={`/fideliza/${menuId}`}
+              className="mt-4 flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 shadow-lg hover:brightness-105 transition-all"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <span className="text-2xl shrink-0">🎁</span>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-wider opacity-80">
+                    {business.fidelizacionProgramName || "Club VIP"} · Tarjeta de Sellos
+                  </p>
+                  <p className="text-xs sm:text-sm font-black truncate">
+                    Suma {business.fidelizacionTargetGoal || 5} visitas y gana: {business.fidelizacionRewardTitle}
+                  </p>
+                </div>
+              </div>
+              <span className="px-3 py-1.5 rounded-xl bg-slate-950 text-amber-400 font-black text-xs shrink-0">
+                Sumar Sellos →
+              </span>
+            </Link>
+          )}
         </div>
       </div>
 

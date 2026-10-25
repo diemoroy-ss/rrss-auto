@@ -85,6 +85,7 @@ export function getSafeOrigin(origin?: string | null): string {
         const isAllowed =
             host === "socialpilot.cl" ||
             host === "www.socialpilot.cl" ||
+            host === "fideliza.socialpilot.cl" ||
             host === "automatizacion.santisoft.cl" ||
             host === "rrss.santisoft.cl" ||
             host === "localhost" ||

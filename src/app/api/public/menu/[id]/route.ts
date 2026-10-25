@@ -53,6 +53,10 @@ export async function GET(
       website: profile.website || null,
       address: profile.address || (isTestProfile ? null : (userData.address || null)),
       promotions: profile.promotions || null,
+      fidelizacionEnabled: profile.fidelizacionEnabled === true,
+      fidelizacionProgramName: profile.fidelizacionConfig?.programName || "Club VIP",
+      fidelizacionRewardTitle: profile.fidelizacionConfig?.rewardTitle || "¡Premio Exclusivo!",
+      fidelizacionTargetGoal: profile.fidelizacionConfig?.targetGoal || 5,
     };
 
     // Determinar si la carta digital está habilitada
