@@ -79,6 +79,10 @@ export default function RrssCreatePost() {
   const [networks, setNetworks] = useState({ facebook: true, instagram: true, linkedin: false, tiktok: true, googleBusiness: true, youtube: true, x: true });
   const [tiktokSettings, setTiktokSettings] = useState<TikTokSettingsState>(DEFAULT_TIKTOK_SETTINGS);
 
+  // Modo asistente paso a paso
+  const [wizardStep, setWizardStep] = useState<1 | 2 | 3>(1);
+  const [isExpertMode, setIsExpertMode] = useState(false);
+
   // Wizard state
   const [previewSlides, setPreviewSlides] = useState<CarouselSlide[]>([]);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -1253,6 +1257,8 @@ export default function RrssCreatePost() {
             setPostText(resolvedCopy);
           }
         }
+        // Avanzar automáticamente al paso 3 para revisar el diseño generado
+        setWizardStep(3);
       }
 
     } catch (err: any) {
@@ -1873,7 +1879,7 @@ export default function RrssCreatePost() {
                 setIncludeVideoVoiceover(false);
               }
             }}
-            className="mt-0.5 w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+            className="mt-0.5 w-4 h-4 rounded text-orange-600 focus:ring-orange-500 cursor-pointer"
           />
           <div className="space-y-0.5">
             <p className="text-xs font-bold text-slate-900 leading-snug">
@@ -1894,7 +1900,7 @@ export default function RrssCreatePost() {
                 type="checkbox"
                 checked={includeVideoSubtitles}
                 onChange={(e) => setIncludeVideoSubtitles(e.target.checked)}
-                className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                className="w-4 h-4 rounded text-orange-600 focus:ring-orange-500 cursor-pointer"
               />
               <span className="text-xs font-semibold text-slate-700">
                 Subtítulos animados en pantalla (estilo Alex Hormozi)
@@ -1905,7 +1911,7 @@ export default function RrssCreatePost() {
                 type="checkbox"
                 checked={includeVideoVoiceover}
                 onChange={(e) => setIncludeVideoVoiceover(e.target.checked)}
-                className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                className="w-4 h-4 rounded text-orange-600 focus:ring-orange-500 cursor-pointer"
               />
               <span className="text-xs font-semibold text-slate-700">
                 Locución y voz en off con nuestros agentes
@@ -1976,7 +1982,64 @@ export default function RrssCreatePost() {
         </div>
       ) : null}
 
-      {/* 1. SECCIÓN SUPERIOR: SELECTOR DE FLUJO VISUAL (VIÑETAS UNIFICADAS) */}
+      {/* Selector de Modo / Stepper Asistente en 3 Pasos */}
+      <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white border border-slate-200/90 rounded-3xl p-3 sm:p-4 shadow-xs">
+        <div className="flex items-center gap-1.5 w-full sm:w-auto flex-1 max-w-xl">
+          <button
+            type="button"
+            onClick={() => setWizardStep(1)}
+            className={`flex-1 py-2 px-3 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer ${
+              wizardStep === 1
+                ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-sm"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black ${wizardStep === 1 ? "bg-white text-orange-600" : "bg-slate-100 text-slate-700"}`}>1</span>
+            <span>Idea y Canales</span>
+          </button>
+
+          <span className="text-slate-300 font-bold">›</span>
+
+          <button
+            type="button"
+            onClick={() => setWizardStep(2)}
+            className={`flex-1 py-2 px-3 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer ${
+              wizardStep === 2
+                ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-sm"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black ${wizardStep === 2 ? "bg-white text-orange-600" : "bg-slate-100 text-slate-700"}`}>2</span>
+            <span>Diseño y Copy</span>
+          </button>
+
+          <span className="text-slate-300 font-bold">›</span>
+
+          <button
+            type="button"
+            onClick={() => setWizardStep(3)}
+            className={`flex-1 py-2 px-3 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer ${
+              wizardStep === 3
+                ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-sm"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black ${wizardStep === 3 ? "bg-white text-orange-600" : "bg-slate-100 text-slate-700"}`}>3</span>
+            <span>Revisar y Programar</span>
+          </button>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setIsExpertMode(!isExpertMode)}
+          className="text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors px-3 py-1.5 rounded-xl hover:bg-slate-100 border border-slate-200"
+        >
+          {isExpertMode ? "⚡ Modo Paso a Paso" : "⚙️ Vista Completa"}
+        </button>
+      </div>
+
+      {/* 1. SECCIÓN SUPERIOR: SELECTOR DE FLUJO VISUAL (VIÑETAS UNIFICADAS - PASO 2) */}
+      {(isExpertMode || wizardStep === 2) && (
       <div className="mb-8">
         <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
           <label className="block text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">
@@ -1985,7 +2048,7 @@ export default function RrssCreatePost() {
           <button
             type="button"
             onClick={() => setGuideModalFlow(activeCreationFlow)}
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-indigo-600 transition-colors cursor-pointer bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 px-3 py-1 rounded-full shadow-2xs"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-orange-600 transition-colors cursor-pointer bg-slate-50 hover:bg-orange-50 border border-slate-200 hover:border-orange-200 px-3 py-1 rounded-full shadow-2xs"
           >
             <span>💡</span>
             <span>¿Cómo funciona cada modo?</span>
@@ -2001,7 +2064,7 @@ export default function RrssCreatePost() {
             }}
             className={`p-5 rounded-2xl border-2 text-left transition-all relative overflow-hidden flex flex-col justify-between cursor-pointer ${
               activeCreationFlow === 'estandar'
-                ? "border-indigo-500 bg-gradient-to-br from-indigo-50/70 via-white to-purple-50/30 shadow-md ring-2 ring-indigo-500/20"
+                ? "border-orange-500 bg-gradient-to-br from-indigo-50/70 via-white to-purple-50/30 shadow-md ring-2 ring-orange-500/20"
                 : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm"
             }`}
           >
@@ -2011,13 +2074,13 @@ export default function RrssCreatePost() {
                   <span className="text-2xl">✨</span>
                   <div>
                     <h3 className="text-base font-black text-slate-900 leading-tight">Publicación Estándar</h3>
-                    <p className={`text-[11px] font-bold ${activeCreationFlow === 'estandar' ? "text-indigo-700" : "text-slate-500"}`}>
+                    <p className={`text-[11px] font-bold ${activeCreationFlow === 'estandar' ? "text-orange-700" : "text-slate-500"}`}>
                       Imagen limpia, Carrusel, Historia o Reel
                     </p>
                   </div>
                 </div>
                 {activeCreationFlow === 'estandar' ? (
-                  <span className="text-[9px] font-black uppercase tracking-wider bg-indigo-600 text-white px-2.5 py-1 rounded-full shadow-xs shrink-0">
+                  <span className="text-[9px] font-black uppercase tracking-wider bg-orange-600 text-white px-2.5 py-1 rounded-full shadow-xs shrink-0">
                     Flujo Activo
                   </span>
                 ) : (
@@ -2039,7 +2102,7 @@ export default function RrssCreatePost() {
                   e.stopPropagation();
                   setGuideModalFlow('estandar');
                 }}
-                className="inline-flex items-center gap-1 text-[11px] font-black text-indigo-700 bg-white hover:bg-indigo-50 border border-indigo-200 px-3 py-1.5 rounded-xl shadow-2xs transition-all hover:scale-102 cursor-pointer"
+                className="inline-flex items-center gap-1 text-[11px] font-black text-orange-700 bg-white hover:bg-orange-50 border border-indigo-200 px-3 py-1.5 rounded-xl shadow-2xs transition-all hover:scale-102 cursor-pointer"
               >
                 <span>💡</span>
                 <span>¿Cómo funciona?</span>
@@ -2174,8 +2237,10 @@ export default function RrssCreatePost() {
           </button>
         </div>
       </div>
+      )}
 
-      {/* 2. CARD UNIFICADA: REDES SOCIALES Y TIPO DE PUBLICACIÓN (A LO LARGO DE LAS 2 CARDS) */}
+      {/* 2. CARD UNIFICADA: REDES SOCIALES Y TIPO DE PUBLICACIÓN (PASO 1) */}
+      {(isExpertMode || wizardStep === 1) && (
       <div className="bg-white border-2 border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-xs mb-8 space-y-6">
         <div className="grid lg:grid-cols-12 gap-6 items-start">
           {/* Lado Izquierdo: Redes Sociales a Publicar */}
@@ -2374,7 +2439,7 @@ export default function RrssCreatePost() {
               <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
                 <span>📐</span> Formato de Publicación
               </label>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-orange-700 border border-indigo-200">
                 {postType}
               </span>
             </div>
@@ -2406,7 +2471,7 @@ export default function RrssCreatePost() {
                       disabled
                         ? "opacity-40 bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed"
                         : isSelected
-                        ? "border-indigo-600 bg-indigo-50/90 text-indigo-950 shadow-sm ring-2 ring-indigo-500/20"
+                        ? "border-orange-600 bg-indigo-50/90 text-indigo-950 shadow-sm ring-2 ring-orange-500/20"
                         : "border-slate-200 bg-slate-50/70 text-slate-600 hover:border-slate-300 hover:bg-white"
                     }`}
                   >
@@ -2464,7 +2529,7 @@ export default function RrssCreatePost() {
                     }}
                     className={`px-3 py-1 rounded-xl text-xs font-black transition-all cursor-pointer ${
                       carouselCount === cnt
-                        ? "bg-indigo-600 text-white shadow-sm scale-102"
+                        ? "bg-orange-600 text-white shadow-sm scale-102"
                         : "bg-white text-slate-600 border border-slate-200 hover:border-slate-300"
                     }`}
                   >
@@ -2512,8 +2577,8 @@ export default function RrssCreatePost() {
                     }}
                     className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between text-left relative overflow-hidden group ${
                       isSelected
-                        ? "border-indigo-600 bg-indigo-50/70 shadow-md ring-2 ring-indigo-500/20"
-                        : "border-slate-200 bg-slate-50/50 hover:bg-white hover:border-indigo-200 hover:shadow-xs"
+                        ? "border-orange-600 bg-indigo-50/70 shadow-md ring-2 ring-orange-500/20"
+                        : "border-slate-200 bg-slate-50/50 hover:bg-white hover:border-orange-200 hover:shadow-xs"
                     }`}
                   >
                     <div>
@@ -2522,7 +2587,7 @@ export default function RrssCreatePost() {
                           <span>{roleInfo.emoji}</span> Slide {idx + 1}
                         </span>
                         {isSelected && (
-                          <span className="text-[9px] font-black uppercase tracking-widest text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-full">
+                          <span className="text-[9px] font-black uppercase tracking-widest text-orange-700 bg-indigo-100 px-2 py-0.5 rounded-full">
                             Activo
                           </span>
                         )}
@@ -2544,7 +2609,7 @@ export default function RrssCreatePost() {
                         )}
                       </div>
                       <div className="mt-2 flex items-center justify-between">
-                        <span className={`text-[10px] font-bold ${isSelected ? "text-indigo-600 underline" : "text-slate-500 group-hover:text-indigo-600"}`}>
+                        <span className={`text-[10px] font-bold ${isSelected ? "text-orange-600 underline" : "text-slate-500 group-hover:text-orange-600"}`}>
                           {isSelected ? "Editando ✍️" : "Seleccionar →"}
                         </span>
                         {slideData?.priceText && (
@@ -2561,6 +2626,21 @@ export default function RrssCreatePost() {
           </div>
         )}
       </div>
+      )}
+
+      {/* Botón de avance al Paso 2 si estamos en el Paso 1 */}
+      {!isExpertMode && wizardStep === 1 && (
+        <div className="mb-10 flex justify-end">
+          <button
+            type="button"
+            onClick={() => setWizardStep(2)}
+            className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-sm rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer hover:scale-[1.01]"
+          >
+            <span>Continuar a Paso 2: Diseño y Estilo</span>
+            <span>→</span>
+          </button>
+        </div>
+      )}
 
       {/* 3. SECCIÓN MEDIA: SEGÚN FLUJO ACTIVO (ESTÁNDAR, AFICHE O LABORATORIO) */}
       {!openEditorParam && (
@@ -2631,7 +2711,7 @@ export default function RrssCreatePost() {
                     if (found && !idea) setIdea(found.name);
                     if (found?.imageUrl) setBaseImageUrl(found.imageUrl);
                   }}
-                  className="w-full border-2 border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-800 outline-none bg-white"
+                  className="w-full border-2 border-slate-200 focus:border-orange-500 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-800 outline-none bg-white"
                 >
                   <option value="">— Ninguno (post general) —</option>
                   {catalogoItems.map((item: any) => (
@@ -2784,10 +2864,45 @@ export default function RrssCreatePost() {
               hideNetworksAndType={true}
               hideCreationMode={true}
             />
+
+            {/* Controles de avance al Paso 3 en Modo Asistente */}
+            {!isExpertMode && wizardStep === 2 && (
+              <div className="pt-4 flex items-center justify-between gap-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setWizardStep(1)}
+                  className="text-xs font-bold text-slate-500 hover:text-slate-800 py-2.5 px-3 rounded-xl hover:bg-slate-100 transition-colors"
+                >
+                  ← Volver al Paso 1
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setWizardStep(3)}
+                  className="px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span>Paso 3: Revisar y Programar</span>
+                  <span>→</span>
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Columna Derecha: Card Modo de Creación compacta + Previsualización de Imagen + Botón Postear */}
           <div className="lg:col-span-5 space-y-5 w-full sticky top-6">
+            {!isExpertMode && wizardStep === 3 && (
+              <div className="flex items-center justify-between pb-1">
+                <button
+                  type="button"
+                  onClick={() => setWizardStep(2)}
+                  className="text-xs font-bold text-slate-500 hover:text-slate-800 py-1 px-2.5 rounded-lg hover:bg-slate-100 transition-colors inline-flex items-center gap-1 cursor-pointer"
+                >
+                  ← Modificar Diseño o Copy
+                </button>
+                <span className="text-[10px] font-black uppercase tracking-wider text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-200">
+                  Paso 3 de 3
+                </span>
+              </div>
+            )}
             {/* Card Modo de Creación (Ajustada Compacta) */}
             <div className="bg-white border-2 border-slate-200/90 rounded-3xl p-4 shadow-xs">
               <div className="flex items-center justify-between gap-3">
@@ -2805,7 +2920,7 @@ export default function RrssCreatePost() {
                     onClick={() => setCreationMode('ai')}
                     className={`py-1.5 px-3 rounded-xl font-black text-xs transition-all flex items-center gap-1.5 cursor-pointer ${
                       creationMode === 'ai'
-                        ? 'bg-white text-indigo-700 shadow-xs border border-slate-200/70'
+                        ? 'bg-white text-orange-700 shadow-xs border border-slate-200/70'
                         : 'text-slate-500 hover:text-slate-800'
                     }`}
                   >
@@ -2816,7 +2931,7 @@ export default function RrssCreatePost() {
                     onClick={() => setCreationMode('manual')}
                     className={`py-1.5 px-3 rounded-xl font-black text-xs transition-all flex items-center gap-1.5 cursor-pointer ${
                       creationMode === 'manual'
-                        ? 'bg-white text-indigo-700 shadow-xs border border-slate-200/70'
+                        ? 'bg-white text-orange-700 shadow-xs border border-slate-200/70'
                         : 'text-slate-500 hover:text-slate-800'
                     }`}
                   >
@@ -2884,7 +2999,7 @@ export default function RrssCreatePost() {
                       onClick={openFinalPostModal}
                       disabled={loading || !isReady} 
                       title={!isReady ? "Falta agregar el copy de la publicación" : ""}
-                      className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 disabled:from-slate-300 disabled:to-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-black text-sm py-3.5 rounded-2xl transition-all shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 hover:-translate-y-0.5 cursor-pointer"
+                      className="w-full bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 disabled:from-slate-300 disabled:to-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-black text-sm py-3.5 rounded-2xl transition-all shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2 hover:-translate-y-0.5 cursor-pointer"
                     >
                       {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : (!isReady ? '⚠️ POSTEAR (Falta Copy)' : '🚀 POSTEAR')}
                     </button>
@@ -2892,7 +3007,7 @@ export default function RrssCreatePost() {
                 ) : (
                   <div className="p-8 border-2 border-dashed border-indigo-200 rounded-[28px] text-center flex flex-col items-center justify-center min-h-[260px] text-indigo-400 bg-indigo-50/20 transition-all w-full">
                     <div className="text-4xl mb-2 opacity-80">📸</div>
-                    <h4 className="font-black text-sm mb-1 text-indigo-700">Galería Manual Activa</h4>
+                    <h4 className="font-black text-sm mb-1 text-orange-700">Galería Manual Activa</h4>
                     <p className="font-medium text-xs max-w-xs leading-relaxed text-slate-500">
                       Selecciona un diseño de la galería manual a la izquierda o sube uno nuevo para previsualizarlo aquí.
                     </p>
@@ -2916,7 +3031,7 @@ export default function RrssCreatePost() {
                       <button
                         type="button"
                         onClick={() => setShowReelWorkspace(true)}
-                        className="w-full max-w-xs bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs py-3 px-5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                        className="w-full max-w-xs bg-orange-600 hover:bg-orange-700 text-white font-black text-xs py-3 px-5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
                       >
                         🎬 Abrir Espacio de Producción
                       </button>
@@ -2937,7 +3052,7 @@ export default function RrssCreatePost() {
                       onClick={openFinalPostModal}
                       disabled={loading || !isReady} 
                       title={!isReady ? "Falta agregar el copy de la publicación" : ""}
-                      className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 disabled:from-slate-300 disabled:to-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-black text-sm py-3.5 rounded-2xl transition-all shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 hover:-translate-y-0.5 cursor-pointer"
+                      className="w-full bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 disabled:from-slate-300 disabled:to-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-black text-sm py-3.5 rounded-2xl transition-all shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2 hover:-translate-y-0.5 cursor-pointer"
                     >
                       {loading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : (!isReady ? '⚠️ POSTEAR (Falta Copy)' : '🚀 POSTEAR')}
                     </button>
@@ -3019,7 +3134,7 @@ export default function RrssCreatePost() {
                          onClick={openFinalPostModal}
                          disabled={loading || !isReady} 
                          title={!isReady ? "Falta agregar el copy de la publicación" : ""}
-                         className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 disabled:from-slate-300 disabled:to-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-black text-[16px] py-4 rounded-[20px] transition-all shadow-xl shadow-indigo-500/30 flex items-center justify-center gap-2 hover:-translate-y-1"
+                         className="w-full bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 disabled:from-slate-300 disabled:to-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-black text-[16px] py-4 rounded-[20px] transition-all shadow-xl shadow-indigo-500/30 flex items-center justify-center gap-2 hover:-translate-y-1"
                        >
                           {loading ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : (!isReady ? '⚠️ POSTEAR (Falta Copy)' : '🚀 POSTEAR')}
                        </button>
@@ -3028,7 +3143,7 @@ export default function RrssCreatePost() {
             ) : (
                 <div className="p-8 border-4 border-dashed border-indigo-100 rounded-[32px] text-center flex flex-col items-center justify-center min-h-[300px] text-indigo-400 bg-indigo-50/20 transition-all w-full">
                   <div className="text-6xl mb-4 opacity-80">📸</div>
-                  <h4 className="font-black text-lg mb-2 text-indigo-700">Galería Manual Activa</h4>
+                  <h4 className="font-black text-lg mb-2 text-orange-700">Galería Manual Activa</h4>
                   <p className="font-medium text-sm max-w-xs leading-relaxed mb-4">Selecciona uno de tus diseños o videos previos o sube uno nuevo para empezar.</p>
                 </div>
             )
@@ -3050,7 +3165,7 @@ export default function RrssCreatePost() {
                    <button
                      type="button"
                      onClick={() => setShowReelWorkspace(true)}
-                     className="w-full max-w-xs bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm py-4 px-6 rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2"
+                     className="w-full max-w-xs bg-orange-600 hover:bg-orange-700 text-white font-black text-sm py-4 px-6 rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2"
                    >
                      🎬 Abrir Espacio de Producción
                    </button>
@@ -3071,7 +3186,7 @@ export default function RrssCreatePost() {
                        onClick={openFinalPostModal}
                        disabled={loading || !isReady} 
                        title={!isReady ? "Falta agregar el copy de la publicación" : ""}
-                       className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 disabled:from-slate-300 disabled:to-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-black text-[16px] py-4 rounded-[20px] transition-all shadow-xl shadow-indigo-500/30 flex items-center justify-center gap-2 hover:-translate-y-1"
+                       className="w-full bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 disabled:from-slate-300 disabled:to-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-black text-[16px] py-4 rounded-[20px] transition-all shadow-xl shadow-indigo-500/30 flex items-center justify-center gap-2 hover:-translate-y-1"
                      >
                         {loading ? <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" /> : (!isReady ? '⚠️ POSTEAR (Falta Copy)' : '🚀 POSTEAR')}
                      </button>
@@ -3127,7 +3242,7 @@ export default function RrssCreatePost() {
               <textarea 
                 value={editablePromptSpanish}
                 onChange={(e) => setEditablePromptSpanish(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-xl p-3 text-slate-700 text-sm font-semibold leading-relaxed focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all resize-none shadow-sm"
+                className="w-full bg-white border border-slate-200 rounded-xl p-3 text-slate-700 text-sm font-semibold leading-relaxed focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all resize-none shadow-sm"
                 rows={4}
               />
               
@@ -3171,7 +3286,7 @@ export default function RrssCreatePost() {
               <button 
                 type="button" 
                 onClick={handleConfirmPreview}
-                className="flex-[1.4] bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 px-3 rounded-2xl transition-all shadow-xl shadow-indigo-600/20 hover:-translate-y-0.5 flex items-center justify-center gap-1.5 text-xs"
+                className="flex-[1.4] bg-orange-600 hover:bg-orange-700 text-white font-black py-4 px-3 rounded-2xl transition-all shadow-xl shadow-indigo-600/20 hover:-translate-y-0.5 flex items-center justify-center gap-1.5 text-xs"
               >
                 🚀 Confirmar y Diseñar
               </button>
@@ -3220,7 +3335,7 @@ export default function RrssCreatePost() {
            {/* Header */}
            <div className="w-full max-w-5xl flex justify-between items-center mb-10 pb-6 border-b border-slate-150">
               <div>
-                 <span className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em]">Asistente de Video IA</span>
+                 <span className="text-[10px] font-black text-orange-600 uppercase tracking-[0.2em]">Asistente de Video IA</span>
                  <h2 className="text-3xl font-black text-slate-900 tracking-tight mt-1">Tu Espacio de Producción de Reel</h2>
               </div>
               <button 
@@ -3249,7 +3364,7 @@ export default function RrssCreatePost() {
                           download="cover_reference.png" 
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-[10px] font-black uppercase bg-indigo-600 hover:bg-indigo-750 text-white px-4 py-2 rounded-xl border border-indigo-500/20 transition-all flex items-center gap-1.5 shadow-lg shadow-indigo-600/10"
+                          className="text-[10px] font-black uppercase bg-orange-600 hover:bg-indigo-750 text-white px-4 py-2 rounded-xl border border-orange-500/20 transition-all flex items-center gap-1.5 shadow-lg shadow-indigo-600/10"
                         >
                           📥 Descargar Portada
                         </a>
@@ -3273,7 +3388,7 @@ export default function RrssCreatePost() {
 
                  {/* final video upload */}
                  <div className="bg-slate-50/50 border border-slate-200/80 rounded-3xl p-6 space-y-4 shadow-sm">
-                    <h4 className="text-xs font-black uppercase tracking-widest text-indigo-600">4. Finaliza tu Reel</h4>
+                    <h4 className="text-xs font-black uppercase tracking-widest text-orange-600">4. Finaliza tu Reel</h4>
                     
                     <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 text-xs font-medium text-indigo-800 space-y-2">
                        <p><strong className="font-black">Opción A (Recomendada): Generación 100% Automática.</strong></p>
@@ -3293,11 +3408,11 @@ export default function RrssCreatePost() {
                       <strong className="text-slate-700">Opción B (Manual):</strong> Si prefieres generar el video en Luma/Runway por tu cuenta combinando la imagen y la locución, súbelo aquí en formato MP4 y nosotros le sumaremos los subtítulos al publicarlo.
                     </p>
                     
-                    <label className="flex flex-col items-center justify-center bg-white border-2 border-dashed border-slate-200 hover:bg-slate-50 hover:border-indigo-500/50 rounded-2xl cursor-pointer group hover:scale-[1.01] transition-all text-indigo-600 py-10 px-4 shadow-sm relative">
+                    <label className="flex flex-col items-center justify-center bg-white border-2 border-dashed border-slate-200 hover:bg-slate-50 hover:border-orange-500/50 rounded-2xl cursor-pointer group hover:scale-[1.01] transition-all text-orange-600 py-10 px-4 shadow-sm relative">
                       {reelVideoUploading ? (
                         <div className="flex flex-col items-center gap-3">
                            <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
-                           <span className="text-xs font-black uppercase text-indigo-600">Subiendo video a Firebase Storage...</span>
+                           <span className="text-xs font-black uppercase text-orange-600">Subiendo video a Firebase Storage...</span>
                         </div>
                       ) : (
                         <>
@@ -3380,7 +3495,7 @@ export default function RrssCreatePost() {
                  {videoPrompt && (
                    <div className="bg-slate-50/50 border border-slate-200/80 rounded-3xl p-6 space-y-4 shadow-sm">
                      <div className="flex items-center justify-between">
-                       <h4 className="text-xs font-black uppercase tracking-widest text-indigo-600">2. Prompt de Animación (Image-to-Video)</h4>
+                       <h4 className="text-xs font-black uppercase tracking-widest text-orange-600">2. Prompt de Animación (Image-to-Video)</h4>
                        <button
                          type="button"
                          onClick={() => {
@@ -3393,7 +3508,7 @@ export default function RrssCreatePost() {
                                onConfirm: () => setStatusModal(prev => ({ ...prev, isOpen: false }))
                            });
                          }}
-                         className="text-[10px] font-black uppercase bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-4 py-2 rounded-xl border border-indigo-200 transition-all"
+                         className="text-[10px] font-black uppercase bg-indigo-50 hover:bg-indigo-100 text-orange-700 px-4 py-2 rounded-xl border border-indigo-200 transition-all"
                        >
                          📋 Copiar Prompt
                        </button>
@@ -3428,7 +3543,7 @@ export default function RrssCreatePost() {
                            download="voiceover.mp3" 
                            target="_blank"
                            rel="noopener noreferrer"
-                           className="text-[10px] font-black uppercase bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl border border-indigo-500/20 transition-all flex items-center gap-1.5"
+                           className="text-[10px] font-black uppercase bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-xl border border-orange-500/20 transition-all flex items-center gap-1.5"
                          >
                            🔊 Descargar Audio (.MP3)
                          </a>
@@ -3563,7 +3678,7 @@ export default function RrssCreatePost() {
                         onClick={() => setFinalPreviewIndex(sIdx)}
                         className={`relative rounded-xl overflow-hidden border-2 transition-all shrink-0 w-16 h-16 cursor-pointer ${
                           finalPreviewIndex === sIdx
-                            ? 'border-indigo-600 ring-2 ring-indigo-500/30 scale-105 shadow-md'
+                            ? 'border-orange-600 ring-2 ring-orange-500/30 scale-105 shadow-md'
                             : 'border-slate-200 opacity-60 hover:opacity-100 hover:border-slate-400'
                         }`}
                       >
@@ -3730,12 +3845,12 @@ export default function RrssCreatePost() {
                    onClick={() => setIncludeLogo(prev => !prev)}
                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl border-2 transition-all text-sm font-bold ${
                      includeLogo
-                       ? 'border-indigo-400 bg-indigo-50 text-indigo-700'
+                       ? 'border-indigo-400 bg-indigo-50 text-orange-700'
                        : 'border-slate-200 bg-slate-50 text-slate-500 hover:border-slate-300'
                    }`}
                  >
                    <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
-                     includeLogo ? 'border-indigo-500 bg-indigo-500' : 'border-slate-300 bg-white'
+                     includeLogo ? 'border-orange-500 bg-indigo-500' : 'border-slate-300 bg-white'
                    }`}>
                      {includeLogo && <span className="w-2 h-2 rounded-full bg-white block" />}
                    </span>
@@ -3792,7 +3907,7 @@ export default function RrssCreatePost() {
                              await handleSubmit(undefined, false); // publishNow = false
                           }}
                           disabled={loading}
-                          className="flex-[2] bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-black py-3 rounded-xl transition-all shadow-lg shadow-indigo-500/25 text-xs flex items-center justify-center gap-2"
+                          className="flex-[2] bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-black py-3 rounded-xl transition-all shadow-lg shadow-orange-500/25 text-xs flex items-center justify-center gap-2"
                        >
                           {loading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : '✅ Confirmar Agendamiento'}
                        </button>
@@ -3811,7 +3926,7 @@ export default function RrssCreatePost() {
                           await handleSubmit(undefined, true);
                        }}
                        disabled={loading}
-                       className="flex-1 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-indigo-500/25 text-xs flex items-center justify-center gap-2"
+                       className="flex-1 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-orange-500/25 text-xs flex items-center justify-center gap-2"
                     >
                        {loading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : '⚡ Publicar Ahora'}
                     </button>
