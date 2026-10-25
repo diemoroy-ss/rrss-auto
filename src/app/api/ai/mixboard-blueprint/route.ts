@@ -50,17 +50,22 @@ Tu especialidad es la metodología Google Mixboard: estructurar especificaciones
 
 REGLAS ESTRICTAS DE COMPOSICIÓN Y REDACCIÓN:
 1. IDIOMA DE LOS TEXTOS DEL CARTEL: Todos los textos visibles en el cartel (titulares, badges, precios, CTA) DEBEN ESTAR EN ESPAÑOL LATAM y ser 100% naturales, persuasivos y comerciales.
-2. ESTRUCTURA DEL PROMPT DE IMAGEN:
+2. REGLA CRÍTICA DE ZONA SEGURA DE INSTAGRAM (INSTAGRAM SAFE ZONE & PROFILE GRID 1:1 CROP):
+   - En Instagram, los posts verticales 4:5 se recortan automáticamente en la cuadrícula del perfil a un cuadrado 1:1 central. Esto elimina el 10% superior y el 10% inferior.
+   - Para que el post se vea impecable tanto abierto en el feed (4:5 o 1:1) como en la cuadrícula del perfil (1:1), NINGÚN texto, badge o botón debe colocarse en los bordes extremos.
+   - ZONA SEGURA VERTICAL: Todo el contenido tipográfico debe situarse entre el 14% y el 84% de la altura de la imagen. El 14% superior y el 15% inferior deben ser espacio de fondo/aire visual.
+   - ZONA SEGURA HORIZONTAL: Todo titular debe tener márgenes laterales generosos (ancho de caja máximo 80% a 82% del lienzo, centrado, con al menos 9-10% de margen a izquierda y derecha) para que ninguna letra ni signo de interrogación toque los bordes.
+3. ESTRUCTURA DEL PROMPT DE IMAGEN:
    - Descripción de la escena, encuadre (${aspectRatio || "4:5"} o 1:1 o 9:16), fondo con atmósfera y paleta hexadecimal (${preset.backgroundPalette}).
    - Elementos visuales principales, iluminación de estudio, profundidad de campo y sombras de contacto.
    - Bloque final obligatorio con el encabezado exacto:
      "TYPOGRAPHY & LAYOUT (Exact Spanish text):"
-     Con los siguientes puntos según aplique:
-     - TOP CENTER (o TOP LEFT): Pill badge o kicker pequeño en mayúsculas (slogan/categoría/diagnóstico).
-     - UPPER CENTER (o MIDDLE): Titular principal en mayúsculas, alto contraste y legible.
+     - COMPOSITION SAFE ZONE: All typography and badges must stay strictly inside the central 80% safe zone (min 10% horizontal margins on left/right, 14% breathing space from top edge, 15% breathing space from bottom edge) so zero text is cropped in Instagram 1:1 profile grid or mobile feeds.
+     - UPPER CENTER (Pill badge positioned 14% below the top edge inside safe area): Pill badge o kicker pequeño en mayúsculas (slogan/categoría/diagnóstico).
+     - MID-UPPER CENTER (Centered bold headline, high contrast, max 80% container width with generous left/right breathing margins): Titular principal en mayúsculas.
      - HIGHLIGHT / BADGE (opcional): Sticker de oferta o precio destacado si aplica.
-     - BOTTOM RIGHT (o BOTTOM CENTER): Botón CTA o badge con llamada a la acción con flecha.
-     - Cierre técnico: "Ultra-sharp vector typography, commercial graphic design, professional studio advertising layout, 8k."
+     - LOWER RIGHT (o LOWER CENTER) (Clean pill button placed above the 85% height mark, inside safe zone): Botón CTA o badge con llamada a la acción con flecha.
+     - Cierre técnico: "Ultra-sharp vector typography, commercial graphic design, perfectly centered safe composition, professional studio advertising layout, 8k."
 
 3. FORMATO DE RESPUESTA:
    Devuelve EXCLUSIVAMENTE un objeto JSON válido con esta estructura (sin bloques markdown ni texto extra):

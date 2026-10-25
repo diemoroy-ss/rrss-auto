@@ -61,6 +61,7 @@ export default function PosterTemplatePreview({
   // "image" -> Muestra solo la imagen limpia generada sin capas de texto
   // "blueprint" -> Muestra el esquema técnico wireframe sin foto
   const [viewMode, setViewMode] = React.useState<"afiche" | "image" | "blueprint">("afiche");
+  const [showSafeZone, setShowSafeZone] = React.useState<boolean>(false);
 
   // Al recibir una nueva imagen generada, asegurar que se active el modo afiche en vivo
   React.useEffect(() => {
@@ -405,6 +406,18 @@ export default function PosterTemplatePreview({
               </button>
             </div>
           )}
+          <button
+            type="button"
+            onClick={() => setShowSafeZone((prev) => !prev)}
+            className={`px-2 py-0.5 rounded-lg text-[10px] font-black transition-all cursor-pointer border flex items-center gap-1 ${
+              showSafeZone
+                ? "bg-emerald-600 text-white border-emerald-400 shadow-xs"
+                : "bg-slate-800 text-slate-300 border-slate-700 hover:text-white"
+            }`}
+            title="Ver guía de recorte de la cuadrícula de Instagram (Grid 1:1 vs Feed 4:5)"
+          >
+            <span>📐</span> Zona Segura IG
+          </button>
           <span className="bg-slate-800 px-2 py-0.5 rounded-lg text-slate-300 font-mono text-[10px]">
             {aspectRatio}
           </span>
@@ -445,6 +458,43 @@ export default function PosterTemplatePreview({
             <div className="relative z-10 h-full flex flex-col justify-between pt-6">
               {renderLayoutBody(true)}
             </div>
+
+            {/* Overlay Guía de Zona Segura de Instagram (Recorte Grid 1:1) */}
+            {showSafeZone && (
+              <div className="absolute inset-0 pointer-events-none z-30 flex flex-col justify-between">
+                {aspectRatio === "4:5" ? (
+                  <>
+                    <div className="h-[10%] bg-rose-950/75 border-b border-rose-400/80 flex items-center justify-center backdrop-blur-[1px]">
+                      <span className="text-[7.5px] font-black uppercase text-rose-200 tracking-wider bg-rose-900/90 px-1.5 py-0.5 rounded border border-rose-400/60 shadow">
+                        ⚠️ Se recorta en Perfil IG (Grid 1:1)
+                      </span>
+                    </div>
+                    <div className="flex-1 border-2 border-dashed border-emerald-400/90 mx-[8%] my-1 rounded-lg flex flex-col justify-between p-1 relative">
+                      <div className="text-[7px] font-black uppercase tracking-wider text-emerald-300 bg-emerald-950/90 px-1.5 py-0.5 rounded border border-emerald-500/40 w-fit mx-auto shadow">
+                        ✓ Zona Segura (100% visible en Grid y Feed)
+                      </div>
+                      <div className="text-[6.5px] font-mono text-emerald-300/80 text-center">
+                        Márgenes laterales 8-10% libres
+                      </div>
+                    </div>
+                    <div className="h-[10%] bg-rose-950/75 border-t border-rose-400/80 flex items-center justify-center backdrop-blur-[1px]">
+                      <span className="text-[7.5px] font-black uppercase text-rose-200 tracking-wider bg-rose-900/90 px-1.5 py-0.5 rounded border border-rose-400/60 shadow">
+                        ⚠️ Se recorta en Perfil IG (Grid 1:1)
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="h-full border-2 border-dashed border-emerald-400/90 m-[8%] rounded-lg flex flex-col justify-between p-1.5 relative">
+                    <div className="text-[7px] font-black uppercase tracking-wider text-emerald-300 bg-emerald-950/90 px-1.5 py-0.5 rounded border border-emerald-500/40 w-fit mx-auto shadow">
+                      ✓ Margen Seguro Cuadrado 1:1
+                    </div>
+                    <div className="text-[6.5px] font-mono text-emerald-300/80 text-center">
+                      Mantén los textos dentro de este recuadro
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Acciones debajo del Afiche */}
@@ -505,6 +555,43 @@ export default function PosterTemplatePreview({
                 {aspectRatio}
               </span>
             </div>
+
+            {/* Overlay Guía de Zona Segura de Instagram (Recorte Grid 1:1) */}
+            {showSafeZone && (
+              <div className="absolute inset-0 pointer-events-none z-30 flex flex-col justify-between">
+                {aspectRatio === "4:5" ? (
+                  <>
+                    <div className="h-[10%] bg-rose-950/75 border-b border-rose-400/80 flex items-center justify-center backdrop-blur-[1px]">
+                      <span className="text-[7.5px] font-black uppercase text-rose-200 tracking-wider bg-rose-900/90 px-1.5 py-0.5 rounded border border-rose-400/60 shadow">
+                        ⚠️ Se recorta en Perfil IG (Grid 1:1)
+                      </span>
+                    </div>
+                    <div className="flex-1 border-2 border-dashed border-emerald-400/90 mx-[8%] my-1 rounded-lg flex flex-col justify-between p-1 relative">
+                      <div className="text-[7px] font-black uppercase tracking-wider text-emerald-300 bg-emerald-950/90 px-1.5 py-0.5 rounded border border-emerald-500/40 w-fit mx-auto shadow">
+                        ✓ Zona Segura (100% visible en Grid y Feed)
+                      </div>
+                      <div className="text-[6.5px] font-mono text-emerald-300/80 text-center">
+                        Márgenes laterales 8-10% libres
+                      </div>
+                    </div>
+                    <div className="h-[10%] bg-rose-950/75 border-t border-rose-400/80 flex items-center justify-center backdrop-blur-[1px]">
+                      <span className="text-[7.5px] font-black uppercase text-rose-200 tracking-wider bg-rose-900/90 px-1.5 py-0.5 rounded border border-rose-400/60 shadow">
+                        ⚠️ Se recorta en Perfil IG (Grid 1:1)
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="h-full border-2 border-dashed border-emerald-400/90 m-[8%] rounded-lg flex flex-col justify-between p-1.5 relative">
+                    <div className="text-[7px] font-black uppercase tracking-wider text-emerald-300 bg-emerald-950/90 px-1.5 py-0.5 rounded border border-emerald-500/40 w-fit mx-auto shadow">
+                      ✓ Margen Seguro Cuadrado 1:1
+                    </div>
+                    <div className="text-[6.5px] font-mono text-emerald-300/80 text-center">
+                      Mantén los textos dentro de este recuadro
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-2 mt-3 w-full max-w-[280px]">
@@ -565,6 +652,43 @@ export default function PosterTemplatePreview({
             <div className="relative z-10 h-full flex flex-col justify-between pt-6">
               {renderLayoutBody(false)}
             </div>
+
+            {/* Overlay Guía de Zona Segura de Instagram (Recorte Grid 1:1) */}
+            {showSafeZone && (
+              <div className="absolute inset-0 pointer-events-none z-30 flex flex-col justify-between">
+                {aspectRatio === "4:5" ? (
+                  <>
+                    <div className="h-[10%] bg-rose-950/75 border-b border-rose-400/80 flex items-center justify-center backdrop-blur-[1px]">
+                      <span className="text-[7.5px] font-black uppercase text-rose-200 tracking-wider bg-rose-900/90 px-1.5 py-0.5 rounded border border-rose-400/60 shadow">
+                        ⚠️ Se recorta en Perfil IG (Grid 1:1)
+                      </span>
+                    </div>
+                    <div className="flex-1 border-2 border-dashed border-emerald-400/90 mx-[8%] my-1 rounded-lg flex flex-col justify-between p-1 relative">
+                      <div className="text-[7px] font-black uppercase tracking-wider text-emerald-300 bg-emerald-950/90 px-1.5 py-0.5 rounded border border-emerald-500/40 w-fit mx-auto shadow">
+                        ✓ Zona Segura (100% visible en Grid y Feed)
+                      </div>
+                      <div className="text-[6.5px] font-mono text-emerald-300/80 text-center">
+                        Márgenes laterales 8-10% libres
+                      </div>
+                    </div>
+                    <div className="h-[10%] bg-rose-950/75 border-t border-rose-400/80 flex items-center justify-center backdrop-blur-[1px]">
+                      <span className="text-[7.5px] font-black uppercase text-rose-200 tracking-wider bg-rose-900/90 px-1.5 py-0.5 rounded border border-rose-400/60 shadow">
+                        ⚠️ Se recorta en Perfil IG (Grid 1:1)
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="h-full border-2 border-dashed border-emerald-400/90 m-[8%] rounded-lg flex flex-col justify-between p-1.5 relative">
+                    <div className="text-[7px] font-black uppercase tracking-wider text-emerald-300 bg-emerald-950/90 px-1.5 py-0.5 rounded border border-emerald-500/40 w-fit mx-auto shadow">
+                      ✓ Margen Seguro Cuadrado 1:1
+                    </div>
+                    <div className="text-[6.5px] font-mono text-emerald-300/80 text-center">
+                      Mantén los textos dentro de este recuadro
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <p className="text-[10px] text-slate-400 font-medium text-center mt-3 max-w-xs leading-tight">
