@@ -1,11 +1,22 @@
 
 // ═══════════════════════════════════════════════════════════════
 // REGLA UNIVERSAL DE ZONA SEGURA DE INSTAGRAM (AUTO-INYECCIÓN)
+// Aplica a TODO post con texto (Post 1:1, Post 4:5, Carruseles, etc.)
 // ═══════════════════════════════════════════════════════════════
-function autoEnforceSafeZoneInPrompt(prompt: string): string {
+function autoEnforceSafeZoneInPrompt(prompt: string, forcePosterMode: boolean = false): string {
   if (!prompt || typeof prompt !== "string") return prompt;
 
-  const hasTypography = /typography\s*&\s*layout/i.test(prompt) || /upper center/i.test(prompt) || /top center/i.test(prompt) || /safe box/i.test(prompt);
+  const hasTypography = forcePosterMode ||
+    /typography\s*&\s*layout/i.test(prompt) || 
+    /upper\s+center/i.test(prompt) || 
+    /top\s+center/i.test(prompt) || 
+    /safe\s+box/i.test(prompt) ||
+    /lower\s+center/i.test(prompt) ||
+    /bottom\s+right/i.test(prompt) ||
+    /mid-upper/i.test(prompt) ||
+    /poster\s*&\s*advertising/i.test(prompt) ||
+    /commercial\s+advertising\s+flyer/i.test(prompt);
+
   if (!hasTypography) return prompt;
 
   let result = prompt;
@@ -168,31 +179,44 @@ function buildEnrichedGeminiPrompt(params: {
             posterParts.push(`Dominant brand color palette: ${posterConfig.primaryColor}.`);
         }
 
-        if (posterConfig.includeBusinessName && posterConfig.businessName) {
-            posterParts.push(`Include the business name prominently in the poster: "${posterConfig.businessName}".`);
-        }
-
-        if (posterConfig.includePrice && posterConfig.priceText) {
-            // Renderizamos solo el texto del precio/promoción especificado,
-            // sin concatenar todo el texto descriptivo del cliente, para evitar
-            // que la IA escriba todo el prompt en el diseño.
-            posterParts.push(`MAIN PROMOTIONAL HEADLINE of the poster (render this text large and prominently): "${posterConfig.priceText}".`);
-        }
-
-        if (posterConfig.includeSlogan && posterConfig.sloganText) {
-            posterParts.push(`Integrate this key slogan as a subtitle in the layout: "${posterConfig.sloganText}".`);
-        }
-
-        if (posterConfig.ctaText) {
-            posterParts.push(`Render a clear call-to-action button or banner at the bottom saying: "${posterConfig.ctaText}".`);
-        }
-
         if (posterConfig.additionalNotes) {
             posterParts.push(`Additional flyer requirements: ${posterConfig.additionalNotes}.`);
         }
 
+        // Estructura Universal de Tipografía y Zona Segura para Todo Post con Texto
+        const typoLines: string[] = [
+            `TYPOGRAPHY & LAYOUT (Exact Spanish text):`,
+            `- COMPOSITION SAFE ZONE (MANDATORY): All typography and badges MUST stay strictly inside the central 60% safe box (minimum 20% empty margins on left/right borders, 15% breathing space from top, 16% breathing space from bottom). Never let any letter, punctuation mark, or emoji touch or approach the canvas edges.`
+        ];
+
+        const badgeText = posterConfig.includeSlogan && posterConfig.sloganText 
+            ? posterConfig.sloganText 
+            : (posterConfig.includeBusinessName && posterConfig.businessName ? posterConfig.businessName : "");
+        if (badgeText) {
+            typoLines.push(`- UPPER CENTER (Pill badge positioned 14% down from top edge inside 60% safe area with 20% side margins): "${badgeText}".`);
+        }
+
+        const mainHeadline = (posterConfig.includeMainText && posterConfig.mainText) 
+            ? posterConfig.mainText 
+            : (posterConfig.includePrice && posterConfig.priceText ? posterConfig.priceText : "");
+        if (mainHeadline) {
+            typoLines.push(`- MID-UPPER CENTER (Centered compact headline broken into 2 to 4 short lines, strictly maximum 60% container width with at least 20% empty background space on left and right sides): "${mainHeadline}".`);
+        }
+
+        if (posterConfig.includePrice && posterConfig.priceText && posterConfig.priceText !== mainHeadline) {
+            typoLines.push(`- HIGHLIGHT BADGE (Centered floating badge inside 60% safe zone): "${posterConfig.priceText}".`);
+        }
+
+        if (posterConfig.ctaText) {
+            typoLines.push(`- LOWER CENTER (Clean pill button placed horizontally in the center above 84% height mark, inside 60% safe zone with 20% side margins): "${posterConfig.ctaText}".`);
+        }
+
+        typoLines.push(`Ultra-sharp vector typography, commercial graphic design, compact centered safe composition, professional studio advertising layout, 8k.`);
+
+        posterParts.push(`\n${typoLines.join("\n")}`);
+
         if (posterParts.length > 0) {
-            posterSpecs = `POSTER & ADVERTISING LAYOUT SPECIFICATIONS (RENDER ALL TEXT AND GRAPHICS DIRECTLY INTEGRATED IN THE IMAGE):\n${posterParts.map(p => `- ${p}`).join("\n")}`;
+            posterSpecs = `POSTER & ADVERTISING LAYOUT SPECIFICATIONS:\n${posterParts.map(p => `- ${p}`).join("\n")}`;
         }
     }
 
@@ -466,7 +490,13 @@ export async function POST(req: NextRequest) {
             posterConfig?.styleReferenceUrl ||
             "";
 
-        const finalPromptForN8n = autoEnforceSafeZoneInPrompt(enrichedPrompts[0] || "");
+        const isPosterPost = Boolean(
+            posterConfig?.enabled ||
+            posterConfig?.mainText ||
+            posterConfig?.priceText ||
+            /typography|headline|cartel|afiche|poster|safe\s+box/i.test(enrichedPrompts[0] || "")
+        );
+        const finalPromptForN8n = autoEnforceSafeZoneInPrompt(enrichedPrompts[0] || "", isPosterPost);
         const n8nPayload: any = {
             prompt: finalPromptForN8n,
             promptEnglish: finalPromptForN8n,
@@ -503,7 +533,13 @@ export async function POST(req: NextRequest) {
                     targetSlide?.styleReferenceUrl ||
                     (targetSlide?.lockStyleFromSlide1 ? (posterConfig?.slides?.[0]?.imageUrl || "") : effectiveStyleRef);
 
-                const finalSlidePrompt = autoEnforceSafeZoneInPrompt(slidePrompt);
+                const isPosterSlide = Boolean(
+                    posterConfig?.enabled ||
+                    targetSlide?.mainText ||
+                    targetSlide?.priceText ||
+                    /typography|headline|cartel|afiche|poster|safe\s+box/i.test(slidePrompt)
+                );
+                const finalSlidePrompt = autoEnforceSafeZoneInPrompt(slidePrompt, isPosterSlide);
                 const slidePayload = {
                     ...n8nPayload,
                     prompt: finalSlidePrompt,

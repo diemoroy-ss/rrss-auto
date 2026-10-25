@@ -170,32 +170,14 @@ export function buildPosterPromptSuffix(config: PosterConfig): string {
     );
   }
 
-  if (config.includeBusinessName && config.businessName) {
-    parts.push(`Nombre del negocio visible: "${config.businessName}".`);
-  }
-  if (config.includeLogo && config.logoUrl) {
-    parts.push('Incluir logo del negocio en el diseño.');
-  }
-  if (config.includeMainText && config.mainText) {
-    parts.push(`Include the exact text "${config.mainText}" prominently as the main heading or message. Do not hallucinate extra words.`);
-  }
-  if (config.includePrice && config.priceText) {
-    parts.push(`Include the exact text "${config.priceText}" prominently. Do not hallucinate extra words.`);
+  if (config.primaryColor) {
+    parts.push(`Color principal del diseño: ${config.primaryColor}.`);
   }
   if (config.includeContact && config.contactValue) {
     const label =
       config.contactType === 'whatsapp' ? 'WhatsApp' :
       config.contactType === 'email' ? 'Email' : 'Teléfono';
-    parts.push(`Include the exact text "${label}: ${config.contactValue}".`);
-  }
-  if (config.includeSlogan && config.sloganText) {
-    parts.push(`Include the exact phrase "${config.sloganText}".`);
-  }
-  if (config.primaryColor) {
-    parts.push(`Color principal del diseño: ${config.primaryColor}.`);
-  }
-  if (config.ctaText) {
-    parts.push(`Include the exact Call-to-Action text: "${config.ctaText}".`);
+    parts.push(`Include contact info: "${label}: ${config.contactValue}".`);
   }
   if (config.additionalNotes) {
     parts.push(`Notas adicionales: ${config.additionalNotes}.`);
@@ -209,6 +191,36 @@ export function buildPosterPromptSuffix(config: PosterConfig): string {
       }
     }
   }
+
+  // ═══════════════════════════════════════════════════════════════
+  // ESTRUCTURA UNIVERSAL DE ZONA SEGURA (POST INDIVIDUAL Y CARRUSEL)
+  // ═══════════════════════════════════════════════════════════════
+  const typographyParts: string[] = [
+    '\n\nTYPOGRAPHY & LAYOUT (Exact Spanish text):',
+    '- COMPOSITION SAFE ZONE (MANDATORY): All typography and badges MUST stay strictly inside the central 60% safe box (minimum 20% empty margins on left/right borders, 15% breathing space from top, 16% breathing space from bottom). Never let any letter, punctuation mark, or emoji touch or approach the canvas edges.'
+  ];
+
+  const badgeText = config.includeSlogan && config.sloganText ? config.sloganText : (config.includeBusinessName && config.businessName ? config.businessName : '');
+  if (badgeText) {
+    typographyParts.push(`- UPPER CENTER (Pill badge positioned 14% down from top edge inside 60% safe area with 20% side margins): "${badgeText}".`);
+  }
+
+  const headline = (config.includeMainText && config.mainText) ? config.mainText : (config.includePrice && config.priceText ? config.priceText : '');
+  if (headline) {
+    typographyParts.push(`- MID-UPPER CENTER (Centered compact headline broken into 2 to 4 short lines, strictly maximum 60% container width with at least 20% empty margins on left and right sides): "${headline}".`);
+  }
+
+  if (config.includePrice && config.priceText && config.priceText !== headline) {
+    typographyParts.push(`- HIGHLIGHT BADGE (Centered floating badge inside 60% safe zone): "${config.priceText}".`);
+  }
+
+  if (config.ctaText) {
+    typographyParts.push(`- LOWER CENTER (Clean pill button placed horizontally in the center above 84% height mark, inside 60% safe zone with 20% side margins): "${config.ctaText}".`);
+  }
+
+  typographyParts.push('Ultra-sharp vector typography, commercial graphic design, compact centered safe composition, professional studio advertising layout, 8k.');
+
+  parts.push(typographyParts.join('\n'));
 
   return ' ' + parts.join(' ');
 }
