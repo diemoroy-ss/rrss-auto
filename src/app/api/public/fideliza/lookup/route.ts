@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "../../../../../lib/firebase-admin";
-import { checkRateLimit, getClientIp } from "../../../../../lib/rate-limit";
+import { checkRateLimit } from "../../../../../lib/security";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +14,10 @@ function normalizePhone(raw: string): string {
 
 export async function GET(req: NextRequest) {
   try {
-    const ip = getClientIp(req);
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("x-real-ip") ||
+      "unknown";
     const { allowed } = checkRateLimit(`fideliza_lookup_${ip}`, 15, 60_000);
     if (!allowed) {
       return NextResponse.json(
