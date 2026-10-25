@@ -1113,11 +1113,14 @@ export default function RrssCreatePost() {
               url: resolvedImageUrls[0],
               carouselImages: resolvedImageUrls,
               carouselCount: resolvedImageUrls.length,
+              plannedCount: isSingleSlideGen ? (carouselCount || 5) : resolvedImageUrls.length,
               carouselPrompts: pendingPrompts?.prompts_spanish || promptsEnglish || [],
               createdAt: new Date(),
               source: "ia",
               type: "Carrusel",
-              prompt: promptEnglish || pendingPrompts?.prompt_spanish || `Carrusel comercial (${resolvedImageUrls.length} diapositivas)`,
+              prompt: promptEnglish || pendingPrompts?.prompt_spanish || (resolvedImageUrls.length > 1
+                ? `Carrusel comercial (${resolvedImageUrls.length} diapositivas)`
+                : `Carrusel comercial (1 de ${carouselCount || 5} láminas)`),
               copy: resolvedCopy || postText,
               posterConfig: posterConfig.enabled ? posterConfig : null,
             });

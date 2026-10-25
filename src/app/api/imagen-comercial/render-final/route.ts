@@ -211,6 +211,9 @@ export async function POST(req: NextRequest) {
               .join("\n\n")
           : textLayers.map((l: any) => l.text).filter(Boolean).join(" · ");
 
+        const slideCount = carouselImagesList.length > 0 ? carouselImagesList.length : 1;
+        const plannedSlidesCount = Array.isArray(commercialDesignData?.slides) ? commercialDesignData.slides.length : slideCount;
+
         const docPayload: any = {
           url: coverImage,
           baseImageUrl: isCarousel ? (commercialDesignData?.slides?.[0]?.baseImageUrl || baseImageUrl) : baseImageUrl,
@@ -218,10 +221,15 @@ export async function POST(req: NextRequest) {
           source: "imagen_comercial",
           type: isCarousel ? "Carrusel" : aspectRatio === "9:16" ? "Historia" : "Post",
           aspectRatio,
-          prompt: prompt || (isCarousel ? `Carrusel Comercial (${carouselImagesList.length || 2} diapositivas)` : "Diseño de Cartel Comercial"),
+          prompt: prompt || (isCarousel
+            ? (slideCount > 1
+                ? `Carrusel Comercial (${slideCount} diapositivas)`
+                : `Carrusel Comercial (1 de ${plannedSlidesCount} láminas)`)
+            : "Diseño de Cartel Comercial"),
           copy: allCopies || textLayers.map((l: any) => l.text).filter(Boolean).join(" · "),
           commercialDesignId: renderId,
           carouselImages: carouselImagesList,
+          plannedCount: plannedSlidesCount,
           commercialDesignData: commercialDesignData || {
             slides: [{ baseImageUrl, textLayers, useLogo, logoUrl, logoX, logoY, logoWidth, logoTransparent, aspectRatio }],
             customFonts,

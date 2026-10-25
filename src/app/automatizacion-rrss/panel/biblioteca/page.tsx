@@ -173,9 +173,26 @@ interface GeneratedImage {
   carouselImages?: string[];
   carouselPrompts?: string[];
   carouselIds?: string[];
+  plannedCount?: number;
   commercialDesignData?: any;
 }
 
+function getCarouselBadgeText(img: GeneratedImage): string {
+  const actualCount = (img.carouselImages && img.carouselImages.length > 0)
+    ? img.carouselImages.length
+    : (img.url ? 1 : 0);
+
+  const plannedCount = img.plannedCount || img.commercialDesignData?.slides?.length || 0;
+
+  if (actualCount <= 1) {
+    if (plannedCount > 1) {
+      return `📚 Carrusel (1 de ${plannedCount} láminas)`;
+    }
+    return `📚 Carrusel (1 diapositiva)`;
+  }
+
+  return `📚 Carrusel (${actualCount} diapositivas)`;
+}
 
 function consolidateCarouselItems(rawList: GeneratedImage[]): GeneratedImage[] {
   const consolidated: GeneratedImage[] = [];
@@ -185,15 +202,8 @@ function consolidateCarouselItems(rawList: GeneratedImage[]): GeneratedImage[] {
     const item = rawList[i];
     if (processedIds.has(item.id)) continue;
 
-    // Si ya tiene carouselImages explícito con más de 1 lámina, agregarlo directamente
-    if (item.type === 'Carrusel' && item.carouselImages && item.carouselImages.length > 1) {
-      processedIds.add(item.id);
-      consolidated.push(item);
-      continue;
-    }
-
-    // Si es tipo Carrusel y vino en lote suelto, agrupar con sus diapositivas hermanas
-    if (item.type === 'Carrusel') {
+    // Si es tipo Carrusel o tiene commercialDesignId asociado
+    if (item.type === 'Carrusel' || item.commercialDesignId) {
       const relatedSlides: GeneratedImage[] = [item];
       processedIds.add(item.id);
 
@@ -204,36 +214,73 @@ function consolidateCarouselItems(rawList: GeneratedImage[]): GeneratedImage[] {
         const other = rawList[j];
         if (processedIds.has(other.id)) continue;
 
-        if (other.type === 'Carrusel') {
-          const timeDiff = Math.abs(other.createdAt.getTime() - itemTime);
-          // Si fueron creadas en la misma sesión/lote (dentro de 5 minutos o mismo diseño comercial)
-          const isSameBatch =
-            (item.commercialDesignId && item.commercialDesignId === other.commercialDesignId) ||
-            timeDiff <= 5 * 60 * 1000;
+        // 1. Coincidencia exacta de commercialDesignId
+        const isExactSameDesign = Boolean(
+          item.commercialDesignId &&
+          other.commercialDesignId &&
+          item.commercialDesignId === other.commercialDesignId
+        );
 
-          if (isSameBatch && relatedSlides.length < 10) {
-            relatedSlides.push(other);
-            processedIds.add(other.id);
-          }
+        // 2. Mismo lote en ventana de 5 minutos si ambos son de tipo Carrusel
+        const isSameBatchTime =
+          other.type === 'Carrusel' &&
+          Math.abs(other.createdAt.getTime() - itemTime) <= 5 * 60 * 1000 &&
+          (item.prompt === other.prompt || !other.prompt || !item.prompt || item.prompt.startsWith("Carrusel") || other.prompt.startsWith("Carrusel"));
+
+        if ((isExactSameDesign || isSameBatchTime) && relatedSlides.length < 10) {
+          relatedSlides.push(other);
+          processedIds.add(other.id);
         }
       }
 
-      if (relatedSlides.length > 1) {
-        // Orden cronológico de las diapositivas
-        relatedSlides.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+      // Consolidar todas las imágenes y prompts
+      const allUrlsSet = new Set<string>();
+      const allUrls: string[] = [];
+      const allPrompts: string[] = [];
+      const allIds: string[] = [];
 
-        const allUrls = relatedSlides.map((s) => s.url).filter(Boolean);
-        const allPrompts = relatedSlides.map((s) => s.prompt || "");
-        const allIds = relatedSlides.map((s) => s.id);
-        const coverItem = relatedSlides[0];
+      // Orden cronológico
+      relatedSlides.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
 
+      for (const s of relatedSlides) {
+        allIds.push(s.id);
+        if (s.carouselImages && s.carouselImages.length > 0) {
+          s.carouselImages.forEach((u, idx) => {
+            if (u && !allUrlsSet.has(u)) {
+              allUrlsSet.add(u);
+              allUrls.push(u);
+              allPrompts.push((s.carouselPrompts && s.carouselPrompts[idx]) || s.prompt || "");
+            }
+          });
+        }
+        if (s.url && !allUrlsSet.has(s.url)) {
+          allUrlsSet.add(s.url);
+          allUrls.push(s.url);
+          allPrompts.push(s.prompt || "");
+        }
+      }
+
+      const coverItem = relatedSlides[0];
+      const actualCount = allUrls.length > 0 ? allUrls.length : (coverItem.url ? 1 : 0);
+      const plannedCount = Math.max(
+        coverItem.plannedCount || 0,
+        coverItem.commercialDesignData?.slides?.length || 0,
+        ...relatedSlides.map((s) => s.plannedCount || s.commercialDesignData?.slides?.length || 0),
+        actualCount
+      );
+
+      if (actualCount > 1 || coverItem.type === "Carrusel") {
         consolidated.push({
           ...coverItem,
-          carouselImages: allUrls,
-          carouselPrompts: allPrompts,
+          carouselImages: allUrls.length > 0 ? allUrls : (coverItem.url ? [coverItem.url] : []),
+          carouselPrompts: allPrompts.length > 0 ? allPrompts : [coverItem.prompt || ""],
           carouselIds: allIds,
-          prompt: coverItem.prompt || `Carrusel comercial (${allUrls.length} diapositivas)`,
+          type: "Carrusel",
+          prompt: coverItem.prompt && !coverItem.prompt.startsWith("Carrusel")
+            ? coverItem.prompt
+            : (actualCount > 1 ? `Carrusel (${actualCount} diapositivas)` : `Carrusel (1 de ${plannedCount || 5} láminas)`),
           copy: relatedSlides.find((s) => s.copy)?.copy || coverItem.copy || "",
+          plannedCount: plannedCount,
         });
       } else {
         consolidated.push(item);
@@ -262,12 +309,35 @@ export default function BibliotecaPage() {
   const [isStyleFilterModalOpen, setIsStyleFilterModalOpen] = useState<boolean>(false);
   const [selectedImage, setSelectedImage] = useState<GeneratedImage | null>(null);
   const [carouselPreviewIndex, setCarouselPreviewIndex] = useState<number>(0);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isDeletingBatch, setIsDeletingBatch] = useState<boolean>(false);
   const ITEMS_PER_PAGE = 12;
   const [error, setError] = useState("");
   const { activeProfile } = useProfile();
+
+  // Navegación con teclado en el modal de detalle/carrusel
+  useEffect(() => {
+    if (!selectedImage) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setSelectedImage(null);
+      } else if (e.key === "ArrowLeft") {
+        if (selectedImage.carouselImages && selectedImage.carouselImages.length > 1) {
+          setCarouselPreviewIndex((prev) => Math.max(0, prev - 1));
+        }
+      } else if (e.key === "ArrowRight") {
+        if (selectedImage.carouselImages && selectedImage.carouselImages.length > 1) {
+          setCarouselPreviewIndex((prev) => Math.min(selectedImage.carouselImages!.length - 1, prev + 1));
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedImage]);
 
   const planLimits: Record<string, number> = {
     free: 15,
@@ -344,11 +414,27 @@ export default function BibliotecaPage() {
             audioScript: data.audioScript || "",
             hasRemotionScenes: Boolean(data.scenes && data.scenes.length > 0),
             commercialDesignId: data.commercialDesignId || (data.source === "imagen_comercial" ? d.id : undefined),
-            carouselImages: Array.isArray(data.carouselImages) && data.carouselImages.length > 0
-              ? data.carouselImages
+            carouselImages: (() => {
+              let resolvedCarouselImages: string[] = [];
+              if (Array.isArray(data.carouselImages) && data.carouselImages.length > 0) {
+                resolvedCarouselImages = data.carouselImages.filter(Boolean);
+              }
+              if (data.commercialDesignData?.slides && Array.isArray(data.commercialDesignData.slides)) {
+                const slidesUrls = data.commercialDesignData.slides
+                  .map((s: any) => s.finalRenderUrl || s.baseImageUrl)
+                  .filter(Boolean);
+                if (slidesUrls.length > resolvedCarouselImages.length) {
+                  resolvedCarouselImages = slidesUrls;
+                }
+              }
+              return resolvedCarouselImages;
+            })(),
+            carouselPrompts: Array.isArray(data.carouselPrompts) && data.carouselPrompts.length > 0
+              ? data.carouselPrompts
               : data.commercialDesignData?.slides
-              ? data.commercialDesignData.slides.map((s: any) => s.finalRenderUrl || s.baseImageUrl).filter(Boolean)
+              ? data.commercialDesignData.slides.map((s: any) => s.prompt || (s.textLayers || []).map((l: any) => l.text).filter(Boolean).join(" · ")).filter(Boolean)
               : [],
+            plannedCount: data.plannedCount || (data.commercialDesignData?.slides ? data.commercialDesignData.slides.length : (data.carouselCount || 0)),
             commercialDesignData: data.commercialDesignData || null,
           });
         }
@@ -1082,7 +1168,7 @@ export default function BibliotecaPage() {
                       {img.source === "ia" ? "✨ Agentes" : img.source === "upload" ? "📥 Subido" : "🎨 Editor"}
                     </span>
                     <span className="text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg bg-black/60 text-white backdrop-blur-md border border-white/10 flex items-center gap-1">
-                      {img.type === "Carrusel" ? `📚 Carrusel (${img.carouselImages?.length || 5} diapositivas)` : img.type}
+                      {img.type === "Carrusel" ? getCarouselBadgeText(img) : img.type}
                     </span>
                   </div>
                 </div>
@@ -1110,7 +1196,7 @@ export default function BibliotecaPage() {
                       href={`/automatizacion-rrss/panel/crear?postType=Carrusel&carouselUrls=${encodeURIComponent(JSON.stringify(img.carouselImages))}&hideAI=true`}
                       className="py-2 px-2 text-center rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-black text-[9px] uppercase tracking-wider transition-all flex items-center justify-center gap-1"
                     >
-                      <span>🚀</span> Postear
+                      <span>🚀</span> Postear ({img.carouselImages.length})
                     </Link>
                   ) : (
                     <Link
@@ -1122,7 +1208,11 @@ export default function BibliotecaPage() {
                   )}
 
                   <Link
-                    href={`/automatizacion-rrss/panel/crear?templateUrl=${encodeURIComponent(img.url)}&openEditor=true`}
+                    href={
+                      img.commercialDesignId
+                        ? `/automatizacion-rrss/panel/imagen-comercial?editId=${img.id}`
+                        : `/automatizacion-rrss/panel/crear?templateUrl=${encodeURIComponent(img.url)}&openEditor=true`
+                    }
                     className="py-2 px-2 text-center rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-[9px] uppercase tracking-wider transition-all flex items-center justify-center gap-1"
                   >
                     <span>🎨</span> Editar
@@ -1245,7 +1335,20 @@ export default function BibliotecaPage() {
                   );
                 })()
               ) : selectedImage.carouselImages && selectedImage.carouselImages.length > 1 ? (
-                <div className="relative w-full flex flex-col items-center justify-center">
+                <div
+                  className="relative w-full flex flex-col items-center justify-center select-none"
+                  onTouchStart={(e) => setTouchStartX(e.touches[0].clientX)}
+                  onTouchEnd={(e) => {
+                    if (touchStartX === null) return;
+                    const diff = touchStartX - e.changedTouches[0].clientX;
+                    if (diff > 40 && carouselPreviewIndex < selectedImage.carouselImages!.length - 1) {
+                      setCarouselPreviewIndex((prev) => prev + 1);
+                    } else if (diff < -40 && carouselPreviewIndex > 0) {
+                      setCarouselPreviewIndex((prev) => prev - 1);
+                    }
+                    setTouchStartX(null);
+                  }}
+                >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={selectedImage.carouselImages[carouselPreviewIndex] || selectedImage.url}
@@ -1266,7 +1369,7 @@ export default function BibliotecaPage() {
                         e.stopPropagation();
                         setCarouselPreviewIndex((prev) => Math.max(0, prev - 1));
                       }}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-slate-900/80 hover:bg-slate-900 text-white flex items-center justify-center font-bold text-base shadow-xl backdrop-blur-xs transition-transform hover:scale-110"
+                      className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-slate-900/80 hover:bg-slate-900 text-white flex items-center justify-center font-bold text-base shadow-xl backdrop-blur-xs transition-transform hover:scale-110 cursor-pointer"
                       title="Diapositiva anterior"
                     >
                       ←
@@ -1280,7 +1383,7 @@ export default function BibliotecaPage() {
                         e.stopPropagation();
                         setCarouselPreviewIndex((prev) => Math.min(selectedImage.carouselImages!.length - 1, prev + 1));
                       }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-slate-900/80 hover:bg-slate-900 text-white flex items-center justify-center font-bold text-base shadow-xl backdrop-blur-xs transition-transform hover:scale-110"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-slate-900/80 hover:bg-slate-900 text-white flex items-center justify-center font-bold text-base shadow-xl backdrop-blur-xs transition-transform hover:scale-110 cursor-pointer"
                       title="Siguiente diapositiva"
                     >
                       →
@@ -1316,17 +1419,39 @@ export default function BibliotecaPage() {
                   </div>
                 </div>
               ) : (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img
-                  src={selectedImage.url}
-                  alt={selectedImage.prompt || "Diseño"}
-                  className="w-full h-auto object-contain max-h-[85vh] rounded-2xl"
-                  onError={(e) => {
-                    if (selectedImage.baseImageUrl && e.currentTarget.src !== selectedImage.baseImageUrl) {
-                      e.currentTarget.src = selectedImage.baseImageUrl;
-                    }
-                  }}
-                />
+                <div className="w-full flex flex-col items-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={selectedImage.url}
+                    alt={selectedImage.prompt || "Diseño"}
+                    className="w-full h-auto object-contain max-h-[80vh] rounded-2xl shadow-md"
+                    onError={(e) => {
+                      if (selectedImage.baseImageUrl && e.currentTarget.src !== selectedImage.baseImageUrl) {
+                        e.currentTarget.src = selectedImage.baseImageUrl;
+                      }
+                    }}
+                  />
+                  {selectedImage.type === 'Carrusel' && (
+                    <div className="mt-4 w-full p-3.5 bg-indigo-50 border border-indigo-200/80 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-indigo-900 shadow-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base shrink-0">💡</span>
+                        <span className="font-semibold text-slate-800">
+                          Has diseñado <strong>1 lámina</strong> de este carrusel{((selectedImage.plannedCount || selectedImage.commercialDesignData?.slides?.length || 0) > 1) ? ` (de ${selectedImage.plannedCount || selectedImage.commercialDesignData?.slides?.length} planificadas)` : ""}.
+                        </span>
+                      </div>
+                      <Link
+                        href={
+                          selectedImage.commercialDesignId
+                            ? `/automatizacion-rrss/panel/imagen-comercial?editId=${selectedImage.id}`
+                            : `/automatizacion-rrss/panel/crear?postType=Carrusel&templateUrl=${encodeURIComponent(selectedImage.url)}`
+                        }
+                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-[10px] uppercase tracking-wider shrink-0 transition-colors text-center shadow-xs"
+                      >
+                        + Diseñar siguientes láminas
+                      </Link>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
 
@@ -1355,7 +1480,20 @@ export default function BibliotecaPage() {
               </div>
               
               <h4 className="font-black text-slate-900 text-base mb-4 flex items-center gap-2">
-                {selectedImage.type === 'Carrusel' ? `📚 Formato: Carrusel (${selectedImage.carouselImages?.length || 5} diapositivas)`
+                {selectedImage.type === 'Carrusel' ? (() => {
+                  const actualCount = (selectedImage.carouselImages && selectedImage.carouselImages.length > 0)
+                    ? selectedImage.carouselImages.length
+                    : (selectedImage.url ? 1 : 0);
+                  const plannedCount = selectedImage.plannedCount || selectedImage.commercialDesignData?.slides?.length || 0;
+
+                  if (actualCount <= 1) {
+                    if (plannedCount > 1) {
+                      return `📚 Formato: Carrusel (1 de ${plannedCount} diapositivas generadas)`;
+                    }
+                    return `📚 Formato: Carrusel (1 diapositiva generada)`;
+                  }
+                  return `📚 Formato: Carrusel (${actualCount} diapositivas)`;
+                })()
                   : selectedImage.type === 'Post'
                   ? '📱 Formato: Post'
                   : selectedImage.type === 'Historia'
@@ -1402,32 +1540,92 @@ export default function BibliotecaPage() {
               
               <div className="flex flex-col gap-2.5 mt-auto pt-4 border-t border-slate-100">
                 {selectedImage.type === 'Carrusel' && selectedImage.carouselImages && selectedImage.carouselImages.length > 1 ? (
-                  <Link
-                    href={`/automatizacion-rrss/panel/crear?postType=Carrusel&carouselUrls=${encodeURIComponent(JSON.stringify(selectedImage.carouselImages))}&hideAI=true`}
-                    className="py-3.5 px-4 text-center rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-black text-[11px] uppercase tracking-wider transition-all shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2"
-                  >
-                    <span>🚀</span> POSTEAR CARRUSEL COMPLETO ({selectedImage.carouselImages.length} LÁMINAS)
-                  </Link>
-                ) : (
-                  <Link
-                    href={`/automatizacion-rrss/panel/crear?templateUrl=${encodeURIComponent(selectedImage.url)}&hideAI=true`}
-                    className="py-3.5 px-4 text-center rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[11px] uppercase tracking-wider transition-all shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2"
-                  >
-                    <span>🚀</span> POSTEAR
-                  </Link>
-                )}
+                  <>
+                    <Link
+                      href={`/automatizacion-rrss/panel/crear?postType=Carrusel&carouselUrls=${encodeURIComponent(JSON.stringify(selectedImage.carouselImages))}&hideAI=true`}
+                      className="py-3.5 px-4 text-center rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-black text-[11px] uppercase tracking-wider transition-all shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2"
+                    >
+                      <span>🚀</span> POSTEAR CARRUSEL COMPLETO ({selectedImage.carouselImages.length} LÁMINAS)
+                    </Link>
 
-                {/* Botón Editar Lámina / Imagen */}
-                <Link
-                  href={`/automatizacion-rrss/panel/crear?templateUrl=${encodeURIComponent(
-                    (selectedImage.carouselImages && selectedImage.carouselImages[carouselPreviewIndex]) || selectedImage.url
-                  )}&openEditor=true`}
-                  className="py-3 px-4 text-center rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-black text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-2"
-                >
-                  <span>🎨</span> {selectedImage.carouselImages && selectedImage.carouselImages.length > 1
-                    ? `EDITAR ESTA LÁMINA (SLIDE ${carouselPreviewIndex + 1})`
-                    : "EDITAR EN EDITOR VISUAL"}
-                </Link>
+                    {/* Botón Editar Lámina / Imagen */}
+                    <Link
+                      href={
+                        selectedImage.commercialDesignId
+                          ? `/automatizacion-rrss/panel/imagen-comercial?editId=${encodeURIComponent(selectedImage.commercialDesignId)}&slide=${carouselPreviewIndex}`
+                          : `/automatizacion-rrss/panel/crear?templateUrl=${encodeURIComponent(
+                              (selectedImage.carouselImages && selectedImage.carouselImages[carouselPreviewIndex]) || selectedImage.url
+                            )}&openEditor=true`
+                      }
+                      className="py-3 px-4 text-center rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-black text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-2"
+                    >
+                      <span>🎨</span> EDITAR ESTA LÁMINA (SLIDE {carouselPreviewIndex + 1})
+                    </Link>
+
+                    <Link
+                      href={
+                        selectedImage.commercialDesignId
+                          ? `/automatizacion-rrss/panel/imagen-comercial?editId=${encodeURIComponent(selectedImage.commercialDesignId)}`
+                          : `/automatizacion-rrss/panel/crear?postType=Carrusel&carouselUrls=${encodeURIComponent(JSON.stringify(selectedImage.carouselImages))}`
+                      }
+                      className="py-2.5 px-4 text-center rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-2"
+                    >
+                      <span>➕</span> AGREGAR O MODIFICAR LÁMINAS DEL CARRUSEL
+                    </Link>
+                  </>
+                ) : selectedImage.type === 'Carrusel' ? (
+                  <>
+                    <Link
+                      href={`/automatizacion-rrss/panel/crear?templateUrl=${encodeURIComponent(selectedImage.url)}&hideAI=true`}
+                      className="py-3.5 px-4 text-center rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[11px] uppercase tracking-wider transition-all shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2"
+                    >
+                      <span>🚀</span> POSTEAR LÁMINA (SLIDE 1)
+                    </Link>
+
+                    <Link
+                      href={
+                        selectedImage.commercialDesignId
+                          ? `/automatizacion-rrss/panel/imagen-comercial?editId=${encodeURIComponent(selectedImage.commercialDesignId)}&slide=0`
+                          : `/automatizacion-rrss/panel/crear?templateUrl=${encodeURIComponent(selectedImage.url)}&openEditor=true`
+                      }
+                      className="py-3 px-4 text-center rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-black text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-2"
+                    >
+                      <span>🎨</span> EDITAR LÁMINA EN EDITOR VISUAL
+                    </Link>
+
+                    <Link
+                      href={
+                        selectedImage.commercialDesignId
+                          ? `/automatizacion-rrss/panel/imagen-comercial?editId=${encodeURIComponent(selectedImage.commercialDesignId)}`
+                          : `/automatizacion-rrss/panel/crear?postType=Carrusel&templateUrl=${encodeURIComponent(selectedImage.url)}`
+                      }
+                      className="py-2.5 px-4 text-center rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-black text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-2"
+                    >
+                      <span>➕</span> CONTINUAR DISEÑANDO CARRUSEL EN EL CREADOR
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href={`/automatizacion-rrss/panel/crear?templateUrl=${encodeURIComponent(selectedImage.url)}&hideAI=true`}
+                      className="py-3.5 px-4 text-center rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[11px] uppercase tracking-wider transition-all shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2"
+                    >
+                      <span>🚀</span> POSTEAR
+                    </Link>
+
+                    {/* Botón Editar Lámina / Imagen */}
+                    <Link
+                      href={
+                        selectedImage.commercialDesignId
+                          ? `/automatizacion-rrss/panel/imagen-comercial?editId=${encodeURIComponent(selectedImage.commercialDesignId)}`
+                          : `/automatizacion-rrss/panel/crear?templateUrl=${encodeURIComponent(selectedImage.url)}&openEditor=true`
+                      }
+                      className="py-3 px-4 text-center rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-black text-[11px] uppercase tracking-wider transition-all flex items-center justify-center gap-2"
+                    >
+                      <span>🎨</span> EDITAR EN EDITOR VISUAL
+                    </Link>
+                  </>
+                )}
 
                 {selectedImage.hasRemotionScenes ? (
                   <Link

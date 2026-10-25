@@ -558,7 +558,11 @@ export default function ImagenComercialPage() {
       if (data) {
         if (Array.isArray(data.slides) && data.slides.length > 0) {
           setSlides(data.slides);
-          setActiveSlideIndex(data.activeSlideIndex || 0);
+          const initialSlideParam = searchParams.get("slide");
+          const targetSlideIdx = initialSlideParam !== null
+            ? Math.min(Math.max(0, parseInt(initialSlideParam, 10) || 0), data.slides.length - 1)
+            : (data.activeSlideIndex || 0);
+          setActiveSlideIndex(targetSlideIdx);
           if (data.slides.length > 1) {
             setWizardContentType("carrusel");
             setWizardSlideCount(data.slides.length);
