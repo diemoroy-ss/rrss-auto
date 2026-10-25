@@ -11,7 +11,7 @@ import {
   FaStore,
   FaWhatsapp,
 } from "react-icons/fa";
-import SocialPilotLogo from "../../components/SocialPilotLogo";
+import FidelizaLogo from "../../components/FidelizaLogo";
 
 export default function FidelizaPortalPage() {
   const [phone, setPhone] = useState("");
@@ -44,9 +44,7 @@ export default function FidelizaPortalPage() {
       {/* Top Navbar */}
       <header className="border-b border-white/10 bg-slate-950/80 backdrop-blur-md">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="https://socialpilot.cl" className="flex items-center gap-2">
-            <SocialPilotLogo height={36} width={170} />
-          </Link>
+          <FidelizaLogo height={40} width={190} href="https://fideliza.socialpilot.cl" priority />
           <div className="flex items-center gap-2">
             <Link
               href="/fideliza/caja"

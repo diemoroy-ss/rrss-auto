@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import FidelizaLogo from "../../../components/FidelizaLogo";
 import {
   FaCashRegister,
   FaSearch,
@@ -162,15 +163,18 @@ function CashierTerminalContent() {
 
   if (!authenticated) {
     return (
-      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-4">
-        <div className="max-w-sm w-full bg-slate-900 border border-white/10 rounded-3xl p-6 space-y-5 shadow-2xl">
+      <div className="w-full min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-4">
+        <div className="mb-6">
+          <FidelizaLogo height={46} width={215} href="/fideliza" priority />
+        </div>
+        <div className="max-w-sm w-full bg-slate-900 border border-white/10 rounded-3xl p-6 space-y-5 shadow-2xl mx-auto">
           <div className="text-center space-y-1.5">
             <div className="w-12 h-12 rounded-2xl bg-orange-500/20 text-orange-400 flex items-center justify-center text-2xl mx-auto">
               <FaCashRegister />
             </div>
             <h1 className="text-xl font-black">Terminal de Caja Fideliza</h1>
             <p className="text-xs text-slate-400">
-              Ingresa el código del local y tu PIN de cajero para acreditar visitas y canjear premios.
+              Ingresa tu Código de Comercio (o correo/nombre del local) y el PIN de cajero para acreditar visitas y canjear premios.
             </p>
           </div>
 
@@ -183,16 +187,19 @@ function CashierTerminalContent() {
           <form onSubmit={handleLoginCashier} className="space-y-3.5">
             <div>
               <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1">
-                ID del Comercio
+                Código de Comercio / Correo / Nombre Local
               </label>
               <input
                 type="text"
                 required
-                placeholder="ID del comercio"
+                placeholder="Ej: SP-4F9A o tu@correo.cl"
                 value={clubId}
                 onChange={(e) => setClubId(e.target.value)}
-                className="w-full bg-slate-950 border border-white/15 rounded-xl px-3.5 py-2.5 text-xs font-mono text-white outline-none"
+                className="w-full bg-slate-950 border border-white/15 rounded-xl px-3.5 py-2.5 text-sm font-bold text-amber-400 placeholder:text-slate-600 placeholder:font-normal outline-none focus:border-amber-500"
               />
+              <span className="block text-[10px] text-slate-500 mt-1">
+                Encuentra tu código corto (SP-XXXX) en Panel → Fidelización.
+              </span>
             </div>
 
             <div>

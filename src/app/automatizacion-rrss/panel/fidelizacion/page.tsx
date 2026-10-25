@@ -9,9 +9,11 @@ import { onAuthStateChanged } from "firebase/auth";
 import {
   useProfile,
   DEFAULT_FIDELIZACION_CONFIG,
+  computeShortMerchantCode,
   type FidelizacionConfig,
   type CatalogoItem,
 } from "../../../../contexts/ProfileContext";
+import FidelizaLogo from "../../../../components/FidelizaLogo";
 import {
   FaGift,
   FaQrcode,
@@ -68,6 +70,7 @@ export default function FidelizacionPanelPage() {
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [copiedClub, setCopiedClub] = useState(false);
   const [copiedCaja, setCopiedCaja] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
   const [iframeKey, setIframeKey] = useState(1);
 
   // CRM Members state
@@ -100,6 +103,11 @@ export default function FidelizacionPanelPage() {
     return `${user.uid}___${profileId}`;
   }, [user?.uid, profileId]);
 
+  const shortMerchantCode = useMemo(() => {
+    if (!user?.uid) return "";
+    return config.merchantCode || computeShortMerchantCode(user.uid, profileId);
+  }, [user?.uid, profileId, config.merchantCode]);
+
   const publicClubUrl = useMemo(() => {
     if (!clubIdentifier) return "";
     if (typeof window !== "undefined" && window.location.hostname === "localhost") {
@@ -115,12 +123,12 @@ export default function FidelizacionPanelPage() {
   }, [clubIdentifier]);
 
   const cashierUrl = useMemo(() => {
-    if (!clubIdentifier) return "";
+    if (!shortMerchantCode) return "";
     if (typeof window !== "undefined" && window.location.hostname === "localhost") {
-      return `${window.location.origin}/fideliza/caja?id=${encodeURIComponent(clubIdentifier)}`;
+      return `${window.location.origin}/fideliza/caja?id=${encodeURIComponent(shortMerchantCode)}`;
     }
-    return `https://fideliza.socialpilot.cl/caja?id=${encodeURIComponent(clubIdentifier)}`;
-  }, [clubIdentifier]);
+    return `https://fideliza.socialpilot.cl/caja?id=${encodeURIComponent(shortMerchantCode)}`;
+  }, [shortMerchantCode]);
 
   // Generate QR code
   useEffect(() => {
@@ -333,9 +341,27 @@ export default function FidelizacionPanelPage() {
       {/* Header Banner */}
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl border border-indigo-500/20 print:hidden">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-          <div className="space-y-2 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/30 text-amber-300 text-xs font-black uppercase tracking-wider">
-              <FaGift /> SocialPilot Fideliza · Retención Inteligente
+          <div className="space-y-2.5 max-w-2xl">
+            <div className="flex flex-wrap items-center gap-3">
+              <FidelizaLogo height={38} width={180} priority />
+              {shortMerchantCode && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(shortMerchantCode);
+                    setCopiedCode(true);
+                    setTimeout(() => setCopiedCode(false), 2500);
+                  }}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-amber-300 text-xs font-black tracking-wide cursor-pointer transition-all"
+                  title="Haz clic para copiar tu código de comercio para el Terminal de Caja"
+                >
+                  <span>Código de Comercio:</span>
+                  <span className="font-mono text-white bg-slate-950/70 px-2 py-0.5 rounded-lg">
+                    {shortMerchantCode}
+                  </span>
+                  {copiedCode ? <FaCheck className="text-emerald-400" /> : <FaCopy />}
+                </button>
+              )}
             </div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
               Club de Fidelización & Tarjeta de Sellos Digital
@@ -791,12 +817,18 @@ export default function FidelizacionPanelPage() {
                 </span>
                 <h3 className="font-black text-lg text-slate-900">Terminal de Caja Aislado</h3>
                 <p className="text-xs text-slate-500 leading-relaxed">
-                  Tus empleados pueden abrir este link en la caja para sumar sellos o canjear premios usando sólo el PIN{" "}
-                  <strong className="text-slate-900 font-mono bg-amber-100 px-1.5 py-0.5 rounded">
-                    {config.cashierPin}
-                  </strong>
-                  , sin entrar a tus redes sociales.
+                  Tus empleados pueden abrir el link directo o entrar a <strong className="text-slate-800">fideliza.socialpilot.cl/caja</strong> con estos datos:
                 </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-center">
+                    <span className="block text-[10px] font-bold uppercase text-amber-700">Código Comercio</span>
+                    <span className="font-mono font-black text-sm text-slate-900">{shortMerchantCode}</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-center">
+                    <span className="block text-[10px] font-bold uppercase text-emerald-700">PIN de Cajero</span>
+                    <span className="font-mono font-black text-sm text-slate-900">{config.cashierPin}</span>
+                  </div>
+                </div>
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 font-mono text-xs text-slate-700 break-all">
                   {cashierUrl}
                 </div>

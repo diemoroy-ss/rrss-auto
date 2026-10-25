@@ -153,7 +153,24 @@ export type FidelizacionConfig = {
   allowWhatsappApproval: boolean;
   primaryColor?: string;
   stampIcon?: string;
+  merchantCode?: string;
 };
+
+export function computeShortMerchantCode(uid: string, profileId: string = "default"): string {
+  const input = `${uid}___${profileId}`;
+  let hash = 5381;
+  for (let i = 0; i < input.length; i++) {
+    hash = ((hash << 5) + hash + input.charCodeAt(i)) >>> 0;
+  }
+  const chars = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+  let code = "";
+  let num = hash;
+  for (let i = 0; i < 4; i++) {
+    code += chars[num % chars.length];
+    num = Math.floor(num / chars.length);
+  }
+  return `SP-${code}`;
+}
 
 export const DEFAULT_FIDELIZACION_CONFIG: FidelizacionConfig = {
   enabled: false,

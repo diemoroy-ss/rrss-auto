@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "../../../../../lib/firebase-admin";
 import { checkRateLimit } from "../../../../../lib/security";
 import { getFreeModel } from "../../../../../lib/gemini-free";
-import { DEFAULT_FIDELIZACION_CONFIG, FidelizacionConfig } from "../../../../../contexts/ProfileContext";
+import {
+  DEFAULT_FIDELIZACION_CONFIG,
+  FidelizacionConfig,
+  computeShortMerchantCode,
+} from "../../../../../contexts/ProfileContext";
 import * as crypto from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -50,12 +54,61 @@ function parseLoyaltyIdentifier(rawId: string) {
 }
 
 async function resolveBusinessAndConfig(rawId: string) {
-  const { uid, targetProfileId, decodedId } = parseLoyaltyIdentifier(rawId);
-  const userDocRef = adminDb.collection("users").doc(uid);
-  const userSnap = await userDocRef.get();
+  let { uid, targetProfileId, decodedId } = parseLoyaltyIdentifier(rawId);
+  let userDocRef = adminDb.collection("users").doc(uid);
+  let userSnap = await userDocRef.get();
 
+  // Si no es un UID directo, buscar por Código Corto (SP-XXXX), alias personalizado, email o nombre del negocio
   if (!userSnap.exists) {
-    return null;
+    const queryClean = decodedId.trim().toUpperCase().replace(/[^A-Z0-9@.]/g, "");
+    const queryLower = decodedId.trim().toLowerCase();
+    const allUsersSnap = await adminDb.collection("users").get();
+
+    let matchedDoc: any = null;
+    let matchedProfileId = "default";
+
+    for (const docSnap of allUsersSnap.docs) {
+      const uData = docSnap.data() || {};
+      const uProfiles: any[] = Array.isArray(uData.profiles) && uData.profiles.length > 0
+        ? uData.profiles
+        : [{ id: "default", name: uData.company || uData.name || "" }];
+
+      // Match por email del dueño
+      if (uData.email && String(uData.email).toLowerCase() === queryLower) {
+        matchedDoc = docSnap;
+        matchedProfileId = uProfiles[0]?.id || "default";
+        break;
+      }
+
+      for (const p of uProfiles) {
+        const pid = p.id || "default";
+        const shortCode = computeShortMerchantCode(docSnap.id, pid).replace(/[^A-Z0-9]/g, "");
+        const customCode = String(p.fidelizacionConfig?.merchantCode || "")
+          .toUpperCase()
+          .replace(/[^A-Z0-9]/g, "");
+        const pName = String(p.name || uData.company || "").trim().toLowerCase();
+
+        if (
+          (queryClean && (shortCode === queryClean || (customCode && customCode === queryClean))) ||
+          (queryLower.length >= 3 && pName === queryLower)
+        ) {
+          matchedDoc = docSnap;
+          matchedProfileId = pid;
+          break;
+        }
+      }
+      if (matchedDoc) break;
+    }
+
+    if (!matchedDoc) {
+      return null;
+    }
+
+    userSnap = matchedDoc;
+    uid = matchedDoc.id;
+    targetProfileId = matchedProfileId;
+    decodedId = `${uid}___${targetProfileId}`;
+    userDocRef = adminDb.collection("users").doc(uid);
   }
 
   const userData = userSnap.data() || {};
