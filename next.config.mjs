@@ -38,6 +38,16 @@ const nextConfig = {
     return {
       beforeFiles: [
         {
+          source: "/",
+          has: [
+            {
+              type: "host",
+              value: "fideliza.socialpilot.cl",
+            },
+          ],
+          destination: "/fideliza",
+        },
+        {
           source: "/:path((?!api|_next|fideliza|favicon|.*\\..*).*)",
           has: [
             {

@@ -226,7 +226,7 @@ export async function POST(
         });
       }
 
-      const cardUrl = `https://socialpilot.cl/fideliza/${decodedId}?phone=${cleanPhone}`;
+      const cardUrl = `https://fideliza.socialpilot.cl/${decodedId}?phone=${cleanPhone}`;
       await sendWhatsAppNotification(
         phone,
         `🎉 *¡Bienvenido/a a ${config.programName} de ${business.name}!*\n\nHola ${newMember.name}, tu tarjeta digital ya está activa.${
@@ -316,7 +316,7 @@ export async function POST(
         createdAt: nowIso,
       });
 
-      const cardUrl = `https://socialpilot.cl/fideliza/${decodedId}?phone=${member.cleanPhone || ""}`;
+      const cardUrl = `https://fideliza.socialpilot.cl/${decodedId}?phone=${member.cleanPhone || ""}`;
       if (unlockedNewReward) {
         await sendWhatsAppNotification(
           member.phone,

@@ -102,14 +102,24 @@ export default function FidelizacionPanelPage() {
 
   const publicClubUrl = useMemo(() => {
     if (!clubIdentifier) return "";
+    if (typeof window !== "undefined" && window.location.hostname === "localhost") {
+      return `${window.location.origin}/fideliza/${clubIdentifier}`;
+    }
+    return `https://fideliza.socialpilot.cl/${clubIdentifier}`;
+  }, [clubIdentifier]);
+
+  const previewClubUrl = useMemo(() => {
+    if (!clubIdentifier) return "";
     const origin = typeof window !== "undefined" ? window.location.origin : "https://socialpilot.cl";
     return `${origin}/fideliza/${clubIdentifier}`;
   }, [clubIdentifier]);
 
   const cashierUrl = useMemo(() => {
     if (!clubIdentifier) return "";
-    const origin = typeof window !== "undefined" ? window.location.origin : "https://socialpilot.cl";
-    return `${origin}/fideliza/caja?id=${encodeURIComponent(clubIdentifier)}`;
+    if (typeof window !== "undefined" && window.location.hostname === "localhost") {
+      return `${window.location.origin}/fideliza/caja?id=${encodeURIComponent(clubIdentifier)}`;
+    }
+    return `https://fideliza.socialpilot.cl/caja?id=${encodeURIComponent(clubIdentifier)}`;
   }, [clubIdentifier]);
 
   // Generate QR code
@@ -714,10 +724,10 @@ export default function FidelizacionPanelPage() {
               </div>
 
               <div className="rounded-2xl overflow-hidden border-4 border-slate-800 bg-slate-950 h-[560px]">
-                {publicClubUrl ? (
+                {previewClubUrl ? (
                   <iframe
                     key={iframeKey}
-                    src={publicClubUrl}
+                    src={previewClubUrl}
                     className="w-full h-full border-0"
                     title="Vista previa Fidelización"
                   />
