@@ -154,6 +154,9 @@ export type FidelizacionConfig = {
   primaryColor?: string;
   stampIcon?: string;
   merchantCode?: string;
+  whatsappSenderPhone?: string;
+  evolutionInstanceName?: string;
+  evolutionApiKey?: string;
 };
 
 export function computeShortMerchantCode(uid: string, profileId: string = "default"): string {

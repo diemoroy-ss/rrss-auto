@@ -11,12 +11,17 @@ import * as crypto from "crypto";
 
 export const dynamic = "force-dynamic";
 
-const EVOLUTION_API_URL = process.env.EVOLUTION_API_URL || "https://evoapi.grupofugas.cl";
-const EVOLUTION_API_KEY = process.env.EVOLUTION_API_KEY || "";
-const EVOLUTION_INSTANCE = process.env.EVOLUTION_INSTANCE_NAME || "Santisoft";
+const EVOLUTION_API_URL = (process.env.EVOLUTION_API_URL || "https://evoapi.grupofugas.cl").trim().replace(/\/$/, "");
+const EVOLUTION_API_KEY = (process.env.EVOLUTION_API_KEY || "6833CC358FA4-42E4-8F45-E74D35CC85A7").trim();
+const EVOLUTION_INSTANCE = (process.env.EVOLUTION_INSTANCE_NAME || "Santisoft").trim();
+const N8N_EVOAPI_WEBHOOK_URL = process.env.N8N_EVOAPI_WEBHOOK_URL || "https://n8n.santisoft.cl/webhook/evoapi";
 
-async function sendWhatsAppNotification(phone: string, message: string) {
-  if (!EVOLUTION_API_URL || !EVOLUTION_API_KEY || !phone) return;
+async function sendWhatsAppNotification(
+  phone: string,
+  message: string,
+  customConfig?: Partial<FidelizacionConfig>
+): Promise<{ sent: boolean; error?: string }> {
+  if (!phone) return { sent: false, error: "Teléfono vacío" };
   try {
     let cleanPhone = phone.replace(/\D/g, "");
     if (cleanPhone.length === 9 && cleanPhone.startsWith("9")) {
@@ -24,20 +29,49 @@ async function sendWhatsAppNotification(phone: string, message: string) {
     } else if (cleanPhone.length === 8) {
       cleanPhone = `569${cleanPhone}`;
     }
-    const url = `${EVOLUTION_API_URL}/message/sendText/${EVOLUTION_INSTANCE}`;
-    await fetch(url, {
+
+    const instanceName = (customConfig?.evolutionInstanceName || EVOLUTION_INSTANCE).trim();
+    const apiKey = (customConfig?.evolutionApiKey || EVOLUTION_API_KEY).trim();
+    const senderPhone = (customConfig?.whatsappSenderPhone || "").replace(/\D/g, "");
+
+    const url = `${EVOLUTION_API_URL}/message/sendText/${encodeURIComponent(instanceName)}`;
+    const res = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        apikey: EVOLUTION_API_KEY,
+        apikey: apiKey,
       },
       body: JSON.stringify({
         number: cleanPhone,
         text: message,
       }),
     });
-  } catch (err) {
+
+    if (res.ok) {
+      return { sent: true };
+    }
+
+    // Fallback a N8N Webhook si la instancia directa responde error
+    if (N8N_EVOAPI_WEBHOOK_URL) {
+      const fbRes = await fetch(N8N_EVOAPI_WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: cleanPhone,
+          number: cleanPhone,
+          text: message,
+          instanceName,
+          senderPhone,
+        }),
+      });
+      if (fbRes.ok) return { sent: true };
+    }
+
+    const errTxt = await res.text().catch(() => `HTTP ${res.status}`);
+    return { sent: false, error: errTxt.slice(0, 140) };
+  } catch (err: any) {
     console.warn("[Fideliza WhatsApp] No se pudo enviar notificación:", err);
+    return { sent: false, error: err.message };
   }
 }
 
@@ -126,8 +160,8 @@ async function resolveBusinessAndConfig(rawId: string) {
     rubro: profile.rubro || "Comercio & Servicios",
     description: profile.businessDescription || "",
     logoUrl: profile.logoUrl || null,
-    phone: profile.phone || userData.phone || null,
-    whatsapp: profile.phone || userData.phone || null,
+    phone: config.whatsappSenderPhone || profile.phone || userData.phone || null,
+    whatsapp: config.whatsappSenderPhone || profile.phone || userData.phone || null,
     instagramUsername: profile.instagramUsername || profile.instagramUrl || null,
     website: profile.website || null,
     address: profile.address || userData.address || null,
@@ -154,8 +188,8 @@ export async function GET(
 
     const { uid, targetProfileId, business, config } = resolved;
 
-    // Excluir cashierPin de la respuesta pública por seguridad
-    const { cashierPin, ...publicConfig } = config;
+    // Excluir cashierPin y evolutionApiKey de la respuesta pública por seguridad
+    const { cashierPin, evolutionApiKey, ...publicConfig } = config;
 
     const url = new URL(req.url);
     const phoneParam = url.searchParams.get("phone");
@@ -284,7 +318,8 @@ export async function POST(
         phone,
         `🎉 *¡Bienvenido/a a ${config.programName} de ${business.name}!*\n\nHola ${newMember.name}, tu tarjeta digital ya está activa.${
           config.welcomeBonus ? `\n✨ ¡Te regalamos tu *1er sello de bienvenida*!` : ""
-        }\n🎯 Meta: *${config.targetGoal} ${config.mode === "visits" ? "visitas" : "puntos"}* para ganar *${config.rewardTitle}*.\n\n📲 Guarda tu tarjeta aquí:\n${cardUrl}`
+        }\n🎯 Meta: *${config.targetGoal} ${config.mode === "visits" ? "visitas" : "puntos"}* para ganar *${config.rewardTitle}*.\n\n📲 Guarda tu tarjeta aquí:\n${cardUrl}`,
+        config
       );
 
       return NextResponse.json({
@@ -373,14 +408,16 @@ export async function POST(
       if (unlockedNewReward) {
         await sendWhatsAppNotification(
           member.phone,
-          `🎁 *¡FELICITACIONES ${member.name.toUpperCase()}!*\n\nCompletaste tu meta en *${business.name}* y desbloqueaste tu premio:\n🏆 *${config.rewardTitle}*\n\n🔐 Tu código de canje es: *${latestRewardCode}*\nMuéstralo en caja en tu próxima compra.\n\n📲 Ver mi tarjeta: ${cardUrl}`
+          `🎁 *¡FELICITACIONES ${member.name.toUpperCase()}!*\n\nCompletaste tu meta en *${business.name}* y desbloqueaste tu premio:\n🏆 *${config.rewardTitle}*\n\n🔐 Tu código de canje es: *${latestRewardCode}*\nMuéstralo en caja en tu próxima compra.\n\n📲 Ver mi tarjeta: ${cardUrl}`,
+          config
         );
       } else {
         await sendWhatsAppNotification(
           member.phone,
           `✅ *¡Sello acreditado en ${business.name}!*\n\nSumaste +${stampsToAdd} ${
             config.mode === "visits" ? "visita" : "punto(s)"
-          }.\n📊 Tu progreso actual: *${currentStamps} de ${goal}* para tu *${config.rewardTitle}*.\n\n📲 Ver mi tarjeta: ${cardUrl}`
+          }.\n📊 Tu progreso actual: *${currentStamps} de ${goal}* para tu *${config.rewardTitle}*.\n\n📲 Ver mi tarjeta: ${cardUrl}`,
+          config
         );
       }
 
@@ -650,7 +687,8 @@ Extrae los datos y devuelve ÚNICAMENTE un JSON válido con esta estructura exac
 
       await sendWhatsAppNotification(
         member.phone,
-        `🥳 *¡Premio Canjeado con Éxito!*\n\nHola ${member.name}, acabas de canjear tu *${redeemedItem.rewardTitle}* (Código ${redeemedItem.code}) en *${business.name}*.\n\n¡Gracias por preferirnos! Sigue sumando visitas en tu tarjeta digital.`
+        `🥳 *¡Premio Canjeado con Éxito!*\n\nHola ${member.name}, acabas de canjear tu *${redeemedItem.rewardTitle}* (Código ${redeemedItem.code}) en *${business.name}*.\n\n¡Gracias por preferirnos! Sigue sumando visitas en tu tarjeta digital.`,
+        config
       );
 
       return NextResponse.json({
@@ -690,9 +728,43 @@ Extrae los datos y devuelve ÚNICAMENTE un JSON válido con esta estructura exac
       return NextResponse.json({
         success: true,
         business,
-        config: { ...config, cashierPin: undefined },
+        config: { ...config, cashierPin: undefined, evolutionApiKey: undefined },
         members,
       });
+    }
+
+    // 7. PROBAR CONEXIÓN WHATSAPP (EVOLUTION API) DESDE EL PANEL
+    if (action === "test_whatsapp") {
+      const { pin, testPhone, whatsappSenderPhone, evolutionInstanceName, evolutionApiKey } = body;
+      if (!pin || String(pin).trim() !== String(config.cashierPin).trim()) {
+        return NextResponse.json({ error: "PIN inválido." }, { status: 403 });
+      }
+      const targetPhone = testPhone || whatsappSenderPhone || config.whatsappSenderPhone;
+      if (!targetPhone) {
+        return NextResponse.json(
+          { error: "Ingresa un número de teléfono para enviar la prueba." },
+          { status: 400 }
+        );
+      }
+
+      const result = await sendWhatsAppNotification(
+        targetPhone,
+        `✅ *Prueba de Conexión Fideliza*\n\nEl canal de WhatsApp de *${business.name}* (${config.programName}) está correctamente conectado a Evolution API y listo para enviar sellos y premios a tus clientes.`,
+        {
+          whatsappSenderPhone: whatsappSenderPhone || config.whatsappSenderPhone,
+          evolutionInstanceName: evolutionInstanceName || config.evolutionInstanceName,
+          evolutionApiKey: evolutionApiKey || config.evolutionApiKey,
+        }
+      );
+
+      if (!result.sent) {
+        return NextResponse.json(
+          { error: `No se pudo entregar el mensaje por Evolution API: ${result.error || "Verifica la instancia"}` },
+          { status: 400 }
+        );
+      }
+
+      return NextResponse.json({ success: true });
     }
 
     return NextResponse.json({ error: "Acción no reconocida" }, { status: 400 });

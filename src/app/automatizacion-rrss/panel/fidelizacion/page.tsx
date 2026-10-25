@@ -78,6 +78,7 @@ export default function FidelizacionPanelPage() {
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  const [testingWa, setTestingWa] = useState(false);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
@@ -92,6 +93,11 @@ export default function FidelizacionPanelPage() {
     setEnabled(activeProfile.fidelizacionEnabled === true);
     setConfig({
       ...DEFAULT_FIDELIZACION_CONFIG,
+      whatsappSenderPhone:
+        activeProfile.fidelizacionConfig?.whatsappSenderPhone ||
+        activeProfile.whatsapp ||
+        activeProfile.phone ||
+        "",
       ...(activeProfile.fidelizacionConfig || {}),
     });
   }, [activeProfile]);
@@ -301,6 +307,38 @@ export default function FidelizacionPanelPage() {
       config.welcomeBonus ? "Además, recibe tu primer sello gratis sólo por registrarte hoy escaneando nuestro código QR en el local o desde el link en nuestra biografía." : ""
     }`;
     router.push(`/automatizacion-rrss/panel/crear?idea=${encodeURIComponent(ideaPrompt)}`);
+  };
+
+  const handleTestWhatsApp = async () => {
+    if (!clubIdentifier) return;
+    if (!config.whatsappSenderPhone?.trim()) {
+      alert("Por favor ingresa primero el número de teléfono WhatsApp en el campo de configuración.");
+      return;
+    }
+    setTestingWa(true);
+    try {
+      await handleSaveConfig();
+      const res = await fetch(`/api/public/fideliza/${encodeURIComponent(clubIdentifier)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "test_whatsapp",
+          pin: config.cashierPin,
+          testPhone: config.whatsappSenderPhone,
+          whatsappSenderPhone: config.whatsappSenderPhone,
+          evolutionInstanceName: config.evolutionInstanceName,
+          evolutionApiKey: config.evolutionApiKey,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error al enviar prueba de WhatsApp");
+      setStatusMsg(`¡Mensaje de prueba enviado con éxito por Evolution API al ${config.whatsappSenderPhone}!`);
+      setTimeout(() => setStatusMsg(""), 4500);
+    } catch (e: any) {
+      alert(e.message);
+    } finally {
+      setTestingWa(false);
+    }
   };
 
   const downloadQr = () => {
@@ -638,6 +676,77 @@ export default function FidelizacionPanelPage() {
                   className="mt-1 w-5 h-5 accent-indigo-600 rounded cursor-pointer"
                 />
               </label>
+            </div>
+
+            {/* Bloque 2.5: Configuración WhatsApp & Evolution API */}
+            <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-5">
+              <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl">
+                    <FaWhatsapp />
+                  </div>
+                  <div>
+                    <h2 className="font-black text-slate-900 text-base">
+                      Teléfono WhatsApp y Conexión Evolution API
+                    </h2>
+                    <p className="text-xs text-slate-500">
+                      Define el teléfono del negocio que se vinculará con Evolution API para enviar las alertas de sellos y premios.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    📱 Teléfono WhatsApp para Mensajes (Evolution API)
+                  </label>
+                  <input
+                    type="tel"
+                    value={config.whatsappSenderPhone || ""}
+                    onChange={(e) => setConfig({ ...config, whatsappSenderPhone: e.target.value })}
+                    placeholder="Ej: +56 9 8765 4321"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-emerald-500 outline-none"
+                  />
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Número oficial del comercio para configurar en Evolution API y recibir consultas de socios.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    ⚙️ Nombre de Instancia en Evolution API (Opcional)
+                  </label>
+                  <input
+                    type="text"
+                    value={config.evolutionInstanceName || ""}
+                    onChange={(e) => setConfig({ ...config, evolutionInstanceName: e.target.value })}
+                    placeholder="Por defecto: Santisoft (o nombre de instancia)"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-emerald-500 outline-none"
+                  />
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Déjalo vacío para usar la instancia central o escribe el nombre de la instancia propia del cliente.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200">
+                <div className="text-xs text-emerald-950">
+                  <span className="font-black block">¿Quieres verificar que los mensajes salgan correctamente?</span>
+                  <span className="text-emerald-700">
+                    Envía un mensaje de prueba al teléfono configurado arriba usando Evolution API.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleTestWhatsApp}
+                  disabled={testingWa || !config.whatsappSenderPhone}
+                  className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center justify-center gap-2 shrink-0 cursor-pointer disabled:opacity-50 shadow-sm"
+                >
+                  <FaWhatsapp className="text-sm" />
+                  <span>{testingWa ? "Enviando..." : "Probar Envío WhatsApp"}</span>
+                </button>
+              </div>
             </div>
 
             {/* Bloque 3: Aceleradores y Estilo */}
