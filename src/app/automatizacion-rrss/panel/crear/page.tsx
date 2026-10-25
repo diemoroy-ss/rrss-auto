@@ -1091,7 +1091,6 @@ export default function RrssCreatePost() {
       await new Promise(r => setTimeout(r, 800));
       setGeneratingOpen(false);
       setGeneratingSteps([]);
-      setWizardStep(3);
 
       // Refrescar contador de uso de imágenes y videos
       if (user?.uid) {
@@ -2499,134 +2498,141 @@ export default function RrssCreatePost() {
             )}
           </div>
         </div>
+      </div>
+      )}
 
-        {/* ── SECCIÓN EXPANDIDA: PLANIFICADOR DE CARRUSEL (1 A 5 SLIDES VISIBLES 1 POR 1) ── */}
-        {postType === "Carrusel" && (
-          <div className="border-t border-slate-100 pt-5 space-y-4 animate-in fade-in duration-300">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <div>
-                <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                  <span>📑</span> Planificador de Carrusel ({carouselCount} Diapositivas)
-                </h4>
-                <p className="text-[11px] font-medium text-slate-500 mt-0.5">
-                  Estructura secuencial para capturar la atención, conectar con el cliente y cerrar con una oferta clara.
-                </p>
-              </div>
-
-              {/* Selector de cantidad de slides con botones 2 a 5 */}
-              <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-200 shrink-0">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider pl-1.5">
-                  Slides:
-                </span>
-                {[2, 3, 4, 5].map((cnt) => (
-                  <button
-                    key={cnt}
-                    type="button"
-                    onClick={() => {
-                      setCarouselCount(cnt);
-                      if (activeSlideIndex >= cnt) {
-                        setActiveSlideIndex(cnt - 1);
-                      }
-                    }}
-                    className={`px-3 py-1 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                      carouselCount === cnt
-                        ? "bg-orange-600 text-white shadow-sm scale-102"
-                        : "bg-white text-slate-600 border border-slate-200 hover:border-slate-300"
-                    }`}
-                  >
-                    {cnt} {cnt === 5 ? "★" : ""}
-                  </button>
-                ))}
-              </div>
+      {/* ── SECCIÓN EXPANDIDA: PLANIFICADOR DE CARRUSEL (VISIBLE TANTO EN PASO 1 COMO EN PASO 2) ── */}
+      {postType === "Carrusel" && (isExpertMode || wizardStep === 1 || wizardStep === 2) && (
+        <div className="bg-white border-2 border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-xs mb-8 space-y-4 animate-in fade-in duration-300">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div>
+              <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                <span>📑</span> Planificador de Carrusel ({carouselCount} Diapositivas)
+              </h4>
+              <p className="text-[11px] font-medium text-slate-500 mt-0.5">
+                Haz clic en cada diapositiva (Slide 1 a {carouselCount}) para redactar y generar su imagen una por una.
+              </p>
             </div>
 
-            {/* Grid de 5 Diapositivas 1 por 1 Visible */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 pt-1">
-              {Array.from({ length: carouselCount }).map((_, idx) => {
-                const roleInfo = CAROUSEL_DEFAULT_SLIDES[idx] || {
-                  emoji: "📑",
-                  role: `Diapositiva ${idx + 1}`,
-                  desc: "Contenido del slide",
-                  placeholder: "Detalles del slide..."
-                };
-                const isSelected = activeSlideIndex === idx;
-                const slideData = posterConfig.slides?.[idx];
-                const previewText = slideData?.mainText || (idx === 0 ? idea : "");
-
-                return (
-                  <div
-                    key={idx}
-                    onClick={() => {
-                      setActiveSlideIndex(idx);
-                      const targetSlide = posterConfig.slides?.[idx];
-                      if (targetSlide) {
-                        setPosterConfig((prev) => ({
-                          ...prev,
-                          activeSlideIndex: idx,
-                          mainText: targetSlide?.mainText ?? "",
-                          priceText: targetSlide?.priceText ?? "",
-                          sloganText: targetSlide?.sloganText ?? "",
-                          ctaText: targetSlide?.ctaText || prev.ctaText,
-                        }));
-                        setImageExpectation(targetSlide?.imageExpectation ?? "");
-                        if (targetSlide?.baseImageUrl !== undefined) {
-                          setBaseImageUrl(targetSlide.baseImageUrl);
-                        }
-                      } else {
-                        setImageExpectation("");
-                      }
-                    }}
-                    className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between text-left relative overflow-hidden group ${
-                      isSelected
-                        ? "border-orange-600 bg-indigo-50/70 shadow-md ring-2 ring-orange-500/20"
-                        : "border-slate-200 bg-slate-50/50 hover:bg-white hover:border-orange-200 hover:shadow-xs"
-                    }`}
-                  >
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-white border border-slate-200 text-slate-700 shadow-2xs flex items-center gap-1">
-                          <span>{roleInfo.emoji}</span> Slide {idx + 1}
-                        </span>
-                        {isSelected && (
-                          <span className="text-[9px] font-black uppercase tracking-widest text-orange-700 bg-indigo-100 px-2 py-0.5 rounded-full">
-                            Activo
-                          </span>
-                        )}
-                      </div>
-                      <h5 className="text-xs font-black text-slate-900 leading-tight mb-1">
-                        {roleInfo.role}
-                      </h5>
-                      <p className="text-[10px] text-slate-500 font-medium leading-relaxed">
-                        {roleInfo.desc}
-                      </p>
-                    </div>
-
-                    <div className="mt-3 pt-2.5 border-t border-slate-200/80">
-                      <div className="text-[10px] text-slate-400 font-bold truncate">
-                        {previewText ? (
-                          <span className="text-slate-800 font-semibold italic">"{previewText}"</span>
-                        ) : (
-                          <span className="text-slate-400 font-medium">Click para redactar...</span>
-                        )}
-                      </div>
-                      <div className="mt-2 flex items-center justify-between">
-                        <span className={`text-[10px] font-bold ${isSelected ? "text-orange-600 underline" : "text-slate-500 group-hover:text-orange-600"}`}>
-                          {isSelected ? "Editando ✍️" : "Seleccionar →"}
-                        </span>
-                        {slideData?.priceText && (
-                          <span className="text-[9px] font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-                            🏷️ Precio
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+            {/* Selector de cantidad de slides con botones 2 a 5 */}
+            <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-200 shrink-0">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider pl-1.5">
+                Slides:
+              </span>
+              {[2, 3, 4, 5].map((cnt) => (
+                <button
+                  key={cnt}
+                  type="button"
+                  onClick={() => {
+                    setCarouselCount(cnt);
+                    if (activeSlideIndex >= cnt) {
+                      setActiveSlideIndex(cnt - 1);
+                    }
+                  }}
+                  className={`px-3 py-1 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                    carouselCount === cnt
+                      ? "bg-orange-600 text-white shadow-sm scale-102"
+                      : "bg-white text-slate-600 border border-slate-200 hover:border-slate-300"
+                  }`}
+                >
+                  {cnt} {cnt === 5 ? "★" : ""}
+                </button>
+              ))}
             </div>
           </div>
-        )}
-      </div>
+
+          {/* Grid de 5 Diapositivas 1 por 1 Visible */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 pt-1">
+            {Array.from({ length: carouselCount }).map((_, idx) => {
+              const roleInfo = CAROUSEL_DEFAULT_SLIDES[idx] || {
+                emoji: "📑",
+                role: `Diapositiva ${idx + 1}`,
+                desc: "Contenido del slide",
+                placeholder: "Detalles del slide..."
+              };
+              const isSelected = activeSlideIndex === idx;
+              const slideData = posterConfig.slides?.[idx];
+              const slideImgUrl = slideData?.imageUrl || previewSlides[idx]?.url || "";
+              const previewText = slideData?.mainText || (idx === 0 ? idea : "");
+
+              return (
+                <div
+                  key={idx}
+                  onClick={() => {
+                    setActiveSlideIndex(idx);
+                    const targetSlide = posterConfig.slides?.[idx];
+                    if (targetSlide) {
+                      setPosterConfig((prev) => ({
+                        ...prev,
+                        activeSlideIndex: idx,
+                        mainText: targetSlide?.mainText ?? "",
+                        priceText: targetSlide?.priceText ?? "",
+                        sloganText: targetSlide?.sloganText ?? "",
+                        ctaText: targetSlide?.ctaText || prev.ctaText,
+                      }));
+                      setImageExpectation(targetSlide?.imageExpectation ?? "");
+                      if (targetSlide?.baseImageUrl !== undefined) {
+                        setBaseImageUrl(targetSlide.baseImageUrl);
+                      }
+                    } else {
+                      setImageExpectation("");
+                    }
+                  }}
+                  className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between text-left relative overflow-hidden group ${
+                    isSelected
+                      ? "border-orange-600 bg-indigo-50/70 shadow-md ring-2 ring-orange-500/20"
+                      : slideImgUrl
+                      ? "border-emerald-300 bg-emerald-50/30 hover:bg-white"
+                      : "border-slate-200 bg-slate-50/50 hover:bg-white hover:border-orange-200 hover:shadow-xs"
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-white border border-slate-200 text-slate-700 shadow-2xs flex items-center gap-1">
+                        <span>{roleInfo.emoji}</span> Slide {idx + 1}
+                      </span>
+                      {slideImgUrl ? (
+                        <span className="text-[9px] font-black uppercase tracking-wider text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                          ✓ Lista
+                        </span>
+                      ) : isSelected ? (
+                        <span className="text-[9px] font-black uppercase tracking-widest text-orange-700 bg-indigo-100 px-2 py-0.5 rounded-full">
+                          Activo
+                        </span>
+                      ) : null}
+                    </div>
+                    <h5 className="text-xs font-black text-slate-900 leading-tight mb-1">
+                      {roleInfo.role}
+                    </h5>
+                    <p className="text-[10px] text-slate-500 font-medium leading-relaxed">
+                      {roleInfo.desc}
+                    </p>
+                  </div>
+
+                  <div className="mt-3 pt-2.5 border-t border-slate-200/80">
+                    <div className="text-[10px] text-slate-400 font-bold truncate">
+                      {previewText ? (
+                        <span className="text-slate-800 font-semibold italic">"{previewText}"</span>
+                      ) : (
+                        <span className="text-slate-400 font-medium">Click para diseñar...</span>
+                      )}
+                    </div>
+                    <div className="mt-2 flex items-center justify-between">
+                      <span className={`text-[10px] font-bold ${isSelected ? "text-orange-600 underline" : "text-slate-500 group-hover:text-orange-600"}`}>
+                        {isSelected ? "Editando ✍️" : "Seleccionar →"}
+                      </span>
+                      {slideData?.priceText && (
+                        <span className="text-[9px] font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                          🏷️ Precio
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
 
       {/* Botón de avance al Paso 2 si estamos en el Paso 1 */}
@@ -2709,6 +2715,25 @@ export default function RrssCreatePost() {
               onApplyLiveRetouch={(sIdx, inst) => handleRetouchImage(sIdx, inst)}
               onUploadStyleReference={handleUploadStyleReference}
             />
+            {!isExpertMode && wizardStep === 2 && (
+              <div className="mt-6 flex items-center justify-between gap-3 bg-white border border-slate-200 rounded-2xl p-4 shadow-xs">
+                <button
+                  type="button"
+                  onClick={() => setWizardStep(1)}
+                  className="text-xs font-bold text-slate-500 hover:text-slate-800 py-2.5 px-4 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
+                >
+                  ← Volver al Paso 1
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setWizardStep(3)}
+                  className="px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer"
+                >
+                  <span>Continuar al Paso 3: Revisar Diseño Final y Programar</span>
+                  <span>→</span>
+                </button>
+              </div>
+            )}
           </div>
         ) : (
                 <div className="grid lg:grid-cols-12 gap-8 items-start mb-10">
