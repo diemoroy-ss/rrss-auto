@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { MercadoPagoConfig, Payment, PreApproval } from "mercadopago";
 import { adminDb } from "../../../../lib/firebase-admin";
+import { normalizePlanId, PlanId } from "../../../../lib/plans";
 
 export async function POST(req: Request) {
   try {
@@ -42,9 +43,6 @@ export async function POST(req: Request) {
             const amount = paymentData.transaction_amount;
             const status = paymentData.status;
             
-            // Si viene de una suscripción, a veces el external_reference está en la suscripción madre
-            // pero Mercado Pago suele propagarlo.
-            
             if (userId && adminDb) {
                 // 1. Guardar en historial de pagos
                 await adminDb.collection("payments").add({
@@ -55,14 +53,44 @@ export async function POST(req: Request) {
                     status,
                     date: new Date().toISOString(),
                     type: "payment",
-                    description: paymentData.description || "Pago Santisoft"
+                    description: paymentData.description || "Pago SocialPilot"
                 });
 
-                // 2. Actualizar plan del usuario (si no es free)
-                // Nota: El planId suele venir en items[0].id si es Preference, 
-                // o en la descripción si lo parseamos. 
-                // Para simplificar, si es un pago aprobado, mantenemos el plan que el usuario eligió.
-                console.log(`Webhook: Pago aprobado para usuario ${userId} por ${amount}`);
+                // 2. Determinar el plan adquirido de manera precisa
+                const rawPlan = paymentData.metadata?.plan_id || 
+                                (paymentData.additional_info?.items?.[0] as any)?.id ||
+                                paymentData.description;
+
+                let detectedPlan: PlanId = 'esencial';
+                if (rawPlan) {
+                  const clean = String(rawPlan).toLowerCase();
+                  if (clean.includes('piloto') || clean.includes('automatico') || clean.includes('business') || clean.includes('agency')) {
+                    detectedPlan = 'piloto_automatico';
+                  } else if (clean.includes('crecimiento') || clean.includes('growth') || clean.includes('pro')) {
+                    detectedPlan = 'crecimiento';
+                  } else if (clean.includes('esencial') || clean.includes('starter')) {
+                    detectedPlan = 'esencial';
+                  } else {
+                    detectedPlan = normalizePlanId(clean);
+                  }
+                } else if (amount) {
+                  if (amount >= 200000) detectedPlan = 'piloto_automatico';
+                  else if (amount >= 80000) detectedPlan = 'crecimiento';
+                  else detectedPlan = 'esencial';
+                }
+
+                const expiryDate = new Date();
+                expiryDate.setDate(expiryDate.getDate() + 32); // 1 mes + 2 días de gracia
+
+                // 3. Actualizar datos del usuario
+                await adminDb.collection("users").doc(userId).update({
+                    plan: detectedPlan,
+                    subscriptionStatus: "active",
+                    lastPaymentDate: new Date().toISOString(),
+                    planExpiry: expiryDate.toISOString()
+                });
+
+                console.log(`Webhook: Pago aprobado para usuario ${userId} por ${amount}. Plan asignado: ${detectedPlan}`);
             }
         }
     }
@@ -72,24 +100,41 @@ export async function POST(req: Request) {
         const preApproval = new PreApproval(client);
         const paData = await preApproval.get({ id: paymentId });
 
-        if (paData && paData.status === "authorized") {
+        if (paData) {
             const userId = paData.external_reference;
-            const planName = paData.reason; // Ej: "Suscripción PRO - Santisoft"
-            
-            if (userId && adminDb) {
-                let planId = "free";
-                if (planName?.includes("PRO")) planId = "pro";
-                else if (planName?.includes("BUSINESS")) planId = "business";
-                else if (planName?.includes("AGENCY")) planId = "agency";
+            const planName = (paData.reason || '').toLowerCase();
 
-                await adminDb.collection("users").doc(userId).update({
-                    plan: planId,
-                    subscriptionId: paData.id,
-                    subscriptionStatus: paData.status,
-                    lastPaymentDate: new Date().toISOString()
-                });
-                
-                console.log(`Webhook: Suscripción ${paData.id} autorizada para usuario ${userId} (${planId})`);
+            if (userId && adminDb) {
+                if (paData.status === "authorized") {
+                    let detectedPlan: PlanId = 'esencial';
+                    if (planName.includes('piloto') || planName.includes('automatico') || planName.includes('business') || planName.includes('agency')) {
+                        detectedPlan = 'piloto_automatico';
+                    } else if (planName.includes('crecimiento') || planName.includes('growth') || planName.includes('pro')) {
+                        detectedPlan = 'crecimiento';
+                    } else if (planName.includes('esencial') || planName.includes('starter')) {
+                        detectedPlan = 'esencial';
+                    } else {
+                        detectedPlan = normalizePlanId(planName);
+                    }
+
+                    const expiryDate = new Date();
+                    expiryDate.setDate(expiryDate.getDate() + 32);
+
+                    await adminDb.collection("users").doc(userId).update({
+                        plan: detectedPlan,
+                        subscriptionId: paData.id,
+                        subscriptionStatus: paData.status,
+                        lastPaymentDate: new Date().toISOString(),
+                        planExpiry: expiryDate.toISOString()
+                    });
+                    
+                    console.log(`Webhook: Suscripción ${paData.id} autorizada para usuario ${userId} (${detectedPlan})`);
+                } else if (paData.status === "cancelled" || paData.status === "paused") {
+                    await adminDb.collection("users").doc(userId).update({
+                        subscriptionStatus: paData.status,
+                    });
+                    console.log(`Webhook: Suscripción ${paData.id} marcada como ${paData.status} para usuario ${userId}`);
+                }
             }
         }
     }

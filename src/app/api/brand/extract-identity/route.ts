@@ -26,6 +26,26 @@ export async function POST(req: NextRequest) {
           normalizedUrl = `https://${normalizedUrl}`;
         }
 
+        const parsed = new URL(normalizedUrl);
+        const host = parsed.hostname.toLowerCase();
+
+        // Validar contra SSRF (bloquear localhost, IPs privadas y metadata de nubes)
+        const isLocalOrPrivate =
+          host === 'localhost' ||
+          host === '127.0.0.1' ||
+          host === '0.0.0.0' ||
+          host === '::1' ||
+          host.endsWith('.local') ||
+          host.endsWith('.internal') ||
+          host.startsWith('10.') ||
+          host.startsWith('192.168.') ||
+          /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(host) ||
+          host === '169.254.169.254';
+
+        if (isLocalOrPrivate || (parsed.protocol !== 'http:' && parsed.protocol !== 'https:')) {
+          throw new Error('Dirección URL no permitida por seguridad.');
+        }
+
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 8000);
 

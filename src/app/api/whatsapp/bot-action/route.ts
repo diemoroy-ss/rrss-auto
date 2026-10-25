@@ -87,6 +87,19 @@ function extractNetworksFromPhrase(phrase: string): string[] {
   return Array.from(new Set(detected));
 }
 
+function isSafePhoneMatch(p1: string, p2: string): boolean {
+  if (!p1 || !p2) return false;
+  const s1 = p1.replace(/\D/g, '');
+  const s2 = p2.replace(/\D/g, '');
+  if (!s1 || !s2) return false;
+  if (s1 === s2) return true;
+  // Solo permitir sufijo si ambos tienen al menos 8 dígitos (ej: 9XXXXXXXX vs 569XXXXXXXX)
+  if (s1.length >= 8 && s2.length >= 8) {
+    return s1.slice(-8) === s2.slice(-8);
+  }
+  return false;
+}
+
 /**
  * Endpoint central para procesar acciones de WhatsApp provenientes de n8n / Evolution API.
  * Identifica si el teléfono pertenece a una o múltiples cuentas/perfiles.
@@ -94,8 +107,19 @@ function extractNetworksFromPhrase(phrase: string): string[] {
  */
 export async function POST(req: Request) {
   try {
+    const authHeader = req.headers.get('authorization') || req.headers.get('x-api-key') || '';
+    const botSecret = process.env.WHATSAPP_BOT_SECRET || process.env.EVOLUTION_API_KEY;
+
     const body = await req.json();
-    const { phone, remoteJid, action = '0', text = '', pushName = 'Cliente' } = body;
+    const { phone, remoteJid, action = '0', text = '', pushName = 'Cliente', secret } = body;
+
+    // Validación de seguridad si hay un secreto configurado
+    if (botSecret) {
+      const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+      if (token !== botSecret && secret !== botSecret) {
+        return NextResponse.json({ error: 'No autorizado para ejecutar acciones de WhatsApp' }, { status: 401 });
+      }
+    }
 
     if (!phone) {
       return NextResponse.json({ error: 'Falta el número de teléfono' }, { status: 400 });
@@ -118,9 +142,8 @@ export async function POST(req: Request) {
       const profiles = Array.isArray(uData.profiles) ? uData.profiles : [];
 
       profiles.forEach((p: any) => {
-        const pPhone = (p.phone || p.whatsappPhone || '').replace(/\D/g, '');
-        const isProfilePhoneMatch =
-          pPhone && (pPhone === cleanPhone || cleanPhone.endsWith(pPhone) || pPhone.endsWith(cleanPhone));
+        const pPhone = p.phone || p.whatsappPhone || '';
+        const isProfilePhoneMatch = isSafePhoneMatch(pPhone, cleanPhone);
 
         if (isProfilePhoneMatch) {
           matchedAccounts.push({
@@ -141,9 +164,8 @@ export async function POST(req: Request) {
     if (matchedAccounts.length === 0) {
       for (const doc of usersSnap.docs) {
         const uData = doc.data();
-        const userPhone = (uData.phone || uData.whatsappPhone || '').replace(/\D/g, '');
-        const isUserPhoneMatch =
-          userPhone && (userPhone === cleanPhone || cleanPhone.endsWith(userPhone) || userPhone.endsWith(cleanPhone));
+        const userPhone = uData.phone || uData.whatsappPhone || '';
+        const isUserPhoneMatch = isSafePhoneMatch(userPhone, cleanPhone);
 
         if (isUserPhoneMatch) {
           const profiles = Array.isArray(uData.profiles) ? uData.profiles : [];

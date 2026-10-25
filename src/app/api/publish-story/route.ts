@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { adminDb } from '../../../lib/firebase-admin';
+import { adminAuth, adminDb } from '../../../lib/firebase-admin';
 import { decrypt } from '../../../lib/encryption';
 
 // Helper function to fetch Meta Graph API with retry mechanism
@@ -23,6 +23,19 @@ async function fetchWithRetry(url: string, options: any, retries = 3, delay = 20
 
 export async function POST(req: Request) {
     try {
+        const authHeader = req.headers.get("Authorization");
+        if (!authHeader?.startsWith("Bearer ")) {
+            return NextResponse.json({ error: "Falta token de autenticación" }, { status: 401 });
+        }
+
+        const idToken = authHeader.split("Bearer ")[1];
+        let decodedToken;
+        try {
+            decodedToken = await adminAuth.verifyIdToken(idToken);
+        } catch (authErr) {
+            return NextResponse.json({ error: "Token inválido o expirado" }, { status: 401 });
+        }
+
         const { postId } = await req.json();
 
         if (!postId) return NextResponse.json({ error: "postId is required" }, { status: 400 });
@@ -36,6 +49,13 @@ export async function POST(req: Request) {
         if (!postSnap.exists) return NextResponse.json({ error: "Post no encontrado" }, { status: 404 });
 
         const post = postSnap.data()!;
+        
+        // Verificar que el post pertenezca al usuario autenticado (a menos que sea admin)
+        const adminEmails = ['diemoroy@gmail.com', 'admin@santisoft.cl', 'spalezcom@gmail.com', 'santisoftai@gmail.com'];
+        const isSuperAdmin = adminEmails.includes((decodedToken.email || '').toLowerCase());
+        if (post.userId !== decodedToken.uid && !isSuperAdmin) {
+            return NextResponse.json({ error: "Acceso no autorizado al post" }, { status: 403 });
+        }
         
         // Use post's imageUrl (or first item in imageUrls if it's a carousel)
         const imageUrl = post.imageUrl || (post.imageUrls && post.imageUrls[0]);

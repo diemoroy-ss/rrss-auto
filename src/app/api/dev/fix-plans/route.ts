@@ -1,8 +1,17 @@
 import { NextResponse } from 'next/server';
-import { adminDb } from '../../../../lib/firebase-admin';
+import { adminAuth, adminDb } from '../../../../lib/firebase-admin';
 
-export async function GET() {
+export async function GET(req: Request) {
     try {
+        const { searchParams } = new URL(req.url);
+        const secret = searchParams.get('secret') || req.headers.get('x-admin-secret');
+        const expectedSecret = process.env.ADMIN_CRON_SECRET || process.env.CRON_SECRET;
+
+        // Requiere clave secreta estricta configurada en .env
+        if (!expectedSecret || secret !== expectedSecret) {
+            return NextResponse.json({ error: "Unauthorized access" }, { status: 401 });
+        }
+
         if (!adminDb) {
             return NextResponse.json({ error: "No admin DB" }, { status: 500 });
         }

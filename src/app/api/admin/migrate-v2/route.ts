@@ -3,10 +3,15 @@ import { adminAuth, adminDb } from '../../../../lib/firebase-admin';
 
 export async function GET(req: Request) {
     try {
-        // En producción idealmente validamos con un token de admin o header secreto,
-        // pero como es un script de migración que usaremos una sola vez lo ejecutaremos directo
-        // *Advertencia: Siempre desactivar post-migración*
-        
+        const { searchParams } = new URL(req.url);
+        const secret = searchParams.get('secret') || req.headers.get('x-admin-secret');
+        const expectedSecret = process.env.ADMIN_CRON_SECRET || process.env.CRON_SECRET;
+
+        // Requiere clave secreta estricta configurada en .env
+        if (!expectedSecret || secret !== expectedSecret) {
+            return NextResponse.json({ error: "Unauthorized access" }, { status: 401 });
+        }
+
         const collectionsToMigrate = ['social_posts', 'external_posts', 'strategy'];
         let totalMigrated = 0;
 
