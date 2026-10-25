@@ -1,47 +1,27 @@
-<svg width="300" height="66" viewBox="0 0 300 66" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Isotipo Sello + Bucle F Infinita + Estrella (Light Version) -->
+<svg width="280" height="56" viewBox="0 0 280 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Isotipo: Doble Tarjeta VIP / Smart Wallet Light -->
   <g transform="translate(6, 6)">
-    <!-- Base del Sello con borde redondeado moderno -->
-    <rect x="1" y="1" width="52" height="52" rx="16" fill="#FFFBEB" stroke="url(#fA_border_l)" stroke-width="2"/>
-    <!-- Círculo interior de sello con pespunte -->
-    <circle cx="27" cy="27" r="21" fill="url(#fA_bg_l)" opacity="0.12"/>
-    <circle cx="27" cy="27" r="18" stroke="#F59E0B" stroke-width="1.2" stroke-dasharray="2.5 2" opacity="0.75"/>
-    
-    <!-- Bucle Infinito 'F' entrelazado -->
-    <path d="M17 35C13 35 10 32 10 28C10 24 13 21 17 21C22 21 27 32 33 32C37 32 40 29 40 25C40 21 37 18 33 18C28 18 23 29 17 29" stroke="url(#fA_loop_l)" stroke-width="4.5" stroke-linecap="round"/>
-    
-    <!-- Barra superior de la 'F' integrada en lazo -->
-    <path d="M19 16.5H35" stroke="url(#fA_loop_l)" stroke-width="3.5" stroke-linecap="round"/>
-    
-    <!-- Estrella dorada brillante en el centro del nodo -->
-    <circle cx="27" cy="25" r="5" fill="#FFFFFF" stroke="#F59E0B" stroke-width="1"/>
-    <path d="M27 20.5L28.3 23.3L31.3 23.7L29.1 25.8L29.7 28.8L27 27.3L24.3 28.8L24.9 25.8L22.7 23.7L25.7 23.3L27 20.5Z" fill="#D97706"/>
+    <!-- Tarjeta trasera naranja suave en rotación sutil -->
+    <rect x="7" y="3" width="36" height="27" rx="6" fill="#F97316" opacity="0.3" transform="rotate(7 7 3)" />
+    <!-- Tarjeta frontal VIP blanca con borde naranja -->
+    <rect x="2" y="9" width="38" height="29" rx="7" fill="#FFFFFF" stroke="#EA580C" stroke-width="1.8" />
+    <!-- Chip de fidelidad dorado -->
+    <rect x="7" y="14" width="8" height="7" rx="2" fill="#F59E0B" />
+    <!-- Líneas del chip -->
+    <path d="M7 17.5H15M11 14V21" stroke="#9A3412" stroke-width="0.8" opacity="0.5"/>
+    <!-- Letra F moderna oscura -->
+    <path d="M22 16H32M22 21.5H28M22 16V30" stroke="#0F172A" stroke-width="2.5" stroke-linecap="round" />
+    <!-- Ondas NFC lealtad -->
+    <path d="M33 24C34.5 25.5 34.5 27.5 33 29" stroke="#EA580C" stroke-width="1.8" stroke-linecap="round" />
   </g>
 
-  <!-- Tipografía Fideliza by SocialPilot -->
-  <text x="70" y="36" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="900" fill="#0F172A" letter-spacing="-0.5">
-    Fide<tspan fill="url(#fA_text_l)">liza</tspan>
-  </text>
-  
-  <!-- Destello estrella junto al nombre -->
-  <path d="M182 14L183.5 17.5L187 19L183.5 20.5L182 24L180.5 20.5L177 19L180.5 17.5L182 14Z" fill="#F59E0B"/>
-  
-  <text x="71" y="52" font-family="system-ui, -apple-system, sans-serif" font-size="9.5" font-weight="800" fill="#64748B" letter-spacing="2.6">
-    BY SOCIAL<tspan fill="#FF6B00">PILOT</tspan>
+  <!-- Tipografía Fideliza Grande y Nítida -->
+  <text x="64" y="32" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="900" fill="#0F172A" letter-spacing="-0.5">
+    Fide<tspan fill="#EA580C">liza</tspan>
   </text>
 
-  <defs>
-    <linearGradient id="fA_border_l" x1="1" y1="1" x2="53" y2="53" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#FF922B"/><stop offset="1" stop-color="#EA580C"/>
-    </linearGradient>
-    <linearGradient id="fA_bg_l" x1="6" y1="6" x2="48" y2="48" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#F59E0B"/><stop offset="1" stop-color="#FF6B00"/>
-    </linearGradient>
-    <linearGradient id="fA_loop_l" x1="10" y1="16" x2="40" y2="35" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#EA580C"/><stop offset="0.5" stop-color="#D97706"/><stop offset="1" stop-color="#B45309"/>
-    </linearGradient>
-    <linearGradient id="fA_text_l" x1="116" y1="16" x2="168" y2="38" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#EA580C"/><stop offset="1" stop-color="#D97706"/>
-    </linearGradient>
-  </defs>
+  <!-- Subtítulo BY SOCIALPILOT -->
+  <text x="65" y="47" font-family="system-ui, -apple-system, sans-serif" font-size="9.5" font-weight="800" fill="#64748B" letter-spacing="2.6">
+    BY SOCIAL<tspan fill="#EA580C">PILOT</tspan>
+  </text>
 </svg>
