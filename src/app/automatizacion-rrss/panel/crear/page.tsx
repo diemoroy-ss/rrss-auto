@@ -739,6 +739,58 @@ export default function RrssCreatePost() {
     }
 
     const activeSlide = posterConfig.slides?.[targetSlideIdx];
+
+    // ──────────────────────────────────────────────────────────────
+    // VALIDACIÓN: IMAGEN SUBIDA O DESCRIPCIÓN DE LA ESCENA
+    // ──────────────────────────────────────────────────────────────
+    if (isSingleSlide) {
+      const slideBaseImg = activeSlide?.baseImageUrl || (targetSlideIdx === 0 ? baseImageUrl : "");
+      const slideUsesSlide1 = Boolean(activeSlide?.useSlide1Image && (posterConfig.slides?.[0]?.imageUrl || posterConfig.slides?.[0]?.baseImageUrl || baseImageUrl));
+      const hasImage = Boolean(slideBaseImg || slideUsesSlide1);
+      const slideDesc = activeSlide?.imageExpectation?.trim() || (targetSlideIdx === 0 ? (imageExpectation.trim() || idea.trim()) : "");
+      const hasDescription = Boolean(slideDesc);
+
+      if (!hasImage && !hasDescription) {
+        setStatusModal({
+          isOpen: true,
+          type: "error",
+          title: `Falta información para diseñar el Slide ${targetSlideIdx + 1}`,
+          message: `Para que nuestros agentes puedan diseñar este slide, debes subir una foto de tu producto o escribir una breve descripción de la escena en "¿Cómo imaginas la escena?".`,
+          onConfirm: () => setStatusModal((prev) => ({ ...prev, isOpen: false })),
+        });
+        return;
+      }
+    } else if (postType === "Carrusel") {
+      const hasAnyImg = Boolean(baseImageUrl || posterConfig.slides?.some((s) => Boolean(s.baseImageUrl)));
+      const hasAnyDesc = Boolean(imageExpectation.trim() || idea.trim() || posterConfig.slides?.some((s) => Boolean(s.imageExpectation?.trim())));
+
+      if (!hasAnyImg && !hasAnyDesc) {
+        setStatusModal({
+          isOpen: true,
+          type: "error",
+          title: "Falta información para diseñar el carrusel",
+          message: "Para que nuestros agentes puedan diseñar las diapositivas de tu carrusel, debes subir una foto de tu producto o escribir la descripción de la escena que imaginas.",
+          onConfirm: () => setStatusModal((prev) => ({ ...prev, isOpen: false })),
+        });
+        return;
+      }
+    } else {
+      // Post individual / Historia / Reel
+      const hasImg = Boolean(baseImageUrl);
+      const hasDesc = Boolean(imageExpectation.trim() || idea.trim());
+
+      if (!hasImg && !hasDesc) {
+        setStatusModal({
+          isOpen: true,
+          type: "error",
+          title: "Falta información para diseñar el afiche",
+          message: "Para diseñar tu afiche publicitario, debes subir una foto de tu producto o escribir una descripción de la escena que imaginas.",
+          onConfirm: () => setStatusModal((prev) => ({ ...prev, isOpen: false })),
+        });
+        return;
+      }
+    }
+
     const targetIdea = isSingleSlide
       ? (activeSlide?.mainText?.trim() || activeSlide?.imageExpectation?.trim() || idea.trim() || `Diapositiva ${targetSlideIdx + 1}`)
       : (idea.trim() || posterConfig.mainText?.trim() || postText.trim() || imageExpectation.trim());

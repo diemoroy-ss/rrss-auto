@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import type { PosterConfig, VisualStyle, ContactType, PosterLayout, PosterSlideConfig } from "../../types/poster";
 import { DEFAULT_POSTER_SLIDES } from "../../types/poster";
 import PosterTemplatePreview from "./PosterTemplatePreview";
@@ -146,11 +146,66 @@ export default function PosterFormView({
   const [customCta, setCustomCta] = useState("");
   const [internalSlideIdx, setInternalSlideIdx] = useState(0);
   const [extractedNotice, setExtractedNotice] = useState<string | null>(null);
+  const [slideValidationError, setSlideValidationError] = useState<string | null>(null);
+  const sceneTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   const currentSlideIdx = setActiveSlideIndex ? activeSlideIndex : internalSlideIdx;
   const setCurrentSlideIdx = (idx: number) => {
+    setSlideValidationError(null);
     if (setActiveSlideIndex) setActiveSlideIndex(idx);
     else setInternalSlideIdx(idx);
+  };
+
+  /**
+   * Valida si el usuario subió una imagen de producto o escribió la descripción de la escena
+   * antes de proceder al diseño del slide o afiche.
+   */
+  const validateCanDesign = (options?: { singleSlideOnly?: boolean; slideIndex?: number }): boolean => {
+    const isSingle = Boolean(options?.singleSlideOnly);
+    const targetIdx = options?.slideIndex ?? currentSlideIdx;
+
+    if (postType === "Carrusel" && isSingle) {
+      const targetSlide = posterConfig.slides?.[targetIdx];
+      const slideBaseImg = targetSlide?.baseImageUrl || (targetIdx === 0 ? baseImageUrl : "");
+      const isUsingSlide1 = Boolean(targetSlide?.useSlide1Image && (posterConfig.slides?.[0]?.imageUrl || posterConfig.slides?.[0]?.baseImageUrl || baseImageUrl));
+      const hasImg = Boolean(slideBaseImg || isUsingSlide1);
+      const slideDesc = targetSlide?.imageExpectation?.trim() || (targetIdx === 0 ? (imageExpectation?.trim() || idea?.trim()) : "");
+      const hasDesc = Boolean(slideDesc);
+
+      if (!hasImg && !hasDesc) {
+        const msg = `Para diseñar el Slide ${targetIdx + 1}, debes subir una imagen de tu producto o escribir una breve descripción de la escena en "¿Cómo imaginas la escena?".`;
+        setSlideValidationError(msg);
+        sceneTextareaRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+        sceneTextareaRef.current?.focus();
+        return false;
+      }
+    } else if (postType === "Carrusel" && !isSingle) {
+      const hasAnyImg = Boolean(baseImageUrl || posterConfig.slides?.some((s) => Boolean(s.baseImageUrl)));
+      const hasAnyDesc = Boolean(imageExpectation?.trim() || idea?.trim() || posterConfig.slides?.some((s) => Boolean(s.imageExpectation?.trim())));
+
+      if (!hasAnyImg && !hasAnyDesc) {
+        const msg = "Para diseñar las 5 imágenes del carrusel, debes subir una imagen de tu producto o escribir la idea/descripción de la escena que imaginas.";
+        setSlideValidationError(msg);
+        sceneTextareaRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+        sceneTextareaRef.current?.focus();
+        return false;
+      }
+    } else {
+      // Post individual / Historia / Reel
+      const hasImg = Boolean(baseImageUrl);
+      const hasDesc = Boolean(imageExpectation?.trim() || idea?.trim());
+
+      if (!hasImg && !hasDesc) {
+        const msg = "Para diseñar el afiche, debes subir una imagen de tu producto o escribir una descripción de la escena publicitaria que imaginas.";
+        setSlideValidationError(msg);
+        sceneTextareaRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+        sceneTextareaRef.current?.focus();
+        return false;
+      }
+    }
+
+    setSlideValidationError(null);
+    return true;
   };
 
   const update = <K extends keyof PosterConfig>(key: K, value: PosterConfig[K]) => {
@@ -680,7 +735,10 @@ export default function PosterFormView({
                 }
                 slideNumber={postType === "Carrusel" ? currentSlideIdx + 1 : undefined}
                 totalSlides={postType === "Carrusel" ? (carouselCount || 5) : 1}
-                onRegenerate={() => handleGeneratePreview(false, { singleSlideOnly: postType === "Carrusel", slideIndex: currentSlideIdx })}
+                onRegenerate={() => {
+                  if (!validateCanDesign({ singleSlideOnly: postType === "Carrusel", slideIndex: currentSlideIdx })) return;
+                  handleGeneratePreview(false, { singleSlideOnly: postType === "Carrusel", slideIndex: currentSlideIdx });
+                }}
                 onOpenEditor={onOpenEditor ? () => onOpenEditor(currentSlideIdx) : undefined}
                 elementTransforms={currentTransforms}
                 onChangeTransforms={handleUpdateTransforms}
@@ -947,7 +1005,10 @@ export default function PosterFormView({
                             </div>
                             <button
                               type="button"
-                              onClick={() => handleGeneratePreview(false, { singleSlideOnly: true, slideIndex: currentSlideIdx })}
+                              onClick={() => {
+                                if (!validateCanDesign({ singleSlideOnly: true, slideIndex: currentSlideIdx })) return;
+                                handleGeneratePreview(false, { singleSlideOnly: true, slideIndex: currentSlideIdx });
+                              }}
                               disabled={previewLoading}
                               className="text-[10px] font-black uppercase tracking-wider text-emerald-800 hover:text-emerald-950 bg-white border border-emerald-300 px-2.5 py-1.5 rounded-xl transition-all shadow-xs shrink-0 cursor-pointer"
                             >
@@ -965,6 +1026,7 @@ export default function PosterFormView({
                             </label>
                             <VoiceMic
                               onResult={(text) => {
+                                setSlideValidationError(null);
                                 const currentVal = postType === "Carrusel"
                                   ? (posterConfig.slides?.[currentSlideIdx]?.imageExpectation || "")
                                   : (idea || "");
@@ -980,12 +1042,14 @@ export default function PosterFormView({
                             />
                           </div>
                           <textarea
+                            ref={sceneTextareaRef}
                             value={
                               postType === "Carrusel"
                                 ? (posterConfig.slides?.[currentSlideIdx]?.imageExpectation ?? "")
                                 : (imageExpectation || idea || "")
                             }
                             onChange={(e) => {
+                              setSlideValidationError(null);
                               const val = e.target.value;
                               if (postType === "Carrusel") {
                                 updateSlideField("imageExpectation", val);
@@ -1000,7 +1064,9 @@ export default function PosterFormView({
                                 ? `Ej: ${CAROUSEL_DEFAULT_SLIDES[currentSlideIdx]?.desc || "Describe la escena fotográfica de este slide"}...`
                                 : "Ej: Hamburguesa gourmet con queso cheddar derretido sobre tabla de madera oscura, iluminación cálida de estudio y fondo elegante..."
                             }
-                            className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-2xl outline-none text-xs font-semibold text-slate-800 resize-none min-h-[90px] focus:border-amber-500 focus:bg-white transition-all shadow-inner"
+                            className={`w-full bg-slate-50 border px-4 py-3 rounded-2xl outline-none text-xs font-semibold text-slate-800 resize-none min-h-[90px] transition-all shadow-inner ${
+                              slideValidationError ? "border-rose-400 bg-rose-50/40 ring-2 ring-rose-200" : "border-slate-200 focus:border-amber-500 focus:bg-white"
+                            }`}
                           />
 
                           {extractedNotice && (
@@ -1663,6 +1729,33 @@ export default function PosterFormView({
 
       {/* Botones de Generación del Cartel / Carrusel */}
       <div className="pt-2">
+        {/* Banner de validación de imagen o descripción */}
+        {slideValidationError && (
+          <div className="mb-3.5 p-4 bg-rose-50 border-2 border-rose-300 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-rose-950 shadow-md animate-in fade-in slide-in-from-top-2">
+            <div className="flex items-start gap-3 min-w-0 flex-1">
+              <span className="text-2xl shrink-0 mt-0.5">⚠️</span>
+              <div className="min-w-0">
+                <h5 className="text-xs font-black uppercase tracking-wider text-rose-900">
+                  Falta imagen o descripción del slide
+                </h5>
+                <p className="text-xs font-semibold text-rose-800 mt-0.5 leading-relaxed">
+                  {slideValidationError}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                sceneTextareaRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+                sceneTextareaRef.current?.focus();
+              }}
+              className="bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-black uppercase tracking-wider px-3.5 py-2 rounded-xl shrink-0 transition-all shadow-xs cursor-pointer self-stretch sm:self-center text-center"
+            >
+              Completar escena ✍️
+            </button>
+          </div>
+        )}
+
         {postType === "Carrusel" ? (
           <div className="space-y-3">
             <div className="grid sm:grid-cols-2 gap-3">
@@ -1692,7 +1785,10 @@ export default function PosterFormView({
               ) : (
                 <button
                   type="button"
-                  onClick={() => handleGeneratePreview(false, { singleSlideOnly: true, slideIndex: currentSlideIdx })}
+                  onClick={() => {
+                    if (!validateCanDesign({ singleSlideOnly: true, slideIndex: currentSlideIdx })) return;
+                    handleGeneratePreview(false, { singleSlideOnly: true, slideIndex: currentSlideIdx });
+                  }}
                   disabled={previewLoading}
                   className="w-full bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-black py-4 px-5 rounded-2xl text-xs uppercase tracking-wider transition-all shadow-lg shadow-amber-500/25 flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
@@ -1716,7 +1812,10 @@ export default function PosterFormView({
               {/* Botón 2: Diseñar las 5 imágenes con una sola idea */}
               <button
                 type="button"
-                onClick={() => handleGeneratePreview(false, { singleSlideOnly: false })}
+                onClick={() => {
+                  if (!validateCanDesign({ singleSlideOnly: false })) return;
+                  handleGeneratePreview(false, { singleSlideOnly: false });
+                }}
                 disabled={previewLoading}
                 className="w-full bg-slate-900 hover:bg-slate-800 text-white font-black py-4 px-5 rounded-2xl text-xs uppercase tracking-wider transition-all border border-slate-700 shadow-md flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
@@ -1768,13 +1867,17 @@ export default function PosterFormView({
           <div className="space-y-3">
             <button
               type="button"
-              onClick={() => handleGeneratePreview()}
+              onClick={() => {
+                if (!validateCanDesign()) return;
+                handleGeneratePreview();
+              }}
               disabled={
                 previewLoading ||
                 (!idea.trim() &&
                   !posterConfig.mainText?.trim() &&
                   !imageExpectation.trim() &&
-                  !postText.trim())
+                  !postText.trim() &&
+                  !baseImageUrl)
               }
               className="w-full bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-black py-4 px-6 rounded-2xl text-sm uppercase tracking-wider transition-all shadow-lg shadow-amber-500/25 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
