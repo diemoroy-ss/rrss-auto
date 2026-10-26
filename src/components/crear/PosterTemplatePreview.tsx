@@ -306,7 +306,7 @@ export default function PosterTemplatePreview({
         {displayTitle &&
           renderInteractiveElement(
             "title",
-            <h5 className="font-black leading-tight tracking-tight uppercase text-white drop-shadow-xl text-center px-2 py-0.5 break-words">
+            <h5 className="font-black leading-tight tracking-tight uppercase text-white drop-shadow-xl text-center px-2 py-0.5 break-words whitespace-pre-line">
               {displayTitle}
             </h5>
           )}
@@ -315,7 +315,7 @@ export default function PosterTemplatePreview({
         {displaySlogan &&
           renderInteractiveElement(
             "slogan",
-            <p className="font-semibold text-slate-200 leading-tight text-center drop-shadow-md bg-black/50 px-2 py-0.5 rounded-md backdrop-blur-xs max-w-xs">
+            <p className="font-semibold text-slate-200 leading-tight text-center drop-shadow-md bg-black/50 px-2 py-0.5 rounded-md backdrop-blur-xs max-w-xs break-words whitespace-pre-line">
               {displaySlogan}
             </p>
           )}

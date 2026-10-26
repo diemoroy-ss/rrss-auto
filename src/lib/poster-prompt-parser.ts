@@ -38,25 +38,28 @@ export function parsePromptTypographyAndDesign(rawText: string): ParsedPosterPro
     }
   }
 
-  // 2. Extraer líneas y citas entre comillas
+  // 2. Extraer líneas y citas entre comillas con su contexto
   const quotedRegex = /"([^"]+)"|«([^«»]+)»|“([^“”]+)”/g;
-  const lines = text.split(/\r?\n/);
+  const rawLines = text.split(/\r?\n/);
 
-  interface ExtractedQuote {
-    line: string;
+  interface ExtractedItem {
+    lineIndex: number;
+    rawLine: string;
     quote: string;
   }
 
-  const extractedQuotes: ExtractedQuote[] = [];
+  const items: ExtractedItem[] = [];
 
-  lines.forEach((line) => {
+  rawLines.forEach((line, lineIndex) => {
     const trimmed = line.trim();
     let m: RegExpExecArray | null;
-    while ((m = quotedRegex.exec(trimmed)) !== null) {
+    const re = /"([^"]+)"|«([^«»]+)»|“([^“”]+)”/g;
+    while ((m = re.exec(trimmed)) !== null) {
       const quoteContent = m[1] || m[2] || m[3];
       if (quoteContent && quoteContent.trim().length > 1) {
-        extractedQuotes.push({
-          line: trimmed,
+        items.push({
+          lineIndex,
+          rawLine: trimmed,
           quote: quoteContent.trim(),
         });
       }
@@ -67,18 +70,18 @@ export function parsePromptTypographyAndDesign(rawText: string): ParsedPosterPro
   // Headline: TEXTO
   // CTA: TEXTO
   // Slogan: TEXTO
-  if (extractedQuotes.length === 0) {
-    lines.forEach((line) => {
+  if (items.length === 0) {
+    rawLines.forEach((line) => {
       const trimmed = line.trim();
       const lower = trimmed.toLowerCase();
 
       // Titular
-      if ((lower.startsWith("headline:") || lower.startsWith("titular:") || lower.startsWith("título:")) && !result.mainText) {
+      if ((lower.startsWith("headline:") || lower.startsWith("header:") || lower.startsWith("titular:") || lower.startsWith("título:")) && !result.mainText) {
         const val = trimmed.split(":")[1]?.trim();
         if (val) result.mainText = val;
       }
       // Slogan / Badge
-      else if ((lower.startsWith("slogan:") || lower.startsWith("badge:") || lower.startsWith("subtítulo:")) && !result.sloganText) {
+      else if ((lower.startsWith("slogan:") || lower.startsWith("badge:") || lower.startsWith("subtítulo:") || lower.startsWith("body:")) && !result.sloganText) {
         const val = trimmed.split(":")[1]?.trim();
         if (val) {
           result.sloganText = val;
@@ -95,13 +98,53 @@ export function parsePromptTypographyAndDesign(rawText: string): ParsedPosterPro
     return Object.keys(result).length > 0 ? result : null;
   }
 
-  // 3. Clasificar cada cita según contexto de la línea y semántica del texto
-  extractedQuotes.forEach((item) => {
-    const l = item.line.toLowerCase();
+  // 3. Detectar tarjetas / puntos emparejados (Title + Body dentro de bloques estructurados)
+  // Ej:
+  // Title (Bold Red/Orange): "❌ 1. HACERLO TÚ MISMO"
+  // Body (White): "Pierdes tus domingos..."
+  const pairedCardTexts: string[] = [];
+  const usedItemIndices = new Set<number>();
+
+  for (let i = 0; i < items.length - 1; i++) {
+    if (usedItemIndices.has(i)) continue;
+    const curr = items[i];
+    const next = items[i + 1];
+
+    const currLineLower = curr.rawLine.toLowerCase();
+    const nextLineLower = next.rawLine.toLowerCase();
+
+    const isCardTitle =
+      (currLineLower.includes("title") || currLineLower.includes("título") || currLineLower.includes("card") || currLineLower.includes("item") || /^[❌✅\d\.\-•]/.test(curr.quote)) &&
+      !currLineLower.includes("header") &&
+      !currLineLower.includes("top header") &&
+      !currLineLower.includes("headline") &&
+      !currLineLower.includes("main title");
+
+    const isCardBody =
+      nextLineLower.includes("body") ||
+      nextLineLower.includes("desc") ||
+      nextLineLower.includes("texto") ||
+      nextLineLower.includes("text:") ||
+      nextLineLower.includes("white):");
+
+    if (isCardTitle && isCardBody && next.lineIndex - curr.lineIndex <= 3) {
+      const sep = /[:\.\-—]\s*$/.test(curr.quote) ? " " : ": ";
+      pairedCardTexts.push(`${curr.quote}${sep}${next.quote}`);
+      usedItemIndices.add(i);
+      usedItemIndices.add(i + 1);
+      i++; // Avanzar al siguiente ya emparejado
+    }
+  }
+
+  // 4. Clasificar cada cita restante según contexto de la línea y semántica del texto
+  items.forEach((item, index) => {
+    if (usedItemIndices.has(index)) return;
+
+    const l = item.rawLine.toLowerCase();
     const q = item.quote;
 
-    // Detectar CTA (Llamado a la acción)
-    if (
+    // Detectar CTA (Llamado a la acción explícito)
+    const isCtaLine =
       l.includes("cta") ||
       l.includes("call to action") ||
       l.includes("call-to-action") ||
@@ -112,16 +155,18 @@ export function parsePromptTypographyAndDesign(rawText: string): ParsedPosterPro
       q.includes("👉") ||
       q.includes("→") ||
       q.includes("►") ||
-      /^(desliza|ahorra|pide|reserva|compra|escríbenos|visítanos|agenda|descubre|más info)/i.test(q)
-    ) {
-      if (!result.ctaText) {
-        result.ctaText = q;
-        return;
-      }
+      /^(desliza|ahorra|pide|reserva|compra|escríbenos|visítanos|agenda|descubre|más info)/i.test(q);
+
+    if (isCtaLine && !result.ctaText) {
+      result.ctaText = q;
+      usedItemIndices.add(index);
+      return;
     }
 
-    // Detectar Headline / Titular Principal
-    if (
+    // Detectar Headline / Titular Principal / Header
+    const isHeaderLine =
+      l.includes("header") ||
+      l.includes("top header") ||
       l.includes("headline") ||
       l.includes("titular") ||
       l.includes("título") ||
@@ -129,16 +174,20 @@ export function parsePromptTypographyAndDesign(rawText: string): ParsedPosterPro
       l.includes("center headline") ||
       l.includes("large bold") ||
       l.includes("main text") ||
-      l.includes("main headline")
-    ) {
-      if (!result.mainText) {
-        result.mainText = q;
-        return;
-      }
+      l.includes("main headline") ||
+      l.includes("main title") ||
+      l.includes("top title") ||
+      l.includes("bold title") ||
+      l.includes("encabezado");
+
+    if (isHeaderLine && !result.mainText) {
+      result.mainText = q;
+      usedItemIndices.add(index);
+      return;
     }
 
     // Detectar Slogan / Badge / Kicker / Subtítulo
-    if (
+    const isBadgeLine =
       l.includes("pill badge") ||
       l.includes("pill") ||
       l.includes("badge") ||
@@ -147,60 +196,71 @@ export function parsePromptTypographyAndDesign(rawText: string): ParsedPosterPro
       l.includes("slogan") ||
       l.includes("subtítulo") ||
       l.includes("subtitle") ||
-      l.includes("sub-badge")
-    ) {
-      if (!result.sloganText) {
-        result.sloganText = q;
-        result.includeSlogan = true;
-        return;
-      }
+      l.includes("sub-badge");
+
+    if (isBadgeLine && !result.sloganText) {
+      result.sloganText = q;
+      result.includeSlogan = true;
+      usedItemIndices.add(index);
+      return;
     }
 
     // Detectar Precio o Promoción
-    if (
+    const isPriceLine =
       l.includes("precio") ||
       l.includes("price") ||
       l.includes("promo") ||
       l.includes("oferta") ||
       q.includes("$") ||
       q.includes("% off") ||
-      q.includes("2x1")
-    ) {
-      if (!result.priceText) {
-        result.priceText = q;
-        result.includePrice = true;
-        return;
-      }
+      q.includes("2x1");
+
+    if (isPriceLine && !result.priceText) {
+      result.priceText = q;
+      result.includePrice = true;
+      usedItemIndices.add(index);
+      return;
     }
   });
 
-  // 4. Asignación inteligente por descarte si faltan campos
-  const assignedQuotes = new Set([result.mainText, result.sloganText, result.ctaText, result.priceText].filter(Boolean));
-  const unassigned = extractedQuotes.filter((item) => !assignedQuotes.has(item.quote));
-
-  // Si no se asignó mainText, tomamos la cita no asignada más larga (el titular suele ser el más extenso)
-  if (!result.mainText && unassigned.length > 0) {
-    unassigned.sort((a, b) => b.quote.length - a.quote.length);
-    result.mainText = unassigned[0].quote;
-    assignedQuotes.add(result.mainText);
-  }
-
-  // Si no se asignó sloganText y quedan citas libres
-  if (!result.sloganText) {
-    const remainingForSlogan = unassigned.filter((item) => !assignedQuotes.has(item.quote));
-    if (remainingForSlogan.length > 0) {
-      result.sloganText = remainingForSlogan[0].quote;
+  // 5. Integrar tarjetas emparejadas (Card 1, Card 2, etc.)
+  if (pairedCardTexts.length > 0) {
+    if (!result.mainText) {
+      // Si no había un encabezado superior, el primer card actúa como titular
+      result.mainText = pairedCardTexts[0];
+      if (pairedCardTexts.length > 1) {
+        result.sloganText = pairedCardTexts.slice(1).join("\n\n");
+        result.includeSlogan = true;
+      }
+    } else {
+      // Si ya hay un encabezado superior, todas las tarjetas van al cuerpo/slogan
+      const cardsCombined = pairedCardTexts.join("\n\n");
+      if (result.sloganText) {
+        result.sloganText = `${result.sloganText}\n\n${cardsCombined}`;
+      } else {
+        result.sloganText = cardsCombined;
+      }
       result.includeSlogan = true;
-      assignedQuotes.add(result.sloganText);
     }
   }
 
-  // Si no se asignó ctaText y quedan citas libres
-  if (!result.ctaText) {
-    const remainingForCta = unassigned.filter((item) => !assignedQuotes.has(item.quote));
-    if (remainingForCta.length > 0) {
-      result.ctaText = remainingForCta[0].quote;
+  // 6. Asignación inteligente por descarte para citas restantes (nunca perder contenido)
+  const remaining = items.filter((_, idx) => !usedItemIndices.has(idx));
+
+  if (!result.mainText && remaining.length > 0) {
+    remaining.sort((a, b) => b.quote.length - a.quote.length);
+    result.mainText = remaining[0].quote;
+    remaining.splice(0, 1);
+  }
+
+  if (remaining.length > 0) {
+    const remainingQuotes = remaining.map((r) => r.quote);
+    if (result.sloganText) {
+      result.sloganText = `${result.sloganText}\n\n${remainingQuotes.join("\n\n")}`;
+    } else {
+      result.sloganText = remainingQuotes.join("\n\n");
     }
+    result.includeSlogan = true;
   }
 
   if (result.mainText) {

@@ -287,6 +287,9 @@ export default function PosterFormView({
       } else {
         setShowCustomCta(false);
       }
+    } else {
+      setShowCustomCta(false);
+      setCustomCta("");
     }
 
     // Si se detectó que es un prompt de afiche completo, cargar la escena visual limpia en imageExpectation e idea
@@ -1212,8 +1215,8 @@ export default function PosterFormView({
                             <span className="text-[10px] text-amber-700 font-bold">Impreso en el diseño</span>
                           </label>
                           {isMainTextChecked && (
-                            <input
-                              type="text"
+                            <textarea
+                              rows={2}
                               value={currentSlideMainText}
                               onChange={(e) => {
                                 const val = e.target.value;
@@ -1233,7 +1236,7 @@ export default function PosterFormView({
                                   ? CAROUSEL_DEFAULT_SLIDES[currentSlideIdx]?.placeholder || "Titular de esta diapositiva..."
                                   : "Ej: GRAN INAUGURACIÓN, 50% OFF, MENÚ EJECUTIVO..."
                               }
-                              className="w-full bg-white border border-slate-200 px-4 py-2.5 rounded-xl outline-none text-xs font-black text-slate-800 focus:border-amber-500 transition-all shadow-inner"
+                              className="w-full bg-white border border-slate-200 px-4 py-2.5 rounded-xl outline-none text-xs font-black text-slate-800 focus:border-amber-500 transition-all shadow-inner resize-y leading-snug"
                             />
                           )}
                           {isMainTextChecked && (
@@ -1328,8 +1331,8 @@ export default function PosterFormView({
                             <span>💬 Slogan o Frase Gancho</span>
                           </label>
                           {isSloganChecked && (
-                            <input
-                              type="text"
+                            <textarea
+                              rows={3}
                               value={currentSlideSloganText}
                               onChange={(e) => {
                                 if (postType === "Carrusel") {
@@ -1338,8 +1341,8 @@ export default function PosterFormView({
                                   update("sloganText", e.target.value);
                                 }
                               }}
-                              placeholder="Ej: Calidad garantizada en cada bocado"
-                              className="w-full bg-white border border-slate-200 px-3.5 py-2.5 rounded-xl outline-none text-xs font-bold text-slate-800 focus:border-amber-500 shadow-xs"
+                              placeholder="Ej: Calidad garantizada o puntos clave del slide..."
+                              className="w-full bg-white border border-slate-200 px-3.5 py-2.5 rounded-xl outline-none text-xs font-bold text-slate-800 focus:border-amber-500 shadow-xs resize-y leading-relaxed"
                             />
                           )}
                           {isSloganChecked && (
