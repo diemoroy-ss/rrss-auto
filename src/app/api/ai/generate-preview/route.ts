@@ -1,6 +1,6 @@
 
 // ═══════════════════════════════════════════════════════════════
-// REGLA UNIVERSAL DE ZONA SEGURA DE INSTAGRAM (AUTO-INYECCIÓN)
+// REGLA UNIVERSAL DE COMPOSICIÓN LIMPIA Y ZONA SEGURA (AUTO-INYECCIÓN)
 // Aplica a TODO post con texto (Post 1:1, Post 4:5, Carruseles, etc.)
 // ═══════════════════════════════════════════════════════════════
 function autoEnforceSafeZoneInPrompt(prompt: string, forcePosterMode: boolean = false): string {
@@ -21,32 +21,34 @@ function autoEnforceSafeZoneInPrompt(prompt: string, forcePosterMode: boolean = 
 
   let result = prompt;
 
-  // 1. Inyectar o asegurar COMPOSITION SAFE ZONE (60% central con 20% de margen lateral libre)
-  const safeZoneDirective = "- COMPOSITION SAFE ZONE (MANDATORY): All typography, headlines, badges, prices and CTA buttons MUST stay strictly inside the central 60% safe box (minimum 20% empty background margins on the left border and 20% on the right border, 15% breathing space from top, 16% breathing space from bottom). Never let any letter, punctuation mark, or emoji touch or approach the canvas edges.";
+  // 1. Inyectar o asegurar COMPOSICIÓN LIMPIA Y CENTRADA (sin números ni porcentajes que el modelo dibuje)
+  const safeZoneDirective = "- CLEAN ADVERTISING COMPOSITION: All typography, headlines, badges, prices and CTA buttons MUST stay centered with generous breathing space away from the edges. Clean high-end social media commercial finish.\n- MANDATORY NEGATIVE INSTRUCTION: ABSOLUTELY DO NOT RENDER ANY MEASUREMENT ARROWS, LABELS, NUMBERS, PERCENTAGES, RED OR ORANGE GUIDELINES, DRAFTING MARKS, WIREFRAME BOXES, TECHNICAL RULERS, OR BOUNDING BOXES ON THE IMAGE. RENDER ONLY THE PRISTINE COMMERCIAL GRAPHIC ARTWORK AND TEXT.";
 
   if (/composition\s+safe\s+zone/i.test(result)) {
     result = result.replace(/-\s*COMPOSITION\s+SAFE\s+ZONE[^\r\n]*/gi, safeZoneDirective);
+  } else if (/clean\s+advertising\s+composition/i.test(result)) {
+    // Ya presente
   } else if (/typography\s*&\s*layout/i.test(result)) {
     result = result.replace(new RegExp("(typography\\s*&\\s*layout[^\\r\\n]*)", "i"), "$1\n" + safeZoneDirective);
   } else {
     result += "\n\n" + safeZoneDirective;
   }
 
-  // 2. Reubicar TOP CENTER para que no quede en el borde 0% sino al 14% de altura con 20% de margen lateral
+  // 2. Reubicar TOP CENTER para que tenga aire superior natural
   result = result.replace(/-\s*TOP\s+CENTER\s*\(([^)]*)\)/gi, (_m, p1) => {
-    return `- UPPER CENTER (Pill badge positioned 14% down from top edge inside 60% safe area with 20% side margins, ${p1})`;
+    return `- UPPER CENTER (Pill badge floating centered with generous breathing room from top edge, ${p1})`;
   });
 
-  // 3. Forzar que el titular no supere el 60% de ancho y tenga 20% de margen a cada lado
+  // 3. Forzar que el titular esté centrado y con márgenes limpios sin mencionar porcentajes
   result = result.replace(/-\s*(UPPER\s+CENTER|MID-UPPER\s+CENTER)\s*\(([^)]*)\)/gi, (_m, _prefix, p1) => {
-    if (/60%/i.test(p1) && /20%/i.test(p1)) return `- MID-UPPER CENTER (${p1})`;
-    const cleaned = p1.replace(/maximum\s+\d+%\s+container\s+width/gi, "").replace(/at\s+least\s+\d+%\s+empty[^\,]*,?/gi, "").trim();
-    return `- MID-UPPER CENTER (Centered compact headline broken into 2 to 4 short lines, strictly maximum 60% container width with at least 20% empty background space on left and right sides, ${cleaned})`;
+    const cleaned = p1.replace(/maximum\s+\d+%\s+container\s+width/gi, "").replace(/at\s+least\s+\d+%\s+empty[^\,]*,?/gi, "").replace(/inside\s+\d+%\s+safe\s+area/gi, "").replace(/with\s+\d+%\s+side\s+margins/gi, "").replace(/positioned\s+\d+%\s+down/gi, "").trim();
+    return `- MID-UPPER CENTER (Centered compact headline broken into 2 to 4 short lines, well-centered with ample empty breathing space on left and right sides, ${cleaned})`;
   });
 
-  // 4. Forzar que el botón CTA inferior esté centrado horizontalmente (LOWER CENTER) para que no se recorte en esquinas
+  // 4. Forzar que el botón CTA inferior esté centrado horizontalmente
   result = result.replace(/-\s*(BOTTOM\s+RIGHT|LOWER\s+RIGHT|BOTTOM\s+LEFT|LOWER\s+LEFT|BOTTOM\s+CENTER)\s*\(([^)]*)\)/gi, (_m, _pos, p1) => {
-    return `- LOWER CENTER (Centered pill badge positioned horizontally in the center above 84% height mark, inside 60% safe zone with at least 20% margins on left and right sides, ${p1})`;
+    const cleaned = p1.replace(/above\s+\d+%\s+height\s+mark/gi, "").replace(/inside\s+\d+%\s+safe\s+zone/gi, "").replace(/with\s+at\s+least\s+\d+%\s+margins[^\,]*,?/gi, "").trim();
+    return `- LOWER CENTER (Centered pill badge positioned cleanly above the lower edge with ample side margins, ${cleaned})`;
   });
 
   return result;
@@ -186,32 +188,33 @@ function buildEnrichedGeminiPrompt(params: {
         // Estructura Universal de Tipografía y Zona Segura para Todo Post con Texto
         const typoLines: string[] = [
             `TYPOGRAPHY & LAYOUT (Exact Spanish text):`,
-            `- COMPOSITION SAFE ZONE (MANDATORY): All typography and badges MUST stay strictly inside the central 60% safe box (minimum 20% empty margins on left/right borders, 15% breathing space from top, 16% breathing space from bottom). Never let any letter, punctuation mark, or emoji touch or approach the canvas edges.`
+            `- CLEAN ADVERTISING COMPOSITION: All typography, headlines, badges, prices and CTA buttons MUST stay centered with generous breathing space away from canvas edges. Clean high-end social media commercial finish.`,
+            `- MANDATORY NEGATIVE INSTRUCTION: ABSOLUTELY DO NOT RENDER ANY MEASUREMENT ARROWS, LABELS, NUMBERS, PERCENTAGES, RED OR ORANGE GUIDELINES, DRAFTING MARKS, WIREFRAME BOXES, TECHNICAL RULERS, OR BOUNDING BOXES ON THE IMAGE. RENDER ONLY THE PRISTINE COMMERCIAL GRAPHIC ARTWORK AND TEXT.`
         ];
 
         const badgeText = posterConfig.includeSlogan && posterConfig.sloganText 
             ? posterConfig.sloganText 
             : (posterConfig.includeBusinessName && posterConfig.businessName ? posterConfig.businessName : "");
         if (badgeText) {
-            typoLines.push(`- UPPER CENTER (Pill badge positioned 14% down from top edge inside 60% safe area with 20% side margins): "${badgeText}".`);
+            typoLines.push(`- UPPER CENTER (Pill badge positioned cleanly floating near the top center with ample breathing room from borders): "${badgeText}".`);
         }
 
         const mainHeadline = (posterConfig.includeMainText && posterConfig.mainText) 
             ? posterConfig.mainText 
             : (posterConfig.includePrice && posterConfig.priceText ? posterConfig.priceText : "");
         if (mainHeadline) {
-            typoLines.push(`- MID-UPPER CENTER (Centered compact headline broken into 2 to 4 short lines, strictly maximum 60% container width with at least 20% empty background space on left and right sides): "${mainHeadline}".`);
+            typoLines.push(`- MID-UPPER CENTER (Centered compact headline broken into 2 to 4 short lines, well-centered with ample empty breathing space on left and right sides): "${mainHeadline}".`);
         }
 
         if (posterConfig.includePrice && posterConfig.priceText && posterConfig.priceText !== mainHeadline) {
-            typoLines.push(`- HIGHLIGHT BADGE (Centered floating badge inside 60% safe zone): "${posterConfig.priceText}".`);
+            typoLines.push(`- HIGHLIGHT BADGE (Centered floating badge with high contrast background): "${posterConfig.priceText}".`);
         }
 
-        if (posterConfig.ctaText) {
-            typoLines.push(`- LOWER CENTER (Clean pill button placed horizontally in the center above 84% height mark, inside 60% safe zone with 20% side margins): "${posterConfig.ctaText}".`);
+        if (posterConfig.includeCta && posterConfig.ctaText) {
+            typoLines.push(`- LOWER CENTER (Clean pill button placed horizontally in the center with comfortable padding from bottom edge): "${posterConfig.ctaText}".`);
         }
 
-        typoLines.push(`Ultra-sharp vector typography, commercial graphic design, compact centered safe composition, professional studio advertising layout, 8k.`);
+        typoLines.push(`Ultra-sharp vector typography, commercial graphic design, compact centered clean composition, professional studio advertising layout, 8k.`);
 
         posterParts.push(`\n${typoLines.join("\n")}`);
 
@@ -265,6 +268,22 @@ function buildEnrichedCarouselPrompts(params: {
     posterConfig?: PosterConfig | null;
 }): string[] {
     return params.rawPrompts.map((rawPrompt, index) => {
+        const slide = params.posterConfig?.slides?.[index];
+        const mergedPosterConfig: PosterConfig | null | undefined = params.posterConfig ? {
+            ...params.posterConfig,
+            mainText: slide?.mainText ?? params.posterConfig.mainText,
+            sloganText: slide?.sloganText ?? params.posterConfig.sloganText,
+            priceText: slide?.priceText ?? params.posterConfig.priceText,
+            ctaText: slide?.ctaText ?? params.posterConfig.ctaText,
+            businessName: slide?.businessName ?? params.posterConfig.businessName,
+            includeMainText: slide?.includeMainText !== undefined ? slide.includeMainText : params.posterConfig.includeMainText,
+            includeSlogan: slide?.includeSlogan !== undefined ? slide.includeSlogan : params.posterConfig.includeSlogan,
+            includePrice: slide?.includePrice !== undefined ? slide.includePrice : params.posterConfig.includePrice,
+            includeCta: slide?.includeCta !== undefined ? slide.includeCta : params.posterConfig.includeCta,
+            includeBusinessName: slide?.includeBusinessName !== undefined ? slide.includeBusinessName : params.posterConfig.includeBusinessName,
+            includeLogo: slide?.includeLogo !== undefined ? slide.includeLogo : params.posterConfig.includeLogo,
+        } : params.posterConfig;
+
         return buildEnrichedGeminiPrompt({
             rawIdeaPrompt: rawPrompt,
             idea: params.idea,
@@ -272,7 +291,7 @@ function buildEnrichedCarouselPrompts(params: {
             userProvidedCopy: params.userProvidedCopy,
             businessType: params.businessType,
             postType: "Carrusel",
-            posterConfig: params.posterConfig,
+            posterConfig: mergedPosterConfig,
         }) + `\n\nCARROUSEL CONTEXT: This is slide ${index + 1} of the carousel sequence. Maintain visual consistency with all other slides (same style, color palette, and lighting treatment).`;
     });
 }

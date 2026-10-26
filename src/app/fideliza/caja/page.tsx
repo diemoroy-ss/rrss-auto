@@ -37,13 +37,20 @@ function CashierTerminalContent() {
   const [purchaseAmount, setPurchaseAmount] = useState("");
 
   useEffect(() => {
-    if (initialClubId) setClubId(initialClubId);
+    if (initialClubId) {
+      setClubId(initialClubId);
+      if (typeof window !== "undefined") {
+        const savedPin = sessionStorage.getItem(`sp_cashier_pin_${initialClubId.trim()}`);
+        if (savedPin) setPin(savedPin);
+      }
+    }
     if (initialPhone) setSearchQuery(initialPhone);
   }, [initialClubId, initialPhone]);
 
   const handleLoginCashier = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!clubId.trim() || !pin.trim()) return;
+    const activePin = pin.trim() || (typeof window !== "undefined" ? sessionStorage.getItem(`sp_cashier_pin_${clubId.trim()}`) || "" : "");
+    if (!clubId.trim() || !activePin) return;
     setLoading(true);
     setError(null);
     try {
@@ -52,11 +59,15 @@ function CashierTerminalContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "cashier_list_members",
-          pin: pin.trim(),
+          pin: activePin,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Acceso denegado");
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem(`sp_cashier_pin_${clubId.trim()}`, activePin);
+      }
+      if (!pin && activePin) setPin(activePin);
       setBusiness(data.business);
       setConfig(data.config);
       setMembers(data.members || []);
@@ -72,6 +83,7 @@ function CashierTerminalContent() {
     setLoading(true);
     setError(null);
     setToast(null);
+    const activePin = pin.trim() || (typeof window !== "undefined" ? sessionStorage.getItem(`sp_cashier_pin_${clubId.trim()}`) || "" : "");
     try {
       const res = await fetch(`/api/public/fideliza/${encodeURIComponent(clubId.trim())}`, {
         method: "POST",
@@ -79,7 +91,7 @@ function CashierTerminalContent() {
         body: JSON.stringify({
           action: "validate_pin",
           memberId,
-          pin: pin.trim(),
+          pin: activePin,
           purchaseAmount: Number(purchaseAmount) || 0,
           bypassCooldown: true,
         }),
@@ -103,6 +115,7 @@ function CashierTerminalContent() {
     setLoading(true);
     setError(null);
     setToast(null);
+    const activePin = pin.trim() || (typeof window !== "undefined" ? sessionStorage.getItem(`sp_cashier_pin_${clubId.trim()}`) || "" : "");
     try {
       const res = await fetch(`/api/public/fideliza/${encodeURIComponent(clubId.trim())}`, {
         method: "POST",
@@ -110,7 +123,7 @@ function CashierTerminalContent() {
         body: JSON.stringify({
           action: "cashier_redeem_reward",
           memberId,
-          pin: pin.trim(),
+          pin: activePin,
           rewardCode,
         }),
       });
@@ -144,9 +157,26 @@ function CashierTerminalContent() {
       setNewName("");
       setNewPhone("");
       setToast(`✅ Socio ${data.member.name} registrado en el club.`);
-      await handleLoginCashier();
+
+      // Agregar inmediatamente a la lista local para no depender de una llamada subsecuente
+      if (data.member) {
+        setMembers((prev) => {
+          const exists = prev.some((m) => m.id === data.member.id || m.cleanPhone === data.member.cleanPhone);
+          if (exists) {
+            return prev.map((m) => (m.id === data.member.id ? data.member : m));
+          }
+          return [data.member, ...prev];
+        });
+      }
+
+      try {
+        await handleLoginCashier();
+      } catch (refreshErr) {
+        console.warn("No se pudo refrescar la lista de miembros tras registro:", refreshErr);
+      }
     } catch (err: any) {
       setError(err.message);
+    } finally {
       setLoading(false);
     }
   };

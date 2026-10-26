@@ -345,6 +345,31 @@ export default function PosterFormView({
     ? (posterConfig.slides?.[currentSlideIdx]?.ctaText ?? (currentSlideIdx === 0 ? (posterConfig.ctaText || "") : ""))
     : (posterConfig.ctaText || "");
 
+  // Banderas de visibilidad independientes por diapositiva en carruseles
+  const isMainTextChecked = postType === "Carrusel"
+    ? (posterConfig.slides?.[currentSlideIdx]?.includeMainText ?? (posterConfig.includeMainText !== false))
+    : (posterConfig.includeMainText !== false);
+
+  const isSloganChecked = postType === "Carrusel"
+    ? (posterConfig.slides?.[currentSlideIdx]?.includeSlogan ?? posterConfig.includeSlogan)
+    : posterConfig.includeSlogan;
+
+  const isPriceChecked = postType === "Carrusel"
+    ? (posterConfig.slides?.[currentSlideIdx]?.includePrice ?? posterConfig.includePrice)
+    : posterConfig.includePrice;
+
+  const isCtaChecked = postType === "Carrusel"
+    ? (posterConfig.slides?.[currentSlideIdx]?.includeCta ?? posterConfig.includeCta)
+    : posterConfig.includeCta;
+
+  const isBusinessNameChecked = postType === "Carrusel"
+    ? (posterConfig.slides?.[currentSlideIdx]?.includeBusinessName ?? posterConfig.includeBusinessName)
+    : posterConfig.includeBusinessName;
+
+  const isLogoChecked = postType === "Carrusel"
+    ? (posterConfig.slides?.[currentSlideIdx]?.includeLogo ?? posterConfig.includeLogo)
+    : posterConfig.includeLogo;
+
   return (
     <div className="w-full max-w-full overflow-hidden min-w-0 space-y-6 sm:space-y-8 animate-in fade-in duration-300">
       {/* 🧪 Módulo 1 Mixboard: Arquitecto de Blueprint (Solo en modo Laboratorio) */}
@@ -582,17 +607,18 @@ export default function PosterFormView({
                     ? (posterConfig.slides?.[currentSlideIdx]?.priceText ?? (currentSlideIdx === 0 ? (posterConfig.priceText || "") : ""))
                     : (posterConfig.priceText || "")
                 }
-                includePrice={posterConfig.includePrice}
+                includePrice={isPriceChecked}
                 ctaText={
                   postType === "Carrusel"
                     ? (posterConfig.slides?.[currentSlideIdx]?.ctaText ?? (currentSlideIdx === 0 ? (posterConfig.ctaText || "") : ""))
                     : (posterConfig.ctaText || "")
                 }
-                includeMainText={posterConfig.includeMainText !== false}
-                includeSlogan={posterConfig.includeSlogan}
+                includeCta={isCtaChecked}
+                includeMainText={isMainTextChecked}
+                includeSlogan={isSloganChecked}
                 businessName={posterConfig.businessName || activeProfile?.name}
-                includeBusinessName={posterConfig.includeBusinessName}
-                includeLogo={posterConfig.includeLogo}
+                includeBusinessName={isBusinessNameChecked}
+                includeLogo={isLogoChecked}
                 includeContact={posterConfig.includeContact}
                 contactType={posterConfig.contactType}
                 contactValue={posterConfig.contactValue}
@@ -1051,11 +1077,12 @@ export default function PosterFormView({
                             <div className="flex items-center gap-2">
                               <input
                                 type="checkbox"
-                                checked={posterConfig.includeMainText !== false}
+                                checked={isMainTextChecked}
                                 onChange={(e) => {
-                                  update("includeMainText", e.target.checked);
                                   if (postType === "Carrusel") {
                                     updateSlideField("includeMainText" as any, e.target.checked);
+                                  } else {
+                                    update("includeMainText", e.target.checked);
                                   }
                                 }}
                                 className="w-4 h-4 accent-amber-600 rounded"
@@ -1064,16 +1091,16 @@ export default function PosterFormView({
                             </div>
                             <span className="text-[10px] text-amber-700 font-bold">Impreso en el diseño</span>
                           </label>
-                          {posterConfig.includeMainText !== false && (
+                          {isMainTextChecked && (
                             <input
                               type="text"
                               value={currentSlideMainText}
                               onChange={(e) => {
                                 const val = e.target.value;
-                                update("mainText", val);
                                 if (postType === "Carrusel") {
                                   updateSlideField("mainText", val);
                                 } else {
+                                  update("mainText", val);
                                   setPosterConfig((prev) => {
                                     const nextSlides = prev.slides ? [...prev.slides] : [];
                                     if (nextSlides[0]) nextSlides[0] = { ...nextSlides[0], mainText: val };
@@ -1089,7 +1116,7 @@ export default function PosterFormView({
                               className="w-full bg-white border border-slate-200 px-4 py-2.5 rounded-xl outline-none text-xs font-black text-slate-800 focus:border-amber-500 transition-all shadow-inner"
                             />
                           )}
-                          {posterConfig.includeMainText !== false && (
+                          {isMainTextChecked && (
                             <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px] text-slate-500 border-t border-slate-200/60 mt-1">
                               <div className="flex items-center gap-1.5">
                                 <span className="font-bold text-slate-700">📏 Tamaño:</span>
@@ -1168,13 +1195,19 @@ export default function PosterFormView({
                           <label className="text-xs font-black text-slate-800 flex items-center gap-2 cursor-pointer">
                             <input
                               type="checkbox"
-                              checked={posterConfig.includeSlogan}
-                              onChange={(e) => update("includeSlogan", e.target.checked)}
+                              checked={isSloganChecked}
+                              onChange={(e) => {
+                                if (postType === "Carrusel") {
+                                  updateSlideField("includeSlogan" as any, e.target.checked);
+                                } else {
+                                  update("includeSlogan", e.target.checked);
+                                }
+                              }}
                               className="w-4 h-4 accent-amber-600 rounded"
                             />
                             <span>💬 Slogan o Frase Gancho</span>
                           </label>
-                          {posterConfig.includeSlogan && (
+                          {isSloganChecked && (
                             <input
                               type="text"
                               value={currentSlideSloganText}
@@ -1189,7 +1222,7 @@ export default function PosterFormView({
                               className="w-full bg-white border border-slate-200 px-3.5 py-2.5 rounded-xl outline-none text-xs font-bold text-slate-800 focus:border-amber-500 shadow-xs"
                             />
                           )}
-                          {posterConfig.includeSlogan && (
+                          {isSloganChecked && (
                             <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px] text-slate-500 border-t border-slate-200/60 mt-1">
                               <div className="flex items-center gap-1.5">
                                 <span className="font-bold text-slate-700">📏 Tamaño:</span>
@@ -1259,9 +1292,13 @@ export default function PosterFormView({
                           <label className="flex items-center gap-2.5 p-3 rounded-2xl border border-slate-200 bg-slate-50/60 cursor-pointer hover:bg-slate-50 transition-colors">
                             <input
                               type="checkbox"
-                              checked={posterConfig.includeBusinessName}
+                              checked={isBusinessNameChecked}
                               onChange={(e) => {
-                                update("includeBusinessName", e.target.checked);
+                                if (postType === "Carrusel") {
+                                  updateSlideField("includeBusinessName" as any, e.target.checked);
+                                } else {
+                                  update("includeBusinessName", e.target.checked);
+                                }
                                 if (e.target.checked && activeProfile?.name) {
                                   update("businessName", activeProfile.name);
                                 }
@@ -1277,8 +1314,14 @@ export default function PosterFormView({
                           <label className="flex items-center gap-2.5 p-3 rounded-2xl border border-slate-200 bg-slate-50/60 cursor-pointer hover:bg-slate-50 transition-colors">
                             <input
                               type="checkbox"
-                              checked={posterConfig.includeLogo}
-                              onChange={(e) => update("includeLogo", e.target.checked)}
+                              checked={isLogoChecked}
+                              onChange={(e) => {
+                                if (postType === "Carrusel") {
+                                  updateSlideField("includeLogo" as any, e.target.checked);
+                                } else {
+                                  update("includeLogo", e.target.checked);
+                                }
+                              }}
                               className="w-4 h-4 accent-amber-600 rounded shrink-0"
                             />
                             <div className="min-w-0 flex-1">
@@ -1299,14 +1342,20 @@ export default function PosterFormView({
                             <label className="text-xs font-black text-amber-950 flex items-center gap-2 cursor-pointer">
                               <input
                                 type="checkbox"
-                                checked={posterConfig.includePrice}
-                                onChange={(e) => update("includePrice", e.target.checked)}
+                                checked={isPriceChecked}
+                                onChange={(e) => {
+                                  if (postType === "Carrusel") {
+                                    updateSlideField("includePrice" as any, e.target.checked);
+                                  } else {
+                                    update("includePrice", e.target.checked);
+                                  }
+                                }}
                                 className="w-4 h-4 accent-amber-600 rounded"
                               />
                               <span>💲 Incluir Precio o Promoción Destacada</span>
                             </label>
                           </div>
-                          {posterConfig.includePrice && (
+                          {isPriceChecked && (
                             <input
                               type="text"
                               value={currentSlidePriceText}
@@ -1321,7 +1370,7 @@ export default function PosterFormView({
                               className="w-full bg-white border border-amber-300 px-3.5 py-2.5 rounded-xl outline-none text-xs font-bold text-slate-800 focus:border-amber-500 shadow-xs"
                             />
                           )}
-                          {posterConfig.includePrice && (
+                          {isPriceChecked && (
                             <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px] text-amber-900 border-t border-amber-200/60 mt-1">
                               <div className="flex items-center gap-1.5">
                                 <span className="font-bold">📏 Tamaño:</span>

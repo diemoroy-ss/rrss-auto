@@ -7,6 +7,7 @@ import {
   FidelizacionConfig,
   computeShortMerchantCode,
 } from "../../../../../contexts/ProfileContext";
+import { sendFidelizaWelcomeEmail } from "../../../../../lib/email-fideliza";
 import * as crypto from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -314,13 +315,30 @@ export async function POST(
       }
 
       const cardUrl = `https://fideliza.socialpilot.cl/${decodedId}?phone=${cleanPhone}`;
-      await sendWhatsAppNotification(
+      
+      // Enviar WhatsApp en segundo plano con control de errores para no retrasar el registro
+      sendWhatsAppNotification(
         phone,
         `🎉 *¡Bienvenido/a a ${config.programName} de ${business.name}!*\n\nHola ${newMember.name}, tu tarjeta digital ya está activa.${
           config.welcomeBonus ? `\n✨ ¡Te regalamos tu *1er sello de bienvenida*!` : ""
         }\n🎯 Meta: *${config.targetGoal} ${config.mode === "visits" ? "visitas" : "puntos"}* para ganar *${config.rewardTitle}*.\n\n📲 Guarda tu tarjeta aquí:\n${cardUrl}`,
         config
-      );
+      ).catch((err) => console.warn("[Fideliza WA] Error enviando bienvenida:", err));
+
+      // Si se proporcionó email, enviar correo de bienvenida con enlace a la tarjeta
+      if (email && typeof email === "string" && email.includes("@")) {
+        sendFidelizaWelcomeEmail({
+          toEmail: email.trim(),
+          memberName: newMember.name,
+          businessName: business.name,
+          programName: config.programName,
+          cardUrl,
+          targetGoal: config.targetGoal,
+          rewardTitle: config.rewardTitle,
+          mode: config.mode,
+          welcomeBonus: !!config.welcomeBonus,
+        }).catch((err) => console.warn("[Fideliza Email] Error enviando bienvenida:", err));
+      }
 
       return NextResponse.json({
         success: true,

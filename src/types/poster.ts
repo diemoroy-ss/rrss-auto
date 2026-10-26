@@ -105,10 +105,18 @@ export interface PosterSlideConfig {
   priceText?: string;
   sloganText?: string;
   ctaText?: string;
+  businessName?: string;
   layout?: PosterLayout;
   visualStyle?: VisualStyle;
   allowImageRetouch?: boolean;
   useSlide1Image?: boolean;
+  // Visibilidad independiente de textos por slide (Carrusel)
+  includeMainText?: boolean;
+  includePrice?: boolean;
+  includeSlogan?: boolean;
+  includeCta?: boolean;
+  includeBusinessName?: boolean;
+  includeLogo?: boolean;
   // Campos exclusivos del Laboratorio Mixboard:
   styleReferenceUrl?: string;
   styleReferenceTraits?: ('palette' | 'lighting' | 'typography' | 'layout')[];
@@ -152,6 +160,7 @@ export interface PosterConfig {
   // Estilo y CTA
   visualStyle: VisualStyle;
   ctaText: string;            // "¡Compra Ahora!", "Reserva Hoy", etc.
+  includeCta?: boolean;
   allowImageRetouch?: boolean;
   baseImageUrl?: string;
   imageUrl?: string;

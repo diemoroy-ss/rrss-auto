@@ -1021,11 +1021,24 @@ export default function RrssCreatePost() {
           phone: activeProfile?.phone || "",
           profileId: activeProfile?.id || "",
           userProvidedCopy: postText,
-          posterConfig: {
-            ...posterConfig,
-            aspectRatio: (postType === 'Historia' || postType === 'Reel') ? '9:16' : '1:1',
-            orientation: (postType === 'Historia' || postType === 'Reel') ? 'vertical' : 'square',
-          },
+          posterConfig: (() => {
+            const targetSlide = isSingleSlideGen ? posterConfig.slides?.[singleSlideTargetIdx] : null;
+            return {
+              ...posterConfig,
+              mainText: targetSlide?.mainText !== undefined ? targetSlide.mainText : posterConfig.mainText,
+              sloganText: targetSlide?.sloganText !== undefined ? targetSlide.sloganText : posterConfig.sloganText,
+              priceText: targetSlide?.priceText !== undefined ? targetSlide.priceText : posterConfig.priceText,
+              ctaText: targetSlide?.ctaText !== undefined ? targetSlide.ctaText : posterConfig.ctaText,
+              includeMainText: targetSlide?.includeMainText !== undefined ? targetSlide.includeMainText : posterConfig.includeMainText,
+              includeSlogan: targetSlide?.includeSlogan !== undefined ? targetSlide.includeSlogan : posterConfig.includeSlogan,
+              includePrice: targetSlide?.includePrice !== undefined ? targetSlide.includePrice : posterConfig.includePrice,
+              includeCta: targetSlide?.includeCta !== undefined ? targetSlide.includeCta : posterConfig.includeCta,
+              includeBusinessName: targetSlide?.includeBusinessName !== undefined ? targetSlide.includeBusinessName : posterConfig.includeBusinessName,
+              includeLogo: targetSlide?.includeLogo !== undefined ? targetSlide.includeLogo : posterConfig.includeLogo,
+              aspectRatio: (postType === 'Historia' || postType === 'Reel') ? '9:16' : '1:1',
+              orientation: (postType === 'Historia' || postType === 'Reel') ? 'vertical' : 'square',
+            };
+          })(),
           baseImageUrl: isSingleSlideGen
             ? (singleSlideTargetIdx === 0
                 ? (posterConfig.slides?.[0]?.baseImageUrl || baseImageUrl || selectedCatalogoItem?.imageUrl || null)

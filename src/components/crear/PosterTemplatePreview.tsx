@@ -69,6 +69,7 @@ interface PosterTemplatePreviewProps {
   priceText?: string;
   includePrice?: boolean;
   ctaText?: string;
+  includeCta?: boolean;
   businessName?: string;
   includeBusinessName?: boolean;
   includeLogo?: boolean;
@@ -98,6 +99,7 @@ export default function PosterTemplatePreview({
   priceText,
   includePrice = false,
   ctaText = "¡Compra Ahora!",
+  includeCta = true,
   businessName = "Tu Marca",
   includeBusinessName = true,
   includeLogo = true,
@@ -144,7 +146,7 @@ export default function PosterTemplatePreview({
   const hasPrice = Boolean(includePrice) && Boolean(priceText && priceText.trim().length > 0);
   const displayPrice = hasPrice ? priceText!.trim() : null;
 
-  const hasCta = Boolean(ctaText && ctaText.trim().length > 0);
+  const hasCta = (includeCta !== false) && Boolean(ctaText && ctaText.trim().length > 0);
   const displayCta = hasCta ? ctaText!.trim() : null;
 
   const hasBrand = Boolean(includeBusinessName) && Boolean(businessName && businessName.trim().length > 0);
