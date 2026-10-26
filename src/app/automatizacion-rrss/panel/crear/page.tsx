@@ -1940,7 +1940,7 @@ export default function RrssCreatePost() {
   const needsConnection = !hasFb && !hasIg && !hasLi && !hasTt && !hasGbp && !hasYt && !hasX;
 
   return (
-    <div className="max-w-[1400px] mx-auto lg:mx-0">
+    <div className="w-full max-w-[1400px] mx-auto lg:mx-0 min-w-0 overflow-x-hidden">
       <div className="mb-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-4xl font-black text-slate-900 tracking-tight">Nueva Publicación</h1>
@@ -2591,6 +2591,7 @@ export default function RrssCreatePost() {
                       setPosterConfig((prev) => ({
                         ...prev,
                         activeSlideIndex: idx,
+                        imageUrl: targetSlide?.imageUrl || prev.imageUrl || "",
                         mainText: targetSlide?.mainText ?? "",
                         priceText: targetSlide?.priceText ?? "",
                         sloganText: targetSlide?.sloganText ?? "",

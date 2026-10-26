@@ -130,10 +130,10 @@ export default function PosterTemplatePreview({
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (hasImage && viewMode === "blueprint") {
+    if (hasImage) {
       setViewMode("afiche");
     }
-  }, [hasImage]);
+  }, [hasImage, generatedImageUrl, slideNumber]);
 
   const activeViewMode = hasImage ? viewMode : "blueprint";
 
@@ -375,11 +375,11 @@ export default function PosterTemplatePreview({
 
         <div className="flex flex-wrap items-center gap-1.5">
           {hasImage && (
-            <div className="flex items-center gap-1 bg-slate-800 p-0.5 rounded-xl border border-slate-700">
+            <div className="flex items-center gap-1 bg-slate-800 p-1 rounded-xl border border-slate-700">
               <button
                 type="button"
                 onClick={() => setViewMode("afiche")}
-                className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                className={`px-2.5 py-1 sm:py-0.5 rounded-lg text-xs sm:text-[10px] font-black transition-all cursor-pointer ${
                   activeViewMode === "afiche" ? "bg-amber-500 text-slate-950 shadow-xs" : "text-slate-400 hover:text-white"
                 }`}
                 title="Ver el afiche completo con textos interactivos en tiempo real"
@@ -389,7 +389,7 @@ export default function PosterTemplatePreview({
               <button
                 type="button"
                 onClick={() => setViewMode("image")}
-                className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                className={`px-2.5 py-1 sm:py-0.5 rounded-lg text-xs sm:text-[10px] font-black transition-all cursor-pointer ${
                   activeViewMode === "image" ? "bg-amber-500 text-slate-950 shadow-xs" : "text-slate-400 hover:text-white"
                 }`}
                 title="Ver solo la imagen fotográfica sin textos montados"
@@ -399,7 +399,7 @@ export default function PosterTemplatePreview({
               <button
                 type="button"
                 onClick={() => setViewMode("blueprint")}
-                className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                className={`px-2.5 py-1 sm:py-0.5 rounded-lg text-xs sm:text-[10px] font-black transition-all cursor-pointer ${
                   activeViewMode === "blueprint" ? "bg-amber-500 text-slate-950 shadow-xs" : "text-slate-400 hover:text-white"
                 }`}
                 title="Ver esquema técnico wireframe"
@@ -716,6 +716,14 @@ export default function PosterTemplatePreview({
               boxShadow: `0 10px 30px -10px ${primaryColor}25`,
             }}
           >
+            {/* Si ya hay imagen generada, mostrarla de fondo para que nunca se oculte */}
+            {hasImage && generatedImageUrl && (
+              <img
+                src={generatedImageUrl}
+                alt={displayTitle || "Fondo afiche"}
+                className="absolute inset-0 w-full h-full object-cover pointer-events-none opacity-40 filter grayscale"
+              />
+            )}
             {/* Fondo simulando textura */}
             <div className="absolute inset-0 opacity-15 pointer-events-none bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:12px_12px]" />
 
