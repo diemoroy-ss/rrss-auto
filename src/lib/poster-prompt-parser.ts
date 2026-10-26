@@ -15,7 +15,7 @@ export interface ParsedPosterPrompt {
 
 export function parsePromptTypographyAndDesign(rawText: string): ParsedPosterPrompt | null {
   if (!rawText || typeof rawText !== "string") return null;
-  const text = rawText.trim();
+  const text = rawText.replace(/^(plaintext|markdown)\s*/i, "").trim();
   if (text.length < 5) return null;
 
   const result: ParsedPosterPrompt = {};
@@ -229,7 +229,7 @@ export function extractSceneAndTypography(rawText: string): ExtractedPosterPromp
     return { sceneDescription: "", parsedTypography: null, isPosterPrompt: false };
   }
 
-  const text = rawText.trim();
+  const text = rawText.replace(/^(plaintext|markdown)\s*/i, "").trim();
   const hasTypographyHeader = /typography\s*&\s*layout/i.test(text);
   const hasLayoutKeywords =
     /top\s+center/i.test(text) ||
@@ -273,8 +273,9 @@ export function extractSceneAndTypography(rawText: string): ExtractedPosterPromp
     sceneDescription = sceneLines.join("\n").trim();
   }
 
-  // Limpiar etiquetas de calidad técnica que suelen ir al pie
+  // Limpiar etiquetas de calidad técnica que suelen ir al pie y prefijos tipo plaintext
   sceneDescription = sceneDescription
+    .replace(/^(plaintext|markdown)\s*/i, "")
     .replace(/ultra-sharp vector typography[^\r\n]*/gi, "")
     .replace(/commercial graphic design[^\r\n]*/gi, "")
     .replace(/,\s*8k\b/gi, "")

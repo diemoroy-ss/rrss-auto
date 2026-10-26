@@ -1018,15 +1018,44 @@ export default function RrssCreatePost() {
          }
       }
 
-      const posterPromptSuffix = posterConfig.enabled ? buildPosterPromptSuffix(posterConfig) : "";
+      // Obtener la configuración de afiche efectiva fusionando los datos del slide con la raíz
+      const getEffectivePosterConfigForSlide = (slideIdx: number | null): PosterConfig => {
+        if (!posterConfig.enabled) return posterConfig;
+        if (slideIdx === null || slideIdx === undefined) return posterConfig;
+        const targetSlide = posterConfig.slides?.[slideIdx];
+        if (!targetSlide) return posterConfig;
+        return {
+          ...posterConfig,
+          mainText: targetSlide.mainText !== undefined && targetSlide.mainText !== "" ? targetSlide.mainText : posterConfig.mainText,
+          sloganText: targetSlide.sloganText !== undefined && targetSlide.sloganText !== "" ? targetSlide.sloganText : posterConfig.sloganText,
+          priceText: targetSlide.priceText !== undefined && targetSlide.priceText !== "" ? targetSlide.priceText : posterConfig.priceText,
+          ctaText: targetSlide.ctaText !== undefined && targetSlide.ctaText !== "" ? targetSlide.ctaText : posterConfig.ctaText,
+          includeMainText: targetSlide.includeMainText !== undefined ? targetSlide.includeMainText : Boolean(targetSlide.mainText || posterConfig.includeMainText),
+          includeSlogan: targetSlide.includeSlogan !== undefined ? targetSlide.includeSlogan : Boolean(targetSlide.sloganText || posterConfig.includeSlogan),
+          includePrice: targetSlide.includePrice !== undefined ? targetSlide.includePrice : Boolean(targetSlide.priceText || posterConfig.includePrice),
+          includeCta: targetSlide.includeCta !== undefined ? targetSlide.includeCta : Boolean(targetSlide.ctaText || posterConfig.includeCta),
+          includeBusinessName: targetSlide.includeBusinessName !== undefined ? targetSlide.includeBusinessName : posterConfig.includeBusinessName,
+          includeLogo: targetSlide.includeLogo !== undefined ? targetSlide.includeLogo : posterConfig.includeLogo,
+        };
+      };
 
-      const promptEnglish = baseEnglishPrompt
-        ? `${baseEnglishPrompt}. ${posterPromptSuffix}`.trim()
+      const singleEffectivePosterConfig = isSingleSlideGen
+        ? getEffectivePosterConfigForSlide(singleSlideTargetIdx)
+        : getEffectivePosterConfigForSlide(0);
+
+      const singlePosterPromptSuffix = singleEffectivePosterConfig.enabled
+        ? buildPosterPromptSuffix(singleEffectivePosterConfig)
         : "";
 
-      const promptsEnglish = pendingPrompts.prompts_english?.map((p: string) =>
-        `${p}. ${posterPromptSuffix}`.trim()
-      ) || [];
+      const promptEnglish = baseEnglishPrompt
+        ? `${baseEnglishPrompt}. ${singlePosterPromptSuffix}`.trim()
+        : "";
+
+      const promptsEnglish = pendingPrompts.prompts_english?.map((p: string, idx: number) => {
+        const slideEffective = getEffectivePosterConfigForSlide(idx);
+        const slideSuffix = slideEffective.enabled ? buildPosterPromptSuffix(slideEffective) : "";
+        return `${p}. ${slideSuffix}`.trim();
+      }) || [];
 
       // Validar cuotas antes de llamar a la generación
       const isVideoType = postType === 'Reel' || postType === 'Video';
@@ -1073,24 +1102,7 @@ export default function RrssCreatePost() {
           phone: activeProfile?.phone || "",
           profileId: activeProfile?.id || "",
           userProvidedCopy: postText,
-          posterConfig: (() => {
-            const targetSlide = isSingleSlideGen ? posterConfig.slides?.[singleSlideTargetIdx] : null;
-            return {
-              ...posterConfig,
-              mainText: targetSlide?.mainText !== undefined ? targetSlide.mainText : posterConfig.mainText,
-              sloganText: targetSlide?.sloganText !== undefined ? targetSlide.sloganText : posterConfig.sloganText,
-              priceText: targetSlide?.priceText !== undefined ? targetSlide.priceText : posterConfig.priceText,
-              ctaText: targetSlide?.ctaText !== undefined ? targetSlide.ctaText : posterConfig.ctaText,
-              includeMainText: targetSlide?.includeMainText !== undefined ? targetSlide.includeMainText : posterConfig.includeMainText,
-              includeSlogan: targetSlide?.includeSlogan !== undefined ? targetSlide.includeSlogan : posterConfig.includeSlogan,
-              includePrice: targetSlide?.includePrice !== undefined ? targetSlide.includePrice : posterConfig.includePrice,
-              includeCta: targetSlide?.includeCta !== undefined ? targetSlide.includeCta : posterConfig.includeCta,
-              includeBusinessName: targetSlide?.includeBusinessName !== undefined ? targetSlide.includeBusinessName : posterConfig.includeBusinessName,
-              includeLogo: targetSlide?.includeLogo !== undefined ? targetSlide.includeLogo : posterConfig.includeLogo,
-              aspectRatio: (postType === 'Historia' || postType === 'Reel') ? '9:16' : '1:1',
-              orientation: (postType === 'Historia' || postType === 'Reel') ? 'vertical' : 'square',
-            };
-          })(),
+          posterConfig: isSingleSlideGen ? singleEffectivePosterConfig : posterConfig,
           baseImageUrl: isSingleSlideGen
             ? (singleSlideTargetIdx === 0
                 ? (posterConfig.slides?.[0]?.baseImageUrl || baseImageUrl || selectedCatalogoItem?.imageUrl || null)

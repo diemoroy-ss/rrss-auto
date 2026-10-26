@@ -202,14 +202,14 @@ function buildEnrichedGeminiPrompt(params: {
 
         const badgeText = posterConfig.includeSlogan && posterConfig.sloganText 
             ? posterConfig.sloganText 
-            : (posterConfig.includeBusinessName && posterConfig.businessName ? posterConfig.businessName : "");
+            : "";
         if (badgeText) {
             typoLines.push(`- UPPER CENTER (Pill badge positioned cleanly floating near the top center with ample breathing room from borders): "${badgeText}".`);
         }
 
         const mainHeadline = (posterConfig.includeMainText && posterConfig.mainText) 
             ? posterConfig.mainText 
-            : (posterConfig.includePrice && posterConfig.priceText ? posterConfig.priceText : "");
+            : (posterConfig.mainText || (posterConfig.includePrice && posterConfig.priceText ? posterConfig.priceText : ""));
         if (mainHeadline) {
             typoLines.push(`- MID-UPPER CENTER (Centered compact headline broken into 2 to 4 short lines, well-centered with ample empty breathing space on left and right sides): "${mainHeadline}".`);
         }

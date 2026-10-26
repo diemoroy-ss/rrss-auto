@@ -390,6 +390,12 @@ export default function PosterFormView({
         priceText: targetSlide.priceText ?? "",
         sloganText: targetSlide.sloganText ?? "",
         ctaText: targetSlide.ctaText || prev.ctaText,
+        includeMainText: targetSlide.includeMainText ?? Boolean(targetSlide.mainText),
+        includeSlogan: targetSlide.includeSlogan ?? Boolean(targetSlide.sloganText),
+        includePrice: targetSlide.includePrice ?? Boolean(targetSlide.priceText),
+        includeCta: targetSlide.includeCta ?? Boolean(targetSlide.ctaText),
+        includeBusinessName: targetSlide.includeBusinessName ?? prev.includeBusinessName,
+        includeLogo: targetSlide.includeLogo ?? prev.includeLogo,
       }));
       setImageExpectation(targetSlide.imageExpectation ?? "");
       if (setBaseImageUrl) {

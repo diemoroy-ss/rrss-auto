@@ -230,12 +230,12 @@ export function buildPosterPromptSuffix(config: PosterConfig): string {
     '- MANDATORY NEGATIVE INSTRUCTION: ABSOLUTELY DO NOT RENDER ANY MEASUREMENT ARROWS, LABELS, NUMBERS, PERCENTAGES, RED OR ORANGE GUIDELINES, DRAFTING MARKS, WIREFRAME BOXES, TECHNICAL RULERS, OR BOUNDING BOXES ON THE IMAGE. RENDER ONLY THE PRISTINE COMMERCIAL GRAPHIC ARTWORK AND TEXT.'
   ];
 
-  const badgeText = config.includeSlogan && config.sloganText ? config.sloganText : (config.includeBusinessName && config.businessName ? config.businessName : '');
+  const badgeText = config.includeSlogan && config.sloganText ? config.sloganText : '';
   if (badgeText) {
     typographyParts.push(`- TOP CENTER (Small glowing pill badge): "${badgeText}".`);
   }
 
-  const headline = (config.includeMainText && config.mainText) ? config.mainText : (config.includePrice && config.priceText ? config.priceText : '');
+  const headline = (config.includeMainText && config.mainText) ? config.mainText : (config.mainText || (config.includePrice && config.priceText ? config.priceText : ''));
   if (headline) {
     typographyParts.push(`- UPPER CENTER (Large bold headline, high contrast, clean typography): "${headline}".`);
   }
