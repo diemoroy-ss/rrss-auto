@@ -114,7 +114,7 @@ export async function POST(req: Request) {
                 const newP = { ...p };
                 
                 if (setAccounts.facebook) {
-                    const { token, pageId, adAccountId, name } = setAccounts.facebook;
+                    const { token, pageId, adAccountId, name, metaTokenExpiresAt } = setAccounts.facebook;
                     
                     if (token) {
                         const { encryptedData, iv, authTag } = encrypt(token);
@@ -132,12 +132,17 @@ export async function POST(req: Request) {
                         newP.facebookPageName = fbPageName;
                     }
 
+                    if (metaTokenExpiresAt !== undefined) {
+                        newP.metaTokenExpiresAt = metaTokenExpiresAt;
+                    }
+
                     // Specific Disconnect Logic
                     if (pageId === "") {
                         newP.facebookToken_enc = "";
                         newP.iv_fb = "";
                         newP.tag_fb = "";
                         newP.facebookPageName = "";
+                        newP.metaTokenExpiresAt = null;
                     }
                 }
 

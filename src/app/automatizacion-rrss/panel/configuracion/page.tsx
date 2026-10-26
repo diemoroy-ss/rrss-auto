@@ -473,9 +473,23 @@ function ConfigContent() {
     const gbpParam = searchParams.get('google-business');
     let shouldReplace = false;
 
-    if (metaParam === 'success' && activeProfile.metaUserToken_enc && !activeProfile.facebookToken_enc) {
+    if (metaParam) {
+      setActiveTab('conexiones');
+      loadProfiles();
+
+      if (metaParam === 'updated') {
+        setMessage({ type: 'success', text: "¡Conexión de Meta (Facebook e Instagram) renovada con éxito!" });
+        shouldReplace = true;
+      } else if (metaParam === 'select' || (metaParam === 'success' && !activeProfile.facebookToken_enc)) {
         setShowMetaModal(true);
         shouldReplace = true;
+      } else if (metaParam === 'success') {
+        setMessage({ type: 'success', text: "¡Conexión de Meta (Facebook e Instagram) actualizada con éxito!" });
+        shouldReplace = true;
+      } else if (metaParam === 'error') {
+        setErrorMsg("Hubo un error al conectar con Meta. Verifica los permisos de tu cuenta.");
+        shouldReplace = true;
+      }
     }
     
     if (linkedinParam === 'success' && activeProfile.linkedinUserToken_enc) {
@@ -500,17 +514,20 @@ function ConfigContent() {
         shouldReplace = true;
     }
     
-    if (metaParam === 'error' || linkedinParam === 'error' || tiktokParam === 'error' || gbpParam === 'error') {
+    if (linkedinParam === 'error' || tiktokParam === 'error' || gbpParam === 'error') {
         setErrorMsg("Hubo un error al conectar la red social.");
         shouldReplace = true;
     }
 
     if (shouldReplace) {
         // Clear params from URL to prevent re-processing on next render
-        const newUrl = pathname;
+        const newUrl = `${pathname}?tab=conexiones`;
         router.replace(newUrl, { scroll: false });
+        if (typeof window !== 'undefined' && window.location.hash) {
+          window.history.replaceState(null, '', newUrl);
+        }
     }
-  }, [searchParams, activeProfile, pathname, router]);
+  }, [searchParams, activeProfile, pathname, router, loadProfiles]);
 
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -901,7 +918,8 @@ function ConfigContent() {
           facebook: { 
             token: page.access_token, 
             pageId: page.id,
-            name: page.name
+            name: page.name,
+            metaTokenExpiresAt: Date.now() + 60 * 24 * 60 * 60 * 1000
           },
           instagram: page.instagram_business_account ? { 
             token: page.access_token, 
