@@ -356,6 +356,74 @@ export default function PosterTemplatePreview({
     );
   };
 
+  const renderSafeZoneOverlay = () => {
+    if (!showSafeZone) return null;
+
+    if (isStoryOrReel) {
+      return (
+        <div className="absolute inset-0 pointer-events-none z-30 flex flex-col justify-between">
+          <div className="h-[14%] bg-rose-950/70 border-b border-rose-400/70 flex items-center justify-center backdrop-blur-[1px]">
+            <span className="text-[7.5px] font-black uppercase text-rose-200 tracking-wider bg-rose-900/90 px-2 py-0.5 rounded border border-rose-400/60 shadow">
+              ⚠️ Zona de Perfil & Controles (14%)
+            </span>
+          </div>
+          <div className="flex-1 border-2 border-dashed border-emerald-400/90 mx-3 my-1 rounded-lg flex flex-col justify-between p-1.5 relative">
+            <div className="text-[7.5px] font-black uppercase tracking-wider text-emerald-300 bg-emerald-950/90 px-2 py-0.5 rounded border border-emerald-500/40 w-fit mx-auto shadow">
+              ✓ Zona Segura Central 9:16
+            </div>
+            <div className="text-[7px] font-mono text-emerald-300/90 text-center">
+              100% visible sin obstrucciones
+            </div>
+          </div>
+          <div className="h-[20%] bg-rose-950/70 border-t border-rose-400/70 flex items-center justify-center backdrop-blur-[1px]">
+            <span className="text-[7.5px] font-black uppercase text-rose-200 tracking-wider bg-rose-900/90 px-2 py-0.5 rounded border border-rose-400/60 shadow">
+              ⚠️ Zona de Copy & Audio (20%)
+            </span>
+          </div>
+        </div>
+      );
+    }
+
+    if (aspectRatio === "4:5") {
+      return (
+        <div className="absolute inset-0 pointer-events-none z-30 flex flex-col justify-between">
+          <div className="h-[10%] bg-amber-950/80 border-b border-amber-400/80 flex items-center justify-center backdrop-blur-[1px]">
+            <span className="text-[7.5px] font-black uppercase text-amber-200 tracking-wider bg-amber-900/90 px-2 py-0.5 rounded border border-amber-400/60 shadow">
+              ⚠️ Se oculta en Cuadrícula 1:1 del Perfil
+            </span>
+          </div>
+          <div className="flex-1 border-2 border-dashed border-emerald-400/90 mx-2 my-1 rounded-lg flex flex-col justify-between p-1.5 relative">
+            <div className="text-[7.5px] font-black uppercase tracking-wider text-emerald-300 bg-emerald-950/90 px-2 py-0.5 rounded border border-emerald-500/40 w-fit mx-auto shadow">
+              ✓ Zona Segura 1:1 (Visible en Perfil y Feed)
+            </div>
+            <div className="text-[7px] font-mono text-emerald-300/90 text-center">
+              100% visible en Feed Vertical y Cuadrícula
+            </div>
+          </div>
+          <div className="h-[10%] bg-amber-950/80 border-t border-amber-400/80 flex items-center justify-center backdrop-blur-[1px]">
+            <span className="text-[7.5px] font-black uppercase text-amber-200 tracking-wider bg-amber-900/90 px-2 py-0.5 rounded border border-amber-400/60 shadow">
+              ⚠️ Se oculta en Cuadrícula 1:1 del Perfil
+            </span>
+          </div>
+        </div>
+      );
+    }
+
+    // Caso 1:1 (Post Cuadrado y Carrusel Cuadrado): En Instagram 1:1 NUNCA hay recorte lateral
+    return (
+      <div className="absolute inset-0 pointer-events-none z-30 p-2.5 sm:p-3">
+        <div className="w-full h-full border-2 border-dashed border-emerald-400/90 rounded-xl flex flex-col justify-between p-2 relative bg-emerald-950/15">
+          <div className="text-[7.5px] font-black uppercase tracking-wider text-emerald-300 bg-emerald-950/90 px-2.5 py-0.5 rounded-full border border-emerald-500/40 w-fit mx-auto shadow">
+            ✓ 100% Visible en Instagram (Feed y Cuadrícula)
+          </div>
+          <div className="text-[7px] font-mono text-emerald-200/90 text-center bg-slate-950/80 py-0.5 px-2 rounded-md w-fit mx-auto border border-emerald-500/30">
+            Sin recorte lateral · Margen de aire recomendado: 8%
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div
       onClick={() => setSelectedKey(null)}
@@ -592,54 +660,8 @@ export default function PosterTemplatePreview({
             {/* Capas Interactivas con Drag & Drop, Tamaño y Giro */}
             {renderInteractiveLayers()}
 
-            {/* Overlay Guía de Zona Segura Universal de Instagram (Solo para Post y Carrusel) */}
-            {showSafeZone && !isStoryOrReel && (
-              <div className="absolute inset-0 pointer-events-none z-30">
-                {aspectRatio === "4:5" ? (
-                  <div className="w-full h-full flex flex-col justify-between">
-                    <div className="h-[10%] bg-rose-950/80 border-b border-rose-400/80 flex items-center justify-center backdrop-blur-[1px]">
-                      <span className="text-[7px] font-black uppercase text-rose-200 tracking-wider bg-rose-900/90 px-1.5 py-0.5 rounded border border-rose-400/60 shadow">
-                        ⚠️ Se recorta en Grid Cuadrado (1:1)
-                      </span>
-                    </div>
-                    <div className="flex-1 border-2 border-dashed border-emerald-400/90 mx-[20%] my-1 rounded-lg flex flex-col justify-between p-1 relative">
-                      <div className="text-[7px] font-black uppercase tracking-wider text-emerald-300 bg-emerald-950/90 px-1.5 py-0.5 rounded border border-emerald-500/40 w-fit mx-auto shadow">
-                        ✓ Zona Segura (60% Central)
-                      </div>
-                      <div className="text-[6.5px] font-mono text-emerald-300/80 text-center">
-                        Visible en Feed y Cuadrícula
-                      </div>
-                    </div>
-                    <div className="h-[12%] bg-rose-950/80 border-t border-rose-400/80 flex items-center justify-center backdrop-blur-[1px]">
-                      <span className="text-[7px] font-black uppercase text-rose-200 tracking-wider bg-rose-900/90 px-1.5 py-0.5 rounded border border-rose-400/60 shadow">
-                        ⚠️ Se recorta en Grid Cuadrado (1:1)
-                      </span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="w-full h-full flex justify-between">
-                    <div className="w-[20%] h-full bg-rose-950/80 border-r border-rose-400/80 flex items-center justify-center backdrop-blur-[1px]">
-                      <span className="text-[6px] font-black uppercase text-rose-200 tracking-tighter bg-rose-900/90 px-1 py-1 rounded border border-rose-400/60 -rotate-90 shadow whitespace-nowrap">
-                        ⚠️ Recorte Lateral (20%)
-                      </span>
-                    </div>
-                    <div className="flex-1 h-full border-2 border-dashed border-emerald-400/90 my-[10%] mx-1 rounded-lg flex flex-col justify-between p-1 relative">
-                      <div className="text-[6.5px] font-black uppercase tracking-wider text-emerald-300 bg-emerald-950/90 px-1.5 py-0.5 rounded border border-emerald-500/40 w-fit mx-auto shadow">
-                        ✓ Zona Segura (60% central)
-                      </div>
-                      <div className="text-[6px] font-mono text-emerald-300/80 text-center">
-                        Visible en Perfil Vertical y Feed
-                      </div>
-                    </div>
-                    <div className="w-[20%] h-full bg-rose-950/80 border-l border-rose-400/80 flex items-center justify-center backdrop-blur-[1px]">
-                      <span className="text-[6px] font-black uppercase text-rose-200 tracking-tighter bg-rose-900/90 px-1 py-1 rounded border border-rose-400/60 rotate-90 shadow whitespace-nowrap">
-                        ⚠️ Recorte Lateral (20%)
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+            {/* Overlay Guía de Zona Segura Universal de Instagram */}
+            {renderSafeZoneOverlay()}
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-2 mt-3 w-full max-w-[280px]">
@@ -740,54 +762,8 @@ export default function PosterTemplatePreview({
             {/* Capas Interactivas con Drag & Drop, Tamaño y Giro */}
             {renderInteractiveLayers()}
 
-            {/* Overlay Guía de Zona Segura Universal de Instagram (Solo para Post y Carrusel) */}
-            {showSafeZone && !isStoryOrReel && (
-              <div className="absolute inset-0 pointer-events-none z-30">
-                {aspectRatio === "4:5" ? (
-                  <div className="w-full h-full flex flex-col justify-between">
-                    <div className="h-[10%] bg-rose-950/80 border-b border-rose-400/80 flex items-center justify-center backdrop-blur-[1px]">
-                      <span className="text-[7px] font-black uppercase text-rose-200 tracking-wider bg-rose-900/90 px-1.5 py-0.5 rounded border border-rose-400/60 shadow">
-                        ⚠️ Se recorta en Grid Cuadrado (1:1)
-                      </span>
-                    </div>
-                    <div className="flex-1 border-2 border-dashed border-emerald-400/90 mx-[20%] my-1 rounded-lg flex flex-col justify-between p-1 relative">
-                      <div className="text-[7px] font-black uppercase tracking-wider text-emerald-300 bg-emerald-950/90 px-1.5 py-0.5 rounded border border-emerald-500/40 w-fit mx-auto shadow">
-                        ✓ Zona Segura (60% Central)
-                      </div>
-                      <div className="text-[6.5px] font-mono text-emerald-300/80 text-center">
-                        Visible en Feed y Cuadrícula
-                      </div>
-                    </div>
-                    <div className="h-[12%] bg-rose-950/80 border-t border-rose-400/80 flex items-center justify-center backdrop-blur-[1px]">
-                      <span className="text-[7px] font-black uppercase text-rose-200 tracking-wider bg-rose-900/90 px-1.5 py-0.5 rounded border border-rose-400/60 shadow">
-                        ⚠️ Se recorta en Grid Cuadrado (1:1)
-                      </span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="w-full h-full flex justify-between">
-                    <div className="w-[20%] h-full bg-rose-950/80 border-r border-rose-400/80 flex items-center justify-center backdrop-blur-[1px]">
-                      <span className="text-[6px] font-black uppercase text-rose-200 tracking-tighter bg-rose-900/90 px-1 py-1 rounded border border-rose-400/60 -rotate-90 shadow whitespace-nowrap">
-                        ⚠️ Recorte Lateral (20%)
-                      </span>
-                    </div>
-                    <div className="flex-1 h-full border-2 border-dashed border-emerald-400/90 my-[10%] mx-1 rounded-lg flex flex-col justify-between p-1 relative">
-                      <div className="text-[6.5px] font-black uppercase tracking-wider text-emerald-300 bg-emerald-950/90 px-1.5 py-0.5 rounded border border-emerald-500/40 w-fit mx-auto shadow">
-                        ✓ Zona Segura (60% central)
-                      </div>
-                      <div className="text-[6px] font-mono text-emerald-300/80 text-center">
-                        Visible en Perfil Vertical y Feed
-                      </div>
-                    </div>
-                    <div className="w-[20%] h-full bg-rose-950/80 border-l border-rose-400/80 flex items-center justify-center backdrop-blur-[1px]">
-                      <span className="text-[6px] font-black uppercase text-rose-200 tracking-tighter bg-rose-900/90 px-1 py-1 rounded border border-rose-400/60 rotate-90 shadow whitespace-nowrap">
-                        ⚠️ Recorte Lateral (20%)
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+            {/* Overlay Guía de Zona Segura Universal de Instagram */}
+            {renderSafeZoneOverlay()}
           </div>
 
           <p className="text-[10px] text-slate-400 font-medium text-center mt-3 max-w-xs leading-tight">
