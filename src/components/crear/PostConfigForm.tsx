@@ -7,7 +7,7 @@ import { useProfile } from "../../contexts/ProfileContext";
 import VoiceMic from "../VoiceMic";
 import Link from "next/link";
 import { type PosterConfig } from "../../types/poster";
-import { parsePromptTypographyAndDesign } from "../../lib/poster-prompt-parser";
+import { parsePromptTypographyAndDesign, extractSceneAndTypography } from "../../lib/poster-prompt-parser";
 import { UserTemplate } from "../../app/automatizacion-rrss/panel/crear/page";
 import { FaFacebookF, FaInstagram, FaLinkedinIn, FaTiktok, FaGoogle, FaYoutube, FaTwitter } from "react-icons/fa";
 import TikTokPostSettings, { TikTokSettingsState } from "./TikTokPostSettings";
@@ -662,16 +662,19 @@ export default function PostConfigForm({
                     const nextVal = imageExpectation + (imageExpectation ? " " : "") + text;
                     setImageExpectation(nextVal);
                     if (setPosterConfig) {
-                      const parsed = parsePromptTypographyAndDesign(nextVal);
+                      const extracted = extractSceneAndTypography(nextVal);
+                      const parsed = extracted.parsedTypography;
                       if (parsed) {
                         setPosterConfig((prev) => ({
                           ...prev,
                           mainText: parsed.mainText ?? prev.mainText,
+                          includeMainText: parsed.includeMainText ?? (parsed.mainText ? true : prev.includeMainText),
                           sloganText: parsed.sloganText ?? prev.sloganText,
                           includeSlogan: parsed.includeSlogan ?? (parsed.sloganText ? true : prev.includeSlogan),
                           priceText: parsed.priceText ?? prev.priceText,
                           includePrice: parsed.includePrice ?? (parsed.priceText ? true : prev.includePrice),
                           ctaText: parsed.ctaText ?? prev.ctaText,
+                          includeCta: parsed.includeCta ?? (parsed.ctaText ? true : prev.includeCta),
                           primaryColor: parsed.primaryColor ?? prev.primaryColor,
                           enabled: true,
                         }));
@@ -687,16 +690,19 @@ export default function PostConfigForm({
                   const val = e.target.value;
                   setImageExpectation(val);
                   if (setPosterConfig) {
-                    const parsed = parsePromptTypographyAndDesign(val);
+                    const extracted = extractSceneAndTypography(val);
+                    const parsed = extracted.parsedTypography;
                     if (parsed) {
                       setPosterConfig((prev) => ({
                         ...prev,
                         mainText: parsed.mainText ?? prev.mainText,
+                        includeMainText: parsed.includeMainText ?? (parsed.mainText ? true : prev.includeMainText),
                         sloganText: parsed.sloganText ?? prev.sloganText,
                         includeSlogan: parsed.includeSlogan ?? (parsed.sloganText ? true : prev.includeSlogan),
                         priceText: parsed.priceText ?? prev.priceText,
                         includePrice: parsed.includePrice ?? (parsed.priceText ? true : prev.includePrice),
                         ctaText: parsed.ctaText ?? prev.ctaText,
+                        includeCta: parsed.includeCta ?? (parsed.ctaText ? true : prev.includeCta),
                         primaryColor: parsed.primaryColor ?? prev.primaryColor,
                         enabled: true,
                       }));
@@ -925,7 +931,7 @@ export default function PostConfigForm({
                   disabled={improveLoading}
                   className="bg-indigo-50 border border-indigo-200 text-indigo-700 text-[10px] font-black px-3.5 py-1.5 rounded-xl uppercase tracking-wider disabled:bg-slate-100 disabled:text-slate-400 transition-all hover:bg-indigo-100/50 shadow-sm"
                 >
-                  {improveLoading ? 'Creando...' : '✨ Mejorar con IA'}
+                  {improveLoading ? 'Creando...' : '✨ Redactar con Agentes'}
                 </button>
               </div>
 
@@ -934,7 +940,36 @@ export default function PostConfigForm({
               }`}>
                 <textarea
                   value={postText}
-                  onChange={e => setPostText(e.target.value)}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setPostText(val);
+                    if (setPosterConfig) {
+                      const extracted = extractSceneAndTypography(val);
+                      if (extracted.isPosterPrompt) {
+                        if (extracted.sceneDescription) {
+                          setImageExpectation(extracted.sceneDescription);
+                        }
+                        const parsed = extracted.parsedTypography;
+                        if (parsed) {
+                          setPosterConfig((prev) => ({
+                            ...prev,
+                            mainText: parsed.mainText ?? prev.mainText,
+                            includeMainText: parsed.includeMainText ?? (parsed.mainText ? true : prev.includeMainText),
+                            sloganText: parsed.sloganText ?? prev.sloganText,
+                            includeSlogan: parsed.includeSlogan ?? (parsed.sloganText ? true : prev.includeSlogan),
+                            priceText: parsed.priceText ?? prev.priceText,
+                            includePrice: parsed.includePrice ?? (parsed.priceText ? true : prev.includePrice),
+                            ctaText: parsed.ctaText ?? prev.ctaText,
+                            includeCta: parsed.includeCta ?? (parsed.ctaText ? true : prev.includeCta),
+                            primaryColor: parsed.primaryColor ?? prev.primaryColor,
+                            enabled: true,
+                          }));
+                          const draftCaption = [parsed.mainText, parsed.sloganText, parsed.ctaText].filter(Boolean).join(" · ");
+                          setPostText(draftCaption);
+                        }
+                      }
+                    }
+                  }}
                   placeholder="El copy que acompañará tu post..."
                   className={`w-full bg-transparent px-4 py-3 text-sm outline-none resize-none min-h-[110px] font-semibold leading-normal ${
                     isOverLimit ? 'text-rose-600' : 'text-slate-700'
@@ -943,7 +978,36 @@ export default function PostConfigForm({
                 />
                 <div className="px-4 py-2 bg-white/50 border-t border-slate-100 flex items-center justify-between text-[10px]">
                   <VoiceMic
-                    onResult={(text) => setPostText(postText + (postText ? " " : "") + text)}
+                    onResult={(text) => {
+                      const nextVal = postText + (postText ? " " : "") + text;
+                      setPostText(nextVal);
+                      if (setPosterConfig) {
+                        const extracted = extractSceneAndTypography(nextVal);
+                        if (extracted.isPosterPrompt) {
+                          if (extracted.sceneDescription) {
+                            setImageExpectation(extracted.sceneDescription);
+                          }
+                          const parsed = extracted.parsedTypography;
+                          if (parsed) {
+                            setPosterConfig((prev) => ({
+                              ...prev,
+                              mainText: parsed.mainText ?? prev.mainText,
+                              includeMainText: parsed.includeMainText ?? (parsed.mainText ? true : prev.includeMainText),
+                              sloganText: parsed.sloganText ?? prev.sloganText,
+                              includeSlogan: parsed.includeSlogan ?? (parsed.sloganText ? true : prev.includeSlogan),
+                              priceText: parsed.priceText ?? prev.priceText,
+                              includePrice: parsed.includePrice ?? (parsed.priceText ? true : prev.includePrice),
+                              ctaText: parsed.ctaText ?? prev.ctaText,
+                              includeCta: parsed.includeCta ?? (parsed.ctaText ? true : prev.includeCta),
+                              primaryColor: parsed.primaryColor ?? prev.primaryColor,
+                              enabled: true,
+                            }));
+                            const draftCaption = [parsed.mainText, parsed.sloganText, parsed.ctaText].filter(Boolean).join(" · ");
+                            setPostText(draftCaption);
+                          }
+                        }
+                      }
+                    }}
                     className="scale-75"
                   />
                   <span className={isOverLimit ? 'text-rose-600 font-bold' : 'text-slate-400 font-medium'}>

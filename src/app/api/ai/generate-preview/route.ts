@@ -46,10 +46,17 @@ function autoEnforceSafeZoneInPrompt(prompt: string, forcePosterMode: boolean = 
   });
 
   // 4. Forzar que el botón CTA inferior esté centrado horizontalmente
-  result = result.replace(/-\s*(BOTTOM\s+RIGHT|LOWER\s+RIGHT|BOTTOM\s+LEFT|LOWER\s+LEFT|BOTTOM\s+CENTER)\s*\(([^)]*)\)/gi, (_m, _pos, p1) => {
+  result = result.replace(/-\s*(BOTTOM\s+RIGHT|LOWER\s+RIGHT|BOTTOM\s+LEFT|LOWER\s+LEFT|BOTTOM\s+CENTER|LOWER\s+CENTER)\s*\(([^)]*)\)/gi, (_m, _pos, p1) => {
     const cleaned = p1.replace(/above\s+\d+%\s+height\s+mark/gi, "").replace(/inside\s+\d+%\s+safe\s+zone/gi, "").replace(/with\s+at\s+least\s+\d+%\s+margins[^\,]*,?/gi, "").trim();
     return `- LOWER CENTER (Centered pill badge positioned cleanly above the lower edge with ample side margins, ${cleaned})`;
   });
+
+  // 5. Eliminar cualquier residuo de porcentajes numéricos o referencias de márgenes técnicos en directivas
+  result = result
+    .replace(/\b\d+%\s*(safe\s*box|safe\s*area|safe\s*zone|margins?|height\s*mark|container\s*width|down|breathing\s*space)\b/gi, "")
+    .replace(/above\s+\d+%\s+height\s+mark,?/gi, "")
+    .replace(/minimum\s+\d+%\s+empty\s+margins[^\,\)]*,?/gi, "")
+    .replace(/\b(strictly\s+)?inside\s+\d+%\s+safe\s+(area|zone|box),?/gi, "");
 
   return result;
 }
@@ -58,6 +65,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { generateElevenLabsAudio } from "../../../../lib/elevenlabs";
 import type { PosterConfig } from "../../../../types/poster";
 import { runInBatches } from "../../../../lib/batch-processor";
+import { extractSceneAndTypography } from "../../../../lib/poster-prompt-parser";
 
 // ═══════════════════════════════════════════════════════════════
 // EXTRACTOR DE CONCEPTO VISUAL
@@ -443,13 +451,90 @@ export async function POST(req: NextRequest) {
         // ═══════════════════════════════════════════════════════
         // 2. CONSTRUIR PROMPTS ENRIQUECIDOS PARA GEMINI
         // ═══════════════════════════════════════════════════════
+        let effectiveUserCopy = userProvidedCopy || "";
+        let effectiveIdea = idea || "";
+        let effectiveImageExpectation = imageExpectation || "";
+        let effectivePosterConfig: PosterConfig | null = posterConfig ? { ...posterConfig } : null;
+
+        // Auto-detección y extracción si el usuario pegó un prompt completo de cartel en cualquier campo
+        let candidatePromptForExtraction = "";
+        if (userProvidedCopy && extractSceneAndTypography(userProvidedCopy).isPosterPrompt) {
+            candidatePromptForExtraction = userProvidedCopy;
+        } else if (imageExpectation && extractSceneAndTypography(imageExpectation).isPosterPrompt) {
+            candidatePromptForExtraction = imageExpectation;
+        } else if (idea && extractSceneAndTypography(idea).isPosterPrompt) {
+            candidatePromptForExtraction = idea;
+        }
+
+        if (candidatePromptForExtraction) {
+            const extracted = extractSceneAndTypography(candidatePromptForExtraction);
+            if (extracted.isPosterPrompt) {
+                if (!effectiveImageExpectation || effectiveImageExpectation.length < 15) {
+                    effectiveImageExpectation = extracted.sceneDescription;
+                }
+                if (!effectiveIdea || effectiveIdea.length < 15) {
+                    effectiveIdea = extracted.sceneDescription;
+                }
+
+                const parsed = extracted.parsedTypography;
+                if (parsed) {
+                    if (!effectivePosterConfig) {
+                        effectivePosterConfig = {
+                            enabled: true,
+                            includeLogo: false,
+                            includeBusinessName: false,
+                            includeMainText: Boolean(parsed.mainText),
+                            mainText: parsed.mainText || "",
+                            includeSlogan: Boolean(parsed.sloganText),
+                            sloganText: parsed.sloganText || "",
+                            includePrice: Boolean(parsed.priceText),
+                            priceText: parsed.priceText || "",
+                            includeContact: false,
+                            ctaText: parsed.ctaText || "¡Compra Ahora!",
+                            includeCta: Boolean(parsed.ctaText),
+                            primaryColor: parsed.primaryColor || "#ff5500",
+                            visualStyle: "Moderno",
+                        };
+                    } else {
+                        effectivePosterConfig.enabled = true;
+                        if (parsed.mainText && !effectivePosterConfig.mainText) {
+                            effectivePosterConfig.mainText = parsed.mainText;
+                            effectivePosterConfig.includeMainText = true;
+                        }
+                        if (parsed.sloganText && !effectivePosterConfig.sloganText) {
+                            effectivePosterConfig.sloganText = parsed.sloganText;
+                            effectivePosterConfig.includeSlogan = true;
+                        }
+                        if (parsed.priceText && !effectivePosterConfig.priceText) {
+                            effectivePosterConfig.priceText = parsed.priceText;
+                            effectivePosterConfig.includePrice = true;
+                        }
+                        if (parsed.ctaText && (!effectivePosterConfig.ctaText || effectivePosterConfig.ctaText === "¡Contáctanos ahora!")) {
+                            effectivePosterConfig.ctaText = parsed.ctaText;
+                            effectivePosterConfig.includeCta = true;
+                        }
+                        if (parsed.primaryColor && !effectivePosterConfig.primaryColor) {
+                            effectivePosterConfig.primaryColor = parsed.primaryColor;
+                        }
+                    }
+                }
+
+                if (candidatePromptForExtraction === userProvidedCopy) {
+                    const headline = parsed?.mainText || "";
+                    const slogan = parsed?.sloganText || "";
+                    const cta = parsed?.ctaText || "";
+                    effectiveUserCopy = [headline, slogan, cta].filter(Boolean).join(" · ");
+                }
+            }
+        }
+
         // Extraer contexto compartido para los builders de prompts
         const sharedContext = {
-            idea: idea || "",
-            imageExpectation: imageExpectation || "",
-            userProvidedCopy: userProvidedCopy || "",
+            idea: effectiveIdea,
+            imageExpectation: effectiveImageExpectation,
+            userProvidedCopy: effectiveUserCopy,
             businessType: businessType || "",
-            posterConfig: posterConfig || null,
+            posterConfig: effectivePosterConfig,
         };
 
         let enrichedPrompts: string[] = [];
@@ -463,7 +548,7 @@ export async function POST(req: NextRequest) {
             } as any);
         } else {
             // Post / Historia / Reel: un solo prompt principal
-            const rawPrompt = promptEnglish || promptsEnglish?.[0] || idea || "";
+            const rawPrompt = promptEnglish || promptsEnglish?.[0] || effectiveImageExpectation || effectiveIdea || "";
             const enriched = buildEnrichedGeminiPrompt({
                 rawIdeaPrompt: rawPrompt,
                 ...sharedContext,
@@ -498,21 +583,21 @@ export async function POST(req: NextRequest) {
         // ═══════════════════════════════════════════════════════
         // 3. PAYLOAD FINAL AL WEBHOOK DE N8N
         // ═══════════════════════════════════════════════════════
-        let enrichedIdea = idea || "";
+        let enrichedIdea = effectiveIdea || "";
         if (catalogoItem && catalogoItem.name) {
             enrichedIdea += `\n\nCONTEXTO DE PRODUCTO/SERVICIO (Basa el copy del post específicamente en esto): "${catalogoItem.name}" - ${catalogoItem.description}`;
         }
 
         const effectiveStyleRef =
             styleReferenceUrl ||
-            posterConfig?.slides?.[0]?.styleReferenceUrl ||
-            posterConfig?.styleReferenceUrl ||
+            effectivePosterConfig?.slides?.[0]?.styleReferenceUrl ||
+            effectivePosterConfig?.styleReferenceUrl ||
             "";
 
         const isPosterPost = Boolean(
-            posterConfig?.enabled ||
-            posterConfig?.mainText ||
-            posterConfig?.priceText ||
+            effectivePosterConfig?.enabled ||
+            effectivePosterConfig?.mainText ||
+            effectivePosterConfig?.priceText ||
             /typography|headline|cartel|afiche|poster|safe\s+box/i.test(enrichedPrompts[0] || "")
         );
         const finalPromptForN8n = autoEnforceSafeZoneInPrompt(enrichedPrompts[0] || "", isPosterPost);
@@ -521,15 +606,15 @@ export async function POST(req: NextRequest) {
             promptEnglish: finalPromptForN8n,
             baseImageUrl: baseImageUrl || "",
             styleReferenceUrl: effectiveStyleRef,
-            styleReferenceTraits: posterConfig?.slides?.[0]?.styleReferenceTraits || posterConfig?.styleReferenceTraits || [],
+            styleReferenceTraits: effectivePosterConfig?.slides?.[0]?.styleReferenceTraits || effectivePosterConfig?.styleReferenceTraits || [],
             retouchTargetImageUrl: retouchTargetImageUrl || "",
             retouchInstruction: retouchInstruction || "",
-            isMixboardLab: Boolean(isMixboardLab || posterConfig?.isLabMode),
-            allowImageRetouch: allowImageRetouch ?? posterConfig?.allowImageRetouch ?? true,
+            isMixboardLab: Boolean(isMixboardLab || effectivePosterConfig?.isLabMode),
+            allowImageRetouch: allowImageRetouch ?? effectivePosterConfig?.allowImageRetouch ?? true,
             productAnalysis: productAnalysis || null,
             idea: enrichedIdea,
-            imageExpectation: imageExpectation || "",
-            userProvidedCopy: userProvidedCopy || "",
+            imageExpectation: effectiveImageExpectation,
+            userProvidedCopy: effectiveUserCopy,
             videoPrompt: videoPrompt || "",
             audioUrl: audioUrl || "",
             voiceoverScript: voiceoverScript || "",
@@ -539,7 +624,7 @@ export async function POST(req: NextRequest) {
             email,
             phone,
             profileId,
-            posterConfig: posterConfig?.enabled ? posterConfig : null,
+            posterConfig: effectivePosterConfig?.enabled ? effectivePosterConfig : null,
         };
 
         // Si es Carrusel con múltiples láminas, enviamos peticiones sincrónicas en lotes de máximo 3 en paralelo
@@ -547,13 +632,13 @@ export async function POST(req: NextRequest) {
             console.log(`[GENERATE-PREVIEW-PROXY] Procesando Carrusel de ${enrichedPrompts.length} láminas en lotes de 3 N8N...`);
 
             const batchResults = await runInBatches(enrichedPrompts, 3, async (slidePrompt, slideIdx) => {
-                const targetSlide = posterConfig?.slides?.[slideIdx];
+                const targetSlide = effectivePosterConfig?.slides?.[slideIdx];
                 const slideStyleRef =
                     targetSlide?.styleReferenceUrl ||
-                    (targetSlide?.lockStyleFromSlide1 ? (posterConfig?.slides?.[0]?.imageUrl || "") : effectiveStyleRef);
+                    (targetSlide?.lockStyleFromSlide1 ? (effectivePosterConfig?.slides?.[0]?.imageUrl || "") : effectiveStyleRef);
 
                 const isPosterSlide = Boolean(
-                    posterConfig?.enabled ||
+                    effectivePosterConfig?.enabled ||
                     targetSlide?.mainText ||
                     targetSlide?.priceText ||
                     /typography|headline|cartel|afiche|poster|safe\s+box/i.test(slidePrompt)

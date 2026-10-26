@@ -13,7 +13,7 @@ import VoiceMic from "../VoiceMic";
 import Link from "next/link";
 import { FaFacebookF, FaInstagram, FaLinkedinIn, FaTiktok, FaGoogle, FaYoutube, FaTwitter } from "react-icons/fa";
 import { isPlatformAllowed } from "../../lib/plans";
-import { parsePromptTypographyAndDesign } from "../../lib/poster-prompt-parser";
+import { parsePromptTypographyAndDesign, extractSceneAndTypography } from "../../lib/poster-prompt-parser";
 
 const VISUAL_STYLES: { id: VisualStyle; emoji: string; desc: string }[] = [
   { id: "Moderno",     emoji: "🔷", desc: "Líneas limpias, tipografía fuerte" },
@@ -211,8 +211,9 @@ export default function PosterFormView({
     handleUpdateTransforms(updated);
   };
 
-  const handleApplyExtractedTypography = (text: string) => {
-    const parsed = parsePromptTypographyAndDesign(text);
+  const handleApplyExtractedTypography = (text: string, sourceField?: 'postText' | 'imageExpectation' | 'idea') => {
+    const extracted = extractSceneAndTypography(text);
+    const parsed = extracted.parsedTypography;
     if (!parsed) return;
 
     const detectedParts: string[] = [];
@@ -233,6 +234,25 @@ export default function PosterFormView({
       }
     }
 
+    // Si se detectó que es un prompt de afiche completo, cargar la escena visual limpia en imageExpectation e idea
+    if (extracted.isPosterPrompt && extracted.sceneDescription) {
+      const cleanScene = extracted.sceneDescription;
+      if (postType === "Carrusel") {
+        updateSlideField("imageExpectation", cleanScene);
+      }
+      setIdea(cleanScene);
+      setImageExpectation(cleanScene);
+
+      // Si se pegó en postText, limpiar el prompt técnico en inglés y dejar un copy comercial en español
+      if (sourceField === 'postText') {
+        const headline = parsed.mainText || "";
+        const slogan = parsed.sloganText || "";
+        const cta = parsed.ctaText || "";
+        const draftCaption = [headline, slogan, cta].filter(Boolean).join(" · ");
+        setPostText(draftCaption);
+      }
+    }
+
     if (postType === "Carrusel") {
       setPosterConfig((prev) => {
         const existingSlides = prev.slides && prev.slides.length > 0 ? [...prev.slides] : [...DEFAULT_POSTER_SLIDES];
@@ -247,21 +267,35 @@ export default function PosterFormView({
           });
         }
         const updatedSlide = { ...existingSlides[currentSlideIdx] };
-        if (parsed.mainText) updatedSlide.mainText = parsed.mainText;
-        if (parsed.sloganText) updatedSlide.sloganText = parsed.sloganText;
-        if (parsed.priceText) updatedSlide.priceText = parsed.priceText;
-        if (parsed.ctaText) updatedSlide.ctaText = parsed.ctaText;
+        if (parsed.mainText) {
+          updatedSlide.mainText = parsed.mainText;
+          updatedSlide.includeMainText = true;
+        }
+        if (parsed.sloganText) {
+          updatedSlide.sloganText = parsed.sloganText;
+          updatedSlide.includeSlogan = true;
+        }
+        if (parsed.priceText) {
+          updatedSlide.priceText = parsed.priceText;
+          updatedSlide.includePrice = true;
+        }
+        if (parsed.ctaText) {
+          updatedSlide.ctaText = parsed.ctaText;
+          updatedSlide.includeCta = true;
+        }
 
         existingSlides[currentSlideIdx] = updatedSlide;
 
         return {
           ...prev,
           mainText: parsed.mainText ?? prev.mainText,
+          includeMainText: parsed.includeMainText ?? (parsed.mainText ? true : prev.includeMainText),
           sloganText: parsed.sloganText ?? prev.sloganText,
           includeSlogan: parsed.includeSlogan ?? (parsed.sloganText ? true : prev.includeSlogan),
           priceText: parsed.priceText ?? prev.priceText,
           includePrice: parsed.includePrice ?? (parsed.priceText ? true : prev.includePrice),
           ctaText: parsed.ctaText ?? prev.ctaText,
+          includeCta: parsed.includeCta ?? (parsed.ctaText ? true : prev.includeCta),
           primaryColor: parsed.primaryColor ?? prev.primaryColor,
           slides: existingSlides,
           enabled: true,
@@ -271,17 +305,23 @@ export default function PosterFormView({
       setPosterConfig((prev) => ({
         ...prev,
         mainText: parsed.mainText ?? prev.mainText,
+        includeMainText: parsed.includeMainText ?? (parsed.mainText ? true : prev.includeMainText),
         sloganText: parsed.sloganText ?? prev.sloganText,
         includeSlogan: parsed.includeSlogan ?? (parsed.sloganText ? true : prev.includeSlogan),
         priceText: parsed.priceText ?? prev.priceText,
         includePrice: parsed.includePrice ?? (parsed.priceText ? true : prev.includePrice),
         ctaText: parsed.ctaText ?? prev.ctaText,
+        includeCta: parsed.includeCta ?? (parsed.ctaText ? true : prev.includeCta),
         primaryColor: parsed.primaryColor ?? prev.primaryColor,
         enabled: true,
       }));
     }
 
-    setExtractedNotice(`Textos y estilo detectados en el prompt: ${detectedParts.join(" · ")}`);
+    setExtractedNotice(
+      extracted.isPosterPrompt
+        ? `✨ Prompt de afiche detectado: Escena visual y textos configurados automáticamente (${detectedParts.join(" · ")})`
+        : `Textos y estilo detectados en el prompt: ${detectedParts.join(" · ")}`
+    );
   };
 
   const handleSelectSlide = (idx: number) => {
@@ -1012,7 +1052,11 @@ export default function PosterFormView({
                       >
                         <textarea
                           value={postText}
-                          onChange={(e) => setPostText(e.target.value)}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setPostText(val);
+                            handleApplyExtractedTypography(val, 'postText');
+                          }}
                           placeholder={
                             postType === "Carrusel"
                               ? "El copy abarcará todo el carrusel en conjunto. Una vez definidas tus diapositivas, pulsa 'Redactar Copy con Agentes' o escribe tu texto aquí..."
@@ -1025,7 +1069,11 @@ export default function PosterFormView({
                         />
                         <div className="px-4 py-2 bg-white/70 border-t border-slate-100 flex items-center justify-between text-[10px]">
                           <VoiceMic
-                            onResult={(text) => setPostText(postText + (postText ? " " : "") + text)}
+                            onResult={(text) => {
+                              const nextVal = postText + (postText ? " " : "") + text;
+                              setPostText(nextVal);
+                              handleApplyExtractedTypography(nextVal, 'postText');
+                            }}
                             className="scale-75"
                           />
                           <span className={isOverLimit ? "text-rose-600 font-bold" : "text-slate-400 font-medium"}>

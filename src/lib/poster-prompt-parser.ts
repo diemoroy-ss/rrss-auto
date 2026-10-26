@@ -7,8 +7,10 @@ export interface ParsedPosterPrompt {
   ctaText?: string;
   priceText?: string;
   primaryColor?: string;
+  includeMainText?: boolean;
   includeSlogan?: boolean;
   includePrice?: boolean;
+  includeCta?: boolean;
 }
 
 export function parsePromptTypographyAndDesign(rawText: string): ParsedPosterPrompt | null {
@@ -201,5 +203,93 @@ export function parsePromptTypographyAndDesign(rawText: string): ParsedPosterPro
     }
   }
 
+  if (result.mainText) {
+    result.includeMainText = true;
+  }
+  if (result.ctaText) {
+    result.includeCta = true;
+  }
+
   return Object.keys(result).length > 0 ? result : null;
+}
+
+export interface ExtractedPosterPromptData {
+  sceneDescription: string;
+  parsedTypography: ParsedPosterPrompt | null;
+  isPosterPrompt: boolean;
+}
+
+/**
+ * Analiza un texto que puede contener tanto la descripción visual de la escena como la
+ * sección técnica de TYPOGRAPHY & LAYOUT. Separa ambos componentes y devuelve los textos
+ * estructurados para cargar en los campos del formulario y el modelo.
+ */
+export function extractSceneAndTypography(rawText: string): ExtractedPosterPromptData {
+  if (!rawText || typeof rawText !== "string") {
+    return { sceneDescription: "", parsedTypography: null, isPosterPrompt: false };
+  }
+
+  const text = rawText.trim();
+  const hasTypographyHeader = /typography\s*&\s*layout/i.test(text);
+  const hasLayoutKeywords =
+    /top\s+center/i.test(text) ||
+    /upper\s+center/i.test(text) ||
+    /bottom\s+right/i.test(text) ||
+    /lower\s+center/i.test(text) ||
+    /headline:/i.test(text) ||
+    /titular:/i.test(text);
+  const hasPosterKeywords =
+    /(vertical|square|commercial|saas|marketing)\s+.*poster/i.test(text) ||
+    /cartel\s+publicitario/i.test(text) ||
+    /afiche/i.test(text);
+
+  const parsedTypography = parsePromptTypographyAndDesign(text);
+
+  let sceneDescription = text;
+
+  if (hasTypographyHeader) {
+    // Extraer todo lo que precede a TYPOGRAPHY & LAYOUT
+    const splitIndex = text.search(/typography\s*&\s*layout/i);
+    if (splitIndex > 0) {
+      sceneDescription = text.substring(0, splitIndex).trim();
+    }
+  } else if (hasLayoutKeywords) {
+    // Si no tiene el encabezado exacto pero tiene directivas tipográficas, filtrar las líneas
+    const lines = text.split(/\r?\n/);
+    const sceneLines = lines.filter((l) => {
+      const lineLower = l.toLowerCase();
+      return (
+        !lineLower.includes("top center") &&
+        !lineLower.includes("upper center") &&
+        !lineLower.includes("bottom right") &&
+        !lineLower.includes("lower center") &&
+        !lineLower.includes("mid-upper center") &&
+        !lineLower.includes("headline:") &&
+        !lineLower.includes("slogan:") &&
+        !lineLower.includes("cta:") &&
+        !lineLower.includes("ultra-sharp vector typography")
+      );
+    });
+    sceneDescription = sceneLines.join("\n").trim();
+  }
+
+  // Limpiar etiquetas de calidad técnica que suelen ir al pie
+  sceneDescription = sceneDescription
+    .replace(/ultra-sharp vector typography[^\r\n]*/gi, "")
+    .replace(/commercial graphic design[^\r\n]*/gi, "")
+    .replace(/,\s*8k\b/gi, "")
+    .replace(/\b8k\b/gi, "")
+    .trim();
+
+  const isPosterPrompt = Boolean(
+    (hasTypographyHeader || (hasLayoutKeywords && (hasPosterKeywords || text.includes('"')))) &&
+    parsedTypography &&
+    (parsedTypography.mainText || parsedTypography.sloganText || parsedTypography.ctaText)
+  );
+
+  return {
+    sceneDescription: sceneDescription || text,
+    parsedTypography,
+    isPosterPrompt,
+  };
 }
