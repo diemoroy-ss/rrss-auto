@@ -11,6 +11,15 @@ import TestimonialsSection from "../../components/TestimonialsSection";
 import WhatsAppBotSection from "../../components/WhatsAppBotSection";
 import ContactForm from "../../components/ContactForm";
 
+const HERO_VIDEOS = [
+  { src: "/rrss1.mp4", label: "Intro · SocialPilot" },
+  { src: "/rrss2.mp4", label: "Generación de Contenido" },
+  { src: "/rrss3.mp4", label: "Estrategia de 14 días" },
+  { src: "/rrss4.mp4", label: "Publicación Automática" },
+  { src: "/rrss5.mp4", label: "Métricas y Reportes" },
+  { src: "/rrss6.mp4", label: "Empieza Gratis Hoy" },
+];
+
 type HeroTabKey = "carrusel" | "competencia" | "semana";
 type NicheKey = "all" | "gastronomia" | "salud" | "retail";
 
@@ -78,7 +87,7 @@ const HERO_DEMOS: Record<
       },
       {
         num: "2. Adaptado a Tu Marca",
-        title: "3 claves que debes revisar antes de automatizar tus redes",
+        title: "3 claves que debes revisar antes de delegar tus redes",
         sub: "Reescrito con tu tono cercano + Tu logo + Tu oferta",
         tag: "Clonado Inteligente",
       },
@@ -186,6 +195,36 @@ export default function PropuestaLandingPage() {
   const [adaptedPost, setAdaptedPost] = useState<CompetitorWinner | null>(
     COMPETITOR_POSTS[0]
   );
+  const [activeHeroVideo, setActiveHeroVideo] = useState(0);
+  const [modalVideoIndex, setModalVideoIndex] = useState<number | null>(null);
+
+  // Auto-rotación del reproductor de videos 9:16 cada 4.5 segundos
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveHeroVideo((prev) => (prev + 1) % HERO_VIDEOS.length);
+    }, 4500);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Navegación por teclado para el modal de video en pantalla completa
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (modalVideoIndex === null) return;
+      if (e.key === "ArrowLeft") {
+        setModalVideoIndex((prev) =>
+          prev === null ? 0 : prev === 0 ? HERO_VIDEOS.length - 1 : prev - 1
+        );
+      } else if (e.key === "ArrowRight") {
+        setModalVideoIndex((prev) =>
+          prev === null ? 0 : prev === HERO_VIDEOS.length - 1 ? 0 : prev + 1
+        );
+      } else if (e.key === "Escape") {
+        setModalVideoIndex(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [modalVideoIndex]);
 
   // IntersectionObserver para el efecto data-reveal de SocialPilot
   useEffect(() => {
@@ -230,61 +269,166 @@ export default function PropuestaLandingPage() {
         PRUEBA GRATIS — <strong>7 DÍAS Y 5 PUBLICACIONES GRATIS</strong> · SIN TARJETA DE CRÉDITO
       </div>
 
-      {/* 2. Navbar Oficial de SocialPilot (con Logo, Ecosistema y ThemeToggle) */}
+      {/* 2. Navbar Oficial de SocialPilot */}
       <BrandHeader />
 
       {/* ===================================================================== */}
-      {/* 3. HERO DIRECTO EN 5 SEGUNDOS + CONSOLA INTERACTIVA DE AGENTES        */}
+      {/* 3. HERO FUSIÓN: VELOCIDAD EN 5 SEGUNDOS + VIDEOS 9:16 + CONSOLA 1-CLIC */}
       {/* ===================================================================== */}
-      <section className="hero" style={{ borderTop: "none", paddingTop: "68px", paddingBottom: "64px" }}>
+      <section
+        className="hero"
+        style={{ borderTop: "none", paddingTop: "68px", paddingBottom: "68px" }}
+      >
         <div className="radar"></div>
 
-        <div className="wrap relative z-10 text-center">
-          <span className="eyebrow mx-auto">
-            Tu equipo de agentes para Redes, SEO y WhatsApp <span className="freq">·</span> Activo 24/7 🟢
-          </span>
+        {/* Parte Superior del Hero: Titular Directo + Reproductor de Videos Reales 9:16 */}
+        <div className="wrap flex flex-col lg:flex-row items-center gap-10 lg:gap-8 relative z-10">
+          <div className="hero-head lg:w-7/12 lg:text-left text-center m-0 max-w-none flex flex-col items-center lg:items-start">
+            <span className="eyebrow">
+              Exclusivo para PyMEs y Negocios en Chile <span className="freq">·</span> Activo 24/7 🟢
+            </span>
 
-          <h1 className="max-w-4xl mx-auto mt-5 text-3xl sm:text-5xl lg:text-6xl font-black leading-[1.08] tracking-tight">
-            Crea y publica el contenido de un mes{" "}
-            <em>en 5 minutos.</em>
-          </h1>
+            <h1 className="lg:text-left text-center leading-[1.08] mt-5 text-3xl sm:text-5xl lg:text-[54px] font-black tracking-tight">
+              Crea y publica el contenido de un mes{" "}
+              <em>en 5 minutos</em> —{" "}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-300">
+                por una fracción de lo que cobra una agencia.
+              </span>
+            </h1>
 
-          <p className="sub mx-auto mt-5 text-base sm:text-lg max-w-2xl leading-relaxed" style={{ color: "var(--ink-dim)" }}>
-            Pega tu web o tu Instagram. Nuestros agentes extraen el ADN de tu marca,{" "}
-            <strong style={{ color: "var(--ink)" }}>revisan qué anuncios le funcionan a tu competencia</strong> y te
-            arman carruseles, afiches y reels listos para publicar.
-          </p>
+            <p
+              className="sub lg:text-left text-center lg:mx-0 mx-auto mt-5 text-base sm:text-lg leading-relaxed max-w-2xl"
+              style={{ color: "var(--ink-dim)" }}
+            >
+              Pega tu web o tu Instagram. Nuestros agentes extraen el ADN de tu marca,{" "}
+              <strong style={{ color: "var(--ink)" }}>
+                revisan qué anuncios le funcionan a tu competencia
+              </strong>{" "}
+              y te dejan el mes completo de carruseles, afiches y reels listos para publicar.
+            </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-3.5 mt-8">
-            <Link
-              href="/automatizacion-rrss/panel/crear"
-              className="btn btn-primary !px-7 !py-3.5 !text-sm !font-black shadow-lg shadow-orange-500/25"
-            >
-              <span>🚀</span> Probar gratis con mi negocio →
-            </Link>
-            <a
-              href="#escaner-competencia"
-              className="btn btn-outline !px-6 !py-3.5 !text-sm !font-bold"
-            >
-              <span>🕵️‍♂️</span> Ver Escáner de Competencia
-            </a>
-            <a
-              href="https://wa.me/56934428848?text=%C2%A1Hola%20Santisoft!%20Quiero%20recibir%20los%203%20posts%20de%20prueba%20gratis%20creados%20para%20mi%20negocio%20por%20WhatsApp."
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn !bg-emerald-600/20 !border-emerald-500/40 !text-emerald-300 hover:!bg-emerald-600/30 !px-5 !py-3.5 !text-sm !font-bold"
-            >
-              <span>💬</span> Pedir 3 posts gratis por WhatsApp
-            </a>
+            {/* Triple CTA de Alta Conversión */}
+            <div className="hero-ctas flex flex-col sm:flex-row flex-wrap justify-center lg:justify-start gap-3 mt-7 w-full">
+              <a
+                href="https://wa.me/56934428848?text=%C2%A1Hola%20Santisoft!%20Quiero%20recibir%20los%203%20posts%20de%20prueba%20gratis%20creados%20para%20mi%20negocio%20por%20WhatsApp.%20Mi%20rubro%20es%3A%20"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-primary w-full sm:w-auto justify-center text-center !bg-gradient-to-r !from-emerald-500 !to-teal-500 hover:!from-emerald-600 hover:!to-teal-600 !text-white !font-black !shadow-lg !shadow-emerald-500/30 flex items-center gap-2 !px-6 !py-3.5"
+              >
+                <span>💬</span> Recibir 3 posts de prueba gratis por WhatsApp
+              </a>
+
+              <Link
+                href="/automatizacion-rrss/panel/crear"
+                className="btn btn-primary w-full sm:w-auto justify-center text-center !px-6 !py-3.5 !font-black shadow-lg shadow-orange-500/25"
+              >
+                <span>🚀</span> Probar en Estudio Creativo →
+              </Link>
+
+              <a
+                href="#escaner-competencia"
+                className="btn btn-outline w-full sm:w-auto justify-center text-center !px-5 !py-3.5 !font-bold"
+              >
+                <span>🕵️‍♂️</span> Escáner de Competencia
+              </a>
+            </div>
+
+            {/* Píldoras de Confianza Rápida */}
+            <div className="badges flex flex-wrap justify-center lg:justify-start gap-2 w-full mt-7">
+              <span className="badge on !border-emerald-500/40 text-emerald-400 font-semibold">
+                <span className="dot !bg-emerald-400 !shadow-[0_0_6px_#34d399]"></span>
+                Aprobación por WhatsApp
+              </span>
+              <span className="badge on !border-orange-500/40 text-orange-300 font-semibold">
+                <span className="dot"></span>
+                Espía de Competencia 1-Clic
+              </span>
+              <span className="badge on">
+                <span className="dot"></span>Instagram, Facebook &amp; TikTok
+              </span>
+              <span className="badge on">
+                <span className="dot"></span>Zona Segura Calibrada
+              </span>
+              <span className="badge on">
+                <span className="dot"></span>Policía Anti-Baneos
+              </span>
+              <span className="badge on">
+                <span className="dot"></span>Setup Llave en Mano
+              </span>
+            </div>
           </div>
 
-          <p className="mt-4 text-xs font-mono uppercase tracking-wider" style={{ color: "var(--ink-faint)" }}>
-            Sin tarjeta · En español · Zona segura calibrada · Publica en 6 redes
-          </p>
+          {/* Columna Derecha: Reproductor de Videos Reales 9:16 */}
+          <div className="hero-carousel-col lg:w-5/12 w-full flex justify-center lg:justify-end z-10 relative">
+            <div
+              onClick={() => setModalVideoIndex(activeHeroVideo)}
+              className="hero-carousel-wrap relative aspect-[9/16] rounded-3xl overflow-hidden shadow-2xl bg-black border border-white/10 group cursor-pointer w-[180px] sm:w-[230px] md:w-[270px] lg:w-full lg:max-w-[330px]"
+            >
+              {HERO_VIDEOS.map((v, i) => (
+                <div
+                  key={i}
+                  className={`absolute inset-0 w-full h-full transition-opacity duration-700 ease-in-out ${
+                    i === activeHeroVideo ? "opacity-100 z-10" : "opacity-0 z-0"
+                  }`}
+                >
+                  <video
+                    src={v.src}
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute top-5 left-0 right-0 flex justify-center px-3">
+                    <span className="bg-black/65 backdrop-blur-md text-white/95 px-3.5 py-1 rounded-full text-[10px] font-mono tracking-widest border border-white/15 uppercase shadow-lg text-center leading-tight">
+                      {v.label}
+                    </span>
+                  </div>
+                </div>
+              ))}
 
-          {/* CONSOLA INTERACTIVA DE AGENTES EN EL HERO */}
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-3 z-20 pointer-events-none p-4 text-center">
+                <div className="w-14 h-14 rounded-full bg-[#FF6B00] text-white flex items-center justify-center shadow-xl scale-95 group-hover:scale-100 transition-transform">
+                  <svg className="w-7 h-7 fill-current ml-0.5" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </div>
+                <span className="bg-black/80 backdrop-blur-md text-white text-xs font-medium px-4 py-2 rounded-full border border-white/20 shadow-lg">
+                  🔊 Clic para agrandar y escuchar audio
+                </span>
+              </div>
+
+              <div className="absolute top-5 right-3.5 z-30">
+                <span className="bg-black/70 backdrop-blur-md text-white/90 p-2 rounded-full border border-white/20 shadow-md flex items-center justify-center text-xs">
+                  🔊
+                </span>
+              </div>
+
+              <div className="absolute bottom-5 left-0 right-0 z-30 flex justify-center gap-2">
+                {[0, 1, 2, 3, 4, 5].map((idx) => (
+                  <button
+                    key={idx}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveHeroVideo(idx);
+                    }}
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      idx === activeHeroVideo
+                        ? "w-6 bg-[#FF6B00] shadow-[0_0_8px_rgba(255,107,0,0.9)]"
+                        : "w-2 bg-white/40 hover:bg-white/70"
+                    }`}
+                    aria-label={`Ver video ${idx + 1}`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Parte Inferior del Hero: Consola Interactiva en 1 Clic (Sin pedir correo primero) */}
+        <div className="wrap relative z-10 mt-12">
           <div
-            className="mt-10 rounded-3xl p-5 sm:p-7 text-left max-w-5xl mx-auto transition-all"
+            className="rounded-3xl p-5 sm:p-7 text-left transition-all"
             style={{
               background: "var(--panel)",
               border: "1px solid var(--line-strong)",
@@ -297,8 +441,11 @@ export default function PropuestaLandingPage() {
             >
               <div className="flex items-center gap-2.5">
                 <span className="rrss-dot" />
-                <span className="font-mono text-xs font-bold uppercase tracking-wider" style={{ color: "var(--ink-dim)" }}>
-                  Consola SocialPilot en vivo — Elige una tarea:
+                <span
+                  className="font-mono text-xs font-bold uppercase tracking-wider"
+                  style={{ color: "var(--ink-dim)" }}
+                >
+                  Prueba cómo trabajan nuestros agentes (Haz clic sin registrarte):
                 </span>
               </div>
 
@@ -348,7 +495,10 @@ export default function PropuestaLandingPage() {
                   <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-orange-400">
                     Tú pides en 1 línea:
                   </span>
-                  <p className="text-sm font-semibold italic leading-relaxed" style={{ color: "var(--ink)" }}>
+                  <p
+                    className="text-sm font-semibold italic leading-relaxed"
+                    style={{ color: "var(--ink)" }}
+                  >
                     {currentHero.prompt}
                   </p>
                 </div>
@@ -390,7 +540,10 @@ export default function PropuestaLandingPage() {
                           {slide.tag}
                         </span>
                       </div>
-                      <p className="text-xs sm:text-sm font-bold leading-snug" style={{ color: "var(--ink)" }}>
+                      <p
+                        className="text-xs sm:text-sm font-bold leading-snug"
+                        style={{ color: "var(--ink)" }}
+                      >
                         {slide.title}
                       </p>
                     </div>
@@ -416,8 +569,8 @@ export default function PropuestaLandingPage() {
           <div className="section-head center" data-reveal>
             <span className="eyebrow">Más contenido · Menos trabajo</span>
             <h2>
-              Todo resuelto para que vendas más en <em>Redes</em>, <span className="em-p">Google</span> y{" "}
-              <span className="em-w">WhatsApp.</span>
+              Todo resuelto para que vendas más en <em>Redes</em>,{" "}
+              <span className="em-p">Google</span> y <span className="em-w">WhatsApp.</span>
             </h2>
           </div>
 
@@ -502,12 +655,20 @@ export default function PropuestaLandingPage() {
             {/* Paso 02 */}
             <div
               className="pillar b !p-7 flex flex-col justify-between gap-5"
-              style={{ borderColor: "var(--signal-line)", boxShadow: "0 16px 40px rgba(255,107,0,0.1)" }}
+              style={{
+                borderColor: "var(--signal-line)",
+                boxShadow: "0 16px 40px rgba(255,107,0,0.1)",
+              }}
             >
               <div>
                 <div className="flex items-center justify-between gap-2">
-                  <span className="pillar-tag !text-orange-400">PASO 02 · ESCÁNER DE COMPETENCIA</span>
-                  <a href="#escaner-competencia" className="text-xs font-bold text-orange-400 hover:underline">
+                  <span className="pillar-tag !text-orange-400">
+                    PASO 02 · ESCÁNER DE COMPETENCIA
+                  </span>
+                  <a
+                    href="#escaner-competencia"
+                    className="text-xs font-bold text-orange-400 hover:underline"
+                  >
                     Probar abajo ↓
                   </a>
                 </div>
@@ -552,10 +713,18 @@ export default function PropuestaLandingPage() {
                   Redes sincronizadas:
                 </span>
                 <div className="flex flex-wrap gap-1.5 text-xs font-bold">
-                  <span className="px-2.5 py-0.5 rounded-full bg-orange-500/15 text-orange-300">Instagram</span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-sky-500/15 text-sky-300">Facebook</span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300">TikTok</span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300">LinkedIn</span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-orange-500/15 text-orange-300">
+                    Instagram
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-sky-500/15 text-sky-300">
+                    Facebook
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300">
+                    TikTok
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300">
+                    LinkedIn
+                  </span>
                 </div>
               </div>
             </div>
@@ -586,7 +755,7 @@ export default function PropuestaLandingPage() {
                   className="px-3 py-1.5 rounded-full text-xs font-semibold"
                   style={{ background: "var(--bg)", border: "1px solid var(--line)" }}
                 >
-                  &ldquo;Más contraste en textos&rdquo;
+                  &ldquo;Aprobar por WhatsApp&rdquo;
                 </span>
               </div>
             </div>
@@ -695,8 +864,12 @@ export default function PropuestaLandingPage() {
                     className="rounded-2xl p-5 flex flex-col justify-between gap-4 transition-all"
                     style={{
                       background: "var(--bg)",
-                      border: isSelected ? "2px solid var(--signal)" : "1px solid var(--line)",
-                      boxShadow: isSelected ? "0 12px 32px rgba(255,107,0,0.15)" : "none",
+                      border: isSelected
+                        ? "2px solid var(--signal)"
+                        : "1px solid var(--line)",
+                      boxShadow: isSelected
+                        ? "0 12px 32px rgba(255,107,0,0.15)"
+                        : "none",
                     }}
                   >
                     <div className="space-y-3">
@@ -806,7 +979,10 @@ export default function PropuestaLandingPage() {
                     className="lg:col-span-7 rounded-xl p-4 space-y-2"
                     style={{ background: "var(--panel)", border: "1px solid var(--line)" }}
                   >
-                    <div className="font-mono text-xs font-bold uppercase tracking-wider" style={{ color: "var(--ink-dim)" }}>
+                    <div
+                      className="font-mono text-xs font-bold uppercase tracking-wider"
+                      style={{ color: "var(--ink-dim)" }}
+                    >
                       Láminas pre-cargadas con checkboxes independientes:
                     </div>
                     {adaptedPost.adaptedSlides.map((slideText, idx) => (
@@ -837,80 +1013,7 @@ export default function PropuestaLandingPage() {
       </section>
 
       {/* ===================================================================== */}
-      {/* 7. COMPARATIVA DIRECTA EN 2 COLUMNAS (RÁPIDA DE LEER)                 */}
-      {/* ===================================================================== */}
-      <section className="py-16 border-t border-slate-800/70">
-        <div className="wrap">
-          <div className="section-head center" data-reveal>
-            <span className="eyebrow">Comparativa directa</span>
-            <h2>
-              Hacerlo todo a mano vs. <em>Con SocialPilot.</em>
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto mt-8" data-reveal>
-            <div className="pillar !p-7">
-              <span className="pillar-tag !text-rose-400">HACERLO TODO A MANO</span>
-              <h3 className="!text-2xl mt-2">Horas perdidas cada semana</h3>
-              <ul className="pillar-list mt-4">
-                <li>
-                  <span className="mark !text-rose-400">✕</span>
-                  <span>Mirar la pantalla en blanco sin saber qué publicar hoy</span>
-                </li>
-                <li>
-                  <span className="mark !text-rose-400">✕</span>
-                  <span>Pelear con plantillas genéricas que se ven iguales a las de todos</span>
-                </li>
-                <li>
-                  <span className="mark !text-rose-400">✕</span>
-                  <span>Textos y botones que quedan cortados al subirlos a Instagram</span>
-                </li>
-                <li>
-                  <span className="mark !text-rose-400">✕</span>
-                  <span>Pagar herramientas separadas para diseñar, programar y fidelizar</span>
-                </li>
-              </ul>
-            </div>
-
-            <div
-              className="pillar a !p-7"
-              style={{ borderColor: "var(--signal-line)", boxShadow: "0 20px 50px rgba(255,107,0,0.12)" }}
-            >
-              <span className="pillar-tag !text-emerald-400">CON SOCIALPILOT</span>
-              <h3 className="!text-2xl mt-2">Listo y programado en 5 minutos</h3>
-              <ul className="pillar-list mt-4">
-                <li>
-                  <span className="mark !text-emerald-400">✓</span>
-                  <span>
-                    <strong>Ideas que ya venden</strong> tomadas de lo que funciona en tu rubro
-                  </span>
-                </li>
-                <li>
-                  <span className="mark !text-emerald-400">✓</span>
-                  <span>
-                    <strong>Carruseles, afiches y reels</strong> con tu logo, colores y catálogo
-                  </span>
-                </li>
-                <li>
-                  <span className="mark !text-emerald-400">✓</span>
-                  <span>
-                    <strong>Zona segura calibrada</strong> para que luzca impecable en celular
-                  </span>
-                </li>
-                <li>
-                  <span className="mark !text-emerald-400">✓</span>
-                  <span>
-                    <strong>Autopublicación en 6 redes</strong> + Club Fideliza + Bot de WhatsApp
-                  </span>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ===================================================================== */}
-      {/* 8. HECHO PARA NEGOCIOS COMO EL TUYO (4 CASOS DE USO CON PROMPTS)      */}
+      {/* 7. HECHO PARA NEGOCIOS COMO EL TUYO (IDENTIFICACIÓN RÁPIDA POR RUBRO) */}
       {/* ===================================================================== */}
       <section className="py-16 border-t border-slate-800/70">
         <div className="wrap">
@@ -981,22 +1084,458 @@ export default function PropuestaLandingPage() {
         </div>
       </section>
 
-      {/* 9. Diferenciador WhatsApp Bot Oficial de SocialPilot */}
+      {/* ===================================================================== */}
+      {/* 8. ECOSISTEMA 3 CANALES EXPLICADO EN SIMPLE (REDES + GOOGLE + WA)     */}
+      {/* ===================================================================== */}
+      <section id="ecosistema" className="py-16 border-t border-slate-800/70">
+        <div className="wrap">
+          <div className="section-head center" data-reveal>
+            <span className="eyebrow">Ecosistema Completo · 3 Canales</span>
+            <h2>
+              Más allá de Instagram: presencia continua en <em>Redes</em>,{" "}
+              <span className="em-p">Google</span> y <span className="em-w">WhatsApp.</span>
+            </h2>
+          </div>
+
+          <div className="pillars three-col mt-8" data-reveal>
+            <div className="pillar a">
+              <span className="pillar-tag">CANAL 1 · REDES SOCIALES 360°</span>
+              <h3>Redes Sociales 360°</h3>
+              <ul className="pillar-list">
+                <li>
+                  <span className="mark">›</span>
+                  <span>
+                    <strong>Videos 9:16 y Afiches Comerciales:</strong> 20 estilos visuales para Reels y TikTok, más afiches con precios, ofertas y llamados a WhatsApp.
+                  </span>
+                </li>
+                <li>
+                  <span className="mark">›</span>
+                  <span>
+                    <strong>Espía de Competencia y Radar:</strong> Detección de anuncios ganadores y temas con tracción real en tu rubro.
+                  </span>
+                </li>
+                <li>
+                  <span className="mark">›</span>
+                  <span>
+                    Publicación automática directa en <strong>Instagram, Facebook, TikTok, LinkedIn, YouTube Shorts</strong> y <strong>X</strong>.
+                  </span>
+                </li>
+              </ul>
+              <div className="mt-3 pt-3 border-t border-slate-700/30 flex items-center justify-between text-xs">
+                <span className="pillar-note !m-0">Autopublicación directa y sincronizada</span>
+                <Link href="/como-funciona" className="text-orange-400 font-bold hover:underline">
+                  Ver ejemplos visuales ➔
+                </Link>
+              </div>
+            </div>
+
+            <div className="pillar b">
+              <span className="pillar-tag">CANAL 2 · BLOG PARA GOOGLE Y BUSCADORES</span>
+              <h3>Aparece cuando te buscan</h3>
+              <ul className="pillar-list">
+                <li>
+                  <span className="mark">›</span>
+                  <span>
+                    <strong>Artículos listos en tu web:</strong> Nuestros agentes redactan y publican artículos optimizados directo en tu WordPress o Shopify.
+                  </span>
+                </li>
+                <li>
+                  <span className="mark">›</span>
+                  <span>
+                    <strong>Recomendado en buscadores modernos:</strong> Estructuramos tu contenido para que tanto Google como los buscadores conversacionales recomienden a tu negocio.
+                  </span>
+                </li>
+                <li>
+                  <span className="mark">›</span>
+                  <span>
+                    Atrae clientes que están buscando activamente tu servicio en tu ciudad.
+                  </span>
+                </li>
+              </ul>
+              <span className="pillar-note">Tráfico orgánico + Posicionamiento continuo</span>
+            </div>
+
+            <div className="pillar c">
+              <span className="pillar-tag">CANAL 3 · CONTROL POR WHATSAPP + FIDELIZA</span>
+              <h3>Mando desde tu celular</h3>
+              <ul className="pillar-list">
+                <li>
+                  <span className="mark">›</span>
+                  <span>
+                    <strong>Aprobación con 1 mensaje:</strong> Revisa y autoriza las publicaciones de la semana directo desde tu WhatsApp.
+                  </span>
+                </li>
+                <li>
+                  <span className="mark">›</span>
+                  <span>
+                    <strong>Pedidos al vuelo:</strong> Manda una foto o audio con una oferta urgente del día y nuestros agentes arman el post al instante.
+                  </span>
+                </li>
+                <li>
+                  <span className="mark">›</span>
+                  <span>
+                    <strong>Club Fideliza integrado:</strong> Tarjetas digitales de puntos y sellos para que tus clientes vuelvan a comprar.
+                  </span>
+                </li>
+              </ul>
+              <span className="pillar-note">Control total desde tu bolsillo</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ===================================================================== */}
+      {/* 9. DIFERENCIADOR WHATSAPP BOT EN VIVO                                 */}
+      {/* ===================================================================== */}
       <WhatsAppBotSection />
 
-      {/* 10. Testimonios Oficiales */}
+      {/* ===================================================================== */}
+      {/* 10. TESTIMONIOS REALES                                                */}
+      {/* ===================================================================== */}
       <TestimonialsSection />
 
-      {/* 11. Planes y Precios Oficiales */}
-      <PricingPlans />
+      {/* ===================================================================== */}
+      {/* 11. ANCLAJE DE PRECIO CHILENO: TABLA DE 3 COLUMNAS EN PESOS (CLP)     */}
+      {/* ===================================================================== */}
+      <section id="comparativa" className="py-20 border-t border-slate-800/80">
+        <div className="wrap">
+          <div className="section-head center" data-reveal>
+            <span className="eyebrow">Comparativa Directa · Números Reales</span>
+            <h2>
+              Tres caminos para tus redes.
+              <br />
+              Uno solo te da <em>ventas y tiempo libre.</em>
+            </h2>
+          </div>
+          <p
+            className="text-center max-w-2xl mx-auto -mt-6 mb-12 text-slate-300 text-sm sm:text-base leading-relaxed"
+            data-reveal
+          >
+            Hagamos números claros para el dueño de negocio en Chile. ¿Cuánto te cuesta realmente mantener tus redes activas todos los días?
+          </p>
 
-      {/* 12. Formulario de Contacto */}
-      <ContactForm />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch" data-reveal>
+            {/* Columna 1: Hacerlo tú mismo */}
+            <div className="p-7 rounded-3xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between space-y-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black uppercase tracking-wider text-slate-400">
+                    Opción 1
+                  </span>
+                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400">
+                    Hacerlo a mano
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">Hacerlo tú mismo</h3>
+                  <div className="mt-2 text-3xl font-black text-slate-200">
+                    $0 <span className="text-sm font-normal text-slate-400">CLP / mes</span>
+                  </div>
+                  <p className="text-xs text-red-400 font-semibold mt-1">
+                    &ldquo;Gratis&rdquo; en dinero, carísimo en tiempo y estrés
+                  </p>
+                </div>
+                <ul className="space-y-3 text-xs text-slate-300 pt-2 border-t border-slate-800">
+                  <li className="flex items-start gap-2">
+                    <span className="text-red-400 font-bold">✕</span>
+                    <span>
+                      Pierdes <strong>+15 horas al mes</strong> pensando qué publicar y buscando fotos.
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-red-400 font-bold">✕</span>
+                    <span>
+                      <strong>Estrés el domingo en la noche</strong> improvisando diseños caseros.
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-red-400 font-bold">✕</span>
+                    <span>
+                      <strong>Redes abandonadas</strong> a la segunda semana por falta de tiempo para operar tu negocio.
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-red-400 font-bold">✕</span>
+                    <span>
+                      Cero alcance: fotos sin llamadas a la acción que nadie guarda ni compra.
+                    </span>
+                  </li>
+                </ul>
+              </div>
+              <div className="p-3.5 rounded-2xl bg-red-950/20 border border-red-900/30 text-center text-xs text-red-300 font-medium">
+                Resultado: Negocio invisible y dueño agotado.
+              </div>
+            </div>
 
-      {/* 13. Footer Oficial de SocialPilot */}
+            {/* Columna 2: Agencia Tradicional */}
+            <div className="p-7 rounded-3xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between space-y-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black uppercase tracking-wider text-slate-400">
+                    Opción 2
+                  </span>
+                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-red-950/60 border border-red-900/40 text-red-300">
+                    Costoso y lento
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">Agencia Tradicional / CM</h3>
+                  <div className="mt-2 text-2xl sm:text-3xl font-black text-white">
+                    $450.000 – $800.000{" "}
+                    <span className="text-xs sm:text-sm font-normal text-slate-400">CLP / mes</span>
+                  </div>
+                  <p className="text-xs text-red-400 font-semibold mt-1">
+                    Presupuesto inalcanzable para la mayoría de PyMEs
+                  </p>
+                </div>
+                <ul className="space-y-3 text-xs text-slate-300 pt-2 border-t border-slate-800">
+                  <li className="flex items-start gap-2">
+                    <span className="text-red-400 font-bold">✕</span>
+                    <span>
+                      <strong>Reuniones lentas</strong> e interminables hilos de correos para coordinar 8 posts al mes.
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-red-400 font-bold">✕</span>
+                    <span>
+                      <strong>Textos genéricos y fríos</strong> redactados por personas que no conocen la realidad de tu rubro.
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-red-400 font-bold">✕</span>
+                    <span>
+                      Tardan <strong>días en responder</strong> cuando necesitas publicar una promo urgente para el fin de semana.
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-red-400 font-bold">✕</span>
+                    <span>
+                      <strong>Contratos largos</strong> amarrados por 6 a 12 meses sin garantía de resultados.
+                    </span>
+                  </li>
+                </ul>
+              </div>
+              <div className="p-3.5 rounded-2xl bg-red-950/20 border border-red-900/30 text-center text-xs text-red-300 font-medium">
+                Resultado: Pagar una fortuna por un servicio rígido.
+              </div>
+            </div>
+
+            {/* Columna 3: SocialPilot by Santisoft (DESTACADA) */}
+            <div className="relative p-7 rounded-3xl bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 border-2 border-orange-500 shadow-2xl shadow-orange-500/20 flex flex-col justify-between space-y-6">
+              <div className="absolute -top-3.5 right-6 bg-gradient-to-r from-orange-500 to-amber-500 text-slate-950 text-[11px] font-black uppercase tracking-wider px-3.5 py-1 rounded-full shadow-lg">
+                🔥 Recomendado para PyMEs
+              </div>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black uppercase tracking-wider text-orange-400">
+                    Opción 3
+                  </span>
+                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    Llave en Mano
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">SocialPilot by Santisoft</h3>
+                  <div className="mt-2 text-3xl font-black text-white">
+                    Desde $59.990{" "}
+                    <span className="text-sm font-normal text-slate-400">CLP / mes</span>
+                  </div>
+                  <p className="text-xs text-emerald-400 font-semibold mt-1">
+                    90% más barato que una agencia y 100% bajo tu control
+                  </p>
+                </div>
+                <ul className="space-y-3 text-xs text-slate-200 pt-2 border-t border-slate-800">
+                  <li className="flex items-start gap-2">
+                    <span className="text-emerald-400 font-bold">✓</span>
+                    <span>
+                      <strong>Nuestros agentes con tu voz real</strong>: textos persuasivos con la personalidad auténtica de tu negocio.
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-emerald-400 font-bold">✓</span>
+                    <span>
+                      <strong>Espía de competencia en 1 clic</strong>: detecta qué anuncios llevan +30 días activos en tu rubro y los adapta a tu marca.
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-emerald-400 font-bold">✓</span>
+                    <span>
+                      <strong>Carruseles, Afiches y Reels</strong> con tu logo, colores, catálogo y zona segura calibrada.
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-emerald-400 font-bold">✓</span>
+                    <span>
+                      <strong>Policía Anti-Baneos</strong> de Instagram para proteger el alcance y la salud de tu cuenta.
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-emerald-400 font-bold">✓</span>
+                    <span>
+                      <strong>Setup Llave en Mano GRATIS</strong>: dejamos tu marca configurada y tu contenido andando.
+                    </span>
+                  </li>
+                </ul>
+              </div>
+              <div className="space-y-2">
+                <a
+                  href="https://wa.me/56934428848?text=%C2%A1Hola!%20Quiero%20asegurar%20uno%20de%20los%20cupos%20del%20Plan%20PyME%20Crecimiento%20de%20Santisoft%20con%20Setup%20Gratis."
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-xs text-center flex items-center justify-center gap-2 shadow-lg shadow-orange-500/25 transition-all"
+                >
+                  <span>🚀</span> Asegurar mi cupo con Setup Gratis
+                </a>
+                <p className="text-[10px] text-center text-slate-400">
+                  Garantía Cero Riesgo de 7 días · Cancela cuando quieras
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ===================================================================== */}
+      {/* 12. PLANES Y PRECIOS OFICIALES                                        */}
+      {/* ===================================================================== */}
+      <section id="planes">
+        <div className="wrap">
+          <div className="section-head center" data-reveal>
+            <span className="eyebrow">Planes</span>
+            <h2>
+              Escoge tu nivel de <em>automatización.</em>
+            </h2>
+          </div>
+          <PricingPlans />
+        </div>
+      </section>
+
+      {/* ===================================================================== */}
+      {/* 13. CONTACTO + REDES OFICIALES                                        */}
+      {/* ===================================================================== */}
+      <section id="contacto" className="relative">
+        <div className="wrap relative z-10 max-w-3xl">
+          <div className="section-head center" data-reveal>
+            <span className="eyebrow">Contacto</span>
+            <h2>
+              ¿Tienes dudas? <em>Hablemos.</em>
+            </h2>
+            <p
+              className="mt-4 font-sans max-w-lg mx-auto"
+              style={{ color: "var(--ink-dim)", fontSize: "15px", lineHeight: "1.6" }}
+            >
+              Déjanos tus datos y te contactaremos a la brevedad para ayudarte a potenciar tu negocio.
+            </p>
+          </div>
+
+          <div className="panel p-8 md:p-10" data-reveal>
+            <ContactForm />
+          </div>
+        </div>
+      </section>
+
+      {/* ===================================================================== */}
+      {/* 14. CTA FINAL CON RADAR OFICIAL                                       */}
+      {/* ===================================================================== */}
+      <div className="final-cta">
+        <div className="radar"></div>
+        <div className="wrap relative z-10">
+          <h2>
+            Tu negocio merece verse activo
+            <br />
+            <em>todos los días.</em>
+          </h2>
+          <p>
+            Empieza hoy con 7 días de prueba gratis o pídenos 3 publicaciones de muestra creadas para tu negocio por WhatsApp.
+          </p>
+          <div className="flex flex-wrap justify-center gap-4">
+            <Link href="/automatizacion-rrss" className="btn btn-primary">
+              Comenzar prueba de 7 días →
+            </Link>
+            <a
+              href="https://wa.me/56934428848?text=%C2%A1Hola%20Santisoft!%20Quiero%20recibir%20los%203%20posts%20de%20prueba%20gratis%20creados%20para%20mi%20negocio."
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-outline"
+            >
+              💬 Pedir 3 posts gratis por WhatsApp
+            </a>
+          </div>
+        </div>
+      </div>
+
+      {/* 15. Footer Oficial de SocialPilot */}
       <BrandFooter />
 
       <WebChatWidget />
+
+      {/* ===================================================================== */}
+      {/* MODAL DE VIDEO 9:16 EN PANTALLA COMPLETA                              */}
+      {/* ===================================================================== */}
+      {modalVideoIndex !== null && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-xl p-3 sm:p-6 animate-fade-in"
+          onClick={() => setModalVideoIndex(null)}
+        >
+          <div
+            className="relative max-w-sm sm:max-w-md w-full flex flex-col items-center justify-center bg-slate-900/95 rounded-3xl p-3 sm:p-5 border border-white/20 shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-full flex items-center justify-between px-2 pb-3 mb-2 border-b border-white/10">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono uppercase tracking-widest text-white/90 bg-[#FF6B00]/80 px-3 py-1 rounded-full border border-orange-400/30">
+                  {HERO_VIDEOS[modalVideoIndex].label}
+                </span>
+                <span className="text-[11px] font-mono text-slate-400">
+                  {modalVideoIndex + 1}/{HERO_VIDEOS.length}
+                </span>
+              </div>
+              <button
+                onClick={() => setModalVideoIndex(null)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-sm font-bold transition-colors"
+                aria-label="Cerrar video"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="relative w-full aspect-[9/16] max-h-[55vh] sm:max-h-[70vh] rounded-2xl overflow-hidden bg-black flex items-center justify-center border border-white/10 shadow-inner group">
+              <video
+                key={modalVideoIndex}
+                src={HERO_VIDEOS[modalVideoIndex].src}
+                controls
+                autoPlay
+                playsInline
+                className="w-full h-full object-cover"
+              />
+
+              <button
+                onClick={() =>
+                  setModalVideoIndex((prev) =>
+                    prev === null ? 0 : prev === 0 ? HERO_VIDEOS.length - 1 : prev - 1
+                  )
+                }
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 hover:bg-black/90 text-white border border-white/20 flex items-center justify-center text-lg shadow-xl transition-transform hover:scale-110 active:scale-95 z-30"
+                aria-label="Video anterior"
+              >
+                ‹
+              </button>
+
+              <button
+                onClick={() =>
+                  setModalVideoIndex((prev) =>
+                    prev === null ? 0 : prev === HERO_VIDEOS.length - 1 ? 0 : prev + 1
+                  )
+                }
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 hover:bg-black/90 text-white border border-white/20 flex items-center justify-center text-lg shadow-xl transition-transform hover:scale-110 active:scale-95 z-30"
+                aria-label="Video siguiente"
+              >
+                ›
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
