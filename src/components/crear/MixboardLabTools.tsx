@@ -281,6 +281,8 @@ export function MixboardStyleReferenceSlot({
 
   const [competitorNote, setCompetitorNote] = useState("");
   const [adapting, setAdapting] = useState(false);
+  const [scanningAds, setScanningAds] = useState(false);
+  const [winningAds, setWinningAds] = useState<any[]>([]);
   const [adaptError, setAdaptError] = useState<string | null>(null);
   const [competitorInsight, setCompetitorInsight] = useState<string | null>(null);
 
@@ -299,6 +301,51 @@ export function MixboardStyleReferenceSlot({
     const q = competitorNote.trim() || businessType || businessName || "promocion";
     const url = `https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=ALL&q=${encodeURIComponent(q)}`;
     window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const handleScanWinningAds = async () => {
+    setScanningAds(true);
+    setAdaptError(null);
+    try {
+      const res = await fetch("/api/ai/competitor-spy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: competitorNote.trim() || businessType || businessName || "Negocio local",
+          businessName: businessName || "Mi Negocio",
+          businessType: businessType || "Comercio / Servicios",
+          postType,
+          carouselCount: postType === "Carrusel" ? carouselCount : 1,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "No se pudieron escanear los anuncios de la competencia.");
+      }
+      setWinningAds(data.winningAds || []);
+    } catch (err: any) {
+      console.error("[MixboardStyleReferenceSlot] Scan Error:", err);
+      setAdaptError(err.message || "Error al escanear anuncios ganadores.");
+    } finally {
+      setScanningAds(false);
+    }
+  };
+
+  const handleSelectWinningAd = (ad: any) => {
+    if (!onApplyCompetitorAdaptation || !ad?.adapted) return;
+    setCompetitorInsight(`${ad.competitorName}: ${ad.whyItWorks}`);
+    onApplyCompetitorAdaptation({
+      prompt: ad.adapted.scenePrompt || ad.hook,
+      competitorInsight: ad.whyItWorks,
+      fields: {
+        mainText: ad.adapted.mainText,
+        sloganText: ad.adapted.sloganText,
+        priceText: ad.adapted.priceText,
+        ctaText: ad.adapted.ctaText,
+        postCopy: ad.adapted.postCopy,
+      },
+      adaptedSlides: ad.adapted.slides || null,
+    });
   };
 
   const handleAdaptToMyBrand = async () => {
@@ -362,23 +409,102 @@ export function MixboardStyleReferenceSlot({
           <span className="text-base shrink-0 mt-0.5">🕵️‍♂️</span>
           <div className="min-w-0">
             <h4 className="text-xs font-black text-purple-950 uppercase tracking-wider leading-tight">
-              Clonador de Estilo & Adaptador de Competencia (1 Clic)
+              Clonador de Estilo & Escáner de Competencia (1 Clic)
             </h4>
             <p className="text-[10px] text-purple-800/80 font-medium leading-snug mt-0.5">
-              Sube un post o anuncio ganador de tu competencia (o pega su gancho) y nuestros agentes adaptarán su estilo visual y sus textos a tu marca.
+              Escanea anuncios ganadores de tu rubro o sube una captura de tu competencia para adaptarla a tu marca.
             </p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={handleOpenMetaAdLibrary}
-          title="Ver anuncios activos reales en la Biblioteca de Anuncios de Meta"
-          className="text-[10px] font-black text-purple-900 bg-white hover:bg-purple-100 border border-purple-300 px-2.5 py-1 rounded-xl transition-all cursor-pointer shrink-0 flex items-center gap-1 shadow-2xs"
-        >
-          <span>🔎</span>
-          <span>Buscar Ads de Competencia</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={handleScanWinningAds}
+            disabled={scanningAds}
+            className="text-[10px] font-black text-white bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 disabled:opacity-50 px-2.5 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1 shadow-xs"
+          >
+            {scanningAds ? (
+              <>
+                <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Escaneando...</span>
+              </>
+            ) : (
+              <>
+                <span>🔥</span>
+                <span>Escanear Anuncios Ganadores</span>
+              </>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={handleOpenMetaAdLibrary}
+            title="Ver anuncios activos reales en la Biblioteca de Anuncios de Meta"
+            className="text-[10px] font-black text-purple-900 bg-white hover:bg-purple-100 border border-purple-300 px-2.5 py-1.5 rounded-xl transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
+          >
+            <span>🔎</span>
+            <span>Meta Ads ↗</span>
+          </button>
+        </div>
       </div>
+
+      {/* Tarjetas de Anuncios Ganadores Extraídos por el Scraper */}
+      {winningAds.length > 0 && (
+        <div className="bg-white border border-amber-200 rounded-2xl p-3 space-y-2.5 shadow-xs animate-in fade-in">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+            <span className="text-[10px] font-black uppercase tracking-wider text-amber-800 flex items-center gap-1">
+              <span>🏆</span> Anuncios y Estructuras Ganadoras Detectadas ({winningAds.length})
+            </span>
+            <button
+              type="button"
+              onClick={() => setWinningAds([])}
+              className="text-[10px] font-bold text-slate-400 hover:text-slate-700 cursor-pointer"
+            >
+              Ocultar ✕
+            </button>
+          </div>
+          <div className="grid grid-cols-1 gap-2.5">
+            {winningAds.map((ad, idx) => (
+              <div
+                key={ad.id || idx}
+                className="p-3 rounded-xl bg-slate-50 border border-slate-200 hover:border-purple-300 transition-all space-y-2"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-1.5">
+                  <span className="text-[11px] font-black text-purple-900">{ad.competitorName}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                      {ad.activeDaysBadge}
+                    </span>
+                    {ad.metaLibraryUrl && (
+                      <a
+                        href={ad.metaLibraryUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[9px] font-bold text-indigo-600 hover:underline"
+                      >
+                        Ver en Meta ↗
+                      </a>
+                    )}
+                  </div>
+                </div>
+                <p className="text-xs font-black text-slate-900 leading-snug">
+                  &ldquo;{ad.hook}&rdquo;
+                </p>
+                <p className="text-[10px] text-slate-600 leading-relaxed">
+                  <b className="text-amber-800">💡 Por qué convierte:</b> {ad.whyItWorks}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => handleSelectWinningAd(ad)}
+                  className="w-full py-1.5 px-3 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-black text-[10px] uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+                >
+                  <span>✨</span>
+                  <span>Usar este Ganador y Adaptar a mi Marca (1 Clic)</span>
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Opción para Slides 2 a 5: Anclar estilo de la Lámina 1 */}
       {isSlideAboveOne && slide1ImageUrl && (
