@@ -318,12 +318,12 @@ export default function PropuestaLandingPage() {
                 <span>💬</span> Recibir 3 posts de prueba gratis por WhatsApp
               </a>
 
-              <Link
-                href="/automatizacion-rrss/panel/crear"
+              <a
+                href="#planes"
                 className="btn btn-primary w-full sm:w-auto justify-center text-center !px-6 !py-3.5 !font-black shadow-lg shadow-orange-500/25"
               >
-                <span>🚀</span> Probar en Estudio Creativo →
-              </Link>
+                <span>🚀</span> Probar con mi negocio →
+              </a>
 
               <a
                 href="#escaner-competencia"
@@ -333,27 +333,31 @@ export default function PropuestaLandingPage() {
               </a>
             </div>
 
-            {/* Píldoras de Confianza Rápida */}
-            <div className="badges flex flex-wrap justify-center lg:justify-start gap-2 w-full mt-7">
-              <span className="badge on !border-emerald-500/40 text-emerald-400 font-semibold">
-                <span className="dot !bg-emerald-400 !shadow-[0_0_6px_#34d399]"></span>
-                Aprobación por WhatsApp
+            {/* Píldoras de Confianza Rápida (Grilla simétrica 2x3 en móvil y 3x2 en escritorio) */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 w-full mt-7">
+              <span className="badge on !border-emerald-500/40 text-emerald-400 font-semibold justify-center sm:justify-start !px-2.5 !py-2 !text-[10.5px] sm:!text-[11px] text-center sm:text-left">
+                <span className="dot !bg-emerald-400 !shadow-[0_0_6px_#34d399] shrink-0"></span>
+                <span className="truncate">Control por WhatsApp</span>
               </span>
-              <span className="badge on !border-orange-500/40 text-orange-300 font-semibold">
-                <span className="dot"></span>
-                Espía de Competencia 1-Clic
+              <span className="badge on !border-orange-500/40 text-orange-300 font-semibold justify-center sm:justify-start !px-2.5 !py-2 !text-[10.5px] sm:!text-[11px] text-center sm:text-left">
+                <span className="dot shrink-0"></span>
+                <span className="truncate">Espía de Competencia</span>
               </span>
-              <span className="badge on">
-                <span className="dot"></span>Instagram, Facebook &amp; TikTok
+              <span className="badge on justify-center sm:justify-start !px-2.5 !py-2 !text-[10.5px] sm:!text-[11px] text-center sm:text-left">
+                <span className="dot shrink-0"></span>
+                <span className="truncate">IG, FB, TikTok &amp; Shorts</span>
               </span>
-              <span className="badge on">
-                <span className="dot"></span>Zona Segura Calibrada
+              <span className="badge on justify-center sm:justify-start !px-2.5 !py-2 !text-[10.5px] sm:!text-[11px] text-center sm:text-left">
+                <span className="dot shrink-0"></span>
+                <span className="truncate">Zona Segura Calibrada</span>
               </span>
-              <span className="badge on">
-                <span className="dot"></span>Policía Anti-Baneos
+              <span className="badge on justify-center sm:justify-start !px-2.5 !py-2 !text-[10.5px] sm:!text-[11px] text-center sm:text-left">
+                <span className="dot shrink-0"></span>
+                <span className="truncate">Policía Anti-Baneos</span>
               </span>
-              <span className="badge on">
-                <span className="dot"></span>Setup Llave en Mano
+              <span className="badge on justify-center sm:justify-start !px-2.5 !py-2 !text-[10.5px] sm:!text-[11px] text-center sm:text-left">
+                <span className="dot shrink-0"></span>
+                <span className="truncate">Setup Llave en Mano</span>
               </span>
             </div>
           </div>
@@ -687,12 +691,12 @@ export default function PropuestaLandingPage() {
                     Carrusel &ldquo;3 señales antes de contratar...&rdquo; (+45 días activo)
                   </span>
                 </div>
-                <Link
-                  href="/automatizacion-rrss/panel/crear"
+                <a
+                  href="#escaner-competencia"
                   className="px-3 py-1.5 rounded-full bg-[#FF6B00] text-white text-xs font-bold shrink-0"
                 >
                   Adaptar 1-Clic
-                </Link>
+                </a>
               </div>
             </div>
 
@@ -945,12 +949,12 @@ export default function PropuestaLandingPage() {
                     </h4>
                   </div>
 
-                  <Link
-                    href="/automatizacion-rrss/panel/crear"
+                  <a
+                    href="#planes"
                     className="btn btn-primary !text-xs !py-2.5 !px-5"
                   >
-                    Probar con mi negocio en Estudio Real →
-                  </Link>
+                    Probar con mi negocio →
+                  </a>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
@@ -1449,9 +1453,9 @@ export default function PropuestaLandingPage() {
             Empieza hoy con 7 días de prueba gratis o pídenos 3 publicaciones de muestra creadas para tu negocio por WhatsApp.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
-            <Link href="/automatizacion-rrss" className="btn btn-primary">
-              Comenzar prueba de 7 días →
-            </Link>
+            <a href="#planes" className="btn btn-primary">
+              Probar con mi negocio (Ver Planes) →
+            </a>
             <a
               href="https://wa.me/56934428848?text=%C2%A1Hola%20Santisoft!%20Quiero%20recibir%20los%203%20posts%20de%20prueba%20gratis%20creados%20para%20mi%20negocio."
               target="_blank"
