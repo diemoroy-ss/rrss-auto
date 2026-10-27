@@ -47,7 +47,7 @@ function cleanStylePromptForSubject(
   if (!isFoodRubro) {
     promptText = promptText
       .replace(
-        /\b(restaurant|food|culinary|gourmet\s+dish|dining\s+experience|steak|wine\s+glass|candlelit\s+dining|appetizing|plating|chef|cookware|spices|sauce|broth|ramen|pizza|biryani|pasta|garlic)\b/gi,
+        /\b(restaurant|food|culinary|gourmet\s+dish|dining\s+experience|steak|wine\s+glass|candlelit\s+dining|appetizing|plating|chef|cookware|spices|sauce|broth|ramen|pizza|biryani|pasta|garlic|chicken|bowl|platter|tasty|meal|dish|rice|dining|recipe|menu\s+board|ingredients|cooking)\b/gi,
         "commercial subject"
       )
       .replace(/,\s*,/g, ",")
@@ -55,7 +55,7 @@ function cleanStylePromptForSubject(
 
     keywords = keywords
       .replace(
-        /\b(restaurant|food|culinary|gourmet|steak|wine|candlelit|broth|ramen|pizza|biryani|pasta|garlic|delicious|appetizing|buena comida[^,]*|tu restaurante|experiencias que hacen volver)\b/gi,
+        /\b(restaurant|food|culinary|gourmet|steak|wine|candlelit|broth|ramen|pizza|biryani|pasta|garlic|delicious|appetizing|chicken|bowl|platter|tasty|meal|dish|rice|dining|recipe|menu\s+board|ingredients|cooking|buena comida[^,]*|tu restaurante|experiencias que hacen volver)\b/gi,
         ""
       )
       .replace(/,\s*,/g, ",")
@@ -217,9 +217,23 @@ export async function POST(req: NextRequest) {
       styleCraftedPrompt = `MANDATORY VISUAL STYLE "${effectiveStyleTitle}": ${populatedFormula}. ${cleanKeywords ? `Keywords: ${cleanKeywords}.` : ""}`;
     }
 
+    const isFoodRubro = /restauran|gastronom|comida|pizz|burger|hamburgues|sushi|cafe|cafeter|pastel|panader|bar|cervecer|parrill/i.test(
+      rubro || ""
+    );
+    let cleanPromptEnglish = promptEnglish.replace(/https?:\/\/\S+/gi, "").trim();
+    if (!isFoodRubro) {
+      cleanPromptEnglish = cleanPromptEnglish
+        .replace(
+          /\b(restaurant|food|culinary|gourmet|steak|wine|broth|ramen|pizza|biryani|pasta|garlic|chicken|bowl|platter|tasty|meal|dish|rice|dining|recipe|menu\s+board|ingredients|cook)\b/gi,
+          ""
+        )
+        .replace(/,\s*,/g, ",")
+        .trim();
+    }
+
     let combinedPrompt = styleCraftedPrompt
-      ? `${styleCraftedPrompt} ${promptEnglish.replace(/https?:\/\/\S+/gi, "")}`.trim()
-      : promptEnglish || `Commercial advertising photography of ${productName}, premium studio lighting, 8k resolution`;
+      ? `${styleCraftedPrompt}. Hero subject: ${productName}. ${cleanPromptEnglish}`.trim()
+      : cleanPromptEnglish || `Commercial advertising photography of ${productName}, premium studio lighting, 8k resolution`;
 
     // Si hay una foto base de referencia subida por el vendedor, analizarla con Gemini Vision para anclar la anatomía exacta del producto dentro del estilo
     if (baseImageUrl && typeof baseImageUrl === "string" && baseImageUrl.startsWith("http")) {
@@ -396,12 +410,21 @@ export async function POST(req: NextRequest) {
               baseImageUrl: baseRawImageUrl,
               textTemplateId: appliedTemplateId,
               textTemplateName: appliedTemplateName,
+              visualStyleId: styleId || effectiveStyleTitle,
+              visualStyleTitle: effectiveStyleTitle,
+              visualStylePrompt: effectiveStyleFormula,
+              visualStyleKeywords: effectiveStyleKeywords,
               ...(isCarousel ? { carouselImages: updatedCarouselImages } : {}),
               ...(commercialEditId ? { commercialEditId } : {}),
             };
             await docRef.update({
               publications,
-              ...(pubIndex === 0 ? { generatedImageUrl: finalComposedUrl } : {}),
+              ...(pubIndex === 0
+                ? {
+                    generatedImageUrl: finalComposedUrl,
+                    selectedStyleTitle: effectiveStyleTitle,
+                  }
+                : {}),
             });
             console.log(`[Generar Imagen Individual] Muestra ${demoId} actualizada en Firestore con nueva imagen en pub #${pubIndex + 1}.`);
           }
@@ -454,6 +477,11 @@ export async function POST(req: NextRequest) {
       templateId: appliedTemplateId,
       templateName: appliedTemplateName,
       pubIndex,
+      styleTitle: effectiveStyleTitle,
+      styleId: styleId || effectiveStyleTitle,
+      stylePrompt: effectiveStyleFormula,
+      styleKeywords: effectiveStyleKeywords,
+      editDocId: commercialEditId,
     });
   } catch (error: any) {
     console.error("[Generar Imagen Individual] Error:", error);

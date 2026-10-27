@@ -40,7 +40,8 @@ import {
   FaFire,
   FaTimesCircle,
   FaTrophy,
-  FaUserCheck
+  FaUserCheck,
+  FaPalette
 } from "react-icons/fa";
 import { FLOW_COMMANDS, FlowCommandDef } from "../../lib/flow-command-translator";
 
@@ -249,18 +250,22 @@ function TemplateVisualPreview({
   template,
   productName,
   price,
+  headline,
   isModal = false,
   showZoomButton = false,
   onOpenModal,
   isCurrentlyApplied = false,
+  customImageUrl,
 }: {
   template: TextTemplate;
   productName?: string;
   price?: string;
+  headline?: string;
   isModal?: boolean;
   showZoomButton?: boolean;
   onOpenModal?: () => void;
   isCurrentlyApplied?: boolean;
+  customImageUrl?: string;
 }) {
   const layout =
     template.layoutPosition ||
@@ -275,18 +280,22 @@ function TemplateVisualPreview({
   const isImpact = template.category === "Ofertas Flash" || template.category === "Delivery";
   const isEditorial = template.category === "Gourmet & Menú" || template.headlineFont === "elegant_serif";
 
-  const rawTitle = template.headlinePattern.replace(
-    /\{PRODUCTO\}|\{PLATO\}/gi,
-    productName?.trim() || "HAMBURGUESA ESPECIAL"
-  );
+  const rawTitle = headline?.trim()
+    ? headline.trim().toUpperCase()
+    : template.headlinePattern.replace(
+        /\{PRODUCTO\}|\{PLATO\}/gi,
+        productName?.trim() || "HAMBURGUESA ESPECIAL"
+      );
   const priceDisplay =
     price?.trim() ||
     (template.priceBadgePattern
       ? template.priceBadgePattern.replace("{PRECIO}", "$12.900")
       : "");
   const photoUrl =
-    template.previewSampleImage ||
-    "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=500&q=80";
+    (customImageUrl && typeof customImageUrl === "string" && customImageUrl.startsWith("http"))
+      ? customImageUrl
+      : (template.previewSampleImage ||
+        "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=500&q=80");
   const scriptText = template.secondaryScriptPattern;
   const ingredients = template.ingredients || [];
 
@@ -914,6 +923,12 @@ export default function VendedoresPwaPage() {
   const [textTemplateViewMode, setTextTemplateViewMode] = useState<"grid" | "list">("grid");
   const [previewModalTemplate, setPreviewModalTemplate] = useState<TextTemplate | null>(null);
 
+  // Modal para cambiar estilo visual de una publicación individual (#1, #2 o #3)
+  const [isChangeStyleModalOpen, setIsChangeStyleModalOpen] = useState<boolean>(false);
+  const [changeStylePubIndex, setChangeStylePubIndex] = useState<number>(0);
+  const [changeStyleSearch, setChangeStyleSearch] = useState<string>("");
+  const [changeStyleCategory, setChangeStyleCategory] = useState<string>("all");
+
   // Sincronizar la plantilla seleccionada cuando el vendedor cambia de muestra (#1, #2, #3)
   useEffect(() => {
     const activeTplId = generatedPublications[selectedPreviewPubIndex]?.textTemplateId;
@@ -1434,13 +1449,58 @@ export default function VendedoresPwaPage() {
     }
   };
 
+  // 8a-1. Abrir modal para cambiar estilo visual de una publicación específica (#1, #2 o #3)
+  const openChangeStyleModal = (pubIdx: number) => {
+    setChangeStylePubIndex(pubIdx);
+    setChangeStyleSearch("");
+    setChangeStyleCategory("all");
+    setIsChangeStyleModalOpen(true);
+  };
+
+  // 8a-2. Aplicar nuevo estilo visual a una publicación
+  const handleApplyStyleToPub = (pubIndex: number, newStyle: PromptTemplate) => {
+    setGeneratedPublications((prev) => {
+      const copy = [...prev];
+      if (copy[pubIndex]) {
+        copy[pubIndex] = {
+          ...copy[pubIndex],
+          visualStyleTitle: newStyle.title,
+          visualStyleId: newStyle.id,
+          visualStylePrompt: newStyle.prompt,
+          visualStyleKeywords: newStyle.styleKeywords || "",
+        };
+      }
+      return copy;
+    });
+    setIsChangeStyleModalOpen(false);
+  };
+
+  // 8a-3. Aplicar nuevo estilo y regenerar imagen de inmediato (1 a 1)
+  const handleApplyAndRegenerateStyle = async (pubIndex: number, newStyle: PromptTemplate) => {
+    handleApplyStyleToPub(pubIndex, newStyle);
+    await handleGenerateSingleImage(pubIndex, newStyle);
+  };
+
   // 8b. Generar imagen individualmente (1 por 1) vía webhook de nuestros agentes respetando el estilo asignado
-  const handleGenerateSingleImage = async (pubIndex: number) => {
+  const handleGenerateSingleImage = async (pubIndex: number, newStyleOverride?: PromptTemplate) => {
     const pub = generatedPublications[pubIndex];
     if (!pub) return;
 
     const assignedStyleObj =
-      selectedStyles[pubIndex % Math.max(1, selectedStyles.length)] || selectedTemplate || null;
+      newStyleOverride ||
+      allTemplates.find(
+        (t) =>
+          (pub.visualStyleId && t.id === pub.visualStyleId) ||
+          (pub.visualStyleTitle && t.title.toLowerCase() === pub.visualStyleTitle.toLowerCase())
+      ) ||
+      selectedStyles[pubIndex % Math.max(1, selectedStyles.length)] ||
+      selectedTemplate ||
+      null;
+
+    const styleTitleToSend = newStyleOverride?.title || pub.visualStyleTitle || assignedStyleObj?.title || "";
+    const styleIdToSend = newStyleOverride?.id || pub.visualStyleId || assignedStyleObj?.id || "";
+    const stylePromptToSend = newStyleOverride?.prompt || pub.visualStylePrompt || assignedStyleObj?.prompt || "";
+    const styleKeywordsToSend = newStyleOverride?.styleKeywords || pub.visualStyleKeywords || assignedStyleObj?.styleKeywords || "";
 
     setIsGeneratingSingleImg(true);
     try {
@@ -1454,7 +1514,9 @@ export default function VendedoresPwaPage() {
         body: JSON.stringify({
           demoId: createdDemoId,
           pubIndex,
-          promptEnglish: pub.imagePromptEnglish || pub.title,
+          promptEnglish: newStyleOverride
+            ? `Commercial advertising photography of ${pub.dishOrProductName || dishOrProductName || prospectBusiness}, ${newStyleOverride.title}`
+            : (pub.imagePromptEnglish || pub.title),
           rubro,
           productName: pub.dishOrProductName || dishOrProductName || prospectBusiness,
           aspectRatio: pub.type === "reel" ? "9:16" : "1:1",
@@ -1465,11 +1527,11 @@ export default function VendedoresPwaPage() {
           idea: commercialIdea || pub.hook || pub.title || "",
           logoUrl: cleanedLogoUrl || logoPreview || "",
           customBadgeText: badgeCustomText || "",
-          styleId: pub.visualStyleId || assignedStyleObj?.id || "",
-          styleTitle: pub.visualStyleTitle || assignedStyleObj?.title || "",
-          stylePrompt: pub.visualStylePrompt || assignedStyleObj?.prompt || "",
-          styleKeywords: pub.visualStyleKeywords || assignedStyleObj?.styleKeywords || "",
-          baseImageUrl: pub.origBaseImageUrl || baseImagePreview || "",
+          styleId: styleIdToSend,
+          styleTitle: styleTitleToSend,
+          stylePrompt: stylePromptToSend,
+          styleKeywords: styleKeywordsToSend,
+          baseImageUrl: pub.origBaseImageUrl || uploadedBaseImageUrl || baseImagePreview || "",
         }),
       });
 
@@ -1489,6 +1551,10 @@ export default function VendedoresPwaPage() {
               baseImageUrl: data.baseImageUrl || data.imageUrl,
               textTemplateId: data.templateId || copy[pubIndex].textTemplateId,
               textTemplateName: data.templateName || copy[pubIndex].textTemplateName,
+              visualStyleTitle: styleTitleToSend || copy[pubIndex].visualStyleTitle,
+              visualStyleId: styleIdToSend || copy[pubIndex].visualStyleId,
+              visualStylePrompt: stylePromptToSend || copy[pubIndex].visualStylePrompt,
+              visualStyleKeywords: styleKeywordsToSend || copy[pubIndex].visualStyleKeywords,
             };
           }
           return copy;
@@ -3161,6 +3227,7 @@ export default function VendedoresPwaPage() {
                 ? (generatedPublications[selectedPreviewPubIndex] || generatedPublications[0])
                 : null;
               const activeImg = activePub?.imageUrl || canvasImageUrl || generatedImageUrl || baseImagePreview || "";
+              const activeCleanBaseImg = activePub?.baseImageUrl || activePub?.origBaseImageUrl || activePub?.imageUrl || canvasImageUrl || generatedImageUrl || baseImagePreview || "";
               const activeCopy = activePub?.copy || generatedPostCaption || "";
 
               return (
@@ -3236,9 +3303,16 @@ export default function VendedoresPwaPage() {
                             </span>
                           )}
                           {activePub?.visualStyleTitle && (
-                            <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 text-[10px] font-black flex items-center gap-1 border border-amber-200">
-                              🎨 {activePub.visualStyleTitle}
-                            </span>
+                            <button
+                              type="button"
+                              onClick={() => openChangeStyleModal(selectedPreviewPubIndex)}
+                              className="px-2.5 py-1 rounded-full bg-amber-50 hover:bg-amber-100 text-amber-900 text-[10px] font-black flex items-center gap-1.5 border border-amber-200 transition-all cursor-pointer shadow-2xs hover:scale-102"
+                              title="Haz clic para cambiar el estilo visual de esta publicación"
+                            >
+                              <span>🎨</span>
+                              <span className="truncate max-w-[200px]">{activePub.visualStyleTitle}</span>
+                              <span className="text-[9px] bg-amber-200/80 text-amber-900 px-1.5 py-0.2 rounded font-bold">Cambiar ▾</span>
+                            </button>
                           )}
                         </div>
                         {activePub?.textTemplateName && (
@@ -3278,31 +3352,41 @@ export default function VendedoresPwaPage() {
                         </div>
                       )}
 
-                      {/* BOTÓN GENERAR IMAGEN INDIVIDUAL CON NUESTROS AGENTES (1 A 1) */}
-                      <button
-                        type="button"
-                        disabled={isGeneratingSingleImg || isRenderingPoster}
-                        onClick={() => handleGenerateSingleImage(selectedPreviewPubIndex)}
-                        className={`w-full py-2.5 px-3 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-2 border shadow-xs ${
-                          isGeneratingSingleImg
-                            ? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed"
-                            : "bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600 shadow-indigo-600/20 active:scale-98 cursor-pointer"
-                        }`}
-                      >
-                        {isGeneratingSingleImg ? (
-                          <>
-                            <FaSyncAlt className="animate-spin text-xs" />
-                            <span>Nuestros agentes están diseñando esta imagen en su estilo...</span>
-                          </>
-                        ) : (
-                          <>
-                            <FaMagic className="text-xs" />
-                            <span>
-                              {activePub?.imageUrl ? "🎨 Regenerar imagen del estilo (1 a 1)" : "🎨 Generar imagen con nuestros agentes"}
-                            </span>
-                          </>
-                        )}
-                      </button>
+                      {/* BOTONES DE ACCIÓN: CAMBIAR ESTILO VISUAL Y REGENERAR IMAGEN */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          disabled={isGeneratingSingleImg || isRenderingPoster}
+                          onClick={() => openChangeStyleModal(selectedPreviewPubIndex)}
+                          className="w-full py-2.5 px-3 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-1.5 border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 shadow-2xs cursor-pointer active:scale-98"
+                        >
+                          <FaPalette className="text-xs text-indigo-600" />
+                          <span>🎨 Cambiar Estilo Visual</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={isGeneratingSingleImg || isRenderingPoster}
+                          onClick={() => handleGenerateSingleImage(selectedPreviewPubIndex)}
+                          className={`w-full py-2.5 px-3 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-1.5 border shadow-xs ${
+                            isGeneratingSingleImg
+                              ? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed"
+                              : "bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600 shadow-indigo-600/20 active:scale-98 cursor-pointer"
+                          }`}
+                        >
+                          {isGeneratingSingleImg ? (
+                            <>
+                              <FaSyncAlt className="animate-spin text-xs" />
+                              <span>Diseñando imagen...</span>
+                            </>
+                          ) : (
+                            <>
+                              <FaMagic className="text-xs text-yellow-300" />
+                              <span>{activePub?.imageUrl ? "Regenerar Imagen (1 a 1)" : "Generar Imagen"}</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
 
                       {/* SELECTOR DE PLANTILLAS DE TEXTO (CON PREVIEWS VISUALES) */}
                       <div className="rounded-2xl border border-emerald-200 bg-emerald-50/40 p-3 space-y-2.5">
@@ -3392,11 +3476,13 @@ export default function VendedoresPwaPage() {
                                   <TemplateVisualPreview
                                     template={tpl}
                                     productName={dishOrProductName.trim() || prospectBusiness.trim()}
+                                    headline={commercialCustomText.trim() || activePub?.title}
                                     price={productPrice.trim()}
                                     isModal={false}
                                     showZoomButton={true}
                                     onOpenModal={() => setPreviewModalTemplate(tpl)}
                                     isCurrentlyApplied={isCurrentlyApplied}
+                                    customImageUrl={activeCleanBaseImg}
                                   />
 
                                   {/* Barra de acción rápida inferior */}
@@ -3458,7 +3544,7 @@ export default function VendedoresPwaPage() {
                                     {/* Thumbnail Preview de la Plantilla con layout esquemático real */}
                                     <div className="relative w-12 h-12 rounded-lg overflow-hidden shrink-0 border border-slate-200 bg-slate-900 shadow-2xs">
                                       <img
-                                        src={tpl.previewSampleImage || "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=200&q=80"}
+                                        src={activeCleanBaseImg || tpl.previewSampleImage || "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=200&q=80"}
                                         alt={tpl.name}
                                         className="w-full h-full object-cover"
                                       />
@@ -3607,9 +3693,11 @@ export default function VendedoresPwaPage() {
                             <TemplateVisualPreview
                               template={previewModalTemplate}
                               productName={dishOrProductName.trim() || prospectBusiness.trim()}
+                              headline={commercialCustomText.trim() || activePub?.title}
                               price={productPrice.trim()}
                               isModal={true}
                               showZoomButton={false}
+                              customImageUrl={activeCleanBaseImg}
                             />
 
                             <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-200">
@@ -3634,6 +3722,189 @@ export default function VendedoresPwaPage() {
                                 type="button"
                                 onClick={() => setPreviewModalTemplate(null)}
                                 className="py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer transition-colors"
+                              >
+                                Cerrar
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* MODAL PARA CAMBIAR ESTILO VISUAL DE LA PUBLICACIÓN */}
+                      {isChangeStyleModalOpen && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/75 backdrop-blur-sm animate-in fade-in">
+                          <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+                            {/* Cabecera del Modal */}
+                            <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between gap-3 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white">
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="px-2 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200 text-[10px] font-black uppercase tracking-wider border border-indigo-400/30">
+                                    Publicación #{changeStylePubIndex + 1}
+                                  </span>
+                                  <h3 className="text-sm sm:text-base font-black truncate">
+                                    Cambiar Estilo Visual
+                                  </h3>
+                                </div>
+                                <p className="text-xs text-slate-300 mt-0.5 truncate">
+                                  Elige el estilo visual con el que nuestros agentes diseñarán la imagen.
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setIsChangeStyleModalOpen(false)}
+                                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-sm font-black transition-colors cursor-pointer shrink-0"
+                              >
+                                ✕
+                              </button>
+                            </div>
+
+                            {/* Buscador y Categorías */}
+                            <div className="p-4 border-b border-slate-100 bg-slate-50 space-y-3">
+                              <div className="relative">
+                                <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none" />
+                                <input
+                                  type="text"
+                                  value={changeStyleSearch}
+                                  onChange={(e) => setChangeStyleSearch(e.target.value)}
+                                  placeholder="Buscar estilo (ej. minimalista, arquitectura, producto, magazine, nórdico)..."
+                                  className="w-full pl-9 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 shadow-2xs"
+                                />
+                                {changeStyleSearch && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setChangeStyleSearch("")}
+                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-600 text-[10px] flex items-center justify-center font-bold"
+                                  >
+                                    ✕
+                                  </button>
+                                )}
+                              </div>
+
+                              {/* Categorías horizontales */}
+                              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                                <button
+                                  type="button"
+                                  onClick={() => setChangeStyleCategory("all")}
+                                  className={`px-3 py-1 rounded-full text-[11px] font-black whitespace-nowrap transition-all cursor-pointer border ${
+                                    changeStyleCategory === "all"
+                                      ? "bg-indigo-600 text-white border-indigo-600 shadow-2xs"
+                                      : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100"
+                                  }`}
+                                >
+                                  Todos ({allTemplates.length})
+                                </button>
+                                {allCategoryNames.map((cat) => (
+                                  <button
+                                    key={cat}
+                                    type="button"
+                                    onClick={() => setChangeStyleCategory(cat)}
+                                    className={`px-3 py-1 rounded-full text-[11px] font-black whitespace-nowrap transition-all cursor-pointer border ${
+                                      changeStyleCategory === cat
+                                        ? "bg-indigo-600 text-white border-indigo-600 shadow-2xs"
+                                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100"
+                                    }`}
+                                  >
+                                    {cat}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Grid de estilos */}
+                            <div className="p-4 overflow-y-auto max-h-[55vh] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                              {allTemplates
+                                .filter((tpl) => {
+                                  const cats = getPromptCategories(tpl);
+                                  const matchCat = changeStyleCategory === "all" || cats.includes(changeStyleCategory);
+                                  const q = changeStyleSearch.trim().toLowerCase();
+                                  const matchSearch =
+                                    !q ||
+                                    tpl.title.toLowerCase().includes(q) ||
+                                    tpl.description.toLowerCase().includes(q) ||
+                                    (tpl.styleKeywords && tpl.styleKeywords.toLowerCase().includes(q));
+                                  return matchCat && matchSearch;
+                                })
+                                .map((tpl) => {
+                                  const targetPub = generatedPublications[changeStylePubIndex];
+                                  const isCurrent =
+                                    targetPub?.visualStyleId === tpl.id ||
+                                    targetPub?.visualStyleTitle?.toLowerCase() === tpl.title.toLowerCase();
+
+                                  return (
+                                    <div
+                                      key={tpl.id}
+                                      className={`rounded-2xl border transition-all flex flex-col justify-between overflow-hidden bg-white shadow-2xs hover:shadow-md ${
+                                        isCurrent
+                                          ? "border-indigo-600 ring-2 ring-indigo-500/30"
+                                          : "border-slate-200 hover:border-indigo-300"
+                                      }`}
+                                    >
+                                      <div>
+                                        <div className="aspect-[4/3] w-full relative overflow-hidden bg-slate-900">
+                                          {tpl.previewUrl ? (
+                                            <img
+                                              src={tpl.previewUrl}
+                                              alt={tpl.title}
+                                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                            />
+                                          ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-slate-400">
+                                              <FaImage className="text-2xl" />
+                                            </div>
+                                          )}
+                                          <div className="absolute top-2 left-2">
+                                            <span className="px-2 py-0.5 rounded-full bg-black/75 backdrop-blur-md text-white text-[9px] font-black uppercase tracking-wider">
+                                              {tpl.category}
+                                            </span>
+                                          </div>
+                                          {isCurrent && (
+                                            <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[9px] font-black flex items-center gap-1 shadow-md">
+                                              <FaCheck className="text-[8px]" /> Actual
+                                            </div>
+                                          )}
+                                        </div>
+                                        <div className="p-3 space-y-1">
+                                          <h4 className="text-xs font-black text-slate-900 line-clamp-1">
+                                            {tpl.title}
+                                          </h4>
+                                          <p className="text-[10px] text-slate-500 line-clamp-2 leading-relaxed">
+                                            {tpl.description}
+                                          </p>
+                                        </div>
+                                      </div>
+
+                                      <div className="p-2.5 pt-0 grid grid-cols-2 gap-1.5 border-t border-slate-50 mt-1">
+                                        <button
+                                          type="button"
+                                          onClick={() => handleApplyStyleToPub(changeStylePubIndex, tpl)}
+                                          className="py-1.5 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold transition-colors cursor-pointer text-center"
+                                        >
+                                          Elegir
+                                        </button>
+                                        <button
+                                          type="button"
+                                          disabled={isGeneratingSingleImg}
+                                          onClick={() => handleApplyAndRegenerateStyle(changeStylePubIndex, tpl)}
+                                          className="py-1.5 px-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black transition-colors cursor-pointer text-center shadow-2xs hover:shadow-md flex items-center justify-center gap-1"
+                                        >
+                                          <span>✨</span>
+                                          <span>Regenerar</span>
+                                        </button>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                            </div>
+
+                            {/* Pie del modal */}
+                            <div className="p-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                              <span>
+                                Estilo actual: <strong className="text-slate-900">{generatedPublications[changeStylePubIndex]?.visualStyleTitle || "Sin estilo asignado"}</strong>
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setIsChangeStyleModalOpen(false)}
+                                className="px-4 py-1.5 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700 cursor-pointer transition-colors"
                               >
                                 Cerrar
                               </button>
