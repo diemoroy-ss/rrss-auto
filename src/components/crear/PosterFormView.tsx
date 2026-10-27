@@ -966,31 +966,127 @@ export default function PosterFormView({
               </div>
             ))}
 
-            {/* 🎨 Módulo 2 Mixboard: Ranura de Referencia de Estilo & Anclaje de Slide 1 (Solo en modo Laboratorio) */}
-            {isLabMode && (
-              <MixboardStyleReferenceSlot
-                activeSlideIndex={currentSlideIdx}
-                slideConfig={posterConfig.slides?.[currentSlideIdx]}
-                slide1ImageUrl={posterConfig.slides?.[0]?.imageUrl || previewSlides?.[0]?.url}
-                onUpdateStyleReference={(url) => {
-                  if (postType === "Carrusel") {
-                    updateSlideField("styleReferenceUrl", url);
+            {/* 🎨 Módulo 2 Mixboard: Clonador de Estilo & Adaptador de Competencia (1 Clic) */}
+            <MixboardStyleReferenceSlot
+              activeSlideIndex={currentSlideIdx}
+              slideConfig={posterConfig.slides?.[currentSlideIdx]}
+              posterStyleReferenceUrl={posterConfig.styleReferenceUrl}
+              slide1ImageUrl={posterConfig.slides?.[0]?.imageUrl || previewSlides?.[0]?.url}
+              businessName={posterConfig.businessName || activeProfile?.name}
+              businessType={activeProfile?.businessType}
+              postType={postType}
+              carouselCount={carouselCount}
+              idea={idea}
+              presetId={posterConfig.mixboardPreset}
+              onUpdateStyleReference={(url) => {
+                if (postType === "Carrusel") {
+                  updateSlideField("styleReferenceUrl", url);
+                }
+                update("styleReferenceUrl", url);
+              }}
+              onToggleLockStyleFromSlide1={(lock) => {
+                if (postType === "Carrusel") {
+                  updateSlideField("lockStyleFromSlide1", lock);
+                  if (lock) {
+                    const s1Url = posterConfig.slides?.[0]?.imageUrl || previewSlides?.[0]?.url || "";
+                    updateSlideField("styleReferenceUrl", s1Url);
                   }
-                  update("styleReferenceUrl", url);
-                }}
-                onToggleLockStyleFromSlide1={(lock) => {
-                  if (postType === "Carrusel") {
-                    updateSlideField("lockStyleFromSlide1", lock);
-                    if (lock) {
-                      const s1Url = posterConfig.slides?.[0]?.imageUrl || previewSlides?.[0]?.url || "";
-                      updateSlideField("styleReferenceUrl", s1Url);
+                }
+              }}
+              onUploadImage={onUploadStyleReference}
+              uploading={uploadingBaseImage}
+              onApplyCompetitorAdaptation={(adaptation) => {
+                if (postType === "Carrusel") {
+                  if (adaptation.adaptedSlides && adaptation.adaptedSlides.length > 0) {
+                    setPosterConfig((prev) => {
+                      const baseSlides =
+                        prev.slides && prev.slides.length > 0
+                          ? [...prev.slides]
+                          : [...DEFAULT_POSTER_SLIDES];
+                      adaptation.adaptedSlides!.forEach((s, idx) => {
+                        if (idx < (carouselCount || 5)) {
+                          const existing = baseSlides[idx] || {
+                            slideNumber: idx + 1,
+                            role: CAROUSEL_DEFAULT_SLIDES[idx]?.role || `Slide ${idx + 1}`,
+                            mainText: "",
+                            priceText: "",
+                            sloganText: "",
+                            ctaText: "",
+                          };
+                          baseSlides[idx] = {
+                            ...existing,
+                            mainText: s.mainText || existing.mainText,
+                            sloganText: s.sloganText ?? existing.sloganText,
+                            ctaText: s.ctaText ?? existing.ctaText,
+                            imageExpectation: s.imageExpectation || (idx === currentSlideIdx ? adaptation.prompt : existing.imageExpectation),
+                            includeMainText: s.mainText ? true : existing.includeMainText,
+                            includeSlogan: s.sloganText ? true : existing.includeSlogan,
+                            includeCta: s.ctaText ? true : existing.includeCta,
+                          };
+                        }
+                      });
+                      const cur = baseSlides[currentSlideIdx] || baseSlides[0];
+                      return {
+                        ...prev,
+                        slides: baseSlides,
+                        mainText: cur?.mainText || adaptation.fields.mainText || prev.mainText,
+                        sloganText: cur?.sloganText || adaptation.fields.sloganText || prev.sloganText,
+                        priceText: adaptation.fields.priceText ?? prev.priceText,
+                        ctaText: cur?.ctaText || adaptation.fields.ctaText || prev.ctaText,
+                        primaryColor: adaptation.fields.primaryColor || prev.primaryColor,
+                      };
+                    });
+                    const activeAdapted = adaptation.adaptedSlides[currentSlideIdx] || adaptation.adaptedSlides[0];
+                    setImageExpectation(activeAdapted?.imageExpectation || adaptation.prompt);
+                  } else {
+                    updateSlideField("imageExpectation", adaptation.prompt);
+                    if (adaptation.fields.mainText) {
+                      updateSlideField("mainText", adaptation.fields.mainText);
+                      updateSlideField("includeMainText", true);
                     }
+                    if (adaptation.fields.sloganText) {
+                      updateSlideField("sloganText", adaptation.fields.sloganText);
+                      updateSlideField("includeSlogan", true);
+                    }
+                    if (adaptation.fields.priceText) {
+                      updateSlideField("priceText", adaptation.fields.priceText);
+                      updateSlideField("includePrice", true);
+                    }
+                    if (adaptation.fields.ctaText) {
+                      updateSlideField("ctaText", adaptation.fields.ctaText);
+                      updateSlideField("includeCta", true);
+                    }
+                    setImageExpectation(adaptation.prompt);
                   }
-                }}
-                onUploadImage={onUploadStyleReference}
-                uploading={uploadingBaseImage}
-              />
-            )}
+                } else {
+                  setImageExpectation(adaptation.prompt);
+                  setIdea(adaptation.prompt);
+                  if (adaptation.fields.mainText) {
+                    update("mainText", adaptation.fields.mainText);
+                    update("includeMainText", true);
+                  }
+                  if (adaptation.fields.sloganText) {
+                    update("sloganText", adaptation.fields.sloganText);
+                    update("includeSlogan", true);
+                  }
+                  if (adaptation.fields.priceText) {
+                    update("priceText", adaptation.fields.priceText);
+                    update("includePrice", true);
+                  }
+                  if (adaptation.fields.ctaText) {
+                    update("ctaText", adaptation.fields.ctaText);
+                    update("includeCta", true);
+                  }
+                }
+                if (adaptation.fields.primaryColor) {
+                  update("primaryColor", adaptation.fields.primaryColor);
+                }
+                if (adaptation.fields.postCopy) {
+                  setPostText(adaptation.fields.postCopy);
+                }
+                setExtractedNotice("✨ Post de referencia adaptado por nuestros agentes a tu marca (textos, escena y copy listos).");
+              }}
+            />
           
                       {/* Campo: Idea o Escena Visual del Afiche */}
                       <div className="pt-2 space-y-3">

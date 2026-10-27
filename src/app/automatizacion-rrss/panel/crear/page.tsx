@@ -1111,6 +1111,10 @@ export default function RrssCreatePost() {
           allowImageRetouch: isSingleSlideGen
             ? (posterConfig.slides?.[singleSlideTargetIdx]?.allowImageRetouch ?? posterConfig.allowImageRetouch ?? true)
             : (posterConfig.allowImageRetouch ?? true),
+          styleReferenceUrl: isSingleSlideGen
+            ? (posterConfig.slides?.[singleSlideTargetIdx]?.styleReferenceUrl || posterConfig.styleReferenceUrl || "")
+            : (posterConfig.styleReferenceUrl || posterConfig.slides?.[0]?.styleReferenceUrl || ""),
+          isMixboardLab: activeCreationFlow === 'laboratorio',
           catalogoItem: selectedCatalogoItem ? {
             name: selectedCatalogoItem.name,
             description: selectedCatalogoItem.description || "",
