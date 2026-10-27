@@ -76,6 +76,7 @@ interface DemoData {
   offerText?: string;
   dishOrProductName?: string;
   badgeCustomText?: string;
+  isCommercialPoster?: boolean;
   generatedPostCaption?: string;
   generatedImageUrl?: string;
   generatedVideoUrl?: string;
@@ -760,7 +761,7 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
                           />
                           <WatermarkOverlay size="normal" showBanner={true} />
 
-                          {pub.productPrice && (
+                          {pub.productPrice && !pub.isCommercialPoster && !demo.isCommercialPoster && (
                             <div className="absolute top-3 left-3 z-30 bg-black/80 backdrop-blur-md text-emerald-400 font-black text-xs px-2.5 py-1 rounded-lg border border-white/20 shadow-md">
                               {pub.productPrice}
                             </div>

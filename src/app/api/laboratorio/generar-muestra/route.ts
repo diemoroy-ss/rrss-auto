@@ -63,9 +63,69 @@ function enrichSelectedStyle(rawStyle: any) {
 }
 
 /**
+ * Limpia la fórmula maestra del estilo visual para que NO arrastre secciones
+ * de tipografía pre-diseñadas ni corchetes que puedan provocar duplicación o triplicación
+ * de textos en los afiches comerciales, y purga menciones de comida si el rubro no es gastronómico.
+ */
+function cleanStylePromptForSubject(
+  rawPrompt: string,
+  rawKeywords: string,
+  subject: string,
+  rubro: string
+): { scenePrompt: string; cleanKeywords: string } {
+  let promptText = rawPrompt || "";
+  let keywords = rawKeywords || "";
+
+  // 1. Quitar cualquier bloque de tipografía que traiga la plantilla del estilo
+  promptText = promptText.replace(
+    /GRAPHIC\s+DESIGN\s*&\s*ON-IMAGE\s+TYPOGRAPHY[\s\S]*?(?=(Luxury|Editorial|High-|Sophisticated|Modern|8k|$))/gi,
+    ""
+  );
+  promptText = promptText.replace(
+    /ON-IMAGE\s+TYPOGRAPHY[\s\S]*?(?=(Luxury|Editorial|High-|Sophisticated|Modern|8k|$))/gi,
+    ""
+  );
+  promptText = promptText.replace(/STRICT\s+PLACEMENT\s+AND\s+NEGATIVE\s+RULE:[^\n\r]*/gi, "");
+
+  // 2. Reemplazar corchetes de producto/objeto por el sujeto real
+  promptText = promptText.replace(
+    /\[(?:Nombre\s+del\s+Plato|Plato\s+Principal|Objeto|Sujeto|Estructura|Escenario)[^\]]*\]/gi,
+    subject
+  );
+  // Eliminar cualquier otro corchete que haya quedado (titulares, kickers, botones, ingredientes de ejemplo)
+  promptText = promptText.replace(/\[[^\]]+\]/g, "");
+
+  // 3. Si el rubro NO es gastronomía, purgar términos de comida que hayan venido del estilo
+  const isFoodRubro = /restauran|gastronom|comida|pizz|burger|hamburgues|sushi|cafe|cafeter|pastel|panader|bar|cervecer|parrill/i.test(
+    rubro || ""
+  );
+  if (!isFoodRubro) {
+    promptText = promptText
+      .replace(
+        /\b(restaurant|food|culinary|gourmet\s+dish|dining\s+experience|steak|wine\s+glass|candlelit\s+dining|appetizing|plating|chef|cookware|spices|sauce|broth|ramen|pizza|biryani|pasta|garlic)\b/gi,
+        "commercial subject"
+      )
+      .replace(/,\s*,/g, ",")
+      .trim();
+
+    keywords = keywords
+      .replace(
+        /\b(restaurant|food|culinary|gourmet|steak|wine|candlelit|broth|ramen|pizza|biryani|pasta|garlic|delicious|appetizing|buena comida[^,]*|tu restaurante|experiencias que hacen volver)\b/gi,
+        ""
+      )
+      .replace(/,\s*,/g, ",")
+      .trim();
+  }
+
+  promptText = promptText.replace(/\n\s*\n\s*\n/g, "\n\n").trim();
+
+  return { scenePrompt: promptText, cleanKeywords: keywords };
+}
+
+/**
  * Construye el prompt en inglés inyectando el producto dentro de la fórmula maestra del estilo visual.
  * Si `commercialOverlay.enabled` es true, integra el bloque `TYPOGRAPHY & LAYOUT (Exact Spanish text)`
- * idéntico a `/api/ai/generate-preview` para que nuestro modelo en n8n genere el afiche comercial completo.
+ * con regla estricta de anti-duplicación para que cada texto se renderice exactamente una vez.
  */
 function buildStyledImagePrompt(
   styleObj: any,
@@ -82,60 +142,81 @@ function buildStyledImagePrompt(
   }
 ): string {
   const cleanSubject = productSubject.trim() || "featured commercial product";
-  let masterFormula = "";
-  let styleHeader = "";
+  const rubro = commercialOverlay?.rubro || "Comercio";
+
+  let baseScene = "";
 
   if (!styleObj) {
-    masterFormula = extraSceneDetail || `Professional commercial studio photography of ${cleanSubject}`;
+    baseScene = extraSceneDetail || `Professional commercial studio photography of ${cleanSubject}`;
   } else {
-    masterFormula = String(styleObj.prompt || "");
-    if (masterFormula.includes("[")) {
-      masterFormula = masterFormula.replace(/\[[^\]]+\]/g, cleanSubject);
-    } else if (masterFormula) {
-      masterFormula = `${masterFormula}, featuring ${cleanSubject}`;
-    } else {
-      masterFormula = `Commercial photography of ${cleanSubject} in "${styleObj.title}" style (${styleObj.description || ""})`;
-    }
-    const keywords = styleObj.styleKeywords ? `Style keywords: ${styleObj.styleKeywords}.` : "";
-    const detail = extraSceneDetail ? `Scene details: ${extraSceneDetail}.` : "";
-    styleHeader = `MANDATORY VISUAL STYLE "${styleObj.title}": ${masterFormula}. ${keywords} ${detail}`.trim();
-  }
+    const rawFormula = String(styleObj.prompt || "");
+    const rawKeywords = String(styleObj.styleKeywords || "");
+    const { scenePrompt, cleanKeywords } = cleanStylePromptForSubject(
+      rawFormula,
+      rawKeywords,
+      cleanSubject,
+      rubro
+    );
 
-  const baseScene = styleHeader || masterFormula;
+    let populatedFormula = scenePrompt;
+    if (!populatedFormula.includes(cleanSubject)) {
+      populatedFormula = populatedFormula ? `${populatedFormula}, featuring ${cleanSubject}` : cleanSubject;
+    }
+
+    const keywordsPart = cleanKeywords ? `Style keywords: ${cleanKeywords}.` : "";
+    const detailPart = extraSceneDetail ? `Scene details: ${extraSceneDetail}.` : "";
+    baseScene = `MANDATORY VISUAL STYLE "${styleObj.title}": ${populatedFormula}. ${keywordsPart} ${detailPart}`.trim();
+  }
 
   if (commercialOverlay?.enabled) {
     const headline = (commercialOverlay.headline || cleanSubject).trim().toUpperCase();
-    const badge = (commercialOverlay.badgeText || commercialOverlay.businessName || "").trim();
-    const price = (commercialOverlay.priceText || "").trim();
-    const cta = (commercialOverlay.ctaText || `¡Cotiza hoy! · ${commercialOverlay.businessName || ""}`).replace(/·\s*$/, "").trim();
+    const rawPrice = (commercialOverlay.priceText || "").trim();
+    const rawBadge = (commercialOverlay.badgeText || "").trim();
+    const rawCta = (commercialOverlay.ctaText || `¡Cotiza hoy! · ${commercialOverlay.businessName || ""}`).replace(/·\s*$/, "").trim();
+
+    // Solo si el texto del badge es breve (<= 24 caracteres) se coloca como pastilla superior
+    // Si es un texto largo explicativo (ej: "INCLUYE KIT BÁSICO + KIT INSTALACIÓN + TRASLADO"), se usa como subtítulo
+    const isBadgeShort = rawBadge.length > 0 && rawBadge.length <= 24;
+    const isBadgeLong = rawBadge.length > 24;
 
     const typoLines: string[] = [
       `POSTER & ADVERTISING LAYOUT SPECIFICATIONS:`,
       `- TYPOGRAPHY & LAYOUT (Exact Spanish text):`,
-      `- CLEAN ADVERTISING COMPOSITION: All typography, headlines, badges, prices and CTA buttons MUST stay centered with generous breathing space away from the edges. Clean high-end social media commercial finish.`,
+      `- CLEAN ADVERTISING COMPOSITION: All typography, headlines, badges, prices and CTA buttons MUST stay centered with generous breathing space away from the canvas edges. Clean high-end social media commercial finish.`,
+      `- MANDATORY ANTI-DUPLICATION RULE: Render the headline EXACTLY ONCE. Render the price badge EXACTLY ONCE. DO NOT REPEAT ANY WORD OR NUMBER. DO NOT RENDER MULTIPLE HEADLINES, DO NOT RENDER BACKGROUND WATERMARKS OF THE TEXT, DO NOT STAMP RANDOM ICONS OR LABELS.`,
       `- MANDATORY NEGATIVE INSTRUCTION: ABSOLUTELY DO NOT RENDER ANY MEASUREMENT ARROWS, LABELS, NUMBERS, PERCENTAGES, RED OR ORANGE GUIDELINES, DRAFTING MARKS, WIREFRAME BOXES, TECHNICAL RULERS, OR BOUNDING BOXES ON THE IMAGE. RENDER ONLY THE PRISTINE COMMERCIAL GRAPHIC ARTWORK AND TEXT.`,
     ];
 
-    if (badge) {
+    if (isBadgeShort) {
       typoLines.push(
-        `- UPPER CENTER (Pill badge floating centered with generous breathing room from top edge): "${badge}".`
+        `- UPPER CENTER (Single small pill badge floating centered with generous breathing room from top edge): "${rawBadge}".`
       );
     }
+
     if (headline) {
       typoLines.push(
-        `- MID-UPPER CENTER (Centered compact headline broken into 2 to 4 short lines, well-centered with ample empty breathing space on left and right sides): "${headline}".`
+        `- MID-UPPER CENTER (Single centered compact headline broken into 1 to 3 short lines, well-centered with ample empty breathing space on left and right sides): "${headline}".`
       );
     }
-    if (price && price !== headline) {
+
+    if (isBadgeLong) {
       typoLines.push(
-        `- HIGHLIGHT BADGE (Centered floating badge with high contrast background): "${price}".`
+        `- SUBTITLE (Single centered line below the headline in clean smaller secondary font): "${rawBadge}".`
       );
     }
-    if (cta) {
+
+    if (rawPrice && rawPrice !== headline && rawPrice !== rawBadge) {
       typoLines.push(
-        `- LOWER CENTER (Centered pill badge positioned cleanly above the lower edge with ample side margins): "${cta}".`
+        `- HIGHLIGHT BADGE (Single centered floating price badge with high contrast background): "${rawPrice}".`
       );
     }
+
+    if (rawCta) {
+      typoLines.push(
+        `- LOWER CENTER (Single centered pill button positioned cleanly above the lower edge with ample side margins): "${rawCta}".`
+      );
+    }
+
     typoLines.push(
       `Ultra-sharp vector typography, commercial graphic design, compact centered clean composition, professional studio advertising layout, 8k.`,
       ``,
@@ -147,7 +228,7 @@ function buildStyledImagePrompt(
       `- ALL TEXT WRITTEN IN THE IMAGE MUST BE STRICTLY IN SPANISH (ESPAÑOL) AND MATCH THE REQUESTED COPY EXACTLY.`
     );
 
-    return `commercial advertising flyer poster design, professional graphic design layout, high-quality promotional banner, square 1:1 format.\n\nMAIN VISUAL CONCEPT:\n${baseScene}\nIndustry/Business type: ${commercialOverlay.rubro || "Comercio"}.\n\n${typoLines.join("\n")}`;
+    return `commercial advertising flyer poster design, professional graphic design layout, high-quality promotional banner, square 1:1 format.\n\nMAIN VISUAL CONCEPT:\n${baseScene}\nIndustry/Business type: ${rubro}.\n\n${typoLines.join("\n")}`;
   }
 
   return `${baseScene} Centered/balanced hero subject with clean negative space at top and bottom margins, 8k resolution, ultra-detailed commercial photography, STRICT NEGATIVE: no text, no typography, no letters, no words, no numbers, no price tags, no watermarks`.trim();
@@ -695,9 +776,18 @@ ${stylesContext}`;
           "";
         const effectiveIdea = commercialIdea || pub.hook || pub.title || prodName;
 
+        // Para la publicación 1: usar el titular comercial o el nombre del producto
+        // Para publicaciones posteriores: si el vendedor no forzó un titular comercial estático,
+        // usar el ángulo estratégico de cada publicación (`pub.title`) para que cada imagen tenga su propia propuesta sin duplicar el mismo texto
+        const uniquePostHeadline = commercialCustomText
+          ? commercialCustomText
+          : idx === 0
+          ? (prodName || pub.title || businessName)
+          : (pub.title || prodName || businessName);
+
         const commercialOverlayConfig = {
           enabled: postIsCommercial,
-          headline: (commercialCustomText || prodName || pub.title || businessName).trim(),
+          headline: uniquePostHeadline.trim(),
           badgeText: (body.offerText || businessName).trim(),
           priceText: effectivePrice,
           ctaText: (badgeCustomText || `¡Cotiza hoy! · ${businessName}`).trim(),

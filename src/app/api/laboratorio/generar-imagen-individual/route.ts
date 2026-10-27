@@ -7,6 +7,66 @@ import { generateFreeText } from "../../../../lib/gemini-free";
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
+/**
+ * Limpia la fórmula maestra del estilo visual para que NO arrastre secciones
+ * de tipografía pre-diseñadas ni corchetes que puedan provocar duplicación o triplicación
+ * de textos en los afiches comerciales, y purga menciones de comida si el rubro no es gastronómico.
+ */
+function cleanStylePromptForSubject(
+  rawPrompt: string,
+  rawKeywords: string,
+  subject: string,
+  rubro: string
+): { scenePrompt: string; cleanKeywords: string } {
+  let promptText = rawPrompt || "";
+  let keywords = rawKeywords || "";
+
+  // 1. Quitar cualquier bloque de tipografía que traiga la plantilla del estilo
+  promptText = promptText.replace(
+    /GRAPHIC\s+DESIGN\s*&\s*ON-IMAGE\s+TYPOGRAPHY[\s\S]*?(?=(Luxury|Editorial|High-|Sophisticated|Modern|8k|$))/gi,
+    ""
+  );
+  promptText = promptText.replace(
+    /ON-IMAGE\s+TYPOGRAPHY[\s\S]*?(?=(Luxury|Editorial|High-|Sophisticated|Modern|8k|$))/gi,
+    ""
+  );
+  promptText = promptText.replace(/STRICT\s+PLACEMENT\s+AND\s+NEGATIVE\s+RULE:[^\n\r]*/gi, "");
+
+  // 2. Reemplazar corchetes de producto/objeto por el sujeto real
+  promptText = promptText.replace(
+    /\[(?:Nombre\s+del\s+Plato|Plato\s+Principal|Objeto|Sujeto|Estructura|Escenario)[^\]]*\]/gi,
+    subject
+  );
+  // Eliminar cualquier otro corchete que haya quedado (titulares, kickers, botones, ingredientes de ejemplo)
+  promptText = promptText.replace(/\[[^\]]+\]/g, "");
+
+  // 3. Si el rubro NO es gastronomía, purgar términos de comida que hayan venido del estilo
+  const isFoodRubro = /restauran|gastronom|comida|pizz|burger|hamburgues|sushi|cafe|cafeter|pastel|panader|bar|cervecer|parrill/i.test(
+    rubro || ""
+  );
+  if (!isFoodRubro) {
+    promptText = promptText
+      .replace(
+        /\b(restaurant|food|culinary|gourmet\s+dish|dining\s+experience|steak|wine\s+glass|candlelit\s+dining|appetizing|plating|chef|cookware|spices|sauce|broth|ramen|pizza|biryani|pasta|garlic)\b/gi,
+        "commercial subject"
+      )
+      .replace(/,\s*,/g, ",")
+      .trim();
+
+    keywords = keywords
+      .replace(
+        /\b(restaurant|food|culinary|gourmet|steak|wine|candlelit|broth|ramen|pizza|biryani|pasta|garlic|delicious|appetizing|buena comida[^,]*|tu restaurante|experiencias que hacen volver)\b/gi,
+        ""
+      )
+      .replace(/,\s*,/g, ",")
+      .trim();
+  }
+
+  promptText = promptText.replace(/\n\s*\n\s*\n/g, "\n\n").trim();
+
+  return { scenePrompt: promptText, cleanKeywords: keywords };
+}
+
 // Invoca el webhook de n8n para UNA SOLA IMAGEN de forma individual respetando el estilo visual y foto base
 async function generateSingleImageWebhook(
   promptEnglish: string,
@@ -142,12 +202,19 @@ export async function POST(req: NextRequest) {
     const effectiveStyleFormula = stylePrompt || matchedStyle?.prompt || "";
     const effectiveStyleKeywords = styleKeywords || matchedStyle?.styleKeywords || "";
 
+    const { scenePrompt, cleanKeywords } = cleanStylePromptForSubject(
+      effectiveStyleFormula,
+      effectiveStyleKeywords,
+      productName,
+      rubro
+    );
+
     let styleCraftedPrompt = "";
-    if (effectiveStyleFormula) {
-      const populatedFormula = effectiveStyleFormula.includes("[")
-        ? effectiveStyleFormula.replace(/\[[^\]]+\]/g, productName)
-        : `${effectiveStyleFormula}, featuring ${productName}`;
-      styleCraftedPrompt = `MANDATORY VISUAL STYLE "${effectiveStyleTitle}": ${populatedFormula}. ${effectiveStyleKeywords ? `Keywords: ${effectiveStyleKeywords}.` : ""}`;
+    if (scenePrompt) {
+      const populatedFormula = scenePrompt.includes(productName)
+        ? scenePrompt
+        : `${scenePrompt}, featuring ${productName}`;
+      styleCraftedPrompt = `MANDATORY VISUAL STYLE "${effectiveStyleTitle}": ${populatedFormula}. ${cleanKeywords ? `Keywords: ${cleanKeywords}.` : ""}`;
     }
 
     let combinedPrompt = styleCraftedPrompt
@@ -177,6 +244,9 @@ export async function POST(req: NextRequest) {
     const effectivePrice = (price || "").trim();
     const effectiveCta = (customBadgeText || `¡Cotiza hoy! · ${businessName || ""}`).replace(/·\s*$/, "").trim();
 
+    const isBadgeShort = effectiveBadge.length > 0 && effectiveBadge.length <= 24;
+    const isBadgeLong = effectiveBadge.length > 24;
+
     let finalPromptForWebhook = "";
     let posterConfigForN8n: any = null;
 
@@ -185,20 +255,24 @@ export async function POST(req: NextRequest) {
         `POSTER & ADVERTISING LAYOUT SPECIFICATIONS:`,
         `- TYPOGRAPHY & LAYOUT (Exact Spanish text):`,
         `- CLEAN ADVERTISING COMPOSITION: All typography, headlines, badges, prices and CTA buttons MUST stay centered with generous breathing space away from the edges. Clean high-end social media commercial finish.`,
+        `- MANDATORY ANTI-DUPLICATION RULE: Render the headline EXACTLY ONCE. Render the price badge EXACTLY ONCE. DO NOT REPEAT ANY WORD OR NUMBER. DO NOT RENDER MULTIPLE HEADLINES, DO NOT RENDER BACKGROUND WATERMARKS OF THE TEXT, DO NOT STAMP RANDOM ICONS OR LABELS.`,
         `- MANDATORY NEGATIVE INSTRUCTION: ABSOLUTELY DO NOT RENDER ANY MEASUREMENT ARROWS, LABELS, NUMBERS, PERCENTAGES, RED OR ORANGE GUIDELINES, DRAFTING MARKS, WIREFRAME BOXES, TECHNICAL RULERS, OR BOUNDING BOXES ON THE IMAGE. RENDER ONLY THE PRISTINE COMMERCIAL GRAPHIC ARTWORK AND TEXT.`,
       ];
 
-      if (effectiveBadge) {
-        typoLines.push(`- UPPER CENTER (Pill badge floating centered with generous breathing room from top edge): "${effectiveBadge}".`);
+      if (isBadgeShort) {
+        typoLines.push(`- UPPER CENTER (Single small pill badge floating centered with generous breathing room from top edge): "${effectiveBadge}".`);
       }
       if (effectiveHeadline) {
-        typoLines.push(`- MID-UPPER CENTER (Centered compact headline broken into 2 to 4 short lines, well-centered with ample empty breathing space on left and right sides): "${effectiveHeadline}".`);
+        typoLines.push(`- MID-UPPER CENTER (Single centered compact headline broken into 1 to 3 short lines, well-centered with ample empty breathing space on left and right sides): "${effectiveHeadline}".`);
       }
-      if (effectivePrice && effectivePrice !== effectiveHeadline) {
-        typoLines.push(`- HIGHLIGHT BADGE (Centered floating badge with high contrast background): "${effectivePrice}".`);
+      if (isBadgeLong) {
+        typoLines.push(`- SUBTITLE (Single centered line below the headline in clean smaller secondary font): "${effectiveBadge}".`);
+      }
+      if (effectivePrice && effectivePrice !== effectiveHeadline && effectivePrice !== effectiveBadge) {
+        typoLines.push(`- HIGHLIGHT BADGE (Single centered floating price badge with high contrast background): "${effectivePrice}".`);
       }
       if (effectiveCta) {
-        typoLines.push(`- LOWER CENTER (Centered pill badge positioned cleanly above the lower edge with ample side margins): "${effectiveCta}".`);
+        typoLines.push(`- LOWER CENTER (Single centered pill button positioned cleanly above the lower edge with ample side margins): "${effectiveCta}".`);
       }
       typoLines.push(
         `Ultra-sharp vector typography, commercial graphic design, compact centered clean composition, professional studio advertising layout, 8k.`,
@@ -211,7 +285,7 @@ export async function POST(req: NextRequest) {
         `- ALL TEXT WRITTEN IN THE IMAGE MUST BE STRICTLY IN SPANISH (ESPAÑOL) AND MATCH THE REQUESTED COPY EXACTLY.`
       );
 
-      finalPromptForWebhook = `commercial advertising flyer poster design, professional graphic design layout, high-quality promotional banner.\n\nMAIN VISUAL CONCEPT:\n${combinedPrompt}\nIndustry/Business type: ${rubro}.\n\n${typoLines.join("\n")}`;
+      finalPromptForWebhook = `commercial advertising flyer poster design, professional graphic design layout, high-quality promotional banner, square 1:1 format.\n\nMAIN VISUAL CONCEPT:\n${combinedPrompt}\nIndustry/Business type: ${rubro}.\n\n${typoLines.join("\n")}`;
       posterConfigForN8n = {
         enabled: true,
         includeLogo: false,

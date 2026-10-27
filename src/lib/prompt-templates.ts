@@ -1283,107 +1283,73 @@ High-conversion promotional social media ad design, crisp legible typography in 
   },
   {
     id: "style-food-brand-experience",
-    title: "Experiencia de Marca & Restaurante (Brand Experience Ad)",
-    description: "Branding gastronómico de prestigio: titular 'BUENA COMIDA MEJORES MOMENTOS' en cabecera oscura superior y plato principal gourmet con copa de vino 100% visible abajo.",
-    category: "Gastronomía & Carteles",
-    categories: ["Gastronomía & Carteles", "Publicidad y Ads", "Editorial y Revista"],
-    prompt: `High-end restaurant branding and dining experience advertisement poster with clean visual hierarchy.
+    title: "Experiencia de Marca de Prestigio (Brand Experience Ad)",
+    description: "Branding comercial de prestigio: composición sofisticada de dos niveles con iluminación atmosférica de alta gama y espacio visual despejado para tipografía publicitaria.",
+    category: "Publicidad y Ads",
+    categories: ["Publicidad y Ads", "Gastronomía & Carteles", "Editorial y Revista"],
+    prompt: `High-end commercial branding and advertising poster with clean visual hierarchy.
 COMPOSITION & SPATIAL HIERARCHY:
-- LOWER 55%-60%: Stunning commercial food photography of [Plato Principal Gourmet:ej. un bife de lomo a la parrilla con papas doradas y reducción de vino tinto], served on an elegant dark ceramic plate next to a glass of red wine on a candlelit dining table, 100% unobstructed and glistening.
-- UPPER 40%-45%: Sophisticated, dark romantic restaurant ambiance with warm candlelight bokeh, reserved entirely for prestigious brand typography.
-
-GRAPHIC DESIGN & ON-IMAGE TYPOGRAPHY (MANDATORY RENDERED TEXT):
-STRICT PLACEMENT AND NEGATIVE RULE: All typography MUST be rendered strictly in the upper dark negative space. Text must NEVER overlap, cover, or touch the steak, plate, or wine glass.
-- Main Headline: Striking bold condensed typography in white and golden amber positioned in the upper dark area reading "[Titular de Experiencia:ej. BUENA COMIDA MEJORES MOMENTOS]"
-- Brand Stack: Three elegant minimalist icon badges floating in the upper right reading "[Nombre del Restaurante:ej. TU RESTAURANTE]", "[Pilar de Calidad:ej. BUENA COMIDA GRANDES HISTORIAS]", and "[Pilar de Experiencia:ej. EXPERIENCIAS QUE HACEN VOLVER]"
-- Action Button: Prominent rounded yellow CTA button at bottom margin reading "[Texto Botón CTA:ej. ¡VISÍTANOS HOY! ->]"
-
-Luxury culinary marketing aesthetic, sharp legible typography in upper copyspace, appetizing gourmet plating unobstructed in the lower half, 8k resolution.`,
+- LOWER 55%-60%: Stunning commercial photography of [Producto o Sujeto Destacado:ej. un producto estrella / una casa prefabricada moderna], 100% unobstructed, glistening with premium commercial lighting.
+- UPPER 40%-45%: Sophisticated atmospheric ambiance with warm bokeh and rim lighting, reserved entirely for clean brand typography and headline.
+Luxury commercial marketing aesthetic, sharp legible layout, hero subject completely unobstructed in the lower half, 8k resolution.`,
     previewUrl: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=500&q=80",
     imageRequirement: "required",
     isCommercialPoster: true,
     imageGenBehavior: "editorial",
-    styleKeywords: "high-end restaurant branding ad poster, two-tier layout, on-image typography in upper 40% copyspace 'BUENA COMIDA MEJORES MOMENTOS', stacked badges 'TU RESTAURANTE', 'BUENA COMIDA GRANDES HISTORIAS', 'EXPERIENCIAS QUE HACEN VOLVER', yellow CTA button '¡VISÍTANOS HOY! ->', steak and red wine candlelit ambiance 100% unobstructed in lower 60%, text never covers food",
+    styleKeywords: "high-end brand experience ad poster, two-tier layout, upper 40% clean copyspace, hero subject 100% unobstructed in lower 60%, sophisticated warm lighting, 8k commercial finish",
   },
   {
     id: "style-food-split-lateral",
-    title: "Póster Asimétrico Split Lateral (Texto al Costado & Plato a la Derecha)",
-    description: "Composición publicitaria editorial de dos columnas: textos, titular mixto (cursiva + imprenta), descripción y precio agrupados a la izquierda; plato estrella 100% despejado a la derecha.",
-    category: "Gastronomía & Carteles",
-    categories: ["Gastronomía & Carteles", "Publicidad y Ads", "Editorial y Revista"],
-    prompt: `Two-column asymmetrical commercial food advertising poster layout for social media.
+    title: "Póster Asimétrico Split Lateral (Texto al Costado & Sujeto a la Derecha)",
+    description: "Composición publicitaria editorial de dos columnas: margen izquierdo amplio y limpio para textos y precio; sujeto o producto estrella 100% despejado a la derecha.",
+    category: "Publicidad y Ads",
+    categories: ["Publicidad y Ads", "Gastronomía & Carteles", "Editorial y Revista"],
+    prompt: `Two-column asymmetrical commercial advertising poster layout for social media.
 COMPOSITION & SPATIAL HIERARCHY:
-- RIGHT SIDE (55%-60% width): Premium high-end commercial food photography featuring [Nombre del Plato:ej. un tazón humeante de Biryani con pollo tierno / una pizza artesanal con queso derretido], presented in authentic cookware on a dark rustic surface with scattered spices, glistening and 100% unobstructed.
-- LEFT SIDE (40%-45% width): Dedicated dark moody atmospheric negative space (copyspace) with subtle warm rim lighting, designed exclusively for advertising typography and pricing.
-
-GRAPHIC DESIGN & ON-IMAGE TYPOGRAPHY (MANDATORY RENDERED TEXT):
-STRICT PLACEMENT AND NEGATIVE RULE: All rendered typography, headlines, subtitles, prices, and CTA buttons MUST be aligned strictly to the LEFT side margin. Typography MUST NEVER overlap or cover the food dish on the right.
-- Top Subtitle or Script Kicker: Elegant cursive script at the top-left reading "[Kicker o Cursiva:ej. Hyderabadi / Fresh & Cheesy / Introducing]"
-- Main Big Headline: Large bold uppercase typography reading "[Nombre del Plato:ej. BIRYANI / PIZZA / BUTTER CHICKEN]" in high-contrast white or golden amber.
-- Product Tagline: Clean 2-line descriptive sentence in clean sans-serif reading "[Descripción Breve:ej. Arroz basmati aromático cocinado con especias tradicionales y carne tierna.]"
-- Price Callout: Prominent price typography with currency symbol reading "[Precio:ej. $24.900]"
-- Top-Right Floating Badge: High-contrast circular or pill badge in the top-right corner reading "[Badge:ej. ORDER NOW! / NEW / BEST VALUE!]"
-- Action Button: Compact rounded CTA button reading "[Texto CTA:ej. ¡ORDENA AHORA!]"
-
-Sophisticated restaurant advertising poster design, asymmetrical two-column layout, crisp on-image typography on the left, delicious food hero clean on the right, 8k resolution.`,
+- RIGHT SIDE (55%-60% width): Premium high-end commercial photography featuring [Producto o Sujeto Destacado:ej. un producto estrella / una casa prefabricada], clean and 100% unobstructed with dramatic commercial rim lighting.
+- LEFT SIDE (40%-45% width): Dedicated dark atmospheric negative space (copyspace) with subtle warm lighting, designed exclusively for advertising typography and pricing.
+Sophisticated advertising poster design, asymmetrical two-column layout, clean copyspace on the left, hero subject clear on the right, 8k resolution.`,
     previewUrl: "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=500&q=80",
     imageRequirement: "required",
     isCommercialPoster: true,
     imageGenBehavior: "editorial",
-    styleKeywords: "asymmetrical split food advertising poster, left 45% dark copyspace for bold typography 'BIRYANI' and script kicker, prominent price '$24.900', circular badge 'ORDER NOW!' in top corner, food hero 100% unobstructed on right 55%, text never covers food, editorial restaurant layout",
+    styleKeywords: "asymmetrical split commercial advertising poster, left 45% dark copyspace for bold typography, hero subject 100% unobstructed on right 55%, editorial advertising layout, 8k",
   },
   {
     id: "style-food-recipe-ingredients",
-    title: "Ficha Gastronómica con Tira de Ingredientes & Cantidades (Recipe Board)",
-    description: "Cartel tipo masterclass culinaria: titular superior elegante, plato en el centro, y tira horizontal inferior de 4 a 5 ingredientes con iconos y cantidades, más firma cursiva.",
-    category: "Gastronomía & Carteles",
-    categories: ["Gastronomía & Carteles", "Editorial y Revista", "Fotorealismo"],
-    prompt: `Vertical culinary advertising poster and recipe board layout.
+    title: "Ficha Descriptiva con Tira de Características (Feature Board)",
+    description: "Cartel editorial con tira de características: titular superior, producto protagonista en el centro y tira inferior con iconos de especificaciones.",
+    category: "Publicidad y Ads",
+    categories: ["Publicidad y Ads", "Gastronomía & Carteles", "Editorial y Revista"],
+    prompt: `Vertical commercial advertising poster and feature board layout.
 COMPOSITION & SPATIAL HIERARCHY:
-- UPPER SECTION: Dark atmospheric vignette with elegant editorial typography.
-- CENTER SECTION (50% of frame): Mouth-watering gourmet culinary photography of [Nombre del Plato:ej. Pasta al Ajo con láminas de ajo dorado y perejil fresco], served in an artisanal ceramic bowl on a rustic dark wooden table, completely clear and appetizing.
-- LOWER SECTION (25% of frame): Clean dark translucent board featuring a horizontal row of minimalist ingredient icon badges.
-
-GRAPHIC DESIGN & ON-IMAGE TYPOGRAPHY (MANDATORY RENDERED TEXT):
-STRICT PLACEMENT AND NEGATIVE RULE: Typography is placed in the upper header and lower board. The central dish remains 100% visible and unobstructed.
-- Top Badge: Small centered pill reading "[Badge Superior:ej. RECETA DE LA CASA]"
-- Main Dish Headline: Imposing serif and bold typography reading "[Nombre del Plato:ej. PASTA AL AJO]" in crisp white and golden amber.
-- Tagline: Elegant cursive script reading "[Subtítulo Cursiva:ej. Simple, deliciosa y lista en minutos]"
-- Lower Ingredient Strip: Horizontal row of 5 minimalist line-art icon badges with ingredient names and exact amounts: "[Ingrediente 1:ej. Ajo 4 dientes]", "[Ingrediente 2:ej. Pasta 200 g]", "[Ingrediente 3:ej. Aceite de oliva 1 cda]", "[Ingrediente 4:ej. Queso parmesano ½ taza]", and "[Ingrediente 5:ej. Perejil al gusto]"
-- Bottom Script Signature: Delicate script cursive sentence at the very bottom reading "[Firma Inferior:ej. Una receta, mil momentos ♡]"
-
-Editorial culinary campaign, masterclass recipe presentation, crisp readable typography, mouth-watering gourmet dish hero, 8k resolution.`,
+- UPPER SECTION: Dark atmospheric vignette with elegant editorial negative space.
+- CENTER SECTION (50% of frame): Mouth-watering commercial hero photography of [Producto o Sujeto Destacado:ej. un producto estrella / una casa prefabricada], completely clear and unobstructed.
+- LOWER SECTION (25% of frame): Clean dark translucent board with breathing room for minimalist spec badges.
+Editorial commercial campaign, crisp clean composition, hero subject in center, 8k resolution.`,
     previewUrl: "https://images.unsplash.com/photo-1621996346565-e3d5d62817d2?w=500&q=80",
     imageRequirement: "required",
     isCommercialPoster: true,
     imageGenBehavior: "editorial",
-    styleKeywords: "culinary recipe board advertising poster, elegant serif typography 'PASTA AL AJO', script subtitle 'Simple, deliciosa y lista en minutos', gourmet pasta dish in center, horizontal row of 5 ingredient badges with icons and amounts 'Ajo 4 dientes', 'Pasta 200g', 'Aceite de oliva', cursive bottom signature 'Una receta, mil momentos', text never covers food",
+    styleKeywords: "feature board commercial poster, hero subject in center, clean upper header negative space, lower translucent specs board, 8k resolution",
   },
   {
     id: "style-food-express-time",
-    title: "Cartel Express con Badge de Tiempo & Sellos de Calidad (10 Minutos)",
-    description: "Publicidad de alta energía para platos rápidos: titular condensado, badge con reloj 'EN 10 MINUTOS', toma en acción y 3 sellos circulares inferiores con iconos de calidad.",
-    category: "Gastronomía & Carteles",
-    categories: ["Gastronomía & Carteles", "Publicidad y Ads"],
-    prompt: `High-impact commercial food advertising poster for fast gourmet dishes.
+    title: "Cartel Comercial de Alta Energía (High Impact Ad)",
+    description: "Publicidad de alta energía para llamados directos: titular impactante, toma en ángulo dinámico y margen inferior con espacio para sellos de calidad.",
+    category: "Publicidad y Ads",
+    categories: ["Publicidad y Ads", "Gastronomía & Carteles"],
+    prompt: `High-impact commercial advertising poster layout.
 COMPOSITION & SPATIAL HIERARCHY:
-- UPPER 35%: Clean dark atmospheric background with bold high-energy commercial typography.
-- CENTER 45%: Dynamic action food photography hero shot of [Nombre del Plato:ej. Ramen artesanal con huevo pochado y fideos levantados con palillos], steaming and glistening with rich broth, 100% visible and appetizing.
-- LOWER 20%: Dedicated dark margin with three circular badge seals.
-
-GRAPHIC DESIGN & ON-IMAGE TYPOGRAPHY (MANDATORY RENDERED TEXT):
-STRICT PLACEMENT AND NEGATIVE RULE: All text is positioned in the upper header and lower footer. The food action shot in the center remains completely clean.
-- Top Main Headline: Large ultra-bold condensed typography reading "[Nombre del Plato:ej. RAMEN FÁCIL]" with first word in white and second in bright yellow.
-- Time Pill Badge: High-contrast pill badge with clock icon reading "[Tiempo:ej. ⏰ EN 10 MINUTOS]"
-- Lower Feature Badges: Three clean minimalist circular outline icon badges aligned horizontally at the bottom reading "[Sello 1:ej. RÁPIDO]", "[Sello 2:ej. DELICIOSO]", and "[Sello 3:ej. CON INGREDIENTES SIMPLES]"
-- Bottom CTA Button: Compact rounded button reading "[Texto CTA:ej. ¡PÍDELO AHORA!]"
-
-High-energy fast gourmet advertising poster, crisp on-image typography, action food photography hero, 8k resolution.`,
+- UPPER 35%: Clean dark atmospheric background with wide open negative space.
+- CENTER 45%: Dynamic action commercial photography hero shot of [Producto o Sujeto Destacado:ej. un producto estrella / una casa prefabricada], 100% visible and pristine.
+- LOWER 20%: Dedicated dark margin with space for quality badges.
+High-energy commercial advertising poster, hero shot in center, 8k resolution.`,
     previewUrl: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=500&q=80",
     imageRequirement: "required",
     isCommercialPoster: true,
     imageGenBehavior: "product",
-    styleKeywords: "fast gourmet food poster, bold typography 'RAMEN FÁCIL', clock badge 'EN 10 MINUTOS', action noodle pull hero shot in center, three circular badges 'RÁPIDO', 'DELICIOSO', 'CON INGREDIENTES SIMPLES', yellow CTA button, text never covers food",
+    styleKeywords: "high-impact commercial poster, hero shot in center, clean upper 35% negative space, lower margin for badges, 8k resolution",
   },
 ];
 
