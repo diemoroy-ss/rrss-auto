@@ -24,6 +24,7 @@ interface GenerateMuestraPayload {
   badgeCustomText?: string;
   productPrice?: string;
   isCommercialPoster?: boolean;
+  includeWatermark?: boolean;
   imageTextOption?: "con_texto" | "sin_texto" | "mixto";
   agentTone?: string;
   customAgentInstruction?: string;
@@ -378,6 +379,7 @@ export async function POST(req: NextRequest) {
       badgeCustomText = "",
       productPrice = "",
       isCommercialPoster = false,
+      includeWatermark = true,
       imageTextOption = body.isCommercialPoster ? "con_texto" : "mixto",
       agentTone = "directo_cercano",
       customAgentInstruction = "",
@@ -1055,6 +1057,8 @@ ${stylesContext}`;
       sellerEmail: body.sellerEmail || "vendedores@santisoft.cl",
       createdAt: new Date(),
       visualStyleSource,
+      isCommercialPoster: Boolean(isCommercialPoster),
+      includeWatermark: includeWatermark !== false,
       publications: finalPublications,
       strategy: parsedStrategy,
       generatedImageUrl: finalPublications[0]?.imageUrl || "",

@@ -77,6 +77,7 @@ interface DemoData {
   dishOrProductName?: string;
   badgeCustomText?: string;
   isCommercialPoster?: boolean;
+  includeWatermark?: boolean;
   generatedPostCaption?: string;
   generatedImageUrl?: string;
   generatedVideoUrl?: string;
@@ -379,6 +380,8 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
             offerText: data.offerText || "",
             dishOrProductName: data.dishOrProductName || "",
             badgeCustomText: data.badgeCustomText || "",
+            isCommercialPoster: Boolean(data.isCommercialPoster),
+            includeWatermark: data.includeWatermark !== undefined ? Boolean(data.includeWatermark) : true,
             generatedPostCaption: data.generatedPostCaption || data.postCaption || "",
             generatedImageUrl: data.generatedImageUrl || "",
             generatedVideoUrl: data.generatedVideoUrl || "",
@@ -494,6 +497,7 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
 
   const hasVideo = Boolean(demo.remotionComposition || demo.generatedVideoUrl);
   const hasImage = Boolean(demo.generatedImageUrl);
+  const showWatermark = demo.includeWatermark !== false;
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans pb-32 selection:bg-indigo-600 selection:text-white">
@@ -674,7 +678,7 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
                               alt={`${displayTitle} - Diapositiva ${currentSlideIndex + 1}`}
                               className="w-full h-full object-contain"
                             />
-                            <WatermarkOverlay size="normal" showBanner={true} />
+                            {showWatermark && <WatermarkOverlay size="normal" showBanner={true} />}
 
                             {/* Badge flotante de Slide */}
                             <div className="absolute top-3 left-3 z-30 bg-black/75 backdrop-blur-md text-white text-[10px] font-black px-2.5 py-1 rounded-lg border border-white/20 shadow-md">
@@ -739,7 +743,7 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
                                 className="w-full h-full object-cover"
                               />
                             )}
-                            <WatermarkOverlay size="normal" showBanner={true} />
+                            {showWatermark && <WatermarkOverlay size="normal" showBanner={true} />}
 
                             <button
                               type="button"
@@ -759,7 +763,7 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
                             alt={displayTitle}
                             className="w-full h-full object-contain"
                           />
-                          <WatermarkOverlay size="normal" showBanner={true} />
+                          {showWatermark && <WatermarkOverlay size="normal" showBanner={true} />}
 
                           {pub.productPrice && !pub.isCommercialPoster && !demo.isCommercialPoster && (
                             <div className="absolute top-3 left-3 z-30 bg-black/80 backdrop-blur-md text-emerald-400 font-black text-xs px-2.5 py-1 rounded-lg border border-white/20 shadow-md">
@@ -891,7 +895,7 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
                     />
 
                     {/* Marca de agua de protección comercial */}
-                    <WatermarkOverlay size="normal" />
+                    {showWatermark && <WatermarkOverlay size="normal" />}
 
                     <div className="absolute top-3 left-3 z-30 flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
                       <span className="px-3 py-1.5 rounded-xl bg-black/75 backdrop-blur-md text-white text-xs font-bold border border-white/20 shadow-md flex items-center gap-1.5">
@@ -903,13 +907,18 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
                     <a
                       href={`https://wa.me/${santisoftWhatsAppNumber}?text=${encodeURIComponent(
-                        `¡Hola Santisoft! Vi la propuesta que prepararon para ${demo.prospectBusiness}. Quiero activar mi plan para descargar los diseños en alta resolución sin marca de agua.`
+                        showWatermark
+                          ? `¡Hola Santisoft! Vi la propuesta que prepararon para ${demo.prospectBusiness}. Quiero activar mi plan para descargar los diseños en alta resolución sin marca de agua.`
+                          : `¡Hola Santisoft! Vi la propuesta que prepararon para ${demo.prospectBusiness}. Quiero activar mi plan para comenzar a publicar en mis redes.`
                       )}`}
                       target="_blank"
                       rel="noreferrer"
                       className="px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-xs font-bold text-white shadow-md flex items-center gap-2 transition-all active:scale-95 cursor-pointer"
                     >
-                      <span>🔒</span> Activar Plan para Descargar sin Marca de Agua
+                      <span>{showWatermark ? "🔒" : "⚡"}</span>{" "}
+                      {showWatermark
+                        ? "Activar Plan para Descargar sin Marca de Agua"
+                        : "Activar Plan para Descargar en Alta Calidad"}
                     </a>
 
                     {hasVideo && (
@@ -1384,91 +1393,6 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
               );
             })}
           </div>
-
-          {/* PLAN BUSINESS Y PLAN AGENCY (MULTIMARCA Y ESCALA) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-            {plans["business"] && (
-              <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-5 sm:p-6 text-white border border-indigo-900/50 shadow-xl flex flex-col justify-between gap-4">
-                <div className="space-y-2">
-                  <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[11px] font-bold border border-indigo-500/30">
-                    <span>🏢</span>
-                    <span>{plans["business"].tagline || "HASTA 3 CUENTAS"}</span>
-                  </div>
-                  <h4 className="text-lg font-black text-white">
-                    {plans["business"].name || "Plan Business"}: Hasta {plans["business"].maxAccounts || 3} marcas
-                  </h4>
-                  <p className="text-xs text-slate-300 leading-relaxed">
-                    {plans["business"].postsLimit} publicaciones, {plans["business"].videosLimit} videos y WhatsApp Bot multimarca.
-                  </p>
-                  <div className="pt-1">
-                    <span className="text-2xl font-black text-white">
-                      {formatPrice(isAnnual ? Math.round((plans["business"].annualPrice || plans["business"].price * 10) / 12) : plans["business"].price)}
-                    </span>
-                    <span className="text-xs text-slate-400 ml-1">/ mes</span>
-                    {isAnnual && plans["business"].annualPrice && (
-                      <p className="text-[10px] text-emerald-400 font-bold mt-0.5">
-                        {formatPrice(plans["business"].annualPrice)} / año (Ahorro anual)
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <a
-                    href={`https://wa.me/${santisoftWhatsAppNumber}?text=${encodeURIComponent(
-                      `¡Hola Santisoft! Vi la propuesta para ${businessName} y me interesa consultar por el Plan Business multi-marca (${formatPrice(plans["business"].price)}/mes).`
-                    )}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-indigo-600/30 cursor-pointer"
-                  >
-                    <FaWhatsapp className="text-emerald-400 text-sm" />
-                    <span>Consultar Plan Business</span>
-                  </a>
-                </div>
-              </div>
-            )}
-
-            {plans["agency"] && (
-              <div className="bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 rounded-3xl p-5 sm:p-6 text-white border border-purple-900/50 shadow-xl flex flex-col justify-between gap-4">
-                <div className="space-y-2">
-                  <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-purple-500/20 text-purple-300 text-[11px] font-bold border border-purple-500/30">
-                    <span>👑</span>
-                    <span>{plans["agency"].tagline || "HASTA 15 CUENTAS"}</span>
-                  </div>
-                  <h4 className="text-lg font-black text-white">
-                    {plans["agency"].name || "Plan Agency"}: Hasta {plans["agency"].maxAccounts || 15} marcas o clientes
-                  </h4>
-                  <p className="text-xs text-slate-300 leading-relaxed">
-                    Publicaciones ilimitadas, {plans["agency"].videosLimit} videos y soporte de ejecutivos dedicados para agencias.
-                  </p>
-                  <div className="pt-1">
-                    <span className="text-2xl font-black text-white">
-                      {formatPrice(isAnnual ? Math.round((plans["agency"].annualPrice || plans["agency"].price * 10) / 12) : plans["agency"].price)}
-                    </span>
-                    <span className="text-xs text-slate-400 ml-1">/ mes</span>
-                    {isAnnual && plans["agency"].annualPrice && (
-                      <p className="text-[10px] text-emerald-400 font-bold mt-0.5">
-                        {formatPrice(plans["agency"].annualPrice)} / año (Ahorro anual)
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <a
-                    href={`https://wa.me/${santisoftWhatsAppNumber}?text=${encodeURIComponent(
-                      `¡Hola Santisoft! Vi la propuesta para ${businessName} y me interesa consultar por el Plan Agency (${formatPrice(plans["agency"].price)}/mes).`
-                    )}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="w-full py-2.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-extrabold text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-purple-600/30 cursor-pointer"
-                  >
-                    <FaWhatsapp className="text-emerald-400 text-sm" />
-                    <span>Consultar Plan Agency</span>
-                  </a>
-                </div>
-              </div>
-            )}
-          </div>
         </section>
 
         {/* BENEFICIOS: CÓMO TRABAJAN NUESTROS AGENTES */}
@@ -1609,7 +1533,7 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
                 className="max-h-[75vh] w-auto max-w-full object-contain rounded-xl select-none"
               />
               {/* Marca de agua de protección comercial en Lightbox */}
-              <WatermarkOverlay size="large" />
+              {showWatermark && <WatermarkOverlay size="large" />}
             </div>
 
             {/* Barra inferior de información y CTA */}

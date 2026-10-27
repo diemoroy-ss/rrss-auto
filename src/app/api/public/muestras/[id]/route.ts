@@ -105,6 +105,8 @@ export async function GET(
           offerText: data.offerText || "",
           dishOrProductName: data.dishOrProductName || "",
           badgeCustomText: data.badgeCustomText || "",
+          isCommercialPoster: Boolean(data.isCommercialPoster),
+          includeWatermark: data.includeWatermark !== undefined ? Boolean(data.includeWatermark) : true,
           generatedPostCaption: data.generatedPostCaption || data.postCaption || "",
           generatedImageUrl: data.generatedImageUrl || "",
           generatedVideoUrl: data.generatedVideoUrl || "",

@@ -86,6 +86,8 @@ interface ProspectDemo {
   followUpCount?: number;
   publications?: any[];
   strategy?: any;
+  includeWatermark?: boolean;
+  isCommercialPoster?: boolean;
 }
 
 const COMMON_NICHES = [
@@ -896,6 +898,7 @@ export default function VendedoresPwaPage() {
     "carrusel",
   ]);
   const [isCommercialPoster, setIsCommercialPoster] = useState<boolean>(true);
+  const [includeWatermark, setIncludeWatermark] = useState<boolean>(true);
   const [productPrice, setProductPrice] = useState<string>("");
   const [generatedPublications, setGeneratedPublications] = useState<any[]>([]);
   const [generatedStrategy, setGeneratedStrategy] = useState<any>(null);
@@ -1353,6 +1356,7 @@ export default function VendedoresPwaPage() {
             commercialIncludeText,
             commercialCustomText: commercialCustomText.trim(),
             isCommercialPoster: visualStyleSource === "commercial_image" ? commercialIncludeText : isCommercialPoster,
+            includeWatermark,
             catalogItems,
             selectedStyles: visualStyleSource === "preset_styles" ? stylesToSend : [],
             logoUrl: uploadedLogoUrl || "",
@@ -1917,6 +1921,31 @@ export default function VendedoresPwaPage() {
     setTimeout(() => setCopyPostSuccess(false), 2500);
   };
 
+  // Alternar marca de agua en landing público para una demo creada
+  const handleToggleWatermarkForDemo = async (demoId: string, currentVal: boolean) => {
+    const newVal = !currentVal;
+    setIncludeWatermark(newVal);
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      await fetch("/api/admin/muestras", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          id: demoId,
+          includeWatermark: newVal,
+        }),
+      });
+      setHistoryDemos((prev) =>
+        prev.map((d) => (d.id === demoId ? { ...d, includeWatermark: newVal } : d))
+      );
+    } catch (err) {
+      console.error("Error actualizando marca de agua de demo:", err);
+    }
+  };
+
   // 14. Cargar demo anterior al editor
   const handleLoadDemoToEdit = (demo: ProspectDemo) => {
     setProspectName(demo.prospectName || "");
@@ -1944,6 +1973,9 @@ export default function VendedoresPwaPage() {
     setGeneratedVideoUrl(demo.generatedVideoUrl || "");
     setGeneratedPostCaption(demo.generatedPostCaption || "");
     setCreatedDemoId(demo.id || "");
+    if (demo.includeWatermark !== undefined) {
+      setIncludeWatermark(demo.includeWatermark);
+    }
 
     if (demo.whatsappMessage) {
       const properLandingUrl = demo.id ? `${PUBLIC_APP_URL}/m/${demo.id}` : "";
@@ -3069,6 +3101,33 @@ export default function VendedoresPwaPage() {
                     Fotografía limpia activada: Las publicaciones de muestra se generarán con estética fotográfica publicitaria pura, sin textos ni precios sobreimpresos en la imagen.
                   </div>
                 )}
+
+                {/* OPCIÓN: MARCA DE AGUA EN EL LANDING PÚBLICO */}
+                <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                  <div className="space-y-0.5 pr-3">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded-full bg-slate-800 text-white text-[10px] font-black uppercase tracking-wider">
+                        Protección
+                      </span>
+                      <h4 className="text-xs sm:text-sm font-black text-slate-900">
+                        ¿Incluir marca de agua en las imágenes del landing?
+                      </h4>
+                    </div>
+                    <p className="text-[11px] text-slate-500 font-medium">
+                      {includeWatermark
+                        ? "Activado: Las imágenes en el landing público (/m/...) tendrán el sello de agua de muestra comercial."
+                        : "Desactivado: Las imágenes se mostrarán limpias en el landing, sin marca de agua ni sellos sobrepuestos."}
+                    </p>
+                  </div>
+                  <div
+                    onClick={() => setIncludeWatermark(!includeWatermark)}
+                    className={`w-11 h-6 flex items-center rounded-full p-1 duration-300 cursor-pointer shrink-0 ${
+                      includeWatermark ? "bg-indigo-600 justify-end" : "bg-slate-300 justify-start"
+                    }`}
+                  >
+                    <div className="bg-white w-4 h-4 rounded-full shadow-md transform transition-all" />
+                  </div>
+                </div>
               </div>
             </section>
 
@@ -3605,6 +3664,29 @@ export default function VendedoresPwaPage() {
                           </button>
                         )}
                       </div>
+
+                      {createdDemoId && (
+                        <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-200">
+                          <div className="space-y-0.5">
+                            <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                              <span>{includeWatermark ? "🔒" : "✨"}</span>
+                              <span>Marca de agua en landing: {includeWatermark ? "Activada" : "Desactivada"}</span>
+                            </span>
+                            <p className="text-[10px] text-slate-500">
+                              {includeWatermark
+                                ? "La landing muestra el sello de agua sobre las fotos."
+                                : "La landing muestra las fotos limpias sin sello de agua."}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleWatermarkForDemo(createdDemoId, includeWatermark)}
+                            className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 border border-slate-300 text-xs font-bold text-slate-700 transition-colors shadow-xs cursor-pointer"
+                          >
+                            {includeWatermark ? "Quitar marca" : "Poner marca"}
+                          </button>
+                        </div>
+                      )}
                     </div>
 
                     {/* COPY Y ENVÍO POR WHATSAPP */}
@@ -4362,6 +4444,24 @@ export default function VendedoresPwaPage() {
                               <FaClock className="text-[9px]" /> {followUpAlert.label}
                             </span>
                           )}
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (demo.id) {
+                                handleToggleWatermarkForDemo(demo.id, demo.includeWatermark !== false);
+                              }
+                            }}
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full border flex items-center gap-1 cursor-pointer transition-colors ${
+                              demo.includeWatermark !== false
+                                ? "bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200"
+                                : "bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100"
+                            }`}
+                            title="Haz clic para cambiar si lleva marca de agua o no en el landing público"
+                          >
+                            <span>{demo.includeWatermark !== false ? "🔒 Con marca" : "✨ Sin marca"}</span>
+                          </button>
                         </div>
 
                         {/* SELECTOR DE ESTADO COMERCIAL / PIPELINE (PUNTO 5) */}
