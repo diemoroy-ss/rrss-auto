@@ -5,7 +5,7 @@ import { DEFAULT_TEXT_TEMPLATES } from "../../../../lib/text-templates";
 import { generateFreeText } from "../../../../lib/gemini-free";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 // Invoca el webhook de n8n para UNA SOLA IMAGEN de forma individual respetando el estilo visual y foto base
 async function generateSingleImageWebhook(
@@ -13,7 +13,12 @@ async function generateSingleImageWebhook(
   rubro: string,
   productName: string,
   aspectRatio: "1:1" | "9:16" = "1:1",
-  baseImageUrl?: string
+  baseImageUrl?: string,
+  extraOptions?: {
+    styleReferenceUrl?: string;
+    idea?: string;
+    posterConfig?: any;
+  }
 ): Promise<string> {
   const width = aspectRatio === "9:16" ? 720 : 1080;
   const height = aspectRatio === "9:16" ? 1280 : 1080;
@@ -23,41 +28,53 @@ async function generateSingleImageWebhook(
     baseImageUrl && typeof baseImageUrl === "string" && baseImageUrl.startsWith("http")
   );
 
-  try {
-    const n8nWebhookUrl = "https://n8n.santisoft.cl/webhook/img-rrss-auto";
-    const promptWithRef = hasValidBase ? `${baseImageUrl} ${promptEnglish}` : promptEnglish;
-    const n8nRes = await fetch(n8nWebhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        prompt: promptWithRef,
-        promptEnglish,
-        baseImageUrl: hasValidBase ? baseImageUrl : undefined,
-        businessType: rubro,
-        rubro,
-        dishOrProduct: productName,
-        type: aspectRatio === "9:16" ? "story" : "rrss",
-      }),
-      signal: AbortSignal.timeout(25000), // Hasta 25s para una sola imagen individual
-    });
+  const n8nWebhookUrl =
+    process.env.NEXT_PUBLIC_N8N_PREVIEW_URL || "https://n8n.santisoft.cl/webhook/img-rrss-auto";
 
-    if (n8nRes.ok) {
-      const rawData = await n8nRes.json().catch(() => ({}));
-      const data = Array.isArray(rawData) ? rawData[0] : rawData;
-      const candidateUrl =
-        data?.img_url ||
-        data?.imageUrl ||
-        data?.url ||
-        data?.output ||
-        data?.image ||
-        (typeof rawData === "string" && rawData.startsWith("http") ? rawData : null);
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const n8nRes = await fetch(n8nWebhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: promptEnglish,
+          promptEnglish,
+          baseImageUrl: hasValidBase ? baseImageUrl : "",
+          styleReferenceUrl: extraOptions?.styleReferenceUrl || "",
+          idea: extraOptions?.idea || productName,
+          imageExpectation: productName,
+          businessType: rubro,
+          rubro,
+          dishOrProduct: productName,
+          type: aspectRatio === "9:16" ? "Historia" : "Post",
+          carouselCount: 1,
+          allowImageRetouch: true,
+          posterConfig: extraOptions?.posterConfig || null,
+        }),
+        signal: AbortSignal.timeout(75000), // 75s para nuestro modelo real en n8n
+      });
 
-      if (candidateUrl && typeof candidateUrl === "string" && candidateUrl.startsWith("http")) {
-        return candidateUrl;
+      if (n8nRes.ok) {
+        const rawData = await n8nRes.json().catch(() => ({}));
+        const data = Array.isArray(rawData) ? rawData[0] : rawData;
+        const candidateUrl =
+          data?.img_url ||
+          data?.imageUrl ||
+          data?.url ||
+          data?.outputUrl ||
+          data?.output ||
+          data?.image ||
+          data?.data?.imageUrl ||
+          data?.data?.url ||
+          (typeof rawData === "string" && rawData.startsWith("http") ? rawData : null);
+
+        if (candidateUrl && typeof candidateUrl === "string" && candidateUrl.startsWith("http")) {
+          return candidateUrl;
+        }
       }
+    } catch (err) {
+      console.warn(`[Generar Imagen Individual] Webhook de n8n intento ${attempt} falló:`, err);
     }
-  } catch (err) {
-    console.warn("[Generar Imagen Individual] Webhook de n8n demoró o falló, usando Flux:", err);
   }
 
   // Fallback a Flux (Pollinations) limpiando cualquier URL para evitar errores HTTP
@@ -155,26 +172,88 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Asegurar que la imagen generada no tenga letras incrustadas del modelo de difusión
-    combinedPrompt = `${combinedPrompt}, clean background with breathing room at top and bottom margins, 8k resolution, STRICT NEGATIVE: no text, no typography, no letters, no words, no numbers, no watermarks`;
+    const effectiveHeadline = (productDescription || productName || "OFERTA ESPECIAL").trim().toUpperCase();
+    const effectiveBadge = (businessName || "").trim();
+    const effectivePrice = (price || "").trim();
+    const effectiveCta = (customBadgeText || `¡Cotiza hoy! · ${businessName || ""}`).replace(/·\s*$/, "").trim();
+
+    let finalPromptForWebhook = "";
+    let posterConfigForN8n: any = null;
+
+    if (isCommercialPoster) {
+      const typoLines: string[] = [
+        `POSTER & ADVERTISING LAYOUT SPECIFICATIONS:`,
+        `- TYPOGRAPHY & LAYOUT (Exact Spanish text):`,
+        `- CLEAN ADVERTISING COMPOSITION: All typography, headlines, badges, prices and CTA buttons MUST stay centered with generous breathing space away from the edges. Clean high-end social media commercial finish.`,
+        `- MANDATORY NEGATIVE INSTRUCTION: ABSOLUTELY DO NOT RENDER ANY MEASUREMENT ARROWS, LABELS, NUMBERS, PERCENTAGES, RED OR ORANGE GUIDELINES, DRAFTING MARKS, WIREFRAME BOXES, TECHNICAL RULERS, OR BOUNDING BOXES ON THE IMAGE. RENDER ONLY THE PRISTINE COMMERCIAL GRAPHIC ARTWORK AND TEXT.`,
+      ];
+
+      if (effectiveBadge) {
+        typoLines.push(`- UPPER CENTER (Pill badge floating centered with generous breathing room from top edge): "${effectiveBadge}".`);
+      }
+      if (effectiveHeadline) {
+        typoLines.push(`- MID-UPPER CENTER (Centered compact headline broken into 2 to 4 short lines, well-centered with ample empty breathing space on left and right sides): "${effectiveHeadline}".`);
+      }
+      if (effectivePrice && effectivePrice !== effectiveHeadline) {
+        typoLines.push(`- HIGHLIGHT BADGE (Centered floating badge with high contrast background): "${effectivePrice}".`);
+      }
+      if (effectiveCta) {
+        typoLines.push(`- LOWER CENTER (Centered pill badge positioned cleanly above the lower edge with ample side margins): "${effectiveCta}".`);
+      }
+      typoLines.push(
+        `Ultra-sharp vector typography, commercial graphic design, compact centered clean composition, professional studio advertising layout, 8k.`,
+        ``,
+        `TECHNICAL REQUIREMENTS:`,
+        `- VERY IMPORTANT: IGNORE ANY PREVIOUS 'NO TEXT' INSTRUCTIONS. This is a promotional poster that requires text.`,
+        `- Integrate the promotional text, values, and branding seamlessly as a professional graphic designer would.`,
+        `- Ensure high contrast and absolute legibility of all written details.`,
+        `- DO NOT ADD ANY RANDOM GIBBERISH, 'LOREM IPSUM', OR HALLUCINATED TYPOGRAPHY.`,
+        `- ALL TEXT WRITTEN IN THE IMAGE MUST BE STRICTLY IN SPANISH (ESPAÑOL) AND MATCH THE REQUESTED COPY EXACTLY.`
+      );
+
+      finalPromptForWebhook = `commercial advertising flyer poster design, professional graphic design layout, high-quality promotional banner.\n\nMAIN VISUAL CONCEPT:\n${combinedPrompt}\nIndustry/Business type: ${rubro}.\n\n${typoLines.join("\n")}`;
+      posterConfigForN8n = {
+        enabled: true,
+        includeLogo: false,
+        includeBusinessName: Boolean(effectiveBadge),
+        businessName: effectiveBadge,
+        includeMainText: true,
+        mainText: effectiveHeadline,
+        includeSlogan: Boolean(effectiveBadge),
+        sloganText: effectiveBadge,
+        includePrice: Boolean(effectivePrice),
+        priceText: effectivePrice,
+        includeCta: Boolean(effectiveCta),
+        ctaText: effectiveCta,
+        visualStyle: "Moderno",
+      };
+    } else {
+      finalPromptForWebhook = `${combinedPrompt}, clean background with breathing room at top and bottom margins, 8k resolution, STRICT NEGATIVE: no text, no typography, no letters, no words, no numbers, no watermarks`;
+    }
 
     console.log(`[Generar Imagen Individual] Solicitando imagen 1-a-1 para pub #${pubIndex + 1} ("${productName}" en estilo "${effectiveStyleTitle || 'Comercial'}")...`);
 
-    // Llamar al webhook para ESTA SOLA IMAGEN
+    // Llamar al webhook para ESTA SOLA IMAGEN con nuestro modelo real en n8n
     const baseRawImageUrl = await generateSingleImageWebhook(
-      combinedPrompt,
+      finalPromptForWebhook,
       rubro,
       productName,
       aspectRatio === "9:16" ? "9:16" : "1:1",
-      baseImageUrl || undefined
+      baseImageUrl || undefined,
+      {
+        styleReferenceUrl: matchedStyle?.previewUrl || "",
+        idea: idea || productName,
+        posterConfig: posterConfigForN8n,
+      }
     );
 
+    const isFallbackImage = baseRawImageUrl.includes("pollinations.ai");
     let finalComposedUrl = baseRawImageUrl;
     let commercialEditId: string | undefined;
-    let appliedTemplateId = templateId;
-    let appliedTemplateName = "";
+    let appliedTemplateId = isFallbackImage ? templateId : "";
+    let appliedTemplateName = isFallbackImage ? "" : (isCommercialPoster ? "Diseño Directo con Agentes" : "");
 
-    // Elegir plantilla de texto al azar de DEFAULT_TEXT_TEMPLATES si no viene forzada
+    // Elegir plantilla de texto al azar de DEFAULT_TEXT_TEMPLATES solo si se requiere respaldo
     const randomTpl =
       DEFAULT_TEXT_TEMPLATES.find((t) => t.id === templateId) ||
       DEFAULT_TEXT_TEMPLATES[Math.floor(Math.random() * DEFAULT_TEXT_TEMPLATES.length)];
@@ -190,7 +269,9 @@ export async function POST(req: NextRequest) {
           const targetPub = publications[pubIndex] || {};
 
           const shouldComposeCommercial = isCommercialPoster ?? targetPub.isCommercialPoster ?? false;
-          if (shouldComposeCommercial) {
+          const effectiveLogo = logoUrl || demoData?.logoUrl || "";
+
+          if (shouldComposeCommercial && isFallbackImage) {
             try {
               const { composeCommercialSlideWithEditor } = await import("../../../../lib/real-product-compositor");
               const composed = await composeCommercialSlideWithEditor({
@@ -203,9 +284,9 @@ export async function POST(req: NextRequest) {
                 rubro: rubro || demoData?.rubro || "Comercio",
                 businessName: businessName || demoData?.prospectBusiness || demoData?.businessName || "Negocio",
                 aspectRatio: aspectRatio === "9:16" ? "9:16" : "1:1",
-                logoUrl: logoUrl || demoData?.logoUrl || undefined,
+                logoUrl: effectiveLogo || undefined,
                 userId: uid,
-                includeLogo: Boolean(logoUrl || demoData?.logoUrl),
+                includeLogo: Boolean(effectiveLogo),
                 saveEditableInLibrary: true,
                 customBadgeText: customBadgeText || targetPub.badgeCustomText || "",
                 skipAgentCopy: true,
@@ -216,7 +297,16 @@ export async function POST(req: NextRequest) {
               appliedTemplateId = composed.templateId || randomTpl?.id || "";
               appliedTemplateName = composed.templateName || randomTpl?.name || "";
             } catch (cErr) {
-              console.warn("[Generar Imagen Individual] Error componiendo texto comercial con editor:", cErr);
+              console.warn("[Generar Imagen Individual] Error componiendo texto comercial de respaldo:", cErr);
+            }
+          } else if (effectiveLogo && effectiveLogo.startsWith("http")) {
+            try {
+              const { overlayLogoOnImage } = await import("../../../../lib/image-watermark");
+              finalComposedUrl = await overlayLogoOnImage(baseRawImageUrl, effectiveLogo, uid, {
+                position: "top-left",
+              });
+            } catch {
+              finalComposedUrl = baseRawImageUrl;
             }
           }
 
@@ -230,8 +320,8 @@ export async function POST(req: NextRequest) {
               ...targetPub,
               imageUrl: finalComposedUrl,
               baseImageUrl: baseRawImageUrl,
-              textTemplateId: appliedTemplateId || targetPub.textTemplateId,
-              textTemplateName: appliedTemplateName || targetPub.textTemplateName,
+              textTemplateId: appliedTemplateId,
+              textTemplateName: appliedTemplateName,
               ...(isCarousel ? { carouselImages: updatedCarouselImages } : {}),
               ...(commercialEditId ? { commercialEditId } : {}),
             };
@@ -245,7 +335,7 @@ export async function POST(req: NextRequest) {
       } catch (dbErr) {
         console.warn("[Generar Imagen Individual] Error actualizando Firestore (no bloqueante):", dbErr);
       }
-    } else if (isCommercialPoster) {
+    } else if (isCommercialPoster && isFallbackImage) {
       try {
         const { composeCommercialSlideWithEditor } = await import("../../../../lib/real-product-compositor");
         const composed = await composeCommercialSlideWithEditor({
@@ -271,6 +361,15 @@ export async function POST(req: NextRequest) {
         appliedTemplateName = composed.templateName || randomTpl?.name || "";
       } catch (cErr) {
         console.warn("[Generar Imagen Individual] Error componiendo texto comercial:", cErr);
+      }
+    } else if (logoUrl && logoUrl.startsWith("http")) {
+      try {
+        const { overlayLogoOnImage } = await import("../../../../lib/image-watermark");
+        finalComposedUrl = await overlayLogoOnImage(baseRawImageUrl, logoUrl, uid, {
+          position: "top-left",
+        });
+      } catch {
+        finalComposedUrl = baseRawImageUrl;
       }
     }
 

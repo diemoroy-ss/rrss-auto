@@ -99,20 +99,34 @@ export async function composeCommercialSlideWithEditor(
 
   console.log(`[RealProductCompositor] Procesando "${productName}" para ${businessName} | Plantilla: "${resolvedTpl.name}" (${resolvedTpl.id})...`);
 
+  const isFoodRubro = /restauran|gastronom|comida|pizz|burger|hamburgues|sushi|cafe|cafeter|pastel|panader|bar|cervecer|parrill/i.test(
+    rubro || ""
+  );
+
   // 1. Textos Publicitarios alimentados por la plantilla seleccionada y los datos del producto
   let bannerCopy: BannerCopyResult;
   if (skipAgentCopy || productName || customBadgeText || price) {
+    const safeDefaultBadge = isFoodRubro
+      ? resolvedTpl.badgeText && !/order now/i.test(resolvedTpl.badgeText)
+        ? resolvedTpl.badgeText
+        : "⭐ ESPECIALIDAD"
+      : "⭐ DESTACADO";
+    const safeDefaultSub = isFoodRubro
+      ? resolvedTpl.subheadlinePattern || "Elaboración propia con ingredientes seleccionados"
+      : `Calidad garantizada · ${businessName || rubro}`;
+    const safeDefaultCta = isFoodRubro ? "¡PIDE HOY!" : "¡COTIZA HOY!";
+
     bannerCopy = {
       badgeText: (customBadgeText && customBadgeText.trim())
         ? customBadgeText.trim().toUpperCase()
-        : (resolvedTpl.badgeText || "⭐ ESPECIALIDAD"),
+        : safeDefaultBadge,
       mainHeadline: productName && productName.trim() ? productName.trim().toUpperCase() : "OFERTA EXCLUSIVA",
       benefitText: (productDescription && productDescription.trim())
         ? productDescription.trim()
-        : (resolvedTpl.subheadlinePattern || "Elaboración propia con ingredientes seleccionados"),
+        : safeDefaultSub,
       ctaText: businessName && businessName.trim()
-        ? `${resolvedTpl.ctaText || "¡ORDENA HOY!"} · ${businessName.trim()}`
-        : (resolvedTpl.ctaText || "¡ORDENA HOY!"),
+        ? `${safeDefaultCta} · ${businessName.trim()}`
+        : safeDefaultCta,
       visualTheme: "food_bold",
       badgeBgColor: resolvedTpl.badgeBgColor || "#fbbf24",
       badgeTextColor: resolvedTpl.badgeTextColor || "#0f172a",

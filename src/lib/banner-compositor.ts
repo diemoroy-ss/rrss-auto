@@ -294,7 +294,15 @@ export async function composeBannerOnImage(options: BannerCompositorOptions): Pr
       const badgeX = width - badgeW - 44;
       const badgeY = isVertical ? 80 : 42;
 
-      const scriptText = escapeXml(tpl.secondaryScriptPattern || "Especialidad de la casa");
+      const isFoodHeadline = /pizz|burger|hamburgues|sushi|ramen|pasta|carne|parrill|taco|menu|menú|plato|sabor|horno|restauran/i.test(
+        `${rawHeadline} ${rawSub}`
+      );
+      const rawScriptCandidate = tpl.secondaryScriptPattern || "Calidad garantizada";
+      const safeScriptCandidate =
+        !isFoodHeadline && /horno|cocina|sabor|chef|fresco|receta/i.test(rawScriptCandidate)
+          ? "Calidad garantizada"
+          : rawScriptCandidate;
+      const scriptText = escapeXml(safeScriptCandidate);
       const blockStartY = isVertical ? 480 : 250;
       const headlineBaseY = blockStartY + 58;
       const afterHeadlineY = headlineBaseY + (lines.length - 1) * lineHeight;
