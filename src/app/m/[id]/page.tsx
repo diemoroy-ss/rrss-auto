@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
+import SocialPilotLogo from "../../../components/SocialPilotLogo";
 import { db } from "../../../lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { FaWhatsapp, FaImage, FaVideo, FaShareAlt, FaCheck, FaArrowRight, FaShieldAlt, FaRocket, FaClock, FaStar, FaCopy, FaPenNib, FaExpand } from "react-icons/fa";
@@ -231,7 +232,7 @@ const PLAN_META: Record<string, { defaultBadge: string; emoji: string; subtitle:
 
 function WatermarkOverlay({
   size = "normal",
-  text = "SANTISOFT · MUESTRA DE PRUEBA",
+  text = "SOCIALPILOT · MUESTRA DE PRUEBA",
   showBanner = true,
 }: {
   size?: "small" | "normal" | "large";
@@ -263,7 +264,7 @@ function WatermarkOverlay({
             {text}
           </p>
           <p className="text-[9px] sm:text-[11px] font-bold uppercase tracking-widest text-amber-300 drop-shadow">
-            PROPIEDAD DE SANTISOFT · DEMO EXCLUSIVA
+            PROPIEDAD DE SOCIALPILOT · DEMO EXCLUSIVA
           </p>
         </div>
       </div>
@@ -381,7 +382,7 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
             dishOrProductName: data.dishOrProductName || "",
             badgeCustomText: data.badgeCustomText || "",
             isCommercialPoster: Boolean(data.isCommercialPoster),
-            includeWatermark: data.includeWatermark !== undefined ? Boolean(data.includeWatermark) : true,
+            includeWatermark: data.includeWatermark === false || (data.includeWatermark as any) === "false" ? false : (data.includeWatermark !== undefined ? Boolean(data.includeWatermark) : true),
             generatedPostCaption: data.generatedPostCaption || data.postCaption || "",
             generatedImageUrl: data.generatedImageUrl || "",
             generatedVideoUrl: data.generatedVideoUrl || "",
@@ -497,26 +498,21 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
 
   const hasVideo = Boolean(demo.remotionComposition || demo.generatedVideoUrl);
   const hasImage = Boolean(demo.generatedImageUrl);
-  const showWatermark = demo.includeWatermark !== false;
+  const showWatermark = demo.includeWatermark !== false && (demo.includeWatermark as any) !== "false";
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans pb-32 selection:bg-indigo-600 selection:text-white">
       
-      {/* Barra Superior de Marca */}
-      <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-xl border-b border-slate-200/80 px-4 py-3 shadow-xs">
+      {/* Barra Superior de Marca Oficial SocialPilot */}
+      <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-xl border-b border-slate-200/80 px-4 py-2.5 shadow-xs">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white font-black text-sm shadow-md shadow-indigo-600/25">
-              S
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-black tracking-wider uppercase text-slate-900">Santisoft</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
-                  Agentes de Redes
-                </span>
-              </div>
-            </div>
+          <div className="flex items-center gap-2.5">
+            <Link href="/" className="flex items-center hover:opacity-90 transition-opacity">
+              <SocialPilotLogo height={32} width={140} variant="dark" priority />
+            </Link>
+            <span className="hidden sm:inline-block text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
+              Agentes de Redes
+            </span>
           </div>
 
           <button

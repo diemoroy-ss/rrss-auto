@@ -1058,7 +1058,7 @@ ${stylesContext}`;
       createdAt: new Date(),
       visualStyleSource,
       isCommercialPoster: Boolean(isCommercialPoster),
-      includeWatermark: includeWatermark !== false,
+      includeWatermark: body.includeWatermark === false || (body.includeWatermark as any) === "false" ? false : true,
       publications: finalPublications,
       strategy: parsedStrategy,
       generatedImageUrl: finalPublications[0]?.imageUrl || "",

@@ -1987,10 +1987,9 @@ export default function VendedoresPwaPage() {
     setTimeout(() => setCopyPostSuccess(false), 2500);
   };
 
-  // Alternar marca de agua en landing público para una demo creada
-  const handleToggleWatermarkForDemo = async (demoId: string, currentVal: boolean) => {
-    const newVal = !currentVal;
-    setIncludeWatermark(newVal);
+  // Establecer / alternar marca de agua en landing público para una demo creada
+  const handleSetWatermarkForDemo = async (demoId: string, enabled: boolean) => {
+    setIncludeWatermark(enabled);
     try {
       const token = await auth.currentUser?.getIdToken();
       await fetch("/api/admin/muestras", {
@@ -2001,15 +2000,19 @@ export default function VendedoresPwaPage() {
         },
         body: JSON.stringify({
           id: demoId,
-          includeWatermark: newVal,
+          includeWatermark: enabled,
         }),
       });
       setHistoryDemos((prev) =>
-        prev.map((d) => (d.id === demoId ? { ...d, includeWatermark: newVal } : d))
+        prev.map((d) => (d.id === demoId ? { ...d, includeWatermark: enabled } : d))
       );
     } catch (err) {
       console.error("Error actualizando marca de agua de demo:", err);
     }
+  };
+
+  const handleToggleWatermarkForDemo = (demoId: string, currentVal: boolean) => {
+    return handleSetWatermarkForDemo(demoId, !currentVal);
   };
 
   // 14. Cargar demo anterior al editor
@@ -2040,7 +2043,9 @@ export default function VendedoresPwaPage() {
     setGeneratedPostCaption(demo.generatedPostCaption || "");
     setCreatedDemoId(demo.id || "");
     if (demo.includeWatermark !== undefined) {
-      setIncludeWatermark(demo.includeWatermark);
+      setIncludeWatermark(demo.includeWatermark === false || (demo.includeWatermark as any) === "false" ? false : true);
+    } else {
+      setIncludeWatermark(true);
     }
 
     if (demo.whatsappMessage) {
@@ -3186,7 +3191,13 @@ export default function VendedoresPwaPage() {
                     </p>
                   </div>
                   <div
-                    onClick={() => setIncludeWatermark(!includeWatermark)}
+                    onClick={() => {
+                      const nextVal = !includeWatermark;
+                      setIncludeWatermark(nextVal);
+                      if (createdDemoId) {
+                        handleSetWatermarkForDemo(createdDemoId, nextVal);
+                      }
+                    }}
                     className={`w-11 h-6 flex items-center rounded-full p-1 duration-300 cursor-pointer shrink-0 ${
                       includeWatermark ? "bg-indigo-600 justify-end" : "bg-slate-300 justify-start"
                     }`}
@@ -3951,7 +3962,7 @@ export default function VendedoresPwaPage() {
                           </div>
                           <button
                             type="button"
-                            onClick={() => handleToggleWatermarkForDemo(createdDemoId, includeWatermark)}
+                            onClick={() => handleSetWatermarkForDemo(createdDemoId, !includeWatermark)}
                             className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 border border-slate-300 text-xs font-bold text-slate-700 transition-colors shadow-xs cursor-pointer"
                           >
                             {includeWatermark ? "Quitar marca" : "Poner marca"}
