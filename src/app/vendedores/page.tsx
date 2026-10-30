@@ -912,6 +912,7 @@ export default function VendedoresPwaPage() {
   const [generatedPublications, setGeneratedPublications] = useState<any[]>([]);
   const [generatedStrategy, setGeneratedStrategy] = useState<any>(null);
   const [selectedPreviewPubIndex, setSelectedPreviewPubIndex] = useState<number>(0);
+  const [activeCarouselSlideMap, setActiveCarouselSlideMap] = useState<Record<number, number>>({});
   const [isGeneratingSingleImg, setIsGeneratingSingleImg] = useState<boolean>(false);
   const [isRenderingPoster, setIsRenderingPoster] = useState<boolean>(false);
   const [uploadedBaseImageUrl, setUploadedBaseImageUrl] = useState<string>("");
@@ -3237,7 +3238,10 @@ export default function VendedoresPwaPage() {
               const activePub = (generatedPublications && generatedPublications.length > 0)
                 ? (generatedPublications[selectedPreviewPubIndex] || generatedPublications[0])
                 : null;
-              const activeImg = activePub?.imageUrl || canvasImageUrl || generatedImageUrl || baseImagePreview || "";
+              const activeSlideIdx = activeCarouselSlideMap[selectedPreviewPubIndex] ?? 0;
+              const activeImg = (activePub?.type === "carrusel" && Array.isArray(activePub?.carouselImages) && activePub.carouselImages[activeSlideIdx])
+                ? activePub.carouselImages[activeSlideIdx]
+                : (activePub?.imageUrl || canvasImageUrl || generatedImageUrl || baseImagePreview || "");
               const activeCleanBaseImg = activePub?.baseImageUrl || activePub?.origBaseImageUrl || activePub?.imageUrl || canvasImageUrl || generatedImageUrl || baseImagePreview || "";
               const activeCopy = activePub?.copy || generatedPostCaption || "";
 
@@ -3351,15 +3355,46 @@ export default function VendedoresPwaPage() {
 
                       {/* Miniaturas de Carrusel si existen */}
                       {activePub?.type === "carrusel" && activePub?.carouselImages && activePub.carouselImages.length > 1 && (
-                        <div className="grid grid-cols-3 gap-2 pt-1">
-                          {activePub.carouselImages.map((slideImg: string, sIdx: number) => (
-                            <div key={sIdx} className="aspect-square rounded-xl overflow-hidden border border-slate-200 bg-slate-100 relative shadow-2xs">
-                              <img src={slideImg} alt={`Slide ${sIdx + 1}`} className="w-full h-full object-cover" />
-                              <span className="absolute bottom-1 right-1 bg-black/70 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md">
-                                #{sIdx + 1}
-                              </span>
-                            </div>
-                          ))}
+                        <div className="space-y-1.5 pt-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                              <span>🎠</span> Diapositivas de este Carrusel ({activePub.carouselImages.length} slides)
+                            </span>
+                            <span className="text-[10px] text-slate-500 font-medium">
+                              Toca para previsualizar cada slide arriba
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            {activePub.carouselImages.map((slideImg: string, sIdx: number) => {
+                              const isSlideActive = activeSlideIdx === sIdx;
+                              return (
+                                <button
+                                  key={sIdx}
+                                  type="button"
+                                  onClick={() =>
+                                    setActiveCarouselSlideMap((prev) => ({
+                                      ...prev,
+                                      [selectedPreviewPubIndex]: sIdx,
+                                    }))
+                                  }
+                                  className={`aspect-square rounded-xl overflow-hidden border-2 relative shadow-2xs cursor-pointer transition-all ${
+                                    isSlideActive
+                                      ? "border-indigo-600 ring-2 ring-indigo-600/30"
+                                      : "border-slate-200 hover:border-slate-300 opacity-80 hover:opacity-100"
+                                  }`}
+                                >
+                                  <img src={slideImg} alt={`Slide ${sIdx + 1}`} className="w-full h-full object-cover" />
+                                  <span
+                                    className={`absolute bottom-1 right-1 text-[9px] font-bold px-1.5 py-0.5 rounded-md ${
+                                      isSlideActive ? "bg-indigo-600 text-white" : "bg-black/70 text-white"
+                                    }`}
+                                  >
+                                    Slide {sIdx + 1}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
                       )}
 

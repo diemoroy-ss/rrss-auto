@@ -1238,48 +1238,33 @@ Artistic aesthetic coffee shop campaign layout, soft organic tones, crisp legibl
     categories: ["Gastronomía & Carteles", "Publicidad y Ads"],
     prompt: `High-impact commercial food delivery advertising poster with clean two-zone composition.
 COMPOSITION & SPATIAL HIERARCHY:
-- LOWER 55%-60%: Tempting commercial photography of [Plato Principal:ej. una hamburguesa doble con queso derretido y tocino], accompanied by golden french fries in a takeout carton and a cold drink with straw, next to a branded brown kraft paper delivery bag with a round stamp logo reading "[Nombre en Bolsa:ej. TASTY BITES]", fully visible on a dark rustic surface.
+- LOWER 55%-60%: Tempting commercial food photography of [Producto o Sujeto Destacado:ej. el plato o producto estrella], accompanied by appetizing side dishes, fully visible on a dark rustic surface, 100% unobstructed.
 - UPPER 40%-45%: Dark moody restaurant backdrop with warm ambient lights, designed as clean negative space (copyspace) for promotional typography.
 
-GRAPHIC DESIGN & ON-IMAGE TYPOGRAPHY (MANDATORY RENDERED TEXT):
-STRICT PLACEMENT AND NEGATIVE RULE: All promotional text MUST be positioned strictly in the upper negative space header. Text must NEVER overlap, cover, or obscure the food, burger, fries, or drink.
-- Top Headline: Large condensed bold typography with crisp white and yellow lettering in the upper negative space reading "[Titular de Delivery:ej. TU COMIDA FAVORITA EN TU CASA]"
-- Delivery Feature Badges: Three clean icon badges positioned directly beneath the headline in the upper zone reading "[Beneficio 1:ej. RÁPIDO]", "[Beneficio 2:ej. SEGURO]", and "[Beneficio 3:ej. A TIEMPO]"
-- Promotional CTA Button: Bright yellow rounded rectangular button with arrow reading "[Texto Botón CTA:ej. ¡ORDENA AHORA! ->]" floating in the upper right or bottom edge without touching the food.
-- Bottom Footer Tagline: Clean modern text at bottom right margin reading "[Lema Secundario:ej. COMIDA REAL EN CUALQUIER LUGAR]"
-
-High-energy commercial delivery ad design, perfectly readable bold fonts in upper copyspace, irresistible food hero 100% unobstructed below, 8k resolution.`,
+High-energy commercial delivery ad design, generous negative space in upper copyspace for headline, irresistible food hero 100% unobstructed below, 8k resolution.`,
     previewUrl: "https://images.unsplash.com/photo-1526367790999-0150786686a2?w=500&q=80",
     imageRequirement: "required",
     isCommercialPoster: true,
     imageGenBehavior: "product",
-    styleKeywords: "commercial food delivery poster, two-tier layout, bold on-image typography in upper 40% copyspace 'TU COMIDA FAVORITA EN TU CASA', icon badges 'RÁPIDO', 'SEGURO', 'A TIEMPO', kraft paper delivery bag with logo, yellow CTA button '¡ORDENA AHORA! ->', footer tagline 'COMIDA REAL EN CUALQUIER LUGAR', food hero 100% unobstructed in lower 60%, text never covers food",
+    styleKeywords: "commercial food delivery poster, two-tier layout, dark upper negative copyspace for headline typography, mouth-watering hero food product 100% unobstructed in lower 60%, warm rustic background, 8k resolution",
   },
   {
     id: "style-food-special-offer",
     title: "Oferta Especial & Descuento Flash (Special Offer Promo)",
-    description: "Cartel promocional de alta urgencia: titular '¡OFERTA ESPECIAL!', descuento gigante en cabecera superior y plato gourmet completamente despejado abajo.",
+    description: "Cartel promocional de alta urgencia: diseño de dos niveles con espacio superior oscuro para oferta y titular publicitario, y producto protagonista 100% despejado abajo.",
     category: "Gastronomía & Carteles",
     categories: ["Gastronomía & Carteles", "Publicidad y Ads"],
-    prompt: `Limited-time restaurant promotional advertisement poster with split vertical layout.
+    prompt: `Limited-time commercial promotion advertisement poster with split vertical layout.
 COMPOSITION & SPATIAL HIERARCHY:
-- LOWER 55%-60%: Appetizing commercial food photography of [Plato en Promoción:ej. un plato abundante de pasta fettuccine con salsa cremosa de champiñones y queso parmesano], presented in a ceramic bowl on a rustic dining table with fresh herbs, completely unobstructed and glistening.
-- UPPER 40%-45%: Dark, rich, atmospheric restaurant background dedicated exclusively to high-urgency promotional typography.
+- LOWER 55%-60%: Appetizing commercial food photography of [Producto o Sujeto Destacado:ej. el producto o plato estrella], presented on a rustic dining surface with fresh garnishes, completely unobstructed, glistening with commercial lighting.
+- UPPER 40%-45%: Dark, rich, atmospheric restaurant background dedicated exclusively as clean negative space (copyspace) for promotional typography and pricing.
 
-GRAPHIC DESIGN & ON-IMAGE TYPOGRAPHY (MANDATORY RENDERED TEXT):
-STRICT PLACEMENT AND NEGATIVE RULE: All promotional typography MUST be located exclusively in the upper dark negative space. Text must NEVER overlap, touch, cover, or obscure the food, pasta, bowl, or plate.
-- Top Promo Headline: Bold high-energy typography at top reading "[Titular Promocional:ej. ¡OFERTA ESPECIAL!]"
-- Urgency Badge: Minimalist clock icon with text reading "[Vigencia o Urgencia:ej. POR TIEMPO LIMITADO]"
-- Giant Discount Callout: Massive, highly visible bold typography in the upper center reading "[Descuento Destacado:ej. 20% DE DESCUENTO]"
-- Category Pill Badge: High-contrast rounded pill banner below the discount reading "[Categoría o Producto:ej. EN TODA LA PASTA]"
-- Bottom CTA Button: Bright yellow rounded rectangle button with arrow reading "[Texto Botón CTA:ej. ¡ORDENA AHORA! ->]" placed at the bottom edge away from the plate.
-
-High-conversion promotional social media ad design, crisp legible typography in upper negative space, mouth-watering gourmet dish hero completely clean below, 8k resolution.`,
+High-conversion promotional social media ad design, generous upper negative space for promotional headline, mouth-watering hero subject completely clean and unobstructed below, 8k resolution.`,
     previewUrl: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=500&q=80",
     imageRequirement: "required",
     isCommercialPoster: true,
     imageGenBehavior: "product",
-    styleKeywords: "promotional discount food ad poster, two-tier layout, on-image typography in upper 40% copyspace '¡OFERTA ESPECIAL!', clock badge 'POR TIEMPO LIMITADO', massive discount text '20% DE DESCUENTO', pill banner 'EN TODA LA PASTA', yellow CTA button '¡ORDENA AHORA! ->', gourmet pasta dish hero 100% unobstructed in lower 60%, text never covers food",
+    styleKeywords: "promotional discount food ad poster, two-tier vertical layout, dark upper 40% negative copyspace for promotional typography, commercial hero food product 100% unobstructed in lower 60%, appetizing presentation, warm dramatic lighting, 8k commercial finish",
   },
   {
     id: "style-food-brand-experience",

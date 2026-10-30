@@ -90,11 +90,19 @@ function cleanStylePromptForSubject(
 
   // 2. Reemplazar corchetes de producto/objeto por el sujeto real
   promptText = promptText.replace(
-    /\[(?:Nombre\s+del\s+Plato|Plato\s+Principal|Objeto|Sujeto|Estructura|Escenario)[^\]]*\]/gi,
+    /\[(?:Nombre\s+del\s+Plato|Plato\s+Principal|Plato\s+en\s+Promoción|Plato|Producto\s+o\s+Sujeto\s+Destacado|Producto|Objeto|Sujeto|Estructura|Escenario)[^\]]*\]/gi,
     subject
   );
   // Eliminar cualquier otro corchete que haya quedado (titulares, kickers, botones, ingredientes de ejemplo)
   promptText = promptText.replace(/\[[^\]]+\]/g, "");
+
+  // Limpiar textos mock o titulares entre comillas en keywords del estilo
+  keywords = keywords
+    .replace(/['"][^'"]*['"]/g, "")
+    .replace(/\b(on-image\s+typography|pill\s+banner|clock\s+badge|yellow\s+CTA\s+button|massive\s+discount\s+text|discount\s+callout|icon\s+badges|footer\s+tagline)\b/gi, "")
+    .replace(/,\s*,/g, ",")
+    .replace(/\s{2,}/g, " ")
+    .trim();
 
   // 3. Si el rubro NO es gastronomía, purgar términos de comida que hayan venido del estilo
   const isFoodRubro = /restauran|gastronom|comida|pizz|burger|hamburgues|sushi|cafe|cafeter|pastel|panader|bar|cervecer|parrill/i.test(
@@ -116,6 +124,19 @@ function cleanStylePromptForSubject(
       )
       .replace(/,\s*,/g, ",")
       .trim();
+  } else {
+    // Si es gastronomía pero el producto es específico, evitar contaminación de otros platos no pedidos (ej: si es hamburguesa, nunca generar pasta)
+    const lowerSubj = subject.toLowerCase();
+    if (/burger|hamburgues|sandwich/i.test(lowerSubj)) {
+      promptText = promptText.replace(/\b(pasta|fettuccine|pizza|sushi|ramen|spaghetti)\b/gi, "").replace(/,\s*,/g, ",");
+      keywords = keywords.replace(/\b(pasta|fettuccine|pizza|sushi|ramen|spaghetti)\b/gi, "").replace(/,\s*,/g, ",");
+    } else if (/pizza/i.test(lowerSubj)) {
+      promptText = promptText.replace(/\b(pasta|fettuccine|burger|hamburgues|sushi|ramen)\b/gi, "").replace(/,\s*,/g, ",");
+      keywords = keywords.replace(/\b(pasta|fettuccine|burger|hamburgues|sushi|ramen)\b/gi, "").replace(/,\s*,/g, ",");
+    } else if (/sushi|roll/i.test(lowerSubj)) {
+      promptText = promptText.replace(/\b(pasta|fettuccine|burger|hamburgues|pizza)\b/gi, "").replace(/,\s*,/g, ",");
+      keywords = keywords.replace(/\b(pasta|fettuccine|burger|hamburgues|pizza)\b/gi, "").replace(/,\s*,/g, ",");
+    }
   }
 
   promptText = promptText.replace(/\n\s*\n\s*\n/g, "\n\n").trim();
