@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import DotCanvas from "../../components/DotCanvas";
 import BrandHeader from "../../components/BrandHeader";
 import BrandFooter from "../../components/BrandFooter";
 import WebChatWidget from "../../components/WebChatWidget";
@@ -42,87 +41,96 @@ const HERO_DEMOS: Record<
     prompt: string;
     agentNote: string;
     badge: string;
-    slides: { num: string; title: string; sub: string; tag: string }[];
+    slides: { num: string; title: string; sub: string; tag: string; imageUrl: string }[];
   }
 > = {
   carrusel: {
     prompt:
-      '"Hazme un carrusel de 5 slides sobre por qué nuestros clientes ahorran tiempo, usando los colores de mi web."',
+      '"Hazme un carrusel de 5 slides para Instagram destacando nuestra especialidad con fotos reales y precios."',
     agentNote:
-      "Nuestros agentes leyeron tu web, extrajeron tu paleta y armaron las láminas con textos independientes:",
-    badge: "Carrusel 5 Slides · 4:5",
+      "Nuestros agentes extraen tus fotos de producto, aplican tu paleta y arman láminas 4:5 listas para publicar:",
+    badge: "Carrusel 5 Láminas · 4:5",
     slides: [
       {
         num: "Slide 1 · Portada",
-        title: "¿Sigues perdiendo 6 horas por semana pensando qué subir?",
-        sub: "Desliza para ver cómo resolverlo hoy →",
-        tag: "Gancho Principal",
+        title: "¿Buscando el mejor sabor para este fin de semana?",
+        sub: "Desliza para ver la promo exclusiva →",
+        tag: "Gancho Visual",
+        imageUrl: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=500&q=80",
       },
       {
-        num: "Slide 2 · Problema",
-        title: "El problema no es tu producto, es la falta de constancia",
-        sub: "Cuando dejas de publicar, tu competencia ocupa tu lugar.",
-        tag: "Dolor del Cliente",
+        num: "Slide 2 · Detalle",
+        title: "Ingredientes frescos seleccionados cada mañana",
+        sub: "100% artesanal, sin esperas y al mejor precio.",
+        tag: "Valor de Marca",
+        imageUrl: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=500&q=80",
       },
       {
-        num: "Slide 3 · Solución",
-        title: "Tu equipo de agentes diseña y programa por ti",
-        sub: "Con tu logo, tus fotos reales y zona segura verificada.",
-        tag: "Cierre + CTA",
+        num: "Slide 3 · Cierre",
+        title: "Pide directo a nuestro WhatsApp con 15% OFF",
+        sub: "Enlace directo en bio · Cupos limitados",
+        tag: "Llamado a WhatsApp",
+        imageUrl: "https://images.unsplash.com/photo-1526367790999-0150786686a2?w=500&q=80",
       },
     ],
   },
   competencia: {
     prompt:
-      '"Revisa qué publicación le está funcionando a mi competencia este mes y adáptala a mi negocio con mi oferta."',
+      '"Revisa qué anuncio le funciona a mi competencia este mes y adáptalo a mi oferta con mi logo."',
     agentNote:
-      "Detectamos un anuncio ganador con más de 40 días activo en tu rubro y lo adaptamos a tu marca:",
-    badge: "Adaptación en 1 Clic · 1:1",
+      "Detectamos un anuncio con +40 días activo en tu rubro y adaptamos su estructura ganadora a tu negocio:",
+    badge: "Adaptación en 1 Clic",
     slides: [
       {
-        num: "1. Detectado en Competencia",
-        title: 'Gancho original: "3 cosas que nadie te dice antes de contratar..."',
-        sub: "🔥 Activo hace 46 días · Alta tasa de guardados",
-        tag: "Anuncio Ganador",
+        num: "1. Detectado",
+        title: 'Anuncio ganador en competencia: "+46 días activo en Meta"',
+        sub: "Estructura de alta retención comprobada.",
+        tag: "Ganador Detectado",
+        imageUrl: "https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=500&q=80",
       },
       {
-        num: "2. Adaptado a Tu Marca",
-        title: "3 claves que debes revisar antes de delegar tus redes",
-        sub: "Reescrito con tu tono cercano + Tu logo + Tu oferta",
-        tag: "Clonado Inteligente",
+        num: "2. Adaptado",
+        title: "3 razones para elegirnos antes de contratar",
+        sub: "Reescrito con tu tono cercano + Tu logo real.",
+        tag: "Tu Marca",
+        imageUrl: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=500&q=80",
       },
       {
-        num: "3. Listo para Publicar",
-        title: "Programado para Jueves 19:30 hrs (Hora de mayor tráfico)",
-        sub: "Publicación automática en Instagram, Facebook y TikTok",
-        tag: "Programado",
+        num: "3. Programado",
+        title: "Listo para publicar en Instagram, FB y TikTok",
+        sub: "Jueves 19:30 hrs · Hora de mayor interacción.",
+        tag: "Listo para Redes",
+        imageUrl: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=500&q=80",
       },
     ],
   },
   semana: {
     prompt:
-      '"Arma mi semana completa de contenido: 1 carrusel educativo, 1 afiche de promoción y 1 historia interactiva."',
+      '"Arma mi semana completa de contenido: 1 carrusel, 1 afiche de oferta y 1 reel."',
     agentNote:
-      "Semana completa generada y distribuida automáticamente en tu calendario:",
-    badge: "Pack Semanal · Multi-Formato",
+      "Semana completa distribuida y calendarizada automáticamente por nuestros agentes:",
+    badge: "Pack Semanal Completo",
     slides: [
       {
         num: "Martes · Carrusel 4:5",
-        title: "5 errores comunes en tu rubro y cómo evitarlos paso a paso",
-        sub: "Objetivo: Guardados y alcance orgánico",
+        title: "5 errores comunes en tu rubro y cómo resolverlos",
+        sub: "Objetivo: Guardados y alcance orgánico.",
         tag: "Educativo",
+        imageUrl: "https://images.unsplash.com/photo-1629909613654-28e377c37b09?w=500&q=80",
       },
       {
-        num: "Jueves · Afiche Oferta 1:1",
-        title: "Promoción exclusiva hasta el viernes · Cupos limitados",
-        sub: "Objetivo: Mensajes directos a tu WhatsApp",
+        num: "Jueves · Afiche 1:1",
+        title: "Combo Especial de Jueves · $12.900 exclusivo hoy",
+        sub: "Objetivo: Mensajes directos a tu WhatsApp.",
         tag: "Venta Directa",
+        imageUrl: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=500&q=80",
       },
       {
-        num: "Sábado · Historia 9:16",
-        title: "Antes vs. Después + Enlace directo a tu catálogo",
-        sub: "Objetivo: Conversión rápida en celulares",
-        tag: "Interacción",
+        num: "Sábado · Reel 9:16",
+        title: "El detrás de cámaras de nuestra preparación",
+        sub: "Objetivo: Interacción y nuevos seguidores.",
+        tag: "Video Reel",
+        imageUrl: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=500&q=80",
       },
     ],
   },
@@ -260,8 +268,7 @@ export default function PropuestaLandingPage() {
   };
 
   return (
-    <div className="landing-page-root relative overflow-x-hidden">
-      <DotCanvas />
+    <div className="landing-page-root relative overflow-x-hidden bg-[#090D16]">
 
       {/* 1. Promo Banner Oficial de SocialPilot */}
       <div className="promo">
@@ -288,142 +295,150 @@ export default function PropuestaLandingPage() {
               Exclusivo para PyMEs y Negocios en Chile <span className="freq">·</span> Activo 24/7 🟢
             </span>
 
-            <h1 className="lg:text-left text-center leading-[1.08] mt-5 text-3xl sm:text-5xl lg:text-[54px] font-black tracking-tight">
-              Crea y publica el contenido de un mes{" "}
-              <em>en 5 minutos</em> —{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-300">
-                por una fracción de lo que cobra una agencia.
-              </span>
+            <h1 className="lg:text-left text-center leading-[1.12] mt-5 text-3xl sm:text-5xl lg:text-[50px] font-black tracking-tight text-white max-w-xl">
+              El contenido de todo tu mes listo{" "}
+              <span className="text-[#FF6B00]">en 5 minutos</span> — por una fracción de lo que cobra una agencia.
             </h1>
 
             <p
-              className="sub lg:text-left text-center lg:mx-0 mx-auto mt-5 text-base sm:text-lg leading-relaxed max-w-2xl"
-              style={{ color: "var(--ink-dim)" }}
+              className="sub lg:text-left text-center lg:mx-0 mx-auto mt-4 text-base sm:text-lg leading-relaxed max-w-xl text-slate-300"
             >
-              Pega tu web o tu Instagram. Nuestros agentes extraen el ADN de tu marca,{" "}
-              <strong style={{ color: "var(--ink)" }}>
-                revisan qué anuncios le funcionan a tu competencia
+              Pega tu web o tu Instagram. Nuestros agentes extraen la identidad de tu marca,{" "}
+              <strong className="text-white font-semibold">
+                revisan los anuncios que ya le funcionan a tu competencia
               </strong>{" "}
               y te dejan el mes completo de carruseles, afiches y reels listos para publicar.
             </p>
 
-            {/* Triple CTA de Alta Conversión */}
+            {/* Doble CTA Jerarquizado (1 Primario Naranja + 1 Secundario Claro) */}
             <div className="hero-ctas flex flex-col sm:flex-row flex-wrap justify-center lg:justify-start gap-3 mt-7 w-full">
               <a
-                href="https://wa.me/56934428848?text=%C2%A1Hola%20Santisoft!%20Quiero%20recibir%20los%203%20posts%20de%20prueba%20gratis%20creados%20para%20mi%20negocio%20por%20WhatsApp.%20Mi%20rubro%20es%3A%20"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-primary w-full sm:w-auto justify-center text-center !bg-gradient-to-r !from-emerald-500 !to-teal-500 hover:!from-emerald-600 hover:!to-teal-600 !text-white !font-black !shadow-lg !shadow-emerald-500/30 flex items-center gap-2 !px-6 !py-3.5"
-              >
-                <span>💬</span> Recibir 3 posts de prueba gratis por WhatsApp
-              </a>
-
-              <a
                 href="#planes"
-                className="btn btn-primary w-full sm:w-auto justify-center text-center !px-6 !py-3.5 !font-black shadow-lg shadow-orange-500/25"
+                className="btn btn-primary w-full sm:w-auto justify-center text-center !bg-[#FF6B00] hover:!bg-orange-600 !text-white !font-black !shadow-xl !shadow-orange-500/25 flex items-center gap-2 !px-7 !py-4 text-base rounded-2xl transition-all cursor-pointer"
               >
                 <span>🚀</span> Probar con mi negocio →
               </a>
 
               <a
-                href="#escaner-competencia"
-                className="btn btn-outline w-full sm:w-auto justify-center text-center !px-5 !py-3.5 !font-bold"
+                href="https://wa.me/56934428848?text=%C2%A1Hola%20SocialPilot!%20Quiero%20recibir%20los%203%20posts%20de%20prueba%20gratis%20para%20mi%20negocio%20por%20WhatsApp.%20Mi%20rubro%20es%3A%20"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-outline w-full sm:w-auto justify-center text-center !px-6 !py-4 !font-bold text-slate-200 border-slate-700 hover:border-slate-500 hover:text-white rounded-2xl transition-all flex items-center gap-2 cursor-pointer"
               >
-                <span>🕵️‍♂️</span> Escáner de Competencia
+                <span>💬</span> Ver muestra gratis por WhatsApp
               </a>
             </div>
 
-            {/* Píldoras de Confianza Rápida (Grilla simétrica 2x3 en móvil y 3x2 en escritorio) */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 w-full mt-7">
-              <span className="badge on !border-emerald-500/40 text-emerald-400 font-semibold justify-center sm:justify-start !px-2.5 !py-2 !text-[10.5px] sm:!text-[11px] text-center sm:text-left">
-                <span className="dot !bg-emerald-400 !shadow-[0_0_6px_#34d399] shrink-0"></span>
-                <span className="truncate">Control por WhatsApp</span>
+            {/* Píldoras de Confianza Claras (Sin jerga técnica, legibilidad 100% PyME) */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 w-full mt-7 text-xs">
+              <span className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700/80 text-slate-200 font-medium">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0 shadow-[0_0_8px_#34d399]" />
+                <span className="truncate">Aprobación por WhatsApp</span>
               </span>
-              <span className="badge on !border-orange-500/40 text-orange-300 font-semibold justify-center sm:justify-start !px-2.5 !py-2 !text-[10.5px] sm:!text-[11px] text-center sm:text-left">
-                <span className="dot shrink-0"></span>
-                <span className="truncate">Espía de Competencia</span>
+              <span className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700/80 text-slate-200 font-medium">
+                <span className="w-2 h-2 rounded-full bg-orange-400 shrink-0 shadow-[0_0_8px_#fb923c]" />
+                <span className="truncate">Espía de competencia</span>
               </span>
-              <span className="badge on justify-center sm:justify-start !px-2.5 !py-2 !text-[10.5px] sm:!text-[11px] text-center sm:text-left">
-                <span className="dot shrink-0"></span>
-                <span className="truncate">IG, FB, TikTok &amp; Shorts</span>
+              <span className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700/80 text-slate-200 font-medium">
+                <span className="w-2 h-2 rounded-full bg-sky-400 shrink-0" />
+                <span className="truncate">Instagram, TikTok y FB</span>
               </span>
-              <span className="badge on justify-center sm:justify-start !px-2.5 !py-2 !text-[10.5px] sm:!text-[11px] text-center sm:text-left">
-                <span className="dot shrink-0"></span>
-                <span className="truncate">Zona Segura Calibrada</span>
+              <span className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700/80 text-slate-200 font-medium">
+                <span className="w-2 h-2 rounded-full bg-indigo-400 shrink-0" />
+                <span className="truncate">Textos que no se cortan</span>
               </span>
-              <span className="badge on justify-center sm:justify-start !px-2.5 !py-2 !text-[10.5px] sm:!text-[11px] text-center sm:text-left">
-                <span className="dot shrink-0"></span>
-                <span className="truncate">Policía Anti-Baneos</span>
+              <span className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700/80 text-slate-200 font-medium">
+                <span className="w-2 h-2 rounded-full bg-teal-400 shrink-0" />
+                <span className="truncate">Hashtags y copys seguros</span>
               </span>
-              <span className="badge on justify-center sm:justify-start !px-2.5 !py-2 !text-[10.5px] sm:!text-[11px] text-center sm:text-left">
-                <span className="dot shrink-0"></span>
-                <span className="truncate">Setup Llave en Mano</span>
+              <span className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700/80 text-slate-200 font-medium">
+                <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
+                <span className="truncate">Listo para publicar en 1 clic</span>
               </span>
             </div>
           </div>
 
-          {/* Columna Derecha: Reproductor de Videos Reales 9:16 */}
+          {/* Columna Derecha: Reproductor de Videos Reales 9:16 con Marco de Celular y Notificación WhatsApp */}
           <div className="hero-carousel-col lg:w-5/12 w-full flex justify-center lg:justify-end z-10 relative">
-            <div
-              onClick={() => setModalVideoIndex(activeHeroVideo)}
-              className="hero-carousel-wrap relative aspect-[9/16] rounded-3xl overflow-hidden shadow-2xl bg-black border border-white/10 group cursor-pointer w-[180px] sm:w-[230px] md:w-[270px] lg:w-full lg:max-w-[330px]"
-            >
-              {HERO_VIDEOS.map((v, i) => (
-                <div
-                  key={i}
-                  className={`absolute inset-0 w-full h-full transition-opacity duration-700 ease-in-out ${
-                    i === activeHeroVideo ? "opacity-100 z-10" : "opacity-0 z-0"
-                  }`}
-                >
-                  <video
-                    src={v.src}
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute top-5 left-0 right-0 flex justify-center px-3">
-                    <span className="bg-black/65 backdrop-blur-md text-white/95 px-3.5 py-1 rounded-full text-[10px] font-mono tracking-widest border border-white/15 uppercase shadow-lg text-center leading-tight">
-                      {v.label}
-                    </span>
-                  </div>
-                </div>
-              ))}
-
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-3 z-20 pointer-events-none p-4 text-center">
-                <div className="w-14 h-14 rounded-full bg-[#FF6B00] text-white flex items-center justify-center shadow-xl scale-95 group-hover:scale-100 transition-transform">
-                  <svg className="w-7 h-7 fill-current ml-0.5" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                </div>
-                <span className="bg-black/80 backdrop-blur-md text-white text-xs font-medium px-4 py-2 rounded-full border border-white/20 shadow-lg">
-                  🔊 Clic para agrandar y escuchar audio
-                </span>
-              </div>
-
-              <div className="absolute top-5 right-3.5 z-30">
-                <span className="bg-black/70 backdrop-blur-md text-white/90 p-2 rounded-full border border-white/20 shadow-md flex items-center justify-center text-xs">
-                  🔊
-                </span>
-              </div>
-
-              <div className="absolute bottom-5 left-0 right-0 z-30 flex justify-center gap-2">
-                {[0, 1, 2, 3, 4, 5].map((idx) => (
-                  <button
-                    key={idx}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveHeroVideo(idx);
-                    }}
-                    className={`h-2 rounded-full transition-all duration-300 ${
-                      idx === activeHeroVideo
-                        ? "w-6 bg-[#FF6B00] shadow-[0_0_8px_rgba(255,107,0,0.9)]"
-                        : "w-2 bg-white/40 hover:bg-white/70"
+            <div className="relative">
+              {/* Celular con bisel elegante */}
+              <div
+                onClick={() => setModalVideoIndex(activeHeroVideo)}
+                className="hero-carousel-wrap relative aspect-[9/16] rounded-[36px] overflow-hidden shadow-2xl bg-black border-4 border-slate-700/80 ring-1 ring-white/15 group cursor-pointer w-[200px] sm:w-[250px] md:w-[280px] lg:w-[320px]"
+              >
+                {HERO_VIDEOS.map((v, i) => (
+                  <div
+                    key={i}
+                    className={`absolute inset-0 w-full h-full transition-opacity duration-700 ease-in-out ${
+                      i === activeHeroVideo ? "opacity-100 z-10" : "opacity-0 z-0"
                     }`}
-                    aria-label={`Ver video ${idx + 1}`}
-                  />
+                  >
+                    <video
+                      src={v.src}
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute top-5 left-0 right-0 flex justify-center px-3">
+                      <span className="bg-black/75 backdrop-blur-md text-white/95 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider border border-white/15 uppercase shadow-lg text-center leading-tight">
+                        {v.label}
+                      </span>
+                    </div>
+                  </div>
                 ))}
+
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-3 z-20 pointer-events-none p-4 text-center">
+                  <div className="w-14 h-14 rounded-full bg-[#FF6B00] text-white flex items-center justify-center shadow-xl scale-95 group-hover:scale-100 transition-transform">
+                    <svg className="w-7 h-7 fill-current ml-0.5" viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  </div>
+                  <span className="bg-black/90 backdrop-blur-md text-white text-xs font-bold px-4 py-2 rounded-full border border-white/20 shadow-lg">
+                    🔊 Clic para agrandar y escuchar audio
+                  </span>
+                </div>
+
+                <div className="absolute top-4 right-3.5 z-30">
+                  <span className="bg-black/80 backdrop-blur-md text-white/95 px-2.5 py-1 rounded-full border border-white/20 shadow-md flex items-center gap-1.5 text-[11px] font-bold">
+                    <span>🔊</span> Audio
+                  </span>
+                </div>
+
+                <div className="absolute bottom-4 left-0 right-0 z-30 flex justify-center gap-2">
+                  {[0, 1, 2, 3, 4, 5].map((idx) => (
+                    <button
+                      key={idx}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveHeroVideo(idx);
+                      }}
+                      className={`h-2 rounded-full transition-all duration-300 ${
+                        idx === activeHeroVideo
+                          ? "w-6 bg-[#FF6B00] shadow-[0_0_8px_rgba(255,107,0,0.9)]"
+                          : "w-2 bg-white/40 hover:bg-white/70"
+                      }`}
+                      aria-label={`Ver video ${idx + 1}`}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Notificación Flotante Realista de WhatsApp de Aprobación */}
+              <div className="absolute -bottom-5 -left-3 sm:-left-8 z-30 bg-slate-900/95 backdrop-blur-xl border border-emerald-500/40 rounded-2xl p-3 shadow-2xl flex items-center gap-3 max-w-[270px] sm:max-w-[310px] pointer-events-none">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 text-base shadow-md shadow-emerald-500/30">
+                  💬
+                </div>
+                <div className="text-left text-xs leading-tight">
+                  <div className="flex items-center justify-between gap-2 text-[10px] text-emerald-400 font-bold">
+                    <span>WhatsApp · SocialPilot</span>
+                    <span className="text-slate-400 font-normal">Ahora</span>
+                  </div>
+                  <p className="text-slate-200 font-medium text-[11px] mt-0.5">
+                    "Tus agentes prepararon 3 publicaciones listas para tu negocio. ¿Aprobamos?"
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -532,31 +547,36 @@ export default function PropuestaLandingPage() {
                 {currentHero.slides.map((slide, idx) => (
                   <div
                     key={idx}
-                    className="rounded-2xl p-4 flex flex-col justify-between gap-3 transition-all hover:border-orange-500/50"
-                    style={{ background: "var(--bg)", border: "1px solid var(--line)" }}
+                    className="group relative aspect-[4/5] rounded-2xl overflow-hidden border border-white/15 shadow-xl flex flex-col justify-between p-3.5 transition-all hover:border-orange-500 hover:scale-[1.02]"
                   >
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between gap-1">
-                        <span className="font-mono text-[11px] font-bold text-orange-400">
-                          {slide.num}
-                        </span>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-300">
-                          {slide.tag}
-                        </span>
-                      </div>
-                      <p
-                        className="text-xs sm:text-sm font-bold leading-snug"
-                        style={{ color: "var(--ink)" }}
-                      >
+                    {/* Imagen de fondo real de producto o negocio */}
+                    <img
+                      src={slide.imageUrl}
+                      alt={slide.title}
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    {/* Degradado oscuro para garantizar legibilidad óptima */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/55 to-black/30 pointer-events-none" />
+
+                    {/* Encabezado de la lámina */}
+                    <div className="relative z-10 flex items-center justify-between gap-1">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-md text-orange-300 border border-orange-500/30">
+                        {slide.num}
+                      </span>
+                      <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-sky-500/25 text-sky-200 backdrop-blur-md border border-sky-400/20">
+                        {slide.tag}
+                      </span>
+                    </div>
+
+                    {/* Titular publicitario diseñado en la lámina */}
+                    <div className="relative z-10 space-y-1.5 text-left">
+                      <p className="text-xs sm:text-sm font-black leading-snug text-white drop-shadow-md">
                         {slide.title}
                       </p>
+                      <p className="text-[10.5px] font-medium leading-tight text-amber-200/90 drop-shadow">
+                        {slide.sub}
+                      </p>
                     </div>
-                    <p
-                      className="text-xs pt-2.5"
-                      style={{ color: "var(--ink-dim)", borderTop: "1px solid var(--line)" }}
-                    >
-                      {slide.sub}
-                    </p>
                   </div>
                 ))}
               </div>
@@ -573,8 +593,7 @@ export default function PropuestaLandingPage() {
           <div className="section-head center" data-reveal>
             <span className="eyebrow">Más contenido · Menos trabajo</span>
             <h2>
-              Todo resuelto para que vendas más en <em>Redes</em>,{" "}
-              <span className="em-p">Google</span> y <span className="em-w">WhatsApp.</span>
+              Todo resuelto para que vendas más en <em>Redes, Google y WhatsApp.</em>
             </h2>
           </div>
 
@@ -775,8 +794,7 @@ export default function PropuestaLandingPage() {
           <div className="section-head center" data-reveal>
             <span className="eyebrow">Inteligencia Competitiva en 1 Clic</span>
             <h2>
-              Revisa qué publicaciones le funcionan a <em>tu competencia</em> y adáptalas a{" "}
-              <span className="em-p">tu marca.</span>
+              Revisa qué publicaciones le funcionan a tu competencia y adáptalas a <em>tu marca.</em>
             </h2>
           </div>
 
@@ -865,18 +883,15 @@ export default function PropuestaLandingPage() {
                 return (
                   <div
                     key={post.id}
-                    className="rounded-2xl p-5 flex flex-col justify-between gap-4 transition-all"
-                    style={{
-                      background: "var(--bg)",
-                      border: isSelected
-                        ? "2px solid var(--signal)"
-                        : "1px solid var(--line)",
-                      boxShadow: isSelected
-                        ? "0 12px 32px rgba(255,107,0,0.15)"
-                        : "none",
-                    }}
+                    onClick={() => setAdaptedPost(post)}
+                    className={`rounded-2xl p-5 flex flex-col justify-between gap-4 transition-all cursor-pointer ${
+                      isSelected
+                        ? "border-2 border-[#FF6B00] shadow-xl shadow-orange-500/15 scale-[1.01]"
+                        : "border border-white/10 hover:border-slate-500"
+                    }`}
+                    style={{ background: "var(--bg)" }}
                   >
-                    <div className="space-y-3">
+                    <div className="space-y-3 text-left">
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-mono text-xs font-bold text-orange-400">
                           {post.competitor}
@@ -897,10 +912,10 @@ export default function PropuestaLandingPage() {
                         className="p-3.5 rounded-xl space-y-1"
                         style={{ background: "var(--panel)", border: "1px solid var(--line)" }}
                       >
-                        <span className="text-[11px] font-bold" style={{ color: "var(--ink-dim)" }}>
+                        <span className="text-[11px] font-bold text-slate-400">
                           Gancho detectado:
                         </span>
-                        <p className="text-sm font-bold leading-snug" style={{ color: "var(--ink)" }}>
+                        <p className="text-sm font-bold leading-snug text-white">
                           {post.hook}
                         </p>
                       </div>
@@ -909,19 +924,23 @@ export default function PropuestaLandingPage() {
                         <span className="text-xs font-bold text-amber-400">
                           💡 Por qué convierte:
                         </span>
-                        <p className="text-xs mt-1 leading-relaxed" style={{ color: "var(--ink-dim)" }}>
+                        <p className="text-xs mt-1 leading-relaxed text-slate-300">
                           {post.whyItWorks}
                         </p>
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => setAdaptedPost(post)}
-                      className="btn btn-primary w-full justify-center !text-xs !py-2.5"
-                    >
-                      ✨ Adaptar este Post a mi Marca (1 Clic)
-                    </button>
+                    <div className="pt-2">
+                      {isSelected ? (
+                        <div className="w-full py-2.5 rounded-xl bg-[#FF6B00] text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-md">
+                          <span>✓</span> Estructura Seleccionada
+                        </div>
+                      ) : (
+                        <div className="w-full py-2.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-300 text-xs font-bold flex items-center justify-center gap-1.5 border border-slate-700/80 transition-colors">
+                          <span>🔍</span> Toca para ver cómo queda en tu marca
+                        </div>
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -1029,59 +1048,123 @@ export default function PropuestaLandingPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8" data-reveal>
-            <div className="pillar a !p-6 space-y-3">
-              <span className="pillar-tag">🏪 NEGOCIO LOCAL O SERVICIO</span>
-              <h3 className="!text-xl">Restaurante, clínica, salón, tienda o gimnasio</h3>
-              <p className="text-xs sm:text-sm" style={{ color: "var(--ink-dim)" }}>
-                Muestra promociones de la semana, llena tu agenda y premia a tus clientes frecuentes con tarjetas digitales Fideliza.
-              </p>
+            {/* Caso 1: Gastronomía & Locales */}
+            <div className="pillar a !p-6 flex flex-col justify-between gap-4 overflow-hidden relative">
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                <div className="w-full sm:w-28 h-28 rounded-2xl overflow-hidden shrink-0 border border-white/10 relative shadow-md">
+                  <img
+                    src="https://images.unsplash.com/photo-1550547660-d9450f859349?w=500&q=80"
+                    alt="Gastronomía y Locales"
+                    className="w-full h-full object-cover"
+                  />
+                  <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/80 text-[9px] font-bold text-orange-300">
+                    4:5 Post
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  <span className="pillar-tag">🍔 GASTRONOMÍA & LOCALES</span>
+                  <h3 className="!text-xl font-black text-white">Restaurantes, cafeterías y locales de comida</h3>
+                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                    Muestra las promociones de la semana, llena mesas en días lentos y canaliza pedidos directo a tu WhatsApp.
+                  </p>
+                </div>
+              </div>
               <div
-                className="p-3.5 rounded-xl text-xs italic"
+                className="p-3.5 rounded-xl text-xs italic text-slate-300 flex items-center justify-between gap-2"
                 style={{ background: "var(--bg)", border: "1px solid var(--line)" }}
               >
-                &ldquo;Hazme un carrusel con las promociones de esta semana y prográmalo para el jueves.&rdquo;
+                <span>&ldquo;Hazme un carrusel con el combo de los jueves con 20% OFF.&rdquo;</span>
+                <span className="text-[10px] text-emerald-400 font-mono font-bold shrink-0">✓ Generado</span>
               </div>
             </div>
 
-            <div className="pillar b !p-6 space-y-3">
-              <span className="pillar-tag">🛍️ VENTA DE PRODUCTOS</span>
-              <h3 className="!text-xl">Catálogo, E-commerce o ventas por WhatsApp</h3>
-              <p className="text-xs sm:text-sm" style={{ color: "var(--ink-dim)" }}>
-                Sube la foto real de tu producto y nuestros agentes arman la escena comercial con precio, oferta y llamado a la acción.
-              </p>
+            {/* Caso 2: Tiendas y Productos */}
+            <div className="pillar b !p-6 flex flex-col justify-between gap-4 overflow-hidden relative">
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                <div className="w-full sm:w-28 h-28 rounded-2xl overflow-hidden shrink-0 border border-white/10 relative shadow-md">
+                  <img
+                    src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&q=80"
+                    alt="Venta de Productos"
+                    className="w-full h-full object-cover"
+                  />
+                  <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/80 text-[9px] font-bold text-sky-300">
+                    1:1 Oferta
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  <span className="pillar-tag">🛍️ TIENDAS & CATÁLOGOS</span>
+                  <h3 className="!text-xl font-black text-white">E-commerce, vestuario, accesorios y hogar</h3>
+                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                    Sube la foto real de tu producto y nuestros agentes arman afiches comerciales con precio, descuento y sticker de envío.
+                  </p>
+                </div>
+              </div>
               <div
-                className="p-3.5 rounded-xl text-xs italic"
+                className="p-3.5 rounded-xl text-xs italic text-slate-300 flex items-center justify-between gap-2"
                 style={{ background: "var(--bg)", border: "1px solid var(--line)" }}
               >
-                &ldquo;Quiero 3 afiches para lanzar mi nueva colección con 20% OFF.&rdquo;
+                <span>&ldquo;Arma 3 afiches para promocionar mi nueva llegada de stock.&rdquo;</span>
+                <span className="text-[10px] text-emerald-400 font-mono font-bold shrink-0">✓ Generado</span>
               </div>
             </div>
 
-            <div className="pillar c !p-6 space-y-3">
-              <span className="pillar-tag">👨‍💼 PROFESIONAL O MARCA PERSONAL</span>
-              <h3 className="!text-xl">Consultor, corredor, abogado, médico o especialista</h3>
-              <p className="text-xs sm:text-sm" style={{ color: "var(--ink-dim)" }}>
-                Transforma tu conocimiento en carruseles educativos que generan confianza y consultas diarias sin perder tu fin de semana.
-              </p>
+            {/* Caso 3: Salud, Clínicas & Estética */}
+            <div className="pillar c !p-6 flex flex-col justify-between gap-4 overflow-hidden relative">
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                <div className="w-full sm:w-28 h-28 rounded-2xl overflow-hidden shrink-0 border border-white/10 relative shadow-md">
+                  <img
+                    src="https://images.unsplash.com/photo-1629909613654-28e377c37b09?w=500&q=80"
+                    alt="Clínicas y Estética"
+                    className="w-full h-full object-cover"
+                  />
+                  <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/80 text-[9px] font-bold text-emerald-300">
+                    Carrusel
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  <span className="pillar-tag">🦷 CLÍNICAS, SALUD & ESTÉTICA</span>
+                  <h3 className="!text-xl font-black text-white">Dentistas, centros de estética y especialistas</h3>
+                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                    Transforma preguntas frecuentes en carruseles educativos que transmiten confianza médica y llenan tu agenda diaria.
+                  </p>
+                </div>
+              </div>
               <div
-                className="p-3.5 rounded-xl text-xs italic"
+                className="p-3.5 rounded-xl text-xs italic text-slate-300 flex items-center justify-between gap-2"
                 style={{ background: "var(--bg)", border: "1px solid var(--line)" }}
               >
-                &ldquo;Hazme un carrusel con 5 errores que comete mi cliente antes de contratar.&rdquo;
+                <span>&ldquo;Carrusel de 4 slides explicando qué cuidados tener antes de un tratamiento.&rdquo;</span>
+                <span className="text-[10px] text-emerald-400 font-mono font-bold shrink-0">✓ Generado</span>
               </div>
             </div>
 
-            <div className="pillar a !p-6 space-y-3">
-              <span className="pillar-tag">🚀 AGENCIA O MULTI-MARCA</span>
-              <h3 className="!text-xl">Community managers o grupos con varias sucursales</h3>
-              <p className="text-xs sm:text-sm" style={{ color: "var(--ink-dim)" }}>
-                Cambia de negocio en 1 clic. Cada perfil mantiene su propio logo, colores, catálogo y redes sociales conectadas de forma independiente.
-              </p>
+            {/* Caso 4: Servicios Profesionales & Agencias */}
+            <div className="pillar a !p-6 flex flex-col justify-between gap-4 overflow-hidden relative">
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                <div className="w-full sm:w-28 h-28 rounded-2xl overflow-hidden shrink-0 border border-white/10 relative shadow-md">
+                  <img
+                    src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=500&q=80"
+                    alt="Servicios Profesionales"
+                    className="w-full h-full object-cover"
+                  />
+                  <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/80 text-[9px] font-bold text-amber-300">
+                    Multi-Red
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  <span className="pillar-tag">👨‍💼 SERVICIOS & AGENCIA</span>
+                  <h3 className="!text-xl font-black text-white">Inmobiliarias, consultores, abogados y marcas</h3>
+                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                    Gestiona múltiples cuentas o posiciona tu marca personal con publicaciones profesionales sin quemar horas de tu día.
+                  </p>
+                </div>
+              </div>
               <div
-                className="p-3.5 rounded-xl text-xs italic"
+                className="p-3.5 rounded-xl text-xs italic text-slate-300 flex items-center justify-between gap-2"
                 style={{ background: "var(--bg)", border: "1px solid var(--line)" }}
               >
-                &ldquo;Arma el plan de contenido de la semana para este cliente.&rdquo;
+                <span>&ldquo;Plan de 14 días para este cliente con copys listos para publicar.&rdquo;</span>
+                <span className="text-[10px] text-emerald-400 font-mono font-bold shrink-0">✓ Generado</span>
               </div>
             </div>
           </div>
@@ -1096,8 +1179,7 @@ export default function PropuestaLandingPage() {
           <div className="section-head center" data-reveal>
             <span className="eyebrow">Ecosistema Completo · 3 Canales</span>
             <h2>
-              Más allá de Instagram: presencia continua en <em>Redes</em>,{" "}
-              <span className="em-p">Google</span> y <span className="em-w">WhatsApp.</span>
+              Más allá de Instagram: presencia continua en <em>Redes, Google y WhatsApp.</em>
             </h2>
           </div>
 
