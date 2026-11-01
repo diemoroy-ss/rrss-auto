@@ -118,7 +118,10 @@ Por cada post, incluye:
       const picStatus = hasPic 
         ? `[TIENE FOTO REAL DEL NEGOCIO: "${item.imageUrl}"]` 
         : `[SIN FOTO: NUESTROS AGENTES GENERARÁN LA FOTOGRAFÍA COMERCIAL DESDE CERO CON EL ESTILO VISUAL]`;
-      return `- Ítem #${idx + 1}: ID: "${item.id || ''}" | Nombre: "${item.name}" | Tipo: ${item.type || 'producto'} | Precio: "${item.price || 'No especificado'}" | Descripción: "${item.description || 'Sin descripción'}" | Estado Fotográfico: ${picStatus}`;
+      const priceInfo = item.offerPrice 
+        ? `Precio Normal: "${item.price || 'No especificado'}" | ¡PRECIO OFERTA / PROMOCIÓN ACTIVA!: "${item.offerPrice}"`
+        : `Precio: "${item.price || 'No especificado'}"`;
+      return `- Ítem #${idx + 1}: ID: "${item.id || ''}" | Nombre: "${item.name}" | Tipo: ${item.type || 'producto'} | ${priceInfo} | Descripción: "${item.description || 'Sin descripción'}" | Estado Fotográfico: ${picStatus}`;
     }).join("\n");
 
     catalogInstruction = `
@@ -128,19 +131,21 @@ ${itemsFormatted}
 INSTRUCCIÓN OBLIGATORIA DE INTEGRACIÓN DE CATÁLOGO (${state.catalogUsage === "all" ? "100% CATÁLOGO OBLIGATORIO" : "INTEGRACIÓN MIXTA PRIORITARIA"}):
 ${state.catalogUsage === "all" 
   ? "1. TODAS las publicaciones deben estar basadas obligatoriamente en uno de los productos o servicios del catálogo." 
-  : "1. Prioriza asignar productos o servicios del catálogo a las publicaciones comerciales, de venta y promociones."}
+  : "1. Prioriza asignar productos o servicios del catálogo a las publicaciones comerciales, de venta y promociones. Si un ítem tiene PRECIO OFERTA o PROMOCIÓN ACTIVA, destácalo como oferta estelar."}
 2. Cuando asignes un producto a un post:
    - "productId": ID exacto del ítem del catálogo.
    - "productName": Nombre exacto del producto o servicio.
    - "productDescription": Descripción breve del producto o servicio.
+   - "productPrice": Precio normal del producto (ej: "$12.990") o null.
+   - "productOfferPrice": Precio oferta o promoción si aplica (ej: "$10.000") o null. Si tiene oferta, úsala en el gancho y copy.
    - Si el producto [TIENE FOTO REAL DEL NEGOCIO]:
      * "baseImageUrl": URL de la foto real del producto.
      * "hasProductImage": true.
-     * En "imageDirection", instruye a nuestros agentes cómo aplicar el estilo visual ("visualStyle") integrando la foto real del producto como protagonista.
+     * En "imageDirection", instruye a nuestros agentes cómo aplicar el estilo visual ("visualStyle") integrando la foto real del producto como protagonista y destacando la oferta o precio.
    - Si el producto está [SIN FOTO]:
      * "baseImageUrl": null.
      * "hasProductImage": false.
-     * En "imageDirection", instruye a nuestros agentes para generar desde cero una fotografía comercial de alta gama para el producto, destacando sus características y aplicando con fidelidad el estilo visual seleccionado ("visualStyle").\n\n`;
+     * En "imageDirection", instruye a nuestros agentes para generar desde cero una fotografía comercial de alta gama ("food porn" o producto premium) para el producto, destacando sus características, la oferta y aplicando con fidelidad el estilo visual seleccionado ("visualStyle").\n\n`;
   }
 
   const contactLines: string[] = [];
@@ -219,6 +224,8 @@ DEBES GENERAR UNA ESTRUCTURA DE JSON válida que contenga un arreglo 'strategy' 
   "productId": "ID del producto o servicio asignado si aplica (o null)",
   "productName": "Nombre exacto del producto o servicio si aplica (o null)",
   "productDescription": "Descripción breve del producto o servicio (o null)",
+  "productPrice": "Precio normal si aplica (ej: '$12.990') o null",
+  "productOfferPrice": "Precio oferta o promoción si aplica (ej: '$10.000') o null",
   "baseImageUrl": "URL de la foto si el producto tiene foto real, o null si no tiene",
   "hasProductImage": true o false,
   "isCommercialPoster": ${state.isCommercialPoster ? "true" : "false"},
@@ -257,7 +264,7 @@ REGLAS A VALIDAR:
 2. Si el plan es Free o máx videos es 0, NINGUNA publicación debe tener formato 'Reel' o 'Video'. Cámbialo a 'Post Fijo' o 'Carrusel'.
 3. Los 'dayOffset' deben ser números coherentes (0 a 14).
 4. El texto de 'hook' y 'cta' debe ser profesional y persuasivo.
-5. CONSERVA INTACTOS los campos de producto si están presentes: 'productId', 'productName', 'productDescription', 'baseImageUrl', 'hasProductImage'.
+5. CONSERVA INTACTOS los campos de producto si están presentes: 'productId', 'productName', 'productDescription', 'productPrice', 'productOfferPrice', 'baseImageUrl', 'hasProductImage'.
 6. CONSERVA INTACTOS los campos de estilo visual: 'visualStyle', 'promptTemplateId', 'previewUrl', 'imageDirection'.
 7. CONSERVA INTACTO el campo 'isCommercialPoster' (booleano) si está presente.
 8. CONSERVA INTACTOS y valida los campos de video para Reels: 'videoCommand', 'videoTemplateName', 'videoCategory', 'videoMotionStyle', 'videoPrompt', 'videoDuration', 'needsBaseImageFirst'.

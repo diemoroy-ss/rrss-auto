@@ -39,6 +39,8 @@ interface StrategyPost {
   productId?: string;
   productName?: string;
   productDescription?: string;
+  productPrice?: string;
+  productOfferPrice?: string;
   baseImageUrl?: string;
   hasProductImage?: boolean;
   isCommercialPoster?: boolean;
@@ -480,6 +482,11 @@ export default function EstrategiaPage() {
             const postBaseText = `${post.content}\n\n${post.cta}`;
             const finalTextWithContact = appendContactInfo(postBaseText, activeProfile);
 
+            const matchedItem = catalogoItems.find((it: any) => it.id === post.productId);
+            const resolvedPrice = post.productPrice || matchedItem?.price || null;
+            const resolvedOfferPrice = post.productOfferPrice || matchedItem?.offerPrice || null;
+            const resolvedBaseImage = post.baseImageUrl || (matchedItem?.imageUrl && typeof matchedItem.imageUrl === 'string' && matchedItem.imageUrl.startsWith('http') ? matchedItem.imageUrl : null);
+
             const newPostRef = await addDoc(postsRef, {
                 userId: user.uid,
                 profileId: activeProfile?.id || 'default',
@@ -496,10 +503,14 @@ export default function EstrategiaPage() {
                 previewUrl: post.previewUrl || null,
                 imageDirection: post.imageDirection || null,
                 productId: post.productId || null,
-                productName: post.productName || null,
-                productDescription: post.productDescription || null,
-                baseImageUrl: post.baseImageUrl || null,
-                hasProductImage: Boolean(post.baseImageUrl),
+                productName: post.productName || matchedItem?.name || null,
+                productDescription: post.productDescription || matchedItem?.description || null,
+                productPrice: resolvedPrice,
+                productOfferPrice: resolvedOfferPrice,
+                baseImageUrl: resolvedBaseImage || null,
+                hasProductImage: Boolean(resolvedBaseImage),
+                imageUrl: resolvedBaseImage || null,
+                imageUrls: resolvedBaseImage ? [resolvedBaseImage] : [],
                 isCommercialPoster: Boolean(post.isCommercialPoster ?? isCommercialPosterOnly),
                 videoCommand: post.videoCommand || null,
                 videoTemplateName: post.videoTemplateName || null,
@@ -507,7 +518,7 @@ export default function EstrategiaPage() {
                 videoMotionStyle: post.videoMotionStyle || null,
                 videoPrompt: post.videoPrompt || null,
                 videoDuration: postType === 'Reel' ? 10 : null,
-                needsBaseImageFirst: Boolean(postType === 'Reel' && (post.needsBaseImageFirst || !post.baseImageUrl))
+                needsBaseImageFirst: Boolean(postType === 'Reel' && (post.needsBaseImageFirst || !resolvedBaseImage))
             });
 
             try {

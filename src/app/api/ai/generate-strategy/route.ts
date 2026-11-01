@@ -43,13 +43,13 @@ export async function POST(req: NextRequest) {
     let catalogContext = "";
     if (catalogoItems && catalogoItems.length > 0 && catalogUsage !== "none") {
         const catalogList = catalogoItems
-            .map((item: any) => `- ${item.type === "producto" ? "Producto" : "Servicio"}: "${item.name}"${item.description ? ` — ${item.description}` : ""}${item.price ? ` (${item.price})` : ""}`)
+            .map((item: any) => `- ${item.type === "producto" ? "Producto" : "Servicio"}: "${item.name}"${item.category ? ` [Categoría: ${item.category}]` : ""}${item.description ? ` — ${item.description}` : ""}${item.price ? ` (Precio Normal: ${item.price})` : ""}${item.offerPrice ? ` [PRECIO OFERTA / PROMOCIÓN ACTIVA: ${item.offerPrice}]` : ""}`)
             .join("\n");
         
         if (catalogUsage === "all") {
-            catalogContext = `\n\nCATÁLOGO DE PRODUCTOS/SERVICIOS (¡IMPORTANTE! BASA TODA LA ESTRATEGIA EXCLUSIVAMENTE EN ESTOS ÍTEMS, DEDICA CADA POST A UNO O VARIOS DE ELLOS):\n${catalogList}`;
+            catalogContext = `\n\nCATÁLOGO DE PRODUCTOS/SERVICIOS (¡IMPORTANTE! BASA TODA LA ESTRATEGIA EXCLUSIVAMENTE EN ESTOS ÍTEMS Y SUS PROMOCIONES, DEDICA CADA POST A UNO O VARIOS DE ELLOS):\n${catalogList}`;
         } else {
-            catalogContext = `\n\nCATÁLOGO DE PRODUCTOS/SERVICIOS DE ESTA MARCA (incluye publicaciones específicas sobre estos ítems en la estrategia, mezclándolos con contenido general de valor):\n${catalogList}`;
+            catalogContext = `\n\nCATÁLOGO DE PRODUCTOS/SERVICIOS DE ESTA MARCA (incluye publicaciones específicas sobre estos ítems y destaca las promociones activas en la estrategia, mezclándolos con contenido general de valor):\n${catalogList}`;
         }
     }
 
