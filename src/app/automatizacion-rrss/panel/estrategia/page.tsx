@@ -43,6 +43,8 @@ interface StrategyPost {
   productOfferPrice?: string;
   baseImageUrl?: string;
   hasProductImage?: boolean;
+  isPromotion?: boolean;
+  promoImageMode?: 'with_text' | 'without_text';
   isCommercialPoster?: boolean;
   videoCommand?: string;
   videoTemplateName?: string;
@@ -101,9 +103,15 @@ export default function EstrategiaPage() {
   const [hasNetworks, setHasNetworks] = useState(false);
   const [catalogoItems, setCatalogoItems] = useState<any[]>([]);
   const [selectedCatalogItemIds, setSelectedCatalogItemIds] = useState<string[]>([]);
+  const [includePromotionsInStrategy, setIncludePromotionsInStrategy] = useState<boolean>(true);
+  const [selectedPromotionIds, setSelectedPromotionIds] = useState<string[]>([]);
+  const [promoImageMode, setPromoImageMode] = useState<'with_text' | 'without_text' | 'mixed'>('mixed');
   const [loadingCatalog, setLoadingCatalog] = useState<boolean>(false);
   const [catalogUsage, setCatalogUsage] = useState<'mixed' | 'all' | 'none'>('mixed');
   const [isCommercialPosterOnly, setIsCommercialPosterOnly] = useState<boolean>(false);
+
+  const regularCatalogItems = catalogoItems.filter((i: any) => i.type !== 'promocion');
+  const catalogPromotions = catalogoItems.filter((i: any) => i.type === 'promocion');
   
   // Fecha y hora de inicio de la planificación
   const [startDate, setStartDate] = useState<string>(() => {
@@ -320,7 +328,10 @@ export default function EstrategiaPage() {
               const catData = await catRes.json();
               const items = catData.items || [];
               setCatalogoItems(items);
-              setSelectedCatalogItemIds(items.map((i: any) => i.id));
+              const regItems = items.filter((i: any) => i.type !== 'promocion');
+              const promItems = items.filter((i: any) => i.type === 'promocion');
+              setSelectedCatalogItemIds(regItems.map((i: any) => i.id));
+              setSelectedPromotionIds(promItems.map((i: any) => i.id));
           } catch (cErr) {
               console.warn("No se pudo cargar el catálogo:", cErr);
           } finally {
@@ -346,13 +357,47 @@ export default function EstrategiaPage() {
       setError("");
       setStrategyResult(null);
       try {
-         const activePromotions = promoMode === 'profile'
-             ? (activeProfile?.promotions || "")
-             : (customPromotions || activeProfile?.promotions || "");
+         const activePromotions = includePromotionsInStrategy
+             ? (promoMode === 'profile'
+                 ? (activeProfile?.promotions || "")
+                 : (customPromotions || activeProfile?.promotions || ""))
+             : "";
 
          const itemsToUse = catalogUsage === 'none'
              ? []
-             : catalogoItems.filter((item: any) => selectedCatalogItemIds.includes(item.id));
+             : regularCatalogItems.filter((item: any) => selectedCatalogItemIds.includes(item.id));
+
+         const promosToUse = includePromotionsInStrategy
+             ? catalogPromotions
+                 .filter((p: any) => selectedPromotionIds.includes(p.id))
+                 .map((promo: any) => {
+                     const linkedProds = regularCatalogItems.filter((rp: any) =>
+                         (promo.linkedProductIds || []).includes(rp.id)
+                     );
+                     const resolvedImg =
+                         promo.imageUrl ||
+                         linkedProds.find((rp: any) => rp.imageUrl)?.imageUrl ||
+                         null;
+                     return {
+                         id: promo.id,
+                         name: promo.name,
+                         description: promo.description,
+                         type: 'promocion',
+                         price: promo.price || null,
+                         offerPrice: promo.offerPrice || null,
+                         imageUrl: resolvedImg,
+                         hasImage: Boolean(resolvedImg && typeof resolvedImg === 'string' && (resolvedImg.startsWith('http') || resolvedImg.startsWith('/'))),
+                         promoImageMode: promo.promoImageMode || 'both',
+                         linkedProducts: linkedProds.map((lp: any) => ({
+                             id: lp.id,
+                             name: lp.name,
+                             description: lp.description,
+                             price: lp.price || null,
+                             imageUrl: lp.imageUrl || null,
+                         })),
+                     };
+                 })
+             : [];
 
          const res = await fetch("/api/ai/generate-strategy", {
              method: "POST",
@@ -363,6 +408,9 @@ export default function EstrategiaPage() {
                  businessType, 
                  expectations,
                  promotions: activePromotions,
+                 includePromotions: includePromotionsInStrategy,
+                 promoImageMode,
+                 selectedPromotions: promosToUse,
                  nicheContext: useRadarContext && radarAnalysis ? (radarAnalysis.summary || JSON.stringify(radarAnalysis.trends || [])) : "",
                  businessData,
                  userId: user?.uid,
@@ -375,10 +423,11 @@ export default function EstrategiaPage() {
                      name: item.name,
                      description: item.description,
                      type: item.type,
+                     category: item.category || null,
                      price: item.price || null,
                      offerPrice: item.offerPrice || null,
                      imageUrl: item.imageUrl || null,
-                     hasImage: Boolean(item.imageUrl && typeof item.imageUrl === 'string' && item.imageUrl.startsWith('http'))
+                     hasImage: Boolean(item.imageUrl && typeof item.imageUrl === 'string' && (item.imageUrl.startsWith('http') || item.imageUrl.startsWith('/')))
                   })),
                  usePromptStyles,
                  selectedPromptStyles: usePromptStyles ? selectedPromptStyles : [],
@@ -485,7 +534,11 @@ export default function EstrategiaPage() {
             const matchedItem = catalogoItems.find((it: any) => it.id === post.productId);
             const resolvedPrice = post.productPrice || matchedItem?.price || null;
             const resolvedOfferPrice = post.productOfferPrice || matchedItem?.offerPrice || null;
-            const resolvedBaseImage = post.baseImageUrl || (matchedItem?.imageUrl && typeof matchedItem.imageUrl === 'string' && matchedItem.imageUrl.startsWith('http') ? matchedItem.imageUrl : null);
+            const resolvedBaseImage = post.baseImageUrl || (matchedItem?.imageUrl && typeof matchedItem.imageUrl === 'string' && (matchedItem.imageUrl.startsWith('http') || matchedItem.imageUrl.startsWith('/')) ? matchedItem.imageUrl : null);
+            const effectivePromoImgMode = post.promoImageMode || (post.isCommercialPoster ? 'with_text' : undefined);
+            const effectiveIsCommercialPoster = effectivePromoImgMode
+                ? effectivePromoImgMode === 'with_text'
+                : Boolean(post.isCommercialPoster ?? isCommercialPosterOnly);
 
             const newPostRef = await addDoc(postsRef, {
                 userId: user.uid,
@@ -511,7 +564,9 @@ export default function EstrategiaPage() {
                 hasProductImage: Boolean(resolvedBaseImage),
                 imageUrl: resolvedBaseImage || null,
                 imageUrls: resolvedBaseImage ? [resolvedBaseImage] : [],
-                isCommercialPoster: Boolean(post.isCommercialPoster ?? isCommercialPosterOnly),
+                isPromotion: Boolean(post.isPromotion || matchedItem?.type === 'promocion'),
+                promoImageMode: effectivePromoImgMode || null,
+                isCommercialPoster: effectiveIsCommercialPoster,
                 videoCommand: post.videoCommand || null,
                 videoTemplateName: post.videoTemplateName || null,
                 videoCategory: post.videoCategory || null,
@@ -746,62 +801,264 @@ export default function EstrategiaPage() {
                )}
              </div>
 
-              {/* NIVEL 2: PROMOCIONES PARA ESTA PLANIFICACIÓN */}
-              <div className="p-6 bg-gradient-to-br from-amber-500/5 via-indigo-500/5 to-purple-500/5 rounded-3xl border-2 border-amber-400/30 space-y-4">
-                  <div className="flex items-center gap-3">
-                     <span className="text-2xl">🏷️</span>
-                     <div>
-                        <h3 className="text-sm font-black text-slate-900 tracking-tight">2. Promociones y Ofertas para esta Planificación</h3>
-                        <p className="text-xs font-medium text-slate-500">Nuestros agentes incluirán estas promociones en los ganchos y carteles publicitarios.</p>
+              {/* NIVEL 2: PROMOCIONES EN LA ESTRATEGIA */}
+              <div className="p-6 bg-gradient-to-br from-rose-500/5 via-amber-500/5 to-orange-500/5 rounded-3xl border-2 border-rose-300/60 space-y-5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                     <div className="flex items-center gap-3">
+                        <span className="w-10 h-10 rounded-2xl bg-gradient-to-br from-rose-600 to-orange-500 text-white flex items-center justify-center text-xl shadow-sm shrink-0">🔥</span>
+                        <div>
+                           <h3 className="text-sm md:text-base font-black text-slate-900 tracking-tight">2. Promociones para esta Estrategia</h3>
+                           <p className="text-xs font-medium text-slate-500">Elige si deseas incluir promociones en este calendario y cómo se diseñarán sus imágenes.</p>
+                        </div>
+                     </div>
+
+                     <div className="flex items-center gap-3 self-start sm:self-center">
+                        <Link
+                          href="/automatizacion-rrss/panel/catalogo"
+                          className="text-xs font-bold text-rose-600 hover:text-rose-800 hover:underline shrink-0"
+                        >
+                          + Crear / Editar Promociones →
+                        </Link>
+                        <label className="flex items-center gap-2 cursor-pointer bg-white px-3.5 py-2 rounded-xl border-2 border-rose-200 shadow-xs">
+                          <input
+                            type="checkbox"
+                            checked={includePromotionsInStrategy}
+                            onChange={(e) => setIncludePromotionsInStrategy(e.target.checked)}
+                            className="w-4 h-4 accent-rose-600 rounded cursor-pointer"
+                          />
+                          <span className="text-xs font-black text-slate-800">
+                            {includePromotionsInStrategy ? '🔥 Incluir Promociones' : 'No incluir promociones'}
+                          </span>
+                        </label>
                      </div>
                   </div>
 
-                  {/* Resumen de lo configurado en el perfil */}
-                  {activeProfile?.promotions ? (
-                    <div className="p-4 bg-white rounded-2xl border border-amber-200/60 shadow-sm text-left">
-                      <p className="text-[10px] font-black uppercase tracking-wider text-amber-700 mb-1">📌 Promociones activas de tu perfil (Nivel 1):</p>
-                      <p className="text-xs font-semibold text-slate-700 whitespace-pre-line">{activeProfile.promotions}</p>
-                    </div>
-                  ) : (
-                    <div className="p-3 bg-amber-50 rounded-2xl border border-amber-200 text-left">
-                      <p className="text-xs text-amber-800 font-medium">
-                        💡 No tienes promociones guardadas en tu perfil. Puedes escribir tus ofertas para esta estrategia aquí o configurarlas en <Link href="/automatizacion-rrss/panel/configuracion" className="underline font-bold">Configuración de Marca</Link>.
-                      </p>
+                  {includePromotionsInStrategy && (
+                    <div className="space-y-5 pt-2 border-t border-rose-200/50 animate-in fade-in duration-300">
+                      {/* A. Selector de Estilo de Imagen para las Promociones (CON TEXTO vs SIN TEXTO vs AMBOS) */}
+                      <div className="bg-white p-4 rounded-2xl border border-rose-200/80 shadow-xs space-y-3">
+                        <div>
+                          <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                            <span>🎨</span> ¿Cómo deseas las imágenes de tus Promociones?
+                          </h4>
+                          <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                            Define si las publicaciones promocionales llevarán texto publicitario superpuesto o fotografía limpia.
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                          <button
+                            type="button"
+                            onClick={() => setPromoImageMode('with_text')}
+                            className={`p-3 rounded-xl border-2 text-left transition-all cursor-pointer ${
+                              promoImageMode === 'with_text'
+                                ? 'border-rose-600 bg-rose-50/50 shadow-xs'
+                                : 'border-slate-100 bg-slate-50 hover:border-rose-200 hover:bg-white'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs font-black text-slate-900">🏷️ Imágenes CON Texto</span>
+                              <input type="radio" checked={promoImageMode === 'with_text'} onChange={() => setPromoImageMode('with_text')} className="accent-rose-600" />
+                            </div>
+                            <p className="text-[10px] text-slate-500 leading-snug">
+                              Diseño tipo cartel comercial con titular, oferta y precio integrados en la imagen.
+                            </p>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setPromoImageMode('without_text')}
+                            className={`p-3 rounded-xl border-2 text-left transition-all cursor-pointer ${
+                              promoImageMode === 'without_text'
+                                ? 'border-rose-600 bg-rose-50/50 shadow-xs'
+                                : 'border-slate-100 bg-slate-50 hover:border-rose-200 hover:bg-white'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs font-black text-slate-900">📸 Imágenes SIN Texto</span>
+                              <input type="radio" checked={promoImageMode === 'without_text'} onChange={() => setPromoImageMode('without_text')} className="accent-rose-600" />
+                            </div>
+                            <p className="text-[10px] text-slate-500 leading-snug">
+                              Fotografía pura y limpia del plato o producto; toda la promoción y precio van en el copy.
+                            </p>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setPromoImageMode('mixed')}
+                            className={`p-3 rounded-xl border-2 text-left transition-all cursor-pointer ${
+                              promoImageMode === 'mixed'
+                                ? 'border-rose-600 bg-rose-50/50 shadow-xs'
+                                : 'border-slate-100 bg-slate-50 hover:border-rose-200 hover:bg-white'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs font-black text-slate-900">🔄 Ambos (Con y Sin Texto)</span>
+                              <input type="radio" checked={promoImageMode === 'mixed'} onChange={() => setPromoImageMode('mixed')} className="accent-rose-600" />
+                            </div>
+                            <p className="text-[10px] text-slate-500 leading-snug">
+                              Nuestros agentes alternan carteles con texto y fotografías limpias para dar dinamismo al feed.
+                            </p>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* B. Promociones creadas en la viñeta Promociones de Productos & Servicios */}
+                      {catalogPromotions.length > 0 ? (
+                        <div className="bg-white p-4 rounded-2xl border border-rose-200/80 shadow-xs space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                                🔥 Tus Promociones del Catálogo ({selectedPromotionIds.length} de {catalogPromotions.length} seleccionadas)
+                              </h4>
+                              <p className="text-[11px] text-slate-500 font-medium">
+                                Marca las promociones que quieres que nuestros agentes programen en este plan:
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setSelectedPromotionIds(catalogPromotions.map((p: any) => p.id))}
+                                className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[11px] rounded-lg transition-colors cursor-pointer"
+                              >
+                                ✓ Todas
+                              </button>
+                              {selectedPromotionIds.length > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedPromotionIds([])}
+                                  className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-[11px] rounded-lg transition-colors cursor-pointer"
+                                >
+                                  Limpiar
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[260px] overflow-y-auto pr-1">
+                            {catalogPromotions.map((promo: any) => {
+                              const isSelected = selectedPromotionIds.includes(promo.id);
+                              const linkedProds = regularCatalogItems.filter((rp: any) =>
+                                (promo.linkedProductIds || []).includes(rp.id)
+                              );
+                              const displayImg =
+                                promo.imageUrl ||
+                                linkedProds.find((rp: any) => rp.imageUrl)?.imageUrl ||
+                                null;
+
+                              return (
+                                <div
+                                  key={promo.id}
+                                  onClick={() => {
+                                    if (isSelected) {
+                                      setSelectedPromotionIds(selectedPromotionIds.filter((id) => id !== promo.id));
+                                    } else {
+                                      setSelectedPromotionIds([...selectedPromotionIds, promo.id]);
+                                    }
+                                  }}
+                                  className={`p-3 rounded-2xl border-2 cursor-pointer transition-all flex items-start gap-3 select-none ${
+                                    isSelected
+                                      ? 'border-rose-500 bg-rose-50/40 shadow-xs'
+                                      : 'border-slate-100 bg-slate-50/60 hover:border-slate-200'
+                                  }`}
+                                >
+                                  <div
+                                    className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold ${
+                                      isSelected
+                                        ? 'bg-rose-600 text-white'
+                                        : 'border border-slate-300 bg-white text-transparent'
+                                    }`}
+                                  >
+                                    ✓
+                                  </div>
+                                  <div className="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center">
+                                    {displayImg ? (
+                                      <img src={displayImg} alt={promo.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                      <span className="text-lg">🔥</span>
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between gap-1.5">
+                                      <h5 className="text-xs font-black text-slate-900 truncate">{promo.name}</h5>
+                                      {(promo.offerPrice || promo.price) && (
+                                        <span className="text-[10px] font-black text-rose-700 bg-rose-100 px-2 py-0.5 rounded-full shrink-0">
+                                          {promo.offerPrice || promo.price}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-[10px] text-slate-500 line-clamp-1 mt-0.5">{promo.description}</p>
+                                    {linkedProds.length > 0 && (
+                                      <div className="flex items-center gap-1 flex-wrap mt-1">
+                                        <span className="text-[9px] font-bold text-slate-400">Incluye:</span>
+                                        {linkedProds.map((lp: any) => (
+                                          <span
+                                            key={lp.id}
+                                            className="text-[9px] font-bold bg-indigo-50 text-indigo-700 px-1.5 py-0.2 rounded border border-indigo-100 truncate max-w-[110px]"
+                                          >
+                                            {lp.name}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="p-4 bg-white rounded-2xl border border-rose-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="text-xs text-slate-600 font-medium">
+                            💡 Puedes crear promociones con productos vinculados en la viñeta <strong>🔥 Promociones</strong> de Productos & Servicios.
+                          </div>
+                          <Link
+                            href="/automatizacion-rrss/panel/catalogo"
+                            className="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-black text-xs rounded-xl transition-all shrink-0 text-center"
+                          >
+                            + Ir a Crear Promociones
+                          </Link>
+                        </div>
+                      )}
+
+                      {/* C. Texto adicional de promociones del perfil o rápidas */}
+                      <div className="space-y-2">
+                        {activeProfile?.promotions && (
+                          <label 
+                            onClick={() => setPromoMode('profile')}
+                            className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${promoMode === 'profile' ? 'bg-white border-amber-500 shadow-sm' : 'bg-white/60 border-slate-100 hover:bg-white'}`}
+                          >
+                            <input type="radio" name="promoMode" checked={promoMode === 'profile'} onChange={() => setPromoMode('profile')} className="accent-amber-600" />
+                            <div className="text-left">
+                              <span className="text-xs font-bold text-slate-800 block">Incluir también las promociones generales de mi perfil</span>
+                              <span className="text-[11px] text-slate-500 line-clamp-1">{activeProfile.promotions}</span>
+                            </div>
+                          </label>
+                        )}
+
+                        <label 
+                          onClick={() => setPromoMode('custom')}
+                          className={`flex items-start gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${promoMode === 'custom' || !activeProfile?.promotions ? 'bg-white border-amber-500 shadow-sm' : 'bg-white/60 border-slate-100 hover:bg-white'}`}
+                        >
+                          <input type="radio" name="promoMode" checked={promoMode === 'custom' || !activeProfile?.promotions} onChange={() => setPromoMode('custom')} className="mt-0.5 accent-amber-600" />
+                          <div className="flex-1">
+                            <span className="text-xs font-bold text-slate-800">
+                              Escribir una nota u oferta adicional rápida para este plan (Opcional)
+                            </span>
+                            {(promoMode === 'custom' || !activeProfile?.promotions) && (
+                              <textarea
+                                value={customPromotions}
+                                onChange={e => setCustomPromotions(e.target.value)}
+                                placeholder="Ej: Este fin de semana 3x2 en postres, o 20% OFF adicional..."
+                                rows={2}
+                                className="w-full mt-2 bg-slate-50 border border-amber-200/60 p-3 rounded-xl text-xs font-bold text-slate-700 outline-none focus:bg-white focus:ring-2 focus:ring-amber-400 resize-none"
+                              />
+                            )}
+                          </div>
+                        </label>
+                      </div>
                     </div>
                   )}
-
-                  <div className="space-y-2.5">
-                    {activeProfile?.promotions && (
-                      <label 
-                        onClick={() => setPromoMode('profile')}
-                        className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${promoMode === 'profile' ? 'bg-white border-amber-500 shadow-sm' : 'bg-white/60 border-slate-100 hover:bg-white'}`}
-                      >
-                        <input type="radio" name="promoMode" checked={promoMode === 'profile'} onChange={() => setPromoMode('profile')} className="accent-amber-600" />
-                        <span className="text-xs font-bold text-slate-800">Usar las promociones habituales de mi perfil</span>
-                      </label>
-                    )}
-
-                    <label 
-                      onClick={() => setPromoMode('custom')}
-                      className={`flex items-start gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${promoMode === 'custom' || !activeProfile?.promotions ? 'bg-white border-amber-500 shadow-sm' : 'bg-white/60 border-slate-100 hover:bg-white'}`}
-                    >
-                      <input type="radio" name="promoMode" checked={promoMode === 'custom' || !activeProfile?.promotions} onChange={() => setPromoMode('custom')} className="mt-0.5 accent-amber-600" />
-                      <div className="flex-1">
-                        <span className="text-xs font-bold text-slate-800">
-                          {activeProfile?.promotions ? "Quiero cambiar o agregar una promo especial para estos 14 días" : "Escribir promociones u ofertas para este plan"}
-                        </span>
-                        {(promoMode === 'custom' || !activeProfile?.promotions) && (
-                          <textarea
-                            value={customPromotions}
-                            onChange={e => setCustomPromotions(e.target.value)}
-                            placeholder="Ej: Este fin de semana 3x2 en postres, o 20% OFF en corte y barba..."
-                            rows={3}
-                            className="w-full mt-2 bg-slate-50 border border-amber-200/60 p-3 rounded-xl text-xs font-bold text-slate-700 outline-none focus:bg-white focus:ring-2 focus:ring-amber-400 resize-none"
-                          />
-                        )}
-                      </div>
-                    </label>
-                  </div>
               </div>
 
               {/* RADAR DE NICHO VINCULADO */}
@@ -847,15 +1104,15 @@ export default function EstrategiaPage() {
               ) : null}
 
               {/* INTEGRACIÓN DEL CATÁLOGO DE PRODUCTOS/SERVICIOS */}
-              {catalogoItems.length > 0 && (
+              {regularCatalogItems.length > 0 && (
                 <div className="p-6 bg-white rounded-3xl border-2 border-slate-100 shadow-sm space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <span className="text-2xl">🛍️</span>
                       <div>
-                        <h3 className="text-sm font-black text-slate-900 tracking-tight">Catálogo de Productos y Servicios</h3>
+                        <h3 className="text-sm font-black text-slate-900 tracking-tight">3. Catálogo de Productos y Servicios</h3>
                         <p className="text-xs font-medium text-slate-500">
-                          Tienes {catalogoItems.length} {catalogoItems.length === 1 ? 'ítem' : 'ítems'} en tu catálogo. ¿Cómo quieres integrarlos en este plan?
+                          Tienes {regularCatalogItems.length} {regularCatalogItems.length === 1 ? 'producto/servicio' : 'productos/servicios'} en tu catálogo. ¿Cómo quieres integrarlos en este plan?
                         </p>
                       </div>
                     </div>
@@ -873,7 +1130,7 @@ export default function EstrategiaPage() {
                         <input type="radio" checked={catalogUsage === 'all'} onChange={() => setCatalogUsage('all')} className="accent-indigo-600" />
                         <span className="text-xs font-black text-slate-800">100% Catálogo</span>
                       </div>
-                      <span className="text-[10px] text-slate-500 pl-5">Toda la estrategia se basará únicamente en tus productos o servicios.</span>
+                      <span className="text-[10px] text-slate-500 pl-5">Toda la estrategia se basará en tus productos, servicios y promociones.</span>
                     </label>
 
                     <label 
@@ -884,7 +1141,7 @@ export default function EstrategiaPage() {
                         <input type="radio" checked={catalogUsage === 'mixed'} onChange={() => setCatalogUsage('mixed')} className="accent-indigo-600" />
                         <span className="text-xs font-black text-slate-800">A medias (Recomendado)</span>
                       </div>
-                      <span className="text-[10px] text-slate-500 pl-5">Mezcla tus productos/servicios con contenido general y de valor.</span>
+                      <span className="text-[10px] text-slate-500 pl-5">Mezcla tus productos/servicios y promociones con contenido general y de valor.</span>
                     </label>
 
                     <label 
@@ -893,9 +1150,9 @@ export default function EstrategiaPage() {
                     >
                       <div className="flex items-center gap-2 mb-1">
                         <input type="radio" checked={catalogUsage === 'none'} onChange={() => setCatalogUsage('none')} className="accent-indigo-600" />
-                        <span className="text-xs font-black text-slate-800">No usar catálogo</span>
+                        <span className="text-xs font-black text-slate-800">No usar productos individuales</span>
                       </div>
-                      <span className="text-[10px] text-slate-500 pl-5">Planificación libre, enfocada en branding o contenido general.</span>
+                      <span className="text-[10px] text-slate-500 pl-5">Solo usar las promociones marcadas arriba o contenido general.</span>
                     </label>
                   </div>
 
@@ -903,7 +1160,7 @@ export default function EstrategiaPage() {
                   {catalogUsage !== 'none' && (
                     <div className="pt-2 border-t border-slate-100">
                       <PlanProductsSelector
-                        items={catalogoItems}
+                        items={regularCatalogItems}
                         selectedItemIds={selectedCatalogItemIds}
                         onChangeSelectedIds={setSelectedCatalogItemIds}
                         loading={loadingCatalog}
@@ -1077,30 +1334,80 @@ export default function EstrategiaPage() {
                                             <span className={`${formatColor} font-black text-[10px] uppercase tracking-widest px-3 py-1.5 rounded-xl`}>{post.format}</span>
                                          </div>
 
-                                         {/* Product badge if assigned */}
-                                         {post.productName && (
-                                            <div className="flex items-center gap-2.5 p-2.5 rounded-2xl bg-amber-50/90 border border-amber-200/90 mb-3 relative z-10 shadow-xs">
-                                              {post.baseImageUrl ? (
-                                                <img 
-                                                  src={post.baseImageUrl} 
-                                                  alt={post.productName} 
-                                                  className="w-10 h-10 rounded-xl object-cover border border-amber-300 shadow-2xs shrink-0" 
-                                                />
-                                              ) : (
-                                                <span className="w-10 h-10 rounded-xl bg-amber-100 border border-amber-200 flex items-center justify-center text-lg shrink-0">🛍️</span>
-                                              )}
-                                              <div className="min-w-0 flex-1">
-                                                <div className="flex items-center gap-1.5 flex-wrap">
-                                                  <span className="text-[9px] font-black uppercase tracking-wider text-amber-800">Producto Destacado</span>
-                                                  <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full ${post.baseImageUrl ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-indigo-100 text-indigo-800 border border-indigo-200'}`}>
-                                                    {post.baseImageUrl ? '✓ Foto de Catálogo' : '🎨 Foto a Generar'}
+                                         {/* Product or Promotion badge if assigned */}
+                                         {(post.productName || post.isPromotion) && (
+                                            <div className={`flex flex-col gap-2 p-3 rounded-2xl border mb-3 relative z-10 shadow-xs ${post.isPromotion ? 'bg-rose-50/90 border-rose-200' : 'bg-amber-50/90 border-amber-200/90'}`}>
+                                              <div className="flex items-center gap-2.5">
+                                                {post.baseImageUrl ? (
+                                                  <img 
+                                                    src={post.baseImageUrl} 
+                                                    alt={post.productName || 'Promo'} 
+                                                    className={`w-10 h-10 rounded-xl object-cover border shadow-2xs shrink-0 ${post.isPromotion ? 'border-rose-300' : 'border-amber-300'}`} 
+                                                  />
+                                                ) : (
+                                                  <span className={`w-10 h-10 rounded-xl border flex items-center justify-center text-lg shrink-0 ${post.isPromotion ? 'bg-rose-100 border-rose-200' : 'bg-amber-100 border-amber-200'}`}>
+                                                    {post.isPromotion ? '🔥' : '🛍️'}
                                                   </span>
-                                                </div>
-                                                <div className="text-xs font-black text-amber-950 truncate mt-0.5">{post.productName}</div>
-                                                {post.productDescription && (
-                                                  <div className="text-[10px] text-amber-800/80 font-medium line-clamp-1 mt-0.5">{post.productDescription}</div>
                                                 )}
+                                                <div className="min-w-0 flex-1">
+                                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                                    <span className={`text-[9px] font-black uppercase tracking-wider ${post.isPromotion ? 'text-rose-700' : 'text-amber-800'}`}>
+                                                      {post.isPromotion ? '🔥 Promoción' : '🛍️ Producto'}
+                                                    </span>
+                                                    {(post.productOfferPrice || post.productPrice) && (
+                                                      <span className="text-[9px] font-black bg-rose-600 text-white px-2 py-0.5 rounded-full">
+                                                        {post.productOfferPrice || post.productPrice}
+                                                      </span>
+                                                    )}
+                                                    <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full ${post.baseImageUrl ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-indigo-100 text-indigo-800 border border-indigo-200'}`}>
+                                                      {post.baseImageUrl ? '✓ Foto Lista' : '🎨 Foto a Generar'}
+                                                    </span>
+                                                  </div>
+                                                  <div className={`text-xs font-black truncate mt-0.5 ${post.isPromotion ? 'text-rose-950' : 'text-amber-950'}`}>
+                                                    {post.productName || 'Oferta Especial'}
+                                                  </div>
+                                                  {post.productDescription && (
+                                                    <div className={`text-[10px] font-medium line-clamp-1 mt-0.5 ${post.isPromotion ? 'text-rose-800/80' : 'text-amber-800/80'}`}>
+                                                      {post.productDescription}
+                                                    </div>
+                                                  )}
+                                                </div>
                                               </div>
+
+                                              {/* Selector rápido por post: Imagen CON texto vs SIN texto */}
+                                              {!post.format.toLowerCase().includes('reel') && !post.format.toLowerCase().includes('video') && (
+                                                <div className="flex items-center justify-between pt-2 border-t border-black/5">
+                                                  <span className="text-[10px] font-bold text-slate-600">Formato de imagen:</span>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                      const currentWithText = post.promoImageMode ? post.promoImageMode === 'with_text' : Boolean(post.isCommercialPoster);
+                                                      const nextMode = currentWithText ? 'without_text' : 'with_text';
+                                                      setStrategyResult((prev) =>
+                                                        (prev || []).map((item) =>
+                                                          item === post
+                                                            ? {
+                                                                ...item,
+                                                                promoImageMode: nextMode,
+                                                                isCommercialPoster: nextMode === 'with_text',
+                                                              }
+                                                            : item
+                                                        )
+                                                      );
+                                                    }}
+                                                    className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer border ${
+                                                      (post.promoImageMode ? post.promoImageMode === 'with_text' : Boolean(post.isCommercialPoster))
+                                                        ? 'bg-rose-600 text-white border-rose-600 shadow-2xs'
+                                                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                                                    }`}
+                                                    title="Haz clic para cambiar entre Imagen CON Texto y SIN Texto"
+                                                  >
+                                                    {(post.promoImageMode ? post.promoImageMode === 'with_text' : Boolean(post.isCommercialPoster))
+                                                      ? '🏷️ Imagen CON Texto (Click para cambiar)'
+                                                      : '📸 Imagen SIN Texto (Click para cambiar)'}
+                                                  </button>
+                                                </div>
+                                              )}
                                             </div>
                                          )}
 

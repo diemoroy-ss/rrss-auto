@@ -1532,7 +1532,7 @@ export default function LaboratorioPage() {
                           setProductForm({
                             name: item.name,
                             description: item.description,
-                            type: item.type,
+                            type: item.type === "servicio" ? "servicio" : "producto",
                             category: item.category || "",
                             subcategory: item.subcategory || "",
                             price: item.price || "",

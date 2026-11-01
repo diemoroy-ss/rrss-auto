@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
   try {
     const uid = await getUid(req);
     const body = await req.json();
-    const { name, description, type, category, subcategory, price, offerPrice, includePriceInCopy, imageUrl, tags, profileId, keepOriginalPhoto, fontStyle } = body;
+    const { name, description, type, category, subcategory, price, offerPrice, includePriceInCopy, imageUrl, tags, profileId, keepOriginalPhoto, fontStyle, linkedProductIds, promoImageMode } = body;
     if (!name || !description || !type || !profileId) {
       return NextResponse.json({ error: "name, description, type y profileId son requeridos" }, { status: 400 });
     }
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
       name: name.trim(),
       description: description.trim(),
       type,
-      category: category?.trim() || null,
+      category: category?.trim() || (type === 'promocion' ? 'Promociones' : null),
       subcategory: subcategory?.trim() || null,
       price: price?.trim() || null,
       offerPrice: offerPrice?.trim() || null,
@@ -64,6 +64,8 @@ export async function POST(req: NextRequest) {
       profileId,
       keepOriginalPhoto: Boolean(keepOriginalPhoto),
       fontStyle: fontStyle || 'script_handwritten',
+      linkedProductIds: Array.isArray(linkedProductIds) ? linkedProductIds : [],
+      promoImageMode: promoImageMode || 'both',
       active: true,
       createdAt: new Date(),
     });
@@ -78,7 +80,7 @@ export async function PUT(req: NextRequest) {
   try {
     const uid = await getUid(req);
     const body = await req.json();
-    const { id, name, description, type, category, subcategory, price, offerPrice, includePriceInCopy, imageUrl, tags, active, keepOriginalPhoto, fontStyle } = body;
+    const { id, name, description, type, category, subcategory, price, offerPrice, includePriceInCopy, imageUrl, tags, active, keepOriginalPhoto, fontStyle, linkedProductIds, promoImageMode } = body;
     if (!id) return NextResponse.json({ error: "id es requerido" }, { status: 400 });
     const updates: Record<string, any> = {};
     if (name !== undefined) updates.name = name.trim();
@@ -94,6 +96,8 @@ export async function PUT(req: NextRequest) {
     if (active !== undefined) updates.active = active;
     if (keepOriginalPhoto !== undefined) updates.keepOriginalPhoto = Boolean(keepOriginalPhoto);
     if (fontStyle !== undefined) updates.fontStyle = fontStyle;
+    if (linkedProductIds !== undefined) updates.linkedProductIds = Array.isArray(linkedProductIds) ? linkedProductIds : [];
+    if (promoImageMode !== undefined) updates.promoImageMode = promoImageMode;
     await catalogoRef(uid).doc(id).update(updates);
     return NextResponse.json({ success: true });
   } catch (err: any) {

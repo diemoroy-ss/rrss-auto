@@ -56,9 +56,16 @@ export async function POST(req: NextRequest) {
     let imageSource: "uploaded_base" | "catalog_product" | "catalog_product_generated" | "business_description" = "business_description";
     let sourceDescription = "Generada a partir de la descripción del negocio";
 
+    const normalizeUrl = (u?: string | null) => {
+      if (!u || typeof u !== "string") return undefined;
+      if (u.startsWith("http")) return u;
+      if (u.startsWith("/")) return `${req.nextUrl.origin}${u}`;
+      return undefined;
+    };
+
     // NIVEL 1: Imagen base subida para este post o producto con foto real
-    const candidateUploaded = overrideBaseImage || post.baseImageUrl;
-    if (candidateUploaded && typeof candidateUploaded === "string" && candidateUploaded.startsWith("http")) {
+    const candidateUploaded = normalizeUrl(overrideBaseImage || post.baseImageUrl);
+    if (candidateUploaded) {
       resolvedBaseImage = candidateUploaded;
       imageSource = resolvedProductName ? "catalog_product" : "uploaded_base";
       sourceDescription = resolvedProductName 
@@ -90,7 +97,7 @@ export async function POST(req: NextRequest) {
             return nameLower.length > 2 && postTextLower.includes(nameLower);
           });
 
-          const selectedItem = matchedItem || allItems.find((it) => it.imageUrl && it.imageUrl.startsWith("http")) || allItems[0];
+          const selectedItem = matchedItem || allItems.find((it) => normalizeUrl(it.imageUrl)) || allItems[0];
           if (selectedItem) {
             resolvedProductName = selectedItem.name;
             resolvedProductDesc = selectedItem.description;
@@ -102,8 +109,9 @@ export async function POST(req: NextRequest) {
               resolvedFontStyle = selectedItem.fontStyle;
             }
 
-            if (selectedItem.imageUrl && typeof selectedItem.imageUrl === "string" && selectedItem.imageUrl.startsWith("http")) {
-              resolvedBaseImage = selectedItem.imageUrl;
+            const normSelectedImg = normalizeUrl(selectedItem.imageUrl);
+            if (normSelectedImg) {
+              resolvedBaseImage = normSelectedImg;
               imageSource = "catalog_product";
               sourceDescription = `Foto de "${selectedItem.name}" de tu catálogo`;
             } else {
@@ -140,7 +148,13 @@ export async function POST(req: NextRequest) {
       ))
     );
 
-    const isBannerMode = isCommercialStyle || ((targetProfile.bannerStyle as any) || 'banner') === 'banner';
+    // Respetar explícitamente promoImageMode ('with_text' vs 'without_text') o isCommercialPoster
+    const isBannerMode =
+      post.promoImageMode === "without_text" || post.isCommercialPoster === false
+        ? false
+        : post.promoImageMode === "with_text" || post.isCommercialPoster === true
+        ? true
+        : isCommercialStyle || ((targetProfile.bannerStyle as any) || "banner") === "banner";
 
     if (resolvedKeepOriginalPhoto && resolvedBaseImage) {
       if (isBannerMode) {
@@ -210,10 +224,10 @@ export async function POST(req: NextRequest) {
         businessName: targetProfile.name || targetProfile.businessName || "",
         businessDescription: targetProfile.businessDescription || "",
         promotions: targetProfile.promotions || "",
-        customOffer: post.customOffer || "",
+        customOffer: resolvedProductPrice ? `${resolvedProductName || 'Promo'}: ${resolvedProductPrice}` : (post.customOffer || ""),
         productName: resolvedProductName,
         productDescription: resolvedProductDesc,
-        bannerStyle: "clean", // Mantener la composición de imagen limpia y estilizada
+        bannerStyle: isBannerMode ? "banner" : "clean",
         aspectRatio: isStory ? "9:16" : "1:1",
         logoPrompt: targetProfile.logoPrompt || "",
         logoUrl: targetProfile.logoUrl || "",

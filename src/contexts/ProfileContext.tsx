@@ -115,7 +115,7 @@ export type CatalogoItem = {
   id: string;
   name: string;
   description: string;
-  type: 'producto' | 'servicio';
+  type: 'producto' | 'servicio' | 'promocion';
   category?: string;
   subcategory?: string;
   price?: string;
@@ -130,6 +130,10 @@ export type CatalogoItem = {
   keepOriginalPhoto?: boolean;
   /** Estilo tipográfico preferido para la sobreposición publicitaria */
   fontStyle?: 'script_handwritten' | 'bold_modern' | 'elegant_serif' | 'clean_minimal';
+  /** IDs de productos o servicios asociados cuando este ítem es una promoción (1 o más, opcional) */
+  linkedProductIds?: string[];
+  /** Modo de imagen preferido para la promoción: con texto, sin texto o ambos */
+  promoImageMode?: 'with_text' | 'without_text' | 'both';
 };
 
 export type FidelizacionConfig = {

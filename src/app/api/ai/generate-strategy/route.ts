@@ -12,6 +12,9 @@ export async function POST(req: NextRequest) {
       profileId,
       expectations, 
       promotions, 
+      includePromotions,
+      promoImageMode,
+      selectedPromotions,
       businessData, 
       connectedPlatforms, 
       nicheContext, 
@@ -53,7 +56,27 @@ export async function POST(req: NextRequest) {
         }
     }
 
-    const enrichedNicheContext = (nicheContext || "") + catalogContext;
+    // Build structured promotions context
+    let structuredPromosContext = "";
+    const activePromoList = (includePromotions !== false && Array.isArray(selectedPromotions)) ? selectedPromotions : [];
+    if (activePromoList.length > 0) {
+        const promoLines = activePromoList.map((p: any, idx: number) => {
+            const linkedStr = Array.isArray(p.linkedProducts) && p.linkedProducts.length > 0
+                ? ` | Productos/Servicios incluidos: ${p.linkedProducts.map((lp: any) => `"${lp.name}"${lp.price ? ` (${lp.price})` : ""}`).join(", ")}`
+                : "";
+            return `- Promoción #${idx + 1}: ID: "${p.id}" | Título Promo: "${p.name}" | Oferta: "${p.offerPrice || p.price || 'Especial'}"${p.price && p.offerPrice ? ` (Antes: ${p.price})` : ""} | Detalle: "${p.description || ''}"${linkedStr}`;
+        }).join("\n");
+
+        const imgRule = promoImageMode === "with_text"
+            ? "REGLA VISUAL DE PROMOCIONES: TODAS las publicaciones de promociones deben ir CON TEXTO PUBLICITARIO (isCommercialPoster: true, promoImageMode: 'with_text')."
+            : promoImageMode === "without_text"
+            ? "REGLA VISUAL DE PROMOCIONES: TODAS las publicaciones de promociones deben ir SIN TEXTO EN LA IMAGEN (fotografía limpia del plato/producto, isCommercialPoster: false, promoImageMode: 'without_text'), dejando toda la oferta escrita en el copy."
+            : "REGLA VISUAL DE PROMOCIONES: Alterna publicaciones de promociones CON TEXTO PUBLICITARIO (isCommercialPoster: true, promoImageMode: 'with_text') y SIN TEXTO EN LA IMAGEN (fotografía limpia, isCommercialPoster: false, promoImageMode: 'without_text').";
+
+        structuredPromosContext = `\n\n🔥 PROMOCIONES ACTIVAS SELECCIONADAS PARA INCLUIR EN ESTA ESTRATEGIA (OBLIGATORIO: Programa publicaciones dedicadas a estas promociones):\n${promoLines}\n${imgRule}`;
+    }
+
+    const enrichedNicheContext = (nicheContext || "") + catalogContext + structuredPromosContext;
 
     console.log(`[STRATEGY] Starting Professional LangGraph strategy for user ${userId}`);
 
@@ -212,9 +235,13 @@ export async function POST(req: NextRequest) {
     }
 
     // 7. Consideración de Cuota de Imágenes
-    // Si la cuota de imágenes es reducida y no hay fotos reales de catálogo, ajustar posts para no exceder cuota
-    const catalogHasRealPhotos = (catalogoItems || []).some((item: any) => 
-        Boolean((item.hasImage || item.imageUrl) && typeof item.imageUrl === 'string' && item.imageUrl.startsWith('http'))
+    const combinedItemsForStrategy = [
+        ...activePromoList.map((p: any) => ({ ...p, type: 'promocion' })),
+        ...(catalogoItems || [])
+    ];
+
+    const catalogHasRealPhotos = combinedItemsForStrategy.some((item: any) => 
+        Boolean((item.hasImage || item.imageUrl) && typeof item.imageUrl === 'string' && (item.imageUrl.startsWith('http') || item.imageUrl.startsWith('/')))
     );
 
     if (!isAdmin && remainingImages < (effectivePosts - maxVideos) && !catalogHasRealPhotos) {
@@ -239,17 +266,70 @@ export async function POST(req: NextRequest) {
         businessData || {},
         userPlan,
         maxVideos,
-        catalogoItems || [],
-        catalogUsage || "mixed",
+        combinedItemsForStrategy,
+        (catalogUsage === "none" && activePromoList.length > 0) ? "mixed" : (catalogUsage || "mixed"),
         remainingPosts,
         remainingVideos,
         remainingImages,
         Boolean(isCommercialPoster)
     );
 
+    // Normalizar promociones e imágenes CON texto vs SIN texto en el resultado
+    const promoIdsSet = new Set(activePromoList.map((p: any) => p.id));
+    let promoToggleIdx = 0;
+
+    const normalizedStrategy = (result.strategy || []).map((post: any) => {
+        const matchedPromo = activePromoList.find(
+            (p: any) => p.id === post.productId || (p.name && post.productName && p.name.toLowerCase() === post.productName.toLowerCase())
+        );
+        const matchedCatalog = (catalogoItems || []).find(
+            (c: any) => c.id === post.productId || (c.name && post.productName && c.name.toLowerCase() === post.productName.toLowerCase())
+        );
+
+        const isPromoPost = Boolean(
+            post.isPromotion ||
+            matchedPromo ||
+            (post.productId && promoIdsSet.has(post.productId)) ||
+            matchedCatalog?.offerPrice ||
+            post.productOfferPrice
+        );
+
+        let resolvedImgMode: 'with_text' | 'without_text' = post.promoImageMode || (post.isCommercialPoster ? 'with_text' : 'without_text');
+
+        if (isPromoPost && includePromotions !== false) {
+            if (promoImageMode === 'with_text') {
+                resolvedImgMode = 'with_text';
+            } else if (promoImageMode === 'without_text') {
+                resolvedImgMode = 'without_text';
+            } else if (promoImageMode === 'mixed') {
+                resolvedImgMode = promoToggleIdx % 2 === 0 ? 'with_text' : 'without_text';
+                promoToggleIdx++;
+            }
+        } else if (isCommercialPoster) {
+            resolvedImgMode = 'with_text';
+        }
+
+        const itemRef = matchedPromo || matchedCatalog;
+        const resolvedBaseImg = post.baseImageUrl || itemRef?.imageUrl || null;
+
+        return {
+            ...post,
+            productId: post.productId || itemRef?.id || null,
+            productName: post.productName || itemRef?.name || null,
+            productDescription: post.productDescription || itemRef?.description || null,
+            productPrice: post.productPrice || itemRef?.price || null,
+            productOfferPrice: post.productOfferPrice || itemRef?.offerPrice || null,
+            baseImageUrl: resolvedBaseImg,
+            hasProductImage: Boolean(resolvedBaseImg),
+            isPromotion: isPromoPost,
+            promoImageMode: resolvedImgMode,
+            isCommercialPoster: resolvedImgMode === 'with_text',
+        };
+    });
+
     console.log(`[STRATEGY] LangGraph Strategy generated successfully for plan ${userPlan} (posts: ${effectivePosts}, maxVideos: ${maxVideos}, remPosts: ${remainingPosts}, remVideos: ${remainingVideos}, remImages: ${remainingImages}).`);
     return NextResponse.json({ 
-        strategy: result.strategy,
+        strategy: normalizedStrategy,
         analysis: result.analysis,
         quotaInfo: {
             plan: userPlan,
