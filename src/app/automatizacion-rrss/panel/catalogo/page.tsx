@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { auth } from '../../../../lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useProfile } from '../../../../contexts/ProfileContext';
@@ -39,6 +39,17 @@ export default function CatalogoPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { activeProfile, updateActiveProfile } = useProfile();
   const [togglingMenu, setTogglingMenu] = useState(false);
+  const [filterCategory, setFilterCategory] = useState<string>("TODAS");
+
+  const existingCategories = useMemo(() => {
+    const cats = Array.from(new Set(items.map((i) => i.category?.trim()).filter(Boolean) as string[]));
+    return cats.sort((a, b) => a.localeCompare(b));
+  }, [items]);
+
+  const displayItems = useMemo(() => {
+    if (filterCategory === "TODAS") return items;
+    return items.filter((i) => (i.category || "Destacados").toLowerCase() === filterCategory.toLowerCase());
+  }, [items, filterCategory]);
 
   const isMenuEnabled = activeProfile?.menuDigitalEnabled === true;
 
@@ -340,8 +351,46 @@ export default function CatalogoPage() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {items.map((item) => (
+        <div>
+          {/* Filtros rápidos por Categoría */}
+          {existingCategories.length > 0 && (
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-2 mb-6">
+              <button
+                type="button"
+                onClick={() => setFilterCategory("TODAS")}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                  filterCategory === "TODAS"
+                    ? "bg-slate-900 text-white shadow-xs"
+                    : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+                }`}
+              >
+                Todas ({items.length})
+              </button>
+              {existingCategories.map((cat) => {
+                const count = items.filter(
+                  (i) => (i.category || "Destacados").toLowerCase() === cat.toLowerCase()
+                ).length;
+                const isSelected = filterCategory.toLowerCase() === cat.toLowerCase();
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setFilterCategory(cat)}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                      isSelected
+                        ? "bg-indigo-600 text-white shadow-xs"
+                        : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+                    }`}
+                  >
+                    {cat} ({count})
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {displayItems.map((item) => (
             <div key={item.id} className="bg-white rounded-3xl border-2 border-slate-100 shadow-md hover:shadow-lg transition-shadow overflow-hidden group">
               <div className="h-44 bg-slate-100 relative overflow-hidden">
                 {item.imageUrl ? (
@@ -415,6 +464,7 @@ export default function CatalogoPage() {
             </div>
           ))}
         </div>
+        </div>
       )}
 
       {/* Modal de Crear/Editar */}
@@ -487,25 +537,34 @@ export default function CatalogoPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-black text-slate-600 uppercase tracking-wider mb-1.5">Categoría (Principal)</label>
+                  <label className="block text-xs font-black text-slate-600 uppercase tracking-wider mb-1.5">
+                    Categoría (ej: Piqueos, Entradas, Fondos...)
+                  </label>
                   <input 
                     type="text" 
                     list="category-suggestions"
                     value={form.category || ''} 
                     onChange={e => setForm({...form, category: e.target.value})}
-                    placeholder="Ej: Cafetería, Hamburguesas..."
+                    placeholder="Escribe o selecciona categoría..."
                     className="w-full border-2 border-slate-200 focus:border-indigo-500 rounded-xl px-4 py-3 text-sm font-semibold text-slate-800 placeholder-slate-400 outline-none transition-colors"
                   />
                   <datalist id="category-suggestions">
-                    <option value="Cafetería" />
-                    <option value="Panadería & Pastelería" />
+                    {existingCategories.map((cat) => (
+                      <option key={cat} value={cat} />
+                    ))}
+                    <option value="Piqueos" />
+                    <option value="Entradas" />
+                    <option value="Platos de Fondo" />
                     <option value="Sandwiches & Hamburguesas" />
-                    <option value="Platos Principales" />
-                    <option value="Bebidas & Jugos" />
+                    <option value="Pizzas & Pastas" />
+                    <option value="Bebidas & Tragos" />
+                    <option value="Cafetería & Pastelería" />
                     <option value="Postres" />
                     <option value="Promociones & Combos" />
-                    <option value="Servicios Destacados" />
                   </datalist>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Esta categoría se verá en el carrusel y encabezados de tu Carta QR.
+                  </p>
                 </div>
                 <div>
                   <label className="block text-xs font-black text-slate-600 uppercase tracking-wider mb-1.5">Subcategoría (Opcional)</label>

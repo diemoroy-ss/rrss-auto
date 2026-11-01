@@ -110,10 +110,17 @@ export async function GET(
       }
     }
 
-    // Ordenar categorías: "Promociones", "Destacados" primero si existen, luego alfabéticamente
-    const allCategories = Array.from(
-      new Set(items.map((i) => i.category || "Destacados"))
-    ).sort((a, b) => {
+    // Consolidar y ordenar categorías dinámicamente a partir de los productos ingresados
+    const categoryMap = new Map<string, string>();
+    items.forEach((i) => {
+      const cat = (i.category && i.category.trim()) || "Destacados";
+      const lower = cat.toLowerCase();
+      if (!categoryMap.has(lower)) {
+        categoryMap.set(lower, cat);
+      }
+    });
+
+    const allCategories = Array.from(categoryMap.values()).sort((a, b) => {
       if (a.toLowerCase().includes("promo") || a.toLowerCase().includes("oferta")) return -1;
       if (b.toLowerCase().includes("promo") || b.toLowerCase().includes("oferta")) return 1;
       if (a.toLowerCase().includes("destacado")) return -1;
