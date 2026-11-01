@@ -100,13 +100,13 @@ export default function PricingPlans() {
     <div className="space-y-12">
       {/* Toggle Facturación Mensual / Anual */}
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3" data-reveal>
-        <div className="inline-flex items-center p-1.5 rounded-2xl bg-slate-900 border border-slate-800 shadow-inner">
+        <div className="inline-flex items-center p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-inner">
           <button
             onClick={() => setBillingCycle("mensual")}
             className={`px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
               billingCycle === "mensual"
                 ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md shadow-orange-500/25"
-                : "text-slate-400 hover:text-white"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             }`}
           >
             Suscripción Mensual
@@ -116,10 +116,10 @@ export default function PricingPlans() {
             className={`px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 ${
               billingCycle === "anual"
                 ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md shadow-orange-500/25"
-                : "text-slate-400 hover:text-white"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             }`}
           >
-            Facturación Anual <span className="px-1.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">-10% OFF</span>
+            Facturación Anual <span className="px-1.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">-10% OFF</span>
           </button>
         </div>
       </div>
@@ -132,10 +132,10 @@ export default function PricingPlans() {
           return (
             <div
               key={plan.id}
-              className={`relative rounded-3xl p-7 sm:p-9 flex flex-col justify-between transition-all duration-300 shadow-2xl ${
+              className={`relative rounded-3xl p-7 sm:p-9 flex flex-col justify-between transition-all duration-300 shadow-xl ${
                 plan.isFeatured
-                  ? "bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 border-2 border-orange-500 shadow-orange-500/20 lg:-translate-y-2"
-                  : "bg-slate-900/80 border border-slate-800 hover:border-slate-700"
+                  ? "bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 border-2 border-orange-500 shadow-orange-500/20 lg:-translate-y-2 text-white"
+                  : "bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
               }`}
             >
               {/* Badge Destacado */}
@@ -147,32 +147,32 @@ export default function PricingPlans() {
 
               <div className="space-y-6">
                 <div>
-                  <span className="text-[11px] font-mono font-bold tracking-widest uppercase text-orange-400">
+                  <span className="text-[11px] font-mono font-bold tracking-widest uppercase text-orange-600 dark:text-orange-400">
                     {plan.tagline}
                   </span>
-                  <h3 className="text-2xl font-black text-white mt-1">{plan.name}</h3>
-                  <p className="text-xs text-slate-300 mt-2 leading-relaxed min-h-[36px]">
+                  <h3 className={`text-2xl font-black mt-1 ${plan.isFeatured ? "text-white" : "text-slate-900 dark:text-white"}`}>{plan.name}</h3>
+                  <p className={`text-xs mt-2 leading-relaxed min-h-[36px] ${plan.isFeatured ? "text-slate-300" : "text-slate-600 dark:text-slate-300"}`}>
                     {plan.description}
                   </p>
                 </div>
 
                 {/* Precio */}
-                <div className="py-4 border-y border-slate-800/80">
+                <div className={`py-4 border-y ${plan.isFeatured ? "border-slate-800/80" : "border-slate-200 dark:border-slate-800/80"}`}>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs text-slate-500 line-through font-semibold">
+                    <span className="text-xs text-slate-400 dark:text-slate-500 line-through font-semibold">
                       ${plan.originalPriceMonthly.toLocaleString("es-CL")} / mes
                     </span>
-                    <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
                       Precio Oferta
                     </span>
                   </div>
                   <div className="flex items-baseline gap-1.5">
-                    <span className="text-4xl sm:text-5xl font-black text-white tracking-tight">
+                    <span className={`text-4xl sm:text-5xl font-black tracking-tight ${plan.isFeatured ? "text-white" : "text-slate-900 dark:text-white"}`}>
                       ${currentPrice.toLocaleString("es-CL")}
                     </span>
-                    <span className="text-xs text-slate-400 font-medium">CLP + IVA / mes</span>
+                    <span className={`text-xs font-medium ${plan.isFeatured ? "text-slate-400" : "text-slate-500 dark:text-slate-400"}`}>CLP + IVA / mes</span>
                   </div>
-                  <div className="text-[11px] text-slate-400 mt-1 font-medium">
+                  <div className={`text-[11px] mt-1 font-medium ${plan.isFeatured ? "text-slate-400" : "text-slate-500 dark:text-slate-400"}`}>
                     {billingCycle === "anual"
                       ? "Facturado anualmente con 10% de descuento incluido"
                       : "Suscripción mes a mes · Cero contratos de permanencia"}
@@ -181,20 +181,20 @@ export default function PricingPlans() {
 
                 {/* Bono destacado */}
                 {plan.bonusText && (
-                  <div className="p-3.5 rounded-2xl bg-orange-500/10 border border-orange-500/30 text-xs text-orange-200 font-semibold leading-relaxed">
+                  <div className={`p-3.5 rounded-2xl text-xs font-semibold leading-relaxed ${plan.isFeatured ? "bg-orange-500/10 border border-orange-500/30 text-orange-200" : "bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/30 text-orange-800 dark:text-orange-200"}`}>
                     {plan.bonusText}
                   </div>
                 )}
 
                 {/* Lista de Features */}
                 <div className="space-y-3">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+                  <span className={`text-[11px] font-bold uppercase tracking-wider block ${plan.isFeatured ? "text-slate-400" : "text-slate-500 dark:text-slate-400"}`}>
                     Qué incluye tu plan:
                   </span>
-                  <ul className="space-y-2.5 text-xs text-slate-300">
+                  <ul className={`space-y-2.5 text-xs ${plan.isFeatured ? "text-slate-300" : "text-slate-600 dark:text-slate-300"}`}>
                     {plan.features.map((feat, idx) => (
                       <li key={idx} className="flex items-start gap-2.5">
-                        <span className="text-emerald-400 font-bold mt-0.5 shrink-0">
+                        <span className="text-emerald-500 dark:text-emerald-400 font-bold mt-0.5 shrink-0">
                           <FaCheck className="text-[10px]" />
                         </span>
                         <span className="leading-snug">{feat}</span>
@@ -205,7 +205,7 @@ export default function PricingPlans() {
               </div>
 
               {/* Botón CTA del Plan */}
-              <div className="pt-8 mt-6 border-t border-slate-800/80">
+              <div className={`pt-8 mt-6 border-t ${plan.isFeatured ? "border-slate-800/80" : "border-slate-200 dark:border-slate-800/80"}`}>
                 {plan.ctaHref.startsWith("http") ? (
                   <a
                     href={plan.ctaHref}
@@ -214,7 +214,7 @@ export default function PricingPlans() {
                     className={`w-full py-4 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all shadow-xl text-center ${
                       plan.isFeatured
                         ? "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-orange-500/30 hover:-translate-y-0.5"
-                        : "bg-slate-800 hover:bg-slate-700 text-white border border-slate-700"
+                        : "bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white border border-slate-800 dark:border-slate-700"
                     }`}
                   >
                     <FaWhatsapp className="text-base" /> {plan.ctaText}
@@ -225,7 +225,7 @@ export default function PricingPlans() {
                     className={`w-full py-4 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all shadow-xl text-center ${
                       plan.isFeatured
                         ? "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-orange-500/30 hover:-translate-y-0.5"
-                        : "bg-slate-800 hover:bg-slate-700 text-white border border-slate-700"
+                        : "bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white border border-slate-800 dark:border-slate-700"
                     }`}
                   >
                     <FaRocket className="text-xs" /> {plan.ctaText}
@@ -239,17 +239,17 @@ export default function PricingPlans() {
 
       {/* 🛡️ Garantía Cero Riesgo de 7 Días */}
       <div
-        className="max-w-3xl mx-auto p-6 sm:p-8 rounded-3xl bg-slate-900/90 border border-emerald-500/40 shadow-xl shadow-emerald-500/10 flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left"
+        className="max-w-3xl mx-auto p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900/90 border border-emerald-500/40 shadow-xl shadow-emerald-500/10 flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left"
         data-reveal
       >
-        <div className="w-14 h-14 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-2xl shrink-0">
+        <div className="w-14 h-14 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-2xl shrink-0">
           <FaShieldAlt />
         </div>
         <div className="space-y-1.5 flex-1">
-          <h4 className="text-base sm:text-lg font-black text-white">
+          <h4 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
             Garantía Cero Riesgo de 7 Días
           </h4>
-          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
             Si en tu primera semana sientes que el sistema no te ahorra al menos <strong>10 horas de trabajo al mes</strong> o
             no quedas 100% satisfecho, te devolvemos el <strong>100% de tu dinero sin preguntas</strong>. Sin contratos de amarre.
           </p>
@@ -266,17 +266,17 @@ export default function PricingPlans() {
 
       {/* Banner Corporativo / Planes a la Medida */}
       <div
-        className="max-w-4xl mx-auto p-6 sm:p-8 rounded-3xl bg-slate-950 border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-6 text-center sm:text-left"
+        className="max-w-4xl mx-auto p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-6 text-center sm:text-left shadow-sm"
         data-reveal
       >
         <div className="space-y-1">
-          <span className="text-xs font-bold uppercase tracking-wider text-orange-400">
+          <span className="text-xs font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">
             ¿Manejas más marcas o eres una agencia?
           </span>
-          <h4 className="text-base sm:text-lg font-black text-white">
+          <h4 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
             Planes a la medida para agencias y franquicias con múltiples sucursales
           </h4>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Habilitamos cuentas multi-marca con límites ampliados y tarifas especiales por volumen.
           </p>
         </div>
@@ -284,7 +284,7 @@ export default function PricingPlans() {
           href={`https://wa.me/${WA_NUMBER}?text=%C2%A1Hola!%20Represento%20a%20una%20agencia%2Ffranquicia%20y%20necesito%20un%20plan%20a%20la%20medida%20de%20SocialPilot%20by%20Santisoft.`}
           target="_blank"
           rel="noopener noreferrer"
-          className="px-6 py-3.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold border border-slate-700 shrink-0 transition-all"
+          className="px-6 py-3.5 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-900 dark:text-white text-xs font-bold border border-slate-200 dark:border-slate-700 shrink-0 transition-all"
         >
           Cotizar Plan Agencia ➔
         </a>

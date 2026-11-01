@@ -268,7 +268,7 @@ export default function PropuestaLandingPage() {
   };
 
   return (
-    <div className="landing-page-root relative overflow-x-hidden bg-[#090D16]">
+    <div className="landing-page-root relative overflow-x-hidden">
 
       {/* 1. Promo Banner Oficial de SocialPilot */}
       <div className="promo">
@@ -295,16 +295,16 @@ export default function PropuestaLandingPage() {
               Exclusivo para PyMEs y Negocios en Chile <span className="freq">·</span> Activo 24/7 🟢
             </span>
 
-            <h1 className="lg:text-left text-center leading-[1.12] mt-5 text-3xl sm:text-5xl lg:text-[50px] font-black tracking-tight text-white max-w-xl">
+            <h1 className="lg:text-left text-center leading-[1.12] mt-5 text-3xl sm:text-5xl lg:text-[50px] font-black tracking-tight text-slate-900 dark:text-white max-w-xl">
               El contenido de todo tu mes listo{" "}
               <span className="text-[#FF6B00]">en 5 minutos</span> — por una fracción de lo que cobra una agencia.
             </h1>
 
             <p
-              className="sub lg:text-left text-center lg:mx-0 mx-auto mt-4 text-base sm:text-lg leading-relaxed max-w-xl text-slate-300"
+              className="sub lg:text-left text-center lg:mx-0 mx-auto mt-4 text-base sm:text-lg leading-relaxed max-w-xl text-slate-600 dark:text-slate-300"
             >
               Pega tu web o tu Instagram. Nuestros agentes extraen la identidad de tu marca,{" "}
-              <strong className="text-white font-semibold">
+              <strong className="text-slate-900 dark:text-white font-semibold">
                 revisan los anuncios que ya le funcionan a tu competencia
               </strong>{" "}
               y te dejan el mes completo de carruseles, afiches y reels listos para publicar.
@@ -323,7 +323,7 @@ export default function PropuestaLandingPage() {
                 href="https://wa.me/56934428848?text=%C2%A1Hola%20SocialPilot!%20Quiero%20recibir%20los%203%20posts%20de%20prueba%20gratis%20para%20mi%20negocio%20por%20WhatsApp.%20Mi%20rubro%20es%3A%20"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn btn-outline w-full sm:w-auto justify-center text-center !px-6 !py-4 !font-bold text-slate-200 border-slate-700 hover:border-slate-500 hover:text-white rounded-2xl transition-all flex items-center gap-2 cursor-pointer"
+                className="btn btn-outline w-full sm:w-auto justify-center text-center !px-6 !py-4 !font-bold text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:border-slate-500 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-transparent rounded-2xl transition-all flex items-center gap-2 cursor-pointer shadow-sm"
               >
                 <span>💬</span> Ver muestra gratis por WhatsApp
               </a>
@@ -331,28 +331,28 @@ export default function PropuestaLandingPage() {
 
             {/* Píldoras de Confianza Claras (Sin jerga técnica, legibilidad 100% PyME) */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 w-full mt-7 text-xs">
-              <span className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700/80 text-slate-200 font-medium">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0 shadow-[0_0_8px_#34d399]" />
+              <span className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-200 font-medium shadow-sm">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 shadow-[0_0_8px_#10b981]" />
                 <span className="truncate">Aprobación por WhatsApp</span>
               </span>
-              <span className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700/80 text-slate-200 font-medium">
-                <span className="w-2 h-2 rounded-full bg-orange-400 shrink-0 shadow-[0_0_8px_#fb923c]" />
+              <span className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-200 font-medium shadow-sm">
+                <span className="w-2 h-2 rounded-full bg-orange-500 shrink-0 shadow-[0_0_8px_#f97316]" />
                 <span className="truncate">Espía de competencia</span>
               </span>
-              <span className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700/80 text-slate-200 font-medium">
-                <span className="w-2 h-2 rounded-full bg-sky-400 shrink-0" />
+              <span className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-200 font-medium shadow-sm">
+                <span className="w-2 h-2 rounded-full bg-sky-500 shrink-0" />
                 <span className="truncate">Instagram, TikTok y FB</span>
               </span>
-              <span className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700/80 text-slate-200 font-medium">
-                <span className="w-2 h-2 rounded-full bg-indigo-400 shrink-0" />
+              <span className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-200 font-medium shadow-sm">
+                <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0" />
                 <span className="truncate">Textos que no se cortan</span>
               </span>
-              <span className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700/80 text-slate-200 font-medium">
-                <span className="w-2 h-2 rounded-full bg-teal-400 shrink-0" />
+              <span className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-200 font-medium shadow-sm">
+                <span className="w-2 h-2 rounded-full bg-teal-500 shrink-0" />
                 <span className="truncate">Hashtags y copys seguros</span>
               </span>
-              <span className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-slate-900/80 border border-slate-700/80 text-slate-200 font-medium">
-                <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
+              <span className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-200 font-medium shadow-sm">
+                <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
                 <span className="truncate">Listo para publicar en 1 clic</span>
               </span>
             </div>
@@ -426,16 +426,16 @@ export default function PropuestaLandingPage() {
               </div>
 
               {/* Notificación Flotante Realista de WhatsApp de Aprobación */}
-              <div className="absolute -bottom-5 -left-3 sm:-left-8 z-30 bg-slate-900/95 backdrop-blur-xl border border-emerald-500/40 rounded-2xl p-3 shadow-2xl flex items-center gap-3 max-w-[270px] sm:max-w-[310px] pointer-events-none">
+              <div className="absolute -bottom-5 -left-3 sm:-left-8 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-emerald-500/40 rounded-2xl p-3 shadow-2xl flex items-center gap-3 max-w-[270px] sm:max-w-[310px] pointer-events-none">
                 <div className="w-9 h-9 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 text-base shadow-md shadow-emerald-500/30">
                   💬
                 </div>
                 <div className="text-left text-xs leading-tight">
-                  <div className="flex items-center justify-between gap-2 text-[10px] text-emerald-400 font-bold">
+                  <div className="flex items-center justify-between gap-2 text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">
                     <span>WhatsApp · SocialPilot</span>
                     <span className="text-slate-400 font-normal">Ahora</span>
                   </div>
-                  <p className="text-slate-200 font-medium text-[11px] mt-0.5">
+                  <p className="text-slate-800 dark:text-slate-200 font-medium text-[11px] mt-0.5">
                     "Tus agentes prepararon 3 publicaciones listas para tu negocio. ¿Aprobamos?"
                   </p>
                 </div>
@@ -451,7 +451,7 @@ export default function PropuestaLandingPage() {
             style={{
               background: "var(--panel)",
               border: "1px solid var(--line-strong)",
-              boxShadow: "0 24px 60px rgba(0,0,0,0.45)",
+              boxShadow: "0 24px 60px rgba(0,0,0,0.15)",
             }}
           >
             <div
@@ -475,7 +475,7 @@ export default function PropuestaLandingPage() {
                   className={`px-3.5 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
                     heroDemo === "carrusel"
                       ? "bg-[#FF6B00] text-white shadow-md shadow-orange-500/30"
-                      : "bg-slate-900/70 text-slate-300 border border-slate-700/80 hover:border-orange-500/50"
+                      : "bg-slate-100 dark:bg-slate-900/70 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:border-orange-500/50"
                   }`}
                 >
                   🎨 Crear un carrusel (Desde tu web)
@@ -486,7 +486,7 @@ export default function PropuestaLandingPage() {
                   className={`px-3.5 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
                     heroDemo === "competencia"
                       ? "bg-[#FF6B00] text-white shadow-md shadow-orange-500/30"
-                      : "bg-slate-900/70 text-slate-300 border border-slate-700/80 hover:border-orange-500/50"
+                      : "bg-slate-100 dark:bg-slate-900/70 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:border-orange-500/50"
                   }`}
                 >
                   🔥 Adaptar un post de tu competencia
@@ -497,7 +497,7 @@ export default function PropuestaLandingPage() {
                   className={`px-3.5 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
                     heroDemo === "semana"
                       ? "bg-[#FF6B00] text-white shadow-md shadow-orange-500/30"
-                      : "bg-slate-900/70 text-slate-300 border border-slate-700/80 hover:border-orange-500/50"
+                      : "bg-slate-100 dark:bg-slate-900/70 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 hover:border-orange-500/50"
                   }`}
                 >
                   📅 Tu semana de contenido
@@ -511,7 +511,7 @@ export default function PropuestaLandingPage() {
                   className="p-4 rounded-2xl space-y-1.5"
                   style={{ background: "var(--bg)", border: "1px solid var(--line)" }}
                 >
-                  <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-orange-400">
+                  <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">
                     Tú pides en 1 línea:
                   </span>
                   <p
@@ -530,10 +530,10 @@ export default function PropuestaLandingPage() {
                   }}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-bold text-emerald-400">
+                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
                       ✓ Respuesta de nuestros agentes:
                     </span>
-                    <span className="font-mono text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-orange-500/20 text-orange-300 border border-orange-500/30">
+                    <span className="font-mono text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-orange-500/15 dark:bg-orange-500/20 text-orange-700 dark:text-orange-300 border border-orange-500/30">
                       {currentHero.badge}
                     </span>
                   </div>
@@ -636,7 +636,7 @@ export default function PropuestaLandingPage() {
       {/* ===================================================================== */}
       {/* 5. LOS 4 PASOS VISUALES ("ASÍ TRABAJA TU NUEVO EQUIPO DE AGENTES")    */}
       {/* ===================================================================== */}
-      <section className="py-16 border-t border-slate-800/70">
+      <section className="py-16 border-t border-slate-200 dark:border-slate-800/70">
         <div className="wrap">
           <div className="section-head center" data-reveal>
             <span className="eyebrow">Cómo funciona · Paso a paso</span>
@@ -660,7 +660,7 @@ export default function PropuestaLandingPage() {
                 style={{ background: "var(--bg)", border: "1px solid var(--line)" }}
               >
                 <div className="flex items-center gap-2.5 truncate">
-                  <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 font-mono font-bold text-xs">
+                  <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-mono font-bold text-xs">
                     ✓ ADN Extraído
                   </span>
                   <span className="font-mono text-xs truncate" style={{ color: "var(--ink-dim)" }}>
@@ -668,9 +668,9 @@ export default function PropuestaLandingPage() {
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="w-4 h-4 rounded-full bg-[#FF6B00] border border-white/20" />
-                  <span className="w-4 h-4 rounded-full bg-[#38BDF8] border border-white/20" />
-                  <span className="w-4 h-4 rounded-full bg-[#22C55E] border border-white/20" />
+                  <span className="w-4 h-4 rounded-full bg-[#FF6B00] border border-slate-300 dark:border-white/20" />
+                  <span className="w-4 h-4 rounded-full bg-[#38BDF8] border border-slate-300 dark:border-white/20" />
+                  <span className="w-4 h-4 rounded-full bg-[#22C55E] border border-slate-300 dark:border-white/20" />
                 </div>
               </div>
             </div>
@@ -685,12 +685,12 @@ export default function PropuestaLandingPage() {
             >
               <div>
                 <div className="flex items-center justify-between gap-2">
-                  <span className="pillar-tag !text-orange-400">
+                  <span className="pillar-tag !text-orange-600 dark:!text-orange-400">
                     PASO 02 · ESCÁNER DE COMPETENCIA
                   </span>
                   <a
                     href="#escaner-competencia"
-                    className="text-xs font-bold text-orange-400 hover:underline"
+                    className="text-xs font-bold text-orange-600 dark:text-orange-400 hover:underline"
                   >
                     Probar abajo ↓
                   </a>
@@ -705,7 +705,7 @@ export default function PropuestaLandingPage() {
                 style={{ background: "var(--bg)", border: "1px solid var(--line)" }}
               >
                 <div className="text-xs">
-                  <strong className="text-orange-400">🔥 Ganador detectado: </strong>
+                  <strong className="text-orange-600 dark:text-orange-400">🔥 Ganador detectado: </strong>
                   <span style={{ color: "var(--ink-dim)" }}>
                     Carrusel &ldquo;3 señales antes de contratar...&rdquo; (+45 días activo)
                   </span>
@@ -736,16 +736,16 @@ export default function PropuestaLandingPage() {
                   Redes sincronizadas:
                 </span>
                 <div className="flex flex-wrap gap-1.5 text-xs font-bold">
-                  <span className="px-2.5 py-0.5 rounded-full bg-orange-500/15 text-orange-300">
+                  <span className="px-2.5 py-0.5 rounded-full bg-orange-500/15 text-orange-700 dark:text-orange-300">
                     Instagram
                   </span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-sky-500/15 text-sky-300">
+                  <span className="px-2.5 py-0.5 rounded-full bg-sky-500/15 text-sky-700 dark:text-sky-300">
                     Facebook
                   </span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300">
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
                     TikTok
                   </span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300">
+                  <span className="px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300">
                     LinkedIn
                   </span>
                 </div>
@@ -789,7 +789,7 @@ export default function PropuestaLandingPage() {
       {/* ===================================================================== */}
       {/* 6. ESCÁNER INTERACTIVO DE ANUNCIOS GANADORES DE LA COMPETENCIA        */}
       {/* ===================================================================== */}
-      <section id="escaner-competencia" className="py-20 border-t border-slate-800/80">
+      <section id="escaner-competencia" className="py-20 border-t border-slate-200 dark:border-slate-800/80">
         <div className="wrap">
           <div className="section-head center" data-reveal>
             <span className="eyebrow">Inteligencia Competitiva en 1 Clic</span>
@@ -822,26 +822,26 @@ export default function PropuestaLandingPage() {
                 <select
                   value={selectedNiche}
                   onChange={(e) => setSelectedNiche(e.target.value as NicheKey)}
-                  className="rounded-xl px-3.5 py-2.5 text-xs font-bold text-white outline-none"
+                  className="rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-800 dark:text-white outline-none cursor-pointer"
                   style={{ background: "var(--bg)", border: "1px solid var(--line-strong)" }}
                 >
-                  <option value="all">Todos los rubros</option>
-                  <option value="gastronomia">🍔 Gastronomía / Cafeterías</option>
-                  <option value="salud">🦷 Clínicas / Salud / Estética</option>
-                  <option value="retail">🛍️ Tiendas / E-commerce / Servicios</option>
+                  <option value="all" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white">Todos los rubros</option>
+                  <option value="gastronomia" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white">🍔 Gastronomía / Cafeterías</option>
+                  <option value="salud" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white">🦷 Clínicas / Salud / Estética</option>
+                  <option value="retail" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white">🛍️ Tiendas / E-commerce / Servicios</option>
                 </select>
 
                 <div
                   className="flex items-center rounded-xl px-3 py-1.5 gap-2"
                   style={{ background: "var(--bg)", border: "1px solid var(--line-strong)" }}
                 >
-                  <span className="text-xs text-orange-400 font-mono">@</span>
+                  <span className="text-xs text-orange-600 dark:text-orange-400 font-mono font-bold">@</span>
                   <input
                     type="text"
                     value={compSearch}
                     onChange={(e) => setCompSearch(e.target.value)}
                     placeholder="competidor o rubro..."
-                    className="bg-transparent text-xs text-white outline-none w-36 sm:w-44 font-medium"
+                    className="bg-transparent text-xs text-slate-900 dark:text-white placeholder-slate-400 outline-none w-36 sm:w-44 font-medium"
                   />
                   <button
                     type="button"
@@ -864,12 +864,12 @@ export default function PropuestaLandingPage() {
               >
                 <div className="flex items-center gap-2.5">
                   <span className="rrss-dot" />
-                  <span className="font-bold text-orange-200">{scanNotice}</span>
+                  <span className="font-bold text-orange-800 dark:text-orange-200">{scanNotice}</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setScanNotice(null)}
-                  className="text-orange-300 hover:text-white font-black cursor-pointer"
+                  className="text-orange-700 dark:text-orange-300 hover:text-orange-950 dark:hover:text-white font-black cursor-pointer"
                 >
                   ✕
                 </button>
@@ -887,16 +887,16 @@ export default function PropuestaLandingPage() {
                     className={`rounded-2xl p-5 flex flex-col justify-between gap-4 transition-all cursor-pointer ${
                       isSelected
                         ? "border-2 border-[#FF6B00] shadow-xl shadow-orange-500/15 scale-[1.01]"
-                        : "border border-white/10 hover:border-slate-500"
+                        : "border border-slate-200 dark:border-white/10 hover:border-orange-500/50"
                     }`}
                     style={{ background: "var(--bg)" }}
                   >
                     <div className="space-y-3 text-left">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="font-mono text-xs font-bold text-orange-400">
+                        <span className="font-mono text-xs font-bold text-orange-600 dark:text-orange-400">
                           {post.competitor}
                         </span>
-                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 text-[11px] font-bold">
+                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold">
                           {post.activeDays}
                         </span>
                       </div>
@@ -912,19 +912,19 @@ export default function PropuestaLandingPage() {
                         className="p-3.5 rounded-xl space-y-1"
                         style={{ background: "var(--panel)", border: "1px solid var(--line)" }}
                       >
-                        <span className="text-[11px] font-bold text-slate-400">
+                        <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
                           Gancho detectado:
                         </span>
-                        <p className="text-sm font-bold leading-snug text-white">
+                        <p className="text-sm font-bold leading-snug text-slate-900 dark:text-white">
                           {post.hook}
                         </p>
                       </div>
 
                       <div>
-                        <span className="text-xs font-bold text-amber-400">
+                        <span className="text-xs font-bold text-amber-600 dark:text-amber-400">
                           💡 Por qué convierte:
                         </span>
-                        <p className="text-xs mt-1 leading-relaxed text-slate-300">
+                        <p className="text-xs mt-1 leading-relaxed text-slate-600 dark:text-slate-300">
                           {post.whyItWorks}
                         </p>
                       </div>
@@ -936,7 +936,7 @@ export default function PropuestaLandingPage() {
                           <span>✓</span> Estructura Seleccionada
                         </div>
                       ) : (
-                        <div className="w-full py-2.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-300 text-xs font-bold flex items-center justify-center gap-1.5 border border-slate-700/80 transition-colors">
+                        <div className="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-900/80 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold flex items-center justify-center gap-1.5 border border-slate-200 dark:border-slate-700/80 transition-colors">
                           <span>🔍</span> Toca para ver cómo queda en tu marca
                         </div>
                       )}
@@ -960,7 +960,7 @@ export default function PropuestaLandingPage() {
                   style={{ borderBottom: "1px solid var(--line)" }}
                 >
                   <div>
-                    <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-300 font-mono text-[11px] font-bold">
+                    <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-mono text-[11px] font-bold">
                       ✓ Estructura adaptada por nuestros agentes a tu negocio
                     </span>
                     <h4 className="text-lg font-black mt-2">
@@ -982,7 +982,7 @@ export default function PropuestaLandingPage() {
                       className="p-4 rounded-xl space-y-1"
                       style={{ background: "var(--panel)", border: "1px solid var(--line)" }}
                     >
-                      <span className="font-mono text-xs font-bold text-orange-400">
+                      <span className="font-mono text-xs font-bold text-orange-600 dark:text-orange-400">
                         Nuevo Titular adaptado a Tu Marca:
                       </span>
                       <p className="text-sm font-bold">{adaptedPost.adaptedHook}</p>
@@ -991,7 +991,7 @@ export default function PropuestaLandingPage() {
                       className="p-4 rounded-xl space-y-1"
                       style={{ background: "var(--panel)", border: "1px solid var(--line)" }}
                     >
-                      <span className="font-mono text-xs font-bold text-emerald-400">
+                      <span className="font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400">
                         Llamado a la Acción (CTA):
                       </span>
                       <p className="text-xs">{adaptedPost.adaptedCTA}</p>
@@ -1022,7 +1022,7 @@ export default function PropuestaLandingPage() {
                           />
                           <span className="font-semibold">{slideText}</span>
                         </div>
-                        <span className="text-emerald-400 font-mono font-bold text-[11px]">
+                        <span className="text-emerald-600 dark:text-emerald-400 font-mono font-bold text-[11px]">
                           Listo
                         </span>
                       </div>
@@ -1038,7 +1038,7 @@ export default function PropuestaLandingPage() {
       {/* ===================================================================== */}
       {/* 7. HECHO PARA NEGOCIOS COMO EL TUYO (IDENTIFICACIÓN RÁPIDA POR RUBRO) */}
       {/* ===================================================================== */}
-      <section className="py-16 border-t border-slate-800/70">
+      <section className="py-16 border-t border-slate-200 dark:border-slate-800/70">
         <div className="wrap">
           <div className="section-head center" data-reveal>
             <span className="eyebrow">Casos de uso reales</span>
@@ -1051,7 +1051,7 @@ export default function PropuestaLandingPage() {
             {/* Caso 1: Gastronomía & Locales */}
             <div className="pillar a !p-6 flex flex-col justify-between gap-4 overflow-hidden relative">
               <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                <div className="w-full sm:w-28 h-28 rounded-2xl overflow-hidden shrink-0 border border-white/10 relative shadow-md">
+                <div className="w-full sm:w-28 h-28 rounded-2xl overflow-hidden shrink-0 border border-slate-200 dark:border-white/10 relative shadow-md">
                   <img
                     src="https://images.unsplash.com/photo-1550547660-d9450f859349?w=500&q=80"
                     alt="Gastronomía y Locales"
@@ -1063,25 +1063,25 @@ export default function PropuestaLandingPage() {
                 </div>
                 <div className="space-y-1">
                   <span className="pillar-tag">🍔 GASTRONOMÍA & LOCALES</span>
-                  <h3 className="!text-xl font-black text-white">Restaurantes, cafeterías y locales de comida</h3>
-                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                  <h3 className="!text-xl font-black text-slate-900 dark:text-white">Restaurantes, cafeterías y locales de comida</h3>
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
                     Muestra las promociones de la semana, llena mesas en días lentos y canaliza pedidos directo a tu WhatsApp.
                   </p>
                 </div>
               </div>
               <div
-                className="p-3.5 rounded-xl text-xs italic text-slate-300 flex items-center justify-between gap-2"
+                className="p-3.5 rounded-xl text-xs italic text-slate-700 dark:text-slate-300 flex items-center justify-between gap-2"
                 style={{ background: "var(--bg)", border: "1px solid var(--line)" }}
               >
                 <span>&ldquo;Hazme un carrusel con el combo de los jueves con 20% OFF.&rdquo;</span>
-                <span className="text-[10px] text-emerald-400 font-mono font-bold shrink-0">✓ Generado</span>
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-bold shrink-0">✓ Generado</span>
               </div>
             </div>
 
             {/* Caso 2: Tiendas y Productos */}
             <div className="pillar b !p-6 flex flex-col justify-between gap-4 overflow-hidden relative">
               <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                <div className="w-full sm:w-28 h-28 rounded-2xl overflow-hidden shrink-0 border border-white/10 relative shadow-md">
+                <div className="w-full sm:w-28 h-28 rounded-2xl overflow-hidden shrink-0 border border-slate-200 dark:border-white/10 relative shadow-md">
                   <img
                     src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&q=80"
                     alt="Venta de Productos"
@@ -1093,25 +1093,25 @@ export default function PropuestaLandingPage() {
                 </div>
                 <div className="space-y-1">
                   <span className="pillar-tag">🛍️ TIENDAS & CATÁLOGOS</span>
-                  <h3 className="!text-xl font-black text-white">E-commerce, vestuario, accesorios y hogar</h3>
-                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                  <h3 className="!text-xl font-black text-slate-900 dark:text-white">E-commerce, vestuario, accesorios y hogar</h3>
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
                     Sube la foto real de tu producto y nuestros agentes arman afiches comerciales con precio, descuento y sticker de envío.
                   </p>
                 </div>
               </div>
               <div
-                className="p-3.5 rounded-xl text-xs italic text-slate-300 flex items-center justify-between gap-2"
+                className="p-3.5 rounded-xl text-xs italic text-slate-700 dark:text-slate-300 flex items-center justify-between gap-2"
                 style={{ background: "var(--bg)", border: "1px solid var(--line)" }}
               >
                 <span>&ldquo;Arma 3 afiches para promocionar mi nueva llegada de stock.&rdquo;</span>
-                <span className="text-[10px] text-emerald-400 font-mono font-bold shrink-0">✓ Generado</span>
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-bold shrink-0">✓ Generado</span>
               </div>
             </div>
 
             {/* Caso 3: Salud, Clínicas & Estética */}
             <div className="pillar c !p-6 flex flex-col justify-between gap-4 overflow-hidden relative">
               <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                <div className="w-full sm:w-28 h-28 rounded-2xl overflow-hidden shrink-0 border border-white/10 relative shadow-md">
+                <div className="w-full sm:w-28 h-28 rounded-2xl overflow-hidden shrink-0 border border-slate-200 dark:border-white/10 relative shadow-md">
                   <img
                     src="https://images.unsplash.com/photo-1629909613654-28e377c37b09?w=500&q=80"
                     alt="Clínicas y Estética"
@@ -1123,25 +1123,25 @@ export default function PropuestaLandingPage() {
                 </div>
                 <div className="space-y-1">
                   <span className="pillar-tag">🦷 CLÍNICAS, SALUD & ESTÉTICA</span>
-                  <h3 className="!text-xl font-black text-white">Dentistas, centros de estética y especialistas</h3>
-                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                  <h3 className="!text-xl font-black text-slate-900 dark:text-white">Dentistas, centros de estética y especialistas</h3>
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
                     Transforma preguntas frecuentes en carruseles educativos que transmiten confianza médica y llenan tu agenda diaria.
                   </p>
                 </div>
               </div>
               <div
-                className="p-3.5 rounded-xl text-xs italic text-slate-300 flex items-center justify-between gap-2"
+                className="p-3.5 rounded-xl text-xs italic text-slate-700 dark:text-slate-300 flex items-center justify-between gap-2"
                 style={{ background: "var(--bg)", border: "1px solid var(--line)" }}
               >
                 <span>&ldquo;Carrusel de 4 slides explicando qué cuidados tener antes de un tratamiento.&rdquo;</span>
-                <span className="text-[10px] text-emerald-400 font-mono font-bold shrink-0">✓ Generado</span>
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-bold shrink-0">✓ Generado</span>
               </div>
             </div>
 
             {/* Caso 4: Servicios Profesionales & Agencias */}
             <div className="pillar a !p-6 flex flex-col justify-between gap-4 overflow-hidden relative">
               <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                <div className="w-full sm:w-28 h-28 rounded-2xl overflow-hidden shrink-0 border border-white/10 relative shadow-md">
+                <div className="w-full sm:w-28 h-28 rounded-2xl overflow-hidden shrink-0 border border-slate-200 dark:border-white/10 relative shadow-md">
                   <img
                     src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=500&q=80"
                     alt="Servicios Profesionales"
@@ -1153,18 +1153,18 @@ export default function PropuestaLandingPage() {
                 </div>
                 <div className="space-y-1">
                   <span className="pillar-tag">👨‍💼 SERVICIOS & AGENCIA</span>
-                  <h3 className="!text-xl font-black text-white">Inmobiliarias, consultores, abogados y marcas</h3>
-                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                  <h3 className="!text-xl font-black text-slate-900 dark:text-white">Inmobiliarias, consultores, abogados y marcas</h3>
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
                     Gestiona múltiples cuentas o posiciona tu marca personal con publicaciones profesionales sin quemar horas de tu día.
                   </p>
                 </div>
               </div>
               <div
-                className="p-3.5 rounded-xl text-xs italic text-slate-300 flex items-center justify-between gap-2"
+                className="p-3.5 rounded-xl text-xs italic text-slate-700 dark:text-slate-300 flex items-center justify-between gap-2"
                 style={{ background: "var(--bg)", border: "1px solid var(--line)" }}
               >
                 <span>&ldquo;Plan de 14 días para este cliente con copys listos para publicar.&rdquo;</span>
-                <span className="text-[10px] text-emerald-400 font-mono font-bold shrink-0">✓ Generado</span>
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-bold shrink-0">✓ Generado</span>
               </div>
             </div>
           </div>
@@ -1174,7 +1174,7 @@ export default function PropuestaLandingPage() {
       {/* ===================================================================== */}
       {/* 8. ECOSISTEMA 3 CANALES EXPLICADO EN SIMPLE (REDES + GOOGLE + WA)     */}
       {/* ===================================================================== */}
-      <section id="ecosistema" className="py-16 border-t border-slate-800/70">
+      <section id="ecosistema" className="py-16 border-t border-slate-200 dark:border-slate-800/70">
         <div className="wrap">
           <div className="section-head center" data-reveal>
             <span className="eyebrow">Ecosistema Completo · 3 Canales</span>
@@ -1207,7 +1207,7 @@ export default function PropuestaLandingPage() {
                   </span>
                 </li>
               </ul>
-              <div className="mt-3 pt-3 border-t border-slate-700/30 flex items-center justify-between text-xs">
+              <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700/30 flex items-center justify-between text-xs">
                 <span className="pillar-note !m-0">Autopublicación directa y sincronizada</span>
                 <Link href="/como-funciona" className="text-orange-400 font-bold hover:underline">
                   Ver ejemplos visuales ➔
@@ -1283,7 +1283,7 @@ export default function PropuestaLandingPage() {
       {/* ===================================================================== */}
       {/* 11. ANCLAJE DE PRECIO CHILENO: TABLA DE 3 COLUMNAS EN PESOS (CLP)     */}
       {/* ===================================================================== */}
-      <section id="comparativa" className="py-20 border-t border-slate-800/80">
+      <section id="comparativa" className="py-20 border-t border-slate-200 dark:border-slate-800/80">
         <div className="wrap">
           <div className="section-head center" data-reveal>
             <span className="eyebrow">Comparativa Directa · Números Reales</span>
@@ -1294,7 +1294,7 @@ export default function PropuestaLandingPage() {
             </h2>
           </div>
           <p
-            className="text-center max-w-2xl mx-auto -mt-6 mb-12 text-slate-300 text-sm sm:text-base leading-relaxed"
+            className="text-center max-w-2xl mx-auto -mt-6 mb-12 text-slate-600 dark:text-slate-300 text-sm sm:text-base leading-relaxed"
             data-reveal
           >
             Hagamos números claros para el dueño de negocio en Chile. ¿Cuánto te cuesta realmente mantener tus redes activas todos los días?
@@ -1302,106 +1302,106 @@ export default function PropuestaLandingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch" data-reveal>
             {/* Columna 1: Hacerlo tú mismo */}
-            <div className="p-7 rounded-3xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between space-y-6">
+            <div className="p-7 rounded-3xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex flex-col justify-between space-y-6 shadow-sm">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-black uppercase tracking-wider text-slate-400">
+                  <span className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
                     Opción 1
                   </span>
-                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400">
+                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-transparent">
                     Hacerlo a mano
                   </span>
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">Hacerlo tú mismo</h3>
-                  <div className="mt-2 text-3xl font-black text-slate-200">
-                    $0 <span className="text-sm font-normal text-slate-400">CLP / mes</span>
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-white">Hacerlo tú mismo</h3>
+                  <div className="mt-2 text-3xl font-black text-slate-900 dark:text-slate-200">
+                    $0 <span className="text-sm font-normal text-slate-500 dark:text-slate-400">CLP / mes</span>
                   </div>
-                  <p className="text-xs text-red-400 font-semibold mt-1">
+                  <p className="text-xs text-rose-600 dark:text-red-400 font-semibold mt-1">
                     &ldquo;Gratis&rdquo; en dinero, carísimo en tiempo y estrés
                   </p>
                 </div>
-                <ul className="space-y-3 text-xs text-slate-300 pt-2 border-t border-slate-800">
+                <ul className="space-y-3 text-xs text-slate-600 dark:text-slate-300 pt-2 border-t border-slate-200 dark:border-slate-800">
                   <li className="flex items-start gap-2">
-                    <span className="text-red-400 font-bold">✕</span>
+                    <span className="text-rose-600 dark:text-red-400 font-bold">✕</span>
                     <span>
                       Pierdes <strong>+15 horas al mes</strong> pensando qué publicar y buscando fotos.
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-red-400 font-bold">✕</span>
+                    <span className="text-rose-600 dark:text-red-400 font-bold">✕</span>
                     <span>
                       <strong>Estrés el domingo en la noche</strong> improvisando diseños caseros.
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-red-400 font-bold">✕</span>
+                    <span className="text-rose-600 dark:text-red-400 font-bold">✕</span>
                     <span>
                       <strong>Redes abandonadas</strong> a la segunda semana por falta de tiempo para operar tu negocio.
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-red-400 font-bold">✕</span>
+                    <span className="text-rose-600 dark:text-red-400 font-bold">✕</span>
                     <span>
                       Cero alcance: fotos sin llamadas a la acción que nadie guarda ni compra.
                     </span>
                   </li>
                 </ul>
               </div>
-              <div className="p-3.5 rounded-2xl bg-red-950/20 border border-red-900/30 text-center text-xs text-red-300 font-medium">
+              <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-red-950/20 border border-rose-200 dark:border-red-900/30 text-center text-xs text-rose-700 dark:text-red-300 font-medium">
                 Resultado: Negocio invisible y dueño agotado.
               </div>
             </div>
 
             {/* Columna 2: Agencia Tradicional */}
-            <div className="p-7 rounded-3xl bg-slate-900/60 border border-slate-800 flex flex-col justify-between space-y-6">
+            <div className="p-7 rounded-3xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex flex-col justify-between space-y-6 shadow-sm">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-black uppercase tracking-wider text-slate-400">
+                  <span className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
                     Opción 2
                   </span>
-                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-red-950/60 border border-red-900/40 text-red-300">
+                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-rose-50 dark:bg-red-950/60 border border-rose-200 dark:border-red-900/40 text-rose-700 dark:text-red-300">
                     Costoso y lento
                   </span>
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">Agencia Tradicional / CM</h3>
-                  <div className="mt-2 text-2xl sm:text-3xl font-black text-white">
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-white">Agencia Tradicional / CM</h3>
+                  <div className="mt-2 text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
                     $450.000 – $800.000{" "}
-                    <span className="text-xs sm:text-sm font-normal text-slate-400">CLP / mes</span>
+                    <span className="text-xs sm:text-sm font-normal text-slate-500 dark:text-slate-400">CLP / mes</span>
                   </div>
-                  <p className="text-xs text-red-400 font-semibold mt-1">
+                  <p className="text-xs text-rose-600 dark:text-red-400 font-semibold mt-1">
                     Presupuesto inalcanzable para la mayoría de PyMEs
                   </p>
                 </div>
-                <ul className="space-y-3 text-xs text-slate-300 pt-2 border-t border-slate-800">
+                <ul className="space-y-3 text-xs text-slate-600 dark:text-slate-300 pt-2 border-t border-slate-200 dark:border-slate-800">
                   <li className="flex items-start gap-2">
-                    <span className="text-red-400 font-bold">✕</span>
+                    <span className="text-rose-600 dark:text-red-400 font-bold">✕</span>
                     <span>
                       <strong>Reuniones lentas</strong> e interminables hilos de correos para coordinar 8 posts al mes.
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-red-400 font-bold">✕</span>
+                    <span className="text-rose-600 dark:text-red-400 font-bold">✕</span>
                     <span>
                       <strong>Textos genéricos y fríos</strong> redactados por personas que no conocen la realidad de tu rubro.
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-red-400 font-bold">✕</span>
+                    <span className="text-rose-600 dark:text-red-400 font-bold">✕</span>
                     <span>
                       Tardan <strong>días en responder</strong> cuando necesitas publicar una promo urgente para el fin de semana.
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-red-400 font-bold">✕</span>
+                    <span className="text-rose-600 dark:text-red-400 font-bold">✕</span>
                     <span>
                       <strong>Contratos largos</strong> amarrados por 6 a 12 meses sin garantía de resultados.
                     </span>
                   </li>
                 </ul>
               </div>
-              <div className="p-3.5 rounded-2xl bg-red-950/20 border border-red-900/30 text-center text-xs text-red-300 font-medium">
+              <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-red-950/20 border border-rose-200 dark:border-red-900/30 text-center text-xs text-rose-700 dark:text-red-300 font-medium">
                 Resultado: Pagar una fortuna por un servicio rígido.
               </div>
             </div>

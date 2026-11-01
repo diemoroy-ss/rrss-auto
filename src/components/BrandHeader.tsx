@@ -56,7 +56,7 @@ export default function BrandHeader() {
   }, [mobileMenuOpen]);
 
   return (
-    <nav className="brand-nav sticky top-0 z-50 bg-slate-950/95 backdrop-blur-md border-b border-slate-800/80">
+    <nav className="brand-nav sticky top-0 z-50 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800/80">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand Lockup (Logo Clean de SocialPilot by Santisoft) */}
         <div className="flex items-center gap-3">
@@ -72,7 +72,7 @@ export default function BrandHeader() {
           <div className="hidden md:block relative" ref={switcherRef}>
             <button
               onClick={() => setSwitcherOpen((prev) => !prev)}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-slate-800 bg-slate-900/80 hover:bg-slate-850 hover:border-slate-700 text-slate-300 text-xs font-medium transition-all"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/80 hover:bg-slate-200 dark:hover:bg-slate-850 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-medium transition-all"
               aria-label="Selector de Ecosistema Santisoft"
               aria-expanded={switcherOpen}
             >
@@ -82,7 +82,7 @@ export default function BrandHeader() {
                 viewBox="0 0 16 16"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
-                className="text-orange-400"
+                className="text-orange-500 dark:text-orange-400"
               >
                 <rect x="2" y="2" width="5" height="5" rx="1.5" fill="currentColor" />
                 <rect x="9" y="2" width="5" height="5" rx="1.5" fill="currentColor" />
@@ -104,49 +104,49 @@ export default function BrandHeader() {
 
             {/* Desktop Ecosystem Popover */}
             {switcherOpen && (
-              <div className="absolute top-full left-0 mt-2 w-72 rounded-2xl bg-slate-900 border border-slate-700/80 p-3 shadow-2xl z-50 space-y-2">
+              <div className="absolute top-full left-0 mt-2 w-72 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 p-3 shadow-2xl z-50 space-y-2">
                 <div className="px-2 py-1">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-orange-400">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-orange-600 dark:text-orange-400">
                     Ecosistema Santisoft
                   </span>
-                  <p className="text-xs text-slate-400">Soluciones de software &amp; automatización</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Soluciones de software &amp; automatización</p>
                 </div>
 
-                <div className="h-px bg-slate-800" />
+                <div className="h-px bg-slate-200 dark:bg-slate-800" />
 
                 <div className="space-y-1">
                   <div className="p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/25">
-                    <div className="flex items-center justify-between text-xs font-bold text-white">
+                    <div className="flex items-center justify-between text-xs font-bold text-slate-900 dark:text-white">
                       <span>SocialPilot</span>
                       <span className="text-[9px] bg-orange-500 text-slate-950 font-black px-1.5 py-0.5 rounded">
                         Actual
                       </span>
                     </div>
-                    <p className="text-[11px] text-slate-400 mt-0.5">Publicación y piezas automáticas</p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Publicación y piezas automáticas</p>
                   </div>
 
                   <a
                     href="https://agentes.santisoft.cl"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block p-2.5 rounded-xl hover:bg-slate-800/80 text-xs text-slate-300 transition-colors"
+                    className="block p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/80 text-xs text-slate-700 dark:text-slate-300 transition-colors"
                     onClick={() => setSwitcherOpen(false)}
                   >
-                    <div className="flex items-center justify-between font-bold text-white">
+                    <div className="flex items-center justify-between font-bold text-slate-900 dark:text-white">
                       <span>Agentes para Empresas</span>
-                      <span className="text-cyan-400 text-xs">↗</span>
+                      <span className="text-cyan-500 dark:text-cyan-400 text-xs">↗</span>
                     </div>
-                    <p className="text-[11px] text-slate-400 mt-0.5">Automatización inteligente de operaciones</p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Automatización inteligente de operaciones</p>
                   </a>
                 </div>
 
-                <div className="h-px bg-slate-800" />
+                <div className="h-px bg-slate-200 dark:bg-slate-800" />
 
                 <a
                   href="https://santisoft.cl"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-between px-2 py-1 text-xs text-slate-400 hover:text-white transition-colors"
+                  className="flex items-center justify-between px-2 py-1 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
                   onClick={() => setSwitcherOpen(false)}
                 >
                   <span>Explorar Santisoft.cl</span>
@@ -161,35 +161,35 @@ export default function BrandHeader() {
         <div className="hidden md:flex items-center gap-6">
           <Link
             href="/como-funciona"
-            className="text-sm font-medium text-slate-300 hover:text-white transition-colors"
+            className="text-sm font-medium text-slate-700 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white transition-colors"
           >
             Cómo Funciona
           </Link>
 
           <Link
             href="/biblioteca"
-            className="text-sm font-medium text-slate-300 hover:text-white transition-colors"
+            className="text-sm font-medium text-slate-700 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white transition-colors"
           >
             Biblioteca
           </Link>
 
           <Link
             href="/triptico"
-            className="text-sm font-medium text-slate-300 hover:text-white transition-colors"
+            className="text-sm font-medium text-slate-700 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white transition-colors"
           >
             Tríptico
           </Link>
 
           <a
             href="/#planes"
-            className="text-sm font-medium text-slate-300 hover:text-white transition-colors"
+            className="text-sm font-medium text-slate-700 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white transition-colors"
           >
             Planes
           </a>
 
           <Link
             href="/login"
-            className="text-sm font-medium text-slate-300 hover:text-white transition-colors"
+            className="text-sm font-medium text-slate-700 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white transition-colors"
           >
             Acceso Cliente
           </Link>
@@ -210,7 +210,7 @@ export default function BrandHeader() {
 
           <button
             onClick={() => setMobileMenuOpen(true)}
-            className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-700/80 flex items-center justify-center text-slate-200 hover:text-white active:scale-95 transition-all"
+            className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 flex items-center justify-center text-slate-700 dark:text-slate-200 hover:text-slate-950 dark:hover:text-white active:scale-95 transition-all"
             aria-label="Abrir menú de navegación"
             aria-expanded={mobileMenuOpen}
           >

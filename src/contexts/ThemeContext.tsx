@@ -13,19 +13,19 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme: "dark",
+  theme: "light",
   toggleTheme: () => {},
   setTheme: () => {},
 });
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("dark");
+  const [theme, setThemeState] = useState<Theme>("light");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // Read saved preference from localStorage or system preference
+    // Read saved preference from localStorage or default to light
     const saved = localStorage.getItem("santisoft_theme") as Theme | null;
-    const initialTheme = saved === "light" || saved === "dark" ? saved : "dark";
+    const initialTheme = saved === "light" || saved === "dark" ? saved : "light";
     
     setThemeState(initialTheme);
     applyTheme(initialTheme);

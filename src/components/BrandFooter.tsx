@@ -79,7 +79,7 @@ export default function BrandFooter() {
                   rel="noopener noreferrer"
                   className="footer-external-link"
                 >
-                  <span>Agentes IA</span>
+                  <span>Agentes para Empresas</span>
                   <span className="footer-arrow">↗</span>
                 </a>
               </li>
