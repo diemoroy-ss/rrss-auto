@@ -46,6 +46,10 @@ interface StrategyPost {
   isPromotion?: boolean;
   promoImageMode?: 'with_text' | 'without_text';
   isCommercialPoster?: boolean;
+  layoutPosition?: 'split_left' | 'split_right' | 'top_banner' | 'recipe_ingredients';
+  fontStyle?: 'bold_modern' | 'elegant_serif' | 'script_handwritten' | 'clean_minimal' | 'serif_script_mix';
+  textFormatLabel?: string;
+  artDirectionReasoning?: string;
   videoCommand?: string;
   videoTemplateName?: string;
   videoCategory?: string;
@@ -105,7 +109,7 @@ export default function EstrategiaPage() {
   const [selectedCatalogItemIds, setSelectedCatalogItemIds] = useState<string[]>([]);
   const [includePromotionsInStrategy, setIncludePromotionsInStrategy] = useState<boolean>(true);
   const [selectedPromotionIds, setSelectedPromotionIds] = useState<string[]>([]);
-  const [promoImageMode, setPromoImageMode] = useState<'with_text' | 'without_text' | 'mixed'>('mixed');
+  const [promoImageMode, setPromoImageMode] = useState<'agent_auto' | 'with_text' | 'without_text' | 'mixed'>('agent_auto');
   const [loadingCatalog, setLoadingCatalog] = useState<boolean>(false);
   const [catalogUsage, setCatalogUsage] = useState<'mixed' | 'all' | 'none'>('mixed');
   const [isCommercialPosterOnly, setIsCommercialPosterOnly] = useState<boolean>(false);
@@ -567,6 +571,10 @@ export default function EstrategiaPage() {
                 isPromotion: Boolean(post.isPromotion || matchedItem?.type === 'promocion'),
                 promoImageMode: effectivePromoImgMode || null,
                 isCommercialPoster: effectiveIsCommercialPoster,
+                layoutPosition: post.layoutPosition || null,
+                fontStyle: post.fontStyle || null,
+                textFormatLabel: post.textFormatLabel || null,
+                artDirectionReasoning: post.artDirectionReasoning || null,
                 videoCommand: post.videoCommand || null,
                 videoTemplateName: post.videoTemplateName || null,
                 videoCategory: post.videoCategory || null,
@@ -846,7 +854,25 @@ export default function EstrategiaPage() {
                           </p>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                          <button
+                            type="button"
+                            onClick={() => setPromoImageMode('agent_auto')}
+                            className={`p-3 rounded-xl border-2 text-left transition-all cursor-pointer ${
+                              promoImageMode === 'agent_auto'
+                                ? 'border-rose-600 bg-rose-50/50 shadow-xs'
+                                : 'border-slate-100 bg-slate-50 hover:border-rose-200 hover:bg-white'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs font-black text-slate-900">🤖 Automático por Agentes</span>
+                              <input type="radio" checked={promoImageMode === 'agent_auto'} onChange={() => setPromoImageMode('agent_auto')} className="accent-rose-600" />
+                            </div>
+                            <p className="text-[10px] text-slate-500 leading-snug">
+                              Nuestros agentes analizan cada imagen y deciden el mejor formato de texto (o foto limpia).
+                            </p>
+                          </button>
+
                           <button
                             type="button"
                             onClick={() => setPromoImageMode('with_text')}
@@ -893,7 +919,7 @@ export default function EstrategiaPage() {
                             }`}
                           >
                             <div className="flex items-center justify-between mb-1">
-                              <span className="text-xs font-black text-slate-900">🔄 Ambos (Con y Sin Texto)</span>
+                              <span className="text-xs font-black text-slate-900">🔄 Ambos (50/50)</span>
                               <input type="radio" checked={promoImageMode === 'mixed'} onChange={() => setPromoImageMode('mixed')} className="accent-rose-600" />
                             </div>
                             <p className="text-[10px] text-slate-500 leading-snug">
@@ -1374,38 +1400,195 @@ export default function EstrategiaPage() {
                                                 </div>
                                               </div>
 
-                                              {/* Selector rápido por post: Imagen CON texto vs SIN texto */}
+                                              {/* Selector rápido por post: Imagen CON texto vs SIN texto + Formato Tipográfico de Agentes */}
                                               {!post.format.toLowerCase().includes('reel') && !post.format.toLowerCase().includes('video') && (
-                                                <div className="flex items-center justify-between pt-2 border-t border-black/5">
-                                                  <span className="text-[10px] font-bold text-slate-600">Formato de imagen:</span>
-                                                  <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                      const currentWithText = post.promoImageMode ? post.promoImageMode === 'with_text' : Boolean(post.isCommercialPoster);
-                                                      const nextMode = currentWithText ? 'without_text' : 'with_text';
-                                                      setStrategyResult((prev) =>
-                                                        (prev || []).map((item) =>
-                                                          item === post
-                                                            ? {
-                                                                ...item,
-                                                                promoImageMode: nextMode,
-                                                                isCommercialPoster: nextMode === 'with_text',
-                                                              }
-                                                            : item
-                                                        )
-                                                      );
-                                                    }}
-                                                    className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer border ${
-                                                      (post.promoImageMode ? post.promoImageMode === 'with_text' : Boolean(post.isCommercialPoster))
-                                                        ? 'bg-rose-600 text-white border-rose-600 shadow-2xs'
-                                                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-                                                    }`}
-                                                    title="Haz clic para cambiar entre Imagen CON Texto y SIN Texto"
-                                                  >
-                                                    {(post.promoImageMode ? post.promoImageMode === 'with_text' : Boolean(post.isCommercialPoster))
-                                                      ? '🏷️ Imagen CON Texto (Click para cambiar)'
-                                                      : '📸 Imagen SIN Texto (Click para cambiar)'}
-                                                  </button>
+                                                <div className="space-y-2 pt-2 border-t border-black/5">
+                                                  <div className="flex items-center justify-between gap-2">
+                                                    <span className="text-[10px] font-bold text-slate-600">Formato de imagen:</span>
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => {
+                                                        const currentWithText = post.promoImageMode ? post.promoImageMode === 'with_text' : Boolean(post.isCommercialPoster);
+                                                        const nextMode = currentWithText ? 'without_text' : 'with_text';
+                                                        setStrategyResult((prev) =>
+                                                          (prev || []).map((item) =>
+                                                            item === post
+                                                              ? {
+                                                                  ...item,
+                                                                  promoImageMode: nextMode,
+                                                                  isCommercialPoster: nextMode === 'with_text',
+                                                                }
+                                                              : item
+                                                          )
+                                                        );
+                                                      }}
+                                                      className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer border ${
+                                                        (post.promoImageMode ? post.promoImageMode === 'with_text' : Boolean(post.isCommercialPoster))
+                                                          ? 'bg-rose-600 text-white border-rose-600 shadow-2xs'
+                                                          : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                                                      }`}
+                                                      title="Haz clic para cambiar entre Imagen CON Texto y SIN Texto"
+                                                    >
+                                                      {(post.promoImageMode ? post.promoImageMode === 'with_text' : Boolean(post.isCommercialPoster))
+                                                        ? '🏷️ Imagen CON Texto'
+                                                        : '📸 Imagen SIN Texto'}
+                                                    </button>
+                                                  </div>
+
+                                                  {(post.promoImageMode ? post.promoImageMode === 'with_text' : Boolean(post.isCommercialPoster)) && (
+                                                    <div className="p-2.5 rounded-xl bg-white/90 border border-slate-200/80 space-y-2">
+                                                      <div className="flex items-start justify-between gap-1.5">
+                                                        <div>
+                                                          <span className="text-[9px] font-black uppercase tracking-wider text-indigo-600 block">
+                                                            🎯 Formato sugerido por nuestros agentes
+                                                          </span>
+                                                          <span className="text-[11px] font-black text-slate-900">
+                                                            {post.textFormatLabel || 'Cabecera Superior · Bold Impacto'}
+                                                          </span>
+                                                        </div>
+                                                      </div>
+                                                      {post.artDirectionReasoning && (
+                                                        <p className="text-[10px] text-slate-600 leading-snug italic">
+                                                          "{post.artDirectionReasoning}"
+                                                        </p>
+                                                      )}
+                                                      <div className="grid grid-cols-2 gap-1.5 pt-1">
+                                                        <div>
+                                                          <label className="block text-[8px] font-black uppercase text-slate-400 mb-0.5">
+                                                            Posición del Texto
+                                                          </label>
+                                                          <select
+                                                            value={post.layoutPosition || 'top_banner'}
+                                                            onChange={(e) => {
+                                                              const newLayout = e.target.value as any;
+                                                              const layoutLabels: Record<string, string> = {
+                                                                split_left: 'Split Lateral Izquierdo',
+                                                                split_right: 'Split Lateral Derecho',
+                                                                top_banner: 'Cabecera Superior',
+                                                                recipe_ingredients: 'Ficha Editorial / Atributos',
+                                                              };
+                                                              const fontLabels: Record<string, string> = {
+                                                                bold_modern: 'Bold Impacto',
+                                                                elegant_serif: 'Serif Elegante',
+                                                                script_handwritten: 'Script Artesanal',
+                                                                clean_minimal: 'Minimalista Limpio',
+                                                                serif_script_mix: 'Mix Editorial',
+                                                              };
+                                                              const curFont = post.fontStyle || 'bold_modern';
+                                                              setStrategyResult((prev) =>
+                                                                (prev || []).map((item) =>
+                                                                  item === post
+                                                                    ? {
+                                                                        ...item,
+                                                                        layoutPosition: newLayout,
+                                                                        textFormatLabel: `${layoutLabels[newLayout] || 'Cabecera Superior'} · ${fontLabels[curFont] || 'Bold Impacto'}`,
+                                                                      }
+                                                                    : item
+                                                                )
+                                                              );
+                                                            }}
+                                                            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-[10px] font-bold text-slate-800 outline-none focus:border-indigo-500"
+                                                          >
+                                                            <option value="split_left">◧ Split Izquierdo</option>
+                                                            <option value="split_right">◨ Split Derecho</option>
+                                                            <option value="top_banner">⬆️ Cabecera Superior</option>
+                                                            <option value="recipe_ingredients">📋 Ficha Editorial</option>
+                                                          </select>
+                                                        </div>
+                                                        <div>
+                                                          <label className="block text-[8px] font-black uppercase text-slate-400 mb-0.5">
+                                                            Tipografía
+                                                          </label>
+                                                          <select
+                                                            value={post.fontStyle || 'bold_modern'}
+                                                            onChange={(e) => {
+                                                              const newFont = e.target.value as any;
+                                                              const layoutLabels: Record<string, string> = {
+                                                                split_left: 'Split Lateral Izquierdo',
+                                                                split_right: 'Split Lateral Derecho',
+                                                                top_banner: 'Cabecera Superior',
+                                                                recipe_ingredients: 'Ficha Editorial / Atributos',
+                                                              };
+                                                              const fontLabels: Record<string, string> = {
+                                                                bold_modern: 'Bold Impacto',
+                                                                elegant_serif: 'Serif Elegante',
+                                                                script_handwritten: 'Script Artesanal',
+                                                                clean_minimal: 'Minimalista Limpio',
+                                                                serif_script_mix: 'Mix Editorial',
+                                                              };
+                                                              const curLayout = post.layoutPosition || 'top_banner';
+                                                              setStrategyResult((prev) =>
+                                                                (prev || []).map((item) =>
+                                                                  item === post
+                                                                    ? {
+                                                                        ...item,
+                                                                        fontStyle: newFont,
+                                                                        textFormatLabel: `${layoutLabels[curLayout] || 'Cabecera Superior'} · ${fontLabels[newFont] || 'Bold Impacto'}`,
+                                                                      }
+                                                                    : item
+                                                                )
+                                                              );
+                                                            }}
+                                                            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-[10px] font-bold text-slate-800 outline-none focus:border-indigo-500"
+                                                          >
+                                                            <option value="bold_modern">🔥 Bold Impacto</option>
+                                                            <option value="elegant_serif">✨ Serif Elegante</option>
+                                                            <option value="script_handwritten">✍️ Script Artesanal</option>
+                                                            <option value="clean_minimal">💎 Minimalista</option>
+                                                            <option value="serif_script_mix">📰 Mix Editorial</option>
+                                                          </select>
+                                                        </div>
+                                                      </div>
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              )}
+                                            </div>
+                                         )}
+
+                                         {/* Formato de imagen y texto para posts generales (sin producto/promo específica) */}
+                                         {!(post.productName || post.isPromotion) && !post.format.toLowerCase().includes('reel') && !post.format.toLowerCase().includes('video') && (
+                                            <div className="p-3 rounded-2xl bg-slate-100/70 border border-slate-200/80 mb-3 relative z-10 space-y-2">
+                                              <div className="flex items-center justify-between gap-2">
+                                                <span className="text-[10px] font-bold text-slate-600">Formato de imagen:</span>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => {
+                                                    const currentWithText = post.promoImageMode ? post.promoImageMode === 'with_text' : Boolean(post.isCommercialPoster);
+                                                    const nextMode = currentWithText ? 'without_text' : 'with_text';
+                                                    setStrategyResult((prev) =>
+                                                      (prev || []).map((item) =>
+                                                        item === post
+                                                          ? {
+                                                              ...item,
+                                                              promoImageMode: nextMode,
+                                                              isCommercialPoster: nextMode === 'with_text',
+                                                            }
+                                                          : item
+                                                      )
+                                                    );
+                                                  }}
+                                                  className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer border ${
+                                                    (post.promoImageMode ? post.promoImageMode === 'with_text' : Boolean(post.isCommercialPoster))
+                                                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
+                                                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                                                  }`}
+                                                >
+                                                  {(post.promoImageMode ? post.promoImageMode === 'with_text' : Boolean(post.isCommercialPoster))
+                                                    ? '🏷️ Imagen CON Texto'
+                                                    : '📸 Imagen SIN Texto'}
+                                                </button>
+                                              </div>
+                                              {(post.promoImageMode ? post.promoImageMode === 'with_text' : Boolean(post.isCommercialPoster)) && (
+                                                <div className="p-2 rounded-xl bg-white border border-slate-200/80 space-y-1">
+                                                  <span className="text-[9px] font-black uppercase tracking-wider text-indigo-600 block">
+                                                    🎯 Formato sugerido: {post.textFormatLabel || 'Cabecera Superior · Mix Editorial'}
+                                                  </span>
+                                                  {post.artDirectionReasoning && (
+                                                    <p className="text-[10px] text-slate-500 leading-snug italic">
+                                                      "{post.artDirectionReasoning}"
+                                                    </p>
+                                                  )}
                                                 </div>
                                               )}
                                             </div>

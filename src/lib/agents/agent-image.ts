@@ -26,6 +26,12 @@ export interface ImageAgentParams {
   baseImageUrl?: string;
   /** ADN de Identidad Visual del cliente */
   brandVisualIdentity?: BrandVisualIdentity;
+  /** Precio u oferta destacada */
+  price?: string;
+  /** Disposición tipográfica decidida por el Agente Director de Arte o elegida por el usuario */
+  layoutPosition?: "top_banner" | "split_left" | "split_right" | "recipe_ingredients";
+  /** Estilo de fuente elegido por el Agente Director de Arte o por el usuario */
+  fontStyle?: "bold_modern" | "bold_textured" | "elegant_serif" | "script_handwritten" | "clean_minimal" | "serif_script_mix";
 }
 
 /**
@@ -230,6 +236,9 @@ export async function generateImageWithAgent(params: ImageAgentParams): Promise<
     visualStyle,
     baseImageUrl,
     brandVisualIdentity,
+    price,
+    layoutPosition,
+    fontStyle,
   } = params;
 
   let width = 1080;
@@ -376,12 +385,37 @@ Genera el prompt narrativo en inglés (prosa, según las instrucciones del siste
     rawGeneratedUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${width}&height=${height}&model=flux&nologo=true&enhance=true&seed=${seed}`;
   }
 
-  // 4. Modo Cartel Publicitario: Generar micro-copys de venta y estampar con Sharp + SVG
+  // 4. Modo Cartel Publicitario: Analizar encuadre de la imagen generada y estampar con Sharp + SVG
   if (bannerStyle === 'banner') {
     try {
-      console.log(`[AgentImage] 🎯 Modo Cartel Publicitario activo. Invocando Agente de Textos Publicitarios...`);
+      console.log(`[AgentImage] 🎯 Modo Cartel Publicitario activo. Invocando Agente Director de Arte y Textos...`);
       const { generateBannerCopyWithAgent } = await import('./agent-banner-copy');
       const { composeBannerOnImage } = await import('../banner-compositor');
+      const { decideArtDirection } = await import('./agent-art-director');
+
+      let resolvedLayout = layoutPosition;
+      let resolvedFont = fontStyle;
+      let resolvedTemplateId: string | undefined = undefined;
+
+      try {
+        const artDecision = await decideArtDirection({
+          imageUrl: rawGeneratedUrl,
+          productName: productName || businessName || rubro,
+          price: price || undefined,
+          postObjective: price || customOffer || promotions ? 'promo' : 'auto',
+          rubro,
+          captionIdea: idea,
+          isPromotion: Boolean(price || customOffer || promotions),
+          preferredLayout: layoutPosition || 'auto',
+          preferredFontStyle: fontStyle || 'auto',
+        });
+        resolvedLayout = artDecision.layoutPosition;
+        resolvedFont = artDecision.fontStyle;
+        resolvedTemplateId = artDecision.templateId;
+        console.log(`[AgentImage] 🎯 Formato de texto elegido (${artDecision.formatLabel}): ${artDecision.reasoning}`);
+      } catch (artErr) {
+        console.warn('[AgentImage] Warning en decideArtDirection sobre imagen generada, usando defaults:', artErr);
+      }
 
       const bannerCopy = await generateBannerCopyWithAgent({
         idea,
@@ -398,10 +432,14 @@ Genera el prompt narrativo en inglés (prosa, según las instrucciones del siste
       const finalBannerUrl = await composeBannerOnImage({
         baseImageUrl: rawGeneratedUrl,
         bannerCopy,
+        price: price || undefined,
         logoUrl,
         userId,
         aspectRatio: isVerticalStory ? '9:16' : '1:1',
-        includeLogo
+        includeLogo,
+        templateId: resolvedTemplateId,
+        layoutPosition: resolvedLayout,
+        fontStyle: resolvedFont,
       });
 
       return finalBannerUrl;

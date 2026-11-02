@@ -1,6 +1,7 @@
 import { adminDb, adminStorage } from "./firebase-admin";
 import { generateBannerCopyWithAgent, BannerCopyResult } from "./agents/agent-banner-copy";
 import { composeBannerOnImage, resolveTextTemplate } from "./banner-compositor";
+import { matchBestTemplateForLayout } from "./agents/agent-art-director";
 import { LayoutPosition, IngredientItem } from "./text-templates";
 
 export interface RealProductBannerParams {
@@ -93,11 +94,17 @@ export async function composeCommercialSlideWithEditor(
   } = params;
 
   const isVertical = aspectRatio === "9:16";
-  const resolvedTpl = resolveTextTemplate(templateId);
+  const resolvedTpl = templateId
+    ? resolveTextTemplate(templateId)
+    : matchBestTemplateForLayout(
+        layoutPosition || "top_banner",
+        price ? "promo" : "auto",
+        (fontStyle as any) || undefined
+      );
   const effectiveFontStyle = fontStyle || resolvedTpl.headlineFont || "bold_modern";
   const effectiveLayoutPosition = layoutPosition || resolvedTpl.layoutPosition || "top_banner";
 
-  console.log(`[RealProductCompositor] Procesando "${productName}" para ${businessName} | Plantilla: "${resolvedTpl.name}" (${resolvedTpl.id})...`);
+  console.log(`[RealProductCompositor] Procesando "${productName}" para ${businessName} | Layout: ${effectiveLayoutPosition} | Font: ${effectiveFontStyle} | Plantilla: "${resolvedTpl.name}" (${resolvedTpl.id})...`);
 
   const isFoodRubro = /restauran|gastronom|comida|pizz|burger|hamburgues|sushi|cafe|cafeter|pastel|panader|bar|cervecer|parrill/i.test(
     rubro || ""
@@ -368,7 +375,7 @@ export async function composeCommercialSlideWithEditor(
   }
 
   // Composición inmediata con motor Sharp de alta velocidad y plantilla limpia
-  console.log(`[RealProductCompositor] Ejecutando compositor Sharp con plantilla "${resolvedTpl.name}"...`);
+  console.log(`[RealProductCompositor] Ejecutando compositor Sharp con plantilla "${resolvedTpl.name}" (Layout: ${effectiveLayoutPosition}, Font: ${effectiveFontStyle})...`);
   const sharpUrl = await composeBannerOnImage({
     baseImageUrl,
     fallbackImageUrl,
@@ -379,6 +386,8 @@ export async function composeCommercialSlideWithEditor(
     aspectRatio,
     includeLogo,
     templateId: resolvedTpl.id,
+    layoutPosition: effectiveLayoutPosition,
+    fontStyle: effectiveFontStyle as any,
   });
 
   if (saveEditableInLibrary && adminDb) {

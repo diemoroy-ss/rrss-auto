@@ -274,11 +274,13 @@ export async function POST(req: NextRequest) {
         Boolean(isCommercialPoster)
     );
 
-    // Normalizar promociones e imágenes CON texto vs SIN texto en el resultado
+    // Normalizar promociones, imágenes CON texto vs SIN texto y formato tipográfico óptimo por Agente Director de Arte
+    const { decideArtDirection } = await import('../../../../lib/agents/agent-art-director');
     const promoIdsSet = new Set(activePromoList.map((p: any) => p.id));
     let promoToggleIdx = 0;
+    const visionCache = new Map<string, any>();
 
-    const normalizedStrategy = (result.strategy || []).map((post: any) => {
+    const normalizedStrategy = await Promise.all((result.strategy || []).map(async (post: any, idx: number) => {
         const matchedPromo = activePromoList.find(
             (p: any) => p.id === post.productId || (p.name && post.productName && p.name.toLowerCase() === post.productName.toLowerCase())
         );
@@ -294,6 +296,40 @@ export async function POST(req: NextRequest) {
             post.productOfferPrice
         );
 
+        const itemRef = matchedPromo || matchedCatalog;
+        const resolvedBaseImg = post.baseImageUrl || itemRef?.imageUrl || null;
+        const resolvedProdName = post.productName || itemRef?.name || null;
+        const resolvedProdDesc = post.productDescription || itemRef?.description || null;
+        const resolvedPrice = post.productPrice || itemRef?.price || null;
+        const resolvedOfferPrice = post.productOfferPrice || itemRef?.offerPrice || null;
+
+        // Analizar con nuestro Agente Director de Arte qué formato de texto (layout + fuente) queda mejor en esta imagen
+        let artDecision: any = null;
+        try {
+            const canUseVision = Boolean(resolvedBaseImg && typeof resolvedBaseImg === 'string' && resolvedBaseImg.startsWith('http') && visionCache.size < 4);
+            const cacheKey = `${resolvedBaseImg || 'no-img'}::${isPromoPost ? 'promo' : 'reg'}`;
+
+            if (resolvedBaseImg && visionCache.has(cacheKey)) {
+                artDecision = visionCache.get(cacheKey);
+            } else {
+                artDecision = await decideArtDirection({
+                    imageUrl: canUseVision ? resolvedBaseImg : undefined,
+                    productName: resolvedProdName || businessType || "Publicación",
+                    price: resolvedOfferPrice || resolvedPrice || undefined,
+                    postObjective: isPromoPost ? "promo" : "auto",
+                    rubro: businessType || "General",
+                    captionIdea: `${post.hook || ""} ${post.content || ""}`,
+                    isPromotion: isPromoPost,
+                    variationIndex: idx,
+                });
+                if (resolvedBaseImg && canUseVision) {
+                    visionCache.set(cacheKey, artDecision);
+                }
+            }
+        } catch (artErr) {
+            console.warn("[STRATEGY] Warning en decideArtDirection por post:", artErr);
+        }
+
         let resolvedImgMode: 'with_text' | 'without_text' = post.promoImageMode || (post.isCommercialPoster ? 'with_text' : 'without_text');
 
         if (isPromoPost && includePromotions !== false) {
@@ -301,31 +337,39 @@ export async function POST(req: NextRequest) {
                 resolvedImgMode = 'with_text';
             } else if (promoImageMode === 'without_text') {
                 resolvedImgMode = 'without_text';
+            } else if (promoImageMode === 'agent_auto') {
+                resolvedImgMode = artDecision ? (artDecision.recommendedWithText ? 'with_text' : 'without_text') : 'with_text';
             } else if (promoImageMode === 'mixed') {
                 resolvedImgMode = promoToggleIdx % 2 === 0 ? 'with_text' : 'without_text';
                 promoToggleIdx++;
             }
+        } else if (promoImageMode === 'agent_auto' && artDecision) {
+            resolvedImgMode = artDecision.recommendedWithText ? 'with_text' : 'without_text';
         } else if (isCommercialPoster) {
             resolvedImgMode = 'with_text';
         }
 
-        const itemRef = matchedPromo || matchedCatalog;
-        const resolvedBaseImg = post.baseImageUrl || itemRef?.imageUrl || null;
-
         return {
             ...post,
             productId: post.productId || itemRef?.id || null,
-            productName: post.productName || itemRef?.name || null,
-            productDescription: post.productDescription || itemRef?.description || null,
-            productPrice: post.productPrice || itemRef?.price || null,
-            productOfferPrice: post.productOfferPrice || itemRef?.offerPrice || null,
+            productName: resolvedProdName,
+            productDescription: resolvedProdDesc,
+            productPrice: resolvedPrice,
+            productOfferPrice: resolvedOfferPrice,
             baseImageUrl: resolvedBaseImg,
             hasProductImage: Boolean(resolvedBaseImg),
             isPromotion: isPromoPost,
             promoImageMode: resolvedImgMode,
             isCommercialPoster: resolvedImgMode === 'with_text',
+            layoutPosition: post.layoutPosition || artDecision?.layoutPosition || 'top_banner',
+            fontStyle: post.fontStyle || artDecision?.fontStyle || (isPromoPost ? 'bold_modern' : 'serif_script_mix'),
+            textFormatLabel: post.textFormatLabel || artDecision?.formatLabel || 'Cabecera Superior · Bold Impacto',
+            artDirectionReasoning:
+                post.artDirectionReasoning ||
+                artDecision?.reasoning ||
+                'Nuestros agentes seleccionaron este formato para destacar el mensaje sin cubrir el sujeto principal.',
         };
-    });
+    }));
 
     console.log(`[STRATEGY] LangGraph Strategy generated successfully for plan ${userPlan} (posts: ${effectivePosts}, maxVideos: ${maxVideos}, remPosts: ${remainingPosts}, remVideos: ${remainingVideos}, remImages: ${remainingImages}).`);
     return NextResponse.json({ 

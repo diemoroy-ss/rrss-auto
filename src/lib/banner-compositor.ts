@@ -5,6 +5,7 @@ import { DEFAULT_TEXT_TEMPLATES, TextTemplate } from "./text-templates";
 
 export type PosterLayoutVariant =
   | "split_left"
+  | "split_right"
   | "top_clean_header"
   | "editorial_magazine"
   | "bottom_impact_card";
@@ -20,6 +21,8 @@ export interface BannerCompositorOptions {
   includeLogo?: boolean;
   templateId?: string;
   layoutVariant?: PosterLayoutVariant;
+  layoutPosition?: "top_banner" | "split_left" | "split_right" | "recipe_ingredients";
+  fontStyle?: "bold_modern" | "elegant_serif" | "script_handwritten" | "clean_minimal" | "serif_script_mix" | "bold_textured";
 }
 
 /**
@@ -82,14 +85,27 @@ export function resolveTextTemplate(templateId?: string): TextTemplate {
 }
 
 /**
- * Determina el arquetipo de layout limpio y sin colisiones a partir de la plantilla
+ * Determina el arquetipo de layout limpio y sin colisiones a partir de la plantilla o dirección de arte
  */
 export function resolveLayoutVariant(
   tpl: TextTemplate,
-  explicitVariant?: PosterLayoutVariant
+  explicitVariant?: PosterLayoutVariant,
+  layoutPosition?: "top_banner" | "split_left" | "split_right" | "recipe_ingredients",
+  fontStyle?: string
 ): PosterLayoutVariant {
   if (explicitVariant) return explicitVariant;
+  if (layoutPosition === "split_left") return "split_left";
+  if (layoutPosition === "split_right") return "split_right";
+  if (layoutPosition === "recipe_ingredients") return "editorial_magazine";
+  if (layoutPosition === "top_banner") {
+    if (fontStyle === "elegant_serif" || fontStyle === "serif_script_mix") {
+      return "editorial_magazine";
+    }
+    return "top_clean_header";
+  }
+
   if (tpl.layoutPosition === "split_left") return "split_left";
+  if (tpl.layoutPosition === "split_right") return "split_right";
   if (
     tpl.category === "Gourmet & Menú" ||
     tpl.category === "Lifestyle & Marca" ||
@@ -108,6 +124,38 @@ export function resolveLayoutVariant(
   return "top_clean_header";
 }
 
+function resolveSvgHeadlineFont(fontStyle?: string): { family: string; style: string; weight: string } {
+  switch (fontStyle) {
+    case "elegant_serif":
+    case "serif_script_mix":
+      return {
+        family: "Georgia, 'Playfair Display', 'Times New Roman', serif",
+        style: "normal",
+        weight: "900",
+      };
+    case "script_handwritten":
+      return {
+        family: "Georgia, 'Playfair Display', 'Times New Roman', serif",
+        style: "italic",
+        weight: "700",
+      };
+    case "clean_minimal":
+      return {
+        family: "system-ui, -apple-system, Montserrat, Arial, sans-serif",
+        style: "normal",
+        weight: "800",
+      };
+    case "bold_modern":
+    case "bold_textured":
+    default:
+      return {
+        family: "system-ui, -apple-system, Montserrat, 'Arial Black', sans-serif",
+        style: "normal",
+        weight: "900",
+      };
+  }
+}
+
 function normalizeSvgColor(color: string | undefined, fallback: string): string {
   if (!color) return fallback;
   if (color.startsWith("rgba")) return "#0f172a";
@@ -116,9 +164,9 @@ function normalizeSvgColor(color: string | undefined, fallback: string): string 
 
 /**
  * Motor de Composición de Banners Publicitarios (Sharp + SVG Vectorial Multi-Plantilla):
- * Utiliza las plantillas de DEFAULT_TEXT_TEMPLATES con 4 arquitecturas de diseño limpias
- * (Split Lateral, Cabecera Limpia, Editorial Revista y Tercio Inferior), garantizando
- * CERO solapamiento de textos/píldoras y dejando el producto central 100% despejado.
+ * Utiliza las plantillas de DEFAULT_TEXT_TEMPLATES con 5 arquitecturas de diseño limpias
+ * (Split Izquierdo, Split Derecho, Cabecera Limpia, Editorial Revista y Tercio Inferior), garantizando
+ * CERO solapamiento de textos/píldoras y dejando el producto principal 100% despejado.
  */
 export async function composeBannerOnImage(options: BannerCompositorOptions): Promise<string> {
   const {
@@ -132,6 +180,8 @@ export async function composeBannerOnImage(options: BannerCompositorOptions): Pr
     includeLogo = true,
     templateId,
     layoutVariant: explicitVariant,
+    layoutPosition,
+    fontStyle,
   } = options;
 
   const isVertical = aspectRatio === "9:16";
@@ -139,10 +189,12 @@ export async function composeBannerOnImage(options: BannerCompositorOptions): Pr
   const height = isVertical ? 1920 : 1080;
 
   const tpl = resolveTextTemplate(templateId);
-  const variant = resolveLayoutVariant(tpl, explicitVariant);
+  const effectiveFontStyle = fontStyle || tpl.headlineFont || "bold_modern";
+  const variant = resolveLayoutVariant(tpl, explicitVariant, layoutPosition, effectiveFontStyle);
+  const svgFont = resolveSvgHeadlineFont(effectiveFontStyle);
 
   console.log(
-    `[BannerCompositor] Componiendo cartel ${width}x${height} | Plantilla: "${tpl.name}" (${tpl.id}) | Layout: ${variant}`
+    `[BannerCompositor] Componiendo cartel ${width}x${height} | Plantilla: "${tpl.name}" (${tpl.id}) | Layout: ${variant} | Font: ${effectiveFontStyle}`
   );
 
   try {
@@ -357,9 +409,10 @@ export async function composeBannerOnImage(options: BannerCompositorOptions): Pr
               x="60"
               y="${headlineBaseY + i * lineHeight}"
               fill="${headlineCol}"
-              font-family="system-ui, -apple-system, Montserrat, 'Arial Black', sans-serif"
+              font-family="${svgFont.family}"
+              font-style="${svgFont.style}"
               font-size="${fontSize}"
-              font-weight="900"
+              font-weight="${svgFont.weight}"
               letter-spacing="0.8"
               text-anchor="start"
             >${escapeXml(line)}</text>
@@ -412,6 +465,148 @@ export async function composeBannerOnImage(options: BannerCompositorOptions): Pr
           <rect x="60" y="${ctaY}" width="${ctaW}" height="50" rx="25" fill="${ctaBg}" />
           <text
             x="${60 + ctaW / 2}"
+            y="${ctaY + 32}"
+            fill="${ctaTextCol}"
+            font-family="system-ui, -apple-system, Montserrat, Arial, sans-serif"
+            font-size="18"
+            font-weight="900"
+            letter-spacing="0.8"
+            text-anchor="middle"
+          >${ctaTextEscaped}</text>
+        </g>
+      `;
+    } else if (variant === "split_right") {
+      // ═══════════════════════════════════════════════════════════════════════
+      // ARQUETIPO A2: SPLIT LATERAL DERECHO (Producto libre a la izquierda)
+      // ═══════════════════════════════════════════════════════════════════════
+      const lines = wrapText(rawHeadline, 13, 3);
+      const fontSize = lines.length >= 3 ? 46 : 52;
+      const lineHeight = Math.round(fontSize * 1.14);
+
+      const badgeW = Math.min(340, Math.max(170, rawBadge.length * 12 + 48));
+      const badgeX = width - badgeW - 60;
+      const badgeY = isVertical ? 80 : 42;
+
+      const isFoodHeadline = /pizz|burger|hamburgues|sushi|ramen|pasta|carne|parrill|taco|menu|menú|plato|sabor|horno|restauran/i.test(
+        `${rawHeadline} ${rawSub}`
+      );
+      const rawScriptCandidate = tpl.secondaryScriptPattern || "Calidad garantizada";
+      const safeScriptCandidate =
+        !isFoodHeadline && /horno|cocina|sabor|chef|fresco|receta/i.test(rawScriptCandidate)
+          ? "Calidad garantizada"
+          : rawScriptCandidate;
+      const scriptText = escapeXml(safeScriptCandidate);
+      const blockStartY = isVertical ? 480 : 250;
+      const headlineBaseY = blockStartY + 58;
+      const afterHeadlineY = headlineBaseY + (lines.length - 1) * lineHeight;
+
+      const subLines = wrapText(rawSub, 26, 2);
+      const subStartY = afterHeadlineY + 46;
+      const afterSubY = subLines.length > 0 ? subStartY + (subLines.length - 1) * 28 : afterHeadlineY + 12;
+
+      const priceY = afterSubY + 26;
+      const priceW = cleanPrice ? Math.max(165, cleanPrice.length * 18 + 44) : 0;
+      const ctaY = cleanPrice ? priceY + 66 : afterSubY + 28;
+      const ctaW = Math.min(380, Math.max(220, rawCta.length * 12 + 52));
+      const rightAnchorX = width - 60;
+
+      layoutBodySvg = `
+        <rect x="${Math.round(width * 0.32)}" y="0" width="${Math.round(width * 0.68)}" height="${height}" fill="url(#right-scrim)" />
+        <rect x="0" y="${Math.round(height * 0.78)}" width="${width}" height="${Math.round(height * 0.22)}" fill="url(#bottom-scrim)" />
+
+        <!-- Badge en esquina superior derecha -->
+        <g filter="url(#soft-shadow)">
+          <rect x="${badgeX}" y="${badgeY}" width="${badgeW}" height="44" rx="22" fill="${badgeBg}" />
+          <text
+            x="${badgeX + badgeW / 2}"
+            y="${badgeY + 28}"
+            fill="${badgeTextCol}"
+            font-family="system-ui, -apple-system, Montserrat, Arial, sans-serif"
+            font-size="16"
+            font-weight="900"
+            letter-spacing="1.2"
+            text-anchor="middle"
+          >${badgeTextEscaped}</text>
+        </g>
+
+        <!-- Kicker en cursiva alineado a la derecha -->
+        <text
+          x="${rightAnchorX}"
+          y="${blockStartY}"
+          fill="#fde68a"
+          font-family="Georgia, 'Times New Roman', serif"
+          font-size="25"
+          font-style="italic"
+          font-weight="700"
+          filter="url(#heavy-shadow)"
+          text-anchor="end"
+        >${scriptText}</text>
+
+        <!-- Titular alineado a la derecha -->
+        <g filter="url(#heavy-shadow)">
+          ${lines
+            .map(
+              (line, i) => `
+            <text
+              x="${rightAnchorX}"
+              y="${headlineBaseY + i * lineHeight}"
+              fill="${headlineCol}"
+              font-family="${svgFont.family}"
+              font-style="${svgFont.style}"
+              font-size="${fontSize}"
+              font-weight="${svgFont.weight}"
+              letter-spacing="0.8"
+              text-anchor="end"
+            >${escapeXml(line)}</text>
+          `
+            )
+            .join("")}
+        </g>
+
+        <!-- Subtítulo limpio alineado a la derecha -->
+        <g filter="url(#heavy-shadow)">
+          ${subLines
+            .map(
+              (sLine, i) => `
+            <text
+              x="${rightAnchorX}"
+              y="${subStartY + i * 28}"
+              fill="#f8fafc"
+              font-family="system-ui, -apple-system, Montserrat, Arial, sans-serif"
+              font-size="21"
+              font-weight="600"
+              text-anchor="end"
+            >${escapeXml(sLine)}</text>
+          `
+            )
+            .join("")}
+        </g>
+
+        <!-- Precio en columna derecha -->
+        ${
+          cleanPrice
+            ? `
+        <g filter="url(#heavy-shadow)">
+          <rect x="${rightAnchorX - priceW}" y="${priceY}" width="${priceW}" height="50" rx="14" fill="${priceBg}" stroke="#ffffff" stroke-width="2" />
+          <text
+            x="${rightAnchorX - priceW / 2}"
+            y="${priceY + 34}"
+            fill="${priceTextCol}"
+            font-family="system-ui, -apple-system, Montserrat, Arial, sans-serif"
+            font-size="25"
+            font-weight="900"
+            text-anchor="middle"
+          >${priceTextEscaped}</text>
+        </g>
+        `
+            : ""
+        }
+
+        <!-- Botón CTA en columna derecha -->
+        <g filter="url(#soft-shadow)">
+          <rect x="${rightAnchorX - ctaW}" y="${ctaY}" width="${ctaW}" height="50" rx="25" fill="${ctaBg}" />
+          <text
+            x="${rightAnchorX - ctaW / 2}"
             y="${ctaY + 32}"
             fill="${ctaTextCol}"
             font-family="system-ui, -apple-system, Montserrat, Arial, sans-serif"
@@ -542,9 +737,10 @@ export async function composeBannerOnImage(options: BannerCompositorOptions): Pr
               x="${width / 2}"
               y="${firstHeadlineY + i * lineHeight}"
               fill="${headlineCol}"
-              font-family="system-ui, -apple-system, Montserrat, 'Arial Black', sans-serif"
+              font-family="${svgFont.family}"
+              font-style="${svgFont.style}"
               font-size="${fontSize}"
-              font-weight="900"
+              font-weight="${svgFont.weight}"
               letter-spacing="1"
               text-anchor="middle"
             >${escapeXml(line)}</text>
@@ -619,9 +815,10 @@ export async function composeBannerOnImage(options: BannerCompositorOptions): Pr
               x="${width / 2}"
               y="${headlineBaseY + i * lineHeight}"
               fill="${headlineCol}"
-              font-family="system-ui, -apple-system, Montserrat, 'Arial Black', sans-serif"
+              font-family="${svgFont.family}"
+              font-style="${svgFont.style}"
               font-size="${fontSize}"
-              font-weight="900"
+              font-weight="${svgFont.weight}"
               letter-spacing="1"
               text-anchor="middle"
             >${escapeXml(line)}</text>
@@ -677,6 +874,12 @@ export async function composeBannerOnImage(options: BannerCompositorOptions): Pr
           </linearGradient>
 
           <linearGradient id="left-scrim" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#000000" stop-opacity="0.88" />
+            <stop offset="60%" stop-color="#000000" stop-opacity="0.55" />
+            <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+          </linearGradient>
+
+          <linearGradient id="right-scrim" x1="1" y1="0" x2="0" y2="0">
             <stop offset="0%" stop-color="#000000" stop-opacity="0.88" />
             <stop offset="60%" stop-color="#000000" stop-opacity="0.55" />
             <stop offset="100%" stop-color="#000000" stop-opacity="0" />

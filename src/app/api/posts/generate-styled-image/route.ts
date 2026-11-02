@@ -16,7 +16,14 @@ export async function POST(req: NextRequest) {
     const uid = decoded.uid;
 
     const body = await req.json();
-    const { postId, baseImageUrl: overrideBaseImage, visualStyle: overrideStyle, promptTemplateId: overrideTemplateId } = body;
+    const {
+      postId,
+      baseImageUrl: overrideBaseImage,
+      visualStyle: overrideStyle,
+      promptTemplateId: overrideTemplateId,
+      layoutPosition: overrideLayoutPosition,
+      fontStyle: overrideFontStyle,
+    } = body;
 
     if (!postId) {
       return NextResponse.json({ error: "postId es requerido." }, { status: 400 });
@@ -52,7 +59,10 @@ export async function POST(req: NextRequest) {
     let resolvedKeepOriginalPhoto: boolean = post.keepOriginalPhoto !== undefined
       ? Boolean(post.keepOriginalPhoto)
       : (targetProfile?.photoTreatment !== 'agent');
-    let resolvedFontStyle: any = post.fontStyle || "script_handwritten";
+    let resolvedFontStyle: any = overrideFontStyle || post.fontStyle || "auto";
+    let chosenLayout: any = overrideLayoutPosition || post.layoutPosition || post.posterConfig?.layout || "auto";
+    let chosenFormatLabel: string | undefined = post.textFormatLabel || undefined;
+    let chosenReasoning: string | undefined = post.artDirectionReasoning || undefined;
     let imageSource: "uploaded_base" | "catalog_product" | "catalog_product_generated" | "business_description" = "business_description";
     let sourceDescription = "Generada a partir de la descripción del negocio";
 
@@ -160,30 +170,33 @@ export async function POST(req: NextRequest) {
       if (isBannerMode) {
         console.log(`[generate-styled-image] 📸 Modo Foto Real + Cartel Publicitario activo para "${resolvedProductName}".`);
 
-        let chosenLayout = post.layoutPosition || post.posterConfig?.layout || "auto";
         let chosenKicker = post.secondaryScript || post.posterConfig?.kickerText;
         let chosenIngredients = post.ingredients || null;
 
-        // Si el layout es auto o no está definido, el Agente Director de Arte decide el encuadre
-        if (chosenLayout === "auto" || !chosenLayout) {
-          try {
-            const { decideArtDirection } = await import("../../../../lib/agents/agent-art-director");
-            const decision = await decideArtDirection({
-              imageUrl: resolvedBaseImage,
-              productName: resolvedProductName || "Producto",
-              price: resolvedProductPrice,
-              postObjective: isCommercialStyle ? "promo" : "auto",
-              rubro: targetProfile.rubro || "Gastronomía",
-              captionIdea: post.idea || post.text,
-            });
-            chosenLayout = decision.layoutPosition;
-            if (!chosenKicker && decision.kickerText) chosenKicker = decision.kickerText;
-            if (!chosenIngredients && decision.ingredients) chosenIngredients = decision.ingredients;
-            console.log(`[generate-styled-image] 🎯 Agente Director de Arte decidió layout "${chosenLayout}": ${decision.reasoning}`);
-          } catch (artErr) {
-            console.warn("[generate-styled-image] Fallback en decisión de arte automática, usando top_banner:", artErr);
-            chosenLayout = "top_banner";
-          }
+        try {
+          const { decideArtDirection, getTextFormatLabel } = await import("../../../../lib/agents/agent-art-director");
+          const decision = await decideArtDirection({
+            imageUrl: resolvedBaseImage,
+            productName: resolvedProductName || "Producto",
+            price: resolvedProductPrice,
+            postObjective: isCommercialStyle ? "promo" : "auto",
+            rubro: targetProfile.rubro || "General",
+            captionIdea: post.idea || post.text,
+            isPromotion: Boolean(post.isPromotion || resolvedProductPrice),
+            preferredLayout: chosenLayout !== "auto" ? chosenLayout : "auto",
+            preferredFontStyle: resolvedFontStyle !== "auto" ? resolvedFontStyle : "auto",
+          });
+          chosenLayout = decision.layoutPosition;
+          resolvedFontStyle = decision.fontStyle;
+          chosenFormatLabel = decision.formatLabel || getTextFormatLabel(chosenLayout, resolvedFontStyle);
+          chosenReasoning = decision.reasoning;
+          if (!chosenKicker && decision.kickerText) chosenKicker = decision.kickerText;
+          if (!chosenIngredients && decision.ingredients) chosenIngredients = decision.ingredients;
+          console.log(`[generate-styled-image] 🎯 Agente Director de Arte decidió "${chosenFormatLabel}": ${decision.reasoning}`);
+        } catch (artErr) {
+          console.warn("[generate-styled-image] Fallback en decisión de arte automática, usando top_banner:", artErr);
+          if (chosenLayout === "auto" || !chosenLayout) chosenLayout = "top_banner";
+          if (resolvedFontStyle === "auto" || !resolvedFontStyle) resolvedFontStyle = "bold_modern";
         }
 
         const { composeRealProductBanner } = await import("../../../../lib/real-product-compositor");
@@ -193,7 +206,7 @@ export async function POST(req: NextRequest) {
           productDescription: resolvedProductDesc,
           price: resolvedProductPrice,
           idea: post.idea || post.text,
-          rubro: targetProfile.rubro || "Gastronomía",
+          rubro: targetProfile.rubro || "General",
           businessName: targetProfile.name || targetProfile.businessName || "Mi Negocio",
           fontStyle: resolvedFontStyle,
           layoutPosition: chosenLayout as any,
@@ -204,19 +217,44 @@ export async function POST(req: NextRequest) {
           userId: post.userId,
           includeLogo: post.includeLogo ?? targetProfile.alwaysIncludeLogo ?? true,
         });
-        sourceDescription = `Foto real de "${resolvedProductName}" con tipografía comercial (Layout: ${chosenLayout})`;
+        sourceDescription = `Foto real de "${resolvedProductName}" con formato ${chosenFormatLabel || chosenLayout}`;
       } else {
         console.log(`[generate-styled-image] 📸 Modo Foto Real Limpia (Sin Cartel) para "${resolvedProductName}".`);
         generatedImageUrl = resolvedBaseImage;
         sourceDescription = `Foto real limpia de "${resolvedProductName}" sin textos gráficos superpuestos`;
       }
     } else {
+      // Si es con texto (isBannerMode), el Agente Director de Arte planifica primero el espacio negativo de la escena
+      let compositionDirective = "";
+      if (isBannerMode) {
+        try {
+          const { decideArtDirection } = await import("../../../../lib/agents/agent-art-director");
+          const plannedDecision = await decideArtDirection({
+            productName: resolvedProductName || targetProfile.name || "Producto",
+            price: resolvedProductPrice,
+            postObjective: isCommercialStyle || post.isPromotion ? "promo" : "auto",
+            rubro: targetProfile.rubro || "General",
+            captionIdea: post.idea || post.text,
+            isPromotion: Boolean(post.isPromotion || resolvedProductPrice),
+            preferredLayout: chosenLayout !== "auto" ? chosenLayout : "auto",
+            preferredFontStyle: resolvedFontStyle !== "auto" ? resolvedFontStyle : "auto",
+          });
+          chosenLayout = plannedDecision.layoutPosition;
+          resolvedFontStyle = plannedDecision.fontStyle;
+          chosenFormatLabel = plannedDecision.formatLabel;
+          chosenReasoning = plannedDecision.reasoning;
+          compositionDirective = ` ${plannedDecision.compositionDirective}`;
+        } catch (planErr) {
+          console.warn("[generate-styled-image] Warning planificando dirección de arte previa:", planErr);
+        }
+      }
+
       const productFocus = resolvedProductName 
         ? `Producto/servicio protagonista: "${resolvedProductName}"${resolvedProductDesc ? ` (${resolvedProductDesc})` : ''}. ` 
         : '';
       const imagePromptIdea = post.imageDirection 
-        ? `${productFocus}${post.imageDirection}. Contexto del post: ${post.idea || post.text || "Fotografía promocional"}`
-        : `${productFocus}${post.idea || post.text || "Fotografía promocional profesional"}`;
+        ? `${productFocus}${post.imageDirection}.${compositionDirective} Contexto del post: ${post.idea || post.text || "Fotografía promocional"}`
+        : `${productFocus}${post.idea || post.text || "Fotografía promocional profesional"}.${compositionDirective}`;
 
       generatedImageUrl = await generateImageWithAgent({
         idea: imagePromptIdea,
@@ -227,6 +265,9 @@ export async function POST(req: NextRequest) {
         customOffer: resolvedProductPrice ? `${resolvedProductName || 'Promo'}: ${resolvedProductPrice}` : (post.customOffer || ""),
         productName: resolvedProductName,
         productDescription: resolvedProductDesc,
+        price: resolvedProductPrice,
+        layoutPosition: chosenLayout !== "auto" ? chosenLayout : undefined,
+        fontStyle: resolvedFontStyle !== "auto" ? resolvedFontStyle : undefined,
         bannerStyle: isBannerMode ? "banner" : "clean",
         aspectRatio: isStory ? "9:16" : "1:1",
         logoPrompt: targetProfile.logoPrompt || "",
@@ -254,6 +295,10 @@ export async function POST(req: NextRequest) {
       hasProductImage: Boolean(resolvedBaseImage),
       visualStyle: effectiveStyleName || post.visualStyle || null,
       promptTemplateId: effectiveStyleId || post.promptTemplateId || null,
+      layoutPosition: chosenLayout !== "auto" ? chosenLayout : (post.layoutPosition || null),
+      fontStyle: resolvedFontStyle !== "auto" ? resolvedFontStyle : (post.fontStyle || null),
+      textFormatLabel: chosenFormatLabel || post.textFormatLabel || null,
+      artDirectionReasoning: chosenReasoning || post.artDirectionReasoning || null,
       imageSource,
       autoGeneratedImage: true,
       isGeneratingImage: false,
@@ -266,6 +311,10 @@ export async function POST(req: NextRequest) {
       imageSource,
       sourceDescription,
       baseImageUrl: resolvedBaseImage || null,
+      layoutPosition: chosenLayout !== "auto" ? chosenLayout : null,
+      fontStyle: resolvedFontStyle !== "auto" ? resolvedFontStyle : null,
+      textFormatLabel: chosenFormatLabel || null,
+      artDirectionReasoning: chosenReasoning || null,
     });
   } catch (err: any) {
     console.error("[GENERATE STYLED IMAGE ERROR]:", err);
