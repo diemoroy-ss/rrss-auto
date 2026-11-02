@@ -64,7 +64,7 @@ const MANIA_14_DAYS_PLAN: PlanItem[] = [
       hook: "El lunes no se cocina en Manía. 4 Hand Rolls apanados por $10.000.",
       copy: "Saliste cansado de la pega o la u y lo último que quieres es ponerte a lavar platos. Pásate por Manía o pídelos para llevar: 4 hand rolls gigantes, recién salidos del panko dorado y crujiente, bien cargados de pollo tierno, queso crema fundido y palta hass en su punto. Con salsa teriyaki dulce para untar sin culpa.",
       cta: "Pídelos directo por nuestro WhatsApp o ven a buscarlos a la barra.",
-      imageUrl: "/demo-mania/hand_rolls.jpg",
+      imageUrl: "/demo-mania/d01.png",
       compositionDirective: "Encuadre asimétrico 4:5. Hand rolls en el tercio derecho con iluminación lateral cálida que resalta el crujiente del panko. 50% izquierdo con bokeh suave de la barra."
     },
     story: {
@@ -91,19 +91,19 @@ const MANIA_14_DAYS_PLAN: PlanItem[] = [
       headline: "Tabla Manía Mar y Tierra",
       productName: "Tabla Mixta con Camarones y Mechada",
       price: "$15.990 (Comen 3)",
-      isPromo: false,
-      hasText: false,
+      isPromo: true,
+      hasText: true,
       artDirection: {
-        layout: "clean_photo",
-        layoutLabel: "📸 Fotografía Limpia (Sin Cartel)",
-        fontStyle: "clean_minimal",
-        fontLabel: "Sin texto en imagen",
-        reasoning: "La abundancia de los camarones al ajillo y la mechada humeante tiene tanta fuerza visual que cualquier cartel taparía la comida. Nuestros agentes eligieron imagen limpia y precio en el copy."
+        layout: "top_banner",
+        layoutLabel: "⬆️ Cabecera Superior Bold",
+        fontStyle: "bold_modern",
+        fontLabel: "🔥 Bold Impacto",
+        reasoning: "Nuestros agentes determinaron colocar una cabecera superior compacta con badge de precio para que la abundante tabla de mar y tierra en madera noble conserve todo el protagonismo sin perder el gancho de la oferta."
       },
       hook: "Cuando una sola cosa no alcanza para calmar el hambre, se pide esto.",
       copy: "Papas rústicas doradas en la base, porción generosa de carne mechada jugosa deshilachada a mano, camarones al ajillo con un toque de merkén ahumado y nuestras tres salsas de la casa. Si vienes de a dos o tres amigos, con esta tabla y un par de schops la noche queda resuelta al tiro.",
       cta: "Etiqueta a los dos amigos que te deben una salida este martes.",
-      imageUrl: "/demo-mania/feed_referencia.jpg",
+      imageUrl: "/demo-mania/d02.png",
       compositionDirective: "Plano cenital 45 grados sobre tabla de madera noble. Iluminación ámbar de restobar con reflejos en las salsas y vapor sutil."
     },
     story: {
@@ -142,7 +142,7 @@ const MANIA_14_DAYS_PLAN: PlanItem[] = [
       hook: "La semana se hace la mitad de larga cuando hay 2x1 en la mesa.",
       copy: "Menta fresca machacada al momento, ron añejo, hielo frappe bien compacto y pulpa natural de maracuyá o frambuesa recién preparada. Hoy miércoles pide uno y el segundo va por cuenta de la casa hasta las 22:00 hrs. Puedes mezclar sabores o repetir tu regalón.",
       cta: "Mesas por orden de llegada o reserva tu rincón por mensaje directo.",
-      imageUrl: "/demo-mania/feed_promo_ref.jpg",
+      imageUrl: "/demo-mania/d03.png",
       compositionDirective: "Dos vasos altos con condensación helada, rodajas de lima y hojas de menta brillante. Fondo oscuro con luces cálidas de neón."
     },
     story: {
@@ -181,7 +181,7 @@ const MANIA_14_DAYS_PLAN: PlanItem[] = [
       hook: "Un Italiano, un Luco y un Chacarero por $10.000. Así de simple.",
       copy: "Carne de vacuno a la plancha caliente, pan frica redondo bien tostado con mantequilla y tres clásicos que no fallan nunca: palta hass molida con tomate fresco y mayo casera, queso mantecoso derretido elástico por los costados, y porotos verdes tiernos con ají verde al hilo. Alcanza para tres o para dos con hambre seria.",
       cta: "Válido hoy en local y para retiro. Escríbenos al WhatsApp antes de que se agote el pan fresco.",
-      imageUrl: "/demo-mania/churrascos.jpg",
+      imageUrl: "/demo-mania/d04.png",
       compositionDirective: "Tres churrascos artesanales alineados sobre tabla de roble. Queso fundido cayendo y palta fresca brillante. Luz lateral directa."
     },
     story: {
@@ -207,20 +207,20 @@ const MANIA_14_DAYS_PLAN: PlanItem[] = [
       format: "Post",
       headline: "Chorrillana Manía Monumental",
       productName: "Chorrillana Tradicional con Posta y Cebolla Caramelizada",
-      price: "Pican 4 personas",
-      isPromo: false,
-      hasText: false,
+      price: "$16.990 (Pican 4)",
+      isPromo: true,
+      hasText: true,
       artDirection: {
-        layout: "clean_photo",
-        layoutLabel: "📸 Fotografía Limpia (Sin Cartel)",
-        fontStyle: "clean_minimal",
-        fontLabel: "Sin texto en imagen",
-        reasoning: "El huevo frito reventándose sobre las papas calientes es el mejor vendedor. Nuestros agentes priorizan la foto limpia 100% apetitosa para captar la mirada en el feed."
+        layout: "bottom_third",
+        layoutLabel: "⬇️ Tercio Inferior Bold",
+        fontStyle: "bold_modern",
+        fontLabel: "🔥 Bold Impacto",
+        reasoning: "Nuestros agentes optaron por situar la tipografía en el tercio inferior sobre una sutil viñeta oscura para dejar la corona de huevos fritos y cebolla caramelizada 100% visible y tentadora."
       },
       hook: "Se terminó la semana. Esto es exactamente lo que te mereces.",
       copy: "Kilo y medio de sabor puesto al centro de la mesa: papas fritas rústicas crujientes por fuera y suaves por dentro, carne picada a mano bien sazonada, cebolla caramelizada lenta en su jugo y dos huevos fritos con la yema lista para romper. Pídela con dos schops helados y ya tienes la noche armada.",
       cta: "Caigan temprano porque los viernes la casa se llena rápido. ¡Nos vemos en Manía!",
-      imageUrl: "/demo-mania/churrascos.jpg",
+      imageUrl: "/demo-mania/d05.png",
       compositionDirective: "Primer plano cenital inclinado de chorrillana humeante con schops de cerveza de fondo desenfocados."
     },
     story: {
@@ -259,7 +259,7 @@ const MANIA_14_DAYS_PLAN: PlanItem[] = [
       hook: "El sábado no se improvisa: se pasa en Manía con buena música y la copa llena.",
       copy: "Desde la piscola negra bien fría con hielo de roca hasta nuestros tragos de autor con gin, frutos rojos y tónica premium. Si buscas un lugar donde comer rico primero y quedarse compartiendo hasta tarde después, esta noche la barra es tuya.",
       cta: "Ven con tu grupo o manda un mensaje al DM para asegurar tu mesa en el salón.",
-      imageUrl: "/demo-mania/feed_promo_ref.jpg",
+      imageUrl: "/demo-mania/d06.png",
       compositionDirective: "Copas iluminadas con luces de neón moradas y azules de restobar nocturno. Hielo cristalino y detalles de garnish."
     },
     story: {
@@ -298,7 +298,7 @@ const MANIA_14_DAYS_PLAN: PlanItem[] = [
       hook: "Para cerrar el fin de semana como corresponde: doble carne y queso fundido.",
       copy: "Dos medallones de carne molida fresca aplastados en plancha bien caliente para formar esa costra crujiente perfecta, doble lámina de queso cheddar derretido encima, salsa secreta de la casa y porción de papas fritas recién hechas. Perfecta para ver una serie o compartir en el sillón.",
       cta: "Pídela por WhatsApp para retiro o delivery directo a tu casa.",
-      imageUrl: "/demo-mania/churrascos.jpg",
+      imageUrl: "/demo-mania/d07.png",
       compositionDirective: "Primer plano de la hamburguesa con el queso cayendo en cascada. Iluminación frontal suave sobre mesa rústica."
     },
     story: {
@@ -325,19 +325,19 @@ const MANIA_14_DAYS_PLAN: PlanItem[] = [
       headline: "Roll Acevichado Especial de la Casa",
       productName: "Sushi Roll Acevichado con Camarón Furai",
       price: "$7.500 (10 piezas)",
-      isPromo: false,
-      hasText: false,
+      isPromo: true,
+      hasText: true,
       artDirection: {
-        layout: "clean_photo",
-        layoutLabel: "📸 Fotografía Limpia (Sin Cartel)",
+        layout: "split_left",
+        layoutLabel: "◧ Split Lateral Minimal",
         fontStyle: "clean_minimal",
-        fontLabel: "Sin texto en imagen",
-        reasoning: "La frescura de la salsa acevichada sobre las láminas de palta y el sésamo tostado luce mejor como fotografía de autor limpia, invitando al antojo natural."
+        fontLabel: "✨ Sans Minimalista",
+        reasoning: "Nuestros agentes integraron una columna tipográfica sobria y minimalista en el tercio izquierdo para respetar la estética japonesa del plato sin perder la claridad de la oferta gastronómica."
       },
       hook: "El sushi bien hecho no necesita adornos: se nota desde el primer bocado.",
       copy: "Camarón furai crocante y palta hass por dentro, envuelto en pesca fresca del día y bañado en nuestra salsa acevichada cremosa con cilantro fino y gotas de limón de pica. Preparado pieza por pieza en nuestra barra con ingredientes frescos de la mañana.",
       cta: "Disponible desde las 17:00 hrs para consumo en local y delivery.",
-      imageUrl: "/demo-mania/hand_rolls.jpg",
+      imageUrl: "/demo-mania/d08.png",
       compositionDirective: "Roll presentado sobre piedra pizarra oscura. Salsa acevichada brillante con cebollín picado fino y semillas de sésamo."
     },
     story: {
@@ -376,7 +376,7 @@ const MANIA_14_DAYS_PLAN: PlanItem[] = [
       hook: "Nadie viene a Manía a comerse solo una papa. Es imposible.",
       copy: "Papas rústicas con cáscara fritas al punto exacto, bañadas en abundante salsa de queso cheddar artesanal derretida y cubiertas con crocantes trozos de tocino ahumado salteado al wok y ciboulette fresco. Pídelas al centro con un schop helado y conversa tranquilo.",
       cta: "¿Con quién compartirías este plato hoy? Etiquétalo aquí.",
-      imageUrl: "/demo-mania/churrascos.jpg",
+      imageUrl: "/demo-mania/d09.png",
       compositionDirective: "Vista picada de 30 grados de una fuente rústica de papas con queso elástico desbordando por los bordes."
     },
     story: {
@@ -404,18 +404,18 @@ const MANIA_14_DAYS_PLAN: PlanItem[] = [
       productName: "Carne Mechada con 6 Horas de Cocción Lenta",
       price: "Especialidad Tradicional",
       isPromo: false,
-      hasText: false,
+      hasText: true,
       artDirection: {
-        layout: "clean_photo",
-        layoutLabel: "📸 Fotografía Limpia (Sin Cartel)",
-        fontStyle: "clean_minimal",
-        fontLabel: "Sin texto en imagen",
-        reasoning: "Post de autoridad culinaria: la fotografía limpia de la carne desmenuzándose sola con los jugos de cocción transmite honestidad y artesanía gastronómica."
+        layout: "top_banner",
+        layoutLabel: "⬆️ Cabecera Editorial",
+        fontStyle: "serif_script_mix",
+        fontLabel: "✍️ Script Artesanal",
+        reasoning: "Nuestros agentes determinaron usar una tipografía script con estilo de caligrafía artesanal en la parte superior para reforzar el concepto de receta tradicional y cocción lenta de 6 horas."
       },
       hook: "Seis horas a fuego lento. No hay atajos para lograr este sabor.",
       copy: "Cada mañana sazonamos los cortes de carne con cebolla dorada, pimentón asado, vino tinto chileno y hierbas de huerto. Se cocina tapada a fuego bajísimo durante seis horas hasta que prácticamente se desarma al tocarla con el tenedor. Por eso cuando la pruebas en tu sándwich o chorrillana, el sabor es profundo y jugoso.",
       cta: "Ven a probarla hoy miércoles en tu formato favorito: sándwich, chorrillana o tabla.",
-      imageUrl: "/demo-mania/feed_referencia.jpg",
+      imageUrl: "/demo-mania/d10.png",
       compositionDirective: "Primer plano de la olla de hierro con la carne mechada humeante deshilachándose con pinzas de cocina."
     },
     story: {
@@ -454,7 +454,7 @@ const MANIA_14_DAYS_PLAN: PlanItem[] = [
       hook: "Jueves con sabor a fin de semana: Schop artesanal de 500cc a $2.500.",
       copy: "Temperatura perfecta, espuma cremosa que retiene el aroma y las mejores variedades locales de cerveza tirada directamente de la chopera. Pide la tuya acompañada de un sándwich o unas papas para picar. Promoción válida en salón durante toda la jornada de jueves.",
       cta: "La primera ronda va por ti. ¿A quién invitas hoy?",
-      imageUrl: "/demo-mania/churrascos.jpg",
+      imageUrl: "/demo-mania/d11.png",
       compositionDirective: "Vaso de schop de 500cc con condensación fría y gotas corriendo por el cristal sobre barra de madera rústica."
     },
     story: {
@@ -481,19 +481,19 @@ const MANIA_14_DAYS_PLAN: PlanItem[] = [
       headline: "Sándwich Mechada Luco Monumental",
       productName: "Carne Mechada con Doble Queso Mantecoso Derretido",
       price: "$7.990 en pan frica artesanal",
-      isPromo: false,
-      hasText: false,
+      isPromo: true,
+      hasText: true,
       artDirection: {
-        layout: "clean_photo",
-        layoutLabel: "📸 Fotografía Limpia (Sin Cartel)",
-        fontStyle: "clean_minimal",
-        fontLabel: "Sin texto en imagen",
-        reasoning: "El queso fundido cayendo por los costados del pan frica tostado tiene tanto impacto visual que un cartel publicitario restaría apetitosidad. Foto limpia de alta gama."
+        layout: "top_banner",
+        layoutLabel: "⬆️ Cabecera Editorial",
+        fontStyle: "serif_script_mix",
+        fontLabel: "📰 Mix Editorial Serif",
+        reasoning: "Nuestros agentes combinaron una tipografía serif refinada con la foto del queso mantecoso derretido, logrando un balance perfecto entre apetitosidad y elegancia de restobar gourmet."
       },
       hook: "Si el queso no desborda por los bordes, no es un Luco de Manía.",
       copy: "Carne mechada tierna y jugosa en abundancia, doble porción de queso mantecoso chileno fundido al calor de la plancha y pan frica artesanal bien calentito que aguanta cada mordisco sin desarmarse. Si eres de los que ama la comida honesta y con sabor a casa, este sándwich te va a conquistar.",
       cta: "Pídelo solo o en combo con papas y schop. ¡Te esperamos en la barra!",
-      imageUrl: "/demo-mania/churrascos.jpg",
+      imageUrl: "/demo-mania/d12.png",
       compositionDirective: "Plano medio cerrado del sándwich cortado por la mitad con el queso mantecoso elástico cayendo sobre la tabla."
     },
     story: {
@@ -532,7 +532,7 @@ const MANIA_14_DAYS_PLAN: PlanItem[] = [
       hook: "La fórmula infalible para abrir la mesa de sábado con tus amigos.",
       copy: "Cinco botellas de cerveza heladas sumergidas en hielo picado más una fuente grande de nuestras papas rústicas con salsas para picar. Llegas, te sientas, pides el balde y te olvidas de todo. Válido durante toda la noche de sábado.",
       cta: "Junta al grupo y caigan a Manía. ¿Quién se anota para hoy?",
-      imageUrl: "/demo-mania/feed_promo_ref.jpg",
+      imageUrl: "/demo-mania/d13.png",
       compositionDirective: "Balde metálico vintage con botellas heladas y limones cortados, rodeado de papas rústicas doradas."
     },
     story: {
@@ -571,7 +571,7 @@ const MANIA_14_DAYS_PLAN: PlanItem[] = [
       hook: "¿Él quiere sándwich y tú quieres sushi? En Manía no hay que elegir.",
       copy: "Armamos el combo definitivo para cuando no se ponen de acuerdo: dos hand rolls apanados crocantes rellenos de pollo y palta, más un churrasco italiano gigante en pan frica tostado con palta y tomate, acompañado de una porción de papas fritas doradas. Todos felices y la cena resuelta en un solo pedido.",
       cta: "Pídelo por WhatsApp para llevar a casa o disfruta tu domingo en nuestro salón.",
-      imageUrl: "/demo-mania/hand_rolls.jpg",
+      imageUrl: "/demo-mania/d14.png",
       compositionDirective: "Composición dual armónica: tabla con hand rolls a un lado y sándwich churrasco cortado al otro, papas al centro."
     },
     story: {
