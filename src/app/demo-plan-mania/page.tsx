@@ -606,22 +606,22 @@ export default function DemoPlanManiaPage() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 pb-24 selection:bg-rose-500 selection:text-white">
+    <div className="min-h-screen bg-slate-50 text-slate-900 pb-24 selection:bg-rose-500 selection:text-white">
       {/* HEADER PRINCIPAL */}
-      <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-40">
+      <header className="border-b border-slate-200 bg-white/90 backdrop-blur-md sticky top-0 z-40 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-rose-600 via-orange-500 to-amber-400 flex items-center justify-center text-xl shadow-lg shadow-rose-900/30">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-rose-600 via-orange-500 to-amber-400 flex items-center justify-center text-xl shadow-lg shadow-rose-500/20 text-white">
               🍻
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black uppercase tracking-widest text-rose-400 bg-rose-950/80 border border-rose-800/60 px-2 py-0.5 rounded-full">
+                <span className="text-[10px] font-black uppercase tracking-widest text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full">
                   Demostración en Vivo
                 </span>
-                <span className="text-xs text-slate-400 font-medium">Manía Restobar</span>
+                <span className="text-xs text-slate-500 font-semibold">Manía Restobar</span>
               </div>
-              <h1 className="text-lg sm:text-xl font-black tracking-tight text-white flex items-center gap-2">
+              <h1 className="text-lg sm:text-xl font-black tracking-tight text-slate-900 flex items-center gap-2">
                 Planificación 14 Días · Radar de Nicho
               </h1>
             </div>
@@ -630,13 +630,13 @@ export default function DemoPlanManiaPage() {
           <div className="flex items-center gap-2.5 flex-wrap">
             <Link
               href="/automatizacion-rrss/panel/estrategia"
-              className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700 transition-all flex items-center gap-2"
+              className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-xs font-bold text-slate-700 border border-slate-200 shadow-xs transition-all flex items-center gap-2"
             >
               <span>←</span> Volver a Estrategia
             </Link>
             <Link
               href="/automatizacion-rrss/panel/catalogo"
-              className="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-xs font-black text-white shadow-lg shadow-rose-600/30 transition-all flex items-center gap-1.5"
+              className="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-xs font-black text-white shadow-md shadow-rose-600/20 transition-all flex items-center gap-1.5"
             >
               <span>🔥</span> Ir a Mis Promociones
             </Link>
@@ -646,38 +646,38 @@ export default function DemoPlanManiaPage() {
 
       {/* BANNER DE INTELIGENCIA DE NICHO */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
-        <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-rose-950/40 via-purple-950/30 to-slate-900 border border-rose-800/40 shadow-xl space-y-4">
+        <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-rose-50 via-orange-50/60 to-amber-50/50 border border-rose-200/80 shadow-sm space-y-4">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <span className="text-xl">📡</span>
-                <h2 className="text-sm sm:text-base font-black text-white uppercase tracking-wider">
+                <h2 className="text-sm sm:text-base font-black text-slate-900 uppercase tracking-wider">
                   Radar de Nicho Activo: Restobar, Sushi & Coctelería Nocturna
                 </h2>
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               </div>
-              <p className="text-xs text-slate-300 font-medium max-w-3xl leading-relaxed">
+              <p className="text-xs text-slate-700 font-medium max-w-3xl leading-relaxed">
                 Nuestros agentes analizaron el feed histórico de <strong>Manía Restobar</strong> junto a las tendencias de consumo gastronómico en Chile: combinamos combos de alto volumen (churrascos y hand rolls), días de coctelería 2x1, tablas para compartir y alternancia equilibrada de <strong>imágenes con cartel publicitario</strong> y <strong>fotografías limpias de apetito visual</strong>.
               </p>
             </div>
 
             {/* METRICAS DEL PLAN */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 shrink-0">
-              <div className="bg-slate-900/90 border border-slate-800 p-2.5 rounded-2xl text-center">
-                <div className="text-base font-black text-rose-400">14</div>
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Posts de Feed</div>
+              <div className="bg-white border border-rose-100 p-2.5 rounded-2xl text-center shadow-xs">
+                <div className="text-base font-black text-rose-600">14</div>
+                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Posts de Feed</div>
               </div>
-              <div className="bg-slate-900/90 border border-slate-800 p-2.5 rounded-2xl text-center">
-                <div className="text-base font-black text-amber-400">14</div>
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Historias Diarias</div>
+              <div className="bg-white border border-rose-100 p-2.5 rounded-2xl text-center shadow-xs">
+                <div className="text-base font-black text-amber-600">14</div>
+                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Historias Diarias</div>
               </div>
-              <div className="bg-slate-900/90 border border-slate-800 p-2.5 rounded-2xl text-center">
-                <div className="text-base font-black text-indigo-400">9 / 5</div>
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Con / Sin Texto</div>
+              <div className="bg-white border border-rose-100 p-2.5 rounded-2xl text-center shadow-xs">
+                <div className="text-base font-black text-indigo-600">14 / 0</div>
+                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Promociones</div>
               </div>
-              <div className="bg-slate-900/90 border border-slate-800 p-2.5 rounded-2xl text-center">
-                <div className="text-base font-black text-emerald-400">100%</div>
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tono Humano</div>
+              <div className="bg-white border border-rose-100 p-2.5 rounded-2xl text-center shadow-xs">
+                <div className="text-base font-black text-emerald-600">100%</div>
+                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Tono Humano</div>
               </div>
             </div>
           </div>
@@ -687,13 +687,13 @@ export default function DemoPlanManiaPage() {
       {/* FILTROS Y SELECTOR DE DIAS */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 space-y-4">
         {/* Barra de Filtros */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900/60 p-3 rounded-2xl border border-slate-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200 shadow-xs">
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 text-xs font-bold">
-            <span className="text-[11px] text-slate-400 mr-2 shrink-0">Filtrar por:</span>
+            <span className="text-[11px] text-slate-500 mr-2 shrink-0">Filtrar por:</span>
             <button
               onClick={() => setFilterType("all")}
               className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer shrink-0 ${
-                filterType === "all" ? "bg-rose-600 text-white shadow-xs" : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                filterType === "all" ? "bg-rose-600 text-white shadow-xs" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
               }`}
             >
               Todos los 14 Días
@@ -701,7 +701,7 @@ export default function DemoPlanManiaPage() {
             <button
               onClick={() => setFilterType("promo")}
               className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer shrink-0 ${
-                filterType === "promo" ? "bg-rose-600 text-white shadow-xs" : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                filterType === "promo" ? "bg-rose-600 text-white shadow-xs" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
               }`}
             >
               🔥 Solo Promociones ({MANIA_14_DAYS_PLAN.filter((i) => i.post.isPromo).length})
@@ -709,7 +709,7 @@ export default function DemoPlanManiaPage() {
             <button
               onClick={() => setFilterType("with_text")}
               className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer shrink-0 ${
-                filterType === "with_text" ? "bg-rose-600 text-white shadow-xs" : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                filterType === "with_text" ? "bg-rose-600 text-white shadow-xs" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
               }`}
             >
               🏷️ Con Texto ({MANIA_14_DAYS_PLAN.filter((i) => i.post.hasText).length})
@@ -717,14 +717,14 @@ export default function DemoPlanManiaPage() {
             <button
               onClick={() => setFilterType("without_text")}
               className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer shrink-0 ${
-                filterType === "without_text" ? "bg-rose-600 text-white shadow-xs" : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                filterType === "without_text" ? "bg-rose-600 text-white shadow-xs" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
               }`}
             >
               📸 Sin Texto ({MANIA_14_DAYS_PLAN.filter((i) => !i.post.hasText).length})
             </button>
           </div>
 
-          <div className="text-[11px] text-slate-400 font-medium">
+          <div className="text-[11px] text-slate-500 font-medium">
             Selecciona un día en la barra inferior para ver su post e historia
           </div>
         </div>
@@ -739,19 +739,19 @@ export default function DemoPlanManiaPage() {
                 onClick={() => setSelectedDay(item.day)}
                 className={`p-2.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between select-none ${
                   isSelected
-                    ? "bg-gradient-to-b from-rose-900/90 to-rose-950 border-rose-500 shadow-lg shadow-rose-950/50 scale-102"
-                    : "bg-slate-900/80 border-slate-800 hover:border-slate-700 hover:bg-slate-850"
+                    ? "bg-rose-600 border-rose-600 text-white shadow-md shadow-rose-600/30 scale-102"
+                    : "bg-white border-slate-200 hover:border-rose-300 hover:bg-rose-50/40 text-slate-800 shadow-xs"
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className={`text-[10px] font-black uppercase ${isSelected ? "text-rose-300" : "text-slate-400"}`}>
+                  <span className={`text-[10px] font-black uppercase ${isSelected ? "text-rose-100" : "text-slate-400"}`}>
                     Día {item.day}
                   </span>
                   <span className="text-xs">{item.post.isPromo ? "🔥" : "✨"}</span>
                 </div>
                 <div className="mt-1">
-                  <div className="text-xs font-black text-white truncate">{item.weekday}</div>
-                  <div className="text-[9px] text-slate-400 font-bold truncate mt-0.5">
+                  <div className={`text-xs font-black truncate ${isSelected ? "text-white" : "text-slate-900"}`}>{item.weekday}</div>
+                  <div className={`text-[9px] font-bold truncate mt-0.5 ${isSelected ? "text-rose-100" : "text-slate-500"}`}>
                     {item.post.hasText ? "🏷️ Con texto" : "📸 Limpia"}
                   </div>
                 </div>
@@ -763,38 +763,38 @@ export default function DemoPlanManiaPage() {
 
       {/* CONTENEDOR PRINCIPAL: DETALLE DEL DÍA SELECCIONADO */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-8 shadow-2xl space-y-6">
+        <div className="bg-white border border-slate-200 rounded-3xl p-5 sm:p-8 shadow-xl shadow-slate-200/50 space-y-6">
           {/* Header del Día */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 border-b border-slate-100">
             <div className="space-y-1">
               <div className="flex items-center gap-2.5 flex-wrap">
-                <span className="px-3 py-1 rounded-full text-xs font-black bg-rose-600 text-white tracking-wide uppercase">
+                <span className="px-3 py-1 rounded-full text-xs font-black bg-rose-600 text-white tracking-wide uppercase shadow-xs">
                   Día {activeItem.day} · {activeItem.weekday}
                 </span>
                 {activeItem.post.isPromo && (
-                  <span className="px-3 py-1 rounded-full text-xs font-black bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase">
+                  <span className="px-3 py-1 rounded-full text-xs font-black bg-amber-50 text-amber-800 border border-amber-300 uppercase">
                     🔥 Promoción Comercial
                   </span>
                 )}
-                <span className="px-3 py-1 rounded-full text-xs font-black bg-slate-800 text-slate-300 border border-slate-700">
+                <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
                   {activeItem.post.hasText ? "🏷️ Imagen CON Texto de Oferta" : "📸 Fotografía Limpia Sin Texto"}
                 </span>
               </div>
-              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight mt-1">
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-1">
                 {activeItem.post.headline}
               </h2>
-              <p className="text-xs text-rose-300/80 font-medium flex items-center gap-1.5">
-                <span>🎯 Oportunidad detectada por nuestros agentes:</span>
-                <span className="italic">{activeItem.nicheTrend}</span>
+              <p className="text-xs text-rose-600 font-medium flex items-center gap-1.5">
+                <span className="font-bold">🎯 Oportunidad detectada por nuestros agentes:</span>
+                <span className="italic text-slate-700">{activeItem.nicheTrend}</span>
               </p>
             </div>
 
             {/* Selector de pestañas internas */}
-            <div className="flex items-center gap-1.5 bg-slate-950 p-1.5 rounded-2xl border border-slate-800 text-xs font-bold self-start lg:self-center">
+            <div className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200 text-xs font-bold self-start lg:self-center">
               <button
                 onClick={() => setViewTab("feed")}
                 className={`px-3 py-2 rounded-xl transition-all cursor-pointer ${
-                  viewTab === "feed" ? "bg-rose-600 text-white" : "text-slate-400 hover:text-white"
+                  viewTab === "feed" ? "bg-rose-600 text-white shadow-xs" : "text-slate-600 hover:text-slate-900"
                 }`}
               >
                 📸 Post de Feed
@@ -802,7 +802,7 @@ export default function DemoPlanManiaPage() {
               <button
                 onClick={() => setViewTab("story")}
                 className={`px-3 py-2 rounded-xl transition-all cursor-pointer ${
-                  viewTab === "story" ? "bg-amber-500 text-slate-950 font-black" : "text-slate-400 hover:text-white"
+                  viewTab === "story" ? "bg-amber-500 text-slate-950 font-black shadow-xs" : "text-slate-600 hover:text-slate-900"
                 }`}
               >
                 📱 Historia Diaria (Story)
@@ -810,7 +810,7 @@ export default function DemoPlanManiaPage() {
               <button
                 onClick={() => setViewTab("art_direction")}
                 className={`px-3 py-2 rounded-xl transition-all cursor-pointer ${
-                  viewTab === "art_direction" ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-white"
+                  viewTab === "art_direction" ? "bg-indigo-600 text-white shadow-xs" : "text-slate-600 hover:text-slate-900"
                 }`}
               >
                 🎨 Dirección de Arte
@@ -818,7 +818,7 @@ export default function DemoPlanManiaPage() {
               <button
                 onClick={() => setViewTab("niche")}
                 className={`px-3 py-2 rounded-xl transition-all cursor-pointer ${
-                  viewTab === "niche" ? "bg-emerald-600 text-white" : "text-slate-400 hover:text-white"
+                  viewTab === "niche" ? "bg-emerald-600 text-white shadow-xs" : "text-slate-600 hover:text-slate-900"
                 }`}
               >
                 📡 Radar de Nicho
@@ -831,15 +831,15 @@ export default function DemoPlanManiaPage() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
               {/* Mockup del Feed (Columna Izquierda 5 cols) */}
               <div className="lg:col-span-5 space-y-3">
-                <div className="bg-slate-950 rounded-3xl border border-slate-800 p-4 shadow-xl space-y-3">
+                <div className="bg-white rounded-3xl border border-slate-200 p-4 shadow-md space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
                       <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-rose-600 to-orange-400 flex items-center justify-center font-bold text-xs text-white">
                         MR
                       </div>
                       <div>
-                        <div className="text-xs font-black text-white">maniarestobar</div>
-                        <div className="text-[10px] text-slate-400">Manía Restobar · Coquimbo / La Serena</div>
+                        <div className="text-xs font-black text-slate-900">maniarestobar</div>
+                        <div className="text-[10px] text-slate-500">Manía Restobar · Coquimbo / La Serena</div>
                       </div>
                     </div>
                     <span className="text-xs text-slate-400">•••</span>
@@ -847,7 +847,7 @@ export default function DemoPlanManiaPage() {
 
                   {/* Imagen de la publicación con Badge visual si es con texto */}
                   <div
-                    className="relative aspect-square rounded-2xl overflow-hidden bg-slate-900 border border-slate-800 group cursor-pointer"
+                    className="relative aspect-square rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 group cursor-pointer"
                     onClick={() => setSelectedImageModal(activeItem.post.imageUrl)}
                   >
                     <img
@@ -882,7 +882,7 @@ export default function DemoPlanManiaPage() {
                   </div>
 
                   {/* Barra de Interacciones */}
-                  <div className="flex items-center justify-between text-slate-300 pt-1 px-1">
+                  <div className="flex items-center justify-between text-slate-600 pt-1 px-1">
                     <div className="flex items-center gap-3 text-lg">
                       <span>❤️</span>
                       <span>💬</span>
@@ -892,7 +892,7 @@ export default function DemoPlanManiaPage() {
                   </div>
                 </div>
 
-                <div className="p-3 bg-slate-950/60 rounded-2xl border border-slate-800 text-[11px] text-slate-400">
+                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 text-[11px] text-slate-600 text-center font-medium">
                   💡 Haz clic sobre la foto para verla en pantalla completa de alta fidelidad.
                 </div>
               </div>
@@ -900,48 +900,48 @@ export default function DemoPlanManiaPage() {
               {/* Copywriting Humanizado & Detalles (Columna Derecha 7 cols) */}
               <div className="lg:col-span-7 space-y-5">
                 {/* Caja de Hook */}
-                <div className="p-4 rounded-2xl bg-rose-950/30 border border-rose-800/50 space-y-1.5">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-rose-400 block">
+                <div className="p-4 rounded-2xl bg-rose-50/80 border border-rose-200 space-y-1.5">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-rose-700 block">
                     🎣 Hook de Primer Segundo
                   </span>
-                  <p className="text-sm sm:text-base font-black text-white leading-snug">
+                  <p className="text-sm sm:text-base font-black text-slate-900 leading-snug">
                     "{activeItem.post.hook}"
                   </p>
                 </div>
 
                 {/* Texto del Post Humanizado */}
-                <div className="p-5 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+                <div className="p-5 rounded-2xl bg-slate-50/80 border border-slate-200 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                      📝 Copywriting Persuasivo (Tú a tú · Sin relleno de IA)
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                      📝 Copywriting Persuasivo (Tú a tú · Sin relleno corporativo)
                     </span>
                     <button
                       onClick={() => navigator.clipboard.writeText(`${activeItem.post.hook}\n\n${activeItem.post.copy}\n\n${activeItem.post.cta}`)}
-                      className="text-[10px] font-bold text-rose-400 hover:text-rose-300 bg-rose-950/60 border border-rose-900/60 px-2.5 py-1 rounded-lg transition-all cursor-pointer"
+                      className="text-[10px] font-bold text-rose-700 hover:text-rose-800 bg-white border border-rose-200 px-2.5 py-1 rounded-lg transition-all cursor-pointer shadow-2xs"
                     >
                       Copiar Copy
                     </button>
                   </div>
-                  <p className="text-xs sm:text-sm text-slate-200 font-medium leading-relaxed whitespace-pre-line">
+                  <p className="text-xs sm:text-sm text-slate-800 font-medium leading-relaxed whitespace-pre-line">
                     {activeItem.post.copy}
                   </p>
-                  <div className="pt-3 border-t border-slate-800 text-xs sm:text-sm font-bold text-amber-300 flex items-center gap-2">
+                  <div className="pt-3 border-t border-slate-200 text-xs sm:text-sm font-bold text-amber-800 flex items-center gap-2">
                     <span>👉</span>
                     <span>{activeItem.post.cta}</span>
                   </div>
                 </div>
 
                 {/* Resumen de Dirección de Arte */}
-                <div className="p-4 rounded-2xl bg-indigo-950/30 border border-indigo-800/40 space-y-2">
+                <div className="p-4 rounded-2xl bg-indigo-50/80 border border-indigo-200 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-indigo-700">
                       🎯 Justificación del Agente Director de Arte
                     </span>
-                    <span className="text-[10px] font-bold text-indigo-300 bg-indigo-900/60 px-2 py-0.5 rounded-full">
+                    <span className="text-[10px] font-bold text-indigo-800 bg-indigo-100/90 border border-indigo-200 px-2 py-0.5 rounded-full">
                       {activeItem.post.artDirection.layoutLabel} · {activeItem.post.artDirection.fontLabel}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-300 font-medium leading-relaxed italic">
+                  <p className="text-xs text-indigo-950 font-medium leading-relaxed italic">
                     "{activeItem.post.artDirection.reasoning}"
                   </p>
                 </div>
@@ -954,7 +954,7 @@ export default function DemoPlanManiaPage() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
               {/* Mockup Vertical 9:16 de la Story */}
               <div className="lg:col-span-5 flex justify-center">
-                <div className="w-full max-w-[300px] aspect-[9/16] rounded-3xl bg-slate-950 border-2 border-slate-700 p-4 shadow-2xl relative overflow-hidden flex flex-col justify-between">
+                <div className="w-full max-w-[300px] aspect-[9/16] rounded-[36px] bg-slate-900 border-4 border-slate-300 p-4 shadow-2xl relative overflow-hidden flex flex-col justify-between">
                   <img
                     src={activeItem.post.imageUrl}
                     alt="Story visual"
@@ -974,7 +974,7 @@ export default function DemoPlanManiaPage() {
                         M
                       </div>
                       <span className="text-[11px] font-black text-white">maniarestobar</span>
-                      <span className="text-[10px] text-slate-400">hace {activeItem.story.time}</span>
+                      <span className="text-[10px] text-slate-300">hace {activeItem.story.time}</span>
                     </div>
                   </div>
 
@@ -997,7 +997,7 @@ export default function DemoPlanManiaPage() {
                       <p className="text-xs font-black">{activeItem.story.interactiveLabel}</p>
                     </div>
 
-                    <div className="flex items-center justify-between text-slate-400 text-xs px-2">
+                    <div className="flex items-center justify-between text-slate-300 text-xs px-2">
                       <span>Enviar mensaje...</span>
                       <span>❤️</span>
                     </div>
@@ -1007,44 +1007,44 @@ export default function DemoPlanManiaPage() {
 
               {/* Guión y Recomendación Técnica de la Story */}
               <div className="lg:col-span-7 space-y-5">
-                <div className="p-5 rounded-2xl bg-amber-950/20 border border-amber-500/40 space-y-3">
+                <div className="p-5 rounded-2xl bg-amber-50/80 border border-amber-200 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-black uppercase tracking-wider text-amber-400">
+                    <span className="text-xs font-black uppercase tracking-wider text-amber-800">
                       ⚡ Estrategia de la Historia del Día
                     </span>
-                    <span className="text-xs font-bold text-amber-300 bg-amber-950/60 px-3 py-1 rounded-full border border-amber-800">
+                    <span className="text-xs font-bold text-amber-900 bg-amber-100 px-3 py-1 rounded-full border border-amber-300">
                       Hora sugerida: {activeItem.story.time}
                     </span>
                   </div>
-                  <h4 className="text-base font-black text-white">
+                  <h4 className="text-base font-black text-slate-900">
                     Objetivo: {activeItem.story.objective}
                   </h4>
-                  <p className="text-xs text-slate-300 leading-relaxed font-medium">
+                  <p className="text-xs text-slate-700 leading-relaxed font-medium">
                     Diseñada con copywriting ultra-corto (máximo 125 caracteres por slide según nuestro skill de Stories) para retener la atención inmediata y generar respuesta al mensaje directo o activación de venta.
                   </p>
                 </div>
 
-                <div className="p-5 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                <div className="p-5 rounded-2xl bg-slate-50/80 border border-slate-200 space-y-3">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
                     📜 Guión de Pantalla (Secuencia de 3 Slides)
                   </span>
                   <div className="space-y-2.5">
                     {activeItem.story.slideTexts.map((text, idx) => (
-                      <div key={idx} className="flex items-start gap-3 p-3 rounded-xl bg-slate-900/80 border border-slate-800">
+                      <div key={idx} className="flex items-start gap-3 p-3 rounded-xl bg-white border border-slate-200 shadow-2xs">
                         <span className="w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center text-[10px] font-black shrink-0 mt-0.5">
                           {idx + 1}
                         </span>
-                        <p className="text-xs text-slate-200 font-bold leading-relaxed">{text}</p>
+                        <p className="text-xs text-slate-800 font-bold leading-relaxed">{text}</p>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-1.5">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1.5">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
                     🎥 Pauta de Grabación & Audio Sugerido
                   </span>
-                  <p className="text-xs text-slate-300 leading-relaxed">
+                  <p className="text-xs text-slate-700 leading-relaxed font-medium">
                     {activeItem.story.visualRecommendation}
                   </p>
                 </div>
@@ -1055,22 +1055,22 @@ export default function DemoPlanManiaPage() {
           {/* CONTENIDO PESTAÑA: DIRECCIÓN DE ARTE */}
           {viewTab === "art_direction" && (
             <div className="space-y-6">
-              <div className="p-5 rounded-2xl bg-indigo-950/30 border border-indigo-800/40 space-y-2">
-                <h3 className="text-sm font-black uppercase tracking-wider text-indigo-400">
+              <div className="p-5 rounded-2xl bg-indigo-50/80 border border-indigo-200 space-y-2">
+                <h3 className="text-sm font-black uppercase tracking-wider text-indigo-800">
                   Análisis Autónomo del Agente Director de Arte para este Post
                 </h3>
-                <p className="text-xs text-slate-300 font-medium leading-relaxed">
+                <p className="text-xs text-indigo-950 font-medium leading-relaxed">
                   Para cada imagen del calendario, nuestros agentes determinaron si convenía superponer carteles publicitarios o dejar la fotografía limpia. En caso de llevar texto, definieron la disposición y la tipografía exacta según la composición de la escena.
                 </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-5 rounded-2xl bg-slate-950 border border-slate-800 space-y-2">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                <div className="p-5 rounded-2xl bg-slate-50/80 border border-slate-200 space-y-2">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
                     Disposición Espacial (Layout)
                   </span>
-                  <h4 className="text-base font-black text-white">{activeItem.post.artDirection.layoutLabel}</h4>
-                  <p className="text-xs text-slate-400 leading-relaxed">
+                  <h4 className="text-base font-black text-slate-900">{activeItem.post.artDirection.layoutLabel}</h4>
+                  <p className="text-xs text-slate-700 leading-relaxed font-medium">
                     {activeItem.post.artDirection.layout === "split_left" &&
                       "El producto se ubica a la derecha dejando el 50% izquierdo con fondo suave para colocar el precio, titular y botón de acción sin tapar la comida."}
                     {activeItem.post.artDirection.layout === "split_right" &&
@@ -1084,12 +1084,12 @@ export default function DemoPlanManiaPage() {
                   </p>
                 </div>
 
-                <div className="p-5 rounded-2xl bg-slate-950 border border-slate-800 space-y-2">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                <div className="p-5 rounded-2xl bg-slate-50/80 border border-slate-200 space-y-2">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
                     Estilo Tipográfico
                   </span>
-                  <h4 className="text-base font-black text-white">{activeItem.post.artDirection.fontLabel}</h4>
-                  <p className="text-xs text-slate-400 leading-relaxed">
+                  <h4 className="text-base font-black text-slate-900">{activeItem.post.artDirection.fontLabel}</h4>
+                  <p className="text-xs text-slate-700 leading-relaxed font-medium">
                     {activeItem.post.artDirection.fontStyle === "bold_modern" &&
                       "Fuentes condensadas de alto impacto (Bebas Neue / Anton) ideales para ofertas comerciales, combos y precios fuertes en restobares."}
                     {activeItem.post.artDirection.fontStyle === "serif_script_mix" &&
@@ -1100,11 +1100,11 @@ export default function DemoPlanManiaPage() {
                 </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-1.5">
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+              <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200 space-y-1.5">
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
                   Directiva Fotográfica Inyectada en el Prompt
                 </span>
-                <p className="text-xs text-slate-300 font-mono bg-slate-900 p-3 rounded-xl border border-slate-850">
+                <p className="text-xs text-slate-800 font-mono bg-white p-3 rounded-xl border border-slate-200">
                   {activeItem.post.compositionDirective}
                 </p>
               </div>
@@ -1114,31 +1114,31 @@ export default function DemoPlanManiaPage() {
           {/* CONTENIDO PESTAÑA: RADAR DE NICHO */}
           {viewTab === "niche" && (
             <div className="space-y-6">
-              <div className="p-5 rounded-2xl bg-emerald-950/30 border border-emerald-800/40 space-y-2">
-                <h3 className="text-sm font-black uppercase tracking-wider text-emerald-400">
+              <div className="p-5 rounded-2xl bg-emerald-50/80 border border-emerald-200 space-y-2">
+                <h3 className="text-sm font-black uppercase tracking-wider text-emerald-800">
                   Por qué nuestros agentes eligieron este contenido para el Día {activeItem.day}
                 </h3>
-                <p className="text-xs text-slate-300 font-medium leading-relaxed">
+                <p className="text-xs text-emerald-950 font-medium leading-relaxed">
                   {activeItem.nicheInsight}
                 </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-1.5">
-                  <span className="text-[10px] font-black uppercase text-slate-400">Comportamiento del Consumidor</span>
-                  <p className="text-xs text-slate-300 font-medium">
+                <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200 space-y-1.5">
+                  <span className="text-[10px] font-black uppercase text-slate-500">Comportamiento del Consumidor</span>
+                  <p className="text-xs text-slate-800 font-medium">
                     Los días {activeItem.weekday.toLowerCase()} el usuario busca {activeItem.day <= 4 ? "precios accesibles para no cocinar en casa" : "experiencias para compartir y cortar la rutina con amigos"}.
                   </p>
                 </div>
-                <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-1.5">
-                  <span className="text-[10px] font-black uppercase text-slate-400">Rol en el Embudo</span>
-                  <p className="text-xs text-slate-300 font-medium">
+                <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200 space-y-1.5">
+                  <span className="text-[10px] font-black uppercase text-slate-500">Rol en el Embudo</span>
+                  <p className="text-xs text-slate-800 font-medium">
                     {activeItem.post.isPromo ? "Conversión directa de venta y activación de reservas inmediatas." : "Autoridad de marca y retención mediante deseo visual gastronómico."}
                   </p>
                 </div>
-                <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-1.5">
-                  <span className="text-[10px] font-black uppercase text-slate-400">Canal de Cierre</span>
-                  <p className="text-xs text-slate-300 font-medium">
+                <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200 space-y-1.5">
+                  <span className="text-[10px] font-black uppercase text-slate-500">Canal de Cierre</span>
+                  <p className="text-xs text-slate-800 font-medium">
                     WhatsApp para pedidos con retiro o DM para reservas de mesas en el salón nocturno.
                   </p>
                 </div>
