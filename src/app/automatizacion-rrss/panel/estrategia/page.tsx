@@ -707,6 +707,33 @@ export default function EstrategiaPage() {
           )}
 
           <div className={`space-y-6 ${userPlan === 'free' && !isUserAdmin(user?.email) ? 'opacity-30 pointer-events-none blur-sm' : ''}`}>
+             {/* BANNER DEMOSTRACIÓN PLAN 14 DÍAS + RADAR DE NICHO */}
+             <div className="p-4 bg-gradient-to-r from-rose-50 via-amber-50 to-orange-50 rounded-2xl border-2 border-rose-300/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+               <div className="flex items-center gap-3">
+                 <span className="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-600 to-orange-500 text-white flex items-center justify-center text-xl shrink-0 shadow-sm">
+                   🍻
+                 </span>
+                 <div>
+                   <div className="flex items-center gap-2">
+                     <span className="text-[9px] font-black uppercase text-rose-700 bg-rose-100 px-2 py-0.5 rounded-full">
+                       Ejemplo Real de 14 Días
+                     </span>
+                     <span className="text-xs font-black text-slate-900">Muestra Manía Restobar</span>
+                   </div>
+                   <p className="text-[11px] text-slate-600 font-medium mt-0.5">
+                     Mira cómo nuestros agentes planificaron 14 días con Radar de Nicho, posteo diario + historias y balance con/sin texto.
+                   </p>
+                 </div>
+               </div>
+               <Link
+                 href="/demo-plan-mania"
+                 className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs rounded-xl transition-all shrink-0 shadow-sm flex items-center gap-1.5"
+               >
+                 <span>Ver Plan 14 Días</span>
+                 <span>→</span>
+               </Link>
+             </div>
+
              {/* SELECTOR DE DURACIÓN DE ESTRATEGIA (Semanal vs 14 días vs Mes) */}
              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
