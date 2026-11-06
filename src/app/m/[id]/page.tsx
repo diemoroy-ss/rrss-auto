@@ -8,7 +8,10 @@ import dynamic from "next/dynamic";
 import SocialPilotLogo from "../../../components/SocialPilotLogo";
 import { db } from "../../../lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
-import { FaWhatsapp, FaImage, FaVideo, FaShareAlt, FaCheck, FaArrowRight, FaShieldAlt, FaRocket, FaClock, FaStar, FaCopy, FaPenNib, FaExpand } from "react-icons/fa";
+import { FaWhatsapp, FaImage, FaVideo, FaShareAlt, FaCheck, FaArrowRight, FaShieldAlt, FaRocket, FaClock, FaStar, FaCopy, FaPenNib, FaExpand, FaTimes, FaInstagram, FaSyncAlt } from "react-icons/fa";
+import { Plan14DayItem, FeedAuditDiagnosis } from "../../../types/demo-plan";
+import Plan14DayViewer from "../../../components/demo-plan/Plan14DayViewer";
+import FeedDiagnosisCard from "../../../components/demo-plan/FeedDiagnosisCard";
 
 // Importación dinámica de RemotionReelPlayer para mantener la carga ultra-rápida en móviles
 const RemotionReelPlayer = dynamic(() => import("../../../components/video/RemotionReelPlayer"), {
@@ -90,6 +93,14 @@ interface DemoData {
   createdAt?: any;
   publications?: PublicationItem[];
   strategy?: DemoStrategy;
+  is14DayPlanDemo?: boolean;
+  plan14Days?: Plan14DayItem[];
+  feedAudit?: FeedAuditDiagnosis;
+  feedScreenshotUrl?: string;
+  anchorRenderedDays?: number[];
+  sellerName?: string;
+  sellerPhone?: string;
+  sellerEmail?: string;
 }
 
 interface PlanConfig {
@@ -307,6 +318,9 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
   } | null>(null);
   const [imageFitMode, setImageFitMode] = useState<"contain" | "cover">("contain");
 
+  // Estados para Auditoría de Feed & Plan 14 Días
+  const [activeMainTab, setActiveMainTab] = useState<"diagnostico" | "plan14">("plan14");
+
   const openLightbox = (imgUrl: string, pub?: any) => {
     setLightboxData({
       isOpen: true,
@@ -393,6 +407,14 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
             selectedStyleTitle: data.selectedStyleTitle || "Estándar Comercial",
             publications: Array.isArray(data.publications) ? data.publications : [],
             strategy: data.strategy || null,
+            is14DayPlanDemo: Boolean(data.is14DayPlanDemo),
+            plan14Days: Array.isArray(data.plan14Days) ? data.plan14Days : [],
+            feedAudit: data.feedAudit || null,
+            feedScreenshotUrl: data.feedScreenshotUrl || "",
+            anchorRenderedDays: Array.isArray(data.anchorRenderedDays) ? data.anchorRenderedDays : [],
+            sellerName: data.sellerName || "",
+            sellerPhone: data.sellerPhone || "",
+            sellerEmail: data.sellerEmail || "",
           };
           setDemo(d);
           // Si tiene video, activar tab video por defecto
@@ -499,35 +521,166 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
   const hasVideo = Boolean(demo.remotionComposition || demo.generatedVideoUrl);
   const hasImage = Boolean(demo.generatedImageUrl);
   const showWatermark = demo.includeWatermark !== false && (demo.includeWatermark as any) !== "false";
+  const is14DayDemo = Boolean(demo.is14DayPlanDemo || (demo.plan14Days && demo.plan14Days.length > 0));
+  const contactWhatsApp = demo.sellerPhone || santisoftWhatsAppNumber;
+  const contactWaUrl = `https://wa.me/${contactWhatsApp}?text=${encodeURIComponent(
+    `¡Hola! Estuve revisando la propuesta estratégica y plan de 14 días para ${demo.prospectBusiness} y me gustaría consultar por los planes disponibles.`
+  )}`;
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans pb-32 selection:bg-indigo-600 selection:text-white">
       
-      {/* Barra Superior de Marca Oficial SocialPilot */}
+      {/* Barra Superior de Marca Oficial SocialPilot (Con Navegación Aislada) */}
       <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-xl border-b border-slate-200/80 px-4 py-2.5 shadow-xs">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
+        <div className={`${is14DayDemo ? "max-w-7xl" : "max-w-4xl"} mx-auto flex items-center justify-between gap-3`}>
           <div className="flex items-center gap-2.5">
             <Link href="/" className="flex items-center hover:opacity-90 transition-opacity">
-              <SocialPilotLogo height={32} width={140} variant="dark" priority />
+              <SocialPilotLogo height={30} width={130} variant="dark" priority />
             </Link>
-            <span className="hidden sm:inline-block text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
-              Agentes de Redes
+            <span className="hidden sm:inline-block text-[10px] px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 font-bold">
+              {is14DayDemo ? "Propuesta 14 Días" : "Agentes de Redes"}
             </span>
           </div>
 
-          <button
-            onClick={handleShareLink}
-            className="text-xs font-bold px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 flex items-center gap-1.5 transition-colors cursor-pointer"
-          >
-            {copiedLink ? <FaCheck className="text-emerald-600" /> : <FaShareAlt />}
-            <span>{copiedLink ? "¡Enlace Copiado!" : "Compartir"}</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <a
+              href="#planes"
+              className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 transition-colors"
+            >
+              Ver Planes
+            </a>
+            <Link
+              href="/login"
+              className="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold transition-colors"
+            >
+              Iniciar Sesión
+            </Link>
+            <a
+              href={contactWaUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-xs transition-colors"
+            >
+              <FaWhatsapp className="text-sm" />
+              <span>Contactar Asesor</span>
+            </a>
+            <button
+              onClick={handleShareLink}
+              className="text-xs font-bold px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              {copiedLink ? <FaCheck className="text-emerald-600" /> : <FaShareAlt />}
+              <span className="hidden sm:inline">{copiedLink ? "¡Copiado!" : "Compartir"}</span>
+            </button>
+          </div>
         </div>
       </header>
 
       {/* Contenido Principal */}
-      <main className="max-w-4xl mx-auto px-4 pt-6 space-y-8">
-        
+      <main className={`${is14DayDemo ? "max-w-7xl" : "max-w-4xl"} mx-auto px-4 pt-6 space-y-8`}>
+        {is14DayDemo ? (
+          <div className="space-y-8">
+            {/* HERO PERSONALIZADO DEL PLAN 14 DÍAS */}
+            <section className="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 space-y-4 relative overflow-hidden shadow-xs">
+              <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl from-rose-100/60 via-amber-50/40 to-transparent rounded-full blur-2xl pointer-events-none -mr-20 -mt-20"></div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="px-3 py-1 rounded-full text-[11px] font-black tracking-wider uppercase bg-rose-50 text-rose-700 border border-rose-200/80">
+                  Demostración Quincenal · Plan 14 Días
+                </span>
+                <span className="text-xs text-slate-500 font-medium">· {demo.rubro}</span>
+              </div>
+
+              <div className="space-y-2">
+                <h1 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight leading-tight">
+                  Planificación Estratégica y Auditoría para{" "}
+                  <span className="bg-gradient-to-r from-rose-600 via-orange-600 to-amber-600 bg-clip-text text-transparent">
+                    {demo.prospectBusiness}
+                  </span>
+                </h1>
+                <p className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-3xl font-normal">
+                  {demo.prospectName ? `Hola ${demo.prospectName}, preparamos` : "Preparamos"} esta propuesta quincenal interactiva con nuestro equipo de agentes especializados. Revisa el diagnóstico de tu feed actual y navega día por día tus publicaciones de feed e historias interactivas.
+                </p>
+              </div>
+
+              {/* TABS PRINCIPALES: DIAGNÓSTICO VS PLAN 14 DÍAS */}
+              <div className="pt-2 flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setActiveMainTab("plan14")}
+                  className={`px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-black transition-all flex items-center gap-2 cursor-pointer ${
+                    activeMainTab === "plan14"
+                      ? "bg-rose-600 text-white shadow-md shadow-rose-600/25 scale-102"
+                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  }`}
+                >
+                  <span>🗓️</span>
+                  <span>Planificación de 14 Días</span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] bg-white/20 text-white">
+                    {demo.plan14Days?.length || 14} días
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveMainTab("diagnostico")}
+                  className={`px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-black transition-all flex items-center gap-2 cursor-pointer ${
+                    activeMainTab === "diagnostico"
+                      ? "bg-rose-600 text-white shadow-md shadow-rose-600/25 scale-102"
+                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  }`}
+                >
+                  <span>📡</span>
+                  <span>Diagnóstico del Feed Actual</span>
+                  {demo.feedAudit?.overallScore ? (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-100 text-amber-900 border border-amber-200">
+                      Score: {demo.feedAudit.overallScore}/100
+                    </span>
+                  ) : null}
+                </button>
+              </div>
+            </section>
+
+            {/* VISTA 1: DIAGNÓSTICO DEL FEED ACTUAL */}
+            {activeMainTab === "diagnostico" && (
+              <FeedDiagnosisCard
+                feedAudit={demo.feedAudit || {
+                  overallScore: 68,
+                  brandAestheticSummary: "Evaluación diagnóstica basada en contraste visual, apetito visual y conversión.",
+                  detectedFlaws: ["Falta de precios claros y llamados directos a WhatsApp."],
+                  detectedStrengths: ["Identidad de marca reconocida en su localidad."],
+                  suggestedPillars: ["Apetito Visual", "Promociones Directas"],
+                  extractedProducts: [],
+                }}
+                feedScreenshotUrl={demo.feedScreenshotUrl}
+                businessName={demo.prospectBusiness}
+                onProceedToPlan={() => setActiveMainTab("plan14")}
+              />
+            )}
+
+            {/* VISTA 2: PLANIFICACIÓN DE 14 DÍAS (INTERACTIVA) */}
+            {activeMainTab === "plan14" && (
+              <Plan14DayViewer
+                plan14Days={demo.plan14Days || []}
+                businessName={demo.prospectBusiness}
+                rubro={demo.rubro}
+                demoId={demo.id}
+                showWatermark={demo.includeWatermark !== false && (demo.includeWatermark as any) !== "false"}
+                onDayRendered={(updatedDay) => {
+                  setDemo((prev) => {
+                    if (!prev || !prev.plan14Days) return prev;
+                    return {
+                      ...prev,
+                      plan14Days: prev.plan14Days.map((d) => (d.day === updatedDay.day ? updatedDay : d)),
+                    };
+                  });
+                }}
+                isPublicClientView={true}
+              />
+            )}
+          </div>
+        ) : (
+          /* MUESTRA ESTÁNDAR / INDIVIDUAL EXISTENTE */
+          <>
         {/* Banner de Bienvenida Personalizado */}
         <section className="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 space-y-4 relative overflow-hidden shadow-xs">
           <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl from-indigo-100/60 via-purple-50/40 to-transparent rounded-full blur-2xl pointer-events-none -mr-20 -mt-20"></div>
@@ -1213,6 +1366,8 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
               </div>
             )}
           </section>
+        )}
+        </>
         )}
 
         {/* SECCIÓN DE PLANES Y TARIFAS DISPONIBLES (100% DINÁMICO DESDE BD) */}

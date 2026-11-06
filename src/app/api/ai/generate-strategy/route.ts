@@ -23,7 +23,8 @@ export async function POST(req: NextRequest) {
       catalogUsage,
       selectedPromptStyles,
       usePromptStyles,
-      isCommercialPoster
+      isCommercialPoster,
+      feedAudit
     } = await req.json();
 
     if (!goal) {
@@ -271,7 +272,8 @@ export async function POST(req: NextRequest) {
         remainingPosts,
         remainingVideos,
         remainingImages,
-        Boolean(isCommercialPoster)
+        Boolean(isCommercialPoster),
+        feedAudit || null
     );
 
     // Normalizar promociones, imágenes CON texto vs SIN texto y formato tipográfico óptimo por Agente Director de Arte

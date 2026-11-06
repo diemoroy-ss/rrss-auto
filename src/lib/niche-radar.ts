@@ -1,4 +1,5 @@
 import { generateFreeText } from "./gemini-free";
+import { FeedAuditDiagnosis } from "../types/demo-plan";
 
 export interface TrendItem {
   id: string;
@@ -50,6 +51,7 @@ export interface RadarInputParams {
   niche: string;
   targetAudience?: string;
   customKeywords?: string;
+  feedAudit?: FeedAuditDiagnosis;
 }
 
 /**
@@ -57,12 +59,22 @@ export interface RadarInputParams {
  * Utiliza IA para sintetizar búsquedas, conversaciones en redes sociales, dudas recurrentes y ganchos efectivos.
  */
 export async function generateNicheRadarAnalysis(params: RadarInputParams): Promise<RadarAnalysisResult> {
-  const { businessName = "Mi Negocio", niche, targetAudience = "Público General", customKeywords = "" } = params;
+  const { businessName = "Mi Negocio", niche, targetAudience = "Público General", customKeywords = "", feedAudit } = params;
 
   const systemInstruction = `Eres un Director de Estrategia de Marketing Digital y Viralidad en Redes Sociales especializado en análisis de tendencias de mercado de los últimos 30 días.
 Tu tarea es analizar el nicho/rubro provisto por el usuario y generar un informe táctico en formato JSON estricto.
 El informe debe enfocarse en lo que REALMENTE está funcionando en Instagram, TikTok, LinkedIn y YouTube en las últimas semanas para ese nicho.
 IMPORTANTE: NUNCA menciones que eres una IA o Inteligencia Artificial. Refiérete a ti mismo y a tus acciones como "nuestros agentes" o "nuestro equipo de agentes especializados". Tampoco hables de "lo que se puede hacer con IA".`;
+
+  const feedAuditSection = feedAudit ? `
+- **Diagnóstico del Feed de Instagram (Auditado por Nuestros Agentes)**:
+  * Score Actual: ${feedAudit.overallScore || 68}/100
+  * Resumen Estético: "${feedAudit.brandAestheticSummary || 'Sin resumen'}"
+  * Fugas Comerciales a Corregir: ${JSON.stringify(feedAudit.detectedFlaws || [])}
+  * Fortalezas Detectadas: ${JSON.stringify(feedAudit.detectedStrengths || [])}
+  * Pilares Recomendados: ${JSON.stringify(feedAudit.suggestedPillars || [])}
+  INSTRUCCIÓN CRUCIAL: Enfoca las tendencias, dudas de audiencia y ganchos sugeridos para solucionar estas fugas de conversión y capitalizar las fortalezas de la marca en Instagram.
+` : "";
 
   const prompt = `Analiza las tendencias más recientes y patrones de viralidad de los ÚLTIMOS 30 DÍAS para el siguiente negocio/nicho:
 
@@ -70,6 +82,7 @@ IMPORTANTE: NUNCA menciones que eres una IA o Inteligencia Artificial. Refiéret
 - **Nicho/Rubro**: "${niche}"
 - **Audiencia Objetivo**: "${targetAudience}"
 ${customKeywords ? `- **Palabras Clave adicionales**: "${customKeywords}"` : ""}
+${feedAuditSection}
 
 Responde ÚNICAMENTE con un objeto JSON válido con la siguiente estructura exacta:
 {

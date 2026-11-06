@@ -280,6 +280,7 @@ export default function NicheRadarPage() {
           userId: user?.uid,
           businessId: activeProfile?.id,
           forceRefresh,
+          feedAudit: activeProfile?.latestFeedAudit || undefined,
         }),
       });
 
@@ -399,6 +400,53 @@ export default function NicheRadarPage() {
         <h2 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
           <span>🎯</span> Configuración del Radar
         </h2>
+
+        {/* BANNER DE VINCULACIÓN CON AUDITORÍA DE FEED DE INSTAGRAM */}
+        {activeProfile?.latestFeedAudit ? (
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-rose-50 via-orange-50 to-amber-50 border border-rose-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
+            <div className="flex items-center gap-3">
+              <span className="w-9 h-9 rounded-xl bg-rose-600 text-white flex items-center justify-center text-base shrink-0 shadow-xs">
+                📸
+              </span>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-black uppercase text-rose-800 bg-rose-100 px-2 py-0.5 rounded-full border border-rose-200">
+                    Feed Auditado
+                  </span>
+                  <span className="text-xs font-black text-slate-900">
+                    Score de Conversión: {activeProfile.latestFeedAudit.overallScore || 68}/100
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-600 font-medium mt-0.5">
+                  Nuestros agentes detectaron {activeProfile.latestFeedAudit.detectedFlaws?.length || 3} fugas de conversión. El Radar enfocará las tendencias y ganchos en solucionarlas.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => handleRunRadar(true)}
+              disabled={loading}
+              className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs shadow-sm transition-all shrink-0 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            >
+              <span>🎯 Actualizar Radar con Diagnóstico</span>
+            </button>
+          </div>
+        ) : (
+          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
+            <div className="text-slate-600 font-medium flex items-center gap-2">
+              <span>💡</span>
+              <span>¿Quieres que el radar ataque directamente las fallas de tu perfil?</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => router.push("/automatizacion-rrss/panel/estrategia")}
+              className="text-rose-600 font-bold hover:underline shrink-0 text-xs cursor-pointer"
+            >
+              Escanear feed en Estrategia →
+            </button>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>

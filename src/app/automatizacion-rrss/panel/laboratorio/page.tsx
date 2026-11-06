@@ -13,6 +13,7 @@ import { TEST_COMPANY_TEMPLATES } from "../../../../lib/test-company-templates";
 import TestCompanyModal from "../../../../components/catalogo/TestCompanyModal";
 import PromptStyleSelector from "../../../../components/strategy/PromptStyleSelector";
 import PlanProductsSelector from "../../../../components/strategy/PlanProductsSelector";
+import Plan14DayBuilder from "../../../../components/demo-plan/Plan14DayBuilder";
 import { 
   MENU_THEMES, 
   DEFAULT_MENU_THEME, 
@@ -70,7 +71,7 @@ export default function LaboratorioPage() {
   };
 
   // Active Tab
-  const [activeTab, setActiveTab] = useState<"marca" | "catalogo" | "menu_qr" | "radar_estrategia">("marca");
+  const [activeTab, setActiveTab] = useState<"marca" | "catalogo" | "menu_qr" | "radar_estrategia" | "plan_14dias">("marca");
 
   // Notifications
   const [successMsg, setSuccessMsg] = useState("");
@@ -627,6 +628,7 @@ export default function LaboratorioPage() {
           niche: rubroActual,
           userId: user.uid,
           businessId: currentTestProfile?.id || "demo",
+          feedAudit: currentTestProfile?.latestFeedAudit || undefined,
         }),
       });
       const data = await res.json();
@@ -1045,6 +1047,21 @@ export default function LaboratorioPage() {
                   {strategyPosts.length} posts
                 </span>
               )}
+            </button>
+
+            <button
+              onClick={() => setActiveTab("plan_14dias")}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-black transition-all shrink-0 cursor-pointer ${
+                activeTab === "plan_14dias"
+                  ? "bg-rose-600 text-white shadow-md shadow-rose-600/30 scale-102"
+                  : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+              }`}
+            >
+              <span>📡</span>
+              <span>5. Auditoría & Plan 14 Días</span>
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-rose-100 text-rose-800 font-bold border border-rose-200">
+                Nuevo
+              </span>
             </button>
           </div>
 
@@ -2689,6 +2706,47 @@ export default function LaboratorioPage() {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* ──────────────────────────────────────────────────────────── */}
+      {/* TAB 5: AUDITORÍA DE FEED & PLAN 14 DÍAS                      */}
+      {/* ──────────────────────────────────────────────────────────── */}
+      {activeTab === "plan_14dias" && (
+        <div className="space-y-6 animate-in fade-in duration-300">
+          <div className="bg-gradient-to-r from-rose-500/10 via-orange-500/10 to-amber-500/10 p-6 sm:p-8 rounded-3xl border-2 border-rose-200/80 shadow-sm space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl p-2.5 bg-rose-100 text-rose-600 rounded-2xl">📡</span>
+                <div>
+                  <h3 className="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
+                    <span>Laboratorio de Auditoría & Plan Quincenal (14 Días)</span>
+                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
+                      Nuevos Agentes
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-600 font-medium mt-0.5">
+                    Genera la propuesta comercial de 14 días con radar de nicho para <strong>{currentTestProfile?.name || brandForm.name || "la empresa seleccionada"}</strong> o cualquier prospecto nuevo subiendo una captura de su Instagram.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <Plan14DayBuilder
+            key={currentTestProfile?.id || "default_test_company"}
+            initialBusiness={currentTestProfile?.name || brandForm.name || ""}
+            initialRubro={currentTestProfile?.rubro || brandForm.rubro || "Gastronomía & Restaurantes"}
+            initialPhone={currentTestProfile?.phone || brandForm.phone || ""}
+            initialProducts={catalogItems.map((item) => ({
+              name: item.name,
+              estimatedPrice: item.price || item.offerPrice || undefined,
+              isPromotion: Boolean(item.offerPrice),
+            }))}
+            sellerName={user?.displayName || user?.email?.split("@")[0] || "Laboratorio SocialPilot"}
+            sellerEmail={user?.email || undefined}
+            storageFolder={`users/${user?.uid || "lab"}/feed_audits`}
+          />
         </div>
       )}
         </>

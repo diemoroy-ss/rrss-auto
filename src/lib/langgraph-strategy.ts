@@ -22,6 +22,7 @@ export const StrategyAnnotation = Annotation.Root({
   remainingVideos: Annotation<number>({ reducer: (a, b) => b ?? a, default: () => 2 }),
   remainingImages: Annotation<number>({ reducer: (a, b) => b ?? a, default: () => 8 }),
   isCommercialPoster: Annotation<boolean>({ reducer: (a, b) => b ?? a, default: () => false }),
+  feedAudit: Annotation<any>({ reducer: (a, b) => b ?? a, default: () => null }),
   analysis: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "" }),
   rawStrategy: Annotation<string>({ reducer: (a, b) => b ?? a, default: () => "" }),
   strategy: Annotation<any[]>({ reducer: (a, b) => b ?? a, default: () => [] }),
@@ -36,6 +37,18 @@ export type StrategyState = typeof StrategyAnnotation.State;
 async function analysisNode(state: StrategyState): Promise<Partial<StrategyState>> {
   console.log(`[LangGraph Strategy] analysisNode - Analizando para: ${state.businessType} (Plan: ${state.planId})`);
   
+  const feedAuditResearchContext = state.feedAudit ? `
+AUDITORÍA PREVIA DEL FEED DE INSTAGRAM (REALIZADA POR NUESTROS AGENTES):
+- Score Actual del Feed: ${state.feedAudit.overallScore || 68}/100
+- Diagnóstico Estético: "${state.feedAudit.brandAestheticSummary || 'Sin resumen'}"
+- FUGAS DE CONVERSIÓN DETECTADAS (OBLIGATORIO RESOLVERLAS EN LA ESTRATEGIA):
+${(state.feedAudit.detectedFlaws || []).map((f: string) => `  * ${f}`).join('\n')}
+- FORTALEZAS VISUALES A POTENCIAR:
+${(state.feedAudit.detectedStrengths || []).map((s: string) => `  * ${s}`).join('\n')}
+- PILARES RECOMENDADOS:
+${(state.feedAudit.suggestedPillars || []).join(', ')}
+` : "";
+
   const prompt = `Eres un Director de Estrategia Digital Senior. 
 Tu tarea es analizar los siguientes datos de un cliente y proponer los pilares de contenido para una estrategia de 7 a 14 días.
 
@@ -44,10 +57,11 @@ DATOS DEL CLIENTE:
 - Objetivo Principal: ${state.goal}
 - Expectativas Especiales: ${state.expectations}
 ${(state.businessData?.businessDescription || state.businessData?.description) ? `- Descripción del Negocio: "${state.businessData.businessDescription || state.businessData.description}"\n` : ""}${state.promotions ? `- Promociones y Ofertas Clave del Local: "${state.promotions}"\n` : ""}- Redes Disponibles: ${state.connectedPlatforms.join(", ")}
+${feedAuditResearchContext}
 
 PROPORCIONA:
 1. Análisis del público objetivo.
-2. 3 Pilares de contenido (ej: Educativo, Venta/Promociones, Entretenimiento).
+2. 3 Pilares de contenido (ej: Educativo, Venta/Promociones, Entretenimiento)${state.feedAudit ? " alineados con los pilares recomendados en la auditoría del feed" : ""}.
 3. Tono de comunicación recomendado.
 4. Frecuencia de publicación sugerida.
 
@@ -192,13 +206,28 @@ REGLA ESTRICTA DE VIDEOS POR PLANTILLAS (PLAN CON VIDEOS):
 3. Si la publicación NO es 'Reel' ni 'Video', estos campos de video deben ser null.
 \n` : "";
 
+  const feedAuditPlanningContext = state.feedAudit ? `
+DIAGNÓSTICO DEL FEED ACTUAL DE INSTAGRAM (AUDITADO POR NUESTROS AGENTES):
+- Score Actual del Feed: ${state.feedAudit.overallScore || 68}/100
+- Diagnóstico Estético: "${state.feedAudit.brandAestheticSummary || 'Sin resumen'}"
+- FUGAS DE CONVERSIÓN A RESOLVER EN ESTA ESTRATEGIA (OBLIGATORIO):
+${(state.feedAudit.detectedFlaws || []).map((f: string) => `  * ${f}`).join('\n')}
+- FORTALEZAS VISUALES A POTENCIAR:
+${(state.feedAudit.detectedStrengths || []).map((s: string) => `  * ${s}`).join('\n')}
+- PILARES RECOMENDADOS:
+${(state.feedAudit.suggestedPillars || []).join(', ')}
+
+INSTRUCCIÓN TÁCTICA DEL AGENTE ESTRATEGA:
+Cada publicación debe ser un antídoto contra las fugas de conversión detectadas en la auditoría. Si se detectó falta de precios, llamadas a la acción débiles o bajo apetito visual, los copys, formatos y directivas de arte deben compensarlo agresivamente con ganchos claros, precios visibles y diseño persuasivo.
+\n` : "";
+
   const prompt = `Eres un Social Media Planner experto, entrenado con los mejores frameworks de crecimiento (BH Skills). 
 Basándote en el siguiente análisis, genera un plan táctico de publicaciones.
 
 ANÁLISIS ESTRATÉGICO:
 ${state.analysis}
 
-${contactContext}${catalogInstruction}${commercialPosterRule}${videoTemplatesContext}${state.promotions ? `PROMOCIONES Y OFERTAS CLAVE DEL NEGOCIO (Incluye estas promociones, precios o combos reales en los ganchos y copys comerciales):\n"${state.promotions}"\n\n` : ""}${state.nicheContext ? `CONTEXTO DEL RADAR DE NICHO (Últimos 30 días):\n${state.nicheContext}\n\n` : ""}${stylesContext}
+${feedAuditPlanningContext}${contactContext}${catalogInstruction}${commercialPosterRule}${videoTemplatesContext}${state.promotions ? `PROMOCIONES Y OFERTAS CLAVE DEL NEGOCIO (Incluye estas promociones, precios o combos reales en los ganchos y copys comerciales):\n"${state.promotions}"\n\n` : ""}${state.nicheContext ? `CONTEXTO DEL RADAR DE NICHO (Últimos 30 días):\n${state.nicheContext}\n\n` : ""}${stylesContext}
 
 HISTORIAL DE POSTS Y RENDIMIENTO (Analiza esto para replicar qué formatos/ideas tuvieron más likes/alcance, y descarta lo que no sirvió):
 ${state.history}
@@ -469,7 +498,8 @@ export async function runProfessionalStrategyWorkflow(
     remainingPosts: number = 5,
     remainingVideos: number = 2,
     remainingImages: number = 8,
-    isCommercialPoster: boolean = false
+    isCommercialPoster: boolean = false,
+    feedAudit: any = null
 ) {
   const app = createStrategyWorkflow();
   const initialState = {
@@ -491,6 +521,7 @@ export async function runProfessionalStrategyWorkflow(
     remainingVideos,
     remainingImages,
     isCommercialPoster: Boolean(isCommercialPoster),
+    feedAudit,
     analysis: "",
     rawStrategy: "",
     strategy: [],

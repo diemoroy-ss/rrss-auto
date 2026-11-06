@@ -103,6 +103,8 @@ export type BusinessProfile = {
   agentTone?: string;
   customAgentInstruction?: string;
   savedRadarContext?: string;
+  latestFeedAudit?: any;
+  feedScreenshotUrl?: string;
   // Account lock: records which social account IDs have been used in a publish (non-business plan protection)
   accountLocks?: {
     facebook?: string;   // facebookPageId

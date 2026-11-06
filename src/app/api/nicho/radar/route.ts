@@ -5,7 +5,7 @@ import { generateNicheRadarAnalysis } from '../../../../lib/niche-radar';
 export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => ({}));
-    const { niche, businessName, targetAudience, customKeywords, forceRefresh, checkCacheOnly, userId, businessId } = body;
+    const { niche, businessName, targetAudience, customKeywords, forceRefresh, checkCacheOnly, userId, businessId, feedAudit } = body;
 
     if (!niche || typeof niche !== 'string' || !niche.trim()) {
       return NextResponse.json({ error: 'Debes especificar un nicho o rubro para analizar.' }, { status: 400 });
@@ -24,8 +24,8 @@ export async function POST(req: Request) {
       }
     }
 
-    // Verificar si existe caché reciente en Firestore si no es forceRefresh
-    if (!forceRefresh && authUid && businessId && adminDb) {
+    // Verificar si existe caché reciente en Firestore si no es forceRefresh y no viene feedAudit nuevo
+    if (!forceRefresh && !feedAudit && authUid && businessId && adminDb) {
       try {
         const radarRef = adminDb.collection('users').doc(authUid).collection('businesses').doc(businessId).collection('radar');
         const cacheSnap = await radarRef.orderBy('createdAt', 'desc').limit(1).get();
@@ -57,6 +57,7 @@ export async function POST(req: Request) {
       niche: niche.trim(),
       targetAudience: targetAudience || 'Público General',
       customKeywords: customKeywords || '',
+      feedAudit: feedAudit || undefined,
     });
 
     // Guardar en Firestore si tenemos datos del usuario y negocio
@@ -65,6 +66,7 @@ export async function POST(req: Request) {
         const radarRef = adminDb.collection('users').doc(authUid).collection('businesses').doc(businessId).collection('radar');
         const newDoc = await radarRef.add({
             ...analysis,
+            feedAudit: feedAudit || null,
             createdAt: new Date().toISOString() // add explicit createdAt for sorting
         });
         analysis.id = newDoc.id; // attach generated ID

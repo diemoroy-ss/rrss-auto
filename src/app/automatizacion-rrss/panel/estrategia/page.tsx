@@ -16,6 +16,8 @@ import { PromptTemplate } from "../../../../lib/prompt-templates";
 import { appendContactInfo } from "../../../../lib/contact-helper";
 import { getScheduleContinuityFromList, ScheduleContinuityResult } from "../../../../lib/schedule-continuity";
 import { getPlanConfig } from "../../../../lib/plans";
+import InstagramFeedScanner from "../../../../components/strategy/InstagramFeedScanner";
+import { FeedAuditDiagnosis } from "../../../../types/demo-plan";
 
 interface StrategyGoal {
   id: string;
@@ -161,7 +163,77 @@ export default function EstrategiaPage() {
     return targetDate;
   };
 
-  const { activeProfile } = useProfile();
+  const { activeProfile, updateProfileById } = useProfile();
+
+  // Estados de Auditoría y Escaneo del Feed de Instagram
+  const [feedAudit, setFeedAudit] = useState<FeedAuditDiagnosis | null>(null);
+  const [feedScreenshotUrl, setFeedScreenshotUrl] = useState<string>("");
+  const [useFeedAudit, setUseFeedAudit] = useState<boolean>(true);
+  const [syncingRadar, setSyncingRadar] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (activeProfile?.latestFeedAudit) {
+      setFeedAudit(activeProfile.latestFeedAudit);
+      if (activeProfile.feedScreenshotUrl) {
+        setFeedScreenshotUrl(activeProfile.feedScreenshotUrl);
+      }
+    }
+  }, [activeProfile?.id]);
+
+  const handleFeedAuditComplete = async (audit: FeedAuditDiagnosis, screenshotUrl: string) => {
+    setFeedAudit(audit);
+    setFeedScreenshotUrl(screenshotUrl);
+    setUseFeedAudit(true);
+    if (activeProfile?.id && updateProfileById) {
+      try {
+        await updateProfileById(activeProfile.id, {
+          latestFeedAudit: audit,
+          feedScreenshotUrl: screenshotUrl,
+        });
+      } catch (err) {
+        console.warn("No se pudo guardar la auditoría en el perfil:", err);
+      }
+    }
+  };
+
+  const handleSyncRadarWithFeedAudit = async () => {
+    if (!feedAudit) return;
+    setSyncingRadar(true);
+    try {
+      const u = auth.currentUser;
+      if (!u) return;
+      const token = await u.getIdToken();
+      const currentRubro = activeProfile?.rubro || (activeProfile as any)?.businessType || businessType || "Comercio";
+      const currentName = activeProfile?.name || businessData.businessName || "Mi Negocio";
+
+      const radarRes = await fetch("/api/nicho/radar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          forceRefresh: true,
+          userId: u.uid,
+          businessId: activeProfile?.id || "default",
+          niche: currentRubro,
+          businessName: currentName,
+          feedAudit,
+        }),
+      });
+
+      if (radarRes.ok) {
+        const rData = await radarRes.json();
+        if (rData.success && rData.analysis) {
+          setRadarAnalysis(rData.analysis);
+          setUseRadarContext(true);
+          showModal("success", "Radar de Nicho Sincronizado", "Nuestros agentes sincronizaron el Radar de Nicho con el diagnóstico de tu feed. Las tendencias y ganchos ahora resuelven directamente las fugas detectadas.");
+        }
+      }
+    } catch (err) {
+      console.error("Error al sincronizar con radar:", err);
+      showModal("error", "Error de Sincronización", "No se pudo actualizar el radar con el diagnóstico.");
+    } finally {
+      setSyncingRadar(false);
+    }
+  };
 
   const [modal, setModal] = useState<{
     isOpen: boolean;
@@ -415,6 +487,7 @@ export default function EstrategiaPage() {
                  includePromotions: includePromotionsInStrategy,
                  promoImageMode,
                  selectedPromotions: promosToUse,
+                  feedAudit: useFeedAudit ? feedAudit : null,
                  nicheContext: useRadarContext && radarAnalysis ? (radarAnalysis.summary || JSON.stringify(radarAnalysis.trends || [])) : "",
                  businessData,
                  userId: user?.uid,
@@ -794,8 +867,21 @@ export default function EstrategiaPage() {
                </div>
              </div>
 
-             <div className="flex items-center justify-between">
-               <h3 className="text-base font-black text-slate-900 tracking-tight">1. ¿Qué deseas lograr?</h3>
+                          {/* 1. ESCANEO Y DIAGNÓSTICO DE FEED DE INSTAGRAM CON NUESTROS AGENTES */}
+             <InstagramFeedScanner
+               businessName={activeProfile?.name || businessData.businessName || "Mi Negocio"}
+               rubro={activeProfile?.rubro || (activeProfile as any)?.businessType || businessType || "Comercio"}
+               feedAudit={feedAudit}
+               feedScreenshotUrl={feedScreenshotUrl}
+               useFeedAuditInStrategy={useFeedAudit}
+               onToggleUseFeedAudit={setUseFeedAudit}
+               onAuditComplete={handleFeedAuditComplete}
+               onSyncRadar={handleSyncRadarWithFeedAudit}
+               isSyncingRadar={syncingRadar}
+             />
+
+<div className="flex items-center justify-between">
+               <h3 className="text-base font-black text-slate-900 tracking-tight">2. ¿Qué deseas lograr?</h3>
                {selectedGoal && (
                  <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 border border-indigo-100 px-3 py-1 rounded-full uppercase tracking-widest">
                    ✓ {goals.find(g => g.id === selectedGoal)?.title}
