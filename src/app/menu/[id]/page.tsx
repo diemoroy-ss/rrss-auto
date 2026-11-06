@@ -14,7 +14,15 @@ import {
   FaCheck,
   FaUtensils,
   FaChevronRight,
-  FaChevronLeft
+  FaChevronLeft,
+  FaBeer,
+  FaHamburger,
+  FaPizzaSlice,
+  FaCocktail,
+  FaCoffee,
+  FaFish,
+  FaDrumstickBite,
+  FaIceCream
 } from "react-icons/fa";
 import { MENU_THEMES, DEFAULT_MENU_THEME, MenuThemeId } from "../../../lib/menu-themes";
 
@@ -57,6 +65,38 @@ function formatPrice(val: string | number | null | undefined): string {
     return `$${num.toLocaleString("es-CL")}`;
   }
   return str;
+}
+
+function getCategoryIcon(name: string) {
+  const n = (name || "").toLowerCase();
+  if (n.includes("promo") || n.includes("combo") || n.includes("oferta") || n.includes("destacad")) {
+    return <FaFire />;
+  }
+  if (n.includes("hamburg") || n.includes("burger") || n.includes("sandwich") || n.includes("sándwich") || n.includes("churrasco") || n.includes("completo") || n.includes("mechada") || n.includes("lomito")) {
+    return <FaHamburger />;
+  }
+  if (n.includes("pizza")) {
+    return <FaPizzaSlice />;
+  }
+  if (n.includes("cerveza") || n.includes("schop") || n.includes("chopp") || n.includes("shop") || n.includes("artesanal")) {
+    return <FaBeer />;
+  }
+  if (n.includes("trago") || n.includes("coctel") || n.includes("cóctel") || n.includes("mojito") || n.includes("barra") || n.includes("licor") || n.includes("pisco") || n.includes("destilad") || n.includes("vino") || n.includes("bebida")) {
+    return <FaCocktail />;
+  }
+  if (n.includes("sushi") || n.includes("roll") || n.includes("pez") || n.includes("pescado") || n.includes("ceviche") || n.includes("marisco")) {
+    return <FaFish />;
+  }
+  if (n.includes("carne") || n.includes("chorrillana") || n.includes("tabla") || n.includes("picoteo") || n.includes("parrilla") || n.includes("asado") || n.includes("pollo") || n.includes("alita")) {
+    return <FaDrumstickBite />;
+  }
+  if (n.includes("café") || n.includes("cafe") || n.includes("desayuno") || n.includes("té") || n.includes("te ") || n.includes("infusi")) {
+    return <FaCoffee />;
+  }
+  if (n.includes("postre") || n.includes("helado") || n.includes("dulce") || n.includes("torta") || n.includes("waffle") || n.includes("cake")) {
+    return <FaIceCream />;
+  }
+  return <FaUtensils />;
 }
 
 export default function PublicMenuPage() {
@@ -385,7 +425,7 @@ export default function PublicMenuPage() {
               <button
                 onClick={handleScrollLeft}
                 aria-label="Ver categorías anteriores"
-                className="absolute left-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white/95 border border-slate-200 shadow-md flex items-center justify-center text-slate-500 hover:text-slate-800 z-10"
+                className="hidden sm:flex absolute left-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white/95 border border-slate-200 shadow-md items-center justify-center text-slate-500 hover:text-slate-800 z-10 transition-opacity"
               >
                 <FaChevronLeft className="text-[10px]" />
               </button>
@@ -393,7 +433,8 @@ export default function PublicMenuPage() {
 
             <div
               ref={categoryScrollRef}
-              className="flex items-center gap-4 sm:gap-6 overflow-x-auto no-scrollbar scroll-smooth px-3 py-1"
+              className="flex items-center gap-2 sm:gap-3 overflow-x-auto no-scrollbar scrollbar-none hide-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden scroll-smooth px-2.5 py-1"
+              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
             >
               {/* Opción Todos */}
               <button
@@ -402,27 +443,29 @@ export default function PublicMenuPage() {
                   setActiveCategory("TODOS");
                   setActiveSubcategory("TODAS");
                 }}
-                className={`flex flex-col items-center justify-center min-w-[68px] sm:min-w-[76px] py-1 px-1 rounded-xl transition-all cursor-pointer group ${
+                className={`shrink-0 flex flex-col items-center justify-start min-w-[76px] max-w-[104px] w-20 sm:w-24 py-1.5 px-1 rounded-xl transition-all cursor-pointer group ${
                   activeCategory === "TODOS"
                     ? "text-[#E15338] font-black"
                     : "text-slate-600 hover:text-slate-900 font-bold"
                 }`}
               >
                 <div
-                  className={`w-9 h-9 rounded-full flex items-center justify-center text-lg mb-1 transition-transform group-hover:scale-110 ${
+                  className={`w-9 h-9 rounded-full flex items-center justify-center text-base mb-1.5 transition-transform group-hover:scale-110 shrink-0 ${
                     activeCategory === "TODOS"
-                      ? "bg-orange-50 text-[#E15338] shadow-xs"
-                      : "text-[#E15338]/80 group-hover:text-[#E15338]"
+                      ? "bg-orange-50 text-[#E15338] shadow-xs ring-2 ring-[#E15338]/20"
+                      : "bg-slate-100 text-slate-600 group-hover:text-[#E15338] group-hover:bg-orange-50/60"
                   }`}
                 >
                   <FaUtensils />
                 </div>
-                <span className="text-[10px] sm:text-[11px] uppercase tracking-tight text-center leading-tight whitespace-nowrap">
+                <span className="text-[10px] sm:text-[11px] uppercase tracking-tight text-center leading-tight line-clamp-2 break-words w-full h-[26px] flex items-center justify-center">
                   TODOS
                 </span>
-                {activeCategory === "TODOS" && (
-                  <span className="w-5 h-0.5 bg-[#E15338] rounded-full mt-1" />
-                )}
+                <span
+                  className={`w-5 h-0.5 rounded-full mt-1 shrink-0 ${
+                    activeCategory === "TODOS" ? "bg-[#E15338]" : "bg-transparent"
+                  }`}
+                />
               </button>
 
               {/* Categorías del local */}
@@ -436,27 +479,32 @@ export default function PublicMenuPage() {
                       setActiveCategory(cat);
                       setActiveSubcategory("TODAS");
                     }}
-                    className={`flex flex-col items-center justify-center min-w-[68px] sm:min-w-[76px] py-1 px-1 rounded-xl transition-all cursor-pointer group ${
+                    className={`shrink-0 flex flex-col items-center justify-start min-w-[76px] max-w-[104px] w-20 sm:w-24 py-1.5 px-1 rounded-xl transition-all cursor-pointer group ${
                       isActive
                         ? "text-[#E15338] font-black"
                         : "text-slate-600 hover:text-slate-900 font-bold"
                     }`}
                   >
                     <div
-                      className={`w-9 h-9 rounded-full flex items-center justify-center text-lg mb-1 transition-transform group-hover:scale-110 ${
+                      className={`w-9 h-9 rounded-full flex items-center justify-center text-base mb-1.5 transition-transform group-hover:scale-110 shrink-0 ${
                         isActive
-                          ? "bg-orange-50 text-[#E15338] shadow-xs"
-                          : "text-[#E15338]/80 group-hover:text-[#E15338]"
+                          ? "bg-orange-50 text-[#E15338] shadow-xs ring-2 ring-[#E15338]/20"
+                          : "bg-slate-100 text-slate-600 group-hover:text-[#E15338] group-hover:bg-orange-50/60"
                       }`}
                     >
-                      <FaUtensils />
+                      {getCategoryIcon(cat)}
                     </div>
-                    <span className="text-[10px] sm:text-[11px] uppercase tracking-tight text-center leading-tight whitespace-nowrap">
+                    <span 
+                      className="text-[10px] sm:text-[11px] uppercase tracking-tight text-center leading-tight line-clamp-2 break-words w-full h-[26px] flex items-center justify-center"
+                      title={cat}
+                    >
                       {cat}
                     </span>
-                    {isActive && (
-                      <span className="w-5 h-0.5 bg-[#E15338] rounded-full mt-1" />
-                    )}
+                    <span
+                      className={`w-5 h-0.5 rounded-full mt-1 shrink-0 ${
+                        isActive ? "bg-[#E15338]" : "bg-transparent"
+                      }`}
+                    />
                   </button>
                 );
               })}
@@ -466,7 +514,7 @@ export default function PublicMenuPage() {
               <button
                 onClick={handleScrollRight}
                 aria-label="Ver más categorías"
-                className="absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white/95 border border-slate-200 shadow-md flex items-center justify-center text-slate-500 hover:text-slate-800 z-10"
+                className="hidden sm:flex absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white/95 border border-slate-200 shadow-md items-center justify-center text-slate-500 hover:text-slate-800 z-10 transition-opacity"
               >
                 <FaChevronRight className="text-[10px]" />
               </button>
@@ -475,7 +523,10 @@ export default function PublicMenuPage() {
 
           {/* Subcategorías si existen */}
           {availableSubcategories.length > 0 && (
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+            <div 
+              className="flex items-center gap-1.5 overflow-x-auto no-scrollbar scrollbar-none hide-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-1"
+              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+            >
               <button
                 onClick={() => setActiveSubcategory("TODAS")}
                 className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all shrink-0 ${

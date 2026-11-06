@@ -169,12 +169,18 @@ body:not(:has(.landing-page-root)) .eyebrow {
 }
 
 /* Hide scrollbar utility - keeps scroll functionality without visual scrollbar */
-.hide-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+.hide-scrollbar,
+.no-scrollbar,
+.scrollbar-none {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
 }
-.hide-scrollbar::-webkit-scrollbar {
-  display: none;
+.hide-scrollbar::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 /* Safe Area Utilities for Mobile (iOS Notch/Home Bar) */
