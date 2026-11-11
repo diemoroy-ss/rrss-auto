@@ -35,13 +35,13 @@ const WA_GIFT_MSG = encodeURIComponent(
   "¡Hola Santisoft! Leí el tríptico comercial y quiero recibir los 3 posts de prueba gratis creados para mi negocio por WhatsApp."
 );
 const WA_ESENCIAL_MSG = encodeURIComponent(
-  "¡Hola Santisoft! Quiero activar el Plan PyME Esencial ($59.990 CLP + IVA/mes) para mi negocio."
+  "¡Hola Santisoft! Quiero activar el Plan PyME Esencial ($59.990 CLP IVA incluido/mes) para mi negocio."
 );
 const WA_CRECIMIENTO_MSG = encodeURIComponent(
-  "¡Hola Santisoft! Quiero asegurar uno de los 15 cupos del Plan PyME Crecimiento ($99.990 CLP + IVA) con Setup Llave en Mano GRATIS."
+  "¡Hola Santisoft! Quiero asegurar uno de los 15 cupos del Plan PyME Crecimiento ($99.990 CLP IVA incluido) con Setup Llave en Mano GRATIS."
 );
 const WA_PILOTO_MSG = encodeURIComponent(
-  "¡Hola Santisoft! Me interesa el Plan PyME Piloto Automático VIP ($249.990 CLP + IVA) con acompañamiento Done-With-You."
+  "¡Hola Santisoft! Me interesa el Plan PyME Piloto Automático VIP ($249.990 CLP IVA incluido) con acompañamiento Done-With-You."
 );
 
 const CONTAINER = "relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8";
@@ -502,7 +502,7 @@ export default function TripticoPitchPage() {
 
             <div className="text-center max-w-3xl mx-auto space-y-2 mb-6 print:mb-3 print:text-left print:max-w-none">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 print:bg-emerald-50 print:border-emerald-300 print:text-emerald-800 text-xs font-black tracking-wider uppercase">
-                Cara 3 · Estructura Oficial de Planes (CLP + IVA)
+                Cara 3 · Estructura Oficial de Planes (CLP · IVA Incluido)
               </div>
               <h2 className="text-2xl sm:text-4xl print:text-2xl font-black text-white print-title leading-tight">
                 Elige cómo quieres activar tus redes en piloto automático
@@ -536,7 +536,7 @@ export default function TripticoPitchPage() {
                         $59.990
                       </span>
                       <span className="text-xs print:text-[10px] text-slate-400 print:text-slate-600 font-medium">
-                        + IVA / mes
+                        IVA incl. / mes
                       </span>
                     </div>
                   </div>
@@ -607,7 +607,7 @@ export default function TripticoPitchPage() {
                         $99.990
                       </span>
                       <span className="text-xs print:text-[10px] text-slate-300 print:text-slate-700 font-medium">
-                        + IVA / mes
+                        IVA incl. / mes
                       </span>
                     </div>
                     {/* BONO DESTACADO */}
@@ -683,7 +683,7 @@ export default function TripticoPitchPage() {
                         $249.990
                       </span>
                       <span className="text-xs print:text-[10px] text-slate-400 print:text-slate-600 font-medium">
-                        + IVA / mes
+                        IVA incl. / mes
                       </span>
                     </div>
                     <div className="mt-2 p-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/30 print:bg-emerald-100 print:border-emerald-300 text-emerald-300 print:text-emerald-900 text-xs print:text-[9.5px] font-bold flex items-center gap-1.5">

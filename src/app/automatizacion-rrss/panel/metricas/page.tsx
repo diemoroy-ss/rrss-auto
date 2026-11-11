@@ -359,9 +359,13 @@ export default function MetricasDashboard() {
 
       const { pdfBase64 } = await pdfRes.json();
 
+      const token = await auth.currentUser?.getIdToken().catch(() => null);
       const res = await fetch("/api/n8n/send-report", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           pdfBase64,
           message: shareTextWhatsApp.replace(/\\n/g, "\n"),
@@ -559,9 +563,9 @@ export default function MetricasDashboard() {
           const localSnap = await getDocs(localQ);
           localSnap.docs.forEach((d) => {
             const docData = d.data();
-            const likes = docData.metrics?.likes || Math.floor(Math.random() * 18) + 12;
-            const comments = docData.metrics?.comments || Math.floor(Math.random() * 5) + 2;
-            const reach = docData.metrics?.reach || Math.floor(Math.random() * 180) + 140;
+            const likes = docData.metrics?.likes || 0;
+            const comments = docData.metrics?.comments || 0;
+            const reach = docData.metrics?.reach || docData.metrics?.impressions || 0;
 
             data.push({
               id: d.id,

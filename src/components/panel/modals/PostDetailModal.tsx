@@ -34,6 +34,7 @@ interface PostDetailModalProps {
   onPublishNow: (postId: string) => void;
   onPublishStory: (postId: string) => void;
   onUpdateStatus: (postId: string, newStatus: "pending" | "confirmed") => void;
+  onDeletePost?: (postId: string) => void;
 }
 
 export default function PostDetailModal({
@@ -57,6 +58,7 @@ export default function PostDetailModal({
   onPublishNow,
   onPublishStory,
   onUpdateStatus,
+  onDeletePost,
 }: PostDetailModalProps) {
   if (!post) return null;
 
@@ -434,7 +436,7 @@ export default function PostDetailModal({
                   )}
                 </div>
               </div>
-            ) : ["business", "agency"].includes(userPlan) ? (
+            ) : ["esencial", "starter", "crecimiento", "growth", "pro", "elite", "piloto_automatico", "piloto-automatico", "business", "agency"].includes(userPlan) ? (
               <div onClick={(e) => onGenerateMedia(post.id, e as any)} className="rounded-[28px] p-8 bg-slate-50 border-2 border-dashed border-slate-200 flex flex-col items-center justify-center cursor-pointer hover:bg-indigo-50 hover:border-indigo-300 transition-all group/modalmedia">
                 <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center text-2xl shadow-sm text-indigo-500 mx-auto mb-4 group-hover/modalmedia:scale-110 group-hover/modalmedia:bg-indigo-500 group-hover/modalmedia:text-white transition-all">✨</div>
                 <p className="text-sm font-black text-slate-500 uppercase tracking-widest group-hover/modalmedia:text-indigo-600">Generar Vista Previa Ahora</p>
@@ -443,7 +445,7 @@ export default function PostDetailModal({
               <div className="rounded-[28px] p-8 bg-slate-50 border border-slate-200 flex flex-col items-center justify-center">
                 <div className="w-14 h-14 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center text-3xl shadow-sm mx-auto mb-4">🤖</div>
                 <p className="text-sm font-black text-slate-500 uppercase tracking-widest">Confía en Piloto Automático</p>
-                <p className="text-xs text-slate-400 mt-2 text-center max-w-sm">Mejora a Business o Agency para pre-visualizar y editar las imágenes generadas antes de que sean publicadas.</p>
+                <p className="text-xs text-slate-400 mt-2 text-center max-w-sm">Activa un plan pagado para pre-visualizar y editar las imágenes generadas antes de que sean publicadas.</p>
               </div>
             )}
 
@@ -484,7 +486,7 @@ export default function PostDetailModal({
               <>
                 <button
                   onClick={() => onPublishNow(post.id)}
-                  disabled={publishingPostId === post.id || !post.imageUrl || post.status === "publishing"}
+                  disabled={publishingPostId === post.id || (!post.imageUrl && !post.videoUrl) || post.status === "publishing"}
                   className="flex-1 bg-gradient-to-br from-slate-800 to-black text-white px-8 py-4 md:py-5 rounded-2xl md:rounded-[28px] font-black text-[13px] uppercase tracking-[0.1em] hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-40 disabled:grayscale disabled:cursor-not-allowed group/publish shadow-2xl shadow-slate-900/30 overflow-hidden relative"
                 >
                   <div className="absolute inset-0 bg-gradient-to-tr from-orange-500/10 to-transparent opacity-0 group-hover/publish:opacity-100 transition-opacity" />
@@ -493,7 +495,7 @@ export default function PostDetailModal({
                   ) : (
                     <span className="text-2xl group-hover/publish:scale-125 transition-transform duration-300 drop-shadow-[0_0_8px_rgba(249,115,22,0.6)]">🔥</span>
                   )}
-                  <span className="relative z-10">{post.status === "publishing" ? "Publicando..." : "Publicar Ahora!!!"}</span>
+                  <span className="relative z-10">{post.status === "publishing" ? "Publicando..." : "Publicar Ahora"}</span>
                 </button>
 
                 <button
@@ -509,8 +511,19 @@ export default function PostDetailModal({
                       {post.status === "confirmed" ? "⏳" : "✅"}
                     </span>
                   )}
-                  <span className="relative z-10">{post.status === "confirmed" ? "Desmarcar Bot" : "Confirmar Bot"}</span>
+                  <span className="relative z-10">{post.status === "confirmed" ? "Pasar a Borrador" : "Confirmar Publicación"}</span>
                 </button>
+
+                {onDeletePost && (
+                  <button
+                    type="button"
+                    onClick={() => onDeletePost(post.id)}
+                    title="Eliminar publicación"
+                    className="px-5 py-4 md:py-5 rounded-2xl md:rounded-[28px] bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 font-black text-sm transition-all flex items-center justify-center shrink-0"
+                  >
+                    🗑️
+                  </button>
+                )}
               </>
             )}
           </div>

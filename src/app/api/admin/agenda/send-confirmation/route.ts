@@ -1,12 +1,39 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminDb } from "../../../../../lib/firebase-admin";
+import { adminAuth, adminDb } from "../../../../../lib/firebase-admin";
+import { sanitizeInput } from "../../../../../lib/security";
 import nodemailer from "nodemailer";
 
 export const dynamic = "force-dynamic";
 
+const ADMIN_EMAILS = ["diemoroy@gmail.com", "admin@santisoft.cl", "spalezcom@gmail.com", "santisoftai@gmail.com"];
+
+async function verifyAdminRequest(req: NextRequest): Promise<boolean> {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ") || !adminAuth) return false;
+  try {
+    const token = authHeader.split("Bearer ")[1];
+    const decoded = await adminAuth.verifyIdToken(token);
+    const email = (decoded.email || "").toLowerCase().trim();
+    if (ADMIN_EMAILS.includes(email)) return true;
+    if (adminDb) {
+      const userDoc = await adminDb.collection("users").doc(decoded.uid).get();
+      return userDoc.data()?.role === "admin";
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
+    if (!(await verifyAdminRequest(req))) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const { bookingId, email, name, date, time, meetUrl, customMessage } = await req.json();
+    const safeName = sanitizeInput(String(name || "cliente"));
+    const safeCustomMessage = customMessage ? sanitizeInput(String(customMessage)) : "";
+    const safeMeetUrl = meetUrl && /^https?:\/\//i.test(String(meetUrl)) ? String(meetUrl) : "";
 
     if (!bookingId || !email) {
       return NextResponse.json({ error: "Booking ID and email are required" }, { status: 400 });
@@ -33,38 +60,38 @@ export async function POST(req: NextRequest) {
         day: 'numeric' 
       });
 
-      const meetButtonHtml = meetUrl 
+      const meetButtonHtml = safeMeetUrl 
         ? `<div style="margin: 25px 0; text-align: center;">
-            <a href="${meetUrl}" target="_blank" style="background-color: #DD4B19; color: white; padding: 14px 28px; text-decoration: none; border-radius: 10px; font-weight: bold; display: inline-block; font-size: 16px; box-shadow: 0 4px 12px rgba(221,75,25,0.3);">
+            <a href="${safeMeetUrl}" target="_blank" style="background-color: #DD4B19; color: white; padding: 14px 28px; text-decoration: none; border-radius: 10px; font-weight: bold; display: inline-block; font-size: 16px; box-shadow: 0 4px 12px rgba(221,75,25,0.3);">
               🎥 Unirse a la Videollamada (Google Meet)
             </a>
            </div>`
         : '';
 
       await transporter.sendMail({
-        from: `"Santisoft AI" <${process.env.SMTP_EMAIL}>`,
+        from: `"Santisoft" <${process.env.SMTP_EMAIL}>`,
         to: email,
-        subject: `✅ Confirmación de Demostración - Santisoft AI`,
+        subject: `✅ Confirmación de Demostración - Santisoft`,
         html: `
           <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333; line-height: 1.6; background-color: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #eaeaea;">
             <div style="background-color: #1e293b; padding: 30px; text-align: center; color: white;">
               <h1 style="margin: 0; font-size: 22px; font-weight: 700;">Demostración Confirmada</h1>
-              <p style="margin-top: 5px; opacity: 0.8; font-size: 14px;">Santisoft AI Automatización</p>
+              <p style="margin-top: 5px; opacity: 0.8; font-size: 14px;">Santisoft Automatización</p>
             </div>
             
             <div style="padding: 30px;">
-              <p>Hola <strong>${name || 'cliente'}</strong>,</p>
+              <p>Hola <strong>${safeName}</strong>,</p>
               <p>Tu reunión para la demostración de nuestra plataforma ha sido <strong>confirmada oficialmente</strong>.</p>
               
               <div style="background-color: #f8fafc; padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 4px solid #DD4B19;">
                 <p style="margin: 5px 0;"><strong>📅 Fecha:</strong> ${fechaFormateada}</p>
                 <p style="margin: 5px 0;"><strong>⏰ Hora:</strong> ${time} hrs</p>
-                ${meetUrl ? `<p style="margin: 5px 0;"><strong>🔗 Enlace:</strong> <a href="${meetUrl}" style="color: #DD4B19;">${meetUrl}</a></p>` : ''}
+                ${safeMeetUrl ? `<p style="margin: 5px 0;"><strong>🔗 Enlace:</strong> <a href="${safeMeetUrl}" style="color: #DD4B19;">${safeMeetUrl}</a></p>` : ''}
               </div>
 
-              ${customMessage ? `
+              ${safeCustomMessage ? `
                 <div style="background-color: #fffbe6; padding: 15px; border-radius: 8px; border: 1px solid #ffe58f; margin-bottom: 20px; font-size: 14px;">
-                  <strong>Mensaje del equipo:</strong><br />${customMessage}
+                  <strong>Mensaje del equipo:</strong><br />${safeCustomMessage}
                 </div>
               ` : ''}
 

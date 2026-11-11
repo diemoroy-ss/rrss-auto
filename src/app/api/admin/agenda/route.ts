@@ -1,10 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminDb } from "../../../../lib/firebase-admin";
+import { adminAuth, adminDb } from "../../../../lib/firebase-admin";
 
 export const dynamic = "force-dynamic";
 
+const ADMIN_EMAILS = ["diemoroy@gmail.com", "admin@santisoft.cl", "spalezcom@gmail.com", "santisoftai@gmail.com"];
+
+async function verifyAdminRequest(req: NextRequest): Promise<boolean> {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ") || !adminAuth) return false;
+  try {
+    const token = authHeader.split("Bearer ")[1];
+    const decoded = await adminAuth.verifyIdToken(token);
+    const email = (decoded.email || "").toLowerCase().trim();
+    if (ADMIN_EMAILS.includes(email)) return true;
+    if (adminDb) {
+      const userDoc = await adminDb.collection("users").doc(decoded.uid).get();
+      return userDoc.data()?.role === "admin";
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 export async function GET(req: NextRequest) {
   try {
+    if (!(await verifyAdminRequest(req))) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     if (!adminDb) {
       return NextResponse.json({ error: "Database unavailable" }, { status: 500 });
     }
@@ -24,6 +47,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    if (!(await verifyAdminRequest(req))) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const { date, time, reason } = await req.json();
 
     if (!date || !time) {
@@ -50,6 +76,9 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
+    if (!(await verifyAdminRequest(req))) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const { id, date, time, status } = await req.json();
 
     if (!id) {
@@ -73,6 +102,9 @@ export async function PUT(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
+    if (!(await verifyAdminRequest(req))) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
 

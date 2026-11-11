@@ -1,10 +1,36 @@
-import { NextResponse } from "next/server";
-import { adminDb } from "../../../../lib/firebase-admin";
+import { NextRequest, NextResponse } from "next/server";
+import { adminAuth, adminDb } from "../../../../lib/firebase-admin";
 
-export async function GET() {
+const ADMIN_EMAILS = ["diemoroy@gmail.com", "admin@santisoft.cl", "spalezcom@gmail.com", "santisoftai@gmail.com"];
+
+export async function GET(req: NextRequest) {
     try {
         if (!adminDb) {
             return NextResponse.json({ error: "DB not initialized" }, { status: 500 });
+        }
+
+        const authHeader = req.headers.get("Authorization");
+        const adminSecret = req.headers.get("x-admin-secret");
+        const expectedSecret = process.env.ADMIN_CRON_SECRET || process.env.CRON_SECRET;
+
+        let isAuthorized = Boolean(expectedSecret && adminSecret === expectedSecret);
+        if (!isAuthorized && authHeader?.startsWith("Bearer ") && adminAuth) {
+            try {
+                const decoded = await adminAuth.verifyIdToken(authHeader.split("Bearer ")[1]);
+                const email = (decoded.email || "").toLowerCase().trim();
+                if (ADMIN_EMAILS.includes(email)) {
+                    isAuthorized = true;
+                } else {
+                    const userDoc = await adminDb.collection("users").doc(decoded.uid).get();
+                    isAuthorized = userDoc.data()?.role === "admin";
+                }
+            } catch {
+                isAuthorized = false;
+            }
+        }
+
+        if (!isAuthorized) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
         const today = new Date().toISOString().split("T")[0];

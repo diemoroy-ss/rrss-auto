@@ -3,7 +3,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { auth, db } from "../../lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import SantisoftLogo from "../../components/SantisoftLogo";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -599,10 +599,16 @@ function OnboardingContent() {
         if (userDoc.exists()) {
           const d = userDoc.data();
           if (d.onboardingCompleted) {
-            router.push("/automatizacion-rrss/panel");
+            if (plan && plan !== "free") {
+              router.push(`/confirmar-plan?plan=${encodeURIComponent(plan)}&billing=${encodeURIComponent(billing)}`);
+            } else {
+              router.push("/automatizacion-rrss/panel");
+            }
             return;
           }
           setUserName(d.name || u.displayName || "");
+        } else {
+          setUserName(u.displayName || "");
         }
       } catch (e) {
         console.error(e);
@@ -611,7 +617,7 @@ function OnboardingContent() {
       setAuthChecked(true);
     });
     return () => unsub();
-  }, [router]);
+  }, [router, plan, billing]);
 
   // ── Loading step animation + save trigger
   useEffect(() => {
@@ -639,89 +645,101 @@ function OnboardingContent() {
     try {
       const userDocRef = doc(db, "users", user.uid);
       const userDoc = await getDoc(userDocRef);
+      const userData = userDoc.exists() ? userDoc.data() : {};
+      let profiles: any[] = userData.profiles || [];
 
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        let profiles: any[] = userData.profiles || [];
+      const effectiveRubro =
+        data.rubro === "Otro" ? data.rubroCustom.trim() || "Otro" : data.rubro;
 
-        const effectiveRubro =
-          data.rubro === "Otro" ? data.rubroCustom.trim() || "Otro" : data.rubro;
-
-        // Find or create default profile
-        let idx = profiles.findIndex((p: any) => p.id === "default");
-        if (idx === -1) {
-          profiles.push({
-            id: "default",
-            name: userData.company || userData.name || "Mi Cuenta Principal",
-            icon: "🏢",
-          });
-          idx = profiles.length - 1;
-        }
-
-        // Extraer automáticamente el ADN de la marca si ingresó sitio web o descripción
-        let extractedVisualIdentity = null;
-        if (data.website && !data.noWebsite || data.businessDescription) {
-          try {
-            const extractRes = await fetch("/api/brand/extract-identity", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                websiteUrl: data.website && !data.noWebsite ? data.website.trim() : "",
-                businessName: userData.company || userData.name || "Mi Marca",
-                rubro: effectiveRubro,
-                businessDescription: data.businessDescription.trim(),
-              }),
-            });
-            if (extractRes.ok) {
-              const extData = await extractRes.json();
-              if (extData.identity) {
-                extractedVisualIdentity = extData.identity;
-              }
-            }
-          } catch (e) {
-            console.warn("[Onboarding] Error extrayendo ADN visual inicial:", e);
-          }
-        }
-
-        // Patch with onboarding data (visible in Configuración → Marca y Contacto)
-        profiles[idx] = {
-          ...profiles[idx],
-          name: profiles[idx].name || userData.company || userData.name || "Mi Cuenta Principal",
-          rubro: effectiveRubro,
-          businessDescription: data.businessDescription.trim(),
-          ...(data.website && !data.noWebsite ? { website: data.website.trim() } : {}),
-          ...(userData.phone && !profiles[idx].phone ? { phone: userData.phone } : {}),
-          ...(userData.email && !profiles[idx].email ? { email: userData.email } : {}),
-          ...(extractedVisualIdentity ? { visualIdentity: extractedVisualIdentity } : {}),
-        };
-
-        await updateDoc(userDocRef, {
-          profiles,
-          ...(data.website && !data.noWebsite ? { website: data.website.trim() } : {}),
-          rubro: effectiveRubro,
-          businessDescription: data.businessDescription.trim(),
-          userType: data.userType,
-          preferredPlatforms: data.platforms,
-          goal: data.goal,
-          preferredTone: data.tone,
-          onboardingCompleted: true,
-          onboardingCompletedAt: serverTimestamp(),
+      // Find or create default profile
+      let idx = profiles.findIndex((p: any) => p.id === "default");
+      if (idx === -1) {
+        profiles.push({
+          id: "default",
+          name: userData.company || userData.name || user.displayName || "Mi Cuenta Principal",
+          icon: "🏢",
         });
+        idx = profiles.length - 1;
+      }
 
-        // ── Generar automáticamente los primeros 2 borradores de bienvenida con nuestros agentes
+      // Extraer automáticamente el ADN de la marca si ingresó sitio web o descripción
+      let extractedVisualIdentity = null;
+      if ((data.website && !data.noWebsite) || data.businessDescription) {
         try {
-          const idToken = await user.getIdToken();
-          await fetch('/api/onboarding/generate-starter-posts', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${idToken}`,
-            },
-            body: JSON.stringify({ profileId: profiles[idx]?.id || 'default' }),
+          const extractRes = await fetch("/api/brand/extract-identity", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              websiteUrl: data.website && !data.noWebsite ? data.website.trim() : "",
+              businessName: userData.company || userData.name || user.displayName || "Mi Marca",
+              rubro: effectiveRubro,
+              businessDescription: data.businessDescription.trim(),
+            }),
           });
-        } catch (starterErr) {
-          console.warn('[Onboarding] Error generando starter posts:', starterErr);
+          if (extractRes.ok) {
+            const extData = await extractRes.json();
+            if (extData.identity) {
+              extractedVisualIdentity = extData.identity;
+            }
+          }
+        } catch (e) {
+          console.warn("[Onboarding] Error extrayendo ADN visual inicial:", e);
         }
+      }
+
+      // Patch with onboarding data (visible in Configuración → Marca y Contacto)
+      profiles[idx] = {
+        ...profiles[idx],
+        name: profiles[idx].name || userData.company || userData.name || user.displayName || "Mi Cuenta Principal",
+        rubro: effectiveRubro,
+        businessDescription: data.businessDescription.trim(),
+        ...(data.website && !data.noWebsite ? { website: data.website.trim() } : {}),
+        ...(userData.phone && !profiles[idx].phone ? { phone: userData.phone } : {}),
+        ...((userData.email || user.email) && !profiles[idx].email ? { email: userData.email || user.email } : {}),
+        ...(extractedVisualIdentity ? { visualIdentity: extractedVisualIdentity } : {}),
+      };
+
+      const adminEmails = ["admin@santisoft.cl", "diemoroy@gmail.com", "spalezcom@gmail.com", "santisoftai@gmail.com"];
+      const resolvedRole = adminEmails.includes((user.email || "").toLowerCase().trim()) ? "admin" : (userData.role || "user");
+
+      await setDoc(userDocRef, {
+        ...(!userDoc.exists() ? {
+          email: user.email || "",
+          name: user.displayName || "Usuario Nuevo",
+          role: resolvedRole,
+          plan: "free",
+          categoriesAllowed: ["all"],
+          createdAt: serverTimestamp(),
+          trialStartedAt: serverTimestamp(),
+          trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          trialDays: 7,
+          registeredApps: ["automatizacion"],
+        } : {}),
+        profiles,
+        ...(data.website && !data.noWebsite ? { website: data.website.trim() } : {}),
+        rubro: effectiveRubro,
+        businessDescription: data.businessDescription.trim(),
+        userType: data.userType,
+        preferredPlatforms: data.platforms,
+        goal: data.goal,
+        preferredTone: data.tone,
+        onboardingCompleted: true,
+        onboardingCompletedAt: serverTimestamp(),
+      }, { merge: true });
+
+      // ── Generar automáticamente los primeros 2 borradores de bienvenida con nuestros agentes
+      try {
+        const idToken = await user.getIdToken();
+        await fetch('/api/onboarding/generate-starter-posts', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({ profileId: profiles[idx]?.id || 'default' }),
+        });
+      } catch (starterErr) {
+        console.warn('[Onboarding] Error generando starter posts:', starterErr);
       }
 
       // ── Final redirect
@@ -844,7 +862,23 @@ function OnboardingContent() {
         {step > 0 && step < 4 && (
           <button
             type="button"
-            onClick={() => router.push("/automatizacion-rrss/panel")}
+            onClick={async () => {
+              if (user) {
+                try {
+                  await setDoc(doc(db, "users", user.uid), {
+                    onboardingCompleted: true,
+                    onboardingCompletedAt: serverTimestamp(),
+                  }, { merge: true });
+                } catch (e) {
+                  console.warn("[Onboarding] Error al saltar onboarding:", e);
+                }
+              }
+              if (!plan || plan === "free") {
+                router.push("/automatizacion-rrss/panel");
+              } else {
+                router.push(`/confirmar-plan?plan=${encodeURIComponent(plan)}&billing=${encodeURIComponent(billing)}`);
+              }
+            }}
             className="mt-4 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
           >
             Saltar por ahora y configurar en el panel

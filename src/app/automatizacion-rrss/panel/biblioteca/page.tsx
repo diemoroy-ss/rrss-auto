@@ -394,6 +394,7 @@ export default function BibliotecaPage() {
       
       snap.forEach((d) => {
         const data = d.data();
+        if (profileId && profileId !== "default" && data.profileId && data.profileId !== profileId) return;
         let displayUrl = data.url;
         // Si data.url es una URL de Butterfly fallida o no existe, usar baseImageUrl
         if ((!displayUrl || displayUrl.includes("butterfly.santisoft.cl")) && data.baseImageUrl) {
@@ -442,6 +443,7 @@ export default function BibliotecaPage() {
 
       snapUploads.forEach((d) => {
         const data = d.data();
+        if (profileId && profileId !== "default" && data.profileId && data.profileId !== profileId) return;
         if (data.url) {
           existingUrls.add(data.url);
           list.push({
@@ -461,6 +463,7 @@ export default function BibliotecaPage() {
 
       snapSocialPosts.forEach((d) => {
         const data = d.data();
+        if (profileId && profileId !== "default" && data.profileId && data.profileId !== profileId) return;
         const imgUrl = data.imageUrl || (data.scenes && data.scenes[0]?.bgImageUrl);
         if (imgUrl && !existingUrls.has(imgUrl)) {
           existingUrls.add(imgUrl);

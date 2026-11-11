@@ -107,37 +107,51 @@ export default function BrandHeader() {
               <div className="absolute top-full left-0 mt-2 w-72 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 p-3 shadow-2xl z-50 space-y-2">
                 <div className="px-2 py-1">
                   <span className="text-[10px] font-black uppercase tracking-wider text-orange-600 dark:text-orange-400">
-                    Ecosistema Santisoft
+                    Ecosistema SocialPilot
                   </span>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Soluciones de software &amp; automatización</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Una cuenta · Tres soluciones modulares</p>
                 </div>
 
                 <div className="h-px bg-slate-200 dark:bg-slate-800" />
 
                 <div className="space-y-1">
-                  <div className="p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/25">
+                  <Link
+                    href="/marketing"
+                    onClick={() => setSwitcherOpen(false)}
+                    className="block p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/25 hover:bg-orange-500/15 transition-colors"
+                  >
                     <div className="flex items-center justify-between text-xs font-bold text-slate-900 dark:text-white">
-                      <span>SocialPilot</span>
+                      <span>📣 SocialPilot Marketing</span>
                       <span className="text-[9px] bg-orange-500 text-slate-950 font-black px-1.5 py-0.5 rounded">
-                        Actual
+                        Ver Producto
                       </span>
                     </div>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Publicación y piezas automáticas</p>
-                  </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Contenido, calendario y redes sociales</p>
+                  </Link>
 
-                  <a
-                    href="https://agentes.santisoft.cl"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/80 text-xs text-slate-700 dark:text-slate-300 transition-colors"
+                  <Link
+                    href="/menu"
                     onClick={() => setSwitcherOpen(false)}
+                    className="block p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/80 text-xs text-slate-700 dark:text-slate-300 transition-colors"
                   >
                     <div className="flex items-center justify-between font-bold text-slate-900 dark:text-white">
-                      <span>Agentes para Empresas</span>
-                      <span className="text-cyan-500 dark:text-cyan-400 text-xs">↗</span>
+                      <span>🍽️ SocialPilot Carta QR</span>
+                      <span className="text-amber-500 text-xs">Ver Producto →</span>
                     </div>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Automatización inteligente de operaciones</p>
-                  </a>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Carta digital interactiva para restaurantes</p>
+                  </Link>
+
+                  <Link
+                    href="/fideliza"
+                    onClick={() => setSwitcherOpen(false)}
+                    className="block p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/80 text-xs text-slate-700 dark:text-slate-300 transition-colors"
+                  >
+                    <div className="flex items-center justify-between font-bold text-slate-900 dark:text-white">
+                      <span>🎁 SocialPilot Fideliza</span>
+                      <span className="text-emerald-500 text-xs">Ver Producto →</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Puntos, sellos y recompensas para clientes</p>
+                  </Link>
                 </div>
 
                 <div className="h-px bg-slate-200 dark:bg-slate-800" />
@@ -160,24 +174,24 @@ export default function BrandHeader() {
         {/* Desktop Navigation Links */}
         <div className="hidden md:flex items-center gap-6">
           <Link
-            href="/como-funciona"
+            href="/marketing"
             className="text-sm font-medium text-slate-700 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white transition-colors"
           >
-            Cómo Funciona
+            Marketing
           </Link>
 
           <Link
-            href="/biblioteca"
+            href="/menu"
             className="text-sm font-medium text-slate-700 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white transition-colors"
           >
-            Biblioteca
+            Carta QR
           </Link>
 
           <Link
-            href="/triptico"
+            href="/fideliza"
             className="text-sm font-medium text-slate-700 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white transition-colors"
           >
-            Tríptico
+            Fideliza
           </Link>
 
           <a
@@ -191,7 +205,7 @@ export default function BrandHeader() {
             href="/login"
             className="text-sm font-medium text-slate-700 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white transition-colors"
           >
-            Acceso Cliente
+            Iniciar Sesión
           </Link>
 
           <ThemeToggle />
@@ -200,7 +214,7 @@ export default function BrandHeader() {
             href="/registro"
             className="px-4 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs tracking-wide shadow-md shadow-orange-500/20 transition-all hover:-translate-y-0.5"
           >
-            Empezar Gratis
+            Conoce SocialPilot
           </Link>
         </div>
 
@@ -334,7 +348,7 @@ export default function BrandHeader() {
                   rel="noopener noreferrer"
                   className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-left text-xs font-semibold text-slate-200 hover:text-white"
                 >
-                  <span className="block text-cyan-400 font-bold text-sm">Agentes IA ↗</span>
+                  <span className="block text-cyan-400 font-bold text-sm">Nuestros Agentes ↗</span>
                   <span className="text-[11px] text-slate-400">Automatización</span>
                 </a>
 

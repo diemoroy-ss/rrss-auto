@@ -35,8 +35,8 @@ const spaceMono = Space_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'SocialPilot by Santisoft — Redes Sociales en Piloto Automático',
-  description: 'Automatización y generación estratégica de contenido para redes sociales (Meta, TikTok) y posicionamiento en motores de IA (GEO/SEO) por Santisoft.',
+  title: 'SocialPilot — Ecosistema SaaS de Marketing, Carta QR y Fidelización',
+  description: 'Tu negocio necesita crecer, no perder horas creando publicaciones. Administra SocialPilot Marketing, Carta QR y Fideliza desde una sola cuenta y catálogo central.',
   metadataBase: new URL('https://socialpilot.cl'),
   icons: {
     icon: [
@@ -57,8 +57,8 @@ export const metadata: Metadata = {
     'mobile-web-app-capable': 'yes',
   },
   openGraph: {
-    title: 'SocialPilot by Santisoft — Redes Sociales en Piloto Automático',
-    description: 'Generación automática de contenido persuasivo, calendarios estratégicos y posicionamiento GEO en IA.',
+    title: 'SocialPilot — Ecosistema SaaS de Marketing, Carta QR y Fidelización',
+    description: 'Herramientas digitales autónomas para negocios: automatización de contenido comercial, carta digital QR y fidelización de clientes.',
     url: 'https://socialpilot.cl',
     siteName: 'SocialPilot by Santisoft',
     images: [{ url: '/favicon.svg?v=4' }],

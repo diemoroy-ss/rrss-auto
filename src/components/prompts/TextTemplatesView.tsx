@@ -115,8 +115,10 @@ export function TextTemplatesView() {
       const snap = await getDocs(collection(db, "text_templates"));
       const userTemplates: TextTemplate[] = [];
       snap.forEach((d) => {
-        const data = d.data() as TextTemplate;
-        userTemplates.push({ ...data, id: d.id });
+        const data = d.data() as TextTemplate & { userId?: string };
+        if (!data.userId || data.userId === userId) {
+          userTemplates.push({ ...data, id: d.id });
+        }
       });
 
       // Si hay plantillas en BD, combinar con las predeterminadas
@@ -626,12 +628,18 @@ export function TextTemplatesView() {
         ctaTextColor: formCtaTextColor,
         previewSampleImage: editingTemplate?.previewSampleImage || DEFAULT_TEXT_TEMPLATES[0].previewSampleImage,
         isDefault: false,
+        userId: currentUser?.uid || "",
       };
 
-      await setDoc(doc(db, "text_templates", templateId), updatedData, { merge: true });
+      const scopedTemplateId = isNewTemplate && currentUser?.uid
+        ? `user_${currentUser.uid}_${templateId}`
+        : templateId;
+      updatedData.id = scopedTemplateId;
+
+      await setDoc(doc(db, "text_templates", scopedTemplateId), updatedData, { merge: true });
 
       setTemplates((prev) => {
-        const filtered = prev.filter((t) => t.id !== templateId);
+        const filtered = prev.filter((t) => t.id !== scopedTemplateId && t.id !== templateId);
         return [updatedData, ...filtered];
       });
 

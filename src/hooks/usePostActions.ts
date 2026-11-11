@@ -169,7 +169,7 @@ export function usePostActions(deps: UsePostActionsDeps) {
         });
         if (!res.ok) {
           updatePostInCache(postId, { isGeneratingImage: false });
-          setMessage({ type: "error", text: "Hubo un error contactando al motor de IA." });
+          setMessage({ type: "error", text: "Hubo un error contactando a nuestros agentes." });
         }
       } catch (err) {
         console.error(err);
@@ -301,6 +301,7 @@ export function usePostActions(deps: UsePostActionsDeps) {
           try {
             await deleteDoc(doc(db, collectionName, postId));
             removePostFromCache(postId, isBlog);
+            setSelectedPost(null);
             setMessage({ type: "success", text: "Publicación eliminada correctamente." });
           } catch {
             setMessage({ type: "error", text: "Error al eliminar la publicación." });
@@ -309,7 +310,7 @@ export function usePostActions(deps: UsePostActionsDeps) {
         true
       );
     },
-    [posts, blogPosts, requestConfirmation, removePostFromCache, setConfirmModalState, setMessage]
+    [posts, blogPosts, requestConfirmation, removePostFromCache, setSelectedPost, setConfirmModalState, setMessage]
   );
 
   // --- Post: confirmar (agenda en GCP Tasks) ---
@@ -734,7 +735,7 @@ export function usePostActions(deps: UsePostActionsDeps) {
         });
         if (!response.ok) throw new Error("No se pudo regenerar el diseño.");
         const data = await response.json();
-        if (!data.imageUrl) throw new Error("La IA no devolvió una imagen válida.");
+        if (!data.imageUrl) throw new Error("Nuestros agentes no devolvieron una imagen válida.");
 
         await updateDoc(doc(db, "social_posts", post.id), { imageUrl: data.imageUrl });
         updatePostInCache(post.id, { imageUrl: data.imageUrl });
@@ -754,32 +755,55 @@ export function usePostActions(deps: UsePostActionsDeps) {
   // --- Estado: actualizar status genérico ---
   const handleUpdateStatus = useCallback(
     async (postId: string, newStatus: "pending" | "confirmed") => {
+      const postToUpdate = [...posts, ...blogPosts].find((p) => p.id === postId);
+      const isBlog = postToUpdate?.networks?.includes("blog");
+      const networksCount = postToUpdate?.networks?.length || 1;
+
+      if (!isBlog && newStatus === "confirmed" && postToUpdate?.status !== "confirmed") {
+        if (quotaUsed + networksCount > planLimit) {
+          setUpgradeModalOpen(true);
+          return;
+        }
+      }
+
       setIsUpdatingStatus(true);
       try {
-        const postToUpdate = [...posts, ...blogPosts].find((p) => p.id === postId);
-        const isBlog = postToUpdate?.networks?.includes("blog");
         const collectionName = isBlog ? "blog_posts" : "social_posts";
 
         await updateDoc(doc(db, collectionName, postId), { status: newStatus, publishError: null });
         updatePostInCache(postId, { status: newStatus, publishError: undefined }, isBlog);
 
         if (!isBlog && postToUpdate) {
-          const networksCount = postToUpdate.networks?.length || 1;
-          if (newStatus === "confirmed" && postToUpdate.status === "pending") {
+          if (newStatus === "confirmed" && postToUpdate.status !== "confirmed") {
             setQuotaUsed((prev) => prev + networksCount);
+            const idToken = await auth.currentUser?.getIdToken();
+            if (postToUpdate.scheduledFor && idToken) {
+              const dateObj =
+                typeof postToUpdate.scheduledFor.toDate === "function"
+                  ? postToUpdate.scheduledFor.toDate()
+                  : new Date(postToUpdate.scheduledFor);
+              await fetch("/api/tasks/schedule", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
+                body: JSON.stringify({ postId: postToUpdate.id, scheduledFor: dateObj.toISOString() }),
+              }).catch(() => {});
+            }
           } else if (newStatus === "pending" && postToUpdate.status === "confirmed") {
             setQuotaUsed((prev) => Math.max(0, prev - networksCount));
           }
         }
         setSelectedPost(null);
-        setMessage({ type: "success", text: `Estado actualizado a '${newStatus}'.` });
+        setMessage({
+          type: "success",
+          text: newStatus === "confirmed" ? "¡Publicación confirmada y agendada!" : "Publicación pasada a borrador.",
+        });
       } catch {
         setMessage({ type: "error", text: "Error al actualizar el estado." });
       } finally {
         setIsUpdatingStatus(false);
       }
     },
-    [posts, blogPosts, updatePostInCache, setQuotaUsed, setSelectedPost, setMessage, setIsUpdatingStatus]
+    [posts, blogPosts, quotaUsed, planLimit, updatePostInCache, setQuotaUsed, setSelectedPost, setMessage, setUpgradeModalOpen, setIsUpdatingStatus]
   );
 
   // --- Reagendar ---

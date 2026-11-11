@@ -59,10 +59,14 @@ export async function GET(
       fidelizacionTargetGoal: profile.fidelizacionConfig?.targetGoal || 5,
     };
 
-    // Determinar si la carta digital está habilitada
+    // Determinar si la carta digital está habilitada (incluyendo módulo Carta QR contratado)
+    const hasContractedQr =
+      profile.contractedModules?.qr === true || userData.contractedModules?.qr === true;
     const isMenuEnabled = isTestProfile
       ? profile.menuDigitalEnabled !== false
-      : (profile.menuDigitalEnabled === true || userData.menuDigitalEnabled === true);
+      : profile.menuDigitalEnabled === true ||
+        userData.menuDigitalEnabled === true ||
+        (hasContractedQr && profile.menuDigitalEnabled !== false);
 
     // Si la carta no ha sido habilitada por el dueño del local
     if (!isMenuEnabled) {
@@ -87,7 +91,9 @@ export async function GET(
           name: data.name || "",
           description: data.description || "",
           type: data.type || "producto",
-          category: (data.category && data.category.trim()) || "Destacados",
+          category:
+            (data.category && data.category.trim()) ||
+            (data.type === "promocion" ? "Promociones" : "Destacados"),
           subcategory: (data.subcategory && data.subcategory.trim()) || null,
           price: data.price || null,
           offerPrice: data.offerPrice || null,

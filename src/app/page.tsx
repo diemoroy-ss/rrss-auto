@@ -53,48 +53,55 @@ export default function Home() {
       {/* 3. Hero & Consola Interactiva */}
       <HeroSection />
 
-      {/* 4. Sección Ecosistema */}
+      {/* 4. Sección Ecosistema: Los 3 Productos Modulares de SocialPilot */}
       <section id="ecosistema">
         <div className="wrap">
           <div className="section-head" data-reveal>
-            <span className="eyebrow">Ecosistema integral · 3 Canales</span>
-            <h2>Un flujo continuo para <em>Redes</em>, <span className="em-p">SEO</span> y <span className="em-w">WhatsApp.</span></h2>
+            <span className="eyebrow">Ecosistema SaaS Modular · 3 Productos Independientes</span>
+            <h2>Una sola cuenta para <em>Marketing</em>, <span className="em-p">Carta QR</span> y <span className="em-w">Fideliza.</span></h2>
           </div>
           <div className="pillars three-col" data-reveal>
             <div className="pillar a">
-              <span className="pillar-tag">CANAL 1 · REDES SOCIALES 360°</span>
-              <h3>Redes Sociales 360°</h3>
+              <span className="pillar-tag">PRODUCTO 1 · SOCIALPILOT MARKETING</span>
+              <h3>SocialPilot Marketing</h3>
               <ul className="pillar-list">
-                <li><span className="mark">›</span><span><strong>Videos 9:16 &amp; Afiches Comerciales:</strong> 20 comandos cinematográficos para Reels y TikTok, más afiches con precios, ofertas y llamados a WhatsApp.</span></li>
-                <li><span className="mark">›</span><span><strong>Radar de Nicho 📡:</strong> Detección de tendencias, dudas y temas con alta tracción en tu rubro.</span></li>
-                <li><span className="mark">›</span><span><strong>Calendario estratégico</strong> que deja todo un mes programado en minutos.</span></li>
-                <li><span className="mark">›</span><span>Publicación automática directa en <strong>Instagram, Facebook, TikTok, YouTube Shorts</strong> y <strong>X</strong>.</span></li>
+                <li><span className="mark">›</span><span><strong>Imágenes, Reels y Textos Comerciales:</strong> Transforma tus productos y promociones en piezas listas para publicar con el apoyo de nuestros agentes.</span></li>
+                <li><span className="mark">›</span><span><strong>Calendario y Programación:</strong> Organiza tu mes completo y publica en Instagram, Facebook, TikTok y LinkedIn.</span></li>
+                <li><span className="mark">›</span><span><strong>Radar de Nicho 📡:</strong> Detecta tendencias y oportunidades comerciales reales en tu rubro.</span></li>
+                <li><span className="mark">›</span><span><strong>100% Independiente:</strong> Úsalo por sí solo o conectado a tu Carta QR y Fideliza.</span></li>
               </ul>
               <div className="mt-3 pt-3 border-t border-slate-700/30 flex items-center justify-between text-xs">
-                <span className="pillar-note !m-0">Autopublicación directa y sincronizada</span>
-                <Link href="/biblioteca" className="text-orange-400 font-bold hover:underline">Ver biblioteca ➔</Link>
+                <span className="pillar-note !m-0">Creación y programación de redes</span>
+                <Link href="/marketing" className="text-orange-400 font-bold hover:underline">Conocer Marketing ➔</Link>
               </div>
             </div>
             <div className="pillar b">
-              <span className="pillar-tag">CANAL 2 · SEO &amp; GEO CON BLOG</span>
-              <h3>SEO &amp; GEO con Blog</h3>
+              <span className="pillar-tag">PRODUCTO 2 · SOCIALPILOT CARTA QR</span>
+              <h3>SocialPilot Carta QR</h3>
               <ul className="pillar-list">
-                <li><span className="mark">›</span><span><strong>Generative Engine Optimization (GEO):</strong> Tu marca recomendada en respuestas de motores generativos (ChatGPT, Perplexity, Gemini).</span></li>
-                <li><span className="mark">›</span><span>Generación de <strong>artículos completos</strong> y estructurados por nuestros redactores especializados.</span></li>
-                <li><span className="mark">›</span><span>Publicación automática y directa en tu <strong>CMS</strong> (WordPress, Shopify, Webflow).</span></li>
+                <li><span className="mark">›</span><span><strong>Carta Digital Interactiva:</strong> Categorías gastronómicas, productos, fotografías, precios y promociones del día.</span></li>
+                <li><span className="mark">›</span><span><strong>Generador de Código QR:</strong> Descarga tu QR listo para mesas, barra o empaques de delivery.</span></li>
+                <li><span className="mark">›</span><span><strong>Autónoma y Sin Duplicar Datos:</strong> Contrátala sola con su propio panel de catálogo o sincronízala con Marketing.</span></li>
+                <li><span className="mark">›</span><span><strong>Diseño Responsive:</strong> 5 temas visuales adaptados para celulares y contacto directo a WhatsApp.</span></li>
               </ul>
-              <span className="pillar-note">Tráfico orgánico + Posicionamiento futuro</span>
+              <div className="mt-3 pt-3 border-t border-slate-700/30 flex items-center justify-between text-xs">
+                <span className="pillar-note !m-0">Para restaurantes, cafés y bares</span>
+                <Link href="/menu" className="text-amber-400 font-bold hover:underline">Conocer Carta QR ➔</Link>
+              </div>
             </div>
             <div className="pillar c">
-              <span className="pillar-tag">CANAL 3 · WHATSAPP BOT</span>
-              <h3>WhatsApp Command</h3>
+              <span className="pillar-tag">PRODUCTO 3 · SOCIALPILOT FIDELIZA</span>
+              <h3>SocialPilot Fideliza</h3>
               <ul className="pillar-list">
-                <li><span className="mark">›</span><span><strong>Gestión sin paneles:</strong> Revisa posts programados, borradores y cuotas enviando solo un número.</span></li>
-                <li><span className="mark">›</span><span><strong>Aprobación con 1 mensaje:</strong> Autoriza el calendario de la semana respondiendo al bot.</span></li>
-                <li><span className="mark">›</span><span><strong>Generación al vuelo:</strong> Manda una idea urgente y nuestros agentes preparan el copy de inmediato.</span></li>
-                <li><span className="mark">›</span><span><strong>Selector multi-marca:</strong> Administra varias marcas desde el mismo número sin cambiar de cuenta.</span></li>
+                <li><span className="mark">›</span><span><strong>Puntos y Estrellas Digitales:</strong> Tus clientes acumulan visitas o compras desde su celular sin bajar aplicaciones.</span></li>
+                <li><span className="mark">›</span><span><strong>Recompensas de tu Catálogo:</strong> Configura cafés gratis, descuentos o productos de regalo y condiciones de canje.</span></li>
+                <li><span className="mark">›</span><span><strong>Control Antifraude en Caja:</strong> Validación con PIN de cajero, código QR e historial de movimientos en vivo.</span></li>
+                <li><span className="mark">›</span><span><strong>Contratación Independiente:</strong> Actívalo solo o combínalo con Carta QR y Marketing.</span></li>
               </ul>
-              <span className="pillar-note">Control total desde tu bolsillo</span>
+              <div className="mt-3 pt-3 border-t border-slate-700/30 flex items-center justify-between text-xs">
+                <span className="pillar-note !m-0">Retención de clientes frecuentes</span>
+                <Link href="/fideliza" className="text-emerald-400 font-bold hover:underline">Conocer Fideliza ➔</Link>
+              </div>
             </div>
           </div>
         </div>
@@ -103,29 +110,29 @@ export default function Home() {
       {/* 5. Sección WhatsApp Bot Diferenciador */}
       <WhatsAppBotSection />
 
-      {/* 5. Sección ¿Qué es GEO? */}
-      <section id="geo">
+      {/* 5. Sección Catálogo Central y Autonomía Operativa */}
+      <section id="catalogo-central">
         <div className="wrap">
           <div className="section-head center" data-reveal>
-            <span className="eyebrow">El futuro del posicionamiento</span>
-            <h2>No basta con salir en Google.<br />Hay que salir en los <em>motores generativos.</em></h2>
+            <span className="eyebrow">Arquitectura Conectada · Cero Doble Trabajo</span>
+            <h2>Registra tus productos una sola vez.<br />Úsalos en <em>todos tus módulos.</em></h2>
           </div>
-          <p style={{ maxWidth: '620px', margin: '-28px auto 40px', textAlign: 'center', color: 'var(--ink-dim)', fontSize: '15px', lineHeight: '1.65' }} data-reveal>
-            Cada vez más personas piden recomendaciones directo a ChatGPT, Perplexity o Google AI Overviews, en vez de hacer una búsqueda tradicional. Si tu negocio no está optimizado para esos motores, simplemente no existe para esa búsqueda.
+          <p style={{ maxWidth: '640px', margin: '-28px auto 40px', textAlign: 'center', color: 'var(--ink-dim)', fontSize: '15px', lineHeight: '1.65' }} data-reveal>
+            El catálogo central de productos, precios, fotografías y promociones es el corazón de SocialPilot. Contrata solo el módulo que hoy necesitas y suma nuevas herramientas cuando tu negocio crezca, sin volver a cargar tu información.
           </p>
           <div className="geo-compare" data-reveal>
             <div className="geo-card old">
-              <span className="k">BÚSQUEDA TRADICIONAL</span>
-              <h4>SEO Tradicional</h4>
-              <p>Optimizamos tu blog para que aparezcas en los resultados de búsqueda de Google, con keywords, estructura y contenido de calidad.</p>
+              <span className="k">HERRAMIENTAS SUELTAS</span>
+              <h4>Subir todo tres veces</h4>
+              <p>Cargas tus platos en un sistema de carta QR, vuelves a subir las fotos y precios para diseñar posts en redes sociales y configuras tus premios aparte.</p>
             </div>
             <div className="geo-card new dark-screen">
-              <span className="k">BÚSQUEDA CONVERSACIONAL</span>
-              <h4>GEO — Generative Engine Optimization</h4>
-              <p>Estructuramos y publicamos tu contenido para que los motores conversacionales te reconozcan y te recomienden como fuente confiable en sus respuestas.</p>
+              <span className="k">CATÁLOGO CENTRAL SOCIALPILOT</span>
+              <h4>Una sola fuente comercial</h4>
+              <p>Registras &quot;Hamburguesa Especial · $8.990 · Promo 2x $14.990&quot; una vez: aparece al instante en tu Carta QR, alimenta tus publicaciones de Marketing y se vincula a tus recompensas en Fideliza.</p>
             </div>
           </div>
-          <p className="geo-closing" data-reveal>&quot;Tu blog, redactado y publicado por nuestros agentes, trabajando para que los motores generativos te encuentren a ti.&quot;</p>
+          <p className="geo-closing" data-reveal>&quot;Autonomía, simplicidad y control total de tu operación digital desde un mismo lugar.&quot;</p>
         </div>
       </section>
 
@@ -228,13 +235,13 @@ export default function Home() {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-white">SocialPilot by Santisoft</h3>
-                  <div className="mt-2 text-3xl font-black text-white">Desde $59.990 <span className="text-sm font-normal text-slate-400">CLP / mes</span></div>
+                  <div className="mt-2 text-3xl font-black text-white">Desde $59.990 <span className="text-sm font-normal text-slate-400">CLP / mes · IVA incl.</span></div>
                   <p className="text-xs text-emerald-400 font-semibold mt-1">90% más barato que una agencia y 100% bajo tu control</p>
                 </div>
                 <ul className="space-y-3 text-xs text-slate-200 pt-2 border-t border-slate-800">
                   <li className="flex items-start gap-2">
                     <span className="text-emerald-400 font-bold">✓</span>
-                    <span><strong>IA con tu voz real</strong>: textos persuasivos con la personalidad auténtica de tu negocio.</span>
+                    <span><strong>Nuestros agentes con tu voz real</strong>: textos persuasivos con la personalidad auténtica de tu negocio.</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-emerald-400 font-bold">✓</span>
@@ -349,12 +356,13 @@ export default function Home() {
       <div className="final-cta">
         <div className="radar"></div>
         <div className="wrap text-center">
-          <h2>¿Listo para que tu marketing <em>trabaje solo?</em></h2>
+          <h2>Tu negocio necesita crecer. <em>No perder horas creando publicaciones.</em></h2>
           <p className="max-w-xl mx-auto mt-3 mb-6 text-slate-300 text-sm sm:text-base leading-relaxed">
-            Redes al día, artículos de blog indexando y control total desde WhatsApp. Empieza hoy con nuestra prueba gratuita.
+            Administra tu catálogo, tus publicaciones de Marketing, tu Carta QR y tu programa Fideliza desde una sola cuenta.
           </p>
-          <div className="flex justify-center">
-            <Link href="/login" className="btn btn-primary">Empezar Ahora Gratis</Link>
+          <div className="flex justify-center gap-3 flex-wrap">
+            <Link href="/registro" className="btn btn-primary">Conoce SocialPilot</Link>
+            <Link href="/demo-plan-mania" className="btn btn-outline">Ver Demostración</Link>
           </div>
         </div>
       </div>

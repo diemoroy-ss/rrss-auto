@@ -103,7 +103,7 @@ export default function WebChatWidget() {
             <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2v10z"/>
           </svg>
           <span className="absolute right-20 bg-white text-slate-800 text-sm font-bold py-2 px-4 rounded-xl shadow-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap hidden md:block border border-slate-100">
-            👋 Chatea con IA
+            👋 Habla con un Agente
           </span>
         </button>
       )}

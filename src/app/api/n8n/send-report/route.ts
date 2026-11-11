@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { adminAuth } from '../../../../lib/firebase-admin';
 
 /**
  * Endpoint para enviar el reporte PDF y resumen a n8n.
@@ -6,6 +7,24 @@ import { NextResponse } from 'next/server';
  */
 export async function POST(req: Request) {
     try {
+        const authHeader = req.headers.get('Authorization');
+        const internalSecret = req.headers.get('x-santisoft-secret');
+        const expectedSecret = process.env.CRON_SECRET || 'santisoft-n8n-cron-key-123';
+
+        let authorized = Boolean(internalSecret && internalSecret === expectedSecret);
+        if (!authorized && authHeader?.startsWith('Bearer ') && adminAuth) {
+            try {
+                await adminAuth.verifyIdToken(authHeader.split('Bearer ')[1]);
+                authorized = true;
+            } catch {
+                authorized = false;
+            }
+        }
+
+        if (!authorized) {
+            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+        }
+
         const body = await req.json();
         const { 
             pdfBase64, 

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { MercadoPagoConfig, PreApproval, Preference } from "mercadopago";
+import { normalizePlanId, PLAN_CONFIGS } from "../../../../lib/plans";
 
 export async function POST(req: Request) {
   try {
@@ -7,6 +8,11 @@ export async function POST(req: Request) {
 
     if (!planId || !userId || !userEmail) {
       return NextResponse.json({ error: "Missing planId, userId or userEmail" }, { status: 400 });
+    }
+
+    const normalizedPlan = normalizePlanId(planId);
+    if (normalizedPlan === "free") {
+      return NextResponse.json({ error: "Plan inválido para suscripción pago" }, { status: 400 });
     }
 
     // Determinar Entorno y Llaves
@@ -20,44 +26,42 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "Configuración de pasarela incompleta" }, { status: 500 });
     }
 
-    // 2. Fetch Price and Title from Firestore
+    // 2. Fetch Price and Title from Firestore (con fallback a PLAN_CONFIGS oficial)
     const { adminDb } = await import("../../../../lib/firebase-admin");
-    if (!adminDb) {
-        return NextResponse.json({ error: "Database not available" }, { status: 500 });
+    let dbPlanConfig: any = null;
+    if (adminDb) {
+      const plansSnap = await adminDb.collection("system_config").doc("plans").get();
+      if (plansSnap.exists) {
+        const plansData = plansSnap.data();
+        dbPlanConfig = plansData?.[normalizedPlan] || plansData?.[planId] || null;
+      }
     }
 
-    const plansSnap = await adminDb.collection("system_config").doc("plans").get();
-    if (!plansSnap.exists) {
-        return NextResponse.json({ error: "Planes no configurados" }, { status: 500 });
-    }
+    const fallbackStatic = PLAN_CONFIGS[normalizedPlan];
+    const basePrice = dbPlanConfig?.price || fallbackStatic.priceClp;
+    const baseAnnualPrice = dbPlanConfig?.annualPrice || Math.round(basePrice * 12 * 0.9);
+    const planName = dbPlanConfig?.name || fallbackStatic.name;
 
-    const plansData = plansSnap.data();
-    const planConfig = plansData ? plansData[planId] : null;
-
-    if (!planConfig || planId === 'free') {
-        return NextResponse.json({ error: "Plan inválido para suscripción pago" }, { status: 400 });
-    }
-
-    let price = planConfig.price;
+    let price = basePrice;
     let frequency = 1;
-    let titleSuffix = "(Mensual)";
+    let titleSuffix = "(Mensual · IVA incluido)";
 
     if (isAnnual) {
       if (annualBillingType === "monthly_discount") {
         // Opción A: Cobro mensual con descuento por compromiso anual
-        const fullAnnual = planConfig.annualPrice > 0 ? planConfig.annualPrice : Math.round((planConfig.price * 12) * 0.84);
+        const fullAnnual = baseAnnualPrice > 0 ? baseAnnualPrice : Math.round((basePrice * 12) * 0.9);
         price = Math.round(fullAnnual / 12);
         frequency = 1; // cobro mensual
-        titleSuffix = "(Anual - Cobro Mensual Descontado)";
+        titleSuffix = "(Anual - Cobro Mensual Descontado · IVA incluido)";
       } else {
         // Opción B: Cobro único anual completo
-        price = planConfig.annualPrice > 0 ? planConfig.annualPrice : Math.round((planConfig.price * 12) * 0.84);
+        price = baseAnnualPrice > 0 ? baseAnnualPrice : Math.round((basePrice * 12) * 0.9);
         frequency = 12; // cobro anual
-        titleSuffix = "(Anual - Pago Único)";
+        titleSuffix = "(Anual - Pago Único · IVA incluido)";
       }
     }
 
-    const title = `Suscripción SocialPilot ${planConfig.name} ${titleSuffix} - Santisoft`;
+    const title = `Suscripción SocialPilot ${planName} ${titleSuffix} - Santisoft`;
 
     // Configurar SDK
     const client = new MercadoPagoConfig({ accessToken, options: { timeout: 5000 } });
@@ -74,7 +78,7 @@ export async function POST(req: Request) {
         const body: any = {
             items: [
                 {
-                    id: planId,
+                    id: normalizedPlan,
                     title: title.substring(0, 256),
                     quantity: 1,
                     unit_price: Number(price),
@@ -86,11 +90,17 @@ export async function POST(req: Request) {
             },
             back_urls: {
                 success: `${origin}/automatizacion-rrss/panel/planes/exito`,
-                failure: `${origin}/automatizacion-rrss/panel/planes`,
+                failure: `${origin}/automatizacion-rrss/panel/planes/error`,
                 pending: `${origin}/automatizacion-rrss/panel/planes`
             },
             auto_return: "approved",
-            external_reference: `${userId}_annual_single`
+            notification_url: `${origin}/api/webhooks/mercadopago`,
+            external_reference: `${userId}|${normalizedPlan}|annual_single`,
+            metadata: {
+                user_id: userId,
+                plan_id: normalizedPlan,
+                billing_type: "annual_single"
+            }
         };
 
         console.log("Enviando body a Mercado Pago Preference (Pago Único Anual):", JSON.stringify(body, null, 2));
@@ -99,6 +109,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ url: checkoutUrl });
     } else {
         const preApproval = new PreApproval(client);
+        const billingTag = isAnnual ? 'annual_monthly' : 'monthly';
         const body: any = {
             reason: title.substring(0, 60), // Límite de 60 caracteres en Mercado Pago para PreApproval
             auto_recurring: {
@@ -109,7 +120,8 @@ export async function POST(req: Request) {
             },
             payer_email: userEmail.trim(),
             back_url: `${origin}/automatizacion-rrss/panel/planes/exito`,
-            external_reference: `${userId}_${isAnnual ? 'annual_monthly' : 'monthly'}`
+            notification_url: `${origin}/api/webhooks/mercadopago`,
+            external_reference: `${userId}|${normalizedPlan}|${billingTag}`
         };
 
         console.log("Enviando body a Mercado Pago PreApproval:", JSON.stringify(body, null, 2));

@@ -1,9 +1,17 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo } from "react";
 import { auth, db } from "../lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
+import {
+  ContractedModules,
+  SaasModuleId,
+  resolveContractedModules,
+  hasModuleAccess,
+  isGeneralAdmin,
+  ModuleResolutionUserInput,
+} from "../lib/saas-modules";
 
 export type BusinessProfile = {
   id: string;
@@ -98,6 +106,8 @@ export type BusinessProfile = {
   // Programa de Fidelización & Club VIP
   fidelizacionEnabled?: boolean;
   fidelizacionConfig?: FidelizacionConfig;
+  // Módulos SaaS contratados por este negocio
+  contractedModules?: Partial<ContractedModules>;
   isTestProfile?: boolean;
   selectedPromptStyleIds?: string[];
   agentTone?: string;
@@ -213,6 +223,8 @@ type ProfileContextType = {
   isBusiness: boolean;
   planConfig: any;
   loading: boolean;
+  contractedModules: ContractedModules;
+  hasModule: (moduleId: SaasModuleId) => boolean;
 };
 
 const ProfileContext = createContext<ProfileContextType>({
@@ -225,7 +237,9 @@ const ProfileContext = createContext<ProfileContextType>({
   loadProfiles: async () => {},
   isBusiness: false,
   planConfig: null,
-  loading: true
+  loading: true,
+  contractedModules: { marketing: true, qr: false, fideliza: false },
+  hasModule: () => true,
 });
 
 export const ProfileProvider = ({ children }: { children: ReactNode }) => {
@@ -233,6 +247,7 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
   const [profiles, setProfiles] = useState<BusinessProfile[]>([]);
   const [isBusiness, setIsBusiness] = useState(false);
   const [planConfig, setPlanConfig] = useState<any>(null);
+  const [userRootMeta, setUserRootMeta] = useState<ModuleResolutionUserInput | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadProfiles = async () => {
@@ -249,6 +264,14 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
        if (userDoc.exists()) {
           const data = userDoc.data();
           const plan = data.plan || "free";
+          setUserRootMeta({
+            role: data.role || "user",
+            email: auth.currentUser.email || data.email || "",
+            plan,
+            contractedModules: data.contractedModules || null,
+            menuDigitalEnabled: Boolean(data.menuDigitalEnabled),
+            fidelizacionEnabled: Boolean(data.fidelizacionEnabled),
+          });
           
           const currentPlanInfo = allPlans[plan] || allPlans['free'] || {};
           setPlanConfig(currentPlanInfo);
@@ -402,6 +425,15 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const contractedModules = useMemo<ContractedModules>(() => {
+    const isAdminUser = isGeneralAdmin(userRootMeta?.email, userRootMeta?.role);
+    return resolveContractedModules(userRootMeta, activeProfileState, isAdminUser);
+  }, [userRootMeta, activeProfileState]);
+
+  const hasModule = (moduleId: SaasModuleId): boolean => {
+    return hasModuleAccess(contractedModules, moduleId);
+  };
+
   return (
     <ProfileContext.Provider value={{ 
       activeProfile: activeProfileState, 
@@ -413,7 +445,9 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
       loadProfiles, 
       isBusiness, 
       planConfig,
-      loading 
+      loading,
+      contractedModules,
+      hasModule
     }}>
       {children}
     </ProfileContext.Provider>

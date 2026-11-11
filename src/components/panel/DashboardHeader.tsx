@@ -301,56 +301,56 @@ export default function DashboardHeader({
             </span>
           </div>
 
-          {/* Gráfico de Barras con la Identidad Santisoft (Slate + Naranja) */}
+          {/* Gráfico de Barras con datos reales del mes actual */}
           <div className="h-32 flex items-end justify-between gap-3 pt-4 pb-2 border-b border-slate-100">
-            {/* Barra 1 */}
-            <div className="flex-1 flex flex-col items-center gap-1 h-full justify-end group cursor-pointer">
-              <span className="text-[9px] font-bold text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                12
-              </span>
-              <div
-                className="w-full bg-slate-200 rounded-t-lg group-hover:bg-slate-300 transition-all"
-                style={{ height: "35%" }}
-              />
-              <span className="text-[10px] font-semibold text-slate-500">Jul</span>
-            </div>
-            {/* Barra 2 */}
-            <div className="flex-1 flex flex-col items-center gap-1 h-full justify-end group cursor-pointer">
-              <span className="text-[9px] font-bold text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                18
+            {/* Barra 1: Publicaciones */}
+            <div className="flex-1 flex flex-col items-center gap-1 h-full justify-end group">
+              <span className="text-[9px] font-bold text-slate-600">
+                {quotaUsed}
               </span>
               <div
                 className="w-full bg-slate-300 rounded-t-lg group-hover:bg-slate-400 transition-all"
-                style={{ height: "50%" }}
+                style={{ height: `${Math.max(12, Math.min(100, planLimit > 0 ? Math.round((quotaUsed / Math.min(planLimit, 60)) * 100) : 15))}%` }}
               />
-              <span className="text-[10px] font-semibold text-slate-500">Ago</span>
+              <span className="text-[10px] font-semibold text-slate-500">Posts</span>
             </div>
-            {/* Barra 3 */}
-            <div className="flex-1 flex flex-col items-center gap-1 h-full justify-end group cursor-pointer">
-              <span className="text-[9px] font-bold text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                24
+            {/* Barra 2: Imágenes */}
+            <div className="flex-1 flex flex-col items-center gap-1 h-full justify-end group">
+              <span className="text-[9px] font-bold text-slate-600">
+                {imagesUsed}
               </span>
               <div
                 className="w-full bg-slate-400 rounded-t-lg group-hover:bg-slate-500 transition-all"
-                style={{ height: "68%" }}
+                style={{ height: `${Math.max(12, Math.min(100, imageLimit > 0 ? Math.round((imagesUsed / Math.min(imageLimit, 60)) * 100) : 15))}%` }}
               />
-              <span className="text-[10px] font-semibold text-slate-500">Sep</span>
+              <span className="text-[10px] font-semibold text-slate-500">Diseños</span>
             </div>
-            {/* Barra 4 (Mes Actual Activo en Naranja Santisoft) */}
-            <div className="flex-1 flex flex-col items-center gap-1 h-full justify-end group cursor-pointer">
+            {/* Barra 3: Reels/Videos */}
+            <div className="flex-1 flex flex-col items-center gap-1 h-full justify-end group">
+              <span className="text-[9px] font-bold text-slate-600">
+                {videosUsed}
+              </span>
+              <div
+                className="w-full bg-slate-500 rounded-t-lg group-hover:bg-slate-600 transition-all"
+                style={{ height: `${Math.max(12, Math.min(100, videoLimit > 0 ? Math.round((videosUsed / Math.min(videoLimit, 30)) * 100) : 15))}%` }}
+              />
+              <span className="text-[10px] font-semibold text-slate-500">Reels</span>
+            </div>
+            {/* Barra 4: Total Activo en Naranja Santisoft */}
+            <div className="flex-1 flex flex-col items-center gap-1 h-full justify-end group">
               <span className="text-[9px] font-black text-orange-600">
-                {Math.max(quotaUsed, 15)}
+                {quotaUsed + imagesUsed + videosUsed}
               </span>
               <div
                 className="w-full bg-gradient-to-t from-orange-500 to-amber-500 rounded-t-lg shadow-md shadow-orange-500/20"
-                style={{ height: "92%" }}
+                style={{ height: `${Math.max(20, Math.min(100, Math.round(((quotaUsed + imagesUsed + videosUsed) / Math.max(15, Math.min(planLimit, 60))) * 100)))}%` }}
               />
-              <span className="text-[10px] font-black text-orange-600">Activo</span>
+              <span className="text-[10px] font-black text-orange-600">Total Mes</span>
             </div>
           </div>
 
           <div className="flex items-center justify-between text-[11px] pt-2.5 text-slate-600 font-medium">
-            <span>Ahorro estimado: <strong className="text-slate-900">~18 hrs/mes</strong></span>
+            <span>Ahorro estimado: <strong className="text-slate-900">~{Math.max(2, Math.round((quotaUsed + imagesUsed) * 0.6))} hrs/mes</strong></span>
             <Link
               href="/automatizacion-rrss/panel/metricas"
               className="text-orange-600 font-bold hover:underline"

@@ -35,14 +35,36 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
       allow create: if isAuthenticated() && request.auth.uid == userId && (
-        !('role' in request.resource.data) || request.resource.data.role == 'user'
-      ) && (
-        !('plan' in request.resource.data) || request.resource.data.plan == 'free'
+        isAdmin() || (
+          (!('role' in request.resource.data) || request.resource.data.role in ['user', 'owner']) &&
+          (!('plan' in request.resource.data) || request.resource.data.plan == 'free') &&
+          !('customLimits' in request.resource.data) &&
+          !('isUnlimited' in request.resource.data)
+        )
       );
       allow update: if isAdmin() || (
         isOwner(userId) &&
         !request.resource.data.diff(resource.data).affectedKeys()
-          .hasAny(['role', 'plan', 'trialEndsAt', 'trialStartedAt', 'isUnlimited', 'subscriptionId', 'subscriptionStatus', 'planExpiry', 'quotaOverride'])
+          .hasAny([
+            'role',
+            'plan',
+            'contractedModules',
+            'commercialMeta',
+            'planStartDate',
+            'planEndDate',
+            'planExpiry',
+            'commercialNotes',
+            'customLimits',
+            'manualActivation',
+            'trialEndsAt',
+            'trialStartedAt',
+            'trialDays',
+            'isUnlimited',
+            'subscriptionId',
+            'subscriptionStatus',
+            'quotaOverride',
+            'isDisabled'
+          ])
       );
       allow delete: if isAdmin();
 
@@ -119,12 +141,20 @@ service cloud.firestore {
       allow read, update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
     }
 
+    // --- COLECCIÓN DE PLANTILLAS DE TEXTO DEL USUARIO ---
+    match /text_templates/{templateId} {
+      allow read: if isAuthenticated() && (!('userId' in resource.data) || resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && (request.resource.data.userId == request.auth.uid || isAdmin());
+      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
     // --- COLECCIÓN DE PUBLICACIONES DEL BLOG ---
     // Son públicas para lectura (cualquier visitante puede leer el blog).
-    // Solo administradores pueden escribir, editar o borrar artículos.
+    // Cada usuario puede gestionar sus propios artículos; administradores gestionan todos.
     match /blog_posts/{postId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow create: if isAuthenticated() && (request.resource.data.userId == request.auth.uid || isAdmin());
+      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
     }
 
     // --- COLECCIÓN DE CONFIGURACIONES DEL SISTEMA (Ej: Límites de Planes) ---

@@ -1387,10 +1387,14 @@ async function publishInBackground(postId: string, post: any, targetProfile: any
                     const parentPath = `${accountName}/${locationName}`;
 
                     // 3. Post to mybusiness.googleapis.com v4
+                    const rawWebsite = (targetProfile?.website || targetProfile?.websiteUrl || '').trim();
+                    const normalizedWebsite = rawWebsite
+                        ? (rawWebsite.startsWith('http://') || rawWebsite.startsWith('https://') ? rawWebsite : `https://${rawWebsite}`)
+                        : '';
                     const postPayload: any = {
                        languageCode: "es",
                        summary: caption,
-                       callToAction: { actionType: "LEARN_MORE", url: "https://santisoft.cl" } // default CTA
+                       ...(normalizedWebsite ? { callToAction: { actionType: "LEARN_MORE", url: normalizedWebsite } } : {})
                     };
 
                     if (imageUrl) {

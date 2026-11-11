@@ -42,7 +42,7 @@ export default function MiPerfil() {
             setName(data.name || data.company || "");
             setWhatsapp(data.whatsapp || "");
             setPlan(data.plan || "free");
-            setPlanEndDate(data.planEndDate || null);
+            setPlanEndDate(data.planEndDate || data.planExpiry || null);
             setAvatarUrl(data.avatarUrl || "");
           }
         } catch (e) {
@@ -148,9 +148,16 @@ export default function MiPerfil() {
   };
 
   const planTitles: { [key: string]: string } = {
-    free: "Plan Free",
-    pro: "Plan Pro",
-    business: "Plan Business",
+    free: "Prueba Gratuita (7 días)",
+    esencial: "Plan PyME Esencial",
+    starter: "Plan PyME Esencial",
+    crecimiento: "Plan PyME Crecimiento",
+    growth: "Plan PyME Crecimiento",
+    pro: "Plan PyME Crecimiento",
+    elite: "Plan PyME Crecimiento",
+    piloto_automatico: "Plan PyME Piloto Automático",
+    "piloto-automatico": "Plan PyME Piloto Automático",
+    business: "Plan PyME Piloto Automático",
     agency: "Plan Agency"
   };
 
@@ -250,7 +257,7 @@ export default function MiPerfil() {
                {planEndDate ? (
                  <div className="mt-4 inline-flex items-center gap-2 bg-white/10 border border-white/20 px-4 py-2 rounded-xl">
                    <span className="text-indigo-300 text-[10px] font-black uppercase tracking-widest">Vence el:</span>
-                   <span className="text-white text-sm font-black">{format(new Date(planEndDate + 'T12:00:00'), "dd 'de' MMMM, yyyy", { locale: es })}</span>
+                   <span className="text-white text-sm font-black">{format(new Date(planEndDate.includes('T') ? planEndDate : planEndDate + 'T12:00:00'), "dd 'de' MMMM, yyyy", { locale: es })}</span>
                  </div>
                ) : (
                  <div className="mt-4 inline-flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-xl">

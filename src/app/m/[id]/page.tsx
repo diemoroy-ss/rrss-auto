@@ -125,7 +125,7 @@ const DEFAULT_PLANS: Record<string, PlanConfig> = {
   free: {
     id: "free",
     name: "Prueba Gratuita",
-    tagline: "POR 10 DÍAS",
+    tagline: "POR 7 DÍAS",
     price: 0,
     annualPrice: 0,
     postsLimit: 5,
@@ -134,7 +134,7 @@ const DEFAULT_PLANS: Record<string, PlanConfig> = {
     aiVideosLimit: 0,
     seoBlogsLimit: 0,
     isPopular: false,
-    ctaText: "Probar 10 Días Gratis",
+    ctaText: "Probar 7 Días Gratis",
     features: [
       "5 publicaciones automáticas en redes",
       "5 imágenes con nuestros agentes",
@@ -148,7 +148,7 @@ const DEFAULT_PLANS: Record<string, PlanConfig> = {
     name: "Plan PyME Esencial",
     tagline: "PRESENCIA ACTIVA",
     price: 59990,
-    annualPrice: 599900,
+    annualPrice: 647880,
     postsLimit: 15,
     videosLimit: 8,
     aiImagesLimit: 15,
@@ -171,7 +171,7 @@ const DEFAULT_PLANS: Record<string, PlanConfig> = {
     name: "Plan PyME Crecimiento",
     tagline: "MÁS ELEGIDO",
     price: 99990,
-    annualPrice: 999900,
+    annualPrice: 1079880,
     postsLimit: 30,
     videosLimit: 30,
     aiImagesLimit: 40,
@@ -195,7 +195,7 @@ const DEFAULT_PLANS: Record<string, PlanConfig> = {
     name: "Plan Piloto Automático",
     tagline: "DONE-WITH-YOU VIP",
     price: 249990,
-    annualPrice: 2499900,
+    annualPrice: 2699880,
     postsLimit: 60,
     videosLimit: 60,
     aiImagesLimit: 120,
@@ -1405,7 +1405,7 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
                 <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-md ${
                   isAnnual ? "bg-indigo-500 text-white font-extrabold" : "bg-emerald-100 text-emerald-700 font-bold"
                 }`}>
-                  -16% Ahorro
+                  -10% Ahorro
                 </span>
               </button>
             </div>
@@ -1420,7 +1420,7 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
               const isPopular = Boolean(plan.isPopular);
 
               // Cálculo dinámico de precio según Facturación Mensual vs Anual
-              const fullAnnualPrice = plan.annualPrice || Math.round((plan.price * 12) * 0.84);
+              const fullAnnualPrice = plan.annualPrice || Math.round((plan.price * 12) * 0.9);
               const monthlyEquivalentPrice = isFree ? 0 : (isAnnual ? Math.round(fullAnnualPrice / 12) : plan.price);
               const priceFormatted = formatPrice(monthlyEquivalentPrice);
               const fullAnnualFormatted = formatPrice(fullAnnualPrice);
@@ -1439,7 +1439,7 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
                     ];
 
               const billingCycleText = isFree ? "Prueba Gratuita" : (isAnnual ? "Plan Anual con descuento" : "Plan Mensual");
-              const waPriceText = isFree ? "Gratis por 10 días" : (isAnnual ? `${priceFormatted}/mes (Facturación Anual ${fullAnnualFormatted})` : `${priceFormatted}/mes`);
+              const waPriceText = isFree ? "Gratis por 7 días" : (isAnnual ? `${priceFormatted}/mes IVA incl. (Facturación Anual ${fullAnnualFormatted})` : `${priceFormatted}/mes IVA incl.`);
 
               const waText = isFree
                 ? `¡Hola Santisoft! Vi la propuesta para ${businessName} (Demo #${demoId.substring(0, 6)}) y me gustaría comenzar con la Prueba Gratuita de ${plan.postsLimit || 5} publicaciones.`
@@ -1492,7 +1492,7 @@ export default function PublicProspectDemoPage({ params }: { params?: { id?: str
                         {priceFormatted}
                       </span>
                       <span className="text-xs text-slate-500 ml-1">
-                        {isFree ? "/ 10 días" : "/ mes"}
+                        {isFree ? "/ 7 días" : "/ mes · IVA incl."}
                       </span>
                       {isAnnual && !isFree && (
                         <p className="text-[10px] text-emerald-600 font-bold mt-1">

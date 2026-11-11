@@ -67,7 +67,7 @@ export default function UpgradeModal({ isOpen, onClose }: UpgradeModalProps) {
               </li>
               <li className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                <span><strong>Módulos exclusivos:</strong> Blog SEO, Meta Ads y Radar de Competidores.</span>
+                <span><strong>Módulos exclusivos:</strong> Meta Ads, Radar de Competidores y Catálogo Central.</span>
               </li>
               <li className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />

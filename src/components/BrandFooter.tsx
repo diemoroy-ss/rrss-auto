@@ -70,39 +70,27 @@ export default function BrandFooter() {
         {/* Links Grid */}
         <div className="footer-links-grid">
           <div className="footer-col">
-            <h4 className="footer-col-title">PRODUCTOS</h4>
+            <h4 className="footer-col-title">ECOSISTEMA SOCIALPILOT</h4>
             <ul className="footer-link-list">
               <li>
-                <a
-                  href="https://agentes.santisoft.cl"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="footer-external-link"
-                >
-                  <span>Agentes para Empresas</span>
-                  <span className="footer-arrow">↗</span>
-                </a>
-              </li>
-              <li>
-                <Link href="/como-funciona" className="footer-link">
-                  Cómo Funciona
+                <Link href="/marketing" className="footer-link active-vertical">
+                  SocialPilot Marketing
                 </Link>
               </li>
               <li>
-                <a href="#hero" className="footer-link active-vertical">
-                  SocialPilot by Santisoft
-                </a>
+                <Link href="/menu" className="footer-link">
+                  SocialPilot Carta QR
+                </Link>
               </li>
               <li>
-                <a
-                  href="https://santisoft.cl"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="footer-external-link"
-                >
-                  <span>Santisoft</span>
-                  <span className="footer-arrow">↗</span>
-                </a>
+                <Link href="/fideliza" className="footer-link">
+                  SocialPilot Fideliza
+                </Link>
+              </li>
+              <li>
+                <Link href="/#planes" className="footer-link">
+                  Planes y Contratación
+                </Link>
               </li>
             </ul>
           </div>
@@ -161,9 +149,9 @@ export default function BrandFooter() {
                 </a>
               </li>
               <li>
-                <a href="#contacto" className="footer-link">
+                <Link href="/#contacto" className="footer-link">
                   Contacto
-                </a>
+                </Link>
               </li>
             </ul>
           </div>

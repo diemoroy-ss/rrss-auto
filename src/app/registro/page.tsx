@@ -78,18 +78,24 @@ function RegistroContent() {
         userEmail = creds.user.email || email;
       }
 
+      const adminEmails = ["admin@santisoft.cl", "diemoroy@gmail.com", "spalezcom@gmail.com", "santisoftai@gmail.com"];
+      const userDocRef = doc(db, "users", uid);
+      const existingDoc = await getDoc(userDocRef);
+      const existingRole = existingDoc.exists() ? existingDoc.data()?.role : undefined;
+      const resolvedRole = adminEmails.includes(userEmail.toLowerCase().trim()) ? "admin" : (existingRole || "user");
+
       // Guardar en DB con prueba gratuita de exactamente 7 días
-      await setDoc(doc(db, "users", uid), {
+      await setDoc(userDocRef, {
         email: userEmail,
         name: name,
         phone: phone,
         company: company,
-        role: "user",
-        plan: "free", // MP webhook will upgrade this later if paid
+        role: resolvedRole,
+        plan: existingDoc.exists() && existingDoc.data()?.plan ? existingDoc.data()?.plan : "free", // MP webhook will upgrade this later if paid
         categoriesAllowed: ["all"],
-        createdAt: serverTimestamp(),
-        trialStartedAt: serverTimestamp(),
-        trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        createdAt: existingDoc.exists() && existingDoc.data()?.createdAt ? existingDoc.data()?.createdAt : serverTimestamp(),
+        trialStartedAt: existingDoc.exists() && existingDoc.data()?.trialStartedAt ? existingDoc.data()?.trialStartedAt : serverTimestamp(),
+        trialEndsAt: existingDoc.exists() && existingDoc.data()?.trialEndsAt ? existingDoc.data()?.trialEndsAt : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         trialDays: 7,
         registeredApps: ["automatizacion"]
       }, { merge: true });
@@ -109,7 +115,27 @@ function RegistroContent() {
     setLoading(true);
     try {
       const res = await signInWithPopup(auth, googleProvider);
-      // El onAuthStateChanged detectará esto y nos pondrá en estado currentUser
+      const u = res.user;
+      const userDocRef = doc(db, "users", u.uid);
+      const existingDoc = await getDoc(userDocRef);
+      if (!existingDoc.exists()) {
+        const adminEmails = ["admin@santisoft.cl", "diemoroy@gmail.com", "spalezcom@gmail.com", "santisoftai@gmail.com"];
+        const resolvedRole = adminEmails.includes((u.email || "").toLowerCase().trim()) ? "admin" : "user";
+        await setDoc(userDocRef, {
+          email: u.email || "",
+          name: u.displayName || "Usuario Nuevo",
+          phone: "",
+          company: "",
+          role: resolvedRole,
+          plan: "free",
+          categoriesAllowed: ["all"],
+          createdAt: serverTimestamp(),
+          trialStartedAt: serverTimestamp(),
+          trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          trialDays: 7,
+          registeredApps: ["automatizacion"]
+        }, { merge: true });
+      }
       setLoading(false);
     } catch (err: any) {
       setError(err.message);
@@ -209,13 +235,26 @@ function RegistroContent() {
             {loading ? (
               <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin inline-block"></span>
             ) : (
-              isPaidPlan ? "Continuar al Pago" : "Comenzar Gratis"
+              isPaidPlan ? "Continuar a Configuración" : "Comenzar Gratis"
             )}
           </button>
         </form>
 
-        <p className="text-center text-xs text-slate-400 mt-6">
-          Al registrarte aceptas nuestros Términos de Servicio y Política de Privacidad.
+        <div className="mt-5 text-center">
+          <Link href="/login" className="text-sm font-semibold text-[#DD4B19] hover:underline">
+            ¿Ya tienes cuenta? Inicia sesión aquí
+          </Link>
+        </div>
+
+        <p className="text-center text-xs text-slate-400 mt-4">
+          Al registrarte aceptas nuestros{" "}
+          <Link href="/es/terminos" className="underline hover:text-slate-600">
+            Términos de Servicio
+          </Link>{" "}
+          y{" "}
+          <Link href="/es/privacidad" className="underline hover:text-slate-600">
+            Política de Privacidad
+          </Link>.
         </p>
       </div>
       </div>

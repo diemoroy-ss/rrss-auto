@@ -103,6 +103,17 @@ export function checkUserTrialStatus(userData?: any, userEmail?: string): TrialS
     const plan = (userData.plan || 'free').toLowerCase().trim();
     const isFreePlan = plan === 'free' || plan === 'demo' || plan === 'prueba';
     if (!isFreePlan) {
+        const rawExpiry = userData.planExpiry || userData.planEndDate;
+        if (rawExpiry) {
+            const expiryDate: Date = rawExpiry.toDate ? rawExpiry.toDate() : new Date(rawExpiry);
+            const diffMs = expiryDate.getTime() - Date.now();
+            if (!isNaN(expiryDate.getTime()) && diffMs <= 0) {
+                return { isTrial: false, isExpired: true, daysRemaining: 0, hoursRemaining: 0, trialEndsAt: expiryDate };
+            }
+            const daysRemaining = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
+            const hoursRemaining = Math.max(0, Math.ceil(diffMs / (60 * 60 * 1000)));
+            return { isTrial: false, isExpired: false, daysRemaining, hoursRemaining, trialEndsAt: expiryDate };
+        }
         return { isTrial: false, isExpired: false, daysRemaining: 999, hoursRemaining: 999, trialEndsAt: null };
     }
 
@@ -142,10 +153,13 @@ export async function getPlanLimit(plan: string, email?: string, userData?: any)
     const planId = (plan || 'free').toLowerCase();
     if (planId === 'unlimited') return 999999;
 
-    // Si la prueba de 7 días caducó, el límite es 0
-    if (planId === 'free' && userData) {
+    // Si la prueba de 7 días o la suscripción pagada caducó, el límite es 0
+    if (userData) {
         const trialStatus = checkUserTrialStatus(userData, email);
         if (trialStatus.isExpired) return 0;
+        if (typeof userData.customLimits?.postsLimit === 'number' && userData.customLimits.postsLimit >= 0) {
+            return userData.customLimits.postsLimit;
+        }
     }
 
     const config = await getPlansConfig();
@@ -157,9 +171,12 @@ export async function getVideoPlanLimit(plan: string, email?: string, userData?:
     const planId = (plan || 'free').toLowerCase();
     if (planId === 'unlimited') return 999999;
 
-    if (planId === 'free' && userData) {
+    if (userData) {
         const trialStatus = checkUserTrialStatus(userData, email);
         if (trialStatus.isExpired) return 0;
+        if (typeof userData.customLimits?.videosLimit === 'number' && userData.customLimits.videosLimit >= 0) {
+            return userData.customLimits.videosLimit;
+        }
     }
 
     const config = await getPlansConfig();
@@ -230,9 +247,15 @@ export async function getAiPlanLimit(plan: string, type: 'image' | 'video' | 'bl
     const planId = (plan || 'free').toLowerCase();
     if (planId === 'unlimited') return 999999;
 
-    if (planId === 'free' && userData) {
+    if (userData) {
         const trialStatus = checkUserTrialStatus(userData, email);
         if (trialStatus.isExpired) return 0;
+        if (type === 'image' && typeof userData.customLimits?.aiImagesLimit === 'number' && userData.customLimits.aiImagesLimit >= 0) {
+            return userData.customLimits.aiImagesLimit;
+        }
+        if (type === 'video' && typeof userData.customLimits?.videosLimit === 'number' && userData.customLimits.videosLimit >= 0) {
+            return userData.customLimits.videosLimit;
+        }
     }
 
     try {

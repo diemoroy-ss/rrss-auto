@@ -13,6 +13,7 @@ import { ProfileProvider, useProfile } from "../../../contexts/ProfileContext";
 import LogoMark from "../../../components/LogoMark";
 import SocialPilotLogo from "../../../components/SocialPilotLogo";
 import { checkUserTrialStatus } from "../../../lib/quota";
+import { getUncontractedModulesList, isGeneralAdmin } from "../../../lib/saas-modules";
 
 export default function RrssPanelLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -66,7 +67,7 @@ export default function RrssPanelLayout({ children }: { children: React.ReactNod
   }
 
   const userEmail = (user?.email || "").toLowerCase();
-  const isAdminUser = ["diemoroy@gmail.com", "spalezcom@gmail.com", "santisoftai@gmail.com"].includes(userEmail) || userDoc?.role === "admin";
+  const isAdminUser = isGeneralAdmin(userEmail, userDoc?.role);
 
   return (
     <ProfileProvider>
@@ -90,17 +91,15 @@ function PanelLayoutContent({
 }) {
   const pathname = usePathname();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const { activeProfile } = useProfile();
+  const { activeProfile, contractedModules } = useProfile();
 
   // Close mobile nav when route changes
   useEffect(() => {
     setMobileNavOpen(false);
   }, [pathname]);
 
-  const isMenuDigitalEnabled = activeProfile?.menuDigitalEnabled === true;
-
   const adminLinks = [
-    { href: "/automatizacion-rrss/panel/admin", label: "Usuarios", icon: "👥", exact: true },
+    { href: "/automatizacion-rrss/panel/admin", label: "Clientes y Módulos", icon: "👥", exact: true },
     { href: "/automatizacion-rrss/panel/admin/muestras", label: "Muestras Prospectos", icon: "🎨", exact: false },
     { href: "/automatizacion-rrss/panel/admin/vendedores", label: "Equipo Vendedores", icon: "💼", exact: false },
     { href: "/automatizacion-rrss/panel/admin/agenda", label: "Agenda & Demos", icon: "📅", exact: false },
@@ -110,48 +109,79 @@ function PanelLayoutContent({
     { href: "/automatizacion-rrss/panel/admin/estrategias", label: "Estrategias", icon: "🚀", exact: false },
     { href: "/automatizacion-rrss/panel/admin/workflows", label: "Workflows N8N", icon: "⚙️", exact: false },
     { href: "/automatizacion-rrss/panel/admin/agentes", label: "Agentes", icon: "🤖", exact: false },
-    { href: "/automatizacion-rrss/panel/admin/modelos-ia", label: "Modelos IA", icon: "🧠", exact: false },
+    { href: "/automatizacion-rrss/panel/admin/modelos-ia", label: "Motores de Agentes", icon: "🧠", exact: false },
     { href: "/automatizacion-rrss/panel/admin/monitoreo", label: "Monitoreo Posts", icon: "📡", exact: false },
     { href: "/automatizacion-rrss/panel/admin/logs", label: "Logs de Sistema", icon: "📝", exact: false },
     { href: "/automatizacion-rrss/panel/admin/analitica", label: "Analítica", icon: "📈", exact: false },
     { href: "/automatizacion-rrss/panel/admin/docs", label: "Documentación", icon: "📚", exact: false },
   ];
 
-  const navSections = [
+  const activeCommercialModules: Array<{ href: string; label: string; icon: string; exact: boolean }> = [];
+  if (contractedModules.qr) {
+    activeCommercialModules.push({
+      href: "/automatizacion-rrss/panel/menu-qr",
+      label: "Carta QR",
+      icon: "🍽️",
+      exact: false,
+    });
+  }
+  if (contractedModules.fideliza) {
+    activeCommercialModules.push({
+      href: "/automatizacion-rrss/panel/fidelizacion",
+      label: "Fideliza",
+      icon: "🎁",
+      exact: false,
+    });
+  }
+
+  const navSections: Array<{
+    title: string;
+    items: Array<{ href: string; label: string; icon: string; exact: boolean }>;
+  }> = [
     {
-      title: "PUBLICACIONES",
+      title: "PANEL CENTRAL",
       items: [
-        { href: "/automatizacion-rrss/panel", label: "Próximos Posts", icon: "📅", exact: true },
-        { href: "/automatizacion-rrss/panel/publicados", label: "Posts Publicados", icon: "✅", exact: true },
-        { href: "/automatizacion-rrss/panel/metricas", label: "Estadísticas", icon: "📊", exact: false },
-      ]
+        { href: "/automatizacion-rrss/panel", label: "Inicio", icon: "🏠", exact: true },
+        { href: "/automatizacion-rrss/panel/configuracion", label: "Mi Negocio", icon: "🏢", exact: false },
+        { href: "/automatizacion-rrss/panel/catalogo", label: "Productos y Promociones", icon: "🛍️", exact: false },
+      ],
     },
+    ...(contractedModules.marketing
+      ? [
+          {
+            title: "MARKETING",
+            items: [
+              { href: "/automatizacion-rrss/panel/crear", label: "Crear Publicación", icon: "✍️", exact: false },
+              { href: "/automatizacion-rrss/panel/poc-video", label: "Generar Video / Reels", icon: "🎬", exact: false },
+              { href: "/automatizacion-rrss/panel/estrategia", label: "Estrategia Mensual", icon: "🚀", exact: false },
+              { href: "/automatizacion-rrss/panel/radar", label: "Radar de Nicho", icon: "📡", exact: false },
+              { href: "/automatizacion-rrss/panel/ads", label: "Meta & Google Ads", icon: "🎯", exact: false },
+              { href: "/automatizacion-rrss/panel/biblioteca", label: "Biblioteca Multimedia", icon: "🖼️", exact: false },
+              { href: "/automatizacion-rrss/panel/publicados", label: "Posts Publicados", icon: "✅", exact: true },
+              { href: "/automatizacion-rrss/panel/metricas", label: "Estadísticas", icon: "📊", exact: false },
+              { href: "/automatizacion-rrss/panel/prompts", label: "Estilos Visuales", icon: "✨", exact: false },
+            ],
+          },
+        ]
+      : []),
+    ...(activeCommercialModules.length > 0
+      ? [
+          {
+            title: "MÓDULOS EN LOCAL",
+            items: activeCommercialModules,
+          },
+        ]
+      : []),
     {
-      title: "CREAR CONTENIDO",
+      title: "SUSCRIPCIÓN Y CUENTA",
       items: [
-        { href: "/automatizacion-rrss/panel/crear", label: "Nuevo Post", icon: "✍️", exact: false },
-        { href: "/automatizacion-rrss/panel/poc-video", label: "Generar Video", icon: "🎬", exact: false },
-      ]
+        { href: "/automatizacion-rrss/panel/planes", label: "Mi Suscripción", icon: "💳", exact: false },
+        { href: "/automatizacion-rrss/panel/mi-perfil", label: "Configuración", icon: "⚙️", exact: false },
+      ],
     },
-    {
-      title: "MI MARCA & CATÁLOGO",
-      items: [
-        { href: "/automatizacion-rrss/panel/catalogo", label: "Productos / Servicios", icon: "🛍️", exact: false },
-        { href: "/automatizacion-rrss/panel/biblioteca", label: "Biblioteca Multimedia", icon: "🖼️", exact: false },
-        { href: "/automatizacion-rrss/panel/fidelizacion", label: "Fidelización & Club VIP", icon: "🎁", exact: false },
-        ...(isMenuDigitalEnabled ? [{ href: "/automatizacion-rrss/panel/menu-qr", label: "Carta Menú & QR", icon: "📱", exact: false }] : []),
-      ]
-    },
-    {
-      title: "CRECIMIENTO & AGENTES",
-      items: [
-        { href: "/automatizacion-rrss/panel/estrategia", label: "Estrategia Mensual", icon: "🚀", exact: false },
-        { href: "/automatizacion-rrss/panel/radar", label: "Radar de Nicho", icon: "📡", exact: false },
-        { href: "/automatizacion-rrss/panel/blog", label: "Artículos SEO / GEO", icon: "🌐", exact: false },
-        { href: "/automatizacion-rrss/panel/prompts", label: "Estilos Visuales", icon: "✨", exact: false },
-      ]
-    }
   ];
+
+  const uncontractedModules = getUncontractedModulesList(contractedModules);
 
   const isLinkActive = (link: { href: string; exact?: boolean }) => {
     if (link.exact) return pathname === link.href;
@@ -228,6 +258,25 @@ function PanelLayoutContent({
                   })}
                 </div>
               ))}
+              {uncontractedModules.length > 0 && (
+                <div className="pt-2 border-t border-slate-800/80 space-y-1">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 px-3 mb-1">
+                    Soluciones Adicionales
+                  </p>
+                  {uncontractedModules.map((mod) => (
+                    <Link
+                      key={mod.id}
+                      href="/automatizacion-rrss/panel/planes"
+                      className="flex items-center justify-between px-3 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all text-xs font-semibold"
+                    >
+                      <span className="truncate">{mod.shortName}</span>
+                      <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-400 border border-orange-500/30">
+                        + Activar
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              )}
               {isAdminUser && (
                 <div className="pt-2 border-t border-slate-800 space-y-1.5">
                   <Link
@@ -263,7 +312,7 @@ function PanelLayoutContent({
               )}
             </nav>
             <div className="px-4 py-4 border-t border-slate-800 space-y-3">
-              <Link href="/terminos" target="_blank"
+              <Link href="/es/terminos" target="_blank"
                 className="flex items-center gap-2 px-3 text-slate-500 hover:text-slate-300 text-[9px] font-bold uppercase tracking-widest transition-all"
               >
                 ⚖️ Términos y Privacidad
@@ -289,7 +338,7 @@ function PanelLayoutContent({
                 </div>
               </div>
               <Link
-                href="/#planes"
+                href="/automatizacion-rrss/panel/planes"
                 className="bg-white text-rose-700 hover:bg-rose-50 px-4 py-1.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all shrink-0 shadow-md hover:scale-105"
               >
                 Activar Plan ➔
@@ -305,7 +354,7 @@ function PanelLayoutContent({
                   <strong>Prueba Gratuita SocialPilot:</strong> Te quedan <strong>{trialStatus.daysRemaining} {trialStatus.daysRemaining === 1 ? 'día' : 'días'}</strong> de acceso. Tus redes sociales están conectadas.
                 </span>
               </div>
-              <Link href="/#planes" className="text-orange-400 font-bold hover:underline text-xs flex items-center gap-1">
+              <Link href="/automatizacion-rrss/panel/planes" className="text-orange-400 font-bold hover:underline text-xs flex items-center gap-1">
                 Asegurar Plan con Setup Gratis ➔
               </Link>
             </div>

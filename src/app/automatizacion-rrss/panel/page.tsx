@@ -14,6 +14,7 @@ import { usePostActions } from "../../../hooks/usePostActions";
 
 // Componentes de UI
 import DashboardHeader from "../../../components/panel/DashboardHeader";
+import EcosystemClientHub from "../../../components/panel/EcosystemClientHub";
 import OnboardingChecklist from "../../../components/panel/OnboardingChecklist";
 import UpcomingTimeline from "../../../components/panel/UpcomingTimeline";
 import PublishedStatsHero from "../../../components/panel/PublishedStatsHero";
@@ -72,7 +73,7 @@ export default function RrssDashboard() {
     return () => unsub();
   }, []);
 
-  const { activeProfile } = useProfile();
+  const { activeProfile, contractedModules } = useProfile();
 
   // --- Hooks de datos ---
   const quota = useQuota(activeProfile?.id);
@@ -189,103 +190,159 @@ export default function RrssDashboard() {
         </div>
       )}
 
-      {/* Header */}
-      <DashboardHeader
-        activeTab={dashboard.activeTab}
-        displayName={user?.displayName}
-        quotaUsed={quota.quotaUsed}
-        planLimit={quota.planLimit}
-        imagesUsed={quota.imagesUsed}
-        imageLimit={quota.imageLimit}
-        videosUsed={quota.videosUsed}
-        videoLimit={quota.videoLimit}
+      {/* Hub Central del Ecosistema SocialPilot (Negocio, Catálogo y Módulos Contratados) */}
+      <EcosystemClientHub
+        userUid={user?.uid}
+        userEmail={user?.email}
         userPlan={quota.userPlan}
-        onOpenUpgradeModal={() => setUpgradeModalOpen(true)}
-      />
-
-      {/* Checklist de Activación y Despegue para Nuevos Usuarios */}
-      <OnboardingChecklist
         activeProfile={activeProfile}
-        posts={dashboard.posts}
-        onScrollToPosts={() => {
-          const el = document.getElementById("post-grid-container");
-          if (el) el.scrollIntoView({ behavior: "smooth" });
-        }}
+        contractedModules={contractedModules}
+        postsCount={dashboard.posts.length}
       />
 
-      {/* Selector de Días/Semanas y Cards Destacadas Inmediatas (Estilo Flow / Santisoft) */}
-      {dashboard.activeTab === "upcoming" && (
-        <UpcomingTimeline
-          posts={dashboard.posts}
-          selectedDateFilter={dashboard.selectedDateFilter}
-          onSelectDateFilter={dashboard.setSelectedDateFilter}
-          onGenerateMedia={actions.handleGenerateMedia}
-          onClickPost={dashboard.setSelectedPost}
-        />
+      {contractedModules.marketing ? (
+        <>
+          {/* Header de Marketing */}
+          <DashboardHeader
+            activeTab={dashboard.activeTab}
+            displayName={user?.displayName}
+            quotaUsed={quota.quotaUsed}
+            planLimit={quota.planLimit}
+            imagesUsed={quota.imagesUsed}
+            imageLimit={quota.imageLimit}
+            videosUsed={quota.videosUsed}
+            videoLimit={quota.videoLimit}
+            userPlan={quota.userPlan}
+            onOpenUpgradeModal={() => setUpgradeModalOpen(true)}
+          />
+
+          {/* Checklist de Activación y Despegue para Nuevos Usuarios */}
+          <OnboardingChecklist
+            activeProfile={activeProfile}
+            posts={dashboard.posts}
+            onScrollToPosts={() => {
+              const el = document.getElementById("post-grid-container");
+              if (el) el.scrollIntoView({ behavior: "smooth" });
+            }}
+          />
+
+          {/* Selector de Días/Semanas y Cards Destacadas Inmediatas (Estilo Flow / Santisoft) */}
+          {dashboard.activeTab === "upcoming" && (
+            <UpcomingTimeline
+              posts={dashboard.posts}
+              selectedDateFilter={dashboard.selectedDateFilter}
+              onSelectDateFilter={dashboard.setSelectedDateFilter}
+              onGenerateMedia={actions.handleGenerateMedia}
+              onClickPost={dashboard.setSelectedPost}
+            />
+          )}
+
+          {/* Historial, Estadísticas de Efectividad y Selector Días/Semanas para Posts Publicados */}
+          {dashboard.activeTab === "published" && (
+            <PublishedStatsHero
+              posts={dashboard.posts}
+              selectedDateFilter={dashboard.selectedDateFilter}
+              onSelectDateFilter={dashboard.setSelectedDateFilter}
+              networkFilter={dashboard.networkFilter}
+              onSelectNetworkFilter={dashboard.setNetworkFilter}
+            />
+          )}
+
+          {/* Filtros + calendario */}
+          <PostFilters
+            networkFilter={dashboard.networkFilter}
+            setNetworkFilter={dashboard.setNetworkFilter}
+            selectedDateFilter={dashboard.selectedDateFilter}
+            setSelectedDateFilter={dashboard.setSelectedDateFilter}
+            isCalendarOpen={isCalendarOpen}
+            setIsCalendarOpen={setIsCalendarOpen}
+            currentMonth={dashboard.currentMonth}
+            nextMonth={dashboard.nextMonth}
+            prevMonth={dashboard.prevMonth}
+            daysInMonth={dashboard.daysInMonth}
+            startDayIndex={dashboard.startDayIndex}
+            getDotsForDate={dashboard.getDotsForDate}
+          />
+
+          {/* Grid de posts */}
+          <div id="post-grid-container">
+            <PostGrid
+              filteredPosts={dashboard.filteredPosts}
+              paginatedPosts={dashboard.paginatedPosts}
+              totalPages={dashboard.totalPages}
+              currentPage={dashboard.currentPage}
+              selectedPostIds={selectedPostIds}
+              activeTab={dashboard.activeTab}
+              selectedDateFilter={dashboard.selectedDateFilter}
+              userPlan={quota.userPlan}
+              onSelectPost={actions.toggleSelectPost}
+              onToggleSelectAll={actions.toggleSelectAll}
+              onClickPost={dashboard.setSelectedPost}
+              onUnconfirm={actions.handleUnconfirm}
+              onReschedule={(post) => {
+                const dateObj = post.scheduledFor?.toDate ? post.scheduledFor.toDate() : new Date();
+                setRescheduleData({ id: post.id, date: format(dateObj, "yyyy-MM-dd'T'HH:mm") });
+              }}
+              onDelete={actions.handleDelete}
+              onGenerateMedia={actions.handleGenerateMedia}
+              onResetGenerating={actions.handleResetGeneratingState}
+              onClearDateFilter={() => dashboard.setSelectedDateFilter(null)}
+              onPageChange={dashboard.setCurrentPage}
+            />
+          </div>
+
+          {/* Bulk action bar */}
+          <BulkActionBar
+            selectedCount={selectedPostIds.length}
+            onConfirm={actions.handleBulkConfirm}
+            onUnconfirm={actions.handleBulkUnconfirm}
+            onDelete={actions.handleBulkDelete}
+            onClear={() => setSelectedPostIds([])}
+          />
+        </>
+      ) : (
+        <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs">
+          <div className="max-w-3xl">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-slate-100 text-slate-700 mb-3">
+              Operación Independiente Activa
+            </span>
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900">
+              Todo tu negocio conectado a un solo Catálogo Central
+            </h2>
+            <p className="text-sm text-slate-600 mt-2 leading-relaxed">
+              Desde este panel puedes registrar tus productos, categorías, fotografías, precios y
+              promociones en{" "}
+              <strong className="text-slate-900">Productos y Promociones</strong>. Cada cambio se
+              refleja al instante en los módulos que tienes activos sin necesidad de cargar datos dos
+              veces.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <a
+                href="/automatizacion-rrss/panel/catalogo"
+                className="bg-orange-600 hover:bg-orange-500 text-white font-black text-xs uppercase tracking-wider px-5 py-3 rounded-xl shadow-sm transition-all"
+              >
+                Ir a Productos y Promociones →
+              </a>
+              {contractedModules.qr && (
+                <a
+                  href="/automatizacion-rrss/panel/menu-qr"
+                  className="bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-black text-xs uppercase tracking-wider px-5 py-3 rounded-xl transition-all"
+                >
+                  Administrar Carta QR →
+                </a>
+              )}
+              {contractedModules.fideliza && (
+                <a
+                  href="/automatizacion-rrss/panel/fidelizacion"
+                  className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-black text-xs uppercase tracking-wider px-5 py-3 rounded-xl transition-all"
+                >
+                  Administrar Fideliza →
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
       )}
-
-      {/* Historial, Estadísticas de Efectividad y Selector Días/Semanas para Posts Publicados */}
-      {dashboard.activeTab === "published" && (
-        <PublishedStatsHero
-          posts={dashboard.posts}
-          selectedDateFilter={dashboard.selectedDateFilter}
-          onSelectDateFilter={dashboard.setSelectedDateFilter}
-          networkFilter={dashboard.networkFilter}
-          onSelectNetworkFilter={dashboard.setNetworkFilter}
-        />
-      )}
-
-      {/* Filtros + calendario */}
-      <PostFilters
-        networkFilter={dashboard.networkFilter}
-        setNetworkFilter={dashboard.setNetworkFilter}
-        selectedDateFilter={dashboard.selectedDateFilter}
-        setSelectedDateFilter={dashboard.setSelectedDateFilter}
-        isCalendarOpen={isCalendarOpen}
-        setIsCalendarOpen={setIsCalendarOpen}
-        currentMonth={dashboard.currentMonth}
-        nextMonth={dashboard.nextMonth}
-        prevMonth={dashboard.prevMonth}
-        daysInMonth={dashboard.daysInMonth}
-        startDayIndex={dashboard.startDayIndex}
-        getDotsForDate={dashboard.getDotsForDate}
-      />
-
-      {/* Grid de posts */}
-      <div id="post-grid-container">
-        <PostGrid
-          filteredPosts={dashboard.filteredPosts}
-          paginatedPosts={dashboard.paginatedPosts}
-          totalPages={dashboard.totalPages}
-          currentPage={dashboard.currentPage}
-          selectedPostIds={selectedPostIds}
-          activeTab={dashboard.activeTab}
-          selectedDateFilter={dashboard.selectedDateFilter}
-          userPlan={quota.userPlan}
-          onSelectPost={actions.toggleSelectPost}
-          onToggleSelectAll={actions.toggleSelectAll}
-          onClickPost={dashboard.setSelectedPost}
-          onUnconfirm={actions.handleUnconfirm}
-          onReschedule={(post) => {
-            const dateObj = post.scheduledFor?.toDate ? post.scheduledFor.toDate() : new Date();
-            setRescheduleData({ id: post.id, date: format(dateObj, "yyyy-MM-dd'T'HH:mm") });
-          }}
-          onDelete={actions.handleDelete}
-          onGenerateMedia={actions.handleGenerateMedia}
-          onResetGenerating={actions.handleResetGeneratingState}
-          onClearDateFilter={() => dashboard.setSelectedDateFilter(null)}
-          onPageChange={dashboard.setCurrentPage}
-        />
-      </div>
-
-      {/* Bulk action bar */}
-      <BulkActionBar
-        selectedCount={selectedPostIds.length}
-        onConfirm={actions.handleBulkConfirm}
-        onUnconfirm={actions.handleBulkUnconfirm}
-        onDelete={actions.handleBulkDelete}
-        onClear={() => setSelectedPostIds([])}
-      />
 
       {/* Full-screen loading overlay mientras publica */}
       {publishingPostId && (
@@ -325,6 +382,7 @@ export default function RrssDashboard() {
         onPublishNow={actions.handlePublishNow}
         onPublishStory={actions.handlePublishStory}
         onUpdateStatus={actions.handleUpdateStatus}
+        onDeletePost={actions.handleDeletePost}
       />
 
       <UpgradeModal

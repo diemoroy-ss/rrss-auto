@@ -20,6 +20,7 @@ export interface IngredientItem {
 
 export interface TextTemplate {
   id: string;
+  userId?: string;
   name: string;
   description: string;
   category:

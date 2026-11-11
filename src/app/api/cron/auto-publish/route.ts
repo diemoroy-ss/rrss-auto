@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '../../../../lib/firebase-admin';
+import { adminAuth, adminDb } from '../../../../lib/firebase-admin';
 import { generateFreeText } from "../../../../lib/gemini-free";
 import { marked } from 'marked';
 import { sendPublishedBlogEmail } from '../../../../lib/email-blog';
+
+const ADMIN_EMAILS = ['diemoroy@gmail.com', 'admin@santisoft.cl', 'spalezcom@gmail.com', 'santisoftai@gmail.com'];
 
 export async function GET(req: NextRequest) {
     return handleAutoPublish(req);
@@ -20,11 +22,39 @@ async function handleAutoPublish(req: NextRequest) {
             return NextResponse.json({ error: "Database not initialized" }, { status: 500 });
         }
 
+        const authHeader = req.headers.get('Authorization');
+        const cronSecretHeader = req.headers.get('x-cron-secret') || req.nextUrl.searchParams.get('secret');
+        const expectedSecret = process.env.CRON_SECRET || process.env.ADMIN_CRON_SECRET;
+
+        let isGlobalCronOrAdmin = false;
+        let scopedUserId: string | null = null;
+
+        if (expectedSecret && (cronSecretHeader === expectedSecret || authHeader === `Bearer ${expectedSecret}`)) {
+            isGlobalCronOrAdmin = true;
+        } else if (authHeader?.startsWith('Bearer ') && adminAuth) {
+            try {
+                const token = authHeader.split('Bearer ')[1];
+                const decoded = await adminAuth.verifyIdToken(token);
+                const email = (decoded.email || '').toLowerCase().trim();
+                if (ADMIN_EMAILS.includes(email)) {
+                    isGlobalCronOrAdmin = true;
+                } else {
+                    scopedUserId = decoded.uid;
+                }
+            } catch {
+                return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
+            }
+        } else {
+            return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+        }
+
         const now = new Date();
         const postsRef = adminDb.collection('blog_posts');
         
-        // Fetch all candidates (strategy, strategy_draft, draft)
-        const snap = await postsRef.get();
+        // Fetch candidates (all if cron/admin, or scoped to authenticated user)
+        const snap = scopedUserId
+            ? await postsRef.where('userId', '==', scopedUserId).get()
+            : await postsRef.get();
 
         const pendingDocs: any[] = [];
 

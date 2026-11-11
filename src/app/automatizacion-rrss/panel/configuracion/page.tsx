@@ -1078,7 +1078,7 @@ function ConfigContent() {
     <div className="max-w-4xl mx-auto lg:mx-0 pb-20">
       <div className="mb-10">
         <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-tight">Configuración de <span className="text-indigo-600">Marca.</span></h1>
-        <p className="text-slate-500 mt-4 text-lg font-medium leading-relaxed">Completa la identidad de <strong className="text-indigo-500">{activeProfile?.name}</strong> para alimentar el "Cerebro" de Estrategia AI y administrar sus conexiones.</p>
+        <p className="text-slate-500 mt-4 text-lg font-medium leading-relaxed">Completa la identidad de <strong className="text-indigo-500">{activeProfile?.name}</strong> para alimentar a nuestros agentes estratégicos y administrar tus conexiones.</p>
       </div>
 
       {errorMsg && <div className="mb-8 p-5 bg-rose-50 text-rose-600 rounded-[24px] font-black text-sm border border-rose-100 animate-in fade-in slide-in-from-top-2">⚠️ {errorMsg}</div>}
@@ -1198,12 +1198,15 @@ function ConfigContent() {
         <TabConexiones
           activeProfile={activeProfile}
           fbStatus={fbStatus}
+          liStatus={liStatus}
           ttStatus={ttStatus}
           gbpStatus={gbpStatus}
           isAdmin={isAdmin}
           isBusiness={isBusiness}
           handleConnectMeta={handleConnectMeta}
           handleDisconnectFb={handleDisconnectFb}
+          handleConnectLinkedIn={handleConnectLinkedIn}
+          handleDisconnectLi={handleDisconnectLi}
           handleConnectTikTok={handleConnectTikTok}
           handleDisconnectTt={handleDisconnectTt}
           handleConnectYouTube={handleConnectYouTube}
@@ -1213,6 +1216,7 @@ function ConfigContent() {
           handleConnectGBP={handleConnectGBP}
           handleDisconnectGBP={handleDisconnectGBP}
           setShowMetaModal={setShowMetaModal}
+          setShowLinkedInModal={setShowLinkedInModal}
           setShowTikTokModal={setShowTikTokModal}
         />
       )}

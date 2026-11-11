@@ -118,40 +118,40 @@ export default function HeroSection() {
 
   return (
     <>
-      <section className="hero" style={{ borderTop: 'none', paddingTop: '80px', paddingBottom: '80px' }}>
+      <section id="hero" className="hero" style={{ borderTop: 'none', paddingTop: '80px', paddingBottom: '80px' }}>
         <div className="radar"></div>
         <div className="wrap flex flex-col lg:flex-row items-center gap-12 lg:gap-8">
           <div className="hero-head lg:w-1/2 lg:text-left text-center m-0 max-w-none flex flex-col items-center lg:items-start z-10 relative">
-            <span className="eyebrow">Exclusivo para PyMEs y Negocios en Chile <span className="freq">·</span> WhatsApp 🟢</span>
+            <span className="eyebrow">Plataforma SaaS Todo-en-Uno <span className="freq">·</span> Marketing · Carta QR · Fideliza 🟢</span>
             <h1 className="lg:text-left text-center leading-tight mt-5 text-3xl sm:text-4xl lg:text-5xl font-black">
-              Tus Redes Sociales publicando y atrayendo clientes 24/7 en piloto automático — <em className="not-italic text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-300">Por una fracción de lo que te cobra una agencia.</em>
+              Tu negocio necesita crecer.{" "}
+              <em className="not-italic text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-300">
+                No perder horas creando publicaciones
+              </em>
             </h1>
             <p className="sub lg:text-left text-center lg:mx-0 mx-auto mt-6 text-base sm:text-lg text-slate-300 leading-relaxed max-w-xl">
-              Sin redactar desde cero, sin sufrir diseñando y sin sonar como robot. Clonamos la voz exacta de tu negocio y te dejamos el mes completo de contenido listo en minutos.
+              Transforma tus productos, fotografías e ideas en contenido profesional para tus redes sociales. Crea, organiza y programa desde una sola plataforma
             </p>
             <div className="hero-ctas flex flex-col sm:flex-row justify-center lg:justify-start gap-3 mt-8 w-full">
               <a
-                href="https://wa.me/56934428848?text=%C2%A1Hola%20Santisoft!%20Quiero%20recibir%20los%203%20posts%20de%20prueba%20gratis%20creados%20para%20mi%20negocio%20por%20WhatsApp.%20Mi%20rubro%20es%3A%20"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-primary w-full sm:w-auto justify-center text-center !bg-gradient-to-r !from-emerald-500 !to-teal-500 hover:!from-emerald-600 hover:!to-teal-600 !text-white !font-black !shadow-lg !shadow-emerald-500/30 flex items-center gap-2"
+                href="#ecosistema"
+                className="btn btn-primary w-full sm:w-auto justify-center text-center !bg-gradient-to-r !from-orange-500 !to-amber-500 hover:!from-orange-600 hover:!to-amber-600 !text-white !font-black !shadow-lg !shadow-orange-500/30 flex items-center gap-2"
               >
-                <span>💬</span> Quiero recibir 3 posts de prueba gratis creados para mi negocio
+                <span>🚀</span> Conoce SocialPilot
               </a>
-              <Link href="/como-funciona" className="btn btn-outline w-full sm:w-auto justify-center text-center">
-                Ver cómo funciona ➔
+              <Link href="/registro" className="btn btn-outline w-full sm:w-auto justify-center text-center">
+                Crear Cuenta Gratis ➔
               </Link>
-              <a href="#comparativa" className="btn btn-ghost w-full sm:w-auto justify-center text-center">
-                Ver precios
-              </a>
+              <Link href="/demo-plan-mania" className="btn btn-ghost w-full sm:w-auto justify-center text-center">
+                Ver Demo en Vivo
+              </Link>
             </div>
             <div className="badges flex flex-wrap justify-center lg:justify-start gap-2 w-full mt-8">
-              <span className="badge on !border-emerald-500/40 text-emerald-400 font-semibold"><span className="dot !bg-emerald-400 !shadow-[0_0_6px_#34d399]"></span>Aprobación por WhatsApp</span>
-              <span className="badge on"><span className="dot"></span>Instagram &amp; Facebook</span>
-              <span className="badge on"><span className="dot"></span>TikTok &amp; Reels</span>
-              <span className="badge on"><span className="dot"></span>YouTube Shorts</span>
-              <span className="badge on"><span className="dot"></span>Policía Anti-Baneos</span>
-              <span className="badge on"><span className="dot"></span>Setup Llave en Mano</span>
+              <span className="badge on !border-orange-500/40 text-orange-400 font-semibold"><span className="dot !bg-orange-400 !shadow-[0_0_6px_#fb923c]"></span>SocialPilot Marketing</span>
+              <span className="badge on !border-amber-500/40 text-amber-300 font-semibold"><span className="dot !bg-amber-400"></span>SocialPilot Carta QR</span>
+              <span className="badge on !border-emerald-500/40 text-emerald-400 font-semibold"><span className="dot !bg-emerald-400 !shadow-[0_0_6px_#34d399]"></span>SocialPilot Fideliza</span>
+              <span className="badge on"><span className="dot"></span>Catálogo Central Único</span>
+              <span className="badge on"><span className="dot"></span>100% Autoadministrable</span>
             </div>
           </div>
 
@@ -208,40 +208,40 @@ export default function HeroSection() {
         <div className="wrap mt-20 z-10 relative">
           <div className="panel dark-screen" data-reveal>
             <div className="panel-topbar">
-              <span>CONSOLA DE TRANSMISIÓN — SOCIALPILOT BY SANTISOFT</span>
-              <div className="freqs"><span>RRSS 360°</span><span>SEO &amp; GEO</span><span>WHATSAPP</span></div>
+              <span>ECOSISTEMA SAAS MODULAR — UNA SOLA CUENTA · UN CATÁLOGO CENTRAL</span>
+              <div className="freqs"><span>MARKETING</span><span>CARTA QR</span><span>FIDELIZA</span></div>
             </div>
             <div className="gauges three-signals">
               <div className="gauge a">
                 <div className="gauge-head">
-                  <span className="gauge-name">CANAL 1 — REDES</span>
-                  <span className="gauge-status">AL AIRE</span>
+                  <span className="gauge-name">PRODUCTO 1 — MARKETING</span>
+                  <span className="gauge-status">INDEPENDIENTE</span>
                 </div>
                 <div className="ring-row">
                   <div className="eq-visual"><span></span><span></span><span></span><span></span><span></span></div>
-                  <p className="gauge-desc"><b>5 Redes activas</b>: videos 9:16, afiches comerciales y publicaciones automáticas en Instagram, TikTok, Facebook, YouTube y X.</p>
+                  <p className="gauge-desc"><b>Creación y programación</b>: transforma tus productos y promociones en imágenes, Reels y calendario para Instagram, Facebook, TikTok y LinkedIn.</p>
                 </div>
               </div>
               <div className="gauge b">
                 <div className="gauge-head">
-                  <span className="gauge-name">CANAL 2 — SEO &amp; GEO</span>
-                  <span className="gauge-status">INDEXANDO</span>
+                  <span className="gauge-name">PRODUCTO 2 — CARTA QR</span>
+                  <span className="gauge-status">INDEPENDIENTE</span>
                 </div>
                 <div className="ring-row">
-                  <div className="term-visual">&gt; posicionando...<br />&gt; cite: ok<br />&gt; ranking: activo<span className="cursor"></span></div>
-                  <p className="gauge-desc"><b>Blog en tu CMS</b> estructurado para Google y para que los motores generativos te citen.</p>
+                  <div className="term-visual">&gt; menu: activo<br />&gt; qr: listo<br />&gt; sync: catálogo<span className="cursor"></span></div>
+                  <p className="gauge-desc"><b>Carta digital interactiva</b>: categorías, fotografías, precios y promociones con código QR listo para tus mesas.</p>
                 </div>
               </div>
               <div className="gauge c">
                 <div className="gauge-head">
-                  <span className="gauge-name">CANAL 3 — WHATSAPP</span>
-                  <span className="gauge-status">EN LÍNEA</span>
+                  <span className="gauge-name">PRODUCTO 3 — FIDELIZA</span>
+                  <span className="gauge-status">INDEPENDIENTE</span>
                 </div>
                 <div className="ring-row">
                   <div className="term-visual !border-emerald-500/40 !bg-emerald-950/20 !text-emerald-400">
-                    &gt; msg: &quot;6&quot;<br />&gt; posts: OK<br />&gt; listos<span className="cursor !bg-emerald-400"></span>
+                    &gt; puntos: +1<br />&gt; canje: OK<br />&gt; pin: seguro<span className="cursor !bg-emerald-400"></span>
                   </div>
-                  <p className="gauge-desc"><b>Comando móvil</b>: aprueba publicaciones, pide copys y revisa métricas desde tu chat.</p>
+                  <p className="gauge-desc"><b>Club de fidelización</b>: acumulación de puntos o sellos, recompensas de tu catálogo y validación antifraude.</p>
                 </div>
               </div>
             </div>
@@ -249,25 +249,18 @@ export default function HeroSection() {
             <div className="console">
               <div className="tabs">
                 <button
-                  className={`tab ${demoType === 'rrss' ? 'active' : ''}`}
+                  className="tab active"
                   onClick={() => setDemoType('rrss')}
                   type="button"
                 >
-                  Genera un post
-                </button>
-                <button
-                  className={`tab ${demoType === 'blog' ? 'active' : ''}`}
-                  onClick={() => setDemoType('blog')}
-                  type="button"
-                >
-                  Genera una idea de blog SEO
+                  Prueba en vivo: Genera una publicación comercial para tu negocio
                 </button>
               </div>
               <form onSubmit={handleDemoSubmit} className="console-form">
                 <input
                   id="rubro"
                   type="text"
-                  placeholder="Rubro del negocio (ej: cafetería, clínica dental)"
+                  placeholder="Rubro del negocio (ej: cafetería, restaurante, tienda)"
                   value={rubro}
                   onChange={(e) => setRubro(e.target.value)}
                   required
@@ -275,7 +268,7 @@ export default function HeroSection() {
                 <input
                   id="promo"
                   type="text"
-                  placeholder={demoType === 'rrss' ? "¿Qué quieres promocionar?" : "¿Sobre qué tema quieres posicionarte?"}
+                  placeholder="¿Qué producto o promoción quieres destacar?"
                   value={promo}
                   onChange={(e) => setPromo(e.target.value)}
                   required

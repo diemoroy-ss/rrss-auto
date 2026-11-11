@@ -39,7 +39,7 @@ export default function CatalogoPage() {
   const [imagePreview, setImagePreview] = useState<string>('');
   const [uploadingImage, setUploadingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { activeProfile, updateActiveProfile } = useProfile();
+  const { activeProfile, updateActiveProfile, contractedModules } = useProfile();
   const [togglingMenu, setTogglingMenu] = useState(false);
 
   // Viñeta principal: 'catalogo' (Productos y Servicios) vs 'promociones' (Promociones)
@@ -85,7 +85,9 @@ export default function CatalogoPage() {
     );
   }, [catalogProductsAndServices, linkedSearch]);
 
-  const isMenuEnabled = activeProfile?.menuDigitalEnabled === true;
+  const isMenuEnabled =
+    activeProfile?.menuDigitalEnabled === true ||
+    (contractedModules.qr && activeProfile?.menuDigitalEnabled !== false);
 
   const handleToggleMenuDigital = async (enable: boolean) => {
     setTogglingMenu(true);
@@ -306,21 +308,35 @@ export default function CatalogoPage() {
 
   return (
     <div className="max-w-5xl mx-auto">
-      {/* Cabecera Principal */}
+      {/* Cabecera Principal del Catálogo Central */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-black text-slate-900">Productos, Servicios & Promociones</h1>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-50 border border-orange-200 text-orange-700 text-[11px] font-black uppercase tracking-wider mb-2">
+            <span>🛍️</span> Catálogo Central SocialPilot
+          </div>
+          <h1 className="text-3xl font-black text-slate-900">Productos, Servicios y Promociones</h1>
           <p className="text-slate-500 text-sm mt-1 font-medium">
-            El catálogo y las ofertas activas de {activeProfile?.name || 'tu marca'} que nuestros agentes usan al planificar y diseñar.
+            Registra la información de {activeProfile?.name || 'tu negocio'} una sola vez. Se sincroniza automáticamente con tus módulos activos:
+            {contractedModules.marketing ? ' 📣 Marketing' : ''}
+            {contractedModules.qr ? ' · 🍽️ Carta QR' : ''}
+            {contractedModules.fideliza ? ' · 🎁 Fideliza' : ''}.
           </p>
         </div>
         <div className="flex items-center gap-2.5 flex-wrap">
-          {isMenuEnabled && (
+          {contractedModules.qr && (
             <Link
               href="/automatizacion-rrss/panel/menu-qr"
+              className="flex items-center gap-2 px-4 py-3 bg-amber-50 hover:bg-amber-100 text-amber-800 border-2 border-amber-200 font-black rounded-2xl transition-all text-xs sm:text-sm shadow-xs"
+            >
+              <span>🍽️</span> Carta QR
+            </Link>
+          )}
+          {contractedModules.fideliza && (
+            <Link
+              href="/automatizacion-rrss/panel/fidelizacion"
               className="flex items-center gap-2 px-4 py-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-2 border-emerald-200 font-black rounded-2xl transition-all text-xs sm:text-sm shadow-xs"
             >
-              <span>📱</span> Carta Menú & QR
+              <span>🎁</span> Fideliza
             </Link>
           )}
           <button

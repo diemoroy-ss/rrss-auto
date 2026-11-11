@@ -16,12 +16,15 @@ function getExpirationText(timestamp?: number) {
 interface TabConexionesProps {
   activeProfile: any;
   fbStatus: boolean;
+  liStatus?: boolean;
   ttStatus: boolean;
   gbpStatus: boolean;
   isAdmin: boolean;
   isBusiness: boolean;
   handleConnectMeta: () => void;
   handleDisconnectFb: () => void;
+  handleConnectLinkedIn?: () => void;
+  handleDisconnectLi?: () => void;
   handleConnectTikTok: () => void;
   handleDisconnectTt: () => void;
   handleConnectYouTube: () => void;
@@ -31,17 +34,20 @@ interface TabConexionesProps {
   handleConnectGBP: () => void;
   handleDisconnectGBP: () => void;
   setShowMetaModal: (v: boolean) => void;
+  setShowLinkedInModal?: (v: boolean) => void;
   setShowTikTokModal?: (v: boolean) => void;
 }
 
 export default function TabConexiones({
-  activeProfile, fbStatus, ttStatus, gbpStatus, isAdmin,
+  activeProfile, fbStatus, liStatus, ttStatus, gbpStatus, isAdmin,
   handleConnectMeta, handleDisconnectFb,
+  handleConnectLinkedIn, handleDisconnectLi,
   handleConnectTikTok, handleDisconnectTt,
   handleConnectYouTube, handleDisconnectYouTube,
   handleConnectX, handleDisconnectX,
   handleConnectGBP, handleDisconnectGBP,
   setShowMetaModal,
+  setShowLinkedInModal,
   setShowTikTokModal,
 }: TabConexionesProps) {
   return (
@@ -208,6 +214,40 @@ export default function TabConexiones({
             </div>
           ) : (
             <button type="button" onClick={handleConnectGBP} className="w-full bg-[#EA4335] hover:bg-[#d63022] text-white font-bold py-2.5 rounded-xl shadow-md text-sm transition-colors mt-auto">Conectar con Google</button>
+          )}
+        </div>
+
+        {/* LinkedIn */}
+        <div className="p-5 border-2 border-slate-100 rounded-2xl bg-slate-50 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <span className="w-8 h-8 bg-[#0A66C2] text-white rounded-lg flex items-center justify-center font-bold text-xs">in</span>
+              <h5 className="font-black text-slate-900">LinkedIn</h5>
+            </div>
+            <p className="text-xs text-slate-500 font-medium mb-4">Publica artículos, actualizaciones corporativas y autoridad B2B en tu perfil o página de empresa.</p>
+          </div>
+          {liStatus ? (
+            <div className="flex flex-col h-full justify-end">
+              <div className="flex items-center gap-2 mb-3"><span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" /><span className="text-xs font-bold text-emerald-600">Conectado</span></div>
+              {activeProfile?.linkedinCompanyUrn && (
+                <div className="mb-3 p-3 bg-white border border-slate-100 rounded-xl shadow-sm">
+                  <div className="text-[11px] font-bold text-slate-700 flex items-center gap-2"><span>🏢</span><span className="text-slate-400">Destino:</span><span className="truncate">Página de Empresa</span></div>
+                </div>
+              )}
+              <div className="flex gap-2">
+                {setShowLinkedInModal && (
+                  <button type="button" onClick={() => setShowLinkedInModal(true)} className="flex-1 bg-white border-2 border-slate-200 hover:border-[#0A66C2] text-slate-700 text-[10px] sm:text-xs font-bold py-2 rounded-xl transition-colors">Destino</button>
+                )}
+                {handleConnectLinkedIn && (
+                  <button type="button" onClick={handleConnectLinkedIn} className="flex-1 bg-blue-50 border-2 border-blue-100 hover:border-blue-300 text-[#0A66C2] text-[10px] sm:text-xs font-bold py-2 rounded-xl transition-colors">Actualizar</button>
+                )}
+                {handleDisconnectLi && (
+                  <button type="button" onClick={handleDisconnectLi} className="px-3 bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold rounded-xl text-xs transition-colors">X</button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <button type="button" onClick={handleConnectLinkedIn} className="w-full bg-[#0A66C2] hover:bg-[#004182] text-white font-bold py-2.5 rounded-xl shadow-md text-sm transition-colors mt-auto">Conectar con LinkedIn</button>
           )}
         </div>
       </div>

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { auth } from "../../../../../lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 
 interface Booking {
   id: string;
@@ -46,7 +48,10 @@ export default function AdminAgendaPage() {
   const fetchBookings = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/agenda");
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch("/api/admin/agenda", {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
       const data = await res.json();
       if (data.bookings) {
         setBookings(data.bookings);
@@ -59,7 +64,11 @@ export default function AdminAgendaPage() {
   };
 
   useEffect(() => {
-    fetchBookings();
+    const unsub = onAuthStateChanged(auth, (u) => {
+      if (u) fetchBookings();
+      else setLoading(false);
+    });
+    return () => unsub();
   }, []);
 
   // Handlers
@@ -69,9 +78,13 @@ export default function AdminAgendaPage() {
     setSendingEmail(true);
 
     try {
+      const token = await auth.currentUser?.getIdToken();
       const res = await fetch("/api/admin/agenda/send-confirmation", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({
           bookingId: confirmModalBooking.id,
           email: confirmModalBooking.email,
@@ -104,9 +117,13 @@ export default function AdminAgendaPage() {
     setSavingEdit(true);
 
     try {
+      const token = await auth.currentUser?.getIdToken();
       const res = await fetch("/api/admin/agenda", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({
           id: editModalBooking.id,
           date: editDate,
@@ -134,9 +151,13 @@ export default function AdminAgendaPage() {
     setSavingBlock(true);
 
     try {
+      const token = await auth.currentUser?.getIdToken();
       const res = await fetch("/api/admin/agenda", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({
           date: blockDate,
           time: blockTime,
@@ -162,7 +183,11 @@ export default function AdminAgendaPage() {
     if (!confirm(isBlock ? "¿Deseas desbloquear este horario?" : "¿Seguro que deseas eliminar esta reserva?")) return;
 
     try {
-      const res = await fetch(`/api/admin/agenda?id=${id}`, { method: "DELETE" });
+      const token = await auth.currentUser?.getIdToken();
+      const res = await fetch(`/api/admin/agenda?id=${id}`, {
+        method: "DELETE",
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
       if (res.ok) {
         fetchBookings();
       } else {

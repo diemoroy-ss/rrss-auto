@@ -103,8 +103,8 @@ const DEFAULT_PLANS = {
             "Módulo de Autoridad en LinkedIn para ventas y captación B2B",
             "Espía de Competencia Activo: Analiza qué anuncios y publicaciones le dan resultado a tus competidores",
             "Pack Publicidad Lista (Meta & Google Ads): Textos persuasivos y creativos listos para campañas pagadas",
-            "Posicionamiento en Google y buscadores de nueva generación (SEO + GEO): Artículos de blog para que tu PyME aparezca recomendada",
-            "Generador de Lead Magnets y Secuencias de Cierre por WhatsApp",
+            "Catálogo Central sincronizado con Carta Digital QR y Programa Fideliza",
+            "Generador de Promociones y Secuencias de Cierre por WhatsApp",
             "Atención prioritaria VIP por WhatsApp"
         ]
     },
@@ -120,14 +120,14 @@ const DEFAULT_PLANS = {
         videosLimit: 30,
         aiImagesLimit: 40,
         aiVideosLimit: 30,
-        seoBlogsLimit: 4,
+        seoBlogsLimit: 0,
         multiAccount: false,
         maxAccounts: 1,
         isPopular: true,
         ctaText: "Elegir Plan Crecimiento",
         features: [
             "30 publicaciones al mes",
-            "Multicanal completo + Ads + Blog SEO"
+            "Multicanal completo + Ads + Catálogo Central"
         ]
     },
     growth: {

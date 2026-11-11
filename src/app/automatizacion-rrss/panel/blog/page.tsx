@@ -118,13 +118,18 @@ export default function SeoAutopilotPanel() {
       }
   };
 
-  const checkAndAutoPublishPending = async () => {
+  const checkAndAutoPublishPending = async (uid?: string) => {
     try {
-      const res = await fetch('/api/cron/auto-publish', { method: 'POST' });
+      const targetUid = uid || user?.uid || auth.currentUser?.uid;
+      const token = await auth.currentUser?.getIdToken().catch(() => null);
+      const res = await fetch('/api/cron/auto-publish', {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
       if (res.ok) {
         const data = await res.json();
-        if (data.processedCount && data.processedCount > 0) {
-          const q = query(collection(db, "blog_posts")); 
+        if (data.processedCount && data.processedCount > 0 && targetUid) {
+          const q = query(collection(db, "blog_posts"), where("userId", "==", targetUid));
           const snap = await getDocs(q);
           const fetchedPosts: BlogPost[] = [];
           snap.forEach(docSnap => {
@@ -154,8 +159,10 @@ export default function SeoAutopilotPanel() {
     }
   };
 
-  const fetchPosts = async () => {
-      const q = query(collection(db, "blog_posts")); 
+  const fetchPosts = async (uid?: string) => {
+      const targetUid = uid || user?.uid || auth.currentUser?.uid;
+      if (!targetUid) return;
+      const q = query(collection(db, "blog_posts"), where("userId", "==", targetUid));
       const snap = await getDocs(q);
       const fetchedPosts: BlogPost[] = [];
       snap.forEach(docSnap => {
@@ -179,7 +186,7 @@ export default function SeoAutopilotPanel() {
       
       fetchedPosts.sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime());
       setPosts(fetchedPosts);
-      checkAndAutoPublishPending();
+      checkAndAutoPublishPending(targetUid);
   };
 
   const handleGeneratePostImage = async (postId: string) => {
@@ -381,7 +388,7 @@ export default function SeoAutopilotPanel() {
               if (data.seoConfig.scrapedUrl) setScrapedUrl(data.seoConfig.scrapedUrl);
           }
         }
-        await fetchPosts();
+        await fetchPosts(u.uid);
         await fetchSocialPosts(u.uid);
         await fetchApiKeys(u);
       } catch (error) {
@@ -552,10 +559,10 @@ export default function SeoAutopilotPanel() {
   if (isLocked) {
      return (
        <UpsellGate
-         moduleName="Blog SEO & Posicionamiento en IA"
+         moduleName="Blog SEO & Posicionamiento Web"
          badge="Exclusivo Plan PyME Crecimiento"
-         title="Multiplica las Visitas de tu Negocio en Google y Motores de IA"
-         description="Los clientes buscan en Google y preguntan a ChatGPT o Perplexity antes de comprar. Con este módulo, nuestros agentes redactan artículos extensos, optimizados para SEO local y estructurados para que la IA recomiende tu negocio."
+         title="Multiplica las Visitas de tu Negocio en Google y Buscadores Generativos"
+         description="Los clientes buscan en Google y consultan buscadores conversacionales antes de comprar. Con este módulo, nuestros agentes redactan artículos extensos, optimizados para SEO local y estructurados para que tu negocio aparezca primero."
          benefits={[
            "Redacción automática de artículos de 1.000+ palabras con tono 100% humano.",
            "Estrategia de palabras clave según tu rubro para atraer clientes con intención de compra.",
@@ -612,9 +619,9 @@ export default function SeoAutopilotPanel() {
                       {/* Varita Magica */}
                       <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-2xl border border-indigo-100">
                           <label className="block text-xs font-bold text-indigo-700 uppercase tracking-widest mb-2 flex items-center gap-1">
-                              🪄 Auto-Completar con IA
+                              🪄 Auto-Completar con nuestros agentes
                           </label>
-                          <p className="text-xs text-slate-600 mb-3 font-medium">Ingresa la URL de tu sitio web y la IA extraerá el tono y keywords ideales.</p>
+                          <p className="text-xs text-slate-600 mb-3 font-medium">Ingresa la URL de tu sitio web y nuestros agentes extraerán el tono y las palabras clave ideales.</p>
                           <div className="flex gap-2">
                               <input type="text" value={scrapeUrl} onChange={e => setScrapeUrl(e.target.value)} placeholder="https://miempresa.com" className="flex-1 bg-white border border-indigo-200 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
                               <button onClick={handleScrapeWebsite} disabled={scraping} className="shrink-0 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white font-bold py-2 px-4 rounded-xl transition-all shadow-md shadow-indigo-600/20 text-sm">

@@ -132,7 +132,7 @@ const ADMIN_EMAILS = [
 const PUBLIC_APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://rrss.santisoft.cl";
 const EVOLUTION_URL = process.env.NEXT_PUBLIC_EVOLUTION_URL || "https://evoapi.grupofugas.cl";
 const EVOLUTION_INSTANCE = process.env.NEXT_PUBLIC_EVOLUTION_INSTANCE || "Santisoft";
-const EVOLUTION_API_KEY = process.env.NEXT_PUBLIC_EVOLUTION_API_KEY || "6833CC358FA4-42E4-8F45-E74D35CC85A7";
+const EVOLUTION_API_KEY = process.env.NEXT_PUBLIC_EVOLUTION_API_KEY || "";
 const N8N_EVOAPI_WEBHOOK_URL = "https://n8n.santisoft.cl/webhook/evoapi";
 
 function buildWhatsAppCopy(
@@ -1887,53 +1887,55 @@ export default function VendedoresPwaPage() {
 
       let delivered = false;
 
-      // 1. Intento primario: Envío directo desde el navegador (conexión directa vía CORS con Evolution API)
-      try {
-        console.log("[WhatsApp Vendedores] Intentando entrega directa vía Evolution API (CORS)...");
-        const endpoint = targetMediaUrl
-          ? `${EVOLUTION_URL}/message/sendMedia/${EVOLUTION_INSTANCE}`
-          : `${EVOLUTION_URL}/message/sendText/${EVOLUTION_INSTANCE}`;
+      // 1. Intento directo vía Evolution API solo si hay clave pública configurada
+      if (EVOLUTION_API_KEY) {
+        try {
+          console.log("[WhatsApp Vendedores] Intentando entrega directa vía Evolution API (CORS)...");
+          const endpoint = targetMediaUrl
+            ? `${EVOLUTION_URL}/message/sendMedia/${EVOLUTION_INSTANCE}`
+            : `${EVOLUTION_URL}/message/sendText/${EVOLUTION_INSTANCE}`;
 
-        const payload = targetMediaUrl
-          ? {
-              number: cleanPhone,
-              mediatype: "image",
-              mimetype: "image/jpeg",
-              caption: messageToSend,
-              media: targetMediaUrl,
-            }
-          : {
-              number: cleanPhone,
-              text: messageToSend,
-            };
+          const payload = targetMediaUrl
+            ? {
+                number: cleanPhone,
+                mediatype: "image",
+                mimetype: "image/jpeg",
+                caption: messageToSend,
+                media: targetMediaUrl,
+              }
+            : {
+                number: cleanPhone,
+                text: messageToSend,
+              };
 
-        const evoRes = await fetch(endpoint, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json; charset=utf-8",
-            apikey: EVOLUTION_API_KEY,
-          },
-          body: JSON.stringify(payload),
-          signal: AbortSignal.timeout(30000), // Timeout holgado de 30s para Baileys
-        });
-
-        if (evoRes.ok) {
-          const evoData = await evoRes.json().catch(() => ({}));
-          console.log("[WhatsApp Vendedores] ✅ Entregado directamente por Evolution API:", evoData);
-          delivered = true;
-
-          // Registro asíncrono en backend y webhook n8n
-          fetch("/api/admin/whatsapp/send", {
+          const evoRes = await fetch(endpoint, {
             method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ phone: cleanPhone, text: messageToSend, logOnly: true }),
-          }).catch(() => {});
-        } else {
-          const errText = await evoRes.text().catch(() => "");
-          console.warn(`[WhatsApp Vendedores] Envío directo respondió ${evoRes.status}: ${errText}. Probando vía backend...`);
+            headers: {
+              "Content-Type": "application/json; charset=utf-8",
+              apikey: EVOLUTION_API_KEY,
+            },
+            body: JSON.stringify(payload),
+            signal: AbortSignal.timeout(30000), // Timeout holgado de 30s para Baileys
+          });
+
+          if (evoRes.ok) {
+            const evoData = await evoRes.json().catch(() => ({}));
+            console.log("[WhatsApp Vendedores] ✅ Entregado directamente por Evolution API:", evoData);
+            delivered = true;
+
+            // Registro asíncrono en backend y webhook n8n
+            fetch("/api/admin/whatsapp/send", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+              body: JSON.stringify({ phone: cleanPhone, text: messageToSend, logOnly: true }),
+            }).catch(() => {});
+          } else {
+            const errText = await evoRes.text().catch(() => "");
+            console.warn(`[WhatsApp Vendedores] Envío directo respondió ${evoRes.status}: ${errText}. Probando vía backend...`);
+          }
+        } catch (clientErr: any) {
+          console.warn("[WhatsApp Vendedores] Envío directo por navegador omitido:", clientErr.message, "Probando vía backend...");
         }
-      } catch (clientErr: any) {
-        console.warn("[WhatsApp Vendedores] Envío directo por navegador omitido:", clientErr.message, "Probando vía backend...");
       }
 
       // 2. Intento secundario: Si falló el envío directo, intentar vía endpoint del backend
@@ -2300,31 +2302,33 @@ export default function VendedoresPwaPage() {
       const token = await auth.currentUser?.getIdToken();
       let delivered = false;
 
-      // 1. Intento directo vía Evolution API (CORS)
-      try {
-        const evoRes = await fetch(`${EVOLUTION_URL}/message/sendText/${EVOLUTION_INSTANCE}`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json; charset=utf-8",
-            apikey: EVOLUTION_API_KEY,
-          },
-          body: JSON.stringify({
-            number: cleanPhone,
-            text: followUpMsg.trim(),
-          }),
-          signal: AbortSignal.timeout(8000),
-        });
-
-        if (evoRes.ok) {
-          delivered = true;
-          fetch("/api/admin/whatsapp/send", {
+      // 1. Intento directo vía Evolution API solo si hay clave pública configurada
+      if (EVOLUTION_API_KEY) {
+        try {
+          const evoRes = await fetch(`${EVOLUTION_URL}/message/sendText/${EVOLUTION_INSTANCE}`, {
             method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ phone: cleanPhone, text: followUpMsg.trim(), logOnly: true }),
-          }).catch(() => {});
+            headers: {
+              "Content-Type": "application/json; charset=utf-8",
+              apikey: EVOLUTION_API_KEY,
+            },
+            body: JSON.stringify({
+              number: cleanPhone,
+              text: followUpMsg.trim(),
+            }),
+            signal: AbortSignal.timeout(8000),
+          });
+
+          if (evoRes.ok) {
+            delivered = true;
+            fetch("/api/admin/whatsapp/send", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+              body: JSON.stringify({ phone: cleanPhone, text: followUpMsg.trim(), logOnly: true }),
+            }).catch(() => {});
+          }
+        } catch (clientErr) {
+          console.warn("Direct follow-up failed, fallback to backend:", clientErr);
         }
-      } catch (clientErr) {
-        console.warn("Direct follow-up failed, fallback to backend:", clientErr);
       }
 
       // 2. Intento secundario: Backend fallback

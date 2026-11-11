@@ -125,8 +125,8 @@ const PLAN_DETAILS: Record<string, PlanDetail> = {
           "Módulo de Autoridad en LinkedIn para ventas y captación B2B",
           "Espía de Competencia Activo: analiza anuncios y posts ganadores de competidores",
           "Pack Publicidad Lista (Meta & Google Ads): textos y creativos para campañas pagadas",
-          "Posicionamiento SEO + GEO: artículos para salir recomendado en Google y buscadores de nueva generación",
-          "Generador de Lead Magnets y Secuencias de Cierre por WhatsApp",
+          "Catálogo Central conectado con Carta Digital QR y Programa Fideliza",
+          "Generador de Promociones y Secuencias de Cierre por WhatsApp",
         ],
       },
       {
@@ -165,8 +165,8 @@ const PLAN_DETAILS: Record<string, PlanDetail> = {
           "Módulo de Autoridad en LinkedIn para ventas y captación B2B",
           "Espía de Competencia Activo: analiza anuncios y posts ganadores de competidores",
           "Pack Publicidad Lista (Meta & Google Ads): textos y creativos para campañas pagadas",
-          "Posicionamiento SEO + GEO: artículos para salir recomendado en Google y buscadores de nueva generación",
-          "Generador de Lead Magnets y Secuencias de Cierre por WhatsApp",
+          "Catálogo Central conectado con Carta Digital QR y Programa Fideliza",
+          "Generador de Promociones y Secuencias de Cierre por WhatsApp",
         ],
       },
       {
@@ -205,8 +205,8 @@ const PLAN_DETAILS: Record<string, PlanDetail> = {
           "Módulo de Autoridad en LinkedIn para ventas y captación B2B",
           "Espía de Competencia Activo: analiza anuncios y posts ganadores de competidores",
           "Pack Publicidad Lista (Meta & Google Ads): textos y creativos para campañas pagadas",
-          "Posicionamiento SEO + GEO: artículos para salir recomendado en Google y buscadores de nueva generación",
-          "Generador de Lead Magnets y Secuencias de Cierre por WhatsApp",
+          "Catálogo Central conectado con Carta Digital QR y Programa Fideliza",
+          "Generador de Promociones y Secuencias de Cierre por WhatsApp",
         ],
       },
       {
@@ -227,7 +227,7 @@ const PLAN_DETAILS: Record<string, PlanDetail> = {
     ],
   },
   "piloto-automatico": {
-    id: "piloto-automatico",
+    id: "piloto_automatico",
     name: "Plan PyME Piloto Automático",
     badge: "⚡ SETUP INICIAL GRATIS",
     tagline: "Nosotros operamos el sistema contigo en sesiones ejecutivas quincenales",
@@ -366,12 +366,18 @@ function ConfirmarPlanContent() {
       const userRef = doc(db, "users", u.uid);
       const userSnap = await getDoc(userRef);
       if (!userSnap.exists()) {
+        const adminEmails = ["admin@santisoft.cl", "diemoroy@gmail.com", "spalezcom@gmail.com", "santisoftai@gmail.com"];
+        const resolvedRole = u.email && adminEmails.includes(u.email.toLowerCase()) ? "admin" : "user";
         await setDoc(userRef, {
           email: u.email,
           name: u.displayName || "",
-          role: "user",
+          role: resolvedRole,
           plan: "free",
+          categoriesAllowed: ["all"],
           createdAt: serverTimestamp(),
+          trialStartedAt: serverTimestamp(),
+          trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          trialDays: 7,
           registeredApps: ["automatizacion"],
         }, { merge: true });
       }
@@ -392,13 +398,19 @@ function ConfirmarPlanContent() {
     try {
       if (authMode === "register") {
         const creds = await createUserWithEmailAndPassword(auth, authEmail, authPassword);
+        const adminEmails = ["admin@santisoft.cl", "diemoroy@gmail.com", "spalezcom@gmail.com", "santisoftai@gmail.com"];
+        const resolvedRole = adminEmails.includes(authEmail.toLowerCase().trim()) ? "admin" : "user";
         await setDoc(doc(db, "users", creds.user.uid), {
           email: authEmail,
           name: authName,
           phone: authPhone,
-          role: "user",
+          role: resolvedRole,
           plan: "free",
+          categoriesAllowed: ["all"],
           createdAt: serverTimestamp(),
+          trialStartedAt: serverTimestamp(),
+          trialEndsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          trialDays: 7,
           registeredApps: ["automatizacion"],
         }, { merge: true });
       } else {

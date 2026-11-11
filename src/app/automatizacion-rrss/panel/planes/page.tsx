@@ -6,6 +6,8 @@ import { auth, db } from "../../../../lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { normalizePlanId } from "../../../../lib/plans";
+import { useProfile } from "../../../../contexts/ProfileContext";
+import { SAAS_MODULES_CATALOG, SaasModuleId } from "../../../../lib/saas-modules";
 import { FaCheck, FaWhatsapp, FaShieldAlt, FaRocket, FaGift, FaStar } from "react-icons/fa";
 
 interface PyMEPlanItem {
@@ -82,8 +84,8 @@ const OFFICIAL_PYME_PLANS: PyMEPlanItem[] = [
       "Módulo de Autoridad en LinkedIn para ventas y captación B2B",
       "Espía de Competencia Activo: Analiza qué anuncios y publicaciones le dan resultado a tus competidores",
       "Pack Publicidad Lista (Meta & Google Ads): Textos persuasivos y creativos listos para campañas pagadas",
-      "Posicionamiento en Google y buscadores de nueva generación (SEO + GEO): Artículos de blog para que tu PyME aparezca recomendada",
-      "Generador de Lead Magnets y Secuencias de Cierre por WhatsApp",
+      "Catálogo Central integrado con Carta Digital QR y Programa Fideliza",
+      "Generador de Promociones y Secuencias de Cierre por WhatsApp",
       "Atención prioritaria VIP por WhatsApp",
     ],
   },
@@ -113,6 +115,7 @@ const OFFICIAL_PYME_PLANS: PyMEPlanItem[] = [
 
 export default function PlanesPage() {
   const router = useRouter();
+  const { activeProfile, contractedModules } = useProfile();
   const [userRawPlan, setUserRawPlan] = useState("free");
   const [isAnnual, setIsAnnual] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -216,6 +219,98 @@ export default function PlanesPage() {
         </div>
       )}
 
+      {/* Estado de Módulos Contratados del Negocio */}
+      <div className="mb-10 bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+          <div>
+            <span className="text-[11px] font-black uppercase tracking-wider text-orange-600">
+              Ecosistema Modular SocialPilot
+            </span>
+            <h2 className="text-xl font-black text-slate-900 mt-0.5">
+              Productos contratados para {activeProfile?.name || "tu negocio"}
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Puedes contratar o combinar cada solución de forma independiente compartiendo el mismo
+              Catálogo Central.
+            </p>
+          </div>
+          <a
+            href="https://wa.me/56934428848?text=Hola%20SocialPilot!%20Quiero%20activar%20o%20combinar%20un%20m%C3%B3dulo%20(Marketing%2C%20Carta%20QR%20o%20Fideliza)%20en%20mi%20cuenta."
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs px-4 py-2.5 rounded-xl transition-all shrink-0"
+          >
+            <FaWhatsapp className="text-sm" /> Solicitar activación de módulo
+          </a>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {(["marketing", "qr", "fideliza"] as SaasModuleId[]).map((modId) => {
+            const mod = SAAS_MODULES_CATALOG[modId];
+            const active = contractedModules[modId];
+            return (
+              <div
+                key={modId}
+                className={`p-5 rounded-2xl border-2 flex flex-col justify-between ${
+                  active
+                    ? "border-emerald-400/80 bg-emerald-50/20"
+                    : "border-slate-200 bg-slate-50/60"
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                      {mod.badge}
+                    </span>
+                    <span
+                      className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full ${
+                        active
+                          ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                          : "bg-slate-200 text-slate-600"
+                      }`}
+                    >
+                      {active ? "ACTIVADO" : "DISPONIBLE"}
+                    </span>
+                  </div>
+                  <h3 className="text-base font-black text-slate-900">{mod.name}</h3>
+                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">{mod.tagline}</p>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-slate-200/60 flex items-center justify-between">
+                  {active ? (
+                    <Link
+                      href={mod.primaryRoute}
+                      className="text-xs font-black text-emerald-700 hover:underline"
+                    >
+                      Ir al módulo →
+                    </Link>
+                  ) : (
+                    <a
+                      href={`https://wa.me/56934428848?text=${encodeURIComponent(
+                        `Hola SocialPilot! Quiero agregar el módulo ${mod.name} a mi cuenta.`
+                      )}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-black text-orange-600 hover:underline"
+                    >
+                      Solicitar este módulo →
+                    </a>
+                  )}
+                  <a
+                    href={mod.publicDemoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[11px] font-semibold text-slate-400 hover:text-slate-700"
+                  >
+                    Ver demo ↗
+                  </a>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Grid de 4 Planes Oficiales */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 items-stretch">
         {OFFICIAL_PYME_PLANS.map((plan) => {
@@ -285,7 +380,7 @@ export default function PlanesPage() {
                       ${formattedCurrentPrice}
                     </span>
                     <span className="text-xs font-bold text-slate-500">
-                      {plan.id === "free" ? "/siempre" : "CLP + IVA / mes"}
+                      {plan.id === "free" ? "/siempre" : "CLP / mes · IVA incluido"}
                     </span>
                   </div>
 

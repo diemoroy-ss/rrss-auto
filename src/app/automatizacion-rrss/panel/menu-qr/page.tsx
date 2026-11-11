@@ -42,7 +42,7 @@ export default function MenuQrPage() {
   const [toggling, setToggling] = useState(false);
   const [statusMsg, setStatusMsg] = useState("");
 
-  const { activeProfile, updateActiveProfile } = useProfile();
+  const { activeProfile, updateActiveProfile, contractedModules } = useProfile();
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
@@ -52,7 +52,9 @@ export default function MenuQrPage() {
   }, []);
 
   const profileId = activeProfile?.id || "default";
-  const isMenuEnabled = activeProfile?.menuDigitalEnabled === true;
+  const isMenuEnabled =
+    activeProfile?.menuDigitalEnabled === true ||
+    (contractedModules.qr && activeProfile?.menuDigitalEnabled !== false);
   const currentThemeId: MenuThemeId = (activeProfile?.menuTheme as MenuThemeId) || DEFAULT_MENU_THEME;
 
   // Deterministic menu URL

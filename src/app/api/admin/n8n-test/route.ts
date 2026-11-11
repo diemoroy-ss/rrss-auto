@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
-import { adminAuth } from '../../../../lib/firebase-admin';
+import { adminAuth, adminDb } from '../../../../lib/firebase-admin';
+
+const ADMIN_EMAILS = ['diemoroy@gmail.com', 'admin@santisoft.cl', 'spalezcom@gmail.com', 'santisoftai@gmail.com'];
 
 export async function POST(req: Request) {
     try {
@@ -12,7 +14,13 @@ export async function POST(req: Request) {
         let decodedToken;
         try {
             decodedToken = await adminAuth.verifyIdToken(token);
-            // Optional: verify admin role here
+            const email = (decodedToken.email || '').toLowerCase().trim();
+            if (!ADMIN_EMAILS.includes(email)) {
+                const userDoc = adminDb ? await adminDb.collection('users').doc(decodedToken.uid).get() : null;
+                if (userDoc?.data()?.role !== 'admin') {
+                    return NextResponse.json({ error: 'Acceso restringido a administradores' }, { status: 403 });
+                }
+            }
         } catch (e) {
             return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
         }

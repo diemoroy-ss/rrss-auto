@@ -389,6 +389,47 @@ export default function RrssCreatePost() {
   const priceParam = searchParams.get("price");
   const textTemplateNameParam = searchParams.get("textTemplateName");
   const layoutPositionParam = searchParams.get("layoutPosition");
+  const topicParam = searchParams.get("topic") || searchParams.get("idea");
+  const formatParam = searchParams.get("format");
+  const hookParam = searchParams.get("hook");
+  const angleParam = searchParams.get("angle");
+  const fontStyleParam = searchParams.get("fontStyle");
+
+  useEffect(() => {
+    if (topicParam || hookParam || angleParam) {
+      const combinedIdea = [
+        topicParam ? decodeURIComponent(topicParam) : "",
+        hookParam ? `Gancho sugerido: ${decodeURIComponent(hookParam)}` : "",
+        angleParam ? `Ángulo: ${decodeURIComponent(angleParam)}` : "",
+      ].filter(Boolean).join(" — ");
+      if (combinedIdea) {
+        setIdea((prev) => prev || combinedIdea);
+      }
+    }
+    if (formatParam && !postTypeParam) {
+      const lowerFmt = decodeURIComponent(formatParam).toLowerCase();
+      if (lowerFmt.includes("reel") || lowerFmt.includes("video")) {
+        setPostType("Reel");
+        setPosterConfig((prev) => ({ ...prev, orientation: "vertical", aspectRatio: "9:16" }));
+      } else if (lowerFmt.includes("carrusel") || lowerFmt.includes("carousel")) {
+        setPostType("Carrusel");
+        setPosterConfig((prev) => ({ ...prev, orientation: "square", aspectRatio: "1:1" }));
+      } else if (lowerFmt.includes("historia") || lowerFmt.includes("story")) {
+        setPostType("Historia");
+        setPosterConfig((prev) => ({ ...prev, orientation: "vertical", aspectRatio: "9:16" }));
+      } else {
+        setPostType("Post");
+        setPosterConfig((prev) => ({ ...prev, orientation: "square", aspectRatio: "1:1" }));
+      }
+    }
+    if (fontStyleParam) {
+      setPosterConfig((prev) => ({
+        ...prev,
+        enabled: true,
+        fontStyle: decodeURIComponent(fontStyleParam) as any,
+      }));
+    }
+  }, [topicParam, formatParam, hookParam, angleParam, fontStyleParam, postTypeParam]);
 
   useEffect(() => {
     if (promptIdParam) {

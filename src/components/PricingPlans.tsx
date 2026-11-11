@@ -18,13 +18,14 @@ interface PyMEPlan {
   isFeatured?: boolean;
   ctaText: string;
   ctaHref: string;
+  waHref: string;
   features: string[];
   bonusText?: string;
 }
 
 const PYME_PLANS: PyMEPlan[] = [
   {
-    id: "pyme-esencial",
+    id: "esencial",
     name: "Plan PyME Esencial",
     tagline: "PRESENCIA ACTIVA · CERO BLOQUEOS",
     originalPriceMonthly: 89990,
@@ -33,7 +34,8 @@ const PYME_PLANS: PyMEPlan[] = [
     description: "Ideal para negocios locales y profesionales que necesitan redes activas, confiables y con contenido profesional sin perder tiempo.",
     isFeatured: false,
     ctaText: "Elegir Plan Esencial ($59.990)",
-    ctaHref: `https://wa.me/${WA_NUMBER}?text=%C2%A1Hola!%20Quiero%20activar%20el%20Plan%20PyME%20Esencial%20de%20SocialPilot%20by%20Santisoft%20(%2459.990%20CLP%20%2B%20IVA%2Fmes)%20para%20mi%20negocio.%20Mi%20empresa%20es%3A%20`,
+    ctaHref: "/confirmar-plan?plan=esencial",
+    waHref: `https://wa.me/${WA_NUMBER}?text=%C2%A1Hola!%20Quiero%20consultar%20por%20el%20Plan%20PyME%20Esencial%20de%20SocialPilot%20by%20Santisoft%20(%2459.990%20CLP%20IVA%20incluido%2Fmes)%20para%20mi%20negocio.%20Mi%20empresa%20es%3A%20`,
     features: [
       "1 Marca configurada (Instagram + Facebook)",
       "Clonación de Voz de Marca + Humanizador: Textos con el tono real de tu negocio, cero robóticos",
@@ -46,7 +48,7 @@ const PYME_PLANS: PyMEPlan[] = [
     ],
   },
   {
-    id: "pyme-crecimiento",
+    id: "crecimiento",
     name: "Plan PyME Crecimiento",
     tagline: "MÁQUINA DE VENTAS · MÁS ELEGIDO",
     badge: "🔥 MÁS ELEGIDO · SOLO 15 CUPOS",
@@ -57,20 +59,21 @@ const PYME_PLANS: PyMEPlan[] = [
     isFeatured: true,
     bonusText: "🎁 BONO EXCLUSIVO (Solo 15 cupos): Setup 'Llave en Mano' GRATIS (Valor real $150.000 CLP) — Nosotros configuramos tu marca, extraemos tu voz desde tu web y dejamos tu primera quincena andando en una videollamada de 25 minutos.",
     ctaText: "Asegurar Cupo Crecimiento con Setup Gratis ($99.990)",
-    ctaHref: `https://wa.me/${WA_NUMBER}?text=%C2%A1Hola!%20Quiero%20asegurar%20uno%20de%20los%2015%20cupos%20del%20Plan%20PyME%20Crecimiento%20de%20SocialPilot%20by%20Santisoft%20(%2499.990%20CLP%20%2B%20IVA)%20con%20Setup%20Llave%20en%20Mano%20Gratis.%20Mi%20negocio%20es%3A%20`,
+    ctaHref: "/confirmar-plan?plan=crecimiento",
+    waHref: `https://wa.me/${WA_NUMBER}?text=%C2%A1Hola!%20Quiero%20asegurar%20uno%20de%20los%2015%20cupos%20del%20Plan%20PyME%20Crecimiento%20de%20SocialPilot%20by%20Santisoft%20(%2499.990%20CLP%20IVA%20incluido)%20con%20Setup%20Llave%20en%20Mano%20Gratis.%20Mi%20negocio%20es%3A%20`,
     features: [
       "Todo lo incluido en el Plan Esencial",
       "Multicanal Ilimitado (30 días): Instagram, Facebook, TikTok",
       "Módulo de Autoridad en LinkedIn para ventas y captación B2B",
       "Espía de Competencia Activo: Analiza qué anuncios y publicaciones le dan resultado a tus competidores",
       "Pack Publicidad Lista (Meta & Google Ads): Textos persuasivos y creativos listos para campañas pagadas",
-      "Posicionamiento en Google e IAs (SEO + GEO): Artículos de blog para que tu PyME aparezca recomendada en Google y ChatGPT",
-      "Generador de Lead Magnets y Secuencias de Cierre por WhatsApp",
+      "Catálogo Central sincronizado con Carta Digital QR y Programa Fideliza",
+      "Generador de Promociones y Secuencias de Cierre por WhatsApp",
       "Atención prioritaria VIP por WhatsApp",
     ],
   },
   {
-    id: "pyme-piloto-automatico",
+    id: "piloto_automatico",
     name: "Plan PyME Piloto Automático",
     tagline: "DONE-WITH-YOU · SERVICIO VIP",
     badge: "⚡ SETUP INICIAL GRATIS",
@@ -80,8 +83,9 @@ const PYME_PLANS: PyMEPlan[] = [
     description: "Para dueños de empresas y gerentes sin tiempo que quieren todo el poder del sistema pero prefieren que nuestro equipo lo opere junto a ellos.",
     isFeatured: false,
     bonusText: "🤝 SERVICIO DONE-WITH-YOU: 2 sesiones ejecutivas al mes (20 min por Zoom) para generar las campañas, revisar métricas y dejar todo programado en vivo.",
-    ctaText: "Postular a Piloto Automático ($249.990)",
-    ctaHref: `https://wa.me/${WA_NUMBER}?text=%C2%A1Hola!%20Me%20interesa%20el%20Plan%20PyME%20Piloto%20Autom%C3%A1tico%20VIP%20de%20SocialPilot%20by%20Santisoft%20(%24249.990%20CLP%20%2B%20IVA)%20con%20acompa%C3%B1amiento%20Done-With-You.%20Mi%20empresa%20es%3A%20`,
+    ctaText: "Activar Piloto Automático ($249.990)",
+    ctaHref: "/confirmar-plan?plan=piloto_automatico",
+    waHref: `https://wa.me/${WA_NUMBER}?text=%C2%A1Hola!%20Me%20interesa%20el%20Plan%20PyME%20Piloto%20Autom%C3%A1tico%20VIP%20de%20SocialPilot%20by%20Santisoft%20(%24249.990%20CLP%20IVA%20incluido)%20con%20acompa%C3%B1amiento%20Done-With-You.%20Mi%20empresa%20es%3A%20`,
     features: [
       "Todo el Plan Crecimiento Ilimitado incluido",
       "2 Sesiones Ejecutivas al Mes (20 min por Zoom): Ejecutamos el espía de competencia, generamos campañas y programamos todo el mes en vivo",
@@ -170,7 +174,7 @@ export default function PricingPlans() {
                     <span className={`text-4xl sm:text-5xl font-black tracking-tight ${plan.isFeatured ? "text-white" : "text-slate-900 dark:text-white"}`}>
                       ${currentPrice.toLocaleString("es-CL")}
                     </span>
-                    <span className={`text-xs font-medium ${plan.isFeatured ? "text-slate-400" : "text-slate-500 dark:text-slate-400"}`}>CLP + IVA / mes</span>
+                    <span className={`text-xs font-medium ${plan.isFeatured ? "text-slate-400" : "text-slate-500 dark:text-slate-400"}`}>CLP / mes · IVA incluido</span>
                   </div>
                   <div className={`text-[11px] mt-1 font-medium ${plan.isFeatured ? "text-slate-400" : "text-slate-500 dark:text-slate-400"}`}>
                     {billingCycle === "anual"
@@ -205,32 +209,29 @@ export default function PricingPlans() {
               </div>
 
               {/* Botón CTA del Plan */}
-              <div className={`pt-8 mt-6 border-t ${plan.isFeatured ? "border-slate-800/80" : "border-slate-200 dark:border-slate-800/80"}`}>
-                {plan.ctaHref.startsWith("http") ? (
-                  <a
-                    href={plan.ctaHref}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`w-full py-4 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all shadow-xl text-center ${
-                      plan.isFeatured
-                        ? "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-orange-500/30 hover:-translate-y-0.5"
-                        : "bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white border border-slate-800 dark:border-slate-700"
-                    }`}
-                  >
-                    <FaWhatsapp className="text-base" /> {plan.ctaText}
-                  </a>
-                ) : (
-                  <Link
-                    href={plan.ctaHref}
-                    className={`w-full py-4 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all shadow-xl text-center ${
-                      plan.isFeatured
-                        ? "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-orange-500/30 hover:-translate-y-0.5"
-                        : "bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white border border-slate-800 dark:border-slate-700"
-                    }`}
-                  >
-                    <FaRocket className="text-xs" /> {plan.ctaText}
-                  </Link>
-                )}
+              <div className={`pt-8 mt-6 border-t space-y-2.5 ${plan.isFeatured ? "border-slate-800/80" : "border-slate-200 dark:border-slate-800/80"}`}>
+                <Link
+                  href={`${plan.ctaHref}&billing=${billingCycle}`}
+                  className={`w-full py-4 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all shadow-xl text-center ${
+                    plan.isFeatured
+                      ? "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-orange-500/30 hover:-translate-y-0.5"
+                      : "bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white border border-slate-800 dark:border-slate-700"
+                  }`}
+                >
+                  <FaRocket className="text-xs" /> {plan.ctaText}
+                </Link>
+                <a
+                  href={plan.waHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`w-full py-2.5 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all text-center ${
+                    plan.isFeatured
+                      ? "text-emerald-300 hover:text-white hover:bg-white/5"
+                      : "text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                  }`}
+                >
+                  <FaWhatsapp className="text-sm" /> ¿Dudas? Consultar este plan por WhatsApp
+                </a>
               </div>
             </div>
           );

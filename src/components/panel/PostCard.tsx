@@ -159,7 +159,7 @@ export default function PostCard({
                 <span>🛍️</span>
                 <span className="truncate max-w-[130px]">{post.productName}</span>
                 <span className={`text-[8px] uppercase px-1.5 py-0.5 rounded-md font-black ${post.baseImageUrl || post.hasProductImage ? "bg-emerald-100 text-emerald-800" : "bg-indigo-100 text-indigo-800"}`}>
-                  {post.baseImageUrl || post.hasProductImage ? "Foto Catálogo" : "Foto IA"}
+                  {post.baseImageUrl || post.hasProductImage ? "Foto Catálogo" : "Diseño Agentes"}
                 </span>
               </span>
             )}
@@ -238,7 +238,7 @@ export default function PostCard({
               </>
             )}
           </div>
-        ) : ["business", "agency"].includes(userPlan) ? (
+        ) : ["esencial", "starter", "crecimiento", "growth", "pro", "elite", "piloto_automatico", "piloto-automatico", "business", "agency"].includes(userPlan) ? (
           <div
             className="mt-2 mb-6 rounded-2xl overflow-hidden border-2 border-dashed border-slate-200 aspect-video bg-slate-50/50 flex items-center justify-center shadow-inner hover:bg-indigo-50 hover:border-indigo-300 transition-all cursor-pointer group/media"
             onClick={(e) => onGenerateMedia(post.id, e)}
@@ -265,7 +265,7 @@ export default function PostCard({
                 href="/automatizacion-rrss/panel/planes"
                 className="text-[10px] font-black text-indigo-500 hover:text-indigo-600 mt-2 hover:underline uppercase block"
               >
-                Mejorar a Business para Vista Previa
+                Activar Plan para Vista Previa
               </Link>
             </div>
           </div>
